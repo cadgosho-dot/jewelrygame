@@ -1,0 +1,16 @@
+{
+  "name": "Jewelife",
+  "short_name": "Jewelife",
+  "description": "宝石を採掘し、加工・販売するジュエリーシミュレーションゲーム",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0805",
+  "theme_color": "#130e09",
+  "lang": "ja",
+  "icons": [
+    { "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

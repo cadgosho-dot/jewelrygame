@@ -1,12 +1,12 @@
 // Firebaseコンソール > プロジェクト設定 > マイアプリ > SDKの設定と構成
 // に表示される値へ置き換えてください。
 export const firebaseConfig = {
-  apiKey: 'PASTE_FIREBASE_API_KEY',
-  authDomain: 'jewelife-cadgosho.firebaseapp.com',
-  projectId: 'jewelife-cadgosho',
-  storageBucket: 'jewelife-cadgosho.firebasestorage.app',
-  messagingSenderId: 'PASTE_MESSAGING_SENDER_ID',
-  appId: 'PASTE_FIREBASE_APP_ID',
+  apiKey: 'AIzaSyCxuJaHMK7fHuuK0QEmIiNlNT81dI81Qsw",
+  authDomain: 'jewelrygame.firebaseapp.com',
+  projectId: 'jewelrygame',
+  storageBucket: 'jewelrygame.firebasestorage.app',
+  messagingSenderId: '87277704756',
+  appId: '1:87277704756:web:96daef44c12c7cdc099c61',
 };
 
 export const METAL_PRICE_ENDPOINT = './assets/data/metal-prices.json';

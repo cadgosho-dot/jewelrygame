@@ -1,7 +1,7 @@
 {
-  "name": "Jewelife",
-  "short_name": "Jewelife",
-  "description": "宝石を採掘し、加工・販売するジュエリーシミュレーションゲーム",
+  "name": "JEWELRYGAME",
+  "short_name": "JEWELRYGAME",
+  "description": "宝石を採掘し、ジュエリーを作って店舗で販売するゲーム",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

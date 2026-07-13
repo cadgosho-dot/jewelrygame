@@ -1,55 +1,74 @@
 import {
-  APP_NAME, VERSION, SCREEN_META, MINING_LOCATIONS, GLAB_ITEMS, ROUGH_BASE_PRICE,
-  QUALITY_MULTIPLIER, DEFAULT_METAL_PRICES, HELP_ENTRIES, SMARTPHONE_GAME_URL,
-  defaultState, tokyoTodayISO, minutesToClock, addDaysISO, weekdayJa, formatDateJa,
-  holidayName, isOkachimachiOpen, isGLabOpen, deterministicWeather, weatherLabelFromCode,
-  qualityScore, seasonForDate,
+  VERSION, SAVE_KEY, METALS, GEMS, ITEMS, DESIGNS, FINISHES, QUALITIES,
+  PRICE_MODES, MINING_LOCATIONS, CUSTOMERS, initialState, migrateState,
+  recommendedPrice, productionCost, productionHours, itemName, roundThousand,
+  clock, nextWeather,
 } from './game-data.js';
-import { METAL_PRICE_ENDPOINT } from './firebase-config.js';
-import {
-  initializeFirebase, firebaseConfigured, observeAuth, googleLogin, sendEmailLoginLink,
-  logout, ensureState, saveState, appendHistory, fetchAllHistory, deleteAllGameData,
-  claimSession, watchSession, heartbeat, isPreviewMode,
-} from './firebase-service.js';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, playSfx, vibrate, stopAllAudio } from './audio.js';
+import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, playSfx, vibrate } from './audio.js';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
 const modalEl = document.querySelector('#modal-layer');
-const offlineEl = document.querySelector('#offline-overlay');
 
-let user = null;
 let state = null;
-let sessionId = crypto.randomUUID();
-let heartbeatTimer = null;
-let currentWorldScreen = 'main';
-let miningSession = null;
-let miningResult = null;
-let currentStorageTab = 'general';
-let phoneParentScreen = 'main';
-let ggleQuery = '';
-let calendarView = 'month';
-let calendarCursor = null;
-let financePeriod = 'day';
-let financeVisible = { income: true, expense: true, profit: true };
-let historyCache = null;
-let busy = false;
-let modalResolver = null;
+let screen = 'title';
+let screenData = {};
+let navigation = [];
+let craftDraft = null;
+let completionId = null;
+let selectedMining = 'river';
+let phoneTab = 'orders';
+let titleSettings = loadTitleSettings();
 
-configureAudio(() => state?.settings || defaultState().settings);
-
+configureAudio(() => state?.settings || titleSettings);
 document.addEventListener('pointerdown', unlockAudio, { once: true });
-window.addEventListener('online', () => { offlineEl.classList.add('hidden'); });
-window.addEventListener('offline', () => { offlineEl.classList.remove('hidden'); });
-if (!navigator.onLine) offlineEl.classList.remove('hidden');
 
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+
+function uid() {
+  if (globalThis.crypto?.randomUUID) return globalThis.uid();
+  return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function loadTitleSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`${SAVE_KEY}-settings`) || 'null');
+    return { ...initialState().settings, ...(saved || {}) };
+  } catch (_) {
+    return initialState().settings;
+  }
+}
+
+function hasSave() {
+  return Boolean(localStorage.getItem(SAVE_KEY));
+}
+
+function loadGame() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    return raw ? migrateState(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveGame(message = false) {
+  if (!state) return;
+  state.updatedAt = new Date().toISOString();
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
+  if (message) showToast('保存しました。');
+}
+
+function esc(value = '') {
+  return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 }
 
 function yen(value) {
-  const sign = Number(value) < 0 ? '-' : '';
-  return `${sign}¥${Math.abs(Math.round(Number(value) || 0)).toLocaleString('ja-JP')}`;
+  return `¥${Math.round(Number(value) || 0).toLocaleString('ja-JP')}`;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, Number(value) || 0));
 }
 
 function showToast(message, type = 'info') {
@@ -57,1129 +76,1116 @@ function showToast(message, type = 'info') {
   toastEl.dataset.type = type;
   toastEl.classList.add('show');
   clearTimeout(showToast.timer);
-  showToast.timer = setTimeout(() => toastEl.classList.remove('show'), 2000);
-  if (type === 'error') playSfx('error');
+  showToast.timer = setTimeout(() => toastEl.classList.remove('show'), 2100);
+  playSfx(type === 'error' ? 'error' : 'select');
 }
 
-function showModal(html) {
-  modalEl.innerHTML = `<div class="modal-backdrop"><section class="modal-card">${html}</section></div>`;
+function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャンセル', danger = false, hideCancel = false, action = '' }) {
+  modalEl.innerHTML = `
+    <div class="modal-backdrop">
+      <section class="modal-card" role="dialog" aria-modal="true">
+        ${title ? `<h2>${esc(title)}</h2>` : ''}
+        <div class="modal-body">${body}</div>
+        <div class="modal-actions">
+          ${hideCancel ? '' : `<button class="secondary-button" data-action="modal-close">${esc(cancel)}</button>`}
+          <button class="${danger ? 'danger-button' : 'primary-button'}" data-action="${esc(action)}">${esc(confirm)}</button>
+        </div>
+      </section>
+    </div>`;
   modalEl.classList.remove('hidden');
-  return new Promise((resolve) => { modalResolver = resolve; });
 }
 
-function closeModal(value = null) {
+function closeModal() {
   modalEl.classList.add('hidden');
   modalEl.innerHTML = '';
-  if (modalResolver) modalResolver(value);
-  modalResolver = null;
 }
 
-function setBusy(flag, message = '保存しています…') {
-  busy = flag;
-  document.body.classList.toggle('is-busy', flag);
-  document.querySelector('#busy-text')?.replaceChildren(document.createTextNode(message));
+function addNotification(title, body, type = 'info') {
+  state.notifications.unshift({ id: uid(), title, body, type, day: state.game.day, unread: true });
+  state.notifications = state.notifications.slice(0, 80);
 }
 
-function getPickaxeLevel() {
-  const tool = state.inventory.general.find((item) => item.category === 'tool' && item.equipped);
-  return tool?.level || 1;
+function addFinance(label, income = 0, expense = 0) {
+  state.finance.push({ id: uid(), day: state.game.day, label, income, expense });
+  state.finance = state.finance.slice(-50);
+  state.daily.income += income;
+  state.daily.expense += expense;
 }
 
-function usedGeneralSlots() { return state.inventory.general.length; }
-
-function countUnread() { return state.notifications.filter((n) => n.unread).length; }
-
-function addNotification({ sender = 'システム', title, body, link = null }) {
-  state.notifications.unshift({
-    id: crypto.randomUUID(), sender, title, body, date: state.game.date,
-    minutes: state.game.minutes, unread: true, link,
-  });
-  if (state.notifications.length > 250) state.notifications.length = 250;
+function canSpendHours(hours) {
+  return state.game.minutes + hours * 60 <= 22 * 60;
 }
 
-function discover(key, title, body) {
-  if (state.unlocks.discovered.includes(key)) return;
-  state.unlocks.discovered.push(key);
-  addNotification({
-    sender: 'g--gle.', title: '新しい情報が追加されました', body,
-    link: { screen: 'ggle', query: title },
-  });
+function spendHours(hours) {
+  state.game.minutes = Math.min(22 * 60, state.game.minutes + hours * 60);
 }
 
-async function persist(event = null, previous = null) {
-  if (!user || !state) return;
-  setBusy(true);
-  try {
-    state.updatedAt = new Date().toISOString();
-    await saveState(user.uid, state);
-    if (event) {
-      await appendHistory(user.uid, {
-        gameDate: state.game.date,
-        minutes: state.game.minutes,
-        type: event.type || 'event',
-        title: event.title || '',
-        details: event.details || '',
-        income: event.income || 0,
-        expense: event.expense || 0,
-        snapshot: event.snapshot || null,
-      });
-      historyCache = null;
-    }
-  } catch (error) {
-    console.error(error);
-    if (previous) state = previous;
-    showToast('保存できなかったため、行動前の状態へ戻しました。', 'error');
-    renderCurrent();
-    throw error;
-  } finally {
-    setBusy(false);
+function weatherIcon(label) {
+  return label === '雨' ? '☂' : label === '曇り' ? '☁' : '☀';
+}
+
+function backgroundFor(target) {
+  const map = {
+    title: 'main', main: 'main', mining: 'mining', miningResult: 'mining', workshop: 'workshop',
+    craft: 'workshop', completion: 'workshop', inventory: 'workshop', supplier: 'okachimachi',
+    store: 'store', customer: 'store', orders: 'store', expansion: 'store', employee: 'store',
+    phone: 'phone', settings: 'main', settingsTitle: 'main', dayResult: 'sleep',
+  };
+  return map[target] || 'main';
+}
+
+function audioFor(target) {
+  const bg = backgroundFor(target);
+  if (bg === 'phone') return 'main';
+  if (bg === 'okachimachi') return 'okachimachi';
+  return bg;
+}
+
+function setScreen(target, data = {}, push = true) {
+  if (push && screen !== target) navigation.push({ screen, data: screenData });
+  screen = target;
+  screenData = data;
+  if (state) state.game.screen = target;
+  render();
+}
+
+function goBack() {
+  const previous = navigation.pop();
+  if (previous) {
+    screen = previous.screen;
+    screenData = previous.data || {};
+    if (state) state.game.screen = screen;
+    render();
+    return;
   }
+  setScreen(state ? 'main' : 'title', {}, false);
 }
 
-function headerHtml() {
-  const moneyClass = state.game.money < 0 ? 'negative' : '';
-  const c = state.player.customization;
+function goMain() {
+  navigation = [];
+  setScreen('main', {}, false);
+}
+
+function header(title, { back = true, main = true, help = '' } = {}) {
   return `
     <header class="game-header">
-      <button class="profile-chip" data-action="open-profile" aria-label="プロフィール">
-        <span class="avatar-mini" style="--hair:${hairCss(c.hairColor)};--skin:${skinCss(c.skinColor)}">${c.gender === '女性' ? '♀' : c.gender === '中性的' ? '◇' : '♂'}</span>
-        <span>${escapeHtml(state.player.name)}</span>
-      </button>
-      <button class="header-chip" data-action="open-calendar">
-        <strong>${escapeHtml(formatDateJa(state.game.date))}</strong><span>（${weekdayJa(state.game.date)}）${holidayName(state.game.date) ? ` ${holidayName(state.game.date)}` : ''}</span>
-      </button>
-      <div class="header-chip time-chip"><strong>${minutesToClock(state.game.minutes)}</strong></div>
-      <button class="header-chip ${moneyClass}" data-action="open-finance"><strong>${yen(state.game.money)}</strong></button>
-      <div class="header-chip weather-chip"><strong>${state.game.weather.icon} ${escapeHtml(state.game.weather.label)}</strong></div>
+      <div class="header-left">
+        ${back ? '<button class="icon-button" data-action="back" aria-label="戻る">←</button>' : ''}
+        <strong>${esc(title)}</strong>
+      </div>
+      <div class="status-row">
+        <span>${state.game.day}日目</span>
+        <span>${clock(state.game.minutes)}</span>
+        <span>${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
+        <span>${yen(state.game.money)}</span>
+      </div>
+      <div class="header-actions">
+        ${help ? `<button class="icon-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
+        ${main ? '<button class="small-button" data-action="main">メイン画面</button>' : ''}
+      </div>
     </header>`;
 }
 
-function hairCss(value) {
-  return ({ ブラック: '#17130f', ダークブラウン: '#35231a', ブラウン: '#5a3a24', ライトブラウン: '#8b623d', ブロンド: '#c7a45a', グレー: '#777' })[value] || '#17130f';
-}
-function skinCss(value) {
-  return ({ 明るい: '#f3d3ba', 標準: '#d5a77d', 健康的: '#b97f55', 小麦色: '#8f5c3c', オリーブ: '#a3865e' })[value] || '#d5a77d';
+function shell(title, body, options = {}) {
+  return `<main class="screen-shell">${header(title, options)}<section class="screen-content">${body}</section></main>`;
 }
 
-function commonNav(showHome = true) {
-  return `<div class="common-nav">
-    <button class="small-ui-button" data-action="back">← 戻る</button>
-    ${showHome ? '<button class="small-ui-button" data-action="go-main">⌂ メイン画面へ戻る</button>' : ''}
-  </div>`;
-}
-
-function setScreenBackground(screen) {
-  const inheritVisual = ['phone', 'settings', 'finance'].includes(screen);
-  const visualScreen = inheritVisual ? (state?.game?.worldScreen || currentWorldScreen || 'main') : screen;
-  const meta = SCREEN_META[visualScreen] || SCREEN_META.main;
-  document.documentElement.style.setProperty('--screen-bg', `url('${meta.image}')`);
-  const audioKey = meta.bgm === 'inherit' ? null : meta.bgm;
-  if (audioKey) {
-    currentWorldScreen = visualScreen;
-    switchAudio(audioKey);
+function render() {
+  document.body.dataset.screen = screen;
+  document.body.dataset.textSize = state?.settings?.textSize || titleSettings.textSize || 'normal';
+  document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundFor(screen)}.webp')`);
+  if (state) {
+    const hour = Math.floor(state.game.minutes / 60);
+    document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
   }
-  applyWeatherEffects();
+  switchAudio(audioFor(screen));
+
+  const renderers = {
+    title: renderTitle,
+    settingsTitle: () => renderSettings(true),
+    main: renderMain,
+    mining: renderMining,
+    miningResult: renderMiningResult,
+    supplier: renderSupplier,
+    workshop: renderWorkshop,
+    craft: renderCraft,
+    completion: renderCompletion,
+    inventory: renderInventory,
+    store: renderStore,
+    customer: renderCustomer,
+    orders: renderOrders,
+    expansion: renderExpansion,
+    employee: renderEmployee,
+    phone: renderPhone,
+    settings: () => renderSettings(false),
+    dayResult: renderDayResult,
+  };
+  root.innerHTML = (renderers[screen] || renderMain)();
+  applyAudioSettings();
 }
 
-function applyWeatherEffects() {
-  const fx = document.querySelector('#weather-fx');
-  if (!fx || !state) return;
-  fx.innerHTML = '';
-  document.body.dataset.weather = state.game.weather.label;
-  const m = state.game.minutes;
-  document.body.dataset.timeperiod = m < 12 * 60 ? 'morning' : m < 16 * 60 ? 'day' : m < 19 * 60 ? 'evening' : 'night';
-  if (['雨', '雪', '嵐'].includes(state.game.weather.label)) {
-    const count = state.game.weather.label === '雪' ? 45 : 70;
-    for (let i = 0; i < count; i += 1) {
-      const span = document.createElement('i');
-      span.className = state.game.weather.label === '雪' ? 'snowflake' : 'raindrop';
-      span.style.left = `${Math.random() * 100}%`;
-      span.style.animationDelay = `${Math.random() * -4}s`;
-      span.style.animationDuration = `${0.8 + Math.random() * 1.8}s`;
-      fx.appendChild(span);
-    }
-  }
-}
-
-function renderShell(content, screen, options = {}) {
-  setScreenBackground(screen);
-  root.innerHTML = `
-    <div id="weather-fx" aria-hidden="true"></div>
-    ${headerHtml()}
-    <main class="screen-content ${options.panel ? 'panel-screen' : ''}">${content}</main>
-    ${options.nav === false ? '' : commonNav(options.home !== false)}
-    <div class="busy-overlay"><span id="busy-text">保存しています…</span></div>`;
-  applyWeatherEffects();
-}
-
-function renderTitle(authUser = null, setupResult = {}) {
-  setScreenBackground('main');
-  stopAllAudio();
-  const configured = firebaseConfigured || isPreviewMode();
-  root.innerHTML = `
+function renderTitle() {
+  return `
     <main class="title-screen">
-      <section class="title-panel glass-panel">
-        <h1 class="sr-only">Jewelife</h1>
-        ${!configured ? `
-          <div class="setup-warning">
-            <strong>Firebase設定が必要です</strong>
-            <p><code>js/firebase-config.js</code>へFirebaseウェブアプリの設定値を入力してください。</p>
-            ${['localhost', '127.0.0.1'].includes(location.hostname) ? '<a class="secondary-link" href="?preview=1">開発用UI確認モード</a>' : ''}
-          </div>` : ''}
-        ${authUser ? `
-          <p class="login-status">${escapeHtml(authUser.email || authUser.displayName || 'ログイン済み')}</p>
-          <button class="primary-button" data-action="start-game">ゲーム開始</button>
-          <button class="text-button" data-action="logout">ログアウト</button>
-        ` : `
-          <button class="primary-button" data-action="google-login" ${configured ? '' : 'disabled'}>Googleでログイン</button>
-          <div class="divider"><span>または</span></div>
-          <label class="input-label">メールアドレス
-            <input id="email-login-input" type="email" autocomplete="email" placeholder="example@email.com" ${configured ? '' : 'disabled'}>
-          </label>
-          <button class="secondary-button" data-action="email-login" ${configured ? '' : 'disabled'}>ログインリンクを送信</button>
-          <p class="small-note">メールに届いた専用リンクを押すとログインできます。</p>
-        `}
+      <section class="title-actions glass-panel">
+        <button class="primary-button large-button" data-action="new-game">はじめから</button>
+        <button class="secondary-button large-button" data-action="continue" ${hasSave() ? '' : 'disabled'}>つづきから</button>
+        <button class="secondary-button large-button" data-action="title-settings">設定</button>
       </section>
     </main>`;
-}
-
-function renderOnboarding() {
-  setScreenBackground('main');
-  const c = state.player.customization;
-  root.innerHTML = `
-    <main class="onboarding-screen">
-      <div class="onboarding-reference"></div>
-      <section class="onboarding-card glass-panel">
-        <h2>主人公を作成</h2>
-        <label class="input-label">プレイヤー名<input id="player-name" maxlength="20" value="${escapeHtml(state.player.name)}" placeholder="名前を入力"></label>
-        ${selectField('gender', '性別', ['男性', '女性', '中性的'], c.gender)}
-        ${selectField('hairStyle', '髪型', ['ショート', 'ベリーショート', 'やや長め', 'センターパート', 'サイドパート', 'マッシュ', 'ウェーブ', 'ボブ', 'ミディアム', 'ロング', 'ポニーテール', 'ひとつ結び'], c.hairStyle)}
-        ${selectField('hairColor', '髪色', ['ブラック', 'ダークブラウン', 'ブラウン', 'ライトブラウン', 'ブロンド', 'グレー'], c.hairColor)}
-        ${selectField('eyeColor', '目の色', ['ダークブラウン', 'ブラウン', 'ヘーゼル', 'グレー', 'ブルー', 'グリーン'], c.eyeColor)}
-        ${selectField('skinColor', '肌の色', ['明るい', '標準', '健康的', '小麦色', 'オリーブ'], c.skinColor)}
-        <p class="small-note">服装は装備品や所持アイテムに応じて自動で変化します。</p>
-        <button class="primary-button" data-action="complete-onboarding">ゲーム開始</button>
-      </section>
-    </main>`;
-}
-
-function selectField(id, label, values, selected) {
-  return `<label class="input-label">${label}<select id="${id}">${values.map((v) => `<option ${v === selected ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`;
-}
-
-function isEndOfDay() { return state.game.minutes >= 21 * 60; }
-function canSpendHours(hours) { return state.game.minutes + hours * 60 <= 21 * 60; }
-
-function menuButton(action, label, icon, options = {}) {
-  const locked = options.locked || false;
-  return `<button class="menu-button ${locked ? 'locked' : ''}" data-action="${action}" ${options.reason ? `data-reason="${escapeHtml(options.reason)}"` : ''}>
-    <span class="menu-icon">${icon}</span><span class="menu-label">${label}</span>${options.time ? `<small>所要時間：${options.time}</small>` : ''}
-  </button>`;
 }
 
 function renderMain() {
-  const end = isEndOfDay();
-  const gOpen = isGLabOpen(state);
-  const oOpen = isOkachimachiOpen(state);
-  const content = `
-    <section class="central-menu main-menu-grid" aria-label="メインメニュー">
-      ${menuButton('go-mining', '採掘', '⛏', { locked: end, reason: '時間が足りません' })}
-      ${menuButton('go-workshop', '工房', '⚒', { locked: end, reason: '時間が足りません' })}
-      ${menuButton('go-store', '店舗', '◇', { locked: end, reason: '時間が足りません' })}
-      ${menuButton('go-glab', 'g-Lab.', 'g', { locked: end || !gOpen, reason: end ? '時間が足りません' : '営業時間外です' })}
-      ${menuButton('go-okachimachi', '御徒町', '街', { locked: end || !oOpen, reason: end ? '時間が足りません' : '営業時間外です' })}
-      ${menuButton('go-phone', 'スマホ', '▣', { locked: false })}
-      ${menuButton('go-sleep', '寝る', '☾')}
-      ${menuButton('go-settings', '設定', '⚙')}
-    </section>`;
-  renderShell(content, 'main', { nav: false });
+  const unread = state.notifications.filter((note) => note.unread).length;
+  const visiting = Object.entries(state.customers).filter(([, customer]) => customer.visiting).map(([id]) => CUSTOMERS[id]?.name);
+  return `
+    <main class="main-screen">
+      ${header('', { back: false, main: false })}
+      <section class="main-spacer" aria-hidden="true"></section>
+      ${visiting.length ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
+      <nav class="main-menu" aria-label="行動">
+        <button data-action="nav" data-screen="mining"><span>⛏</span><strong>採掘</strong></button>
+        <button data-action="nav" data-screen="workshop"><span>⚒</span><strong>工房</strong></button>
+        <button data-action="nav" data-screen="store"><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>
+        <button data-action="nav" data-screen="supplier"><span>♢</span><strong>仕入れ</strong></button>
+        <button data-action="nav" data-screen="phone"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
+        <button data-action="sleep"><span>☾</span><strong>寝る</strong></button>
+      </nav>
+    </main>`;
 }
 
 function renderMining() {
-  if (miningSession) return renderMiningSession();
-  const cards = state.unlocks.miningLocations.map((id) => {
-    const loc = MINING_LOCATIONS[id];
-    const locked = !canSpendHours(loc.hours);
-    return `<button class="location-card ${locked ? 'locked' : ''}" data-action="choose-mining" data-id="${id}" data-reason="時間が足りません">
-      <h3>${loc.name}</h3><p>${loc.description}</p><small>所要時間：${loc.hours}時間</small>
-    </button>`;
-  }).join('');
-  const content = `<section class="screen-panel mining-panel"><h2>採掘場所を選択</h2><div class="card-grid three">${cards}</div>${miningResult ? `<div class="result-box">${miningResult}</div>` : ''}</section>`;
-  renderShell(content, 'mining');
+  const location = MINING_LOCATIONS[selectedMining];
+  const remaining = Math.floor((22 * 60 - state.game.minutes) / 60);
+  return shell('採掘', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel">
+        <div class="choice-grid three">
+          ${Object.values(MINING_LOCATIONS).map((place) => `
+            <button class="choice-card ${place.id === selectedMining ? 'selected' : ''}" data-action="select-mining" data-id="${place.id}">
+              <strong>${esc(place.name)}</strong><small>${place.hours}時間</small>
+            </button>`).join('')}
+        </div>
+        <article class="summary-card">
+          <h2>${esc(location.name)}</h2>
+          <p>${esc(location.description)}</p>
+          <div class="tag-row">${location.gems.map((entry) => `<span>${esc(GEMS[entry.id].name)}</span>`).join('')}</div>
+          <small>残り時間：${remaining}時間</small>
+        </article>
+        <button class="primary-button full-button" data-action="mine" ${canSpendHours(location.hours) ? '' : 'disabled'}>採掘する</button>
+        ${canSpendHours(location.hours) ? '' : '<p class="error-text">今日は採掘する時間がありません。</p>'}
+      </section>
+    </div>`, { help: '採掘場所を選び、「採掘する」を押すと宝石を入手できます。' });
 }
 
-function renderMiningSession() {
-  const loc = MINING_LOCATIONS[miningSession.locationId];
-  const pct = Math.max(0, (miningSession.hp / miningSession.maxHp) * 100);
-  const content = `<section class="screen-panel mining-game-panel">
-    <h2>${loc.name}で採掘</h2>
-    <div class="rock-visual">🪨</div>
-    <div class="hp-bar"><span style="width:${pct}%"></span></div>
-    <p>岩の硬さ：${miningSession.hp} / ${miningSession.maxHp}</p>
-    <button class="primary-button hit-button" data-action="mining-hit">⛏ ツルハシを振る</button>
-    <button class="text-button" data-action="cancel-mining">採掘場所へ戻る</button>
-  </section>`;
-  renderShell(content, 'mining');
-}
-
-function renderWorkshop(view = 'menu') {
-  if (view === 'storage') return renderStorage();
-  if (view === 'roughCut') return renderRoughCut();
-  if (view === 'jewelryCraft') return renderJewelryCraft();
-  const roughEquipmentLocked = !state.unlocks.equipment.includes('roughCut');
-  const jewelryEquipmentLocked = !state.unlocks.equipment.includes('jewelryCraft');
-  const roughTimeLocked = !canSpendHours(2);
-  const jewelryTimeLocked = !canSpendHours(3);
-  const content = `<section class="central-menu workshop-menu">
-    ${menuButton('workshop-rough-cut', '原石カット', '◆', { locked: roughEquipmentLocked || roughTimeLocked, reason: roughEquipmentLocked ? '必要なアイテムを持っていません' : '時間が足りません', time: '2時間' })}
-    ${menuButton('workshop-jewelry-craft', 'ジュエリー作成', '♢', { locked: jewelryEquipmentLocked || jewelryTimeLocked, reason: jewelryEquipmentLocked ? '必要なアイテムを持っていません' : '時間が足りません', time: '3時間' })}
-    ${menuButton('workshop-storage', '保管を見る', '▤')}
-  </section>`;
-  renderShell(content, 'workshop');
-}
-
-function renderStorage() {
-  const inv = state.inventory;
-  const tabs = ['general', 'loose', 'metal', 'jewelry'].map((id) => {
-    const labels = { general: '通常収納', loose: 'ルースボックス', metal: '地金金庫', jewelry: 'ジュエリーボックス' };
-    return `<button class="tab-button ${currentStorageTab === id ? 'active' : ''}" data-action="storage-tab" data-id="${id}">${labels[id]}</button>`;
-  }).join('');
-  let body = '';
-  if (currentStorageTab === 'general') {
-    body = `<p>使用：${usedGeneralSlots()} / ${inv.generalCapacity}枠</p><div class="inventory-list">${inv.general.map((item) => inventoryRow(item)).join('') || '<p>空です</p>'}</div>`;
-  } else if (currentStorageTab === 'loose') {
-    body = `<p>使用：${inv.loose.length} / ${inv.looseCapacity}石</p><div class="inventory-list">${inv.loose.map((item) => inventoryRow(item)).join('') || '<p>空です</p>'}</div>`;
-  } else if (currentStorageTab === 'metal') {
-    body = `<div class="metal-storage">
-      ${metalRow('platinum', 'プラチナ')} ${metalRow('gold', 'ゴールド')} ${metalRow('silver', 'シルバー')}
-    </div>`;
-  } else {
-    body = `<p>使用：${inv.jewelry.length} / ${inv.jewelryCapacity}点</p><div class="inventory-list">${inv.jewelry.map((item) => inventoryRow(item)).join('') || '<p>空です</p>'}</div>`;
-  }
-  const content = `<section class="screen-panel storage-panel"><h2>工房の保管</h2><div class="tabs">${tabs}</div>${body}</section>`;
-  renderShell(content, 'workshop');
-}
-
-function inventoryRow(item) {
-  return `<div class="inventory-row"><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.quality || item.category || '')}${item.equipped ? '・装備中' : ''}</small></div><span>${item.qty ? `×${item.qty}` : ''}</span></div>`;
-}
-function metalRow(key, label) {
-  const inv = state.inventory;
-  return `<div class="metal-row"><strong>${label}</strong><span>${Number(inv.metals[key]).toFixed(1)}g / ${inv.metalCapacity[key]}g</span><div class="capacity-bar"><span style="width:${Math.min(100, inv.metals[key] / inv.metalCapacity[key] * 100)}%"></span></div></div>`;
-}
-
-function renderRoughCut() {
-  if (!state.unlocks.equipment.includes('roughCut')) { showToast('必要なアイテムを持っていません', 'error'); return renderWorkshop(); }
-  const roughs = state.inventory.general.filter((i) => i.category === 'rough' && i.qty > 0);
-  const content = `<section class="screen-panel"><h2>原石カット</h2>
-    <p>原石を1個選んでルースへ加工します。所要時間：2時間</p>
-    <div class="inventory-list">${roughs.map((r) => `<button class="inventory-row selectable" data-action="cut-rough" data-id="${r.id}"><div><strong>${r.name}</strong><small>${r.quality}</small></div><span>×${r.qty}</span></button>`).join('') || '<p>加工できる原石がありません。</p>'}</div>
-  </section>`;
-  renderShell(content, 'workshop');
-}
-
-function renderJewelryCraft() {
-  if (!state.unlocks.equipment.includes('jewelryCraft')) { showToast('必要なアイテムを持っていません', 'error'); return renderWorkshop(); }
-  const content = `<section class="screen-panel"><h2>ジュエリー作成</h2>
-    <p>ルース1石と地金を選び、リングを制作します。所要時間：3時間</p>
-    <label class="input-label">ルース<select id="craft-loose">${state.inventory.loose.map((l) => `<option value="${l.id}">${l.name}（${l.quality}）</option>`).join('')}</select></label>
-    <label class="input-label">地金<select id="craft-metal"><option value="silver">シルバー 5g</option><option value="gold">ゴールド 3g</option><option value="platinum">プラチナ 3g</option></select></label>
-    <button class="primary-button" data-action="craft-jewelry" ${state.inventory.loose.length ? '' : 'disabled'}>ジュエリーを作成</button>
-  </section>`;
-  renderShell(content, 'workshop');
-}
-
-function renderStore() {
-  const content = `<section class="central-menu store-menu">
-    ${menuButton('store-select', '店舗選択', '店')}
-    <div class="empty-store-message">現在、所有している店舗はありません。<br>店舗機能は今後の更新で実装します。</div>
-  </section>`;
-  renderShell(content, 'store');
-}
-
-function renderGLab(view = 'menu') {
-  if (view === 'shop') return renderGLabShop();
-  const open = isGLabOpen(state);
-  const content = `<section class="central-menu two-menu">
-    ${menuButton('glab-shop', 'アイテム購入', '買', { locked: !open, reason: '営業時間外です' })}
-    ${menuButton('glab-repair', '修理・加工依頼', '修', { locked: true, reason: 'まだ利用できません' })}
-  </section>`;
-  renderShell(content, 'glab');
-}
-
-function renderGLabShop() {
-  const items = GLAB_ITEMS.map((item) => {
-    const owned = item.unique && (state.unlocks.equipment.includes(item.effect?.unlock) || state.inventory.general.some((x) => x.key === item.id));
-    return `<article class="shop-card ${owned ? 'owned' : ''}">
-      <h3>${item.name}</h3><p>${item.description}</p><div class="shop-meta"><span>${yen(item.price)}</span><small>所要時間：${item.hours}時間</small></div>
-      <button class="secondary-button ${!canSpendHours(item.hours) && !owned ? 'locked' : ''}" data-action="buy-glab-item" data-id="${item.id}" data-reason="時間が足りません" ${owned ? 'disabled' : ''}>${owned ? '購入済み' : '購入する'}</button>
-    </article>`;
-  }).join('');
-  const content = `<section class="screen-panel wide-panel"><h2>g-Lab. アイテム購入</h2><div class="card-grid shop-grid">${items}</div></section>`;
-  renderShell(content, 'glab');
-}
-
-function renderOkachimachi() {
-  const open = isOkachimachiOpen(state);
-  const shops = [
-    ['material-shop', '素材屋', '素', false], ['loose-shop', 'ルース屋', '石', true], ['jewelry-shop', 'ジュエリー店', '宝', true],
-    ['frame-shop', '空枠屋', '枠', true], ['cast-shop', 'キャスト屋', '鋳', true], ['estate-shop', '不動産屋', '家', true], ['staff-shop', '人材紹介', '人', true],
-  ];
-  const content = `<section class="central-menu okachimachi-grid">${shops.map(([action, label, icon, future]) => menuButton(action, label, icon, {
-    locked: !open || future, reason: !open ? '営業時間外です' : 'まだ利用できません',
-  })).join('')}</section>`;
-  renderShell(content, 'okachimachi');
-}
-
-function renderMaterialShop() {
-  const roughs = state.inventory.general.filter((i) => i.category === 'rough' && i.qty > 0);
-  const roughHtml = roughs.map((item) => {
-    const unit = roughSellPrice(item);
-    return `<div class="sell-row"><div><strong>${item.name}</strong><small>${item.quality}・単価 ${yen(unit)}</small></div><span>×${item.qty}</span><button class="secondary-button ${!canSpendHours(1) ? 'locked' : ''}" data-action="sell-rough" data-id="${item.id}" data-reason="時間が足りません">全て売る（1時間）</button></div>`;
-  }).join('') || '<p>売却できる原石がありません。</p>';
-  const metalHtml = ['platinum', 'gold', 'silver'].map((key) => {
-    const label = { platinum: 'プラチナ', gold: 'ゴールド', silver: 'シルバー' }[key];
-    return `<div class="sell-row"><div><strong>${label}</strong><small>${yen(state.market[key])} / g</small></div><span>${state.inventory.metals[key].toFixed(1)}g</span><button class="secondary-button ${!canSpendHours(1) ? 'locked' : ''}" data-action="sell-metal" data-id="${key}" data-reason="時間が足りません" ${state.inventory.metals[key] <= 0 ? 'disabled' : ''}>全て売る（1時間）</button></div>`;
-  }).join('');
-  const content = `<section class="screen-panel wide-panel"><h2>素材屋</h2><p class="market-source">地金相場：${escapeHtml(state.market.source || '')}</p><h3>原石</h3><div class="sell-list">${roughHtml}</div><h3>金属</h3><div class="sell-list">${metalHtml}</div></section>`;
-  renderShell(content, 'okachimachi');
-}
-
-function roughSellPrice(item) {
-  const base = ROUGH_BASE_PRICE[item.key] || 300;
-  const q = QUALITY_MULTIPLIER[item.quality] || 1;
-  const season = seasonForDate(state.game.date);
-  const demandSeed = [...`${season}-${item.key}`].reduce((a, c) => a + c.charCodeAt(0), 0);
-  const demand = 0.85 + (demandSeed % 31) / 100;
-  return Math.max(1, Math.round(base * q * demand / 10) * 10);
-}
-
-function phoneShell(title, body) {
-  return `<section class="phone-stage">
-    <div class="phone-device">
-      <img src="./assets/images/phone.webp" alt="スマートフォン">
-      <div class="phone-screen">
-        <div class="phone-topbar"><button data-action="phone-home">‹</button><strong>${title}</strong><span></span></div>
-        <div class="phone-body">${body}</div>
+function renderMiningResult() {
+  const result = screenData.result;
+  return shell('採掘結果', `
+    <section class="center-card glass-panel result-card">
+      <div class="gem-symbol" style="--gem:${result ? GEMS[result.gem].hue : '#777'}">${result ? '◆' : '·'}</div>
+      ${result ? `
+        <h1>${esc(GEMS[result.gem].name)}を見つけました。</h1>
+        <p>入手数：${result.qty}個</p>` : `
+        <h1>今回は宝石が見つかりませんでした。</h1>
+        <p>次の採掘では見つかりやすくなります。</p>`}
+      <div class="button-stack">
+        <button class="primary-button" data-action="mine-again">もう一度採掘する</button>
+        <button class="secondary-button" data-action="main">メイン画面へ戻る</button>
       </div>
-    </div>
-  </section>`;
+    </section>`, { main: false });
 }
 
-function renderPhone() {
-  const badge = countUnread();
-  const menus = [
-    ['phone-profile', 'プロフィール', '人'], ['phone-notifications', '通知', '通'], ['phone-calendar', 'カレンダー', '日'],
-    ['phone-ggle', 'g--gle.', 'g'], ['phone-game', 'スマホゲーム', '遊'], ['phone-ai', 'AI', 'AI'],
-  ];
-  const body = `<div class="phone-menu-grid">${menus.map(([action, label, icon]) => `<button class="phone-app" data-action="${action}"><span>${icon}</span><small>${label}</small>${action === 'phone-notifications' && badge ? `<b>${badge}</b>` : ''}</button>`).join('')}</div>`;
-  renderShell(phoneShell('スマホ', body), 'phone');
+function renderSupplier() {
+  const tab = screenData.tab || 'metals';
+  const products = tab === 'metals' ? Object.values(METALS) : Object.values(GEMS);
+  return shell('仕入れ', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel">
+        <div class="tab-row">
+          <button class="${tab === 'metals' ? 'active' : ''}" data-action="supplier-tab" data-tab="metals">地金</button>
+          <button class="${tab === 'gems' ? 'active' : ''}" data-action="supplier-tab" data-tab="gems">宝石</button>
+        </div>
+        <div class="product-list">
+          ${products.map((product) => {
+            const kind = tab === 'metals' ? 'metal' : 'gem';
+            const owned = tab === 'metals' ? state.inventory.metals[product.id] : state.inventory.gems[product.id];
+            const disabled = state.game.money < product.price || !canSpendHours(1);
+            return `<article class="product-row">
+              <div><strong>${esc(product.name)}</strong><small>所持：${owned}個</small></div>
+              <strong>${yen(product.price)}</strong>
+              <button class="primary-button" data-action="purchase" data-kind="${kind}" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入する</button>
+            </article>`;
+          }).join('')}
+        </div>
+        <p class="small-note">購入すると1時間進みます。1回の購入で1個増えます。</p>
+      </section>
+    </div>`, { help: '地金または宝石を1個ずつ購入できます。購入すると1時間進みます。' });
 }
 
-function renderProfile() {
-  const c = state.player.customization;
-  const body = `<div class="phone-form"><div class="profile-preview"><span class="avatar-large" style="--hair:${hairCss(c.hairColor)};--skin:${skinCss(c.skinColor)}">${c.gender === '女性' ? '♀' : c.gender === '中性的' ? '◇' : '♂'}</span><strong>${escapeHtml(state.player.name)}</strong></div>
-    ${selectField('profile-gender', '性別', ['男性', '女性', '中性的'], c.gender)}
-    ${selectField('profile-hairStyle', '髪型', ['ショート', 'ベリーショート', 'やや長め', 'センターパート', 'サイドパート', 'マッシュ', 'ウェーブ', 'ボブ', 'ミディアム', 'ロング', 'ポニーテール', 'ひとつ結び'], c.hairStyle)}
-    ${selectField('profile-hairColor', '髪色', ['ブラック', 'ダークブラウン', 'ブラウン', 'ライトブラウン', 'ブロンド', 'グレー'], c.hairColor)}
-    ${selectField('profile-eyeColor', '目の色', ['ダークブラウン', 'ブラウン', 'ヘーゼル', 'グレー', 'ブルー', 'グリーン'], c.eyeColor)}
-    ${selectField('profile-skinColor', '肌の色', ['明るい', '標準', '健康的', '小麦色', 'オリーブ'], c.skinColor)}
-    <button class="primary-button" data-action="save-profile">変更を保存</button></div>`;
-  renderShell(phoneShell('プロフィール', body), 'phone');
+function renderWorkshop() {
+  const gemTotal = Object.values(state.inventory.gems).reduce((a, b) => a + b, 0);
+  const metalTotal = Object.values(state.inventory.metals).reduce((a, b) => a + b, 0);
+  const stored = state.inventory.jewelry.filter((item) => item.status !== 'sold').length;
+  return shell('工房', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel">
+        <div class="stat-grid">
+          <div><small>宝石</small><strong>${gemTotal}個</strong></div>
+          <div><small>地金</small><strong>${metalTotal}個</strong></div>
+          <div><small>完成品</small><strong>${stored}/${state.inventory.capacity}</strong></div>
+          <div><small>職人</small><strong>レベル${state.artisan.level}</strong></div>
+        </div>
+        <div class="button-stack">
+          <button class="primary-button large-button" data-action="open-craft">ジュエリーを作る</button>
+          <button class="secondary-button large-button" data-action="nav" data-screen="inventory">材料・完成品を見る</button>
+        </div>
+      </section>
+    </div>`, { help: '所持している宝石と地金を使い、ジュエリーを作れます。' });
 }
 
-function renderNotifications() {
-  const rows = state.notifications.map((n) => `<article class="notification-card ${n.unread ? 'unread' : ''}">
-    <button class="notification-main" data-action="open-notification" data-id="${n.id}">
-      <span class="sender">${escapeHtml(n.sender)}</span><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.body)}</p><small>${n.date} ${minutesToClock(n.minutes)}</small>
-    </button><button class="delete-icon" data-action="delete-notification" data-id="${n.id}" aria-label="削除">×</button>
-  </article>`).join('') || '<p class="empty-message">通知はありません。</p>';
-  const body = `<div class="phone-actions"><button class="text-button" data-action="mark-all-read">すべて既読</button><button class="text-button danger" data-action="delete-all-notifications">すべて削除</button></div><div class="notification-list">${rows}</div>`;
-  renderShell(phoneShell('通知', body), 'phone');
+function defaultDraft(orderId = null) {
+  const order = orderId ? state.orders.find((entry) => entry.id === orderId) : null;
+  return {
+    orderId,
+    item: order?.item || 'ring',
+    gem: order?.gem || firstOwned(state.inventory.gems, 'amethyst'),
+    metal: order?.metal || firstOwned(state.inventory.metals, 'silver'),
+    design: order?.design || 'simple',
+    finish: 'mirror',
+  };
 }
 
-async function renderCalendar() {
-  if (!historyCache) historyCache = await fetchAllHistory(user.uid);
-  if (!calendarCursor) calendarCursor = state.game.date;
-  const body = calendarBody();
-  renderShell(phoneShell('カレンダー', body), 'phone');
+function firstOwned(collection, fallback) {
+  return Object.keys(collection).find((key) => collection[key] > 0) || fallback;
 }
 
-function calendarBody() {
-  const nav = `<div class="calendar-nav"><button data-action="calendar-prev">‹</button><strong>${calendarTitle()}</strong><button data-action="calendar-next">›</button></div>
-    <div class="tabs compact">${['year', 'month', 'week', 'day'].map((v) => `<button class="tab-button ${calendarView === v ? 'active' : ''}" data-action="calendar-view" data-id="${v}">${{ year: '年', month: '月', week: '週', day: '日' }[v]}</button>`).join('')}</div>`;
-  let content = '';
-  if (calendarView === 'year') content = yearCalendar();
-  else if (calendarView === 'month') content = monthCalendar();
-  else if (calendarView === 'week') content = weekCalendar();
-  else content = dayCalendar(calendarCursor);
-  const form = `<details class="calendar-add"><summary>予定・メモを追加</summary>
-    <label class="input-label">タイトル<input id="cal-title" maxlength="60"></label>
-    <label class="input-label">日付<input id="cal-date" type="date" value="${calendarCursor}"></label>
-    <label class="input-label">時刻<input id="cal-time" type="time" value="09:00"></label>
-    <label class="input-label">内容<textarea id="cal-note" rows="2"></textarea></label>
-    <label class="check-row"><input id="cal-notify" type="checkbox" checked> ゲーム内通知</label>
-    <button class="secondary-button" data-action="add-calendar-event">追加</button>
-  </details>`;
-  return nav + content + form;
+function craftChoice(label, group, entries, current, locked = false) {
+  return `<fieldset class="craft-field"><legend>${esc(label)}</legend><div class="choice-grid ${Object.keys(entries).length > 3 ? 'many' : 'three'}">
+    ${Object.values(entries).map((entry) => {
+      const owned = group === 'gem' ? state.inventory.gems[entry.id] : group === 'metal' ? state.inventory.metals[entry.id] : null;
+      return `<button type="button" class="choice-card ${current === entry.id ? 'selected' : ''}" data-action="craft-choice" data-group="${group}" data-id="${entry.id}" ${locked && current !== entry.id ? 'disabled' : ''}>
+        <strong>${esc(entry.name)}</strong>${owned !== null ? `<small>所持 ${owned}</small>` : ''}
+      </button>`;
+    }).join('')}
+  </div></fieldset>`;
 }
 
-function calendarTitle() {
-  const d = new Date(`${calendarCursor}T12:00:00+09:00`);
-  if (calendarView === 'year') return `${d.getFullYear()}年`;
-  if (calendarView === 'month') return `${d.getFullYear()}年${d.getMonth() + 1}月`;
-  if (calendarView === 'week') return `${formatDateJa(calendarCursor)}を含む週`;
-  return `${formatDateJa(calendarCursor)}（${weekdayJa(calendarCursor)}）`;
+function renderCraft() {
+  const orderId = screenData.orderId || null;
+  if (!craftDraft || craftDraft.orderId !== orderId) craftDraft = defaultDraft(orderId);
+  const locked = Boolean(orderId);
+  const order = locked ? state.orders.find((entry) => entry.id === orderId) : null;
+  const hours = productionHours(craftDraft, state.employee);
+  const cost = productionCost(craftDraft);
+  const quality = expectedQuality();
+  const price = recommendedPrice({ ...craftDraft, quality });
+  const enoughGem = state.inventory.gems[craftDraft.gem] > 0;
+  const enoughMetal = state.inventory.metals[craftDraft.metal] > 0;
+  const capacityOk = state.inventory.jewelry.filter((item) => item.status !== 'sold').length < state.inventory.capacity;
+  const canCraft = enoughGem && enoughMetal && capacityOk && canSpendHours(hours);
+
+  return shell(order ? '注文の商品を作る' : 'ジュエリーを作る', `
+    <div class="craft-layout">
+      <section class="preview-panel glass-panel">
+        <div class="jewelry-preview metal-${craftDraft.metal}" style="--gem:${GEMS[craftDraft.gem].hue}">
+          <span class="preview-item">${ITEMS[craftDraft.item].symbol}</span><i>◆</i>
+        </div>
+        <h2>${esc(itemName(craftDraft))}</h2>
+        ${order ? `<span class="order-badge">${esc(order.customerName)}さんの注文品</span>` : ''}
+        <dl class="preview-details">
+          <div><dt>制作時間</dt><dd>${hours}時間</dd></div>
+          <div><dt>原価</dt><dd>${yen(cost)}</dd></div>
+          <div><dt>品質予想</dt><dd>${esc(QUALITIES[quality].name)}</dd></div>
+          <div><dt>推奨価格</dt><dd>${yen(price)}</dd></div>
+        </dl>
+      </section>
+      <section class="craft-options glass-panel">
+        ${craftChoice('アイテム', 'item', ITEMS, craftDraft.item, locked)}
+        ${craftChoice('宝石', 'gem', GEMS, craftDraft.gem, locked)}
+        ${craftChoice('地金', 'metal', METALS, craftDraft.metal, locked)}
+        ${craftChoice('デザイン', 'design', DESIGNS, craftDraft.design, locked)}
+        ${craftChoice('仕上げ', 'finish', FINISHES, craftDraft.finish, false)}
+        <div class="validation-list">
+          ${enoughGem ? '' : `<p>・${esc(GEMS[craftDraft.gem].name)}を持っていません。</p>`}
+          ${enoughMetal ? '' : `<p>・${esc(METALS[craftDraft.metal].name)}を持っていません。</p>`}
+          ${capacityOk ? '' : '<p>・完成品の保管場所に空きがありません。</p>'}
+          ${canSpendHours(hours) ? '' : '<p>・今日は制作する時間がありません。</p>'}
+        </div>
+        <button class="primary-button full-button" data-action="confirm-craft" ${canCraft ? '' : 'disabled'}>制作する</button>
+        ${!enoughGem ? '<button class="secondary-button full-button" data-action="nav" data-screen="mining">採掘へ</button>' : ''}
+        ${!enoughMetal ? '<button class="secondary-button full-button" data-action="nav" data-screen="supplier">仕入れへ</button>' : ''}
+      </section>
+    </div>`, { help: '上から項目を選び、「制作する」を押します。専門的な技術操作や失敗はありません。' });
 }
 
-function eventCount(iso) {
-  return state.manualCalendar.filter((e) => e.date === iso).length + (historyCache || []).filter((e) => e.gameDate === iso).length;
+function renderCompletion() {
+  const jewelry = state.inventory.jewelry.find((item) => item.id === completionId);
+  if (!jewelry) return shell('完成', '<p>完成品が見つかりません。</p>');
+  return shell('完成', `
+    <section class="center-card glass-panel result-card">
+      <div class="jewelry-preview large metal-${jewelry.metal}" style="--gem:${GEMS[jewelry.gem].hue}">
+        <span class="preview-item">${ITEMS[jewelry.item].symbol}</span><i>◆</i>
+      </div>
+      <h1>${esc(jewelry.name)}が完成しました。</h1>
+      <div class="result-stats">
+        <span>品質：${esc(QUALITIES[jewelry.quality].name)}</span>
+        <span>推奨価格：${yen(jewelry.recommendedPrice)}</span>
+        <span>経験値：＋${jewelry.xp}</span>
+      </div>
+      <div class="button-stack">
+        ${jewelry.status === 'order' ? `<button class="primary-button" data-action="nav" data-screen="orders">注文を見る</button>` : `<button class="primary-button" data-action="place-from-completion" data-id="${jewelry.id}">店舗に並べる</button>`}
+        <button class="secondary-button" data-action="nav" data-screen="inventory">保管する</button>
+        <button class="secondary-button" data-action="open-craft">もう一度作る</button>
+        <button class="text-button" data-action="nav" data-screen="workshop">工房へ戻る</button>
+      </div>
+    </section>`, { main: true });
 }
 
-function yearCalendar() {
-  const year = Number(calendarCursor.slice(0, 4));
-  return `<div class="year-grid">${Array.from({ length: 12 }, (_, i) => {
-    const prefix = `${year}-${String(i + 1).padStart(2, '0')}`;
-    const count = state.manualCalendar.filter((e) => e.date.startsWith(prefix)).length + (historyCache || []).filter((e) => e.gameDate?.startsWith(prefix)).length;
-    return `<button data-action="jump-month" data-id="${prefix}-01"><strong>${i + 1}月</strong><small>${count}件</small></button>`;
-  }).join('')}</div>`;
+function renderInventory() {
+  const tab = screenData.tab || 'finished';
+  return shell(tab === 'finished' ? '完成品' : '材料', `
+    <section class="wide-panel glass-panel">
+      <div class="tab-row">
+        <button class="${tab === 'finished' ? 'active' : ''}" data-action="inventory-tab" data-tab="finished">完成品</button>
+        <button class="${tab === 'materials' ? 'active' : ''}" data-action="inventory-tab" data-tab="materials">材料</button>
+      </div>
+      ${tab === 'materials' ? renderMaterials() : renderFinishedItems()}
+    </section>`, { help: '完成品と、所持している宝石・地金を確認できます。' });
 }
 
-function monthCalendar() {
-  const [year, month] = calendarCursor.split('-').map(Number);
-  const first = new Date(`${year}-${String(month).padStart(2, '0')}-01T12:00:00+09:00`);
-  const days = new Date(year, month, 0).getDate();
-  const offset = first.getDay();
-  const cells = Array(offset).fill('<span></span>');
-  for (let day = 1; day <= days; day += 1) {
-    const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    cells.push(`<button class="calendar-day ${iso === state.game.date ? 'today' : ''}" data-action="calendar-day" data-id="${iso}"><b>${day}</b>${holidayName(iso) ? '<i>祝</i>' : ''}${eventCount(iso) ? `<small>${eventCount(iso)}</small>` : ''}</button>`);
-  }
-  return `<div class="week-labels"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div class="month-grid">${cells.join('')}</div>`;
-}
-
-function weekCalendar() {
-  const d = new Date(`${calendarCursor}T12:00:00+09:00`);
-  const start = addDaysISO(calendarCursor, -d.getDay());
-  return `<div class="week-list">${Array.from({ length: 7 }, (_, i) => {
-    const iso = addDaysISO(start, i);
-    return `<button data-action="calendar-day" data-id="${iso}"><strong>${formatDateJa(iso)}（${weekdayJa(iso)}）</strong><span>${eventCount(iso)}件</span></button>`;
-  }).join('')}</div>`;
-}
-
-function dayCalendar(iso) {
-  const manual = state.manualCalendar.filter((e) => e.date === iso);
-  const history = (historyCache || []).filter((e) => e.gameDate === iso);
-  return `<div class="day-events">
-    ${manual.map((e) => `<article><strong>${escapeHtml(e.title)}</strong><small>${e.time || '終日'}・手動予定</small><p>${escapeHtml(e.note || '')}</p><button class="delete-icon" data-action="delete-calendar-event" data-id="${e.id}">×</button></article>`).join('')}
-    ${history.map((e) => `<article class="official-record"><strong>${escapeHtml(e.title)}</strong><small>${minutesToClock(e.minutes || 0)}・正式記録</small><p>${escapeHtml(e.details || '')}</p></article>`).join('')}
-    ${!manual.length && !history.length ? '<p class="empty-message">記録はありません。</p>' : ''}
+function renderMaterials() {
+  return `<div class="materials-grid">
+    <section><h2>宝石</h2>${Object.values(GEMS).map((gem) => `<div class="material-row"><span><i class="mini-gem" style="--gem:${gem.hue}">◆</i>${esc(gem.name)}</span><strong>${state.inventory.gems[gem.id]}個</strong></div>`).join('')}</section>
+    <section><h2>地金</h2>${Object.values(METALS).map((metal) => `<div class="material-row"><span>${esc(metal.name)}</span><strong>${state.inventory.metals[metal.id]}個</strong></div>`).join('')}</section>
   </div>`;
 }
 
-function renderGgle() {
-  const entries = HELP_ENTRIES.filter((e) => !e.requiresUnlock || state.unlocks.equipment.includes(e.requiresUnlock));
-  const q = ggleQuery.trim().toLowerCase();
-  const filtered = entries.filter((e) => !q || `${e.title} ${e.category} ${e.keywords} ${e.body}`.toLowerCase().includes(q));
-  const categories = [...new Set(entries.map((e) => e.category))];
-  const body = `<div class="ggle-search"><input id="ggle-search" value="${escapeHtml(ggleQuery)}" placeholder="ゲーム内の説明を検索"><button data-action="ggle-search">検索</button></div>
-    <div class="category-chips">${categories.map((c) => `<button data-action="ggle-category" data-id="${c}">${c}</button>`).join('')}</div>
-    <div class="help-list">${filtered.map((e) => `<article id="help-${e.id}"><h3>${e.title}</h3><small>${e.category}</small><p>${e.body}</p></article>`).join('') || '<p>該当する説明はありません。</p>'}</div>`;
-  renderShell(phoneShell('g--gle.', body), 'phone');
+function renderFinishedItems() {
+  const items = state.inventory.jewelry.filter((item) => item.status !== 'sold');
+  if (!items.length) return '<div class="empty-state"><strong>完成品はありません。</strong><p>工房でジュエリーを作ると、ここに表示されます。</p></div>';
+  return `<div class="jewelry-grid">${items.map((item) => {
+    const status = item.status === 'displayed' ? '陳列中' : item.status === 'order' ? '注文品' : '保管中';
+    return `<article class="jewelry-card">
+      <div class="small-jewelry metal-${item.metal}" style="--gem:${GEMS[item.gem].hue}"><span>${ITEMS[item.item].symbol}</span><i>◆</i></div>
+      <div><h3>${esc(item.name)}</h3><p>${esc(QUALITIES[item.quality].name)}・${yen(item.recommendedPrice)}</p><small>状態：${status}</small></div>
+      ${item.status === 'stored' ? `<button class="primary-button" data-action="place-item" data-id="${item.id}">店舗に並べる</button>` : ''}
+    </article>`;
+  }).join('')}</div>`;
 }
 
-function renderAI() {
-  const body = `<div class="ai-screen"><button class="primary-button ai-copy-button" data-action="copy-ai-data">ゲームデータコピー</button><p>このゲームデータをコピーして、実際のAIチャットへ貼り付けることでゲーム履歴の分析や相談が可能です。</p></div>`;
-  renderShell(phoneShell('AI', body), 'phone');
+function renderStore() {
+  const activeVisitors = Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting);
+  const canExpand = expansionEligible();
+  const available = state.inventory.jewelry.filter((item) => item.status === 'stored');
+  return shell('店舗', `
+    <div class="store-layout">
+      <section class="store-scene"></section>
+      <section class="store-panel glass-panel">
+        <div class="store-summary">
+          <div><small>店舗評価</small><strong>★ ${state.store.rating.toFixed(1)}</strong></div>
+          <div><small>累計販売</small><strong>${state.store.salesCount}点</strong></div>
+          <div><small>累計売上</small><strong>${yen(state.store.totalRevenue)}</strong></div>
+        </div>
+        ${activeVisitors.length ? `<section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>` : ''}
+        <h2>ショーケース</h2>
+        <div class="showcase-grid">${state.store.showcases.map((slot, index) => renderShowcaseSlot(slot, index)).join('')}</div>
+        ${available.length ? `<details class="available-items"><summary>商品を並べる</summary><div class="compact-list">${available.map((item) => `<button data-action="place-item" data-id="${item.id}"><span>${esc(item.name)}</span><small>${yen(item.recommendedPrice)}</small></button>`).join('')}</div></details>` : ''}
+        <div class="button-grid">
+          <button class="secondary-button" data-action="nav" data-screen="inventory">完成品を見る</button>
+          <button class="secondary-button" data-action="nav" data-screen="orders">注文を見る</button>
+          <button class="secondary-button" data-action="nav" data-screen="expansion">店舗情報</button>
+          ${state.store.expanded ? '<button class="secondary-button" data-action="nav" data-screen="employee">店員</button>' : ''}
+        </div>
+        ${canExpand ? '<p class="success-text">店舗を拡張できます。</p>' : ''}
+      </section>
+    </div>`, { help: '完成品をショーケースに並べて寝ると、一般のお客様への販売判定が行われます。' });
 }
 
-async function renderFinance() {
-  if (!historyCache) historyCache = await fetchAllHistory(user.uid);
-  const financeRows = historyCache.filter((e) => Number(e.income) || Number(e.expense));
-  const grouped = groupFinance(financeRows, financePeriod);
-  const chart = financeChart(grouped);
-  const totals = grouped.reduce((a, r) => ({ income: a.income + r.income, expense: a.expense + r.expense }), { income: 0, expense: 0 });
-  const content = `<section class="screen-panel wide-panel finance-panel"><h2>収支履歴</h2>
-    <div class="tabs">${['day', 'month', 'year'].map((v) => `<button class="tab-button ${financePeriod === v ? 'active' : ''}" data-action="finance-period" data-id="${v}">${{ day: '日', month: '月', year: '年' }[v]}</button>`).join('')}</div>
-    <div class="finance-totals"><div><small>売上</small><strong>${yen(totals.income)}</strong></div><div><small>支出</small><strong>${yen(totals.expense)}</strong></div><div><small>利益</small><strong>${yen(totals.income - totals.expense)}</strong></div></div>
-    <div class="chart-controls">${['income', 'expense', 'profit'].map((k) => `<label><input type="checkbox" data-action="finance-toggle" data-id="${k}" ${financeVisible[k] ? 'checked' : ''}>${{ income: '売上', expense: '支出', profit: '利益' }[k]}</label>`).join('')}</div>
-    ${chart}
-    <div class="finance-breakdown">${financeRows.slice(-30).reverse().map((r) => `<div><span>${r.gameDate} ${escapeHtml(r.title)}</span><strong>${r.income ? `+${yen(r.income)}` : `-${yen(r.expense)}`}</strong></div>`).join('') || '<p>収支履歴はありません。</p>'}</div>
-  </section>`;
-  renderShell(content, currentWorldScreen, { panel: true });
+function renderShowcaseSlot(slot, index) {
+  if (!slot) return `<article class="showcase-slot empty"><strong>${index + 1}</strong><span>空き</span></article>`;
+  const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+  if (!item) return `<article class="showcase-slot empty"><strong>${index + 1}</strong><span>空き</span></article>`;
+  const price = roundThousand(item.recommendedPrice * PRICE_MODES[slot.priceMode].multiplier);
+  return `<article class="showcase-slot">
+    <div class="slot-number">${index + 1}</div>
+    <div class="small-jewelry metal-${item.metal}" style="--gem:${GEMS[item.gem].hue}"><span>${ITEMS[item.item].symbol}</span><i>◆</i></div>
+    <div class="slot-details"><strong>${esc(item.name)}</strong><small>${yen(price)}</small>
+      <select data-action="price-mode" data-slot="${index}">
+        ${Object.values(PRICE_MODES).map((mode) => `<option value="${mode.id}" ${slot.priceMode === mode.id ? 'selected' : ''}>${esc(mode.name)}</option>`).join('')}
+      </select>
+      <button class="text-button" data-action="remove-showcase" data-slot="${index}">商品を下げる</button>
+    </div>
+  </article>`;
 }
 
-function groupFinance(rows, period) {
-  const map = new Map();
-  for (const row of rows) {
-    const key = period === 'year' ? row.gameDate.slice(0, 4) : period === 'month' ? row.gameDate.slice(0, 7) : row.gameDate;
-    const v = map.get(key) || { key, income: 0, expense: 0 };
-    v.income += Number(row.income || 0); v.expense += Number(row.expense || 0); map.set(key, v);
+function renderCustomer() {
+  const customerId = screenData.customerId;
+  const customer = CUSTOMERS[customerId];
+  const customerState = state.customers[customerId];
+  if (!customer || !customerState?.visiting) return shell('お客様', '<div class="empty-state"><strong>現在、接客中のお客様はいません。</strong></div>');
+  const candidates = state.inventory.jewelry
+    .filter((item) => item.status === 'stored' || item.status === 'displayed')
+    .map((item) => ({ item, score: matchScore(item, customer.request) }))
+    .sort((a, b) => b.score - a.score);
+  const activeOrders = state.orders.filter((order) => !['完了', '取消'].includes(order.status)).length;
+  const orderLimit = state.store.expanded ? 2 : 1;
+  return shell(customer.name, `
+    <div class="customer-layout">
+      <section class="customer-stage"><div class="customer-placeholder"><span>人物画像</span><small>後から透過画像を重ねられます</small></div></section>
+      <section class="dialog-panel glass-panel">
+        <p class="dialog-text">${esc(customer.opening)}</p>
+        <article class="request-card"><small>希望</small><strong>${esc(customer.preferenceText)}</strong><span>予算：${yen(customer.request.budget)}</span></article>
+        <h2>商品を見せる</h2>
+        ${candidates.length ? `<div class="candidate-list">${candidates.slice(0, 4).map(({ item, score }) => `<article><div><strong>${esc(item.name)}</strong><small>${score >= 4 ? 'ぴったり' : score >= 2 ? 'おすすめ' : '少し違う'}・${yen(item.recommendedPrice)}</small></div><button class="primary-button" data-action="customer-buy" data-customer="${customerId}" data-id="${item.id}">見せる</button></article>`).join('')}</div>` : '<p class="small-note">販売できる完成品がありません。</p>'}
+        <div class="dialog-actions">
+          <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${activeOrders >= orderLimit ? 'disabled' : ''}>注文を受ける</button>
+          <button class="text-button" data-action="ignore-customer" data-id="${customerId}">今回は対応しない</button>
+        </div>
+        ${activeOrders >= orderLimit ? `<p class="error-text">同時に受けられる注文は${orderLimit}件までです。</p>` : ''}
+      </section>
+    </div>`, { help: '希望に合う完成品を見せるか、注文を受けるか、今回は対応しないかを選べます。' });
+}
+
+function renderOrders() {
+  const active = state.orders.filter((order) => order.status !== '完了');
+  return shell('注文', `
+    <section class="wide-panel glass-panel">
+      ${active.length ? `<div class="order-list">${active.map((order) => {
+        const remaining = order.deadlineDay - state.game.day;
+        return `<article class="order-card ${remaining < 0 ? 'overdue' : ''}">
+          <div><h2>${esc(order.customerName)}</h2><p>${esc(GEMS[order.gem].name)}・${esc(METALS[order.metal].name)}${esc(ITEMS[order.item].name)}</p><small>${esc(DESIGNS[order.design].name)}／${remaining < 0 ? `${Math.abs(remaining)}日遅れ` : remaining === 0 ? '本日が納期' : `納期まであと${remaining}日`}</small></div>
+          <div class="order-status"><span>${esc(order.status)}</span><strong>${yen(order.price)}</strong></div>
+          <div class="order-actions">
+            ${order.status === '受注' ? `<button class="primary-button" data-action="craft-order" data-id="${order.id}">注文の商品を作る</button>` : ''}
+            ${order.status === '完成' ? `<button class="primary-button" data-action="deliver-order" data-id="${order.id}">納品する</button>` : ''}
+          </div>
+        </article>`;
+      }).join('')}</div>` : '<div class="empty-state"><strong>現在の注文はありません。</strong><p>注文を受けなくても、通常商品の制作と販売を続けられます。</p></div>'}
+      ${state.orders.some((order) => order.status === '完了') ? `<details><summary>完了した注文</summary><div class="history-list">${state.orders.filter((order) => order.status === '完了').map((order) => `<p>${order.customerName}：${GEMS[order.gem].name}${ITEMS[order.item].name}</p>`).join('')}</div></details>` : ''}
+    </section>`, { help: '注文は任意です。受けた注文は、指定された条件の商品を作って納品します。' });
+}
+
+function renderExpansion() {
+  const eligible = expansionEligible();
+  return shell('店舗情報', `
+    <section class="center-card glass-panel expansion-card">
+      <h1>${state.store.expanded ? '拡張済みの店舗' : '小さな店舗'}</h1>
+      <div class="stat-grid">
+        <div><small>ショーケース</small><strong>${state.store.showcaseCount}枠</strong></div>
+        <div><small>完成品保管</small><strong>${state.inventory.capacity}点</strong></div>
+        <div><small>同時注文</small><strong>${state.store.expanded ? 2 : 1}件</strong></div>
+        <div><small>店員</small><strong>${state.store.expanded ? '1人' : 'なし'}</strong></div>
+      </div>
+      ${state.store.expanded ? '<p>この基本版での店舗拡張は完了しています。小さな店のまま遊び続けることもできます。</p>' : `
+        <h2>拡張条件</h2>
+        <ul class="condition-list">
+          <li class="${state.store.salesCount >= 5 ? 'done' : ''}">商品を5点販売：${state.store.salesCount}/5</li>
+          <li class="${state.store.totalRevenue >= 100000 ? 'done' : ''}">累計売上100,000円：${yen(state.store.totalRevenue)}</li>
+          <li class="${state.game.money >= 50000 ? 'done' : ''}">所持金50,000円：${yen(state.game.money)}</li>
+        </ul>
+        <p>拡張費：${yen(50000)}</p>
+        <button class="primary-button full-button" data-action="expand-store" ${eligible ? '' : 'disabled'}>店舗を拡張する</button>
+        <p class="small-note">条件を満たしても、拡張するかどうかは自由です。</p>`}
+    </section>`, { help: '条件を満たすと店舗を1回拡張できます。拡張は必須ではありません。' });
+}
+
+function renderEmployee() {
+  if (!state.store.expanded) return shell('店員', '<div class="empty-state"><strong>店舗拡張後に利用できます。</strong></div>');
+  return shell('店員', `
+    <section class="center-card glass-panel employee-card">
+      ${state.employee.hired ? `
+        <h1>${esc(state.employee.name)}</h1>
+        <p>勤務した日は、1日の終わりに給与2,000円を支払います。</p>
+        <fieldset class="craft-field"><legend>担当</legend><div class="choice-grid three">
+          <button class="choice-card ${state.employee.role === 'service' ? 'selected' : ''}" data-action="employee-role" data-role="service"><strong>接客</strong><small>固定客が来店しやすい</small></button>
+          <button class="choice-card ${state.employee.role === 'sales' ? 'selected' : ''}" data-action="employee-role" data-role="sales"><strong>販売</strong><small>商品が少し売れやすい</small></button>
+          <button class="choice-card ${state.employee.role === 'craft' ? 'selected' : ''}" data-action="employee-role" data-role="craft"><strong>制作補助</strong><small>制作時間を1時間短縮</small></button>
+        </div></fieldset>
+        <label class="toggle-row"><span>本日勤務する</span><input type="checkbox" data-action="employee-working" ${state.employee.working ? 'checked' : ''}></label>` : `
+        <h1>店員を1人雇えます。</h1>
+        <article class="candidate-card"><h2>田中 葵</h2><p>接客・販売・制作補助のいずれかを担当できます。</p><small>給与：勤務日ごとに2,000円</small></article>
+        <button class="primary-button full-button" data-action="hire-employee">雇う</button>`}
+    </section>`, { help: '店員は1人だけ雇えます。担当を1つ選ぶ簡単な仕組みです。' });
+}
+
+function renderPhone() {
+  if (phoneTab === 'notifications') state.notifications.forEach((note) => { note.unread = false; });
+  return shell('スマートフォン', `
+    <div class="phone-stage">
+      <section class="phone-ui">
+        <nav class="phone-tabs">
+          <button class="${phoneTab === 'orders' ? 'active' : ''}" data-action="phone-tab" data-tab="orders">注文</button>
+          <button class="${phoneTab === 'calendar' ? 'active' : ''}" data-action="phone-tab" data-tab="calendar">予定</button>
+          <button class="${phoneTab === 'notifications' ? 'active' : ''}" data-action="phone-tab" data-tab="notifications">通知</button>
+          <button class="${phoneTab === 'finance' ? 'active' : ''}" data-action="phone-tab" data-tab="finance">収支</button>
+          <button class="${phoneTab === 'settings' ? 'active' : ''}" data-action="phone-tab" data-tab="settings">設定</button>
+        </nav>
+        <div class="phone-content">${renderPhoneContent()}</div>
+      </section>
+    </div>`, { help: '注文、予定、通知、収支、設定を確認できます。確認するだけでは時間は進みません。' });
+}
+
+function renderPhoneContent() {
+  if (phoneTab === 'orders') {
+    const orders = state.orders.filter((order) => order.status !== '完了');
+    return orders.length ? orders.map((order) => `<article class="phone-card"><strong>${esc(order.customerName)}</strong><span>${esc(GEMS[order.gem].name)}${esc(ITEMS[order.item].name)}</span><small>${esc(order.status)}・${order.deadlineDay - state.game.day >= 0 ? `あと${order.deadlineDay - state.game.day}日` : '期限超過'}</small></article>`).join('') : '<div class="phone-empty">注文はありません。</div>';
   }
-  return [...map.values()].sort((a, b) => a.key.localeCompare(b.key)).slice(-24);
-}
-
-function financeChart(rows) {
-  const width = 800; const height = 260; const pad = 35;
-  if (!rows.length) return '<div class="empty-chart">グラフに表示するデータがありません。</div>';
-  const values = rows.flatMap((r) => [r.income, r.expense, r.income - r.expense]);
-  const max = Math.max(1, ...values.map(Math.abs));
-  const x = (i) => pad + i * ((width - pad * 2) / Math.max(1, rows.length - 1));
-  const y = (v) => height / 2 - (v / max) * (height / 2 - pad);
-  const line = (key, cls) => financeVisible[key] ? `<polyline class="${cls}" points="${rows.map((r, i) => `${x(i)},${y(key === 'profit' ? r.income - r.expense : r[key])}`).join(' ')}"/>` : '';
-  return `<svg class="finance-chart" viewBox="0 0 ${width} ${height}" role="img"><line x1="${pad}" y1="${height / 2}" x2="${width - pad}" y2="${height / 2}" class="axis"/>${line('income', 'income-line')}${line('expense', 'expense-line')}${line('profit', 'profit-line')}</svg>`;
-}
-
-function renderSettings() {
-  const s = state.settings;
-  const content = `<section class="screen-panel settings-panel"><h2>設定</h2>
-    ${volumeControl('bgm', 'BGM', s.bgmVolume, s.bgmMuted)}
-    ${volumeControl('ambient', '環境音', s.ambientVolume, s.ambientMuted)}
-    ${volumeControl('sfx', '効果音', s.sfxVolume, s.sfxMuted)}
-    <label class="setting-row"><span>バイブレーション</span><input type="checkbox" id="vibration-setting" ${s.vibration ? 'checked' : ''} data-action="toggle-vibration"></label>
-    <div class="settings-actions"><button class="secondary-button" data-action="logout">ログアウト</button><button class="danger-button" data-action="delete-game-data">ゲームデータ全削除</button></div>
-  </section>`;
-  renderShell(content, currentWorldScreen, { panel: true });
-}
-
-function volumeControl(id, label, value, muted) {
-  return `<div class="setting-row"><span>${label}</span><input type="range" min="0" max="1" step="0.01" value="${value}" data-action="volume-change" data-id="${id}"><button class="mute-button ${muted ? 'active' : ''}" data-action="mute-toggle" data-id="${id}">${muted ? 'ミュート解除' : 'ミュート'}</button></div>`;
-}
-
-function renderSleep() {
-  const daily = state.daily;
-  const eventRows = daily.events.slice(0, 5).map((e) => `<li>${escapeHtml(e)}</li>`).join('') || '<li>特にありませんでした。</li>';
-  const content = `<section class="sleep-summary glass-panel"><h2>今日の結果</h2>
-    <div class="finance-totals"><div><small>売上</small><strong>${yen(daily.income)}</strong></div><div><small>支出</small><strong>${yen(daily.expense)}</strong></div><div><small>利益</small><strong>${yen(daily.income - daily.expense)}</strong></div></div>
-    <h3>主な出来事</h3><ul>${eventRows}</ul><button class="primary-button" data-action="next-day">次の日へ</button>
-  </section>`;
-  renderShell(content, 'sleep');
-}
-
-function renderCurrent() {
-  if (!state) return;
-  const screen = state.game.currentScreen || 'main';
-  const routes = {
-    main: renderMain, mining: renderMining, workshop: renderWorkshop, store: renderStore,
-    glab: renderGLab, okachimachi: renderOkachimachi, phone: renderPhone, sleep: renderSleep,
-    settings: renderSettings, finance: renderFinance, profile: renderProfile, notifications: renderNotifications,
-    calendar: renderCalendar, ggle: renderGgle, ai: renderAI, materialShop: renderMaterialShop,
-    glabShop: () => renderGLab('shop'), storage: () => renderWorkshop('storage'), roughCut: () => renderWorkshop('roughCut'), jewelryCraft: () => renderWorkshop('jewelryCraft'),
-  };
-  (routes[screen] || renderMain)();
-}
-
-async function navigate(screen, options = {}) {
-  if (!state) return;
-  if (isEndOfDay() && !['main', 'sleep', 'phone', 'settings', 'profile', 'notifications', 'calendar', 'ggle', 'ai', 'finance'].includes(screen)) {
-    showToast('時間が足りません', 'error'); return;
+  if (phoneTab === 'calendar') {
+    const orders = state.orders.filter((order) => order.status !== '完了');
+    const visitors = Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting);
+    return `<h2>${state.game.day}日目</h2>
+      ${orders.map((order) => `<article class="phone-card"><strong>${order.deadlineDay}日目</strong><span>${esc(order.customerName)}さんの納期</span></article>`).join('')}
+      ${visitors.map((id) => `<article class="phone-card"><strong>本日</strong><span>${esc(CUSTOMERS[id].name)}さんが来店中</span></article>`).join('')}
+      ${!orders.length && !visitors.length ? '<div class="phone-empty">予定はありません。</div>' : ''}`;
   }
-  if (['phone', 'profile', 'notifications', 'calendar', 'ggle', 'ai'].includes(screen) && !['phone', 'profile', 'notifications', 'calendar', 'ggle', 'ai'].includes(state.game.currentScreen)) {
-    phoneParentScreen = state.game.currentScreen;
+  if (phoneTab === 'notifications') {
+    return state.notifications.length ? state.notifications.map((note) => `<article class="phone-card"><strong>${esc(note.title)}</strong><span>${esc(note.body)}</span><small>${note.day}日目</small></article>`).join('') : '<div class="phone-empty">通知はありません。</div>';
   }
-  const worldMap = { glabShop: 'glab', materialShop: 'okachimachi', storage: 'workshop', roughCut: 'workshop', jewelryCraft: 'workshop' };
-  if (!['phone', 'profile', 'notifications', 'calendar', 'ggle', 'ai', 'settings', 'finance'].includes(screen)) {
-    currentWorldScreen = worldMap[screen] || screen;
-    state.game.worldScreen = currentWorldScreen;
+  if (phoneTab === 'finance') {
+    const income = state.finance.reduce((sum, row) => sum + row.income, 0);
+    const expense = state.finance.reduce((sum, row) => sum + row.expense, 0);
+    return `<div class="phone-totals"><div><small>収入</small><strong>${yen(income)}</strong></div><div><small>支出</small><strong>${yen(expense)}</strong></div></div>
+      ${state.finance.slice().reverse().map((row) => `<article class="finance-row"><span>${row.day}日目 ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || '<div class="phone-empty">収支の記録はありません。</div>'}`;
   }
-  state.game.previousScreen = options.previous || state.game.currentScreen;
-  state.game.currentScreen = screen;
-  renderCurrent();
-  saveState(user.uid, state).catch(() => showToast('画面位置を保存できませんでした。', 'error'));
+  return renderSettingsForm(false, true);
 }
 
-async function refreshWeather() {
-  const real = tokyoTodayISO();
-  if (state.game.date === real) {
-    try {
-      const url = 'https://api.open-meteo.com/v1/forecast?latitude=35.7075&longitude=139.7745&current=weather_code,temperature_2m&timezone=Asia%2FTokyo';
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('weather');
-      const data = await res.json();
-      const label = weatherLabelFromCode(Number(data.current?.weather_code));
-      state.game.weather = { ...label, code: Number(data.current?.weather_code), temperature: data.current?.temperature_2m, source: 'real' };
-      return;
-    } catch (error) { console.warn(error); }
+function renderSettings(titleMode) {
+  const settings = titleMode ? titleSettings : state.settings;
+  return titleMode ? `
+    <main class="screen-shell">
+      <header class="game-header simple"><button class="icon-button" data-action="title-back">←</button><strong>設定</strong></header>
+      <section class="screen-content"><section class="center-card glass-panel">${renderSettingsForm(true, false)}</section></section>
+    </main>` : shell('設定', `<section class="center-card glass-panel">${renderSettingsForm(false, false)}</section>`);
+}
+
+function renderSettingsForm(titleMode, compact) {
+  const settings = titleMode ? titleSettings : state.settings;
+  return `<div class="settings-form ${compact ? 'compact' : ''}">
+    <label><span>音楽</span><input type="range" min="0" max="1" step="0.05" value="${settings.bgmVolume}" data-setting="bgmVolume" data-title-mode="${titleMode}"></label>
+    <label><span>環境音</span><input type="range" min="0" max="1" step="0.05" value="${settings.ambientVolume}" data-setting="ambientVolume" data-title-mode="${titleMode}"></label>
+    <label><span>効果音</span><input type="range" min="0" max="1" step="0.05" value="${settings.sfxVolume}" data-setting="sfxVolume" data-title-mode="${titleMode}"></label>
+    <label class="toggle-row"><span>音楽を消す</span><input type="checkbox" data-setting="bgmMuted" data-title-mode="${titleMode}" ${settings.bgmMuted ? 'checked' : ''}></label>
+    <label class="toggle-row"><span>環境音を消す</span><input type="checkbox" data-setting="ambientMuted" data-title-mode="${titleMode}" ${settings.ambientMuted ? 'checked' : ''}></label>
+    <label class="toggle-row"><span>効果音を消す</span><input type="checkbox" data-setting="sfxMuted" data-title-mode="${titleMode}" ${settings.sfxMuted ? 'checked' : ''}></label>
+    <label><span>文字の大きさ</span><select data-setting="textSize" data-title-mode="${titleMode}"><option value="normal" ${settings.textSize === 'normal' ? 'selected' : ''}>標準</option><option value="large" ${settings.textSize === 'large' ? 'selected' : ''}>大きい</option></select></label>
+    <small>バージョン ${VERSION}</small>
+    ${!titleMode && !compact ? '<button class="danger-button full-button" data-action="delete-save">セーブデータを消す</button>' : ''}
+  </div>`;
+}
+
+function renderDayResult() {
+  const result = state.store.lastResult;
+  if (!result) return shell('1日の結果', '<p>結果がありません。</p>', { main: false });
+  return `
+    <main class="day-result-screen">
+      <section class="sleep-card glass-panel">
+        <h1>${result.day}日目の結果</h1>
+        <div class="result-list">
+          <div><span>採掘</span><strong>${result.mined.length ? result.mined.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、') : 'なし'}</strong></div>
+          <div><span>制作</span><strong>${result.crafted.length}点</strong></div>
+          <div><span>販売</span><strong>${result.sold.length}点</strong></div>
+          <div><span>来店人数</span><strong>${result.visitors}人</strong></div>
+          <div><span>売上</span><strong>${yen(result.income)}</strong></div>
+          <div><span>支出</span><strong>${yen(result.expense)}</strong></div>
+        </div>
+        <p class="goodnight">お疲れ様でした。おやすみなさい。</p>
+        <button class="primary-button full-button" data-action="next-day">次の日へ</button>
+      </section>
+    </main>`;
+}
+
+function weightedPick(entries) {
+  const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = Math.random() * total;
+  for (const entry of entries) {
+    roll -= entry.weight;
+    if (roll <= 0) return entry.id;
   }
-  state.game.weather = deterministicWeather(state.game.date);
+  return entries.at(-1).id;
 }
 
-async function refreshMarket() {
-  if (!METAL_PRICE_ENDPOINT) { state.market = state.market || { ...DEFAULT_METAL_PRICES }; return; }
-  try {
-    const res = await fetch(METAL_PRICE_ENDPOINT, { cache: 'no-store' });
-    if (!res.ok) throw new Error('market');
-    const data = await res.json();
-    if (['platinum', 'gold', 'silver'].every((k) => Number.isFinite(Number(data[k])))) {
-      state.market = { platinum: Number(data.platinum), gold: Number(data.gold), silver: Number(data.silver), source: data.source || '外部相場API', fetchedAt: data.fetchedAt || new Date().toISOString() };
-    }
-  } catch (error) { console.warn('地金相場を取得できませんでした', error); }
-}
-
-function addRough(item, qty = 1) {
-  const stack = state.inventory.general.find((x) => x.category === 'rough' && x.key === item.key && x.quality === item.quality && x.qty < 99);
-  if (stack) {
-    const room = 99 - stack.qty;
-    const add = Math.min(room, qty); stack.qty += add; qty -= add;
+function mine() {
+  const location = MINING_LOCATIONS[selectedMining];
+  if (!canSpendHours(location.hours)) return showToast('今日は採掘する時間がありません。', 'error');
+  spendHours(location.hours);
+  const success = state.miningMisses >= 1 || Math.random() < 0.83;
+  let result = null;
+  if (success) {
+    const gem = weightedPick(location.gems);
+    const qty = Math.random() < 0.18 ? 2 : 1;
+    state.inventory.gems[gem] += qty;
+    state.daily.mined.push({ gem, qty });
+    state.miningMisses = 0;
+    result = { gem, qty };
+    playSfx('success');
+    vibrate([30, 30, 50]);
+  } else {
+    state.miningMisses += 1;
+    playSfx('impact');
   }
-  while (qty > 0) {
-    if (usedGeneralSlots() >= state.inventory.generalCapacity) return false;
-    const add = Math.min(99, qty);
-    state.inventory.general.push({ id: crypto.randomUUID(), category: 'rough', key: item.key, name: item.name, quality: item.quality, qty: add });
-    qty -= add;
-  }
-  return true;
+  saveGame();
+  setScreen('miningResult', { result });
 }
 
-function addMetal(metal, grams) {
-  const room = state.inventory.metalCapacity[metal] - state.inventory.metals[metal];
-  if (room <= 0) return 0;
-  const add = Math.min(room, grams);
-  state.inventory.metals[metal] += add;
-  return add;
+function purchase(kind, id) {
+  const product = kind === 'metal' ? METALS[id] : GEMS[id];
+  if (!product) return;
+  if (!canSpendHours(1)) return showToast('今日は仕入れに行く時間がありません。', 'error');
+  if (state.game.money < product.price) return showToast('所持金が足りません。', 'error');
+  state.game.money -= product.price;
+  if (kind === 'metal') state.inventory.metals[id] += 1;
+  else state.inventory.gems[id] += 1;
+  spendHours(1);
+  addFinance(`${product.name}を購入`, 0, product.price);
+  saveGame();
+  showToast(`${product.name}を購入しました。`);
+  render();
 }
 
-async function chooseDiscardFor(item) {
-  const discardable = state.inventory.general.filter((x) => !x.equipped);
-  if (!discardable.length) return false;
-  const html = `<h2>これ以上持てません</h2><p>「${escapeHtml(item.name)}」を保管するには、代わりに捨てるものを選んでください。</p><div class="inventory-list">${discardable.map((x) => `<button class="inventory-row selectable" data-action="modal-discard" data-id="${x.id}"><strong>${escapeHtml(x.name)}</strong><span>${x.qty ? `×${x.qty}` : ''}</span></button>`).join('')}</div><button class="text-button" data-action="modal-cancel">保管しない</button>`;
-  const id = await showModal(html);
-  if (!id) return false;
-  state.inventory.general = state.inventory.general.filter((x) => x.id !== id);
-  return addRough(item, 1);
+function qualityRoll() {
+  const r = Math.random();
+  if (state.artisan.level <= 1) return r < 0.72 ? 'standard' : 'good';
+  if (state.artisan.level === 2) return r < 0.18 ? 'standard' : r < 0.82 ? 'good' : 'premium';
+  return r < 0.55 ? 'good' : 'premium';
 }
 
-function weightedChoice(items) {
-  const total = items.reduce((s, i) => s + i.weight, 0);
-  let r = Math.random() * total;
-  for (const item of items) { r -= item.weight; if (r <= 0) return item; }
-  return items[0];
+function expectedQuality() {
+  if (state.artisan.level === 1) return 'standard';
+  if (state.artisan.level === 2) return 'good';
+  return 'premium';
 }
 
-async function completeMining() {
-  const before = structuredClone(state);
-  const loc = MINING_LOCATIONS[miningSession.locationId];
-  const level = getPickaxeLevel();
-  let rewardCount = 2 + (Math.random() < 0.35 + level * 0.08 ? 1 : 0);
-  if (state.game.weather.label === '雨' && loc.id === 'river') rewardCount += 1;
-  const rewards = [];
-  for (let i = 0; i < rewardCount; i += 1) {
-    const pick = weightedChoice(loc.rewards);
-    if (pick.type === 'rough') {
-      let quality = pick.quality;
-      if (level >= 2 && Math.random() < 0.25) quality = quality === '普通' ? '良質' : quality;
-      const item = { ...pick, quality };
-      let stored = addRough(item, 1);
-      if (!stored) stored = await chooseDiscardFor(item);
-      rewards.push(`${item.name}（${quality}）${stored ? '' : ' ※保管できませんでした'}`);
-      if (stored) discover(`rough-${item.key}`, item.name, `${item.name}の情報が追加されました。`);
-    } else {
-      const grams = Math.round((pick.min + Math.random() * (pick.max - pick.min)) * 10) / 10;
-      const stored = addMetal(pick.metal, grams);
-      rewards.push(`${pick.name} ${stored.toFixed(1)}g${stored < grams ? ' ※容量上限' : ''}`);
-      if (stored > 0) discover(`metal-${pick.metal}`, pick.name, `${pick.name}の情報が追加されました。`);
-    }
-  }
-  const oldTime = state.game.minutes;
-  state.game.minutes += loc.hours * 60;
-  state.daily.events.unshift(`${loc.name}で採掘しました。`);
-  miningResult = `<strong>採掘結果</strong><p>${rewards.map(escapeHtml).join('<br>')}</p><small>${minutesToClock(oldTime)} → ${minutesToClock(state.game.minutes)}</small>`;
-  miningSession = null;
-  playSfx('success'); vibrate([80, 40, 120]);
-  try {
-    await persist({ type: 'mining', title: `${loc.name}で採掘`, details: rewards.join('、') }, before);
-    if (isEndOfDay()) { state.game.currentScreen = 'main'; state.game.worldScreen = 'main'; currentWorldScreen = 'main'; await saveState(user.uid, state); renderMain(); }
-    else renderMining();
-  } catch (_) {}
+function confirmCraft() {
+  const hours = productionHours(craftDraft, state.employee);
+  showModal({
+    title: 'この内容で制作しますか？',
+    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>${esc(GEMS[craftDraft.gem].name)}1個・${esc(METALS[craftDraft.metal].name)}1個を使用します。</p>`,
+    confirm: '制作する', action: 'craft',
+  });
 }
 
-async function buyGlabItem(id) {
-  const item = GLAB_ITEMS.find((x) => x.id === id);
-  if (!item) return;
-  if (!isGLabOpen(state)) return showToast('営業時間外です', 'error');
-  if (!canSpendHours(item.hours)) return showToast('時間が足りません', 'error');
-  if (state.game.money < item.price) return showToast('所持金が足りません', 'error');
-  const before = structuredClone(state);
-  let storageNeeded = item.category === 'tool';
-  if (storageNeeded && usedGeneralSlots() >= state.inventory.generalCapacity) {
-    const accepted = await showModal(`<h2>これ以上持てません</h2><p>購入するには通常収納のアイテムを捨ててください。</p><div class="inventory-list">${state.inventory.general.filter((x) => !x.equipped).map((x) => `<button class="inventory-row selectable" data-action="modal-discard" data-id="${x.id}"><strong>${escapeHtml(x.name)}</strong></button>`).join('')}</div><button class="text-button" data-action="modal-cancel">購入しない</button>`);
-    if (!accepted) return;
-    state.inventory.general = state.inventory.general.filter((x) => x.id !== accepted);
-  }
-  state.game.money -= item.price;
-  state.daily.expense += item.price;
-  const oldTime = state.game.minutes; state.game.minutes += item.hours * 60;
-  if (item.effect.pickaxeLevel) {
-    state.inventory.general.forEach((x) => { if (x.category === 'tool') x.equipped = false; });
-    state.inventory.general.push({ id: crypto.randomUUID(), category: 'tool', key: item.id, name: item.name, qty: 1, equipped: true, level: item.effect.pickaxeLevel });
-  }
-  if (item.effect.generalCapacity) state.inventory.generalCapacity += item.effect.generalCapacity;
-  if (item.effect.looseCapacity) state.inventory.looseCapacity += item.effect.looseCapacity;
-  if (item.effect.jewelryCapacity) state.inventory.jewelryCapacity += item.effect.jewelryCapacity;
-  if (item.effect.metalCapacity) {
-    state.inventory.metalCapacity.platinum += 50; state.inventory.metalCapacity.gold += 50; state.inventory.metalCapacity.silver += 500;
-  }
-  if (item.effect.unlock && !state.unlocks.equipment.includes(item.effect.unlock)) {
-    state.unlocks.equipment.push(item.effect.unlock); state.featureFlags[item.effect.unlock] = true;
-    addNotification({ sender: 'g-Lab.', title: `${item.name}を設置しました`, body: '工房で新しい加工が利用できます。', link: { screen: 'ggle', query: item.name.includes('原石') ? '原石カット' : 'ジュエリー作成' } });
-  }
-  state.daily.events.unshift(`${item.name}を購入しました。`);
-  playSfx('success'); vibrate(80);
-  try {
-    await persist({ type: 'purchase', title: `g-Lab.で${item.name}を購入`, details: `${minutesToClock(oldTime)} → ${minutesToClock(state.game.minutes)}`, expense: item.price }, before);
-    if (state.game.money < 0 && before.game.money >= 0) addNotification({ sender: 'システム', title: '所持金が不足しています', body: '所持金がマイナスになりました。' });
-    renderGLabShop();
-  } catch (_) {}
-}
-
-async function sellRough(id) {
-  const item = state.inventory.general.find((x) => x.id === id);
-  if (!item || item.category !== 'rough') return;
-  if (!isOkachimachiOpen(state)) return showToast('営業時間外です', 'error');
-  if (!canSpendHours(1)) return showToast('時間が足りません', 'error');
-  const before = structuredClone(state);
-  const oldTime = state.game.minutes;
-  const amount = roughSellPrice(item) * item.qty;
-  state.game.money += amount; state.daily.income += amount; state.game.minutes += 60;
-  state.inventory.general = state.inventory.general.filter((x) => x.id !== id);
-  state.daily.events.unshift(`${item.name}を素材屋へ売却しました。`);
-  playSfx('success'); vibrate(60);
-  try { await persist({ type: 'finance', title: `${item.name}を売却`, details: `${item.qty}個・${minutesToClock(oldTime)} → ${minutesToClock(state.game.minutes)}`, income: amount }, before); if (isEndOfDay()) { state.game.currentScreen = 'main'; state.game.worldScreen = 'main'; currentWorldScreen = 'main'; await saveState(user.uid, state); renderMain(); } else renderMaterialShop(); } catch (_) {}
-}
-
-async function sellMetal(key) {
-  const grams = state.inventory.metals[key];
-  if (grams <= 0) return;
-  if (!isOkachimachiOpen(state)) return showToast('営業時間外です', 'error');
-  if (!canSpendHours(1)) return showToast('時間が足りません', 'error');
-  const before = structuredClone(state);
-  const oldTime = state.game.minutes;
-  const amount = Math.round(grams * state.market[key]);
-  const label = { platinum: 'プラチナ', gold: 'ゴールド', silver: 'シルバー' }[key];
-  state.inventory.metals[key] = 0; state.game.money += amount; state.daily.income += amount; state.game.minutes += 60;
-  state.daily.events.unshift(`${label}を素材屋へ売却しました。`);
-  playSfx('success'); vibrate(60);
-  try { await persist({ type: 'finance', title: `${label}を売却`, details: `${grams.toFixed(1)}g・${minutesToClock(oldTime)} → ${minutesToClock(state.game.minutes)}`, income: amount }, before); if (isEndOfDay()) { state.game.currentScreen = 'main'; state.game.worldScreen = 'main'; currentWorldScreen = 'main'; await saveState(user.uid, state); renderMain(); } else renderMaterialShop(); } catch (_) {}
-}
-
-async function cutRough(id) {
-  if (!canSpendHours(2)) return showToast('時間が足りません', 'error');
-  if (state.inventory.loose.length >= state.inventory.looseCapacity) return showToast('これ以上持てません', 'error');
-  const item = state.inventory.general.find((x) => x.id === id);
-  if (!item) return;
-  const before = structuredClone(state);
-  item.qty -= 1;
-  if (item.qty <= 0) state.inventory.general = state.inventory.general.filter((x) => x.id !== id);
-  const baseScore = qualityScore(item.quality);
-  const score = Math.max(1, Math.min(100, Math.round(baseScore + (Math.random() * 18 - 9))));
-  const quality = score >= 88 ? '上質' : score >= 72 ? '良質' : score >= 50 ? '普通' : '低品質';
-  const loose = { id: crypto.randomUUID(), category: 'loose', key: item.key, name: item.name.replace('の原石', ''), quality, cutScore: score };
-  state.inventory.loose.push(loose);
-  const old = state.game.minutes; state.game.minutes += 120;
-  state.daily.events.unshift(`${loose.name}をカットしました。`);
-  discover(`loose-${item.key}`, loose.name, `${loose.name}のルース情報が追加されました。`);
-  playSfx('success'); vibrate([60, 30, 100]);
-  try { await persist({ type: 'craft', title: `${loose.name}を原石カット`, details: `${quality}・加工品質${score}点・${minutesToClock(old)} → ${minutesToClock(state.game.minutes)}` }, before); if (isEndOfDay()) { state.game.currentScreen = 'main'; state.game.worldScreen = 'main'; currentWorldScreen = 'main'; await saveState(user.uid, state); renderMain(); } else renderRoughCut(); } catch (_) {}
-}
-
-async function craftJewelry() {
-  if (!canSpendHours(3)) return showToast('時間が足りません', 'error');
-  if (state.inventory.jewelry.length >= state.inventory.jewelryCapacity) return showToast('これ以上持てません', 'error');
-  const looseId = document.querySelector('#craft-loose')?.value;
-  const metal = document.querySelector('#craft-metal')?.value;
-  const loose = state.inventory.loose.find((x) => x.id === looseId);
-  if (!loose) return showToast('ルースを選択してください', 'error');
-  const grams = metal === 'silver' ? 5 : 3;
-  if (state.inventory.metals[metal] < grams) return showToast('必要なアイテムを持っていません', 'error');
-  const before = structuredClone(state);
-  state.inventory.loose = state.inventory.loose.filter((x) => x.id !== looseId);
-  state.inventory.metals[metal] -= grams;
-  const craftScore = Math.max(1, Math.min(100, Math.round((loose.cutScore || 60) * .45 + 35 + Math.random() * 20)));
-  const metalLabel = { silver: 'SV', gold: 'K18', platinum: 'Pt' }[metal];
-  const materialCost = Math.round(grams * state.market[metal]);
+function craft() {
+  closeModal();
+  const hours = productionHours(craftDraft, state.employee);
+  if (!canSpendHours(hours)) return showToast('今日は制作する時間がありません。', 'error');
+  if (state.inventory.gems[craftDraft.gem] < 1 || state.inventory.metals[craftDraft.metal] < 1) return showToast('材料が足りません。', 'error');
+  if (state.inventory.jewelry.filter((item) => item.status !== 'sold').length >= state.inventory.capacity) return showToast('完成品の保管場所に空きがありません。', 'error');
+  state.inventory.gems[craftDraft.gem] -= 1;
+  state.inventory.metals[craftDraft.metal] -= 1;
+  spendHours(hours);
+  const quality = qualityRoll();
+  const xp = ITEMS[craftDraft.item].id === 'earrings' ? 12 : 10;
   const jewelry = {
-    id: crypto.randomUUID(), category: 'jewelry', name: `${metalLabel} ${loose.name}リング`, loose, metal,
-    grams, craftScore, designScore: 60 + Math.round(Math.random() * 25), materialCost, createdDate: state.game.date,
+    id: uid(),
+    ...craftDraft,
+    name: itemName(craftDraft),
+    quality,
+    cost: productionCost(craftDraft),
+    recommendedPrice: recommendedPrice({ ...craftDraft, quality }),
+    xp,
+    status: craftDraft.orderId ? 'order' : 'stored',
+    createdDay: state.game.day,
   };
   state.inventory.jewelry.push(jewelry);
-  const old = state.game.minutes; state.game.minutes += 180;
-  state.daily.events.unshift(`${jewelry.name}を制作しました。`);
-  playSfx('success'); vibrate([80, 40, 150]);
-  try { await persist({ type: 'craft', title: `${jewelry.name}を制作`, details: `加工品質${craftScore}点・${minutesToClock(old)} → ${minutesToClock(state.game.minutes)}` }, before); if (isEndOfDay()) { state.game.currentScreen = 'main'; state.game.worldScreen = 'main'; currentWorldScreen = 'main'; await saveState(user.uid, state); renderMain(); } else renderJewelryCraft(); } catch (_) {}
+  state.daily.crafted.push(jewelry.id);
+  state.artisan.xp += xp;
+  const previousLevel = state.artisan.level;
+  state.artisan.level = state.artisan.xp >= 250 ? 3 : state.artisan.xp >= 100 ? 2 : 1;
+  if (state.artisan.level > previousLevel) addNotification('職人レベルが上がりました', `職人レベル${state.artisan.level}になりました。`);
+  if (craftDraft.orderId) {
+    const order = state.orders.find((entry) => entry.id === craftDraft.orderId);
+    if (order) {
+      order.status = '完成';
+      order.jewelryId = jewelry.id;
+      addNotification('注文品が完成しました', `${order.customerName}さんの注文品を納品できます。`);
+    }
+  }
+  completionId = jewelry.id;
+  craftDraft = null;
+  saveGame();
+  playSfx('success');
+  vibrate([40, 30, 70]);
+  setScreen('completion');
 }
 
-async function nextDay() {
-  const before = structuredClone(state);
-  const goodnightPromise = showModal(`<h2>お疲れ様でした、おやすみなさい。</h2><div class="goodnight-icon">☾</div>`);
-  setTimeout(() => closeModal(true), 1400);
-  await goodnightPromise;
-  const summary = { ...state.daily };
-  const oldDate = state.game.date;
-  state.game.date = addDaysISO(state.game.date, 1);
-  state.game.minutes = 9 * 60;
-  state.game.dayNumber += 1;
-  state.daily = { income: 0, expense: 0, events: [] };
-  state.game.currentScreen = 'main'; state.game.previousScreen = 'sleep'; state.game.worldScreen = 'main'; currentWorldScreen = 'main';
-  await refreshWeather();
-  notifyCalendarEventsForDate(state.game.date);
-  try {
-    await persist({ type: 'day-summary', title: `${oldDate}の1日結果`, details: `売上${yen(summary.income)}・支出${yen(summary.expense)}・利益${yen(summary.income - summary.expense)}・${summary.events.slice(0, 5).join('、')}` }, before);
-    renderMain();
-  } catch (_) {}
+function placeItem(itemId) {
+  const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
+  if (!item || item.status !== 'stored') return showToast('この商品は並べられません。', 'error');
+  const emptySlot = state.store.showcases.findIndex((slot) => !slot);
+  if (emptySlot < 0) return showToast('ショーケースに空きがありません。', 'error');
+  state.store.showcases[emptySlot] = { jewelryId: itemId, priceMode: 'standard' };
+  item.status = 'displayed';
+  saveGame();
+  showToast('商品をショーケースに並べました。');
+  setScreen('store', {}, false);
 }
 
-function notifyCalendarEventsForDate(date) {
-  state.manualCalendar.filter((e) => e.date === date && e.notify).forEach((e) => addNotification({ sender: 'カレンダー', title: e.title, body: e.note || `${date}の予定です。`, link: { screen: 'calendar', date } }));
+function removeShowcase(slotIndex) {
+  const slot = state.store.showcases[slotIndex];
+  if (!slot) return;
+  const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+  if (item) item.status = 'stored';
+  state.store.showcases[slotIndex] = null;
+  saveGame();
+  showToast('商品をショーケースから下げました。');
+  render();
 }
 
-async function saveProfile() {
-  const before = structuredClone(state);
-  state.player.customization = {
-    gender: document.querySelector('#profile-gender').value,
-    hairStyle: document.querySelector('#profile-hairStyle').value,
-    hairColor: document.querySelector('#profile-hairColor').value,
-    eyeColor: document.querySelector('#profile-eyeColor').value,
-    skinColor: document.querySelector('#profile-skinColor').value,
+function matchScore(item, request) {
+  let score = 0;
+  if (item.item === request.item) score += 2;
+  if (item.gem === request.gem) score += 2;
+  if (item.metal === request.metal) score += 2;
+  if (item.design === request.design) score += 1;
+  if (item.recommendedPrice <= request.budget) score += 1;
+  return score;
+}
+
+function removeJewelry(itemId) {
+  state.store.showcases = state.store.showcases.map((slot) => slot?.jewelryId === itemId ? null : slot);
+  const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
+  if (item) item.status = 'sold';
+}
+
+function customerBuy(customerId, itemId) {
+  const customer = CUSTOMERS[customerId];
+  const customerState = state.customers[customerId];
+  const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
+  if (!customer || !item) return;
+  if (!canSpendHours(1)) return showToast('今日は接客する時間がありません。', 'error');
+  const score = matchScore(item, customer.request);
+  const price = item.recommendedPrice;
+  const willBuy = score >= 5 || (score >= 3 && Math.random() < 0.65);
+  spendHours(1);
+  customerState.met = true;
+  customerState.lastVisitDay = state.game.day;
+  customerState.visiting = false;
+  if (willBuy) {
+    removeJewelry(itemId);
+    state.game.money += price;
+    state.store.salesCount += 1;
+    state.store.totalRevenue += price;
+    state.store.totalProfit += price - item.cost;
+    state.store.rating = clamp(state.store.rating + (score >= 7 ? 0.2 : 0.1), 1, 5);
+    customerState.purchases += 1;
+    customerState.relation = customerState.purchases >= 3 ? '常連客' : 'リピーター';
+    addFinance(`${customer.name}さんへ販売`, price, 0);
+    showModal({ title: '商品を購入していただきました。', body: `<p>${esc(item.name)}</p><p>売上：${yen(price)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
+  } else {
+    showModal({ title: '今回は購入されませんでした。', body: '<p>希望とは少し違ったようです。注文を受けなくても、また来店することがあります。</p>', confirm: '閉じる', action: 'modal-close', hideCancel: true });
+  }
+  saveGame();
+  setTimeout(() => { if (screen === 'customer') setScreen('store', {}, false); }, 50);
+}
+
+function acceptOrder(customerId) {
+  const customer = CUSTOMERS[customerId];
+  const customerState = state.customers[customerId];
+  const active = state.orders.filter((order) => order.status !== '完了').length;
+  const limit = state.store.expanded ? 2 : 1;
+  if (active >= limit) return showToast(`同時に受けられる注文は${limit}件までです。`, 'error');
+  if (!canSpendHours(1)) return showToast('今日は接客する時間がありません。', 'error');
+  const request = customer.request;
+  const estimated = recommendedPrice({ ...request, finish: 'mirror', quality: 'good' }) + 5000;
+  const order = {
+    id: uid(), customerId, customerName: customer.name,
+    item: request.item, gem: request.gem, metal: request.metal, design: request.design,
+    budget: request.budget, price: Math.min(request.budget, estimated),
+    acceptedDay: state.game.day, deadlineDay: state.game.day + request.deadlineDays,
+    status: '受注', jewelryId: null,
   };
-  try { await persist({ type: 'profile', title: 'プロフィールを変更', details: '主人公の外見を変更しました。' }, before); showToast('プロフィールを保存しました'); renderProfile(); } catch (_) {}
+  state.orders.push(order);
+  spendHours(1);
+  customerState.met = true;
+  customerState.visiting = false;
+  customerState.lastVisitDay = state.game.day;
+  addNotification('注文を受けました', `${customer.name}さんの注文は${order.deadlineDay}日目が納期です。`);
+  saveGame();
+  showToast('注文を受けました。');
+  setScreen('orders', {}, false);
 }
 
-async function copyAIData() {
-  setBusy(true, '全履歴を読み込んでいます…');
-  try {
-    const history = await fetchAllHistory(user.uid);
-    const jewelries = state.inventory.jewelry.map((j) => ({
-      name: j.name, designScore: j.designScore, material: j.metal, stone: j.loose?.name,
-      stoneQuality: j.loose?.quality, cutScore: j.loose?.cutScore, craftScore: j.craftScore,
-      cost: j.materialCost, createdDate: j.createdDate,
-    }));
-    const text = `【Jewelife AI相談用ゲームデータ】\n\nあなたはゲーム「Jewelife」専用の分析AIです。以下のゲームデータだけを根拠に回答してください。現実世界の行動、未実装機能、ゲーム内で実行できない行動を提案・発言してはいけません。情報が不足している場合は推測で断定せず「現在のゲームデータでは判断できません」と明記してください。プレイヤーから明示的に相談されない限り、次にやるべきこと、改善案、最適解、おすすめ行動は提示しないでください。\n\n最初の回答は必ず次の順番にしてください。\n1. 現在のゲーム状況を簡潔に報告\n2. 店舗の評価（店舗未所有・未実装の場合はその旨を明記）\n3. 良いジュエリーランキングBEST10（所有数が少ない場合は存在する分だけ）。各ジュエリーについて、総合点100点、デザイン性100点、素材価値・希少性100点、加工品質100点、利益性100点、実際の利益率、現在の店舗での予想販売価格1点、ジュエリーの参考市場価値1点、評価理由を表示。総合点は4項目の単純平均。店舗・季節・天気・流行・客層など外部環境はランキング基準から除外し、現在の店舗での予想販売価格にのみ反映してください。\n4. その他のプレイヤーの特徴、これまでの変化、制作・販売傾向を分析\n\n【実装済み機能】\nログイン、主人公作成、自動セーブ、日付・時刻・天気、採掘、工房保管、g-Lab.アイテム購入、設備解放後の原石カット・ジュエリー作成、御徒町素材屋への売却、スマホ（プロフィール・通知・カレンダー・g--gle.・スマホゲーム・AI）、寝る・日付進行、収支履歴、設定。店舗開業、接客、アルバイト、外注は現バージョンでは未実装です。\n\n【現在状態】\n${JSON.stringify(state, null, 2)}\n\n【所有ジュエリー】\n${JSON.stringify(jewelries, null, 2)}\n\n【ゲーム開始から現在までの全履歴】\n${JSON.stringify(history, null, 2)}\n`;
-    await copyText(text);
-    showToast('ゲームデータをコピーしました');
-  } catch (error) { console.error(error); showToast('コピーできませんでした', 'error'); }
-  finally { setBusy(false); }
+function ignoreCustomer(customerId) {
+  const customerState = state.customers[customerId];
+  if (!customerState) return;
+  customerState.visiting = false;
+  customerState.ignoredToday = true;
+  saveGame();
+  showToast('今回は対応しませんでした。');
+  setScreen('store', {}, false);
 }
 
-async function copyText(text) {
-  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-  const area = document.createElement('textarea'); area.value = text; document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove();
+function deliverOrder(orderId) {
+  const order = state.orders.find((entry) => entry.id === orderId);
+  const item = state.inventory.jewelry.find((entry) => entry.id === order?.jewelryId);
+  if (!order || !item || order.status !== '完成') return showToast('納品できる商品がありません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は納品する時間がありません。', 'error');
+  spendHours(1);
+  const lateDays = Math.max(0, state.game.day - order.deadlineDay);
+  order.status = '完了';
+  item.status = 'sold';
+  state.game.money += order.price;
+  state.store.salesCount += 1;
+  state.store.totalRevenue += order.price;
+  state.store.totalProfit += order.price - item.cost;
+  state.store.rating = clamp(state.store.rating + (lateDays ? -0.05 : 0.2), 1, 5);
+  const customerState = state.customers[order.customerId];
+  customerState.purchases += 1;
+  customerState.relation = customerState.purchases >= 3 ? '常連客' : 'リピーター';
+  addFinance(`${order.customerName}さんへ注文品を納品`, order.price, 0);
+  saveGame();
+  showModal({ title: '注文品を納品しました。', body: `<p>${esc(item.name)}</p><p>売上：${yen(order.price)}</p><p>${lateDays ? '少し遅れての納品になりました。' : '納期内に納品できました。'}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
+  render();
 }
 
-async function completeOnboarding() {
-  const name = document.querySelector('#player-name').value.trim();
-  if (!name) return showToast('プレイヤー名を入力してください', 'error');
-  const before = structuredClone(state);
-  state.player.name = name;
-  state.player.customization = {
-    gender: document.querySelector('#gender').value,
-    hairStyle: document.querySelector('#hairStyle').value,
-    hairColor: document.querySelector('#hairColor').value,
-    eyeColor: document.querySelector('#eyeColor').value,
-    skinColor: document.querySelector('#skinColor').value,
+function expansionEligible() {
+  return !state.store.expanded && state.store.salesCount >= 5 && state.store.totalRevenue >= 100000 && state.game.money >= 50000;
+}
+
+function expandStore() {
+  if (!expansionEligible()) return;
+  state.game.money -= 50000;
+  state.store.expanded = true;
+  state.store.showcaseCount = 5;
+  while (state.store.showcases.length < 5) state.store.showcases.push(null);
+  state.inventory.capacity = 20;
+  addFinance('店舗を拡張', 0, 50000);
+  addNotification('店舗を拡張しました', 'ショーケースが5枠になり、店員を1人雇えるようになりました。');
+  saveGame();
+  playSfx('success');
+  showToast('店舗を拡張しました。');
+  render();
+}
+
+function settleDay() {
+  const sold = [];
+  let visitors = Math.floor(Math.random() * 4) + 1;
+  if (state.store.expanded) visitors += Math.floor(Math.random() * 3) + 1;
+  if (state.game.weather === '雨') visitors = Math.max(0, visitors - 1);
+  if (state.employee.hired && state.employee.working && state.employee.role === 'sales') visitors += 1;
+
+  for (let i = 0; i < state.store.showcases.length; i += 1) {
+    const slot = state.store.showcases[i];
+    if (!slot) continue;
+    const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+    if (!item) { state.store.showcases[i] = null; continue; }
+    const mode = PRICE_MODES[slot.priceMode];
+    const price = roundThousand(item.recommendedPrice * mode.multiplier);
+    let chance = 0.24 + visitors * 0.055 + mode.saleBonus + QUALITIES[item.quality].saleBonus + state.store.rating * 0.018;
+    if (state.employee.hired && state.employee.working && state.employee.role === 'sales') chance += 0.1;
+    chance = clamp(chance, 0.08, 0.9);
+    if (Math.random() < chance) {
+      removeJewelry(item.id);
+      state.game.money += price;
+      state.store.salesCount += 1;
+      state.store.totalRevenue += price;
+      state.store.totalProfit += price - item.cost;
+      state.store.rating = clamp(state.store.rating + 0.04, 1, 5);
+      addFinance(`${item.name}を販売`, price, 0);
+      sold.push({ itemId: item.id, name: item.name, price, profit: price - item.cost });
+    }
+  }
+
+  state.store.totalVisitors += visitors;
+  state.daily.visitors = visitors;
+  state.daily.sold.push(...sold);
+
+  if (state.employee.hired && state.employee.working) {
+    const salary = 2000;
+    state.game.money = Math.max(0, state.game.money - salary);
+    addFinance(`${state.employee.name}さんの給与`, 0, salary);
+  }
+
+  const result = {
+    day: state.game.day,
+    mined: structuredClone(state.daily.mined),
+    crafted: structuredClone(state.daily.crafted),
+    sold: structuredClone(state.daily.sold),
+    visitors,
+    income: state.daily.income,
+    expense: state.daily.expense,
   };
-  state.onboardingComplete = true; state.game.currentScreen = 'main';
-  try { await persist({ type: 'start', title: 'Jewelifeを開始', details: `${name}としてゲームを開始しました。` }, before); renderMain(); } catch (_) {}
+  state.store.lastResult = result;
+
+  state.game.day += 1;
+  state.game.minutes = 8 * 60;
+  state.game.weather = nextWeather();
+  state.daily = { mined: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 };
+  Object.values(state.customers).forEach((customer) => { customer.ignoredToday = false; });
+  scheduleCustomerVisit();
+  updateOrderNotifications();
+  saveGame();
+  setScreen('dayResult', {}, false);
 }
 
-async function deleteGameDataFlow() {
-  const answer = await showModal(`<h2>ゲームデータ全削除</h2><p>ゲームの進行データをすべて削除しますか？ログイン中のアカウントは残ります。</p><button class="danger-button" data-action="modal-confirm">削除を続ける</button><button class="text-button" data-action="modal-cancel">キャンセル</button>`);
-  if (!answer) return;
-  const name = await showModal(`<h2>プレイヤー名を入力</h2><p>確認のため、現在のプレイヤー名を入力してください。</p><input id="delete-name-input" class="modal-input" autocomplete="off"><button class="danger-button" data-action="modal-name-confirm">ゲームデータ全削除を実行</button><button class="text-button" data-action="modal-cancel">キャンセル</button>`);
-  if (name !== state.player.name) return showToast('プレイヤー名が一致しません', 'error');
-  setBusy(true, 'ゲームデータを削除しています…');
-  try {
-    playSfx('explosion', { gain: 1.4 }); vibrate([100, 60, 200, 80, 400]);
-    const fresh = defaultState();
-    fresh.player.name = state.player.name;
-    fresh.onboardingComplete = true;
-    await deleteAllGameData(user.uid, fresh);
-    state = fresh;
-    await new Promise((r) => setTimeout(r, 1500));
-    renderMain();
-  } catch (error) { console.error(error); showToast('削除できませんでした', 'error'); }
-  finally { setBusy(false); }
-}
-
-async function handleAction(action, target) {
-  if (busy) return;
-  const reason = target.dataset.reason;
-  if (target.classList.contains('locked') || target.disabled) {
-    if (reason) showToast(reason, 'error');
+function scheduleCustomerVisit() {
+  if (Object.values(state.customers).some((customer) => customer.visiting)) return;
+  const employeeBonus = state.employee.hired && state.employee.working && state.employee.role === 'service' ? 0.12 : 0;
+  if (!state.customers.misaki.met && state.game.day >= 2 && Math.random() < 0.38 + employeeBonus) {
+    state.customers.misaki.visiting = true;
+    addNotification('お客様が来店しています', `${CUSTOMERS.misaki.name}さんが店舗に来ています。`);
     return;
   }
-  playSfx('select'); vibrate(25);
+  if (state.customers.misaki.met && !state.customers.kenta.met && state.game.day >= 3 && Math.random() < 0.32 + employeeBonus) {
+    state.customers.kenta.visiting = true;
+    addNotification('お客様が来店しています', `${CUSTOMERS.kenta.name}さんが店舗に来ています。`);
+    return;
+  }
+  const known = Object.keys(CUSTOMERS).filter((id) => state.customers[id].met && state.game.day - (state.customers[id].lastVisitDay || 0) >= 3);
+  if (known.length && Math.random() < 0.18 + employeeBonus) {
+    const id = known[Math.floor(Math.random() * known.length)];
+    state.customers[id].visiting = true;
+    addNotification('お客様が来店しています', `${CUSTOMERS[id].name}さんが店舗に来ています。`);
+  }
+}
+
+function updateOrderNotifications() {
+  state.orders.filter((order) => !['完了', '取消'].includes(order.status)).forEach((order) => {
+    const remaining = order.deadlineDay - state.game.day;
+    if (remaining === 1) addNotification('明日が納期です', `${order.customerName}さんの注文は明日が納期です。`, 'warning');
+    if (remaining === 0) addNotification('本日が納期です', `${order.customerName}さんの注文は本日が納期です。`, 'warning');
+    if (remaining < 0 && order.status !== '完成') addNotification('注文の納期を過ぎています', `${order.customerName}さんの注文を確認してください。`, 'warning');
+  });
+}
+
+function confirmSleep() {
+  showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep' });
+}
+
+function deleteSave() {
+  localStorage.removeItem(SAVE_KEY);
+  state = null;
+  screen = 'title';
+  navigation = [];
+  closeModal();
+  showToast('セーブデータを消しました。');
+  render();
+}
+
+root.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-action]');
+  if (!button || button.disabled) return;
+  const action = button.dataset.action;
+  playSfx('select');
   switch (action) {
-    case 'google-login': await googleLogin().catch((e) => showToast(e.message, 'error')); break;
-    case 'email-login': {
-      const email = document.querySelector('#email-login-input')?.value.trim();
-      if (!email) return showToast('メールアドレスを入力してください', 'error');
-      try { await sendEmailLoginLink(email); showToast('ログインリンクを送信しました'); } catch (e) { showToast(e.message, 'error'); }
+    case 'new-game':
+      if (hasSave()) showModal({ title: 'はじめから遊びますか？', body: '<p>現在のセーブデータは消去されます。</p>', confirm: 'はじめから', cancel: 'キャンセル', danger: true, action: 'new-game-confirmed' });
+      else startNewGame();
       break;
-    }
-    case 'logout': stopAllAudio(); await logout(); break;
-    case 'start-game': await startAuthenticatedGame(); break;
-    case 'complete-onboarding': await completeOnboarding(); break;
-    case 'go-mining': await navigate('mining'); break;
-    case 'go-workshop': await navigate('workshop'); break;
-    case 'go-store': await navigate('store'); break;
-    case 'go-glab': if (!isGLabOpen(state)) showToast('営業時間外です', 'error'); else await navigate('glab'); break;
-    case 'go-okachimachi': if (!isOkachimachiOpen(state)) showToast('営業時間外です', 'error'); else await navigate('okachimachi'); break;
-    case 'go-phone': phoneParentScreen = state.game.currentScreen; await navigate('phone'); break;
-    case 'go-sleep': await navigate('sleep'); break;
-    case 'go-settings': await navigate('settings'); break;
-    case 'go-main': miningSession = null; await navigate('main'); break;
-    case 'back': await navigate(state.game.previousScreen || 'main'); break;
-    case 'choose-mining': {
-      const loc = MINING_LOCATIONS[target.dataset.id];
-      if (!canSpendHours(loc.hours)) return showToast('時間が足りません', 'error');
-      miningSession = { locationId: loc.id, maxHp: Math.max(2, loc.hp - (getPickaxeLevel() - 1) * 2), hp: Math.max(2, loc.hp - (getPickaxeLevel() - 1) * 2) };
-      miningResult = null; renderMining(); break;
-    }
-    case 'mining-hit':
-      if (!miningSession) return;
-      miningSession.hp -= getPickaxeLevel(); playSfx('impact'); vibrate(55);
-      if (miningSession.hp <= 0) await completeMining(); else renderMiningSession();
+    case 'new-game-confirmed': closeModal(); startNewGame(); break;
+    case 'continue':
+      state = loadGame();
+      if (!state) return showToast('セーブデータを読み込めませんでした。', 'error');
+      navigation = [];
+      setScreen('main', {}, false);
       break;
-    case 'cancel-mining': miningSession = null; renderMining(); break;
-    case 'workshop-storage': await navigate('storage'); break;
-    case 'workshop-rough-cut': if (!state.unlocks.equipment.includes('roughCut')) showToast('必要なアイテムを持っていません', 'error'); else await navigate('roughCut'); break;
-    case 'workshop-jewelry-craft': if (!state.unlocks.equipment.includes('jewelryCraft')) showToast('必要なアイテムを持っていません', 'error'); else await navigate('jewelryCraft'); break;
-    case 'storage-tab': currentStorageTab = target.dataset.id; renderStorage(); break;
-    case 'cut-rough': await cutRough(target.dataset.id); break;
-    case 'craft-jewelry': await craftJewelry(); break;
-    case 'store-select': showToast('まだ利用できません', 'error'); break;
-    case 'glab-shop': await navigate('glabShop'); break;
-    case 'glab-repair': showToast('まだ利用できません', 'error'); break;
-    case 'buy-glab-item': await buyGlabItem(target.dataset.id); break;
-    case 'material-shop': await navigate('materialShop'); break;
-    case 'loose-shop': case 'jewelry-shop': case 'frame-shop': case 'cast-shop': case 'estate-shop': case 'staff-shop': showToast('まだ利用できません', 'error'); break;
-    case 'sell-rough': await sellRough(target.dataset.id); break;
-    case 'sell-metal': await sellMetal(target.dataset.id); break;
-    case 'phone-profile': await navigate('profile'); break;
-    case 'phone-notifications': await navigate('notifications'); break;
-    case 'phone-calendar': await navigate('calendar'); break;
-    case 'phone-ggle': ggleQuery = ''; await navigate('ggle'); break;
-    case 'phone-game': window.open(SMARTPHONE_GAME_URL, '_blank', 'noopener,noreferrer'); break;
-    case 'phone-ai': await navigate('ai'); break;
-    case 'phone-home': await navigate('phone'); break;
-    case 'open-profile': phoneParentScreen = state.game.currentScreen; await navigate('profile'); break;
-    case 'open-calendar': phoneParentScreen = state.game.currentScreen; await navigate('calendar'); break;
-    case 'open-finance': await navigate('finance'); break;
-    case 'save-profile': await saveProfile(); break;
-    case 'open-notification': {
-      const n = state.notifications.find((x) => x.id === target.dataset.id); if (!n) return;
-      n.unread = false; await saveState(user.uid, state);
-      if (n.link?.screen === 'ggle') { ggleQuery = n.link.query || ''; await navigate('ggle'); }
-      else if (n.link?.screen === 'calendar') { calendarCursor = n.link.date || state.game.date; calendarView = 'day'; await navigate('calendar'); }
-      else renderNotifications();
-      break;
-    }
-    case 'delete-notification': state.notifications = state.notifications.filter((n) => n.id !== target.dataset.id); await saveState(user.uid, state); renderNotifications(); break;
-    case 'mark-all-read': state.notifications.forEach((n) => { n.unread = false; }); await saveState(user.uid, state); renderNotifications(); break;
-    case 'delete-all-notifications': {
-      const ok = await showModal('<h2>通知をすべて削除しますか？</h2><button class="danger-button" data-action="modal-confirm">すべて削除</button><button class="text-button" data-action="modal-cancel">キャンセル</button>');
-      if (ok) { state.notifications = []; await saveState(user.uid, state); renderNotifications(); }
-      break;
-    }
-    case 'ggle-search': ggleQuery = document.querySelector('#ggle-search')?.value || ''; renderGgle(); break;
-    case 'ggle-category': ggleQuery = target.dataset.id; renderGgle(); break;
-    case 'copy-ai-data': await copyAIData(); break;
-    case 'calendar-view': calendarView = target.dataset.id; await renderCalendar(); break;
-    case 'calendar-prev': calendarCursor = shiftCalendar(-1); await renderCalendar(); break;
-    case 'calendar-next': calendarCursor = shiftCalendar(1); await renderCalendar(); break;
-    case 'jump-month': calendarCursor = target.dataset.id; calendarView = 'month'; await renderCalendar(); break;
-    case 'calendar-day': calendarCursor = target.dataset.id; calendarView = 'day'; await renderCalendar(); break;
-    case 'add-calendar-event': await addCalendarEvent(); break;
-    case 'delete-calendar-event': state.manualCalendar = state.manualCalendar.filter((e) => e.id !== target.dataset.id); await saveState(user.uid, state); await renderCalendar(); break;
-    case 'finance-period': financePeriod = target.dataset.id; await renderFinance(); break;
-    case 'finance-toggle': financeVisible[target.dataset.id] = target.checked; await renderFinance(); break;
-    case 'volume-change': state.settings[`${target.dataset.id}Volume`] = Number(target.value); applyAudioSettings(); await saveState(user.uid, state); break;
-    case 'mute-toggle': state.settings[`${target.dataset.id}Muted`] = !state.settings[`${target.dataset.id}Muted`]; applyAudioSettings(); await saveState(user.uid, state); renderSettings(); break;
-    case 'toggle-vibration': state.settings.vibration = target.checked; await saveState(user.uid, state); break;
-    case 'delete-game-data': await deleteGameDataFlow(); break;
-    case 'next-day': await nextDay(); break;
-    case 'modal-confirm': closeModal(true); break;
-    case 'modal-cancel': closeModal(false); break;
-    case 'modal-discard': closeModal(target.dataset.id); break;
-    case 'modal-name-confirm': closeModal(document.querySelector('#delete-name-input')?.value || ''); break;
+    case 'title-settings': setScreen('settingsTitle'); break;
+    case 'title-back': navigation = []; setScreen('title', {}, false); break;
+    case 'nav': setScreen(button.dataset.screen, button.dataset.screen === 'supplier' ? { tab: 'metals' } : {}); break;
+    case 'back': goBack(); break;
+    case 'main': goMain(); break;
+    case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
+    case 'modal-close': closeModal(); break;
+    case 'select-mining': selectedMining = button.dataset.id; render(); break;
+    case 'mine': mine(); break;
+    case 'mine-again': setScreen('mining', {}, false); break;
+    case 'supplier-tab': screenData.tab = button.dataset.tab; render(); break;
+    case 'purchase': purchase(button.dataset.kind, button.dataset.id); break;
+    case 'open-craft': craftDraft = defaultDraft(); setScreen('craft', {}); break;
+    case 'craft-choice': craftDraft[button.dataset.group] = button.dataset.id; render(); break;
+    case 'confirm-craft': confirmCraft(); break;
+    case 'craft': craft(); break;
+    case 'place-from-completion': placeItem(button.dataset.id); break;
+    case 'inventory-tab': screenData.tab = button.dataset.tab; render(); break;
+    case 'place-item': placeItem(button.dataset.id); break;
+    case 'remove-showcase': removeShowcase(Number(button.dataset.slot)); break;
+    case 'customer': setScreen('customer', { customerId: button.dataset.id }); break;
+    case 'ignore-customer': ignoreCustomer(button.dataset.id); break;
+    case 'customer-buy': customerBuy(button.dataset.customer, button.dataset.id); break;
+    case 'accept-order': acceptOrder(button.dataset.customer); break;
+    case 'craft-order': craftDraft = defaultDraft(button.dataset.id); setScreen('craft', { orderId: button.dataset.id }); break;
+    case 'deliver-order': deliverOrder(button.dataset.id); break;
+    case 'expand-store': expandStore(); break;
+    case 'hire-employee': state.employee.hired = true; state.employee.working = true; saveGame(); showToast('店員を雇いました。'); render(); break;
+    case 'employee-role': state.employee.role = button.dataset.role; saveGame(); render(); break;
+    case 'phone-tab': phoneTab = button.dataset.tab; render(); saveGame(); break;
+    case 'sleep': confirmSleep(); break;
+    case 'do-sleep': closeModal(); settleDay(); break;
+    case 'next-day': goMain(); break;
+    case 'delete-save': showModal({ title: 'セーブデータを消しますか？', body: '<p>この操作は元に戻せません。</p>', confirm: '消す', cancel: 'キャンセル', danger: true, action: 'delete-save-confirmed' }); break;
+    case 'delete-save-confirmed': deleteSave(); break;
     default: break;
   }
-}
-
-function shiftCalendar(amount) {
-  if (calendarView === 'year') return `${Number(calendarCursor.slice(0, 4)) + amount}-01-01`;
-  if (calendarView === 'month') {
-    const d = new Date(`${calendarCursor}T12:00:00+09:00`); d.setMonth(d.getMonth() + amount); return d.toISOString().slice(0, 10);
-  }
-  if (calendarView === 'week') return addDaysISO(calendarCursor, amount * 7);
-  return addDaysISO(calendarCursor, amount);
-}
-
-async function addCalendarEvent() {
-  const title = document.querySelector('#cal-title')?.value.trim();
-  if (!title) return showToast('タイトルを入力してください', 'error');
-  state.manualCalendar.push({
-    id: crypto.randomUUID(), title,
-    date: document.querySelector('#cal-date').value,
-    time: document.querySelector('#cal-time').value,
-    note: document.querySelector('#cal-note').value,
-    notify: document.querySelector('#cal-notify').checked,
-  });
-  await saveState(user.uid, state); showToast('予定を追加しました'); await renderCalendar();
-}
-
-document.addEventListener('click', async (event) => {
-  const target = event.target.closest('[data-action]');
-  if (!target) return;
-  event.preventDefault();
-  try { await handleAction(target.dataset.action, target); }
-  catch (error) { console.error(error); showToast(error.message || 'エラーが発生しました', 'error'); }
 });
 
-
-document.addEventListener('input', (event) => {
+root.addEventListener('change', (event) => {
   const target = event.target;
-  if (target?.dataset?.action === 'volume-change' && state) {
-    state.settings[`${target.dataset.id}Volume`] = Number(target.value);
+  if (target.matches('[data-action="price-mode"]')) {
+    const slot = state.store.showcases[Number(target.dataset.slot)];
+    if (slot) slot.priceMode = target.value;
+    saveGame();
+    showToast('価格を変更しました。');
+    render();
+    return;
+  }
+  if (target.matches('[data-action="employee-working"]')) {
+    state.employee.working = target.checked;
+    saveGame();
+    render();
+    return;
+  }
+  if (target.matches('[data-setting]')) {
+    const titleMode = target.dataset.titleMode === 'true';
+    const settings = titleMode ? titleSettings : state.settings;
+    const key = target.dataset.setting;
+    settings[key] = target.type === 'checkbox' ? target.checked : target.type === 'range' ? Number(target.value) : target.value;
+    if (titleMode) {
+      titleSettings = settings;
+      localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(settings));
+    } else saveGame();
     applyAudioSettings();
+    document.body.dataset.textSize = settings.textSize || 'normal';
   }
 });
-document.addEventListener('change', async (event) => {
+
+root.addEventListener('input', (event) => {
   const target = event.target;
-  if (target?.dataset?.action === 'volume-change' && state && user) {
-    try { await saveState(user.uid, state); } catch (error) { showToast('設定を保存できませんでした', 'error'); }
+  if (!target.matches('[data-setting]') || target.type !== 'range') return;
+  const titleMode = target.dataset.titleMode === 'true';
+  const settings = titleMode ? titleSettings : state.settings;
+  settings[target.dataset.setting] = Number(target.value);
+  applyAudioSettings();
+});
+
+function startNewGame() {
+  state = initialState();
+  state.settings = { ...state.settings, ...titleSettings };
+  navigation = [];
+  craftDraft = null;
+  completionId = null;
+  saveGame();
+  setScreen('main', {}, false);
+}
+
+window.addEventListener('beforeunload', () => saveGame());
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+render();
+
+modalEl.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-action]');
+  if (!button || button.disabled) return;
+  const action = button.dataset.action;
+  playSfx('select');
+  switch (action) {
+    case 'modal-close': closeModal(); break;
+    case 'new-game-confirmed': closeModal(); startNewGame(); break;
+    case 'craft': craft(); break;
+    case 'do-sleep': closeModal(); settleDay(); break;
+    case 'delete-save-confirmed': deleteSave(); break;
+    default: break;
   }
-});
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && document.activeElement?.id === 'ggle-search') document.querySelector('[data-action="ggle-search"]')?.click();
-});
-
-async function startAuthenticatedGame() {
-  state = await ensureState(user.uid);
-  currentWorldScreen = state.game.worldScreen || 'main';
-  await refreshWeather(); await refreshMarket();
-  await claimSession(user.uid, sessionId);
-  watchSession(user.uid, sessionId, () => {
-    stopAllAudio();
-    showModal('<h2>別の端末でゲームが開始されました。</h2><p>続けるには再読み込みしてください。</p><button class="primary-button" onclick="location.reload()">再読み込み</button>');
-  });
-  clearInterval(heartbeatTimer);
-  heartbeatTimer = setInterval(() => heartbeat(user.uid, sessionId), 30000);
-  if (!state.onboardingComplete) renderOnboarding(); else renderCurrent();
-}
-
-async function bootstrap() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
-  const setup = await initializeFirebase();
-  renderTitle(null, setup);
-  observeAuth((authUser) => {
-    user = authUser;
-    renderTitle(authUser, setup);
-  });
-}
-
-bootstrap().catch((error) => {
-  console.error(error);
-  root.innerHTML = `<main class="fatal-error"><h1>Jewelife</h1><p>起動できませんでした。</p><pre>${escapeHtml(error.message)}</pre></main>`;
 });

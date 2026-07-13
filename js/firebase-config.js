@@ -1,7 +1,7 @@
 // Firebaseコンソール > プロジェクト設定 > マイアプリ > SDKの設定と構成
 // に表示される値へ置き換えてください。
 export const firebaseConfig = {
-  apiKey: 'AIzaSyCxuJaHMK7fHuuK0QEmIiNlNT81dI81Qsw",
+  apiKey: 'AIzaSyCxuJaHMK7fHuuK0QEmIiNlNT81dI81Qsw',
   authDomain: 'jewelrygame.firebaseapp.com',
   projectId: 'jewelrygame',
   storageBucket: 'jewelrygame.firebasestorage.app',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jewelife-v0.1.0';
+const CACHE_NAME = 'jewelife-v0.1.1';
 const APP_SHELL = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './js/app.js', './js/audio.js', './js/game-data.js', './js/firebase-service.js', './js/firebase-config.js',

@@ -55,17 +55,16 @@ export function observeAuth(callback) {
 }
 
 export async function googleLogin() {
-  if (!auth) throw new Error('Firebaseの設定が完了していません。');
-  const provider = new GoogleAuthProvider();
-  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (mobile) return signInWithRedirect(auth, provider);
-  try { return await signInWithPopup(auth, provider); }
-  catch (error) {
-    if (['auth/popup-blocked', 'auth/cancelled-popup-request', 'auth/popup-closed-by-user'].includes(error.code)) {
-      return signInWithRedirect(auth, provider);
-    }
-    throw error;
+  if (!auth) {
+    throw new Error('Firebaseの設定が完了していません。');
   }
+
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({
+    prompt: 'select_account',
+  });
+
+  return signInWithPopup(auth, provider);
 }
 
 export async function sendEmailLoginLink(email) {

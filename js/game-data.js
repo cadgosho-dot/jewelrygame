@@ -1,5 +1,5 @@
-export const VERSION = '0.3.8';
-export const SAVE_KEY = 'jewelife-simple-v0.3.0';
+export const VERSION = '0.5.0';
+export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 
 export const METALS = {
   silver: { id: 'silver', name: 'シルバー', price: 3000 },
@@ -8,12 +8,23 @@ export const METALS = {
 };
 
 export const GEMS = {
+  garnet: { id: 'garnet', name: 'ガーネット', price: 4000, hue: '#7d1f2d' },
   amethyst: { id: 'amethyst', name: 'アメシスト', price: 3000, hue: '#8e62c7' },
   aquamarine: { id: 'aquamarine', name: 'アクアマリン', price: 5000, hue: '#78cddd' },
-  garnet: { id: 'garnet', name: 'ガーネット', price: 4000, hue: '#8c2635' },
-  peridot: { id: 'peridot', name: 'ペリドット', price: 4000, hue: '#9bcf54' },
-  sapphire: { id: 'sapphire', name: 'サファイア', price: 10000, hue: '#3158a5' },
   diamond: { id: 'diamond', name: 'ダイヤモンド', price: 20000, hue: '#dcecf2' },
+  emerald: { id: 'emerald', name: 'エメラルド', price: 12000, hue: '#11a67a' },
+  moonstone: { id: 'moonstone', name: 'ムーンストーン', price: 4500, hue: '#c9e4ef' },
+  ruby: { id: 'ruby', name: 'ルビー', price: 13000, hue: '#c51f55' },
+  peridot: { id: 'peridot', name: 'ペリドット', price: 4000, hue: '#98cf3d' },
+  sapphire: { id: 'sapphire', name: 'サファイア', price: 10000, hue: '#3158a5' },
+  opal: { id: 'opal', name: 'オパール', price: 9000, hue: '#ffbe60' },
+  imperialtopaz: { id: 'imperialtopaz', name: 'インペリアルトパーズ', price: 11000, hue: '#e7b07c' },
+  turquoise: { id: 'turquoise', name: 'トルコ石', price: 5000, hue: '#36c9d0' },
+  lapislazuli: { id: 'lapislazuli', name: 'ラピスラズリ', price: 4500, hue: '#2f55c8' },
+  paraibatourmaline: { id: 'paraibatourmaline', name: 'パライバトルマリン', price: 15000, hue: '#1ed8dd' },
+  tourmaline: { id: 'tourmaline', name: 'トルマリン', price: 7000, hue: '#c36f98' },
+  tanzanite: { id: 'tanzanite', name: 'タンザナイト', price: 11000, hue: '#6a68df' },
+  citrine: { id: 'citrine', name: 'シトリン', price: 3500, hue: '#d89a22' },
 };
 
 export const ITEMS = {
@@ -49,26 +60,62 @@ export const PRICE_MODES = {
 export const MINING_LOCATIONS = {
   river: {
     id: 'river', name: '河原', hours: 2,
-    description: '短い時間で採掘できます。',
+    description: '比較的やさしい採掘場所です。淡い色の原石や定番の石が見つかります。',
     gems: [
-      { id: 'amethyst', weight: 55 },
-      { id: 'aquamarine', weight: 45 },
+      { id: 'amethyst', weight: 18 },
+      { id: 'aquamarine', weight: 18 },
+      { id: 'moonstone', weight: 16 },
+      { id: 'citrine', weight: 16 },
+      { id: 'turquoise', weight: 14 },
+      { id: 'lapislazuli', weight: 10 },
+      { id: 'garnet', weight: 8 },
     ],
   },
   mountain: {
     id: 'mountain', name: '山道', hours: 3,
-    description: '色の鮮やかな宝石が見つかります。',
+    description: '色の鮮やかな原石が見つかります。種類も少し増えます。',
     gems: [
-      { id: 'garnet', weight: 55 },
-      { id: 'peridot', weight: 45 },
+      { id: 'garnet', weight: 16 },
+      { id: 'peridot', weight: 16 },
+      { id: 'ruby', weight: 10 },
+      { id: 'sapphire', weight: 9 },
+      { id: 'opal', weight: 10 },
+      { id: 'tourmaline', weight: 14 },
+      { id: 'tanzanite', weight: 8 },
+      { id: 'emerald', weight: 8 },
+      { id: 'lapislazuli', weight: 9 },
+    ],
+  },
+  cave: {
+    id: 'cave', name: '洞窟', hours: 4,
+    description: 'やや希少な原石が見つかります。時間はかかりますが、品揃えが広がります。',
+    gems: [
+      { id: 'emerald', weight: 12 },
+      { id: 'sapphire', weight: 14 },
+      { id: 'opal', weight: 11 },
+      { id: 'imperialtopaz', weight: 10 },
+      { id: 'tourmaline', weight: 12 },
+      { id: 'ruby', weight: 9 },
+      { id: 'aquamarine', weight: 10 },
+      { id: 'paraibatourmaline', weight: 7 },
+      { id: 'diamond', weight: 5 },
+      { id: 'tanzanite', weight: 10 },
     ],
   },
   mine: {
-    id: 'mine', name: '鉱山入口', hours: 4,
-    description: '時間はかかりますが、希少な宝石が見つかります。',
+    id: 'mine', name: '鉱山奥', hours: 5,
+    description: '希少石を狙える採掘場所です。時間は長いですが、高価な原石が見つかります。',
     gems: [
-      { id: 'sapphire', weight: 82 },
-      { id: 'diamond', weight: 18 },
+      { id: 'diamond', weight: 8 },
+      { id: 'paraibatourmaline', weight: 10 },
+      { id: 'tanzanite', weight: 12 },
+      { id: 'imperialtopaz', weight: 10 },
+      { id: 'emerald', weight: 12 },
+      { id: 'sapphire', weight: 12 },
+      { id: 'opal', weight: 12 },
+      { id: 'tourmaline', weight: 12 },
+      { id: 'ruby', weight: 8 },
+      { id: 'moonstone', weight: 4 },
     ],
   },
 };
@@ -186,23 +233,60 @@ function merge(base, saved) {
 }
 
 export function migrateState(saved) {
-  const state = merge(initialState(), saved);
+  const legacy = saved && typeof saved === 'object' ? structuredClone(saved) : {};
+  const state = merge(initialState(), legacy);
+
+  // v0.1系のクラウドセーブから、保持できる基本情報を引き継ぐ。
+  if (legacy.game?.dayNumber != null && legacy.game?.day == null) state.game.day = Number(legacy.game.dayNumber) || 1;
+  if (legacy.game?.currentScreen && !legacy.game?.screen) state.game.screen = 'main';
+  if (legacy.game?.weather?.label) state.game.weather = legacy.game.weather.label;
+  if (legacy.inventory?.metals) {
+    for (const key of Object.keys(METALS)) {
+      if (Number.isFinite(Number(legacy.inventory.metals[key]))) state.inventory.metals[key] = Math.max(0, Number(legacy.inventory.metals[key]));
+    }
+  }
+  const legacyGemRows = [
+    ...(Array.isArray(legacy.inventory?.general) ? legacy.inventory.general : []),
+    ...(Array.isArray(legacy.inventory?.loose) ? legacy.inventory.loose : []),
+  ];
+  for (const row of legacyGemRows) {
+    const key = row?.key || row?.gem;
+    if (key && Object.prototype.hasOwnProperty.call(state.inventory.gems, key)) {
+      state.inventory.gems[key] += Math.max(0, Number(row.qty) || 1);
+    }
+  }
+
   state.version = VERSION;
+  state.started = true;
+  state.game.day = Math.max(1, Number(state.game.day) || 1);
   state.game.minutes = Math.max(8 * 60, Math.min(22 * 60, Number(state.game.minutes) || 8 * 60));
+  state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 15000;
+  state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
+  state.game.screen = 'main';
+
+  state.inventory.gems = { ...initialState().inventory.gems, ...(state.inventory.gems || {}) };
+  state.inventory.metals = { ...initialState().inventory.metals, ...(state.inventory.metals || {}) };
+  state.inventory.jewelry = Array.isArray(state.inventory.jewelry) ? state.inventory.jewelry.filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal] && DESIGNS[entry.design] && FINISHES[entry.finish] && QUALITIES[entry.quality]) : [];
   state.store.showcaseCount = state.store.expanded ? 5 : 3;
   state.inventory.capacity = state.store.expanded ? 20 : 10;
   state.store.showcases = Array.isArray(state.store.showcases) ? state.store.showcases.slice(0, state.store.showcaseCount) : [];
   while (state.store.showcases.length < state.store.showcaseCount) state.store.showcases.push(null);
   const jewelryIds = new Set(state.inventory.jewelry.map((item) => item.id));
   state.store.showcases = state.store.showcases.map((slot) => slot && jewelryIds.has(slot.jewelryId) ? slot : null);
-  state.orders = Array.isArray(state.orders) ? state.orders : [];
-  state.notifications = Array.isArray(state.notifications) ? state.notifications.slice(0, 80) : [];
+  state.orders = Array.isArray(state.orders) ? state.orders.filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal]) : [];
+  state.notifications = (Array.isArray(state.notifications) ? state.notifications : []).slice(0, 80).map((note, index) => ({
+    id: note?.id || `legacy-note-${index}`,
+    title: note?.title || note?.sender || 'お知らせ',
+    body: note?.body || '',
+    type: note?.type || 'info',
+    day: Number(note?.day) || state.game.day,
+    unread: note?.unread !== false,
+  }));
   state.finance = Array.isArray(state.finance) ? state.finance.slice(-50) : [];
   state.daily = state.daily || { mined: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 };
 
-  // The game has no player avatar, protagonist profile, or character customization.
-  // Remove legacy fields if an older save happens to contain them.
-  for (const key of ['player', 'profile', 'character', 'avatar', 'customization', 'characterCustomize']) {
+  // 主人公像・顔アイコン・キャラクター選択は使用しない。
+  for (const key of ['player', 'profile', 'character', 'avatar', 'customization', 'characterCustomize', 'onboardingComplete']) {
     if (Object.prototype.hasOwnProperty.call(state, key)) delete state[key];
   }
 

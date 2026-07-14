@@ -5,13 +5,17 @@ import {
   clock, nextWeather,
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, playSfx, vibrate } from './audio.js';
+import {
+  initializeFirebase, observeAuth, googleLogin, emailLogin, emailSignup, logout,
+  loadState, saveState, deleteGameData, claimSession, watchSession, heartbeat, firebaseErrorMessage,
+} from './firebase-service.js';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
 const modalEl = document.querySelector('#modal-layer');
 
 let state = null;
-let screen = 'title';
+let screen = 'loading';
 let screenData = {};
 let navigation = [];
 let craftDraft = null;
@@ -19,13 +23,21 @@ let completionId = null;
 let selectedMining = 'river';
 let phoneTab = 'orders';
 let titleSettings = loadTitleSettings();
+let currentUser = null;
+let cloudSave = null;
+let authReady = false;
+let saveQueue = Promise.resolve();
+let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+let stopSessionWatch = null;
+let heartbeatTimer = null;
+let sessionTakenOver = false;
 
 configureAudio(() => state?.settings || titleSettings);
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 
 
 function uid() {
-  if (globalThis.crypto?.randomUUID) return globalThis.uid();
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
@@ -38,24 +50,43 @@ function loadTitleSettings() {
   }
 }
 
+function localSaveKey() {
+  return currentUser?.uid ? `${SAVE_KEY}-${currentUser.uid}` : SAVE_KEY;
+}
+
 function hasSave() {
-  return Boolean(localStorage.getItem(SAVE_KEY));
+  return Boolean(cloudSave || localStorage.getItem(localSaveKey()));
 }
 
 function loadGame() {
   try {
-    const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    const raw = cloudSave || JSON.parse(localStorage.getItem(localSaveKey()) || 'null');
     return raw ? migrateState(raw) : null;
   } catch (_) {
     return null;
   }
 }
 
-function saveGame(message = false) {
-  if (!state) return;
+function saveLocalBackup() {
+  if (!state || !currentUser) return;
   state.updatedAt = new Date().toISOString();
-  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  localStorage.setItem(localSaveKey(), JSON.stringify(state));
   localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
+  cloudSave = structuredClone(state);
+}
+
+function saveGame(message = false) {
+  if (!state || !currentUser || sessionTakenOver) return;
+  saveLocalBackup();
+  const snapshot = structuredClone(state);
+  const userId = currentUser.uid;
+  saveQueue = saveQueue
+    .catch(() => {})
+    .then(() => saveState(userId, snapshot))
+    .catch((error) => {
+      console.error(error);
+      showToast('クラウド保存に失敗しました。通信を確認してください。', 'error');
+    });
   if (message) showToast('保存しました。');
 }
 
@@ -69,6 +100,12 @@ function yen(value) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function gemVisual(id, className = 'gem-thumb', alt = '') {
+  const gem = GEMS[id];
+  if (!gem) return '';
+  return `<img class="${className}" src="./assets/images/gems/${gem.id}.png" alt="${esc(alt || gem.name)}">`;
 }
 
 function showToast(message, type = 'info') {
@@ -126,8 +163,8 @@ function weatherIcon(label) {
 
 function backgroundFor(target) {
   const map = {
-    title: 'main', main: 'main', mining: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'workshop', completion: 'workshop', inventory: 'workshop', supplier: 'okachimachi',
+    loading: 'main', login: 'main', title: 'main', main: 'main', mining: 'mining', miningResult: 'mining', workshop: 'workshop',
+    craft: 'workshop', completion: 'workshop', inventory: 'workshop', glab: 'glab', supplier: 'okachimachi',
     store: 'store', customer: 'store', orders: 'store', expansion: 'store', employee: 'store',
     phone: 'phone', settings: 'main', settingsTitle: 'main', dayResult: 'sleep',
   };
@@ -193,7 +230,7 @@ function shell(title, body, options = {}) {
 function render() {
   document.body.dataset.screen = screen;
   document.body.dataset.textSize = state?.settings?.textSize || titleSettings.textSize || 'normal';
-  document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundFor(screen)}.webp')`);
+  document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundFor(screen)}.webp?v=${VERSION}')`);
   if (state) {
     const hour = Math.floor(state.game.minutes / 60);
     document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
@@ -201,6 +238,8 @@ function render() {
   switchAudio(audioFor(screen));
 
   const renderers = {
+    loading: renderLoading,
+    login: renderLogin,
     title: renderTitle,
     settingsTitle: () => renderSettings(true),
     main: renderMain,
@@ -211,6 +250,7 @@ function render() {
     craft: renderCraft,
     completion: renderCompletion,
     inventory: renderInventory,
+    glab: renderGlab,
     store: renderStore,
     customer: renderCustomer,
     orders: renderOrders,
@@ -224,6 +264,25 @@ function render() {
   applyAudioSettings();
 }
 
+function renderLoading() {
+  return `<main class="title-screen"><section class="title-actions glass-panel login-panel"><div class="loading-spinner" aria-hidden="true"></div><p>読み込んでいます…</p></section></main>`;
+}
+
+function renderLogin() {
+  return `
+    <main class="title-screen">
+      <section class="title-actions glass-panel login-panel">
+        <button class="primary-button large-button" data-action="google-login">Googleでログイン</button>
+        <div class="login-separator"><span>または</span></div>
+        <label class="login-field"><span>メールアドレス</span><input id="login-email" type="email" autocomplete="email" inputmode="email"></label>
+        <label class="login-field"><span>パスワード</span><input id="login-password" type="password" autocomplete="current-password" minlength="6"></label>
+        <button class="secondary-button full-button" data-action="email-login">メールでログイン</button>
+        <button class="text-button" data-action="email-signup">新規アカウントを作成</button>
+        <small>セーブデータはログインしたアカウントへ自動保存されます。</small>
+      </section>
+    </main>`;
+}
+
 function renderTitle() {
   return `
     <main class="title-screen">
@@ -231,6 +290,8 @@ function renderTitle() {
         <button class="primary-button large-button" data-action="new-game">はじめから</button>
         <button class="secondary-button large-button" data-action="continue" ${hasSave() ? '' : 'disabled'}>つづきから</button>
         <button class="secondary-button large-button" data-action="title-settings">設定</button>
+        <small class="account-label">${esc(currentUser?.email || currentUser?.displayName || '')}</small>
+        <button class="text-button" data-action="logout">ログアウト</button>
       </section>
     </main>`;
 }
@@ -247,7 +308,8 @@ function renderMain() {
         <button data-action="nav" data-screen="mining"><span>⛏</span><strong>採掘</strong></button>
         <button data-action="nav" data-screen="workshop"><span>⚒</span><strong>工房</strong></button>
         <button data-action="nav" data-screen="store"><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>
-        <button data-action="nav" data-screen="supplier"><span>♢</span><strong>仕入れ</strong></button>
+        <button data-action="nav" data-screen="glab"><span>◆</span><strong>g-Lab.</strong></button>
+        <button data-action="nav" data-screen="supplier"><span>♢</span><strong>御徒町</strong></button>
         <button data-action="nav" data-screen="phone"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
         <button data-action="sleep"><span>☾</span><strong>寝る</strong></button>
       </nav>
@@ -283,7 +345,7 @@ function renderMiningResult() {
   const result = screenData.result;
   return shell('採掘結果', `
     <section class="center-card glass-panel result-card">
-      <div class="gem-symbol" style="--gem:${result ? GEMS[result.gem].hue : '#777'}">${result ? '◆' : '·'}</div>
+      <div class="gem-symbol">${result ? gemVisual(result.gem, 'gem-result-image') : '<span class="gem-empty-dot">·</span>'}</div>
       ${result ? `
         <h1>${esc(GEMS[result.gem].name)}を見つけました。</h1>
         <p>入手数：${result.qty}個</p>` : `
@@ -294,6 +356,24 @@ function renderMiningResult() {
         <button class="secondary-button" data-action="main">メイン画面へ戻る</button>
       </div>
     </section>`, { main: false });
+}
+
+function renderGlab() {
+  return shell('g-Lab.', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel">
+        <article class="summary-card">
+          <h2>g-Lab.</h2>
+          <p>工房や制作に関する機能へ移動できます。</p>
+        </article>
+        <div class="button-stack">
+          <button class="primary-button full-button" data-action="nav" data-screen="workshop">工房へ</button>
+          <button class="secondary-button full-button" data-action="nav" data-screen="inventory">材料・完成品を見る</button>
+          <button class="secondary-button full-button" data-action="glab-info">g-Lab.について</button>
+        </div>
+      </section>
+    </div>`, { help: 'g-Lab.から工房や材料・完成品の確認画面へ移動できます。' });
 }
 
 function renderSupplier() {
@@ -313,7 +393,10 @@ function renderSupplier() {
             const owned = tab === 'metals' ? state.inventory.metals[product.id] : state.inventory.gems[product.id];
             const disabled = state.game.money < product.price || !canSpendHours(1);
             return `<article class="product-row">
-              <div><strong>${esc(product.name)}</strong><small>所持：${owned}個</small></div>
+              <div class="product-main">
+                ${kind === 'gem' ? gemVisual(product.id, 'gem-inline') : '<span class="material-chip">地金</span>'}
+                <div><strong>${esc(product.name)}</strong><small>所持：${owned}個</small></div>
+              </div>
               <strong>${yen(product.price)}</strong>
               <button class="primary-button" data-action="purchase" data-kind="${kind}" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入する</button>
             </article>`;
@@ -367,6 +450,7 @@ function craftChoice(label, group, entries, current, locked = false) {
     ${Object.values(entries).map((entry) => {
       const owned = group === 'gem' ? state.inventory.gems[entry.id] : group === 'metal' ? state.inventory.metals[entry.id] : null;
       return `<button type="button" class="choice-card ${current === entry.id ? 'selected' : ''}" data-action="craft-choice" data-group="${group}" data-id="${entry.id}" ${locked && current !== entry.id ? 'disabled' : ''}>
+        ${group === 'gem' ? `<span class="choice-visual">${gemVisual(entry.id, 'choice-gem')}</span>` : ''}
         <strong>${esc(entry.name)}</strong>${owned !== null ? `<small>所持 ${owned}</small>` : ''}
       </button>`;
     }).join('')}
@@ -458,7 +542,7 @@ function renderInventory() {
 
 function renderMaterials() {
   return `<div class="materials-grid">
-    <section><h2>宝石</h2>${Object.values(GEMS).map((gem) => `<div class="material-row"><span><i class="mini-gem" style="--gem:${gem.hue}">◆</i>${esc(gem.name)}</span><strong>${state.inventory.gems[gem.id]}個</strong></div>`).join('')}</section>
+    <section><h2>宝石</h2>${Object.values(GEMS).map((gem) => `<div class="material-row"><span class="material-name">${gemVisual(gem.id, 'gem-inline')}<span>${esc(gem.name)}</span></span><strong>${state.inventory.gems[gem.id]}個</strong></div>`).join('')}</section>
     <section><h2>地金</h2>${Object.values(METALS).map((metal) => `<div class="material-row"><span>${esc(metal.name)}</span><strong>${state.inventory.metals[metal.id]}個</strong></div>`).join('')}</section>
   </div>`;
 }
@@ -673,7 +757,7 @@ function renderSettingsForm(titleMode, compact) {
     <label class="toggle-row"><span>効果音を消す</span><input type="checkbox" data-setting="sfxMuted" data-title-mode="${titleMode}" ${settings.sfxMuted ? 'checked' : ''}></label>
     <label><span>文字の大きさ</span><select data-setting="textSize" data-title-mode="${titleMode}"><option value="normal" ${settings.textSize === 'normal' ? 'selected' : ''}>標準</option><option value="large" ${settings.textSize === 'large' ? 'selected' : ''}>大きい</option></select></label>
     <small>バージョン ${VERSION}</small>
-    ${!titleMode && !compact ? '<button class="danger-button full-button" data-action="delete-save">セーブデータを消す</button>' : ''}
+    ${!titleMode && !compact ? '<button class="secondary-button full-button" data-action="logout">ログアウト</button><button class="danger-button full-button" data-action="delete-save">セーブデータを消す</button>' : ''}
   </div>`;
 }
 
@@ -1056,22 +1140,50 @@ function confirmSleep() {
   showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep' });
 }
 
-function deleteSave() {
-  localStorage.removeItem(SAVE_KEY);
-  state = null;
-  screen = 'title';
-  navigation = [];
-  closeModal();
-  showToast('セーブデータを消しました。');
-  render();
+async function deleteSave() {
+  if (!currentUser) return;
+  try {
+    await deleteGameData(currentUser.uid);
+    localStorage.removeItem(localSaveKey());
+    cloudSave = null;
+    state = null;
+    screen = 'title';
+    navigation = [];
+    closeModal();
+    showToast('セーブデータを消しました。');
+    render();
+  } catch (error) {
+    console.error(error);
+    showToast('セーブデータを削除できませんでした。', 'error');
+  }
 }
 
-root.addEventListener('click', (event) => {
+root.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   playSfx('select');
   switch (action) {
+    case 'google-login':
+      try { await googleLogin(); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+      break;
+    case 'email-login': {
+      const email = document.querySelector('#login-email')?.value.trim() || '';
+      const password = document.querySelector('#login-password')?.value || '';
+      if (!email || !password) { showToast('メールアドレスとパスワードを入力してください。', 'error'); break; }
+      try { await emailLogin(email, password); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+      break;
+    }
+    case 'email-signup': {
+      const email = document.querySelector('#login-email')?.value.trim() || '';
+      const password = document.querySelector('#login-password')?.value || '';
+      if (!email || !password) { showToast('メールアドレスと6文字以上のパスワードを入力してください。', 'error'); break; }
+      try { await emailSignup(email, password); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+      break;
+    }
+    case 'logout':
+      try { await saveQueue.catch(() => {}); await logout(); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+      break;
     case 'new-game':
       if (hasSave()) showModal({ title: 'はじめから遊びますか？', body: '<p>現在のセーブデータは消去されます。</p>', confirm: 'はじめから', cancel: 'キャンセル', danger: true, action: 'new-game-confirmed' });
       else startNewGame();
@@ -1090,10 +1202,12 @@ root.addEventListener('click', (event) => {
     case 'main': goMain(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'modal-close': closeModal(); break;
+    case 'reload-page': location.reload(); break;
     case 'select-mining': selectedMining = button.dataset.id; render(); break;
     case 'mine': mine(); break;
     case 'mine-again': setScreen('mining', {}, false); break;
     case 'supplier-tab': screenData.tab = button.dataset.tab; render(); break;
+    case 'glab-info': showModal({ title: 'g-Lab.', body: '<p>御徒町のジュエリー工房です。ゲーム内では制作や材料確認への入口として利用できます。</p>', confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'purchase': purchase(button.dataset.kind, button.dataset.id); break;
     case 'open-craft': craftDraft = defaultDraft(); setScreen('craft', {}); break;
     case 'craft-choice': craftDraft[button.dataset.group] = button.dataset.id; render(); break;
@@ -1117,7 +1231,7 @@ root.addEventListener('click', (event) => {
     case 'do-sleep': closeModal(); settleDay(); break;
     case 'next-day': goMain(); break;
     case 'delete-save': showModal({ title: 'セーブデータを消しますか？', body: '<p>この操作は元に戻せません。</p>', confirm: '消す', cancel: 'キャンセル', danger: true, action: 'delete-save-confirmed' }); break;
-    case 'delete-save-confirmed': deleteSave(); break;
+    case 'delete-save-confirmed': await deleteSave(); break;
     default: break;
   }
 });
@@ -1171,21 +1285,78 @@ function startNewGame() {
   setScreen('main', {}, false);
 }
 
-window.addEventListener('beforeunload', () => saveGame());
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
-render();
+window.addEventListener('beforeunload', () => saveLocalBackup());
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').then((registration) => registration.update()).catch(() => {}));
+}
 
-modalEl.addEventListener('click', (event) => {
+async function boot() {
+  render();
+  try {
+    await initializeFirebase();
+    observeAuth(async (user) => {
+      authReady = true;
+      currentUser = user;
+      state = null;
+      navigation = [];
+      sessionTakenOver = false;
+      if (stopSessionWatch) stopSessionWatch();
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (!user) {
+        cloudSave = null;
+        screen = 'login';
+        render();
+        return;
+      }
+      screen = 'loading';
+      render();
+      try {
+        cloudSave = await loadState(user.uid);
+        if (cloudSave) localStorage.setItem(localSaveKey(), JSON.stringify(cloudSave));
+        await claimSession(user.uid, sessionId);
+        stopSessionWatch = watchSession(user.uid, sessionId, () => {
+          sessionTakenOver = true;
+          showModal({
+            title: '別の端末でゲームが開始されました',
+            body: '<p>続けるには、この画面を再読み込みしてください。</p>',
+            confirm: '再読み込み',
+            action: 'reload-page',
+            hideCancel: true,
+          });
+        });
+        heartbeatTimer = setInterval(() => heartbeat(user.uid, sessionId), 60000);
+        screen = 'title';
+        render();
+      } catch (error) {
+        console.error(error);
+        screen = 'login';
+        render();
+        showToast('クラウドデータを読み込めませんでした。', 'error');
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    authReady = true;
+    screen = 'login';
+    render();
+    showToast('ログイン機能を初期化できませんでした。', 'error');
+  }
+}
+
+boot();
+
+modalEl.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   playSfx('select');
   switch (action) {
     case 'modal-close': closeModal(); break;
+    case 'reload-page': location.reload(); break;
     case 'new-game-confirmed': closeModal(); startNewGame(); break;
     case 'craft': craft(); break;
     case 'do-sleep': closeModal(); settleDay(); break;
-    case 'delete-save-confirmed': deleteSave(); break;
+    case 'delete-save-confirmed': await deleteSave(); break;
     default: break;
   }
 });

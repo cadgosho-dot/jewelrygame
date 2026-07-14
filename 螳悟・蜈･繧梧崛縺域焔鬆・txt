@@ -1,0 +1,25 @@
+JEWELRYGAME v0.4.0　完全入れ替え手順
+
+【重要】
+GitHub Desktopで管理しているパソコン内の jewelrygame フォルダーを作業対象にします。
+隠しフォルダー「.git」は絶対に削除しないでください。
+
+1. GitHub Desktopを開き、jewelrygameリポジトリを選択します。
+2. Repository → Show in Explorer（Finder）でローカルフォルダーを開きます。
+3. 念のため、フォルダー全体を別の場所へコピーしてバックアップします。
+4. jewelrygameフォルダー内で「.git」以外をすべて削除します。
+5. このZIPを展開し、「JEWELRYGAME_v0_4_0_CLEAN」フォルダーの中身をすべてjewelrygame直下へコピーします。
+6. index.htmlがjewelrygame直下にあることを確認します。二重フォルダーにしないでください。
+7. GitHub Desktopへ戻り、Changesに多数の削除・追加・変更が表示されることを確認します。
+8. Summaryへ「v0.4.0 clean rebuild」と入力し、Commit to mainを押します。
+9. Push originを押します。
+10. GitHub Pagesの反映を数分待ちます。
+
+【公開後に背景が古い場合】
+・ブラウザで公開URLを開き、ページを再読み込みします。
+・Androidでホーム画面へ追加済みの場合は、一度ホーム画面のゲームアイコンを削除します。
+・Chromeのサイト設定から cadgosho-dot.github.io の保存データ／キャッシュを削除します。
+・公開URLを開き直し、再度ホーム画面へ追加します。
+
+公開URL
+https://cadgosho-dot.github.io/jewelrygame/

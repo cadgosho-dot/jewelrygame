@@ -31,7 +31,6 @@ let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Ma
 let stopSessionWatch = null;
 let heartbeatTimer = null;
 let sessionTakenOver = false;
-let uiHidden = false;
 
 configureAudio(() => state?.settings || titleSettings);
 document.addEventListener('pointerdown', unlockAudio, { once: true });
@@ -181,7 +180,6 @@ function audioFor(target) {
 
 function setScreen(target, data = {}, push = true) {
   if (push && screen !== target) navigation.push({ screen, data: screenData });
-  uiHidden = false;
   screen = target;
   screenData = data;
   if (state) state.game.screen = target;
@@ -208,35 +206,31 @@ function goMain() {
 function header(title, { back = true, main = true, help = '' } = {}) {
   return `
     <header class="game-header">
-      <div class="header-left">
+      <div class="status-left" aria-label="時間と天気">
+        <span class="header-time">${clock(state.game.minutes)}</span>
+        <span class="header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
+      </div>
+      <div class="header-center">
         ${back ? '<button class="icon-button" data-action="back" aria-label="戻る">←</button>' : ''}
-        <strong>${esc(title)}</strong>
+        <div class="header-title"><strong>${esc(title)}</strong><small>${state.game.day}日目</small></div>
       </div>
-      <div class="status-row">
-        <span>${state.game.day}日目</span>
-        <span>${clock(state.game.minutes)}</span>
-        <span>${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
-        <span>${yen(state.game.money)}</span>
-      </div>
-      <div class="header-actions">
-        ${help ? `<button class="icon-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
-        ${main ? '<button class="small-button" data-action="main">メイン画面</button>' : ''}
+      <div class="header-right">
+        <div class="header-actions">
+          ${help ? `<button class="icon-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
+          ${main ? '<button class="small-button" data-action="main">メイン画面</button>' : ''}
+        </div>
+        <span class="header-money" aria-label="所持金">${yen(state.game.money)}</span>
       </div>
     </header>`;
 }
 
-function uiToggleButton() {
-  return `<button class="ui-toggle" data-action="toggle-ui" aria-label="画面表示を切り替える"><span aria-hidden="true">◉</span><strong>${uiHidden ? 'UIを表示' : 'UIを隠す'}</strong></button>`;
-}
-
 function shell(title, body, options = {}) {
-  return `<main class="screen-shell">${header(title, options)}<section class="screen-content">${body}</section>${uiToggleButton()}</main>`;
+  return `<main class="screen-shell">${header(title, options)}<section class="screen-content">${body}</section></main>`;
 }
 
 function render() {
   document.body.dataset.screen = screen;
   document.body.dataset.textSize = state?.settings?.textSize || titleSettings.textSize || 'normal';
-  document.body.classList.toggle('ui-hidden', uiHidden);
   document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundFor(screen)}.webp?v=${VERSION}')`);
   if (state) {
     const hour = Math.floor(state.game.minutes / 60);
@@ -1208,12 +1202,6 @@ root.addEventListener('click', async (event) => {
     case 'nav': setScreen(button.dataset.screen, button.dataset.screen === 'supplier' ? { tab: 'metals' } : {}); break;
     case 'back': goBack(); break;
     case 'main': goMain(); break;
-    case 'toggle-ui':
-      uiHidden = !uiHidden;
-      document.body.classList.toggle('ui-hidden', uiHidden);
-      button.querySelector('strong').textContent = uiHidden ? 'UIを表示' : 'UIを隠す';
-      button.setAttribute('aria-label', uiHidden ? '操作画面を表示する' : '操作画面を隠す');
-      break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;

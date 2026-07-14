@@ -1,6 +1,7 @@
-JEWELRY×JEWELRY v0.5.1 完全入れ替え手順
+JEWELRY×JEWELRY v0.5.3 完全入れ替え手順
 
-この版は、各画面の背景が黒く表示される問題を修正した完全版です。
+この版では、時間・天気を左上、所持金を右上に配置し、すべてのUIボタンを透明化しています。
+「UIを隠す」機能は削除済みです。
 
 1. GitHub Desktopで jewelrygame を選択します。
 2. Repository → Show in Explorer でローカルフォルダーを開きます。
@@ -9,10 +10,9 @@ JEWELRY×JEWELRY v0.5.1 完全入れ替え手順
    ※ .git が見えない場合は、エクスプローラーで「隠しファイル」を表示してください。
 5. このZIPを展開し、中身をすべて jewelrygame フォルダー直下へコピーします。
 6. GitHub DesktopのChangesで、多数の追加・変更・削除が表示されることを確認します。
-7. Summaryに「v0.5.1 背景表示修正」と入力して Commit to main を押します。
+7. Summaryに「v0.5.3 透明UI配置変更」と入力して Commit to main を押します。
 8. 必ず Push origin を押します。
-9. GitHubのリポジトリ画面を開き、READMEの先頭に v0.5.1 の記載があることを確認します。
-10. 公開URLを開き、Ctrl+F5で強制再読み込みします。
+9. 公開URLを開き、Ctrl+F5で強制再読み込みします。
 
 スマートフォン/PWAで古い画面が残る場合
 - ホーム画面に追加したゲームを一度削除します。

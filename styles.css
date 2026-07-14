@@ -299,46 +299,6 @@ body[data-timeperiod="night"] #background-shade{background:linear-gradient(180de
 .main-menu button>span{font-size:1.2rem}
 .main-menu button>strong{font-size:.76rem}
 .floating-notice{top:70px;background:rgba(15,10,7,.72);backdrop-filter:blur(8px)}
-.ui-toggle{
-  position:fixed;
-  z-index:45;
-  right:12px;
-  bottom:max(12px,var(--safe-bottom));
-  display:flex;
-  align-items:center;
-  gap:.38rem;
-  min-height:38px;
-  padding:.45rem .68rem;
-  border:1px solid rgba(235,199,121,.5);
-  border-radius:999px;
-  background:rgba(12,9,7,.7);
-  color:#f8e7c5;
-  box-shadow:0 8px 25px rgba(0,0,0,.3);
-  backdrop-filter:blur(8px);
-}
-.ui-toggle span{color:var(--gold-light)}
-.ui-toggle strong{font-size:.72rem}
-body[data-screen="main"] .ui-toggle{bottom:84px}
-body.ui-hidden #background-shade{opacity:.34}
-body.ui-hidden .game-header,
-body.ui-hidden .main-menu,
-body.ui-hidden .floating-notice,
-body.ui-hidden .screen-content>.glass-panel,
-body.ui-hidden .screen-content .glass-panel,
-body.ui-hidden .phone-ui{
-  opacity:0;
-  pointer-events:none;
-}
-body.ui-hidden .game-header{transform:translateY(-12px)}
-body.ui-hidden .main-menu{transform:translate(-50%,18px)}
-body.ui-hidden .action-panel,
-body.ui-hidden .store-panel,
-body.ui-hidden .dialog-panel{transform:translateX(20px)}
-body.ui-hidden .ui-toggle{
-  background:rgba(12,9,7,.84);
-  border-color:rgba(255,218,133,.78);
-}
-
 @media (orientation:portrait), (max-width:820px){
   .game-header{
     grid-template-columns:minmax(0,1fr) auto;
@@ -375,8 +335,6 @@ body.ui-hidden .ui-toggle{
     padding:.45rem .35rem;
   }
   .main-menu button>strong{font-size:.68rem}
-  body[data-screen="main"] .ui-toggle{bottom:76px}
-  .ui-toggle{right:8px;bottom:8px;padding:.38rem .55rem}
 }
 
 @media (max-width:480px){
@@ -384,4 +342,122 @@ body.ui-hidden .ui-toggle{
   .screen-content{padding-left:7px;padding-right:7px}
   .split-layout,.store-layout,.customer-layout{grid-template-rows:minmax(250px,55vh) auto}
   .action-panel,.store-panel,.dialog-panel{max-height:38vh;padding:10px}
+}
+
+
+/* v0.5.3: 上部情報の左右配置・透明UI */
+.game-header{
+  grid-template-columns:minmax(110px,1fr) auto minmax(150px,1fr);
+  align-items:center;
+  gap:10px;
+  background:rgba(8,6,4,.14);
+  border-color:rgba(255,232,181,.25);
+  box-shadow:0 5px 20px rgba(0,0,0,.18);
+  backdrop-filter:blur(4px);
+}
+.status-left{
+  justify-self:start;
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  min-width:0;
+  color:#fff0cf;
+  text-shadow:0 2px 6px rgba(0,0,0,.9);
+  font-weight:800;
+}
+.header-time,.header-weather{white-space:nowrap}
+.header-center{
+  justify-self:center;
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  min-width:0;
+}
+.header-title{display:grid;justify-items:center;line-height:1.05;text-shadow:0 2px 7px rgba(0,0,0,.95)}
+.header-title strong{white-space:nowrap;color:#fff3d5}
+.header-title small{font-size:.65rem;color:#e8d3a6;margin-top:.2rem}
+.header-right{
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  min-width:0;
+}
+.header-actions{display:flex;align-items:center;gap:.35rem}
+.header-money{
+  white-space:nowrap;
+  color:#fff3cf;
+  font-weight:900;
+  text-shadow:0 2px 7px rgba(0,0,0,.95);
+}
+.status-row{display:none!important}
+
+/* 全操作ボタンを透明化。選択状態だけ薄い光で識別する。 */
+button,
+.primary-button,.secondary-button,.danger-button,.small-button,.icon-button,
+.main-menu button,.choice-card,.tab-row button,.phone-tabs button,
+.compact-list button{
+  background:rgba(12,9,7,.12)!important;
+  color:#fff1d1!important;
+  border-color:rgba(255,225,161,.48)!important;
+  box-shadow:0 3px 12px rgba(0,0,0,.17)!important;
+  backdrop-filter:blur(2px);
+  text-shadow:0 1px 4px rgba(0,0,0,.9);
+}
+button:hover,
+.primary-button:hover,.secondary-button:hover,.small-button:hover,.icon-button:hover,
+.main-menu button:hover,.choice-card:hover,.tab-row button:hover,.phone-tabs button:hover{
+  background:rgba(255,224,158,.14)!important;
+  border-color:rgba(255,232,184,.82)!important;
+  filter:none;
+}
+.choice-card.selected,.tab-row button.active,.phone-tabs button.active{
+  background:rgba(224,177,82,.2)!important;
+  color:#fff4d5!important;
+  border-color:rgba(255,221,144,.9)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,239,196,.18),0 3px 12px rgba(0,0,0,.16)!important;
+}
+.danger-button{border-color:rgba(255,121,109,.7)!important;color:#ffd6d1!important}
+.text-button{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
+.main-menu{background:rgba(8,6,4,.18);border-color:rgba(255,224,157,.25);backdrop-filter:blur(4px)}
+.glass-panel{background:linear-gradient(145deg,rgba(27,20,14,.58),rgba(12,9,7,.46));backdrop-filter:blur(5px)}
+
+@media (orientation:portrait), (max-width:820px){
+  .game-header{
+    grid-template-columns:minmax(92px,1fr) auto minmax(105px,1fr);
+    min-height:52px;
+  }
+  .status-left{gap:.35rem;font-size:.7rem;flex-wrap:wrap;line-height:1.05}
+  .header-center{gap:.35rem}
+  .header-title strong{font-size:.78rem;max-width:28vw;overflow:hidden;text-overflow:ellipsis}
+  .header-title small{font-size:.58rem}
+  .header-right{gap:.3rem}
+  .header-money{font-size:.72rem}
+  .header-actions .small-button{display:none}
+  .header-actions .icon-button,.header-center .icon-button{width:34px;height:34px;min-height:34px}
+  .screen-content{padding-top:72px}
+}
+
+@media (max-width:480px){
+  .game-header{left:6px;right:6px;gap:4px;padding:5px 6px}
+  .status-left{font-size:.64rem;display:grid;gap:.1rem}
+  .header-title strong{font-size:.72rem;max-width:24vw}
+  .header-title small{display:none}
+  .header-money{font-size:.66rem}
+  .header-actions{gap:.15rem}
+  .header-actions .icon-button,.header-center .icon-button{width:31px;height:31px;min-height:31px;font-size:.92rem}
+}
+
+/* 明るいスマートフォン画面内では透明のまま文字色を濃くする */
+.phone-ui button{
+  background:rgba(255,255,255,.1)!important;
+  color:#3a2a1c!important;
+  border-color:rgba(72,52,31,.34)!important;
+  text-shadow:none;
+  box-shadow:none!important;
+}
+.phone-ui .phone-tabs button.active{
+  background:rgba(142,99,46,.18)!important;
+  color:#2a1d12!important;
+  border-color:rgba(112,76,36,.58)!important;
 }

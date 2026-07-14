@@ -4,6 +4,8 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -30,6 +32,8 @@ export async function initializeFirebase() {
   if (previewMode) return { previewMode: true, configured: true };
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
+  auth.languageCode = 'ja';
+  await setPersistence(auth, browserLocalPersistence);
   db = getFirestore(app);
   return { previewMode: false, configured: true };
 }
@@ -44,10 +48,18 @@ export function observeAuth(callback) {
 }
 
 export async function googleLogin() {
-  if (previewMode) return;
+  if (previewMode) return null;
+  if (!auth) throw new Error('Firebaseの初期化が完了していません。');
+
+  // すでにこの端末で認証済みなら、再認証画面を出さずそのまま利用する。
+  if (auth.currentUser) return auth.currentUser;
+
   const provider = new GoogleAuthProvider();
+  // Googleにログイン済みの端末では、アカウント選択後にそのまま認証される。
+  // パスワード確認が必要かどうかはGoogle側のセキュリティ判定に委ねられる。
   provider.setCustomParameters({ prompt: 'select_account' });
-  await signInWithPopup(auth, provider);
+  const result = await signInWithPopup(auth, provider);
+  return result.user;
 }
 
 export async function emailLogin(email, password) {
@@ -149,6 +161,7 @@ export function firebaseErrorMessage(error) {
     'auth/email-already-in-use': 'このメールアドレスはすでに登録されています。',
     'auth/invalid-credential': 'メールアドレスまたはパスワードが正しくありません。',
     'auth/popup-closed-by-user': 'Googleログインがキャンセルされました。',
+    'auth/popup-blocked': 'Googleアカウント選択画面を開けませんでした。ブラウザのポップアップを許可してください。',
     'auth/network-request-failed': '通信できません。インターネット接続を確認してください。',
   };
   return messages[code] || '処理を完了できませんでした。もう一度お試しください。';

@@ -1,4 +1,4 @@
-export const VERSION = '0.7.5';
+export const VERSION = '0.8.0';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const POLISHING_MACHINE_PRICE = 30000;

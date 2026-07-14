@@ -284,6 +284,8 @@ function header(title, { back = true, main = true, help = '' } = {}) {
         <div class="status-top-line">
           <span class="header-time">${clock(state.game.minutes)}</span>
           <span class="header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
+          ${state.playerName ? `<span class="header-player-name">${esc(state.playerName)}</span>` : ''}
+          ${state.store?.rented && state.store?.name ? `<span class="header-store-name">${esc(state.store.name)}</span>` : ''}
         </div>
         ${isMainMenu ? `<span class="header-day">${state.game.day}日目</span>` : ''}
       </div>
@@ -355,13 +357,28 @@ function renderLogin() {
   return `
     <main class="title-screen">
       <section class="title-actions glass-panel login-panel">
-        <button class="primary-button large-button" data-action="google-login">Googleでログイン</button>
-        <div class="login-separator"><span>または</span></div>
-        <label class="login-field"><span>メールアドレス</span><input id="login-email" type="email" autocomplete="email" inputmode="email"></label>
-        <label class="login-field"><span>パスワード</span><input id="login-password" type="password" autocomplete="current-password" minlength="6"></label>
-        <button class="secondary-button full-button" data-action="email-login">メールでログイン</button>
-        <button class="text-button" data-action="email-signup">新規アカウントを作成</button>
-        <small>セーブデータはログインしたアカウントへ自動保存されます。</small>
+        <button class="primary-button large-button full-button" data-action="google-login">Googleアカウントを選んでスタート</button>
+        <p class="small-note login-main-note">Googleにログイン済みの携帯では、アカウントを選ぶだけで開始します。ゲーム内でGoogleのパスワードを入力することはありません。</p>
+        <small class="login-keep-note">認証状態はこの端末に保存され、次回からは通常「スタート」だけで続けられます。</small>
+        <details class="email-login-details">
+          <summary>メールアドレスでログインする</summary>
+          <div class="email-login-fields">
+            <label class="login-field"><span>メールアドレス</span><input id="login-email" type="email" autocomplete="email" inputmode="email"></label>
+            <label class="login-field password-login-field">
+              <span>ゲーム用パスワード</span>
+              <span class="password-input-wrap">
+                <input id="login-password" type="password" autocomplete="current-password" minlength="6" aria-describedby="login-password-help">
+                <button type="button" class="password-visibility-button" data-action="toggle-login-password" aria-pressed="false" aria-label="パスワードを表示する">表示</button>
+              </span>
+            </label>
+            <div id="login-password-help" class="password-help" role="note">
+              <strong>このゲーム用のパスワードを設定してください。</strong>
+              <small>新規登録は6文字以上です。普段のメールやGoogleのパスワードは入力しないでください。</small>
+            </div>
+            <button class="secondary-button full-button" data-action="email-login">メールでログイン</button>
+            <button class="text-button" data-action="email-signup">メールで新規アカウントを作成</button>
+          </div>
+        </details>
       </section>
     </main>`;
 }
@@ -1067,7 +1084,10 @@ function renderSettingsForm(titleMode, compact) {
     <label class="toggle-row"><span>効果音を消す</span><input type="checkbox" data-setting="sfxMuted" data-title-mode="${titleMode}" ${settings.sfxMuted ? 'checked' : ''}></label>
     <label><span>文字の大きさ</span><select data-setting="textSize" data-title-mode="${titleMode}"><option value="normal" ${settings.textSize === 'normal' ? 'selected' : ''}>標準</option><option value="large" ${settings.textSize === 'large' ? 'selected' : ''}>大きい</option></select></label>
     <small>バージョン ${VERSION}</small>
-    ${!titleMode && !compact ? '<button class="secondary-button full-button" data-action="logout">ログアウト</button><button class="danger-button full-button" data-action="delete-save">セーブデータを消す</button>' : ''}
+    ${!titleMode ? `<div class="account-danger-actions" aria-label="アカウント操作">
+      <button class="account-mini-button" data-action="logout">ログアウト</button>
+      <button class="account-mini-button danger" data-action="delete-save">データ全削除</button>
+    </div>` : ''}
   </div>`;
 }
 
@@ -1560,6 +1580,58 @@ async function beginSleepTransition() {
   sleepTransitioning = false;
 }
 
+function showPlayerNameExecution(kind) {
+  const deleting = kind === 'delete';
+  const title = deleting ? 'データを全削除します' : 'ログアウトします';
+  const message = deleting
+    ? '確認のため、現在のプレイヤー名を入力してください。全データ削除後は元に戻せません。'
+    : '確認のため、現在のプレイヤー名を入力してください。';
+  showModal({
+    title,
+    body: `<div class="account-confirmation">
+      <p>${message}</p>
+      <label class="name-entry-field">
+        <span>プレイヤー名</span>
+        <input id="account-confirm-player-name" type="text" maxlength="20" autocomplete="off" enterkeyhint="done" placeholder="現在のプレイヤー名を入力">
+      </label>
+    </div>`,
+    confirm: '実行',
+    cancel: 'キャンセル',
+    danger: deleting,
+    action: deleting ? 'delete-save-execute' : 'logout-execute',
+  });
+  setTimeout(() => document.querySelector('#account-confirm-player-name')?.focus(), 0);
+}
+
+function verifiedPlayerName() {
+  const input = document.querySelector('#account-confirm-player-name');
+  const entered = String(input?.value || '').trim();
+  const expected = String(state?.playerName || '').trim();
+  if (!entered) {
+    showToast('プレイヤー名を入力してください。', 'error');
+    input?.focus();
+    return false;
+  }
+  if (!expected || entered !== expected) {
+    showToast('プレイヤー名が一致しません。', 'error');
+    input?.focus();
+    input?.select();
+    return false;
+  }
+  return true;
+}
+
+async function executeLogout() {
+  if (!verifiedPlayerName()) return;
+  try {
+    await saveQueue.catch(() => {});
+    closeModal();
+    await logout();
+  } catch (error) {
+    showToast(firebaseErrorMessage(error), 'error');
+  }
+}
+
 async function deleteSave() {
   if (!currentUser) return;
   try {
@@ -1588,6 +1660,17 @@ root.addEventListener('click', async (event) => {
     case 'google-login':
       try { await googleLogin(); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
       break;
+    case 'toggle-login-password': {
+      const input = document.querySelector('#login-password');
+      if (!input) break;
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      button.textContent = showing ? '表示' : '隠す';
+      button.setAttribute('aria-pressed', String(!showing));
+      button.setAttribute('aria-label', showing ? 'パスワードを表示する' : 'パスワードを隠す');
+      input.focus({ preventScroll: true });
+      break;
+    }
     case 'email-login': {
       const email = document.querySelector('#login-email')?.value.trim() || '';
       const password = document.querySelector('#login-password')?.value || '';
@@ -1598,12 +1681,19 @@ root.addEventListener('click', async (event) => {
     case 'email-signup': {
       const email = document.querySelector('#login-email')?.value.trim() || '';
       const password = document.querySelector('#login-password')?.value || '';
-      if (!email || !password) { showToast('メールアドレスと6文字以上のパスワードを入力してください。', 'error'); break; }
+      if (!email || !password) { showToast('メールアドレスとゲーム用パスワードを入力してください。', 'error'); break; }
+      if (password.length < 6) { showToast('ゲーム用パスワードは6文字以上で設定してください。', 'error'); break; }
       try { await emailSignup(email, password); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
       break;
     }
     case 'logout':
-      try { await saveQueue.catch(() => {}); await logout(); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+      showModal({
+        title: 'ほんとにログアウトしますか？',
+        body: '<p>ログアウト後は、再びアカウントを選択してログインする必要があります。</p><p>続ける場合は、次の画面でプレイヤー名を入力してください。</p>',
+        confirm: '次へ',
+        cancel: 'キャンセル',
+        action: 'logout-name-check',
+      });
       break;
     case 'start':
       if (hasSave()) {
@@ -1744,8 +1834,16 @@ root.addEventListener('click', async (event) => {
     case 'sleep': confirmSleep(); break;
     case 'do-sleep': await beginSleepTransition(); break;
     case 'next-day': goMain(); break;
-    case 'delete-save': showModal({ title: 'セーブデータを消しますか？', body: '<p>この操作は元に戻せません。</p>', confirm: '消す', cancel: 'キャンセル', danger: true, action: 'delete-save-confirmed' }); break;
-    case 'delete-save-confirmed': await deleteSave(); break;
+    case 'delete-save':
+      showModal({
+        title: 'ほんとにデータを全削除しますか？',
+        body: '<p>クラウドセーブを含むゲームデータをすべて削除します。この操作は元に戻せません。</p><p>続ける場合は、次の画面でプレイヤー名を入力してください。</p>',
+        confirm: '次へ',
+        cancel: 'キャンセル',
+        danger: true,
+        action: 'delete-save-name-check',
+      });
+      break;
     default: break;
   }
 });
@@ -1884,7 +1982,12 @@ modalEl.addEventListener('click', async (event) => {
     case 'reload-page': location.reload(); break;
     case 'craft': craft(); break;
     case 'do-sleep': await beginSleepTransition(); break;
-    case 'delete-save-confirmed': await deleteSave(); break;
+    case 'logout-name-check': showPlayerNameExecution('logout'); break;
+    case 'delete-save-name-check': showPlayerNameExecution('delete'); break;
+    case 'logout-execute': await executeLogout(); break;
+    case 'delete-save-execute':
+      if (verifiedPlayerName()) await deleteSave();
+      break;
     default: break;
   }
 });

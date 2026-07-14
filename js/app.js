@@ -31,6 +31,7 @@ let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Ma
 let stopSessionWatch = null;
 let heartbeatTimer = null;
 let sessionTakenOver = false;
+let uiHidden = false;
 
 configureAudio(() => state?.settings || titleSettings);
 document.addEventListener('pointerdown', unlockAudio, { once: true });
@@ -180,6 +181,7 @@ function audioFor(target) {
 
 function setScreen(target, data = {}, push = true) {
   if (push && screen !== target) navigation.push({ screen, data: screenData });
+  uiHidden = false;
   screen = target;
   screenData = data;
   if (state) state.game.screen = target;
@@ -223,13 +225,18 @@ function header(title, { back = true, main = true, help = '' } = {}) {
     </header>`;
 }
 
+function uiToggleButton() {
+  return `<button class="ui-toggle" data-action="toggle-ui" aria-label="画面表示を切り替える"><span aria-hidden="true">◉</span><strong>${uiHidden ? 'UIを表示' : 'UIを隠す'}</strong></button>`;
+}
+
 function shell(title, body, options = {}) {
-  return `<main class="screen-shell">${header(title, options)}<section class="screen-content">${body}</section></main>`;
+  return `<main class="screen-shell">${header(title, options)}<section class="screen-content">${body}</section>${uiToggleButton()}</main>`;
 }
 
 function render() {
   document.body.dataset.screen = screen;
   document.body.dataset.textSize = state?.settings?.textSize || titleSettings.textSize || 'normal';
+  document.body.classList.toggle('ui-hidden', uiHidden);
   document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundFor(screen)}.webp?v=${VERSION}')`);
   if (state) {
     const hour = Math.floor(state.game.minutes / 60);
@@ -313,6 +320,7 @@ function renderMain() {
         <button data-action="nav" data-screen="phone"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
         <button data-action="sleep"><span>☾</span><strong>寝る</strong></button>
       </nav>
+      ${uiToggleButton()}
     </main>`;
 }
 
@@ -1200,6 +1208,12 @@ root.addEventListener('click', async (event) => {
     case 'nav': setScreen(button.dataset.screen, button.dataset.screen === 'supplier' ? { tab: 'metals' } : {}); break;
     case 'back': goBack(); break;
     case 'main': goMain(); break;
+    case 'toggle-ui':
+      uiHidden = !uiHidden;
+      document.body.classList.toggle('ui-hidden', uiHidden);
+      button.querySelector('strong').textContent = uiHidden ? 'UIを表示' : 'UIを隠す';
+      button.setAttribute('aria-label', uiHidden ? '操作画面を表示する' : '操作画面を隠す');
+      break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;

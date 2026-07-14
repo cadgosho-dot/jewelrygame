@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jewelrygame-clean-v0.5.3';
+const CACHE_NAME = 'jewelrygame-clean-v0.5.5';
 const APP_SHELL = [
   './',
   './index.html',

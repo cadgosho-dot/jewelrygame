@@ -461,3 +461,9 @@ button:hover,
   color:#2a1d12!important;
   border-color:rgba(112,76,36,.58)!important;
 }
+
+
+/* v0.5.5: 起動画面はスタートボタンのみ */
+.start-only-panel{width:min(330px,84vw);padding:.8rem;background:transparent!important;border-color:transparent!important;box-shadow:none!important;backdrop-filter:none!important}
+.start-button{min-height:64px;font-size:1.08rem;background:rgba(18,12,8,.34)!important;border:1px solid rgba(255,226,158,.68)!important;box-shadow:0 8px 28px rgba(0,0,0,.22)!important;backdrop-filter:blur(5px)}
+.start-button:hover,.start-button:focus-visible{background:rgba(55,38,21,.48)!important;border-color:#ffe0a0!important}

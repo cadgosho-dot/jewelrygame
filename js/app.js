@@ -54,6 +54,14 @@ function localSaveKey() {
   return currentUser?.uid ? `${SAVE_KEY}-${currentUser.uid}` : SAVE_KEY;
 }
 
+function freshStartFlagKey() {
+  return currentUser?.uid ? `${SAVE_KEY}-fresh-start-${currentUser.uid}` : `${SAVE_KEY}-fresh-start`;
+}
+
+function freshStartRequested() {
+  return localStorage.getItem(freshStartFlagKey()) === '1';
+}
+
 function hasSave() {
   return Boolean(cloudSave || localStorage.getItem(localSaveKey()));
 }
@@ -285,14 +293,11 @@ function renderLogin() {
 }
 
 function renderTitle() {
+  const label = freshStartRequested() ? 'はじめから' : 'スタート';
   return `
     <main class="title-screen">
-      <section class="title-actions glass-panel">
-        <button class="primary-button large-button" data-action="new-game">はじめから</button>
-        <button class="secondary-button large-button" data-action="continue" ${hasSave() ? '' : 'disabled'}>つづきから</button>
-        <button class="secondary-button large-button" data-action="title-settings">設定</button>
-        <small class="account-label">${esc(currentUser?.email || currentUser?.displayName || '')}</small>
-        <button class="text-button" data-action="logout">ログアウト</button>
+      <section class="title-actions glass-panel start-only-panel">
+        <button class="primary-button large-button start-button" data-action="start">${label}</button>
       </section>
     </main>`;
 }
@@ -314,7 +319,6 @@ function renderMain() {
         <button data-action="nav" data-screen="phone"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
         <button data-action="sleep"><span>☾</span><strong>寝る</strong></button>
       </nav>
-      ${uiToggleButton()}
     </main>`;
 }
 
@@ -1147,6 +1151,7 @@ async function deleteSave() {
   try {
     await deleteGameData(currentUser.uid);
     localStorage.removeItem(localSaveKey());
+    localStorage.setItem(freshStartFlagKey(), '1');
     cloudSave = null;
     state = null;
     screen = 'title';
@@ -1186,19 +1191,16 @@ root.addEventListener('click', async (event) => {
     case 'logout':
       try { await saveQueue.catch(() => {}); await logout(); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
       break;
-    case 'new-game':
-      if (hasSave()) showModal({ title: 'はじめから遊びますか？', body: '<p>現在のセーブデータは消去されます。</p>', confirm: 'はじめから', cancel: 'キャンセル', danger: true, action: 'new-game-confirmed' });
-      else startNewGame();
+    case 'start':
+      if (hasSave()) {
+        state = loadGame();
+        if (!state) return showToast('セーブデータを読み込めませんでした。', 'error');
+        navigation = [];
+        setScreen('main', {}, false);
+      } else {
+        startNewGame();
+      }
       break;
-    case 'new-game-confirmed': closeModal(); startNewGame(); break;
-    case 'continue':
-      state = loadGame();
-      if (!state) return showToast('セーブデータを読み込めませんでした。', 'error');
-      navigation = [];
-      setScreen('main', {}, false);
-      break;
-    case 'title-settings': setScreen('settingsTitle'); break;
-    case 'title-back': navigation = []; setScreen('title', {}, false); break;
     case 'nav': setScreen(button.dataset.screen, button.dataset.screen === 'supplier' ? { tab: 'metals' } : {}); break;
     case 'back': goBack(); break;
     case 'main': goMain(); break;
@@ -1278,6 +1280,7 @@ root.addEventListener('input', (event) => {
 });
 
 function startNewGame() {
+  localStorage.removeItem(freshStartFlagKey());
   state = initialState();
   state.settings = { ...state.settings, ...titleSettings };
   navigation = [];
@@ -1355,7 +1358,6 @@ modalEl.addEventListener('click', async (event) => {
   switch (action) {
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;
-    case 'new-game-confirmed': closeModal(); startNewGame(); break;
     case 'craft': craft(); break;
     case 'do-sleep': closeModal(); settleDay(); break;
     case 'delete-save-confirmed': await deleteSave(); break;

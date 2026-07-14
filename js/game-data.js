@@ -1,4 +1,4 @@
-export const VERSION = '0.6.3';
+export const VERSION = '0.7.5';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const POLISHING_MACHINE_PRICE = 30000;
@@ -178,6 +178,7 @@ export function initialState() {
   return {
     version: VERSION,
     started: true,
+    playerName: '',
     game: {
       day: 1,
       minutes: 8 * 60,
@@ -197,7 +198,20 @@ export function initialState() {
       polishingMachine: false,
       polishingMachineDay: null,
     },
+    facilities: {
+      materialShop: true,
+      looseShop: false,
+      glab: true,
+      jewelryShop: false,
+      settingShop: false,
+      castingShop: false,
+      realEstate: false,
+      recruitment: false,
+    },
     store: {
+      name: '',
+      branchNumber: 1,
+      branches: [],
       rented: false,
       rentedDay: null,
       expanded: false,
@@ -220,9 +234,9 @@ export function initialState() {
     finance: [],
     daily: { mined: [], polished: [], roughSold: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 },
     settings: {
-      bgmVolume: 0.45,
-      ambientVolume: 0.3,
-      sfxVolume: 0.65,
+      bgmVolume: 0.75,
+      ambientVolume: 0.60,
+      sfxVolume: 0.75,
       bgmMuted: false,
       ambientMuted: false,
       sfxMuted: false,
@@ -274,6 +288,8 @@ export function migrateState(saved) {
 
   state.version = VERSION;
   state.started = true;
+  const legacyPlayerName = legacy.playerName || legacy.profile?.name || legacy.player?.name || '';
+  state.playerName = String(state.playerName || legacyPlayerName).trim().slice(0, 20);
   state.game.day = Math.max(1, Number(state.game.day) || 1);
   state.game.minutes = Math.max(8 * 60, Math.min(22 * 60, Number(state.game.minutes) || 8 * 60));
   state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 15000;
@@ -296,6 +312,13 @@ export function migrateState(saved) {
   state.tools = { ...initialState().tools, ...(state.tools || {}) };
   state.tools.polishingMachine = Boolean(state.tools.polishingMachine);
   state.tools.polishingMachineDay = state.tools.polishingMachine ? (Number(state.tools.polishingMachineDay) || 1) : null;
+  state.facilities = { ...initialState().facilities, ...(state.facilities || {}) };
+  // 初期から利用できるのは素材屋とg-Lab.のみ。
+  state.facilities.materialShop = true;
+  state.facilities.glab = true;
+  // 既存セーブで利用済みの施設は閉じない。
+  if (state.store?.rented) state.facilities.realEstate = true;
+  if (state.employee?.hired) state.facilities.recruitment = true;
   // v0.5.8より店舗は不動産で契約してから利用する。旧セーブは実際の店舗利用履歴がある場合のみ契約済みとして引き継ぐ。
   if (typeof legacy.store?.rented !== 'boolean') {
     const usedStore = Number(state.store.salesCount) > 0
@@ -307,7 +330,23 @@ export function migrateState(saved) {
   } else {
     state.store.rented = legacy.store.rented;
   }
+  state.store.name = String(state.store.name || legacy.store?.storeName || '').trim().slice(0, 30);
+  state.store.branchNumber = Math.max(1, Number(state.store.branchNumber) || 1);
   state.store.rentedDay = state.store.rented ? (Number(state.store.rentedDay) || 1) : null;
+  const savedBranches = Array.isArray(state.store.branches) ? state.store.branches : [];
+  state.store.branches = savedBranches
+    .filter((branch) => branch && Number(branch.number) >= 1)
+    .map((branch) => ({
+      id: branch.id || `branch-${Number(branch.number)}`,
+      number: Math.max(1, Number(branch.number) || 1),
+      label: Number(branch.number) === 1 ? '本店' : `${Number(branch.number)}号店`,
+      name: String(branch.name || state.store.name || '').trim().slice(0, 30),
+      rentedDay: Math.max(1, Number(branch.rentedDay) || state.store.rentedDay || 1),
+    }));
+  if (state.store.rented && state.store.name && !state.store.branches.some((branch) => branch.number === 1)) {
+    state.store.branches.unshift({ id: 'branch-1', number: 1, label: '本店', name: state.store.name, rentedDay: state.store.rentedDay || 1 });
+  }
+  if (state.store.rented) state.facilities.realEstate = true;
   state.inventory.jewelry = Array.isArray(state.inventory.jewelry) ? state.inventory.jewelry.filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal] && DESIGNS[entry.design] && FINISHES[entry.finish] && QUALITIES[entry.quality]) : [];
   state.store.showcaseCount = state.store.expanded ? 5 : 3;
   state.inventory.capacity = state.store.expanded ? 20 : 10;
@@ -335,6 +374,11 @@ export function migrateState(saved) {
     income: Number(state.daily?.income) || 0,
     expense: Number(state.daily?.expense) || 0,
   };
+  state.settings = { ...initialState().settings, ...(state.settings || {}) };
+  // v0.7.3では各場面のBGM・環境音を明瞭に聞けるよう、旧初期値の音量を引き上げる。
+  if (Number(state.settings.bgmVolume) <= 0.45) state.settings.bgmVolume = 0.75;
+  if (Number(state.settings.ambientVolume) <= 0.35) state.settings.ambientVolume = 0.60;
+  if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;
   if (!state.store.rented) {
     Object.values(state.customers).forEach((customer) => { customer.visiting = false; });
   }

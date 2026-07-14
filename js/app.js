@@ -13,6 +13,7 @@ import {
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
 const modalEl = document.querySelector('#modal-layer');
+const sleepCurtainEl = document.querySelector('#sleep-curtain');
 
 let state = null;
 let screen = 'loading';
@@ -32,6 +33,7 @@ let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Ma
 let stopSessionWatch = null;
 let heartbeatTimer = null;
 let sessionTakenOver = false;
+let sleepTransitioning = false;
 
 configureAudio(() => state?.settings || titleSettings);
 document.addEventListener('pointerdown', unlockAudio, { once: true });
@@ -45,7 +47,11 @@ function uid() {
 function loadTitleSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(`${SAVE_KEY}-settings`) || 'null');
-    return { ...initialState().settings, ...(saved || {}) };
+    const settings = { ...initialState().settings, ...(saved || {}) };
+    if (Number(settings.bgmVolume) <= 0.45) settings.bgmVolume = 0.75;
+    if (Number(settings.ambientVolume) <= 0.35) settings.ambientVolume = 0.60;
+    if (Number(settings.sfxVolume) <= 0.65) settings.sfxVolume = 0.75;
+    return settings;
   } catch (_) {
     return initialState().settings;
   }
@@ -105,6 +111,37 @@ function esc(value = '') {
 
 function yen(value) {
   return `¥${Math.round(Number(value) || 0).toLocaleString('ja-JP')}`;
+}
+
+function storeBranchLabel(number = 1) {
+  const branchNumber = Math.max(1, Number(number) || 1);
+  return branchNumber === 1 ? '本店' : `${branchNumber}号店`;
+}
+
+function storeDisplayName() {
+  const name = String(state?.store?.name || '').trim();
+  return name ? `${name} ${storeBranchLabel(state.store.branchNumber)}` : '店舗';
+}
+
+function facilityUnlocked(id) {
+  return Boolean(state?.facilities?.[id]);
+}
+
+function facilityButton({ id, label, screen, primary = false }) {
+  if (!facilityUnlocked(id)) {
+    return `<button type="button" class="${primary ? 'primary-button' : 'secondary-button'} full-button facility-locked" disabled aria-disabled="true"><span>${esc(label)}</span><small>未解放</small></button>`;
+  }
+  return `<button class="${primary ? 'primary-button' : 'secondary-button'} full-button" data-action="nav" data-screen="${screen}">${esc(label)}</button>`;
+}
+
+function storeNameEntry(buttonAction, buttonLabel) {
+  return `
+    <label class="name-entry-field">
+      <span>店舗名</span>
+      <input id="store-name-input" type="text" maxlength="30" autocomplete="organization" enterkeyhint="done" placeholder="店舗名を入力">
+    </label>
+    <p class="small-note">最初の店舗は「本店」として登録されます。今後の支店は「2号店」「3号店」のように区別します。</p>
+    <button class="primary-button full-button" data-action="${buttonAction}">${buttonLabel}</button>`;
 }
 
 function clamp(value, min, max) {
@@ -186,17 +223,30 @@ function weatherIcon(label) {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', title: 'main', main: 'main', mining: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'workshop', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', glab: 'glab', okachimachi: 'okachimachi', supplier: 'okachimachi', realEstate: 'okachimachi',
+    loading: 'main', login: 'main', title: 'main', nameSetup: 'main', main: 'main', mining: 'mining', miningResult: 'mining', workshop: 'workshop',
+    craft: 'workshop', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', glab: 'glab', okachimachi: 'okachimachi', supplier: 'okachimachi', looseShop: 'okachimachi', realEstate: 'okachimachi',
     store: 'store', customer: 'store', orders: 'store', expansion: 'store', employee: 'store',
     phone: 'phone', settings: 'main', settingsTitle: 'main', dayResult: 'sleep',
   };
   return map[target] || 'main';
 }
 
+
+function backgroundAssetFor(target) {
+  const base = backgroundFor(target);
+  const portrait = window.matchMedia('(orientation: portrait), (max-width: 820px)').matches;
+  if (portrait && base === 'main') return 'main-portrait';
+  return base;
+}
+
+function applyCurrentBackground() {
+  document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundAssetFor(screen)}.webp?v=${VERSION}')`);
+}
+
+
 function audioFor(target) {
   const bg = backgroundFor(target);
-  if (bg === 'phone') return 'main';
+  if (bg === 'phone') return 'phone';
   if (bg === 'okachimachi') return 'okachimachi';
   return bg;
 }
@@ -258,7 +308,7 @@ function shell(title, body, options = {}) {
 function render() {
   document.body.dataset.screen = screen;
   document.body.dataset.textSize = state?.settings?.textSize || titleSettings.textSize || 'normal';
-  document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundFor(screen)}.webp?v=${VERSION}')`);
+  applyCurrentBackground();
   if (state) {
     const hour = Math.floor(state.game.minutes / 60);
     document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
@@ -269,12 +319,14 @@ function render() {
     loading: renderLoading,
     login: renderLogin,
     title: renderTitle,
+    nameSetup: renderNameSetup,
     settingsTitle: () => renderSettings(true),
     main: renderMain,
     mining: renderMining,
     miningResult: renderMiningResult,
     okachimachi: renderOkachimachi,
     supplier: renderSupplier,
+    looseShop: renderLooseShop,
     realEstate: renderRealEstate,
     workshop: renderWorkshop,
     craft: renderCraft,
@@ -324,14 +376,27 @@ function renderTitle() {
     </main>`;
 }
 
+function renderNameSetup() {
+  return `
+    <main class="title-screen">
+      <section class="title-actions glass-panel name-setup-panel">
+        <h1>名前を入力してください</h1>
+        <p>ゲーム内で使用する名前です。設定から後で変更できます。</p>
+        <label class="name-entry-field">
+          <span>名前</span>
+          <input id="player-name-setup" type="text" maxlength="20" autocomplete="nickname" enterkeyhint="done" placeholder="名前を入力">
+        </label>
+        <button class="primary-button large-button full-button" data-action="confirm-player-name">この名前で始める</button>
+      </section>
+    </main>`;
+}
+
 function renderMain() {
   const unread = state.notifications.filter((note) => note.unread).length;
   const visiting = canServeCustomers()
     ? Object.entries(state.customers).filter(([, customer]) => customer.visiting).map(([id]) => CUSTOMERS[id]?.name)
     : [];
-  const storeButton = state.store.rented
-    ? `<button data-action="nav" data-screen="store"><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`
-    : '<button type="button" disabled aria-disabled="true" title="御徒町の不動産屋で店舗を借りると利用できます"><span>▣</span><strong>店舗</strong><small>未契約</small></button>';
+  const storeButton = `<button data-action="nav" data-screen="store"><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
   return `
     <main class="main-screen">
       ${header('', { back: false, main: false })}
@@ -341,7 +406,6 @@ function renderMain() {
         <button data-action="nav" data-screen="mining"><span>⛏</span><strong>採掘</strong></button>
         <button data-action="nav" data-screen="workshop"><span>⚒</span><strong>工房</strong></button>
         ${storeButton}
-        <button data-action="nav" data-screen="glab"><span>◆</span><strong>g-Lab.</strong></button>
         <button data-action="nav" data-screen="okachimachi"><span>♢</span><strong>御徒町</strong></button>
         <button data-action="nav" data-screen="phone"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
         <button data-action="sleep"><span>☾</span><strong>寝る</strong></button>
@@ -428,20 +492,26 @@ function renderOkachimachi() {
       <section class="action-panel glass-panel">
         <article class="summary-card">
           <h2>御徒町</h2>
-          <p>地金・ルースの購入、原石の売却、店舗を借りるための不動産屋を利用できます。</p>
+          <p>各施設を選んでください。</p>
         </article>
-        <div class="button-stack">
-          <button class="primary-button full-button" data-action="nav" data-screen="supplier">素材屋</button>
-          <button class="secondary-button full-button" data-action="nav" data-screen="realEstate">不動産屋</button>
+        <div class="button-stack okachimachi-facilities">
+          ${facilityButton({ id: 'materialShop', label: '素材屋', screen: 'supplier', primary: true })}
+          ${facilityButton({ id: 'looseShop', label: 'ルース屋', screen: 'looseShop' })}
+          ${facilityButton({ id: 'glab', label: 'g-Lab.', screen: 'glab' })}
+          ${facilityButton({ id: 'jewelryShop', label: 'ジュエリー店', screen: 'jewelryShop' })}
+          ${facilityButton({ id: 'settingShop', label: '空枠屋', screen: 'settingShop' })}
+          ${facilityButton({ id: 'castingShop', label: 'キャスト屋', screen: 'castingShop' })}
+          ${facilityButton({ id: 'realEstate', label: '不動産屋', screen: 'realEstate' })}
+          ${facilityButton({ id: 'recruitment', label: '人材紹介', screen: 'recruitment' })}
         </div>
-        ${state.store.rented ? '<p class="small-note">店舗は契約済みです。不動産屋で契約状況を確認できます。</p>' : '<p class="small-note">店舗を利用するには、不動産屋で店舗を借りてください。</p>'}
+        <p class="small-note">ゲーム開始時に利用できるのは「素材屋」と「g-Lab.」です。ほかの施設は進行に応じて解放されます。</p>
       </section>
-    </div>`, { help: '御徒町では、地金・ルースの購入、原石の売却、店舗の賃貸契約ができます。' });
+    </div>`, { help: '御徒町では施設を選択できます。初期から利用できるのは素材屋とg-Lab.です。' });
 }
 
 function renderSupplier() {
   const requestedTab = screenData.tab || 'metals';
-  const tab = ['metals', 'loose', 'rough'].includes(requestedTab) ? requestedTab : 'metals';
+  const tab = ['metals', 'rough'].includes(requestedTab) ? requestedTab : 'metals';
   const products = tab === 'metals' ? Object.values(METALS) : Object.values(GEMS);
   const isSellingRough = tab === 'rough';
   return shell('素材屋', `
@@ -450,7 +520,6 @@ function renderSupplier() {
       <section class="action-panel glass-panel">
         <div class="tab-row supplier-tabs">
           <button class="${tab === 'metals' ? 'active' : ''}" data-action="supplier-tab" data-tab="metals">地金を買う</button>
-          <button class="${tab === 'loose' ? 'active' : ''}" data-action="supplier-tab" data-tab="loose">ルースを買う</button>
           <button class="${tab === 'rough' ? 'active' : ''}" data-action="supplier-tab" data-tab="rough">原石を売る</button>
         </div>
         <div class="product-list">
@@ -468,31 +537,69 @@ function renderSupplier() {
                 <button class="primary-button" data-action="sell-rough" data-id="${product.id}" ${disabled ? 'disabled' : ''}>1個売る</button>
               </article>`;
             }
-            const kind = tab === 'metals' ? 'metal' : 'loose';
-            const owned = kind === 'metal' ? state.inventory.metals[product.id] : state.inventory.loose[product.id];
+            const owned = state.inventory.metals[product.id];
             const disabled = state.game.money < product.price || !canSpendHours(1);
             return `<article class="product-row">
               <div class="product-main">
-                ${kind === 'loose' ? looseVisual(product.id, 'loose-inline') : '<span class="material-chip">地金</span>'}
-                <div><strong>${esc(product.name)}${kind === 'loose' ? 'ルース' : ''}</strong><small>所持：${owned}個</small></div>
+                <span class="material-chip">地金</span>
+                <div><strong>${esc(product.name)}</strong><small>所持：${owned}個</small></div>
               </div>
               <strong>${yen(product.price)}</strong>
-              <button class="primary-button" data-action="purchase" data-kind="${kind}" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入する</button>
+              <button class="primary-button" data-action="purchase" data-kind="metal" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入する</button>
             </article>`;
           }).join('')}
         </div>
-        <p class="small-note">購入・売却は1回につき1個で、手続きに1時間かかります。原石を購入できる場所はありません。</p>
+        <p class="small-note">素材屋では地金を購入し、採掘した原石を売却できます。原石を購入することはできません。</p>
       </section>
-    </div>`, { help: '素材屋では地金とルースを購入できます。採掘した原石を売却できるのも素材屋だけです。' });
+    </div>`, { help: '素材屋では地金を購入できます。採掘した原石を販売できるのも素材屋だけです。' });
+}
+
+function renderLooseShop() {
+  const products = Object.values(GEMS);
+  return shell('ルース屋', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel">
+        <article class="summary-card">
+          <h2>ルース屋</h2>
+          <p>カット済みのルースを購入できます。</p>
+        </article>
+        <div class="product-list">
+          ${products.map((product) => {
+            const owned = state.inventory.loose[product.id];
+            const disabled = state.game.money < product.price || !canSpendHours(1);
+            return `<article class="product-row">
+              <div class="product-main">
+                ${looseVisual(product.id, 'loose-inline')}
+                <div><strong>${esc(product.name)}ルース</strong><small>所持：${owned}個</small></div>
+              </div>
+              <strong>${yen(product.price)}</strong>
+              <button class="primary-button" data-action="purchase" data-kind="loose" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入する</button>
+            </article>`;
+          }).join('')}
+        </div>
+        <p class="small-note">購入は1回につき1個で、手続きに1時間かかります。</p>
+      </section>
+    </div>`, { help: 'ルース屋ではカット済みのルースを購入できます。初期状態では利用できません。' });
 }
 
 function renderRealEstate() {
   if (state.store.rented) {
+    if (!state.store.name) {
+      return shell('不動産屋', `
+        <section class="center-card glass-panel expansion-card">
+          <h1>店舗名を決める</h1>
+          <p>契約済みの最初の店舗に、店名を設定してください。</p>
+          ${storeNameEntry('confirm-store-name', 'この店名を登録する')}
+        </section>`, { help: '最初の店舗は本店として登録されます。店名は空欄では登録できません。' });
+    }
     return shell('不動産屋', `
       <section class="center-card glass-panel expansion-card">
-        <h1>小さな店舗を契約中です。</h1>
+        <h1>${esc(storeDisplayName())}</h1>
+        <p>小さな店舗を契約中です。</p>
         <p>${state.store.rentedDay || 1}日目から店舗を利用しています。</p>
         <div class="stat-grid">
+          <div><small>支店区分</small><strong>${esc(storeBranchLabel(state.store.branchNumber))}</strong></div>
           <div><small>ショーケース</small><strong>${state.store.showcaseCount}枠</strong></div>
           <div><small>完成品保管</small><strong>${state.inventory.capacity}点</strong></div>
         </div>
@@ -504,20 +611,26 @@ function renderRealEstate() {
   return shell('不動産屋', `
     <section class="center-card glass-panel expansion-card">
       <h1>店舗を借りる</h1>
-      <p>最初は店舗を持っていません。商品を販売したり、お客様を接客したりするには店舗の契約が必要です。</p>
+      <p>商品を販売したり、お客様を接客したりするには、店名を決めて店舗を契約する必要があります。</p>
       <article class="summary-card">
         <h2>小さな店舗</h2>
         <p>ショーケース3枠・完成品保管10点の小さな店舗です。</p>
         <div class="result-stats">
           <span>契約費：${yen(STORE_LEASE_COST)}</span>
           <span>手続き：1時間</span>
+          <span>支店区分：本店</span>
         </div>
       </article>
-      <button class="primary-button full-button" data-action="rent-store" ${affordable && hasTime ? '' : 'disabled'}>この店舗を借りる</button>
+      <label class="name-entry-field">
+        <span>店舗名</span>
+        <input id="store-name-input" type="text" maxlength="30" autocomplete="organization" enterkeyhint="done" placeholder="店舗名を入力">
+      </label>
+      <p class="small-note">最初の店舗は「本店」として登録されます。今後の支店は「2号店」「3号店」のように区別します。</p>
+      <button class="primary-button full-button" data-action="rent-store" ${affordable && hasTime ? '' : 'disabled'}>この店名で本店を借りる</button>
       ${affordable ? '' : `<p class="error-text">契約費が${yen(STORE_LEASE_COST - state.game.money)}足りません。</p>`}
       ${hasTime ? '' : '<p class="error-text">今日は契約手続きをする時間がありません。</p>'}
       <p class="small-note">この基本版では、契約時に費用を支払い、その後の毎日の家賃は発生しません。</p>
-    </section>`, { help: '御徒町の不動産屋で店舗を契約すると、ショーケースへの陳列とお客様の接客が利用できます。' });
+    </section>`, { help: '店名を決めて店舗を契約すると、最初の店舗が本店として登録されます。' });
 }
 
 function renderWorkshop() {
@@ -535,15 +648,13 @@ function renderWorkshop() {
           <div><small>地金</small><strong>${metalTotal}個</strong></div>
           <div><small>完成品</small><strong>${stored}/${state.inventory.capacity}</strong></div>
         </div>
-        <div class="button-stack">
-          <button class="primary-button large-button" data-action="open-craft">ジュエリーを作る</button>
-          <button class="secondary-button large-button" data-action="nav" data-screen="polishing" ${state.tools.polishingMachine ? '' : 'disabled'}>原石を研磨する</button>
-          ${state.tools.polishingMachine ? '' : '<button class="secondary-button large-button" data-action="nav" data-screen="glab">g-Lab.で研磨機を見る</button>'}
-          <button class="secondary-button large-button" data-action="nav" data-screen="inventory">材料・完成品を見る</button>
+        <div class="button-stack workshop-menu">
+          <button class="primary-button large-button" data-action="nav" data-screen="polishing" ${state.tools.polishingMachine ? '' : 'disabled'}>原石研磨</button>
+          <button class="primary-button large-button" data-action="open-craft">ジュエリー作成</button>
         </div>
-        ${state.tools.polishingMachine ? '' : '<p class="small-note">原石研磨には、g-Lab.で購入できる研磨機が必要です。</p>'}
+        ${state.tools.polishingMachine ? '' : '<p class="small-note">原石研磨には、御徒町のg-Lab.で購入できる研磨機が必要です。</p>'}
       </section>
-    </div>`, { help: 'ルースと地金でジュエリーを制作できます。研磨機があれば原石をルースへ加工できます。' });
+    </div>`, { help: '工房では、原石研磨とジュエリー作成を行えます。原石研磨には研磨機が必要です。' });
 }
 
 function renderPolishing() {
@@ -552,8 +663,8 @@ function renderPolishing() {
       <section class="center-card glass-panel">
         <h1>研磨機がありません。</h1>
         <p>原石をルースへ加工するには、g-Lab.で原石研磨機を購入してください。</p>
-        <button class="primary-button full-button" data-action="nav" data-screen="glab">g-Lab.へ行く</button>
-      </section>`, { help: '原石研磨機はg-Lab.で購入できます。' });
+        <button class="primary-button full-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>
+      </section>`, { help: '原石研磨機は御徒町のg-Lab.で購入できます。' });
   }
   if (!GEMS[selectedPolishing]) selectedPolishing = Object.keys(GEMS)[0];
   const roughOwned = state.inventory.rough[selectedPolishing] || 0;
@@ -716,16 +827,35 @@ function renderFinishedItems() {
 }
 
 function renderStore() {
-  if (!state.store.rented) {
-    return shell('店舗', '<div class="empty-state"><strong>まだ店舗を借りていません。</strong><p>御徒町の不動産屋で店舗を契約すると利用できます。</p><button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button></div>');
+  const branches = Array.isArray(state.store.branches)
+    ? state.store.branches.filter((branch) => branch && Number(branch.number) >= 1).sort((a, b) => a.number - b.number)
+    : [];
+
+  if (!branches.length) {
+    return shell('店舗', '<div class="empty-state store-empty-state"><strong>現在店舗はありません</strong></div>');
   }
+
+  const branchId = screenData.branchId;
+  if (!branchId) {
+    return shell('店舗', `
+      <section class="center-card glass-panel store-branch-menu">
+        <h1>${esc(state.store.name || '店舗')}</h1>
+        <div class="button-stack">
+          ${branches.map((branch) => `<button class="primary-button full-button" data-action="open-store-branch" data-id="${esc(branch.id)}">${esc(branch.label || storeBranchLabel(branch.number))}</button>`).join('')}
+        </div>
+      </section>`, { help: '開く店舗を選択してください。店舗を増やすと、本店・2号店・3号店の順に表示されます。' });
+  }
+
+  const branch = branches.find((entry) => entry.id === branchId) || branches[0];
+  const displayName = `${branch.name || state.store.name} ${branch.label || storeBranchLabel(branch.number)}`.trim();
   const activeVisitors = canServeCustomers() ? Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting) : [];
   const canExpand = expansionEligible();
   const available = state.inventory.jewelry.filter((item) => item.status === 'stored');
-  return shell('店舗', `
+  return shell(displayName, `
     <div class="store-layout">
       <section class="store-scene"></section>
       <section class="store-panel glass-panel">
+        <h1 class="store-name-title">${esc(displayName)}</h1>
         <div class="store-summary">
           <div><small>店舗評価</small><strong>★ ${state.store.rating.toFixed(1)}</strong></div>
           <div><small>累計販売</small><strong>${state.store.salesCount}点</strong></div>
@@ -777,11 +907,18 @@ function renderCustomer() {
     .sort((a, b) => b.score - a.score);
   const activeOrders = state.orders.filter((order) => !['完了', '取消'].includes(order.status)).length;
   const orderLimit = state.store.expanded ? 2 : 1;
+  const playerGreeting = state.playerName ? `${state.playerName}さん、こんにちは。` : '';
+  const storeGreeting = state.store.name
+    ? customerState.met
+      ? `また${storeDisplayName()}に伺いました。`
+      : `${storeDisplayName()}で相談できると聞いて来ました。`
+    : '';
+  const customerOpening = `${playerGreeting}${storeGreeting}${customer.opening}`;
   return shell(customer.name, `
     <div class="customer-layout">
       <section class="customer-stage"><div class="customer-placeholder"><span>人物画像</span><small>後から透過画像を重ねられます</small></div></section>
       <section class="dialog-panel glass-panel">
-        <p class="dialog-text">${esc(customer.opening)}</p>
+        <p class="dialog-text">${esc(customerOpening)}</p>
         <article class="request-card"><small>希望</small><strong>${esc(customer.preferenceText)}</strong><span>予算：${yen(customer.request.budget)}</span></article>
         <h2>商品を見せる</h2>
         ${candidates.length ? `<div class="candidate-list">${candidates.slice(0, 4).map(({ item, score }) => `<article><div><strong>${esc(item.name)}</strong><small>${score >= 4 ? 'ぴったり' : score >= 2 ? 'おすすめ' : '少し違う'}・${yen(item.recommendedPrice)}</small></div><button class="primary-button" data-action="customer-buy" data-customer="${customerId}" data-id="${item.id}">見せる</button></article>`).join('')}</div>` : '<p class="small-note">販売できる完成品がありません。</p>'}
@@ -818,7 +955,8 @@ function renderExpansion() {
   const eligible = expansionEligible();
   return shell('店舗情報', `
     <section class="center-card glass-panel expansion-card">
-      <h1>${state.store.expanded ? '拡張済みの店舗' : '小さな店舗'}</h1>
+      <h1>${esc(storeDisplayName())}</h1>
+      <p>${state.store.expanded ? '拡張済みの店舗' : '小さな店舗'}・${esc(storeBranchLabel(state.store.branchNumber))}</p>
       <div class="stat-grid">
         <div><small>ショーケース</small><strong>${state.store.showcaseCount}枠</strong></div>
         <div><small>完成品保管</small><strong>${state.inventory.capacity}点</strong></div>
@@ -912,6 +1050,15 @@ function renderSettings(titleMode) {
 function renderSettingsForm(titleMode, compact) {
   const settings = titleMode ? titleSettings : state.settings;
   return `<div class="settings-form ${compact ? 'compact' : ''}">
+    ${!titleMode ? `<section class="player-name-setting">
+      <label><span>プレイヤー名</span><input type="text" maxlength="20" autocomplete="nickname" value="${esc(state.playerName || '')}" data-player-name-input></label>
+      <button class="secondary-button full-button" data-action="update-player-name">名前を変更</button>
+    </section>
+    ${state.store.rented ? `<section class="store-name-setting">
+      <label><span>店舗名</span><input type="text" maxlength="30" autocomplete="organization" value="${esc(state.store.name || '')}" data-store-name-input></label>
+      <small>店舗名は本店・2号店・3号店など、すべての支店に共通で反映されます。</small>
+      <button class="secondary-button full-button" data-action="update-store-name">店舗名を変更</button>
+    </section>` : ''}` : ''}
     <label><span>音楽</span><input type="range" min="0" max="1" step="0.05" value="${settings.bgmVolume}" data-setting="bgmVolume" data-title-mode="${titleMode}"></label>
     <label><span>環境音</span><input type="range" min="0" max="1" step="0.05" value="${settings.ambientVolume}" data-setting="ambientVolume" data-title-mode="${titleMode}"></label>
     <label><span>効果音</span><input type="range" min="0" max="1" step="0.05" value="${settings.sfxVolume}" data-setting="sfxVolume" data-title-mode="${titleMode}"></label>
@@ -1110,8 +1257,8 @@ function craft() {
 
 function placeItem(itemId) {
   if (!state.store.rented) {
-    showToast('先に御徒町の不動産屋で店舗を借りてください。', 'error');
-    return setScreen('realEstate');
+    showToast(facilityUnlocked('realEstate') ? '先に御徒町の不動産屋で店舗を借りてください。' : '不動産屋はまだ利用できません。', 'error');
+    return setScreen('okachimachi');
   }
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
   if (!item || item.status !== 'stored') return showToast('この商品は並べられません。', 'error');
@@ -1121,7 +1268,7 @@ function placeItem(itemId) {
   item.status = 'displayed';
   saveGame();
   showToast('商品をショーケースに並べました。');
-  setScreen('store', {}, false);
+  setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false);
 }
 
 function removeShowcase(slotIndex) {
@@ -1175,12 +1322,13 @@ function customerBuy(customerId, itemId) {
     customerState.purchases += 1;
     customerState.relation = customerState.purchases >= 3 ? '常連客' : 'リピーター';
     addFinance(`${customer.name}さんへ販売`, price, 0);
-    showModal({ title: '商品を購入していただきました。', body: `<p>${esc(item.name)}</p><p>売上：${yen(price)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
+    const proposalMessage = state.playerName ? `<p>${esc(state.playerName)}さんのご提案を気に入っていただけました。</p>` : '';
+    showModal({ title: '商品を購入していただきました。', body: `${proposalMessage}<p>${esc(item.name)}</p><p>売上：${yen(price)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
   } else {
     showModal({ title: '今回は購入されませんでした。', body: '<p>希望とは少し違ったようです。注文を受けなくても、また来店することがあります。</p>', confirm: '閉じる', action: 'modal-close', hideCancel: true });
   }
   saveGame();
-  setTimeout(() => { if (screen === 'customer') setScreen('store', {}, false); }, 50);
+  setTimeout(() => { if (screen === 'customer') setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false); }, 50);
 }
 
 function acceptOrder(customerId) {
@@ -1205,7 +1353,7 @@ function acceptOrder(customerId) {
   customerState.met = true;
   customerState.visiting = false;
   customerState.lastVisitDay = state.game.day;
-  addNotification('注文を受けました', `${customer.name}さんの注文は${order.deadlineDay}日目が納期です。`);
+  addNotification('注文を受けました', `${storeDisplayName()}で受けた${customer.name}さんの注文は${order.deadlineDay}日目が納期です。`);
   saveGame();
   showToast('注文を受けました。');
   setScreen('orders', {}, false);
@@ -1218,7 +1366,7 @@ function ignoreCustomer(customerId) {
   customerState.ignoredToday = true;
   saveGame();
   showToast('今回は対応しませんでした。');
-  setScreen('store', {}, false);
+  setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false);
 }
 
 function deliverOrder(orderId) {
@@ -1245,19 +1393,29 @@ function deliverOrder(orderId) {
 }
 
 function rentStore() {
-  if (state.store.rented) return setScreen('store', {}, false);
+  if (state.store.rented) return setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false);
+  const input = document.querySelector('#store-name-input');
+  const storeName = String(input?.value || '').trim().slice(0, 30);
+  if (!storeName) {
+    showToast('店舗名を入力してください。', 'error');
+    input?.focus();
+    return;
+  }
   if (state.game.money < STORE_LEASE_COST) return showToast('店舗の契約費が足りません。', 'error');
   if (!canSpendHours(1)) return showToast('今日は契約手続きをする時間がありません。', 'error');
   state.game.money -= STORE_LEASE_COST;
   spendHours(1);
+  state.store.name = storeName;
+  state.store.branchNumber = 1;
   state.store.rented = true;
   state.store.rentedDay = state.game.day;
-  addFinance('小さな店舗を契約', 0, STORE_LEASE_COST);
-  addNotification('店舗を借りました', '完成品をショーケースに並べられるようになりました。');
+  state.store.branches = [{ id: 'branch-1', number: 1, label: '本店', name: storeName, rentedDay: state.game.day }];
+  addFinance(`${storeName} 本店を契約`, 0, STORE_LEASE_COST);
+  addNotification('店舗を借りました', `${storeName} 本店を開店できるようになりました。`);
   saveGame();
   playSfx('success');
-  showToast('小さな店舗を借りました。');
-  setScreen('store', {}, false);
+  showToast(`${storeName} 本店を借りました。`);
+  setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false);
 }
 
 function expansionEligible() {
@@ -1351,19 +1509,19 @@ function scheduleCustomerVisit() {
   const employeeBonus = state.employee.hired && state.employee.working && state.employee.role === 'service' ? 0.12 : 0;
   if (!state.customers.misaki.met && state.game.day >= 2 && Math.random() < 0.38 + employeeBonus) {
     state.customers.misaki.visiting = true;
-    addNotification('お客様が来店しています', `${CUSTOMERS.misaki.name}さんが店舗に来ています。`);
+    addNotification('お客様が来店しています', `${CUSTOMERS.misaki.name}さんが${storeDisplayName()}に来ています。`);
     return;
   }
   if (state.customers.misaki.met && !state.customers.kenta.met && state.game.day >= 3 && Math.random() < 0.32 + employeeBonus) {
     state.customers.kenta.visiting = true;
-    addNotification('お客様が来店しています', `${CUSTOMERS.kenta.name}さんが店舗に来ています。`);
+    addNotification('お客様が来店しています', `${CUSTOMERS.kenta.name}さんが${storeDisplayName()}に来ています。`);
     return;
   }
   const known = Object.keys(CUSTOMERS).filter((id) => state.customers[id].met && state.game.day - (state.customers[id].lastVisitDay || 0) >= 3);
   if (known.length && Math.random() < 0.18 + employeeBonus) {
     const id = known[Math.floor(Math.random() * known.length)];
     state.customers[id].visiting = true;
-    addNotification('お客様が来店しています', `${CUSTOMERS[id].name}さんが店舗に来ています。`);
+    addNotification('お客様が来店しています', `${CUSTOMERS[id].name}さんが${storeDisplayName()}に来ています。`);
   }
 }
 
@@ -1378,6 +1536,28 @@ function updateOrderNotifications() {
 
 function confirmSleep() {
   showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function beginSleepTransition() {
+  if (sleepTransitioning) return;
+  sleepTransitioning = true;
+  closeModal();
+
+  // 操作直後から静かな就寝用BGMへ切り替える。
+  await switchAudio('sleep');
+
+  // 一瞬だけ完全な暗転を挟んでから翌日の結果画面へ進む。
+  sleepCurtainEl?.classList.add('active');
+  await wait(700);
+  settleDay();
+  await wait(320);
+  sleepCurtainEl?.classList.remove('active');
+  await wait(260);
+  sleepTransitioning = false;
 }
 
 async function deleteSave() {
@@ -1430,13 +1610,101 @@ root.addEventListener('click', async (event) => {
         state = loadGame();
         if (!state) return showToast('セーブデータを読み込めませんでした。', 'error');
         navigation = [];
-        setScreen('main', {}, false);
+        setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
       } else {
         startNewGame();
       }
       break;
-    case 'nav': setScreen(button.dataset.screen, button.dataset.screen === 'supplier' ? { tab: button.dataset.tab || 'metals' } : {}); break;
+    case 'confirm-player-name': {
+      const input = document.querySelector('#player-name-setup');
+      const name = String(input?.value || '').trim().slice(0, 20);
+      if (!name) {
+        showToast('名前を入力してください。', 'error');
+        input?.focus();
+        break;
+      }
+      state.playerName = name;
+      saveGame();
+      setScreen('main', {}, false);
+      showToast(`${name}さん、ようこそ。`);
+      break;
+    }
+    case 'update-player-name': {
+      const input = document.querySelector('[data-player-name-input]');
+      const name = String(input?.value || '').trim().slice(0, 20);
+      if (!name) {
+        showToast('名前を入力してください。', 'error');
+        input?.focus();
+        break;
+      }
+      state.playerName = name;
+      saveGame();
+      showToast('名前を変更しました。');
+      render();
+      break;
+    }
+    case 'update-store-name': {
+      if (!state.store.rented) {
+        showToast('店舗を借りてから変更できます。', 'error');
+        break;
+      }
+      const input = document.querySelector('[data-store-name-input]');
+      const storeName = String(input?.value || '').trim().slice(0, 30);
+      if (!storeName) {
+        showToast('店舗名を入力してください。', 'error');
+        input?.focus();
+        break;
+      }
+      state.store.name = storeName;
+      state.store.branches = (state.store.branches || []).map((branch) => ({ ...branch, name: storeName }));
+      saveGame();
+      showToast(`店舗名を「${storeName}」へ変更しました。`);
+      render();
+      break;
+    }
+    case 'nav': {
+      const target = button.dataset.screen;
+      const facilityByScreen = { supplier: 'materialShop', looseShop: 'looseShop', glab: 'glab', realEstate: 'realEstate' };
+      const facilityId = facilityByScreen[target];
+      if (facilityId && !facilityUnlocked(facilityId)) {
+        showToast('この施設はまだ利用できません。', 'error');
+        break;
+      }
+      setScreen(target, target === 'supplier' ? { tab: button.dataset.tab || 'metals' } : {});
+      break;
+    }
+    case 'open-store-branch': {
+      const branch = (state.store.branches || []).find((entry) => entry.id === button.dataset.id);
+      if (!branch) break;
+      state.store.branchNumber = Math.max(1, Number(branch.number) || 1);
+      saveGame();
+      setScreen('store', { branchId: branch.id });
+      break;
+    }
     case 'rent-store': rentStore(); break;
+    case 'confirm-store-name': {
+      const input = document.querySelector('#store-name-input');
+      const storeName = String(input?.value || '').trim().slice(0, 30);
+      if (!storeName) {
+        showToast('店舗名を入力してください。', 'error');
+        input?.focus();
+        break;
+      }
+      state.store.name = storeName;
+      state.store.branchNumber = Math.max(1, Number(state.store.branchNumber) || 1);
+      const branchNumber = state.store.branchNumber;
+      const existing = state.store.branches.find((branch) => branch.number === branchNumber);
+      if (existing) {
+        existing.name = storeName;
+        existing.label = storeBranchLabel(branchNumber);
+      } else {
+        state.store.branches.push({ id: `branch-${branchNumber}`, number: branchNumber, label: storeBranchLabel(branchNumber), name: storeName, rentedDay: state.store.rentedDay || state.game.day });
+      }
+      saveGame();
+      showToast(`${storeDisplayName()}を登録しました。`);
+      render();
+      break;
+    }
     case 'back': goBack(); break;
     case 'main': goMain(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
@@ -1474,7 +1742,7 @@ root.addEventListener('click', async (event) => {
     case 'employee-role': state.employee.role = button.dataset.role; saveGame(); render(); break;
     case 'phone-tab': phoneTab = button.dataset.tab; render(); saveGame(); break;
     case 'sleep': confirmSleep(); break;
-    case 'do-sleep': closeModal(); settleDay(); break;
+    case 'do-sleep': await beginSleepTransition(); break;
     case 'next-day': goMain(); break;
     case 'delete-save': showModal({ title: 'セーブデータを消しますか？', body: '<p>この操作は元に戻せません。</p>', confirm: '消す', cancel: 'キャンセル', danger: true, action: 'delete-save-confirmed' }); break;
     case 'delete-save-confirmed': await deleteSave(); break;
@@ -1512,6 +1780,18 @@ root.addEventListener('change', (event) => {
   }
 });
 
+root.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter') return;
+  const target = event.target;
+  if (target?.id === 'player-name-setup') {
+    event.preventDefault();
+    root.querySelector('[data-action="confirm-player-name"]')?.click();
+  } else if (target?.matches?.('[data-player-name-input]')) {
+    event.preventDefault();
+    root.querySelector('[data-action="update-player-name"]')?.click();
+  }
+});
+
 root.addEventListener('input', (event) => {
   const target = event.target;
   if (!target.matches('[data-setting]') || target.type !== 'range') return;
@@ -1528,8 +1808,8 @@ function startNewGame() {
   navigation = [];
   craftDraft = null;
   completionId = null;
-  saveGame();
-  setScreen('main', {}, false);
+  setScreen('nameSetup', {}, false);
+  requestAnimationFrame(() => document.querySelector('#player-name-setup')?.focus());
 }
 
 window.addEventListener('beforeunload', () => saveLocalBackup());
@@ -1591,6 +1871,8 @@ async function boot() {
 }
 
 boot();
+window.addEventListener('resize', applyCurrentBackground);
+window.addEventListener('orientationchange', applyCurrentBackground);
 
 modalEl.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
@@ -1601,7 +1883,7 @@ modalEl.addEventListener('click', async (event) => {
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;
     case 'craft': craft(); break;
-    case 'do-sleep': closeModal(); settleDay(); break;
+    case 'do-sleep': await beginSleepTransition(); break;
     case 'delete-save-confirmed': await deleteSave(); break;
     default: break;
   }

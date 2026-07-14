@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jewelrygame-clean-v0.6.3';
+const CACHE_NAME = 'jewelrygame-clean-v0.7.5';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const APP_SHELL = [
   './js/firebase-config.js',
   './js/firebase-service.js',
   './assets/images/main.webp',
+  './assets/images/main-portrait.webp',
   './assets/images/mining.webp',
   './assets/images/workshop.webp',
   './assets/images/store.webp',
@@ -44,6 +45,7 @@ const APP_SHELL = [
   './assets/audio/bgm-store.ogg',
   './assets/audio/bgm-glab.ogg',
   './assets/audio/bgm-okachimachi.ogg',
+  './assets/audio/bgm-phone.ogg',
   './assets/audio/bgm-sleep.ogg',
   './assets/audio/amb-main.ogg',
   './assets/audio/amb-mining.ogg',
@@ -51,6 +53,7 @@ const APP_SHELL = [
   './assets/audio/amb-store.ogg',
   './assets/audio/amb-glab.ogg',
   './assets/audio/amb-okachimachi.ogg',
+  './assets/audio/amb-phone.ogg',
   './assets/audio/amb-sleep.ogg',
   './assets/audio/sfx-select.ogg',
   './assets/audio/sfx-impact.ogg',

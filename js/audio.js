@@ -5,9 +5,9 @@ const ambients = {};
 const sfx = {};
 let currentKey = null;
 let initialized = false;
-let settingsProvider = () => ({ bgmVolume: .45, ambientVolume: .35, sfxVolume: .65, bgmMuted: false, ambientMuted: false, sfxMuted: false });
+let settingsProvider = () => ({ bgmVolume: .75, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false });
 
-const keys = ['main', 'mining', 'workshop', 'store', 'glab', 'okachimachi', 'sleep'];
+const keys = ['main', 'mining', 'workshop', 'store', 'glab', 'okachimachi', 'phone', 'sleep'];
 for (const key of keys) {
   const bgm = new Audio(`${AUDIO_DIR}/bgm-${key}.ogg`);
   bgm.loop = true; bgm.preload = 'auto'; tracks[key] = bgm;
@@ -32,10 +32,44 @@ export async function unlockAudio() {
   } catch (_) {}
 }
 
+const BGM_SCALE = {
+  main: 1,
+  mining: .98,
+  workshop: .96,
+  store: .94,
+  glab: .96,
+  okachimachi: .98,
+  phone: .92,
+  sleep: .64,
+};
+
+const AMBIENT_SCALE = {
+  main: .92,
+  mining: 1,
+  workshop: 1,
+  store: .90,
+  glab: .94,
+  okachimachi: 1,
+  phone: .88,
+  sleep: .56,
+};
+
+function targetVolume(kind, key, settings) {
+  const muted = kind === 'bgm' ? settings.bgmMuted : settings.ambientMuted;
+  if (muted) return 0;
+  const base = Number(kind === 'bgm' ? settings.bgmVolume : settings.ambientVolume) || 0;
+  const scale = (kind === 'bgm' ? BGM_SCALE : AMBIENT_SCALE)[key] ?? 1;
+  return Math.max(0, Math.min(1, base * scale));
+}
+
 export function applyAudioSettings() {
-  const s = settingsProvider();
-  Object.values(tracks).forEach((a) => { a.volume = s.bgmMuted ? 0 : Number(s.bgmVolume); });
-  Object.values(ambients).forEach((a) => { a.volume = s.ambientMuted ? 0 : Number(s.ambientVolume); });
+  const settings = settingsProvider();
+  Object.entries(tracks).forEach(([key, audio]) => {
+    audio.volume = targetVolume('bgm', key, settings);
+  });
+  Object.entries(ambients).forEach(([key, audio]) => {
+    audio.volume = targetVolume('ambient', key, settings);
+  });
 }
 
 function fade(audio, target, duration = 450) {
@@ -67,11 +101,11 @@ export async function switchAudio(key) {
   const ambient = ambients[key];
   if (track) {
     track.volume = 0;
-    try { await track.play(); fade(track, s.bgmMuted ? 0 : Number(s.bgmVolume), 550); } catch (_) {}
+    try { await track.play(); fade(track, targetVolume('bgm', key, s), 550); } catch (_) {}
   }
   if (ambient) {
     ambient.volume = 0;
-    try { await ambient.play(); fade(ambient, s.ambientMuted ? 0 : Number(s.ambientVolume), 550); } catch (_) {}
+    try { await ambient.play(); fade(ambient, targetVolume('ambient', key, s), 550); } catch (_) {}
   }
 }
 

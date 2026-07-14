@@ -1,5 +1,8 @@
-export const VERSION = '0.5.5';
+export const VERSION = '0.6.2';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
+export const STORE_LEASE_COST = 10000;
+export const POLISHING_MACHINE_PRICE = 30000;
+export const POLISHING_HOURS = 2;
 
 export const METALS = {
   silver: { id: 'silver', name: 'シルバー', price: 3000 },
@@ -141,6 +144,11 @@ export function roundThousand(value) {
   return Math.max(1000, Math.round(Number(value || 0) / 1000) * 1000);
 }
 
+export function roughSalePrice(gemId) {
+  const gem = GEMS[gemId];
+  return gem ? roundThousand(gem.price * 0.35) : 0;
+}
+
 export function recommendedPrice({ item, gem, metal, design, finish, quality }) {
   return roundThousand(
     ITEMS[item].basePrice
@@ -179,12 +187,19 @@ export function initialState() {
     },
     artisan: { level: 1, xp: 0 },
     inventory: {
-      gems: Object.fromEntries(Object.keys(GEMS).map((key) => [key, 0])),
+      rough: Object.fromEntries(Object.keys(GEMS).map((key) => [key, 0])),
+      loose: Object.fromEntries(Object.keys(GEMS).map((key) => [key, 0])),
       metals: Object.fromEntries(Object.keys(METALS).map((key) => [key, 0])),
       jewelry: [],
       capacity: 10,
     },
+    tools: {
+      polishingMachine: false,
+      polishingMachineDay: null,
+    },
     store: {
+      rented: false,
+      rentedDay: null,
       expanded: false,
       showcaseCount: 3,
       showcases: [null, null, null],
@@ -203,7 +218,7 @@ export function initialState() {
     employee: { hired: false, name: '田中 葵', role: 'sales', working: true },
     notifications: [],
     finance: [],
-    daily: { mined: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 },
+    daily: { mined: [], polished: [], roughSold: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 },
     settings: {
       bgmVolume: 0.45,
       ambientVolume: 0.3,
@@ -249,10 +264,11 @@ export function migrateState(saved) {
     ...(Array.isArray(legacy.inventory?.general) ? legacy.inventory.general : []),
     ...(Array.isArray(legacy.inventory?.loose) ? legacy.inventory.loose : []),
   ];
+  const migratedLooseRows = Object.fromEntries(Object.keys(GEMS).map((key) => [key, 0]));
   for (const row of legacyGemRows) {
     const key = row?.key || row?.gem;
-    if (key && Object.prototype.hasOwnProperty.call(state.inventory.gems, key)) {
-      state.inventory.gems[key] += Math.max(0, Number(row.qty) || 1);
+    if (key && Object.prototype.hasOwnProperty.call(migratedLooseRows, key)) {
+      migratedLooseRows[key] += Math.max(0, Number(row.qty) || 1);
     }
   }
 
@@ -264,8 +280,34 @@ export function migrateState(saved) {
   state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
   state.game.screen = 'main';
 
-  state.inventory.gems = { ...initialState().inventory.gems, ...(state.inventory.gems || {}) };
+  const savedRough = state.inventory.rough && !Array.isArray(state.inventory.rough) ? state.inventory.rough : {};
+  const savedLoose = state.inventory.loose && !Array.isArray(state.inventory.loose) ? state.inventory.loose : {};
+  state.inventory.rough = { ...initialState().inventory.rough, ...savedRough };
+  state.inventory.loose = { ...initialState().inventory.loose, ...savedLoose };
+  for (const key of Object.keys(GEMS)) state.inventory.loose[key] += migratedLooseRows[key];
+  // v0.5.9以前の「宝石」在庫は購入品と採掘品が混在していたため、利用不能にならないようルースへ引き継ぐ。
+  if (legacy.inventory?.gems && !legacy.inventory?.rough && !legacy.inventory?.loose) {
+    for (const key of Object.keys(GEMS)) {
+      state.inventory.loose[key] += Math.max(0, Number(legacy.inventory.gems[key]) || 0);
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(state.inventory, 'gems')) delete state.inventory.gems;
   state.inventory.metals = { ...initialState().inventory.metals, ...(state.inventory.metals || {}) };
+  state.tools = { ...initialState().tools, ...(state.tools || {}) };
+  state.tools.polishingMachine = Boolean(state.tools.polishingMachine);
+  state.tools.polishingMachineDay = state.tools.polishingMachine ? (Number(state.tools.polishingMachineDay) || 1) : null;
+  // v0.5.8より店舗は不動産で契約してから利用する。旧セーブは実際の店舗利用履歴がある場合のみ契約済みとして引き継ぐ。
+  if (typeof legacy.store?.rented !== 'boolean') {
+    const usedStore = Number(state.store.salesCount) > 0
+      || Number(state.store.totalRevenue) > 0
+      || (Array.isArray(state.store.showcases) && state.store.showcases.some(Boolean))
+      || (Array.isArray(state.orders) && state.orders.length > 0)
+      || Object.values(state.customers || {}).some((customer) => customer?.met || customer?.visiting);
+    state.store.rented = Boolean(usedStore);
+  } else {
+    state.store.rented = legacy.store.rented;
+  }
+  state.store.rentedDay = state.store.rented ? (Number(state.store.rentedDay) || 1) : null;
   state.inventory.jewelry = Array.isArray(state.inventory.jewelry) ? state.inventory.jewelry.filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal] && DESIGNS[entry.design] && FINISHES[entry.finish] && QUALITIES[entry.quality]) : [];
   state.store.showcaseCount = state.store.expanded ? 5 : 3;
   state.inventory.capacity = state.store.expanded ? 20 : 10;
@@ -283,7 +325,19 @@ export function migrateState(saved) {
     unread: note?.unread !== false,
   }));
   state.finance = Array.isArray(state.finance) ? state.finance.slice(-50) : [];
-  state.daily = state.daily || { mined: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 };
+  state.daily = {
+    mined: Array.isArray(state.daily?.mined) ? state.daily.mined : [],
+    polished: Array.isArray(state.daily?.polished) ? state.daily.polished : [],
+    roughSold: Array.isArray(state.daily?.roughSold) ? state.daily.roughSold : [],
+    crafted: Array.isArray(state.daily?.crafted) ? state.daily.crafted : [],
+    sold: Array.isArray(state.daily?.sold) ? state.daily.sold : [],
+    visitors: Number(state.daily?.visitors) || 0,
+    income: Number(state.daily?.income) || 0,
+    expense: Number(state.daily?.expense) || 0,
+  };
+  if (!state.store.rented) {
+    Object.values(state.customers).forEach((customer) => { customer.visiting = false; });
+  }
 
   // 主人公像・顔アイコン・キャラクター選択は使用しない。
   for (const key of ['player', 'profile', 'character', 'avatar', 'customization', 'characterCustomize', 'onboardingComplete']) {

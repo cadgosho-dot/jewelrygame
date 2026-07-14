@@ -1,7 +1,7 @@
 import {
-  VERSION, SAVE_KEY, METALS, GEMS, ITEMS, DESIGNS, FINISHES, QUALITIES,
+  VERSION, SAVE_KEY, STORE_LEASE_COST, POLISHING_MACHINE_PRICE, POLISHING_HOURS, METALS, GEMS, ITEMS, DESIGNS, FINISHES, QUALITIES,
   PRICE_MODES, MINING_LOCATIONS, CUSTOMERS, initialState, migrateState,
-  recommendedPrice, productionCost, productionHours, itemName, roundThousand,
+  recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice,
   clock, nextWeather,
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, playSfx, vibrate } from './audio.js';
@@ -21,6 +21,7 @@ let navigation = [];
 let craftDraft = null;
 let completionId = null;
 let selectedMining = 'river';
+let selectedPolishing = 'garnet';
 let phoneTab = 'orders';
 let titleSettings = loadTitleSettings();
 let currentUser = null;
@@ -110,10 +111,16 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value) || 0));
 }
 
-function gemVisual(id, className = 'gem-thumb', alt = '') {
+function roughVisual(id, className = 'gem-thumb', alt = '') {
   const gem = GEMS[id];
   if (!gem) return '';
-  return `<img class="${className}" src="./assets/images/gems/${gem.id}.png" alt="${esc(alt || gem.name)}">`;
+  return `<img class="${className}" src="./assets/images/gems/${gem.id}.png" alt="${esc(alt || `${gem.name}原石`)}">`;
+}
+
+function looseVisual(id, className = 'loose-inline', alt = '') {
+  const gem = GEMS[id];
+  if (!gem) return '';
+  return `<span class="${className}" style="--gem:${gem.hue}" role="img" aria-label="${esc(alt || `${gem.name}ルース`)}">◆</span>`;
 }
 
 function showToast(message, type = 'info') {
@@ -125,10 +132,10 @@ function showToast(message, type = 'info') {
   playSfx(type === 'error' ? 'error' : 'select');
 }
 
-function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャンセル', danger = false, hideCancel = false, action = '' }) {
+function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャンセル', danger = false, hideCancel = false, action = '', className = '' }) {
   modalEl.innerHTML = `
     <div class="modal-backdrop">
-      <section class="modal-card" role="dialog" aria-modal="true">
+      <section class="modal-card ${esc(className)}" role="dialog" aria-modal="true">
         ${title ? `<h2>${esc(title)}</h2>` : ''}
         <div class="modal-body">${body}</div>
         <div class="modal-actions">
@@ -161,6 +168,14 @@ function canSpendHours(hours) {
   return state.game.minutes + hours * 60 <= 22 * 60;
 }
 
+function hasCraftedJewelry() {
+  return Boolean(state && (state.artisan.xp > 0 || state.inventory.jewelry.length > 0 || state.store.salesCount > 0));
+}
+
+function canServeCustomers() {
+  return Boolean(state?.store?.rented && hasCraftedJewelry());
+}
+
 function spendHours(hours) {
   state.game.minutes = Math.min(22 * 60, state.game.minutes + hours * 60);
 }
@@ -172,7 +187,7 @@ function weatherIcon(label) {
 function backgroundFor(target) {
   const map = {
     loading: 'main', login: 'main', title: 'main', main: 'main', mining: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'workshop', completion: 'workshop', inventory: 'workshop', glab: 'glab', supplier: 'okachimachi',
+    craft: 'workshop', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', glab: 'glab', okachimachi: 'okachimachi', supplier: 'okachimachi', realEstate: 'okachimachi',
     store: 'store', customer: 'store', orders: 'store', expansion: 'store', employee: 'store',
     phone: 'phone', settings: 'main', settingsTitle: 'main', dayResult: 'sleep',
   };
@@ -212,15 +227,19 @@ function goMain() {
 }
 
 function header(title, { back = true, main = true, help = '' } = {}) {
+  const isMainMenu = !title && !back && !main;
   return `
-    <header class="game-header">
-      <div class="status-left" aria-label="時間と天気">
-        <span class="header-time">${clock(state.game.minutes)}</span>
-        <span class="header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
+    <header class="game-header ${isMainMenu ? 'main-header' : ''}">
+      <div class="status-left" aria-label="時間、天気、日数">
+        <div class="status-top-line">
+          <span class="header-time">${clock(state.game.minutes)}</span>
+          <span class="header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
+        </div>
+        ${isMainMenu ? `<span class="header-day">${state.game.day}日目</span>` : ''}
       </div>
       <div class="header-center">
         ${back ? '<button class="icon-button" data-action="back" aria-label="戻る">←</button>' : ''}
-        <div class="header-title"><strong>${esc(title)}</strong><small>${state.game.day}日目</small></div>
+        ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
       </div>
       <div class="header-right">
         <div class="header-actions">
@@ -254,9 +273,12 @@ function render() {
     main: renderMain,
     mining: renderMining,
     miningResult: renderMiningResult,
+    okachimachi: renderOkachimachi,
     supplier: renderSupplier,
+    realEstate: renderRealEstate,
     workshop: renderWorkshop,
     craft: renderCraft,
+    polishing: renderPolishing,
     completion: renderCompletion,
     inventory: renderInventory,
     glab: renderGlab,
@@ -304,7 +326,12 @@ function renderTitle() {
 
 function renderMain() {
   const unread = state.notifications.filter((note) => note.unread).length;
-  const visiting = Object.entries(state.customers).filter(([, customer]) => customer.visiting).map(([id]) => CUSTOMERS[id]?.name);
+  const visiting = canServeCustomers()
+    ? Object.entries(state.customers).filter(([, customer]) => customer.visiting).map(([id]) => CUSTOMERS[id]?.name)
+    : [];
+  const storeButton = state.store.rented
+    ? `<button data-action="nav" data-screen="store"><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`
+    : '<button type="button" disabled aria-disabled="true" title="御徒町の不動産屋で店舗を借りると利用できます"><span>▣</span><strong>店舗</strong><small>未契約</small></button>';
   return `
     <main class="main-screen">
       ${header('', { back: false, main: false })}
@@ -313,9 +340,9 @@ function renderMain() {
       <nav class="main-menu" aria-label="行動">
         <button data-action="nav" data-screen="mining"><span>⛏</span><strong>採掘</strong></button>
         <button data-action="nav" data-screen="workshop"><span>⚒</span><strong>工房</strong></button>
-        <button data-action="nav" data-screen="store"><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>
+        ${storeButton}
         <button data-action="nav" data-screen="glab"><span>◆</span><strong>g-Lab.</strong></button>
-        <button data-action="nav" data-screen="supplier"><span>♢</span><strong>御徒町</strong></button>
+        <button data-action="nav" data-screen="okachimachi"><span>♢</span><strong>御徒町</strong></button>
         <button data-action="nav" data-screen="phone"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
         <button data-action="sleep"><span>☾</span><strong>寝る</strong></button>
       </nav>
@@ -344,18 +371,18 @@ function renderMining() {
         <button class="primary-button full-button" data-action="mine" ${canSpendHours(location.hours) ? '' : 'disabled'}>採掘する</button>
         ${canSpendHours(location.hours) ? '' : '<p class="error-text">今日は採掘する時間がありません。</p>'}
       </section>
-    </div>`, { help: '採掘場所を選び、「採掘する」を押すと宝石を入手できます。' });
+    </div>`, { help: '採掘場所を選び、「採掘する」を押すと原石を入手できます。' });
 }
 
 function renderMiningResult() {
   const result = screenData.result;
   return shell('採掘結果', `
     <section class="center-card glass-panel result-card">
-      <div class="gem-symbol">${result ? gemVisual(result.gem, 'gem-result-image') : '<span class="gem-empty-dot">·</span>'}</div>
+      <div class="gem-symbol">${result ? roughVisual(result.gem, 'gem-result-image') : '<span class="gem-empty-dot">·</span>'}</div>
       ${result ? `
-        <h1>${esc(GEMS[result.gem].name)}を見つけました。</h1>
+        <h1>${esc(GEMS[result.gem].name)}の原石を見つけました。</h1>
         <p>入手数：${result.qty}個</p>` : `
-        <h1>今回は宝石が見つかりませんでした。</h1>
+        <h1>今回は原石が見つかりませんでした。</h1>
         <p>次の採掘では見つかりやすくなります。</p>`}
       <div class="button-stack">
         <button class="primary-button" data-action="mine-again">もう一度採掘する</button>
@@ -365,13 +392,25 @@ function renderMiningResult() {
 }
 
 function renderGlab() {
+  const machineOwned = state.tools.polishingMachine;
+  const canBuyMachine = state.game.money >= POLISHING_MACHINE_PRICE && canSpendHours(1);
   return shell('g-Lab.', `
     <div class="split-layout">
       <section class="scene-space"></section>
       <section class="action-panel glass-panel">
         <article class="summary-card">
           <h2>g-Lab.</h2>
-          <p>工房や制作に関する機能へ移動できます。</p>
+          <p>工房設備や制作に関する道具を購入できます。</p>
+        </article>
+        <article class="summary-card">
+          <h2>原石研磨機</h2>
+          <p>工房で原石を研磨し、ジュエリー制作に使えるルースへ加工できます。</p>
+          ${machineOwned
+            ? `<p class="success-text">購入済みです。${state.tools.polishingMachineDay || 1}日目から使用できます。</p>`
+            : `<div class="result-stats"><span>価格：${yen(POLISHING_MACHINE_PRICE)}</span><span>購入手続き：1時間</span></div>
+               <button class="primary-button full-button" data-action="buy-polishing-machine" ${canBuyMachine ? '' : 'disabled'}>研磨機を購入する</button>
+               ${state.game.money >= POLISHING_MACHINE_PRICE ? '' : `<p class="error-text">所持金が${yen(POLISHING_MACHINE_PRICE - state.game.money)}足りません。</p>`}
+               ${canSpendHours(1) ? '' : '<p class="error-text">今日は購入手続きをする時間がありません。</p>'}`}
         </article>
         <div class="button-stack">
           <button class="primary-button full-button" data-action="nav" data-screen="workshop">工房へ</button>
@@ -379,42 +418,111 @@ function renderGlab() {
           <button class="secondary-button full-button" data-action="glab-info">g-Lab.について</button>
         </div>
       </section>
-    </div>`, { help: 'g-Lab.から工房や材料・完成品の確認画面へ移動できます。' });
+    </div>`, { help: 'g-Lab.では原石研磨機などの工房設備を購入できます。' });
 }
 
-function renderSupplier() {
-  const tab = screenData.tab || 'metals';
-  const products = tab === 'metals' ? Object.values(METALS) : Object.values(GEMS);
-  return shell('仕入れ', `
+function renderOkachimachi() {
+  return shell('御徒町', `
     <div class="split-layout">
       <section class="scene-space"></section>
       <section class="action-panel glass-panel">
-        <div class="tab-row">
-          <button class="${tab === 'metals' ? 'active' : ''}" data-action="supplier-tab" data-tab="metals">地金</button>
-          <button class="${tab === 'gems' ? 'active' : ''}" data-action="supplier-tab" data-tab="gems">宝石</button>
+        <article class="summary-card">
+          <h2>御徒町</h2>
+          <p>地金・ルースの購入、原石の売却、店舗を借りるための不動産屋を利用できます。</p>
+        </article>
+        <div class="button-stack">
+          <button class="primary-button full-button" data-action="nav" data-screen="supplier">素材屋</button>
+          <button class="secondary-button full-button" data-action="nav" data-screen="realEstate">不動産屋</button>
+        </div>
+        ${state.store.rented ? '<p class="small-note">店舗は契約済みです。不動産屋で契約状況を確認できます。</p>' : '<p class="small-note">店舗を利用するには、不動産屋で店舗を借りてください。</p>'}
+      </section>
+    </div>`, { help: '御徒町では、地金・ルースの購入、原石の売却、店舗の賃貸契約ができます。' });
+}
+
+function renderSupplier() {
+  const requestedTab = screenData.tab || 'metals';
+  const tab = ['metals', 'loose', 'rough'].includes(requestedTab) ? requestedTab : 'metals';
+  const products = tab === 'metals' ? Object.values(METALS) : Object.values(GEMS);
+  const isSellingRough = tab === 'rough';
+  return shell('素材屋', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel">
+        <div class="tab-row supplier-tabs">
+          <button class="${tab === 'metals' ? 'active' : ''}" data-action="supplier-tab" data-tab="metals">地金を買う</button>
+          <button class="${tab === 'loose' ? 'active' : ''}" data-action="supplier-tab" data-tab="loose">ルースを買う</button>
+          <button class="${tab === 'rough' ? 'active' : ''}" data-action="supplier-tab" data-tab="rough">原石を売る</button>
         </div>
         <div class="product-list">
           ${products.map((product) => {
-            const kind = tab === 'metals' ? 'metal' : 'gem';
-            const owned = tab === 'metals' ? state.inventory.metals[product.id] : state.inventory.gems[product.id];
+            if (isSellingRough) {
+              const owned = state.inventory.rough[product.id];
+              const price = roughSalePrice(product.id);
+              const disabled = owned < 1 || !canSpendHours(1);
+              return `<article class="product-row">
+                <div class="product-main">
+                  ${roughVisual(product.id, 'gem-inline')}
+                  <div><strong>${esc(product.name)}原石</strong><small>所持：${owned}個</small></div>
+                </div>
+                <strong>${yen(price)}</strong>
+                <button class="primary-button" data-action="sell-rough" data-id="${product.id}" ${disabled ? 'disabled' : ''}>1個売る</button>
+              </article>`;
+            }
+            const kind = tab === 'metals' ? 'metal' : 'loose';
+            const owned = kind === 'metal' ? state.inventory.metals[product.id] : state.inventory.loose[product.id];
             const disabled = state.game.money < product.price || !canSpendHours(1);
             return `<article class="product-row">
               <div class="product-main">
-                ${kind === 'gem' ? gemVisual(product.id, 'gem-inline') : '<span class="material-chip">地金</span>'}
-                <div><strong>${esc(product.name)}</strong><small>所持：${owned}個</small></div>
+                ${kind === 'loose' ? looseVisual(product.id, 'loose-inline') : '<span class="material-chip">地金</span>'}
+                <div><strong>${esc(product.name)}${kind === 'loose' ? 'ルース' : ''}</strong><small>所持：${owned}個</small></div>
               </div>
               <strong>${yen(product.price)}</strong>
               <button class="primary-button" data-action="purchase" data-kind="${kind}" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入する</button>
             </article>`;
           }).join('')}
         </div>
-        <p class="small-note">購入すると1時間進みます。1回の購入で1個増えます。</p>
+        <p class="small-note">購入・売却は1回につき1個で、手続きに1時間かかります。原石を購入できる場所はありません。</p>
       </section>
-    </div>`, { help: '地金または宝石を1個ずつ購入できます。購入すると1時間進みます。' });
+    </div>`, { help: '素材屋では地金とルースを購入できます。採掘した原石を売却できるのも素材屋だけです。' });
+}
+
+function renderRealEstate() {
+  if (state.store.rented) {
+    return shell('不動産屋', `
+      <section class="center-card glass-panel expansion-card">
+        <h1>小さな店舗を契約中です。</h1>
+        <p>${state.store.rentedDay || 1}日目から店舗を利用しています。</p>
+        <div class="stat-grid">
+          <div><small>ショーケース</small><strong>${state.store.showcaseCount}枠</strong></div>
+          <div><small>完成品保管</small><strong>${state.inventory.capacity}点</strong></div>
+        </div>
+        <button class="primary-button full-button" data-action="nav" data-screen="store">店舗へ行く</button>
+      </section>`, { help: '御徒町の不動産屋で、契約済みの店舗情報を確認できます。' });
+  }
+  const affordable = state.game.money >= STORE_LEASE_COST;
+  const hasTime = canSpendHours(1);
+  return shell('不動産屋', `
+    <section class="center-card glass-panel expansion-card">
+      <h1>店舗を借りる</h1>
+      <p>最初は店舗を持っていません。商品を販売したり、お客様を接客したりするには店舗の契約が必要です。</p>
+      <article class="summary-card">
+        <h2>小さな店舗</h2>
+        <p>ショーケース3枠・完成品保管10点の小さな店舗です。</p>
+        <div class="result-stats">
+          <span>契約費：${yen(STORE_LEASE_COST)}</span>
+          <span>手続き：1時間</span>
+        </div>
+      </article>
+      <button class="primary-button full-button" data-action="rent-store" ${affordable && hasTime ? '' : 'disabled'}>この店舗を借りる</button>
+      ${affordable ? '' : `<p class="error-text">契約費が${yen(STORE_LEASE_COST - state.game.money)}足りません。</p>`}
+      ${hasTime ? '' : '<p class="error-text">今日は契約手続きをする時間がありません。</p>'}
+      <p class="small-note">この基本版では、契約時に費用を支払い、その後の毎日の家賃は発生しません。</p>
+    </section>`, { help: '御徒町の不動産屋で店舗を契約すると、ショーケースへの陳列とお客様の接客が利用できます。' });
 }
 
 function renderWorkshop() {
-  const gemTotal = Object.values(state.inventory.gems).reduce((a, b) => a + b, 0);
+  const roughTotal = Object.values(state.inventory.rough).reduce((a, b) => a + b, 0);
+  const looseTotal = Object.values(state.inventory.loose).reduce((a, b) => a + b, 0);
   const metalTotal = Object.values(state.inventory.metals).reduce((a, b) => a + b, 0);
   const stored = state.inventory.jewelry.filter((item) => item.status !== 'sold').length;
   return shell('工房', `
@@ -422,17 +530,56 @@ function renderWorkshop() {
       <section class="scene-space"></section>
       <section class="action-panel glass-panel">
         <div class="stat-grid">
-          <div><small>宝石</small><strong>${gemTotal}個</strong></div>
+          <div><small>原石</small><strong>${roughTotal}個</strong></div>
+          <div><small>ルース</small><strong>${looseTotal}個</strong></div>
           <div><small>地金</small><strong>${metalTotal}個</strong></div>
           <div><small>完成品</small><strong>${stored}/${state.inventory.capacity}</strong></div>
-          <div><small>職人</small><strong>レベル${state.artisan.level}</strong></div>
         </div>
         <div class="button-stack">
           <button class="primary-button large-button" data-action="open-craft">ジュエリーを作る</button>
+          <button class="secondary-button large-button" data-action="nav" data-screen="polishing" ${state.tools.polishingMachine ? '' : 'disabled'}>原石を研磨する</button>
+          ${state.tools.polishingMachine ? '' : '<button class="secondary-button large-button" data-action="nav" data-screen="glab">g-Lab.で研磨機を見る</button>'}
           <button class="secondary-button large-button" data-action="nav" data-screen="inventory">材料・完成品を見る</button>
         </div>
+        ${state.tools.polishingMachine ? '' : '<p class="small-note">原石研磨には、g-Lab.で購入できる研磨機が必要です。</p>'}
       </section>
-    </div>`, { help: '所持している宝石と地金を使い、ジュエリーを作れます。' });
+    </div>`, { help: 'ルースと地金でジュエリーを制作できます。研磨機があれば原石をルースへ加工できます。' });
+}
+
+function renderPolishing() {
+  if (!state.tools.polishingMachine) {
+    return shell('原石研磨', `
+      <section class="center-card glass-panel">
+        <h1>研磨機がありません。</h1>
+        <p>原石をルースへ加工するには、g-Lab.で原石研磨機を購入してください。</p>
+        <button class="primary-button full-button" data-action="nav" data-screen="glab">g-Lab.へ行く</button>
+      </section>`, { help: '原石研磨機はg-Lab.で購入できます。' });
+  }
+  if (!GEMS[selectedPolishing]) selectedPolishing = Object.keys(GEMS)[0];
+  const roughOwned = state.inventory.rough[selectedPolishing] || 0;
+  const canPolish = roughOwned > 0 && canSpendHours(POLISHING_HOURS);
+  return shell('原石研磨', `
+    <section class="wide-panel glass-panel">
+      <div class="choice-grid many polishing-grid">
+        ${Object.values(GEMS).map((gem) => `<button class="choice-card ${selectedPolishing === gem.id ? 'selected' : ''}" data-action="select-polishing" data-id="${gem.id}">
+          <span class="choice-visual">${roughVisual(gem.id, 'choice-gem')}</span>
+          <strong>${esc(gem.name)}</strong><small>原石 ${state.inventory.rough[gem.id]}個</small>
+        </button>`).join('')}
+      </div>
+      <article class="summary-card polishing-summary">
+        <div>${roughVisual(selectedPolishing, 'polishing-rough')}</div>
+        <div class="polishing-arrow">→</div>
+        <div>${looseVisual(selectedPolishing, 'polishing-loose')}</div>
+        <div class="polishing-copy">
+          <h2>${esc(GEMS[selectedPolishing].name)}原石を研磨</h2>
+          <p>原石1個から、同種のルース1個を作ります。</p>
+          <div class="result-stats"><span>加工時間：${POLISHING_HOURS}時間</span><span>ルース所持：${state.inventory.loose[selectedPolishing]}個</span></div>
+        </div>
+      </article>
+      <button class="primary-button full-button" data-action="polish-rough" ${canPolish ? '' : 'disabled'}>原石を1個研磨する</button>
+      ${roughOwned > 0 ? '' : '<p class="error-text">選択した原石を持っていません。</p>'}
+      ${canSpendHours(POLISHING_HOURS) ? '' : '<p class="error-text">今日は研磨する時間がありません。</p>'}
+    </section>`, { help: '原石1個を消費し、ジュエリー制作に使えるルース1個へ加工します。' });
 }
 
 function defaultDraft(orderId = null) {
@@ -440,7 +587,7 @@ function defaultDraft(orderId = null) {
   return {
     orderId,
     item: order?.item || 'ring',
-    gem: order?.gem || firstOwned(state.inventory.gems, 'amethyst'),
+    gem: order?.gem || firstOwned(state.inventory.loose, 'amethyst'),
     metal: order?.metal || firstOwned(state.inventory.metals, 'silver'),
     design: order?.design || 'simple',
     finish: 'mirror',
@@ -454,9 +601,9 @@ function firstOwned(collection, fallback) {
 function craftChoice(label, group, entries, current, locked = false) {
   return `<fieldset class="craft-field"><legend>${esc(label)}</legend><div class="choice-grid ${Object.keys(entries).length > 3 ? 'many' : 'three'}">
     ${Object.values(entries).map((entry) => {
-      const owned = group === 'gem' ? state.inventory.gems[entry.id] : group === 'metal' ? state.inventory.metals[entry.id] : null;
+      const owned = group === 'gem' ? state.inventory.loose[entry.id] : group === 'metal' ? state.inventory.metals[entry.id] : null;
       return `<button type="button" class="choice-card ${current === entry.id ? 'selected' : ''}" data-action="craft-choice" data-group="${group}" data-id="${entry.id}" ${locked && current !== entry.id ? 'disabled' : ''}>
-        ${group === 'gem' ? `<span class="choice-visual">${gemVisual(entry.id, 'choice-gem')}</span>` : ''}
+        ${group === 'gem' ? `<span class="choice-visual">${looseVisual(entry.id, 'choice-loose')}</span>` : ''}
         <strong>${esc(entry.name)}</strong>${owned !== null ? `<small>所持 ${owned}</small>` : ''}
       </button>`;
     }).join('')}
@@ -472,7 +619,7 @@ function renderCraft() {
   const cost = productionCost(craftDraft);
   const quality = expectedQuality();
   const price = recommendedPrice({ ...craftDraft, quality });
-  const enoughGem = state.inventory.gems[craftDraft.gem] > 0;
+  const enoughGem = state.inventory.loose[craftDraft.gem] > 0;
   const enoughMetal = state.inventory.metals[craftDraft.metal] > 0;
   const capacityOk = state.inventory.jewelry.filter((item) => item.status !== 'sold').length < state.inventory.capacity;
   const canCraft = enoughGem && enoughMetal && capacityOk && canSpendHours(hours);
@@ -494,19 +641,20 @@ function renderCraft() {
       </section>
       <section class="craft-options glass-panel">
         ${craftChoice('アイテム', 'item', ITEMS, craftDraft.item, locked)}
-        ${craftChoice('宝石', 'gem', GEMS, craftDraft.gem, locked)}
+        ${craftChoice('ルース', 'gem', GEMS, craftDraft.gem, locked)}
         ${craftChoice('地金', 'metal', METALS, craftDraft.metal, locked)}
         ${craftChoice('デザイン', 'design', DESIGNS, craftDraft.design, locked)}
         ${craftChoice('仕上げ', 'finish', FINISHES, craftDraft.finish, false)}
         <div class="validation-list">
-          ${enoughGem ? '' : `<p>・${esc(GEMS[craftDraft.gem].name)}を持っていません。</p>`}
+          ${enoughGem ? '' : `<p>・${esc(GEMS[craftDraft.gem].name)}のルースを持っていません。</p>`}
           ${enoughMetal ? '' : `<p>・${esc(METALS[craftDraft.metal].name)}を持っていません。</p>`}
           ${capacityOk ? '' : '<p>・完成品の保管場所に空きがありません。</p>'}
           ${canSpendHours(hours) ? '' : '<p>・今日は制作する時間がありません。</p>'}
         </div>
         <button class="primary-button full-button" data-action="confirm-craft" ${canCraft ? '' : 'disabled'}>制作する</button>
-        ${!enoughGem ? '<button class="secondary-button full-button" data-action="nav" data-screen="mining">採掘へ</button>' : ''}
-        ${!enoughMetal ? '<button class="secondary-button full-button" data-action="nav" data-screen="supplier">仕入れへ</button>' : ''}
+        ${!enoughGem && state.tools.polishingMachine && state.inventory.rough[craftDraft.gem] > 0 ? '<button class="secondary-button full-button" data-action="nav" data-screen="polishing">原石を研磨する</button>' : ''}
+        ${!enoughGem ? '<button class="secondary-button full-button" data-action="nav" data-screen="supplier" data-tab="loose">素材屋でルースを見る</button>' : ''}
+        ${!enoughMetal ? '<button class="secondary-button full-button" data-action="nav" data-screen="supplier" data-tab="metals">素材屋で地金を見る</button>' : ''}
       </section>
     </div>`, { help: '上から項目を選び、「制作する」を押します。専門的な技術操作や失敗はありません。' });
 }
@@ -526,7 +674,7 @@ function renderCompletion() {
         <span>経験値：＋${jewelry.xp}</span>
       </div>
       <div class="button-stack">
-        ${jewelry.status === 'order' ? `<button class="primary-button" data-action="nav" data-screen="orders">注文を見る</button>` : `<button class="primary-button" data-action="place-from-completion" data-id="${jewelry.id}">店舗に並べる</button>`}
+        ${jewelry.status === 'order' ? `<button class="primary-button" data-action="nav" data-screen="orders">注文を見る</button>` : state.store.rented ? `<button class="primary-button" data-action="place-from-completion" data-id="${jewelry.id}">店舗に並べる</button>` : '<button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>'}
         <button class="secondary-button" data-action="nav" data-screen="inventory">保管する</button>
         <button class="secondary-button" data-action="open-craft">もう一度作る</button>
         <button class="text-button" data-action="nav" data-screen="workshop">工房へ戻る</button>
@@ -543,12 +691,13 @@ function renderInventory() {
         <button class="${tab === 'materials' ? 'active' : ''}" data-action="inventory-tab" data-tab="materials">材料</button>
       </div>
       ${tab === 'materials' ? renderMaterials() : renderFinishedItems()}
-    </section>`, { help: '完成品と、所持している宝石・地金を確認できます。' });
+    </section>`, { help: '完成品と、所持している原石・ルース・地金を確認できます。' });
 }
 
 function renderMaterials() {
-  return `<div class="materials-grid">
-    <section><h2>宝石</h2>${Object.values(GEMS).map((gem) => `<div class="material-row"><span class="material-name">${gemVisual(gem.id, 'gem-inline')}<span>${esc(gem.name)}</span></span><strong>${state.inventory.gems[gem.id]}個</strong></div>`).join('')}</section>
+  return `<div class="materials-grid materials-grid-three">
+    <section><h2>原石</h2>${Object.values(GEMS).map((gem) => `<div class="material-row"><span class="material-name">${roughVisual(gem.id, 'gem-inline')}<span>${esc(gem.name)}</span></span><strong>${state.inventory.rough[gem.id]}個</strong></div>`).join('')}</section>
+    <section><h2>ルース</h2>${Object.values(GEMS).map((gem) => `<div class="material-row"><span class="material-name">${looseVisual(gem.id, 'loose-mini')}<span>${esc(gem.name)}</span></span><strong>${state.inventory.loose[gem.id]}個</strong></div>`).join('')}</section>
     <section><h2>地金</h2>${Object.values(METALS).map((metal) => `<div class="material-row"><span>${esc(metal.name)}</span><strong>${state.inventory.metals[metal.id]}個</strong></div>`).join('')}</section>
   </div>`;
 }
@@ -561,13 +710,16 @@ function renderFinishedItems() {
     return `<article class="jewelry-card">
       <div class="small-jewelry metal-${item.metal}" style="--gem:${GEMS[item.gem].hue}"><span>${ITEMS[item.item].symbol}</span><i>◆</i></div>
       <div><h3>${esc(item.name)}</h3><p>${esc(QUALITIES[item.quality].name)}・${yen(item.recommendedPrice)}</p><small>状態：${status}</small></div>
-      ${item.status === 'stored' ? `<button class="primary-button" data-action="place-item" data-id="${item.id}">店舗に並べる</button>` : ''}
+      ${item.status === 'stored' ? state.store.rented ? `<button class="primary-button" data-action="place-item" data-id="${item.id}">店舗に並べる</button>` : '<button class="secondary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>' : ''}
     </article>`;
   }).join('')}</div>`;
 }
 
 function renderStore() {
-  const activeVisitors = Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting);
+  if (!state.store.rented) {
+    return shell('店舗', '<div class="empty-state"><strong>まだ店舗を借りていません。</strong><p>御徒町の不動産屋で店舗を契約すると利用できます。</p><button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button></div>');
+  }
+  const activeVisitors = canServeCustomers() ? Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting) : [];
   const canExpand = expansionEligible();
   const available = state.inventory.jewelry.filter((item) => item.status === 'stored');
   return shell('店舗', `
@@ -579,6 +731,7 @@ function renderStore() {
           <div><small>累計販売</small><strong>${state.store.salesCount}点</strong></div>
           <div><small>累計売上</small><strong>${yen(state.store.totalRevenue)}</strong></div>
         </div>
+        ${hasCraftedJewelry() ? '' : '<section class="visitor-box"><h2>接客はまだ利用できません。</h2><p>まず工房でジュエリーを1点制作してください。制作後からお客様が来店するようになります。</p><button class="secondary-button" data-action="nav" data-screen="workshop">工房へ</button></section>'}
         ${activeVisitors.length ? `<section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>` : ''}
         <h2>ショーケース</h2>
         <div class="showcase-grid">${state.store.showcases.map((slot, index) => renderShowcaseSlot(slot, index)).join('')}</div>
@@ -612,6 +765,8 @@ function renderShowcaseSlot(slot, index) {
 }
 
 function renderCustomer() {
+  if (!state.store.rented) return shell('お客様', '<div class="empty-state"><strong>店舗を借りてから接客できます。</strong><p>御徒町の不動産屋で契約してください。</p><button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button></div>');
+  if (!hasCraftedJewelry()) return shell('お客様', '<div class="empty-state"><strong>まだ接客できません。</strong><p>工房でジュエリーを1点制作すると接客が解放されます。</p><button class="primary-button" data-action="nav" data-screen="workshop">工房へ</button></div>');
   const customerId = screenData.customerId;
   const customer = CUSTOMERS[customerId];
   const customerState = state.customers[customerId];
@@ -659,6 +814,7 @@ function renderOrders() {
 }
 
 function renderExpansion() {
+  if (!state.store.rented) return shell('店舗情報', '<div class="empty-state"><strong>店舗を借りてから確認できます。</strong><p>御徒町の不動産屋で契約してください。</p><button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button></div>');
   const eligible = expansionEligible();
   return shell('店舗情報', `
     <section class="center-card glass-panel expansion-card">
@@ -683,6 +839,7 @@ function renderExpansion() {
 }
 
 function renderEmployee() {
+  if (!state.store.rented) return shell('店員', '<div class="empty-state"><strong>店舗を借りてから利用できます。</strong></div>');
   if (!state.store.expanded) return shell('店員', '<div class="empty-state"><strong>店舗拡張後に利用できます。</strong></div>');
   return shell('店員', `
     <section class="center-card glass-panel employee-card">
@@ -775,7 +932,9 @@ function renderDayResult() {
       <section class="sleep-card glass-panel">
         <h1>${result.day}日目の結果</h1>
         <div class="result-list">
-          <div><span>採掘</span><strong>${result.mined.length ? result.mined.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、') : 'なし'}</strong></div>
+          <div><span>採掘した原石</span><strong>${result.mined.length ? result.mined.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、') : 'なし'}</strong></div>
+          <div><span>研磨</span><strong>${result.polished?.length ? result.polished.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、') : 'なし'}</strong></div>
+          <div><span>原石売却</span><strong>${result.roughSold?.length || 0}個</strong></div>
           <div><span>制作</span><strong>${result.crafted.length}点</strong></div>
           <div><span>販売</span><strong>${result.sold.length}点</strong></div>
           <div><span>来店人数</span><strong>${result.visitors}人</strong></div>
@@ -807,7 +966,7 @@ function mine() {
   if (success) {
     const gem = weightedPick(location.gems);
     const qty = Math.random() < 0.18 ? 2 : 1;
-    state.inventory.gems[gem] += qty;
+    state.inventory.rough[gem] += qty;
     state.daily.mined.push({ gem, qty });
     state.miningMisses = 0;
     result = { gem, qty };
@@ -822,17 +981,64 @@ function mine() {
 }
 
 function purchase(kind, id) {
-  const product = kind === 'metal' ? METALS[id] : GEMS[id];
-  if (!product) return;
-  if (!canSpendHours(1)) return showToast('今日は仕入れに行く時間がありません。', 'error');
+  const product = kind === 'metal' ? METALS[id] : kind === 'loose' ? GEMS[id] : null;
+  if (!product) return showToast('この商品は購入できません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
   if (state.game.money < product.price) return showToast('所持金が足りません。', 'error');
   state.game.money -= product.price;
   if (kind === 'metal') state.inventory.metals[id] += 1;
-  else state.inventory.gems[id] += 1;
+  else state.inventory.loose[id] += 1;
   spendHours(1);
-  addFinance(`${product.name}を購入`, 0, product.price);
+  addFinance(`${product.name}${kind === 'loose' ? 'ルース' : ''}を購入`, 0, product.price);
   saveGame();
-  showToast(`${product.name}を購入しました。`);
+  showToast(`${product.name}${kind === 'loose' ? 'ルース' : ''}を購入しました。`);
+  render();
+}
+
+function sellRough(id) {
+  const gem = GEMS[id];
+  if (!gem || state.inventory.rough[id] < 1) return showToast('売却できる原石がありません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は売却手続きをする時間がありません。', 'error');
+  const price = roughSalePrice(id);
+  state.inventory.rough[id] -= 1;
+  state.game.money += price;
+  spendHours(1);
+  state.daily.roughSold.push({ gem: id, qty: 1, price });
+  addFinance(`${gem.name}原石を素材屋へ売却`, price, 0);
+  saveGame();
+  showToast(`${gem.name}原石を${yen(price)}で売却しました。`);
+  render();
+}
+
+function buyPolishingMachine() {
+  if (state.tools.polishingMachine) return showToast('研磨機は購入済みです。');
+  if (state.game.money < POLISHING_MACHINE_PRICE) return showToast('研磨機を購入する所持金が足りません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
+  state.game.money -= POLISHING_MACHINE_PRICE;
+  spendHours(1);
+  state.tools.polishingMachine = true;
+  state.tools.polishingMachineDay = state.game.day;
+  addFinance('g-Lab.で原石研磨機を購入', 0, POLISHING_MACHINE_PRICE);
+  addNotification('原石研磨機を購入しました', '工房で原石をルースへ研磨できるようになりました。');
+  saveGame();
+  playSfx('success');
+  showToast('原石研磨機を購入しました。');
+  render();
+}
+
+function polishRough() {
+  const gem = GEMS[selectedPolishing];
+  if (!state.tools.polishingMachine) return showToast('原石研磨機が必要です。', 'error');
+  if (!gem || state.inventory.rough[selectedPolishing] < 1) return showToast('選択した原石を持っていません。', 'error');
+  if (!canSpendHours(POLISHING_HOURS)) return showToast('今日は研磨する時間がありません。', 'error');
+  state.inventory.rough[selectedPolishing] -= 1;
+  state.inventory.loose[selectedPolishing] += 1;
+  spendHours(POLISHING_HOURS);
+  state.daily.polished.push({ gem: selectedPolishing, qty: 1 });
+  saveGame();
+  playSfx('success');
+  vibrate([35, 25, 55]);
+  showToast(`${gem.name}原石をルースへ研磨しました。`);
   render();
 }
 
@@ -853,7 +1059,7 @@ function confirmCraft() {
   const hours = productionHours(craftDraft, state.employee);
   showModal({
     title: 'この内容で制作しますか？',
-    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>${esc(GEMS[craftDraft.gem].name)}1個・${esc(METALS[craftDraft.metal].name)}1個を使用します。</p>`,
+    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>${esc(GEMS[craftDraft.gem].name)}ルース1個・${esc(METALS[craftDraft.metal].name)}1個を使用します。</p>`,
     confirm: '制作する', action: 'craft',
   });
 }
@@ -862,9 +1068,9 @@ function craft() {
   closeModal();
   const hours = productionHours(craftDraft, state.employee);
   if (!canSpendHours(hours)) return showToast('今日は制作する時間がありません。', 'error');
-  if (state.inventory.gems[craftDraft.gem] < 1 || state.inventory.metals[craftDraft.metal] < 1) return showToast('材料が足りません。', 'error');
+  if (state.inventory.loose[craftDraft.gem] < 1 || state.inventory.metals[craftDraft.metal] < 1) return showToast('材料が足りません。', 'error');
   if (state.inventory.jewelry.filter((item) => item.status !== 'sold').length >= state.inventory.capacity) return showToast('完成品の保管場所に空きがありません。', 'error');
-  state.inventory.gems[craftDraft.gem] -= 1;
+  state.inventory.loose[craftDraft.gem] -= 1;
   state.inventory.metals[craftDraft.metal] -= 1;
   spendHours(hours);
   const quality = qualityRoll();
@@ -903,6 +1109,10 @@ function craft() {
 }
 
 function placeItem(itemId) {
+  if (!state.store.rented) {
+    showToast('先に御徒町の不動産屋で店舗を借りてください。', 'error');
+    return setScreen('realEstate');
+  }
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
   if (!item || item.status !== 'stored') return showToast('この商品は並べられません。', 'error');
   const emptySlot = state.store.showcases.findIndex((slot) => !slot);
@@ -942,6 +1152,7 @@ function removeJewelry(itemId) {
 }
 
 function customerBuy(customerId, itemId) {
+  if (!canServeCustomers()) return showToast('現在は接客できません。', 'error');
   const customer = CUSTOMERS[customerId];
   const customerState = state.customers[customerId];
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
@@ -973,6 +1184,7 @@ function customerBuy(customerId, itemId) {
 }
 
 function acceptOrder(customerId) {
+  if (!canServeCustomers()) return showToast('現在は接客できません。', 'error');
   const customer = CUSTOMERS[customerId];
   const customerState = state.customers[customerId];
   const active = state.orders.filter((order) => order.status !== '完了').length;
@@ -1032,8 +1244,24 @@ function deliverOrder(orderId) {
   render();
 }
 
+function rentStore() {
+  if (state.store.rented) return setScreen('store', {}, false);
+  if (state.game.money < STORE_LEASE_COST) return showToast('店舗の契約費が足りません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は契約手続きをする時間がありません。', 'error');
+  state.game.money -= STORE_LEASE_COST;
+  spendHours(1);
+  state.store.rented = true;
+  state.store.rentedDay = state.game.day;
+  addFinance('小さな店舗を契約', 0, STORE_LEASE_COST);
+  addNotification('店舗を借りました', '完成品をショーケースに並べられるようになりました。');
+  saveGame();
+  playSfx('success');
+  showToast('小さな店舗を借りました。');
+  setScreen('store', {}, false);
+}
+
 function expansionEligible() {
-  return !state.store.expanded && state.store.salesCount >= 5 && state.store.totalRevenue >= 100000 && state.game.money >= 50000;
+  return state.store.rented && !state.store.expanded && state.store.salesCount >= 5 && state.store.totalRevenue >= 100000 && state.game.money >= 50000;
 }
 
 function expandStore() {
@@ -1053,12 +1281,12 @@ function expandStore() {
 
 function settleDay() {
   const sold = [];
-  let visitors = Math.floor(Math.random() * 4) + 1;
-  if (state.store.expanded) visitors += Math.floor(Math.random() * 3) + 1;
-  if (state.game.weather === '雨') visitors = Math.max(0, visitors - 1);
-  if (state.employee.hired && state.employee.working && state.employee.role === 'sales') visitors += 1;
+  let visitors = state.store.rented ? Math.floor(Math.random() * 4) + 1 : 0;
+  if (state.store.rented && state.store.expanded) visitors += Math.floor(Math.random() * 3) + 1;
+  if (state.store.rented && state.game.weather === '雨') visitors = Math.max(0, visitors - 1);
+  if (state.store.rented && state.employee.hired && state.employee.working && state.employee.role === 'sales') visitors += 1;
 
-  for (let i = 0; i < state.store.showcases.length; i += 1) {
+  if (state.store.rented) for (let i = 0; i < state.store.showcases.length; i += 1) {
     const slot = state.store.showcases[i];
     if (!slot) continue;
     const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
@@ -1084,7 +1312,7 @@ function settleDay() {
   state.daily.visitors = visitors;
   state.daily.sold.push(...sold);
 
-  if (state.employee.hired && state.employee.working) {
+  if (state.store.rented && state.employee.hired && state.employee.working) {
     const salary = 2000;
     state.game.money = Math.max(0, state.game.money - salary);
     addFinance(`${state.employee.name}さんの給与`, 0, salary);
@@ -1093,6 +1321,8 @@ function settleDay() {
   const result = {
     day: state.game.day,
     mined: structuredClone(state.daily.mined),
+    polished: structuredClone(state.daily.polished),
+    roughSold: structuredClone(state.daily.roughSold),
     crafted: structuredClone(state.daily.crafted),
     sold: structuredClone(state.daily.sold),
     visitors,
@@ -1104,7 +1334,7 @@ function settleDay() {
   state.game.day += 1;
   state.game.minutes = 8 * 60;
   state.game.weather = nextWeather();
-  state.daily = { mined: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 };
+  state.daily = { mined: [], polished: [], roughSold: [], crafted: [], sold: [], visitors: 0, income: 0, expense: 0 };
   Object.values(state.customers).forEach((customer) => { customer.ignoredToday = false; });
   scheduleCustomerVisit();
   updateOrderNotifications();
@@ -1113,6 +1343,10 @@ function settleDay() {
 }
 
 function scheduleCustomerVisit() {
+  if (!canServeCustomers()) {
+    Object.values(state.customers).forEach((customer) => { customer.visiting = false; });
+    return;
+  }
   if (Object.values(state.customers).some((customer) => customer.visiting)) return;
   const employeeBonus = state.employee.hired && state.employee.working && state.employee.role === 'service' ? 0.12 : 0;
   if (!state.customers.misaki.met && state.game.day >= 2 && Math.random() < 0.38 + employeeBonus) {
@@ -1143,7 +1377,7 @@ function updateOrderNotifications() {
 }
 
 function confirmSleep() {
-  showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep' });
+  showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
 }
 
 async function deleteSave() {
@@ -1201,7 +1435,8 @@ root.addEventListener('click', async (event) => {
         startNewGame();
       }
       break;
-    case 'nav': setScreen(button.dataset.screen, button.dataset.screen === 'supplier' ? { tab: 'metals' } : {}); break;
+    case 'nav': setScreen(button.dataset.screen, button.dataset.screen === 'supplier' ? { tab: button.dataset.tab || 'metals' } : {}); break;
+    case 'rent-store': rentStore(); break;
     case 'back': goBack(); break;
     case 'main': goMain(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
@@ -1211,8 +1446,12 @@ root.addEventListener('click', async (event) => {
     case 'mine': mine(); break;
     case 'mine-again': setScreen('mining', {}, false); break;
     case 'supplier-tab': screenData.tab = button.dataset.tab; render(); break;
-    case 'glab-info': showModal({ title: 'g-Lab.', body: '<p>御徒町のジュエリー工房です。ゲーム内では制作や材料確認への入口として利用できます。</p>', confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
+    case 'glab-info': showModal({ title: 'g-Lab.', body: '<p>御徒町のジュエリー工房です。ゲーム内では原石研磨機などの工房設備を購入できます。</p>', confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'purchase': purchase(button.dataset.kind, button.dataset.id); break;
+    case 'sell-rough': sellRough(button.dataset.id); break;
+    case 'buy-polishing-machine': buyPolishingMachine(); break;
+    case 'select-polishing': selectedPolishing = button.dataset.id; render(); break;
+    case 'polish-rough': polishRough(); break;
     case 'open-craft': craftDraft = defaultDraft(); setScreen('craft', {}); break;
     case 'craft-choice': craftDraft[button.dataset.group] = button.dataset.id; render(); break;
     case 'confirm-craft': confirmCraft(); break;
@@ -1221,7 +1460,10 @@ root.addEventListener('click', async (event) => {
     case 'inventory-tab': screenData.tab = button.dataset.tab; render(); break;
     case 'place-item': placeItem(button.dataset.id); break;
     case 'remove-showcase': removeShowcase(Number(button.dataset.slot)); break;
-    case 'customer': setScreen('customer', { customerId: button.dataset.id }); break;
+    case 'customer':
+      if (!canServeCustomers()) showToast(state.store.rented ? 'まずジュエリーを1点制作してください。' : '先に御徒町の不動産屋で店舗を借りてください。', 'error');
+      else setScreen('customer', { customerId: button.dataset.id });
+      break;
     case 'ignore-customer': ignoreCustomer(button.dataset.id); break;
     case 'customer-buy': customerBuy(button.dataset.customer, button.dataset.id); break;
     case 'accept-order': acceptOrder(button.dataset.customer); break;

@@ -1,5 +1,0 @@
-index.html
-manifest.webmanifest
-sw.js
-js/app.js
-js/game-data.js

@@ -12,17 +12,18 @@
   --safe-bottom:max(8px,env(safe-area-inset-bottom));
 }
 *{box-sizing:border-box}
-html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#090603;color:var(--text);font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;color:var(--text);font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif}html{background:#090603}body{position:relative;isolation:isolate;background:#090603}
 body[data-text-size="large"]{font-size:18px}
 button,input,select{font:inherit}
 button{cursor:pointer}
 button:disabled{cursor:not-allowed;opacity:.38;filter:grayscale(.7)}
-body::before{content:"";position:fixed;inset:0;background-image:var(--screen-bg);background-size:cover;background-position:center;z-index:-3;transition:.35s ease}
-body::after{content:"";position:fixed;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.08) 45%,rgba(0,0,0,.52));z-index:-2;pointer-events:none}
-body[data-timeperiod="morning"]::after{background:linear-gradient(180deg,rgba(245,188,104,.09),rgba(0,0,0,.08) 45%,rgba(0,0,0,.44))}
-body[data-timeperiod="evening"]::after{background:linear-gradient(180deg,rgba(164,79,27,.2),rgba(0,0,0,.18) 45%,rgba(0,0,0,.55))}
-body[data-timeperiod="night"]::after{background:linear-gradient(180deg,rgba(15,26,58,.4),rgba(0,0,0,.34) 45%,rgba(0,0,0,.68))}
-#root{height:100%}
+#background-layer{position:fixed;inset:0;z-index:0;background-image:var(--screen-bg);background-size:cover;background-position:center;background-repeat:no-repeat;transition:background-image .35s ease;pointer-events:none}
+#background-shade{position:fixed;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.04) 45%,rgba(0,0,0,.38));pointer-events:none}
+body[data-timeperiod="morning"] #background-shade{background:linear-gradient(180deg,rgba(245,188,104,.07),rgba(0,0,0,.04) 45%,rgba(0,0,0,.34))}
+body[data-timeperiod="evening"] #background-shade{background:linear-gradient(180deg,rgba(164,79,27,.14),rgba(0,0,0,.12) 45%,rgba(0,0,0,.42))}
+body[data-timeperiod="night"] #background-shade{background:linear-gradient(180deg,rgba(15,26,58,.28),rgba(0,0,0,.22) 45%,rgba(0,0,0,.52))}
+#root{position:relative;z-index:2;height:100%}
+#toast,#modal-layer{z-index:120}
 .hidden{display:none!important}
 .glass-panel{background:linear-gradient(145deg,rgba(27,20,14,.95),rgba(12,9,7,.87));border:1px solid var(--line);box-shadow:0 20px 70px rgba(0,0,0,.5),inset 0 0 30px rgba(255,193,79,.03);backdrop-filter:blur(10px)}
 .primary-button,.secondary-button,.danger-button,.text-button,.small-button,.icon-button{border-radius:10px;min-height:44px;border:1px solid var(--line);padding:.72rem 1rem;transition:.16s ease}

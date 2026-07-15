@@ -14,7 +14,7 @@ for (const key of keys) {
   const ambient = new Audio(`${AUDIO_DIR}/amb-${key}.ogg`);
   ambient.loop = true; ambient.preload = 'auto'; ambients[key] = ambient;
 }
-for (const name of ['select', 'impact', 'success', 'error', 'explosion']) {
+for (const name of ['select', 'impact', 'success', 'error', 'explosion', 'dig', 'mining-win', 'mining-miss', 'sale', 'eat', 'levelup']) {
   const audio = new Audio(`${AUDIO_DIR}/sfx-${name}.ogg`);
   audio.preload = 'auto'; sfx[name] = audio;
 }

@@ -4,12 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#130e09">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="宝石を採掘し、ジュエリーを作って店舗で販売するシミュレーションゲーム">
   <title>ゲーム</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=0.8.0">
+  <link rel="stylesheet" href="./styles.css?v=0.10.10">
 </head>
 <body>
   <div id="background-layer" aria-hidden="true"></div>
@@ -17,6 +20,8 @@
   <div id="root" aria-live="polite"></div>
   <div id="toast" role="status" aria-live="polite"></div>
   <div id="modal-layer" class="hidden"></div>
-  <script type="module" src="./js/app.js?v=0.8.0"></script>
+  <div id="sleep-curtain" aria-hidden="true"></div>
+  <div id="morning-brief" aria-live="polite"></div>
+  <script type="module" src="./js/app.js?v=0.10.10"></script>
 </body>
 </html>

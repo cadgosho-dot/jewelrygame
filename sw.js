@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jewelrygame-clean-v0.8.0';
+const CACHE_NAME = 'jewelrygame-clean-v0.10.10';
 const APP_SHELL = [
   './',
   './index.html',
@@ -16,8 +16,27 @@ const APP_SHELL = [
   './assets/images/store.webp',
   './assets/images/glab.webp',
   './assets/images/okachimachi.webp',
+  './assets/images/okachimachi-portrait.webp',
   './assets/images/phone.webp',
+  './assets/images/tools/placeholder.svg',
   './assets/images/sleep.webp',
+  './assets/images/meal-menu.webp',
+  './assets/images/meal-convenience.webp',
+  './assets/images/meal-convenience-portrait.webp',
+  './assets/images/meal-soba.webp',
+  './assets/images/meal-soba-portrait.webp',
+  './assets/images/meal-ramen.webp',
+  './assets/images/meal-ramen-portrait.webp',
+  './assets/images/meal-hamburger.webp',
+  './assets/images/meal-hamburger-portrait.webp',
+  './assets/images/meal-indian.webp',
+  './assets/images/meal-indian-portrait.webp',
+  './assets/images/meal-korean.webp',
+  './assets/images/meal-korean-portrait.webp',
+  './assets/images/meal-chinese.webp',
+  './assets/images/meal-chinese-portrait.webp',
+  './assets/images/meal-kebab.webp',
+  './assets/images/meal-kebab-portrait.webp',
   './assets/images/gems/garnet.png',
   './assets/images/gems/amethyst.png',
   './assets/images/gems/aquamarine.png',
@@ -60,6 +79,12 @@ const APP_SHELL = [
   './assets/audio/sfx-success.ogg',
   './assets/audio/sfx-error.ogg',
   './assets/audio/sfx-explosion.ogg',
+  './assets/audio/sfx-dig.ogg',
+  './assets/audio/sfx-mining-win.ogg',
+  './assets/audio/sfx-mining-miss.ogg',
+  './assets/audio/sfx-sale.ogg',
+  './assets/audio/sfx-eat.ogg',
+  './assets/audio/sfx-levelup.ogg',
 ];
 
 self.addEventListener('install', (event) => {

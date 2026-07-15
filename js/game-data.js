@@ -1,4 +1,4 @@
-export const VERSION = '0.10.10';
+export const VERSION = '0.10.13';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const JEWELRY_BENCH_PRICE = 85000;
@@ -6,9 +6,9 @@ export const POLISHING_MACHINE_PRICE = 400000;
 export const POLISHING_HOURS = 2;
 
 export const METALS = {
-  silver: { id: 'silver', name: 'シルバー', price: 3000 },
-  gold: { id: 'gold', name: 'ゴールド', price: 12000 },
-  platinum: { id: 'platinum', name: 'プラチナ', price: 18000 },
+  silver: { id: 'silver', name: 'シルバー', price: 3000, unitWeight: 5 },
+  gold: { id: 'gold', name: 'ゴールド', price: 12000, unitWeight: 5 },
+  platinum: { id: 'platinum', name: 'プラチナ', price: 18000, unitWeight: 5 },
 };
 
 export const GEMS = {
@@ -177,9 +177,9 @@ export const WORKSHOP_TOOLS = {
 };
 
 export const ITEMS = {
-  ring: { id: 'ring', name: 'リング', basePrice: 12000, hours: 2, symbol: '◯' },
-  pendant: { id: 'pendant', name: 'ペンダント', basePrice: 10000, hours: 2, symbol: '◇' },
-  earrings: { id: 'earrings', name: 'ピアス', basePrice: 14000, hours: 3, symbol: '◈' },
+  ring: { id: 'ring', name: 'リング', basePrice: 12000, hours: 2, symbol: '◯', metalWeight: 4, looseQuantity: 1 },
+  pendant: { id: 'pendant', name: 'ペンダント', basePrice: 10000, hours: 2, symbol: '◇', metalWeight: 3, looseQuantity: 1 },
+  earrings: { id: 'earrings', name: 'ピアス', basePrice: 14000, hours: 3, symbol: '◈', metalWeight: 5, looseQuantity: 2 },
 };
 
 export const DESIGNS = {
@@ -256,12 +256,14 @@ export const CUSTOMERS = {
     id: 'misaki', name: '山本美咲',
     opening: '普段使いできる、あまり派手ではないリングを探しています。',
     preferenceText: 'アメシスト・シルバー・シンプルなリング',
+    image: './assets/images/customers/customer-placeholder.svg',
     request: { item: 'ring', gem: 'amethyst', metal: 'silver', design: 'simple', budget: 30000, deadlineDays: 4 },
   },
   kenta: {
     id: 'kenta', name: '佐藤健太',
     opening: 'プレゼント用のペンダントを探しています。間に合うものがあると助かります。',
     preferenceText: 'アクアマリン・ゴールド・シンプルなペンダント',
+    image: './assets/images/customers/customer-placeholder.svg',
     request: { item: 'pendant', gem: 'aquamarine', metal: 'gold', design: 'simple', budget: 60000, deadlineDays: 3 },
   },
 };
@@ -283,18 +285,26 @@ export function looseSalePrice(gemId) {
 }
 
 export function recommendedPrice({ item, gem, metal, design, finish, quality }) {
+  const itemData = ITEMS[item] || ITEMS.ring;
+  const metalData = METALS[metal] || METALS.silver;
+  const looseQuantity = Math.max(1, Number(itemData.looseQuantity) || 1);
+  const metalUnits = Math.max(1, Math.ceil((Number(itemData.metalWeight) || Number(metalData.unitWeight) || 5) / (Number(metalData.unitWeight) || 5)));
   return roundThousand(
-    ITEMS[item].basePrice
-    + GEMS[gem].price
-    + METALS[metal].price
+    itemData.basePrice
+    + (GEMS[gem].price * looseQuantity)
+    + (metalData.price * metalUnits)
     + DESIGNS[design].price
     + FINISHES[finish].price
     + QUALITIES[quality].price,
   );
 }
 
-export function productionCost({ gem, metal }) {
-  return GEMS[gem].price + METALS[metal].price;
+export function productionCost({ item, gem, metal }) {
+  const itemData = ITEMS[item] || ITEMS.ring;
+  const metalData = METALS[metal] || METALS.silver;
+  const looseQuantity = Math.max(1, Number(itemData.looseQuantity) || 1);
+  const metalUnits = Math.max(1, Math.ceil((Number(itemData.metalWeight) || Number(metalData.unitWeight) || 5) / (Number(metalData.unitWeight) || 5)));
+  return (GEMS[gem].price * looseQuantity) + (metalData.price * metalUnits);
 }
 
 export function productionHours({ item, design, finish }, employee = null) {
@@ -326,6 +336,7 @@ export function initialState() {
       money: 15000,
       weather: '晴れ',
       screen: 'main',
+      phoneTab: 'calendar',
     },
     artisan: { level: 1, xp: 0 },
     wellbeing: { hunger: 7, maxHunger: 7, lastMeal: '', mealsEaten: 0 },
@@ -384,7 +395,7 @@ export function initialState() {
     finance: [],
     daily: { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 },
     settings: {
-      bgmVolume: 0.75,
+      bgmVolume: 0.35,
       ambientVolume: 0.60,
       sfxVolume: 0.75,
       bgmMuted: false,
@@ -460,6 +471,7 @@ export function migrateState(saved) {
   state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 15000;
   state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
   state.game.screen = 'main';
+  state.game.phoneTab = ['calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(state.game.phoneTab) ? state.game.phoneTab : 'calendar';
 
   const savedRough = state.inventory.rough && !Array.isArray(state.inventory.rough) ? state.inventory.rough : {};
   const savedLoose = state.inventory.loose && !Array.isArray(state.inventory.loose) ? state.inventory.loose : {};
@@ -574,7 +586,20 @@ export function migrateState(saved) {
   while (state.store.showcases.length < state.store.showcaseCount) state.store.showcases.push(null);
   const jewelryIds = new Set(state.inventory.jewelry.map((item) => item.id));
   state.store.showcases = state.store.showcases.map((slot) => slot && jewelryIds.has(slot.jewelryId) ? slot : null);
-  state.orders = Array.isArray(state.orders) ? state.orders.filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal]) : [];
+  state.orders = Array.isArray(state.orders)
+    ? state.orders
+      .filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal])
+      .map((entry) => {
+        const customer = CUSTOMERS[entry.customerId];
+        const item = ITEMS[entry.item];
+        return {
+          ...entry,
+          desiredConditions: String(entry.desiredConditions || customer?.preferenceText || `${GEMS[entry.gem].name}・${METALS[entry.metal].name}・${DESIGNS[entry.design]?.name || '指定なし'}`),
+          requiredMetalWeight: Math.max(0.1, Number(entry.requiredMetalWeight) || Number(item.metalWeight) || Number(METALS[entry.metal].unitWeight) || 5),
+          requiredLooseQuantity: Math.max(1, Math.round(Number(entry.requiredLooseQuantity) || Number(item.looseQuantity) || 1)),
+        };
+      })
+    : [];
   state.notifications = (Array.isArray(state.notifications) ? state.notifications : []).slice(0, 80).map((note, index) => ({
     id: note?.id || `legacy-note-${index}`,
     title: note?.title || note?.sender || 'お知らせ',
@@ -627,8 +652,11 @@ export function migrateState(saved) {
 
   state.settings = { ...initialState().settings, ...(state.settings || {}) };
   delete state.settings.textSize;
-  // v0.7.3では各場面のBGM・環境音を明瞭に聞けるよう、旧初期値の音量を引き上げる。
-  if (Number(state.settings.bgmVolume) <= 0.45) state.settings.bgmVolume = 0.75;
+  // v0.10.12ではBGMだけを控えめにし、環境音と効果音は従来の設定を維持する。
+  const savedBgmVolume = Number(legacy.settings?.bgmVolume);
+  if (!Number.isFinite(Number(state.settings.bgmVolume))) state.settings.bgmVolume = 0.35;
+  if (legacy.version !== VERSION && Number.isFinite(savedBgmVolume) && savedBgmVolume >= 0.70) state.settings.bgmVolume = 0.35;
+  state.settings.bgmVolume = Math.max(0, Math.min(1, Number(state.settings.bgmVolume)));
   if (Number(state.settings.ambientVolume) <= 0.35) state.settings.ambientVolume = 0.60;
   if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;
   if (!state.store.rented) {

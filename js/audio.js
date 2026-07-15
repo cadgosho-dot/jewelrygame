@@ -5,9 +5,13 @@ const ambients = {};
 const sfx = {};
 let currentKey = null;
 let initialized = false;
-let settingsProvider = () => ({ bgmVolume: .75, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false });
+let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false });
 
-const keys = ['main', 'mining', 'workshop', 'store', 'glab', 'okachimachi', 'phone', 'sleep'];
+const keys = [
+  'main', 'mining', 'workshop', 'store', 'glab', 'okachimachi', 'phone', 'sleep',
+  'meal', 'meal-convenience', 'meal-soba', 'meal-ramen', 'meal-hamburger',
+  'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab',
+];
 for (const key of keys) {
   const bgm = new Audio(`${AUDIO_DIR}/bgm-${key}.ogg`);
   bgm.loop = true; bgm.preload = 'auto'; tracks[key] = bgm;
@@ -41,6 +45,16 @@ const BGM_SCALE = {
   okachimachi: .98,
   phone: .92,
   sleep: .64,
+  // 食事関連は全体的に悲しい曲調。以前のBGMが大きかったため控えめに再生する。
+  meal: .66,
+  'meal-convenience': .64,
+  'meal-soba': .66,
+  'meal-ramen': .64,
+  'meal-hamburger': .62,
+  'meal-indian': .64,
+  'meal-korean': .62,
+  'meal-chinese': .64,
+  'meal-kebab': .64,
 };
 
 const AMBIENT_SCALE = {
@@ -52,6 +66,15 @@ const AMBIENT_SCALE = {
   okachimachi: 1,
   phone: .88,
   sleep: .56,
+  meal: .54,
+  'meal-convenience': .50,
+  'meal-soba': .58,
+  'meal-ramen': .50,
+  'meal-hamburger': .52,
+  'meal-indian': .50,
+  'meal-korean': .50,
+  'meal-chinese': .56,
+  'meal-kebab': .54,
 };
 
 function targetVolume(kind, key, settings) {

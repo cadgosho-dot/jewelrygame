@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 720" role="img" aria-labelledby="title desc">
+  <title id="title">注文者の共通仮画像</title>
+  <desc id="desc">正式な人物画像が提供されるまで表示する人物シルエット</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a1410"/>
+      <stop offset="1" stop-color="#38281e"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#efd49a"/>
+      <stop offset="1" stop-color="#9f7139"/>
+    </linearGradient>
+  </defs>
+  <rect width="560" height="720" rx="34" fill="url(#bg)"/>
+  <rect x="22" y="22" width="516" height="676" rx="27" fill="none" stroke="#e7c779" stroke-width="4" opacity=".55"/>
+  <circle cx="280" cy="235" r="104" fill="url(#body)" opacity=".92"/>
+  <path d="M102 654c12-166 74-263 178-263s166 97 178 263" fill="url(#body)" opacity=".92"/>
+  <path d="M199 228c17-66 48-99 94-99 51 0 83 39 91 116-32-22-72-35-120-35-23 0-45 6-65 18z" fill="#241913" opacity=".9"/>
+  <circle cx="241" cy="248" r="7" fill="#3a281d"/>
+  <circle cx="319" cy="248" r="7" fill="#3a281d"/>
+  <path d="M252 298c18 13 38 13 56 0" fill="none" stroke="#5a3826" stroke-width="7" stroke-linecap="round"/>
+  <text x="280" y="674" fill="#f0d89d" font-size="25" text-anchor="middle" font-family="sans-serif" letter-spacing="3">PERSON IMAGE</text>
+</svg>

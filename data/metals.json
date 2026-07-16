@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 4,
+  "status": "fallback",
+  "source": {
+    "name": "Metals.Dev",
+    "endpoint": "latest",
+    "currency": "JPY",
+    "unit": "g"
+  },
+  "marketTimestamp": null,
+  "updatedAt": null,
+  "marketDateJst": null,
+  "previousMarketDateJst": null,
+  "spotPerGram": {
+    "gold": null,
+    "silver": null,
+    "platinum": null
+  },
+  "previousSpotPerGram": null,
+  "changeFromPreviousDayPerGram": {
+    "gold": null,
+    "silver": null,
+    "platinum": null
+  },
+  "gamePricesPerGram": {
+    "K18": 2400,
+    "Pt900": 3600,
+    "SV925": 600
+  },
+  "gamePurchasePricesPerGram": {
+    "K18": 2400,
+    "Pt900": 3600,
+    "SV925": 600
+  },
+  "gameSellPricesPerGram": {
+    "K18": 2050,
+    "Pt900": 2940,
+    "SV925": 415
+  },
+  "gamePurchasePrices": {
+    "gold": {
+      "alloy": "K18",
+      "grams": 1,
+      "price": 2400
+    },
+    "platinum": {
+      "alloy": "Pt900",
+      "grams": 1,
+      "price": 3600
+    },
+    "silver": {
+      "alloy": "SV925",
+      "grams": 1,
+      "price": 600
+    }
+  },
+  "gameSellPrices": {
+    "gold": {
+      "alloy": "K18",
+      "grams": 1,
+      "price": 2050
+    },
+    "platinum": {
+      "alloy": "Pt900",
+      "grams": 1,
+      "price": 2940
+    },
+    "silver": {
+      "alloy": "SV925",
+      "grams": 1,
+      "price": 415
+    }
+  },
+  "calculation": {
+    "K18": {
+      "baseMetal": "gold",
+      "purity": 0.75,
+      "purchaseMultiplier": 1.15,
+      "sellMultiplier": 0.98,
+      "roundingYenPerGram": 10
+    },
+    "Pt900": {
+      "baseMetal": "platinum",
+      "purity": 0.9,
+      "purchaseMultiplier": 1.15,
+      "sellMultiplier": 0.94,
+      "roundingYenPerGram": 10
+    },
+    "SV925": {
+      "baseMetal": "silver",
+      "purity": 0.925,
+      "purchaseMultiplier": 1.3,
+      "sellMultiplier": 0.9,
+      "roundingYenPerGram": 1
+    }
+  },
+  "note": "GitHub Actionsの初回正常実行後に、純金・純プラチナ・純銀の現実相場、前日比、5年間の日次履歴、K18・Pt900・SV925の購入価格と売却価格へ置き換わります。",
+  "historyRetentionYears": 5,
+  "historyDaily": []
+}

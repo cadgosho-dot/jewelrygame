@@ -10,24 +10,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="宝石を採掘し、ジュエリーを作って店舗で販売するシミュレーションゲーム">
-  <title>JEWELRY×JEWELRY</title>
+  <title>ゲーム</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="./viewport-shell.css?v=0.10.88">
+  <link rel="stylesheet" href="./styles.css?v=0.10.88">
 </head>
 <body>
-  <main id="viewport-safe-area" aria-label="JEWELRY×JEWELRY">
-    <div id="device-stage">
-      <iframe
-        id="game-frame"
-        src="./game.html?v=0.10.88"
-        title="JEWELRY×JEWELRY"
-        allow="autoplay; clipboard-write"
-        referrerpolicy="strict-origin-when-cross-origin"
-      ></iframe>
-    </div>
-  </main>
-  <script src="./viewport-shell.js?v=0.10.88"></script>
+  <div id="background-layer" aria-hidden="true"></div>
+  <div id="background-shade" aria-hidden="true"></div>
+  <div id="root" aria-live="polite"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="modal-layer" class="hidden"></div>
+  <div id="sleep-curtain" aria-hidden="true"></div>
+  <div id="morning-brief" aria-live="polite"></div>
+  <script type="module" src="./js/app.js?v=0.10.88"></script>
 </body>
 </html>

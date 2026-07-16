@@ -103,6 +103,8 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
 .product-list{display:grid;gap:.65rem}
 .product-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.75rem;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);border-radius:11px;padding:.75rem}
 .product-row>div{display:grid;gap:.2rem}.product-row small{color:var(--muted)}
+.sell-action-row{display:flex!important;gap:.45rem!important;align-items:center;justify-content:flex-end}
+.sell-action-row>button{white-space:nowrap}
 .product-main{display:grid;grid-template-columns:52px minmax(0,1fr);align-items:center;gap:.75rem}
 .material-chip{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--gold-light);font-size:.78rem;font-weight:700}
 
@@ -214,6 +216,8 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
   .craft-layout{grid-template-columns:1fr}.preview-panel{position:relative}.jewelry-preview{height:210px}.jewelry-preview.large{height:230px}.jewelry-preview .preview-item{font-size:6rem}
   .choice-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.choice-card{padding:.58rem;min-height:62px}.choice-card strong{font-size:.82rem}.choice-card small{font-size:.68rem}
   .product-row{grid-template-columns:minmax(0,1fr) auto}.product-row button{grid-column:1/-1}
+  .product-row .sell-action-row{grid-column:1/-1;display:grid!important;grid-template-columns:1fr 1fr}
+  .product-row .sell-action-row>button{grid-column:auto!important}
   .materials-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.store-summary{grid-template-columns:repeat(3,minmax(0,1fr));font-size:.78rem}
   .showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.showcase-slot{min-height:195px}
   .customer-placeholder{height:90%;min-height:220px}.dialog-actions{grid-template-columns:1fr}
@@ -596,6 +600,7 @@ button:disabled{
 .polishing-summary{display:grid;grid-template-columns:140px 56px 140px minmax(220px,1fr);align-items:center;gap:1rem}
 .polishing-rough{display:block;width:130px;height:130px;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.38))}
 .polishing-loose{width:130px;height:130px;font-size:6rem}
+.loose-image{display:block;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.35));text-shadow:none;color:unset}
 .polishing-arrow{font-size:2.4rem;text-align:center;color:var(--gold-light)}
 .polishing-copy h2,.polishing-copy p{margin:.2rem 0 .55rem}
 @media (max-width:900px){
@@ -1064,147 +1069,156 @@ body:not([data-screen="main"]) .compact-list button{
 }
 
 
-/* v0.8.2 採掘ミニゲーム */
+/* v0.10.18 採掘画面簡略化・大型岩画像 */
 .mining-game-panel{
-  width:min(980px,96vw);
-  min-height:min(660px,calc(100vh - 96px));
+  width:min(1100px,100%);
+  min-height:calc(100vh - 86px);
   margin:auto;
-  padding:clamp(12px,2.2vw,24px);
-  border-radius:18px;
+  padding:clamp(8px,1.5vw,18px);
   display:grid;
-  align-content:center;
-  gap:clamp(10px,2vh,20px);
+  place-items:center;
   background:transparent!important;
   box-shadow:none!important;
-  backdrop-filter:none!important;
 }
-.mining-game-guide{text-align:center;display:grid;gap:.35rem}
-.mining-game-guide h1,.mining-game-guide p{margin:0}
-.mining-game-guide strong{color:var(--gold-light);font-size:.9rem}
-.mining-rock-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:clamp(8px,2vw,22px);padding:.4rem 0}
+.mining-rock-grid{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  place-items:center;
+  align-items:center;
+  gap:clamp(6px,1.6vw,18px);
+}
 .mining-rock{
   position:relative;
-  flex:0 1 clamp(104px,16vw,150px);
-  min-height:160px;
+  width:100%;
+  min-width:0;
+  min-height:clamp(150px,25vh,230px);
   display:grid;
-  justify-items:center;
-  align-content:end;
-  gap:.25rem;
-  padding:8px 4px 4px;
+  place-items:center;
+  padding:4px;
   border:0!important;
   background:transparent!important;
-  background-image:none!important;
   box-shadow:none!important;
-  color:var(--text);
   overflow:visible;
   touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
 }
-.mining-rock:focus-visible{outline:2px solid var(--gold-light);outline-offset:4px}
+.mining-rock:focus-visible{outline:2px solid var(--gold-light);outline-offset:2px;border-radius:16px}
 .mining-rock:disabled{opacity:1;filter:none}
-.rock-shape{
+.rock-visual{
   position:relative;
   display:block;
-  width:clamp(82px,13vw,124px);
-  height:clamp(68px,10.5vw,104px);
-  clip-path:polygon(14% 24%,35% 4%,68% 8%,91% 31%,96% 66%,77% 92%,40% 98%,9% 77%,3% 45%);
-  background:
-    radial-gradient(circle at 34% 24%,rgba(255,255,255,.24),transparent 22%),
-    radial-gradient(circle at 62% 70%,rgba(0,0,0,.42),transparent 34%),
-    linear-gradient(145deg,#7f786e 0%,#514c46 42%,#292724 100%);
-  border:1px solid rgba(233,216,185,.42);
-  filter:drop-shadow(0 12px 12px rgba(0,0,0,.48));
+  width:clamp(126px,17vw,190px);
+  aspect-ratio:5/4;
   transform-origin:center bottom;
+  filter:drop-shadow(0 14px 12px rgba(0,0,0,.50));
+  user-select:none;
+  -webkit-user-select:none;
 }
-.rock-shape::before{
-  content:"";
-  position:absolute;
-  inset:9% 12%;
-  opacity:0;
-  background:
-    linear-gradient(62deg,transparent 46%,rgba(235,220,190,.95) 47% 49%,transparent 50%),
-    linear-gradient(118deg,transparent 47%,rgba(235,220,190,.88) 48% 50%,transparent 51%),
-    linear-gradient(18deg,transparent 48%,rgba(235,220,190,.72) 49% 50%,transparent 51%);
-  clip-path:polygon(44% 0,57% 35%,82% 17%,62% 50%,94% 69%,57% 62%,42% 100%,42% 65%,6% 78%,34% 50%,13% 30%,43% 37%);
-}
-.mining-rock.hit-1 .rock-shape::before{opacity:.22}
-.mining-rock.hit-2 .rock-shape::before{opacity:.42}
-.mining-rock.hit-3 .rock-shape::before{opacity:.62}
-.mining-rock.hit-4 .rock-shape::before,.mining-rock.hit-5 .rock-shape::before{opacity:.9}
-.mining-rock.hit-2 .rock-shape{filter:brightness(.96) drop-shadow(0 12px 12px rgba(0,0,0,.48))}
-.mining-rock.hit-3 .rock-shape{filter:brightness(.9) drop-shadow(0 12px 12px rgba(0,0,0,.48))}
-.mining-rock.hit-4 .rock-shape{filter:brightness(.84) drop-shadow(0 12px 12px rgba(0,0,0,.48))}
-.pickaxe-sprite{
-  position:absolute;
-  z-index:3;
-  left:50%;
-  top:4px;
-  font-size:clamp(2.25rem,5vw,3.5rem);
-  line-height:1;
-  opacity:0;
-  transform-origin:82% 80%;
+.mining-rock-image{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
   pointer-events:none;
-  filter:drop-shadow(0 4px 5px rgba(0,0,0,.65));
+  user-select:none;
+  -webkit-user-drag:none;
 }
-.mining-rock.swinging .pickaxe-sprite{animation:pickaxeSwing .32s cubic-bezier(.2,.75,.35,1) both}
-.mining-rock.swinging .rock-shape{animation:rockHit .32s ease-out}
-.mining-rock.breaking .rock-shape{animation:rockBreak .55s ease-in forwards}
+.mining-pickaxe-image{
+  position:absolute;
+  z-index:5;
+  left:58%;
+  top:-10%;
+  display:block;
+  width:clamp(74px,10vw,112px);
+  height:auto;
+  opacity:0;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  transform-origin:50% 88%;
+  filter:drop-shadow(0 7px 5px rgba(0,0,0,.48));
+}
+.mining-rock.swinging .mining-pickaxe-image{animation:miningPickaxeStrike .32s ease-out both}
+@keyframes miningPickaxeStrike{
+  0%{opacity:0;transform:translate(32%,-22%) rotate(42deg) scale(.92)}
+  16%{opacity:1}
+  56%{opacity:1;transform:translate(-34%,2%) rotate(-31deg) scale(1)}
+  100%{opacity:0;transform:translate(-38%,8%) rotate(-35deg) scale(.98)}
+}
+.rock-cracks{
+  position:absolute;
+  inset:18% 18% 15%;
+  opacity:0;
+  pointer-events:none;
+  background:
+    linear-gradient(62deg,transparent 46%,rgba(242,226,196,.95) 47% 49%,transparent 50%),
+    linear-gradient(118deg,transparent 47%,rgba(242,226,196,.88) 48% 50%,transparent 51%),
+    linear-gradient(18deg,transparent 48%,rgba(242,226,196,.76) 49% 50%,transparent 51%);
+  clip-path:polygon(44% 0,57% 35%,82% 17%,62% 50%,94% 69%,57% 62%,42% 100%,42% 65%,6% 78%,34% 50%,13% 30%,43% 37%);
+  filter:drop-shadow(0 0 2px rgba(20,14,8,.9));
+}
+.mining-rock.hit-1 .rock-cracks{opacity:.22}
+.mining-rock.hit-2 .rock-cracks{opacity:.42}
+.mining-rock.hit-3 .rock-cracks{opacity:.64}
+.mining-rock.hit-4 .rock-cracks,.mining-rock.hit-5 .rock-cracks{opacity:.92}
+.mining-rock.hit-2 .rock-visual{filter:brightness(.97) drop-shadow(0 14px 12px rgba(0,0,0,.50))}
+.mining-rock.hit-3 .rock-visual{filter:brightness(.91) drop-shadow(0 14px 12px rgba(0,0,0,.50))}
+.mining-rock.hit-4 .rock-visual{filter:brightness(.84) drop-shadow(0 14px 12px rgba(0,0,0,.50))}
+.mining-rock.swinging .rock-visual{animation:rockHit .32s ease-out}
+.mining-rock.breaking .rock-visual{animation:rockBreak .55s ease-in forwards}
 .mining-rock.breaking::after{
   content:"";
   position:absolute;
-  width:88px;
-  height:34px;
+  width:clamp(100px,15vw,160px);
+  height:42px;
   left:50%;
-  bottom:42px;
+  bottom:12%;
   transform:translateX(-50%);
   border-radius:50%;
   background:radial-gradient(ellipse,rgba(205,191,164,.65),rgba(105,91,70,.25) 55%,transparent 72%);
   animation:dustCloud .62s ease-out forwards;
   pointer-events:none;
 }
-.mining-rock strong{font-size:.86rem}
-.rock-counter{font-size:.72rem;color:var(--gold-light)}
-.mining-game-note{text-align:center;margin:0;color:var(--muted);font-size:.76rem}
-@keyframes pickaxeSwing{
-  0%{opacity:0;transform:translate(-100%,-24%) rotate(-62deg) scale(.94)}
-  18%{opacity:1}
-  72%{opacity:1;transform:translate(-22%,34%) rotate(26deg) scale(1.04)}
-  100%{opacity:0;transform:translate(-10%,42%) rotate(34deg) scale(.98)}
-}
 @keyframes rockHit{
-  0%,100%{transform:translateX(0) rotate(0)}
-  28%{transform:translateX(-5px) rotate(-2deg)}
-  55%{transform:translateX(5px) rotate(2deg)}
-  78%{transform:translateX(-2px) rotate(-1deg)}
+  0%,100%{transform:translateX(0) rotate(0) scale(1)}
+  24%{transform:translateX(-7px) rotate(-2.5deg) scale(1.025)}
+  52%{transform:translateX(7px) rotate(2.5deg) scale(.985)}
+  76%{transform:translateX(-3px) rotate(-1deg) scale(1.01)}
 }
 @keyframes rockBreak{
   0%{opacity:1;transform:scale(1) rotate(0)}
-  40%{transform:scale(1.05,.9) rotate(-3deg)}
-  100%{opacity:0;transform:translateY(28px) scale(.22,.12) rotate(9deg)}
+  40%{transform:scale(1.07,.9) rotate(-3deg)}
+  100%{opacity:0;transform:translateY(34px) scale(.22,.12) rotate(9deg)}
 }
 @keyframes dustCloud{
   0%{opacity:0;transform:translateX(-50%) scale(.2)}
   35%{opacity:.85}
-  100%{opacity:0;transform:translateX(-50%) translateY(-20px) scale(1.75)}
+  100%{opacity:0;transform:translateX(-50%) translateY(-24px) scale(1.9)}
 }
-@media (orientation:portrait), (max-width:820px){
-  .mining-game-panel{min-height:calc(100vh - 92px);padding:10px 8px;gap:8px}
-  .mining-game-guide h1{font-size:1.15rem}
-  .mining-game-guide p{font-size:.78rem;line-height:1.45}
-  .mining-game-guide strong{font-size:.76rem}
-  .mining-rock-grid{gap:6px 10px}
-  .mining-rock{flex-basis:28%;min-height:132px}
-  .rock-shape{width:82px;height:68px}
+@media (orientation:portrait), (max-width:600px){
+  .mining-game-panel{min-height:calc(100vh - 92px);padding:4px 5px}
+  .mining-rock-grid{
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    grid-template-rows:repeat(2,minmax(150px,1fr));
+    gap:2px 0;
+  }
+  .mining-rock{min-height:150px;padding:0}
+  .mining-rock:nth-child(1){grid-column:1/4}
+  .mining-rock:nth-child(2){grid-column:4/7}
+  .mining-rock:nth-child(3){grid-column:1/3}
+  .mining-rock:nth-child(4){grid-column:3/5}
+  .mining-rock:nth-child(5){grid-column:5/7}
+  .rock-visual{width:clamp(108px,35vw,132px)}
+  .mining-pickaxe-image{width:clamp(70px,22vw,90px);left:60%;top:-5%}
 }
 @media (orientation:landscape) and (max-height:560px){
-  .mining-game-panel{min-height:calc(100vh - 66px);padding:6px 10px;gap:4px}
-  .mining-game-guide{gap:.1rem}
-  .mining-game-guide h1{font-size:1rem}
-  .mining-game-guide p,.mining-game-guide strong,.mining-game-note{font-size:.66rem}
-  .mining-rock-grid{flex-wrap:nowrap;gap:6px;padding:0}
-  .mining-rock{flex-basis:112px;min-height:116px}
-  .rock-shape{width:76px;height:60px}
-  .pickaxe-sprite{font-size:2.2rem}
+  .mining-game-panel{min-height:calc(100vh - 64px);padding:2px 8px}
+  .mining-rock-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+  .mining-rock{min-height:210px;padding:0}
+  .rock-visual{width:clamp(112px,16vw,142px)}
+  .mining-pickaxe-image{width:clamp(68px,9vw,88px);top:-2%}
 }
 
 
@@ -1234,7 +1248,7 @@ body:not([data-screen="main"]) .compact-list button{
   text-shadow:0 2px 7px rgba(0,0,0,.96),0 0 9px currentColor;
   animation:money-change-rise 1.05s ease-out both;
 }
-.header-money-change.gain{color:#63b7ff}
+.header-money-change.gain{color:#5ee08a}
 .header-money-change.loss{color:#ff5f6d}
 .sell-empty-state{
   padding:2rem 1rem;
@@ -1324,43 +1338,72 @@ body:not([data-screen="main"]) .compact-list button{
   opacity:0;
   visibility:hidden;
   pointer-events:none;
-  background:rgba(0,0,0,.18);
+  background:rgba(0,0,0,.28);
   transition:opacity .25s ease,visibility 0s linear .25s;
 }
 #morning-brief.active{
   opacity:1;
   visibility:visible;
+  pointer-events:auto;
   transition:opacity .25s ease;
 }
 .morning-brief-card{
-  width:min(520px,88vw);
+  width:min(560px,90vw);
+  max-height:min(720px,88vh);
+  overflow:auto;
   display:grid;
   justify-items:center;
-  gap:.45rem;
-  padding:1.15rem 1.4rem;
+  gap:.72rem;
+  padding:1.2rem 1.4rem;
   border:1px solid rgba(255,226,166,.75);
   border-radius:14px;
-  background:rgba(8,6,4,.72);
+  background:rgba(8,6,4,.80);
   color:#fff2cf;
   text-align:center;
-  box-shadow:0 15px 55px rgba(0,0,0,.48);
+  box-shadow:0 15px 55px rgba(0,0,0,.52);
   backdrop-filter:blur(5px);
 }
-.morning-brief-card>strong{
-  font-size:clamp(1.45rem,5vw,2.4rem);
-  letter-spacing:.04em;
+.morning-date-summary{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  gap:.35rem .85rem;
 }
-.morning-brief-card>span{
-  font-size:clamp(1rem,3vw,1.35rem);
+.morning-date-summary>strong{
+  font-size:clamp(1.25rem,4.5vw,2.15rem);
+  letter-spacing:.03em;
+}
+.morning-date-summary>span{
+  font-size:clamp(1rem,3vw,1.32rem);
+  font-weight:800;
+}
+.morning-greeting{
+  margin:.1rem 0 .2rem;
+  color:#fff0c5;
+  font-size:clamp(1.08rem,3.5vw,1.55rem);
+  font-weight:900;
 }
 .morning-events{
   width:100%;
-  margin-top:.35rem;
-  padding-top:.6rem;
+  margin-top:.15rem;
+  padding-top:.7rem;
   border-top:1px solid rgba(255,226,166,.35);
 }
-.morning-events small{color:#d8c59c}
-.morning-events p{margin:.25rem 0;font-size:.95rem}
+.morning-events small{
+  display:block;
+  margin-bottom:.35rem;
+  color:#e8d4a8;
+  font-size:.92rem;
+  font-weight:800;
+}
+.morning-events p{margin:.3rem 0;font-size:.98rem}
+.morning-empty{color:#d8c9ab}
+.morning-main-button{width:min(260px,100%);margin-top:.25rem}
+@media (orientation:portrait), (max-width:820px){
+  .morning-brief-card{width:min(330px,92vw);max-height:84vh;padding:1rem 1.05rem}
+  .morning-date-summary{gap:.25rem .55rem}
+}
 
 
 /* v0.8.6 プロフィール・空腹度・食事 */
@@ -1377,11 +1420,11 @@ body:not([data-screen="main"]) .compact-list button{
 .meal-choice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
 .meal-choice-card{display:grid;gap:.28rem;min-height:100px;padding:.85rem;border:1px solid rgba(239,203,129,.52);border-radius:12px;background:transparent!important;color:var(--text);text-align:left;box-shadow:none!important}.meal-choice-card:hover{border-color:#ffe199;transform:translateY(-2px)}.meal-choice-card>strong{font-size:1rem;color:#ffe6ad}.meal-choice-card>span{font-weight:900}.meal-choice-card>small{color:var(--muted)}
 .meal-note{text-align:center;color:var(--muted);margin:1rem 0 0}
-.meal-eating-panel{width:min(500px,88vw);margin:auto;display:grid;justify-items:center;gap:.8rem;padding:1.4rem;border-radius:18px;text-align:center}.meal-eating-panel h1{margin:.2rem 0;color:#ffe0a0}.meal-eating-panel>strong{font-size:1.15rem}
+.meal-eating-panel{width:min(640px,92vw);margin:auto;display:grid;justify-items:center;gap:.8rem;padding:1.4rem;border-radius:18px;text-align:center}.meal-eating-panel h1{margin:.2rem 0;color:#ffe0a0}.meal-eating-panel>strong{font-size:1.15rem}.meal-food-display{margin:0;display:grid;place-items:center;min-height:240px;width:min(560px,100%)}.meal-food-display img{display:block;max-width:min(520px,100%);max-height:270px;object-fit:contain;filter:drop-shadow(0 16px 26px rgba(0,0,0,.28))}
 .meal-steam{position:relative;width:120px;height:90px;border:1px solid rgba(255,228,174,.65);border-radius:14px 14px 36px 36px}.meal-steam::after{content:"";position:absolute;left:18px;right:18px;bottom:-10px;height:14px;border:1px solid rgba(255,228,174,.5);border-top:0;border-radius:0 0 18px 18px}.meal-steam i{position:absolute;bottom:62px;width:2px;height:38px;background:rgba(255,255,255,.7);border-radius:99px;animation:meal-steam 1.2s ease-in-out infinite}.meal-steam i:nth-child(1){left:34px}.meal-steam i:nth-child(2){left:59px;animation-delay:.2s}.meal-steam i:nth-child(3){left:83px;animation-delay:.4s}
 @keyframes meal-steam{0%{opacity:0;transform:translateY(8px) scaleY(.75)}40%{opacity:.9}100%{opacity:0;transform:translateY(-18px) scaleY(1.2)}}
 .phone-tabs{grid-template-columns:repeat(5,minmax(0,1fr))!important}
-@media (orientation:portrait), (max-width:820px){.meal-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.phone-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media (orientation:portrait), (max-width:820px){.meal-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.meal-food-display{min-height:200px;width:min(92vw,420px)}.meal-food-display img{max-width:100%;max-height:220px}.phone-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media (orientation:landscape) and (max-height:540px){.meal-choice-panel{padding:8px 12px}.meal-hunger-summary{margin-bottom:.5rem;padding:.45rem .7rem}.meal-choice-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:5px}.meal-choice-card{min-height:78px;padding:.5rem}.meal-choice-card>strong{font-size:.78rem}.meal-choice-card>small{font-size:.62rem}.meal-note{margin:.5rem 0 0;font-size:.7rem}}
 
 
@@ -1625,6 +1668,8 @@ body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(7,minmax(0,1f
 .phone-item-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.8rem;padding:.78rem;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(0,0,0,.12)}
 .phone-item-row.equipped{border-color:rgba(231,192,110,.65)}
 .phone-item-icon{display:grid;place-items:center;width:48px;height:48px;border:1px solid rgba(231,192,110,.38);border-radius:11px;font-size:1.55rem}
+.phone-item-icon.equipment-image-icon{padding:3px;overflow:hidden;background:rgba(255,255,255,.045)}
+.phone-equipment-image{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));pointer-events:none;user-select:none;-webkit-user-drag:none}
 .phone-item-row>div{display:grid;gap:.2rem;min-width:0}.phone-item-row>div>strong{display:flex;align-items:center;gap:.45rem;min-width:0}.phone-item-row>div>strong em{font-style:normal;font-size:.65rem;color:#171008;background:var(--gold-light);border-radius:999px;padding:.14rem .42rem}
 .phone-item-row small{color:var(--muted);line-height:1.45}.phone-item-row>div>span{font-size:.72rem;color:var(--gold-light)}
 .phone-item-row button{min-width:76px}.item-status-label{font-size:.72rem;color:var(--muted)}
@@ -1647,7 +1692,7 @@ body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(7,minmax(0,1f
 .glab-tool-card{display:grid;gap:.65rem}.glab-tool-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem}.glab-tool-heading>span{font-size:.72rem;color:var(--muted);white-space:nowrap}
 .tool-name-button{display:inline;padding:0!important;min-height:0!important;border:0!important;background:transparent!important;color:var(--gold-light)!important;font:inherit;font-weight:800!important;text-align:left;text-decoration:underline;text-underline-offset:3px;cursor:pointer;box-shadow:none!important}
 .tool-name-button:hover{color:#fff0c5!important}.tool-name-button:focus-visible{outline:2px solid var(--gold-light);outline-offset:4px;border-radius:3px}
-.workshop-level-card{border-color:rgba(231,192,110,.42)!important}.workshop-equipment-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;width:min(780px,100%);margin:0 auto .9rem}.workshop-equipment-summary>div{display:grid;gap:.2rem;padding:.75rem;border:1px solid rgba(231,192,110,.32);border-radius:11px;text-align:center}.workshop-equipment-summary small{color:var(--muted)}.workshop-equipment-summary strong{font-size:1.25rem;color:var(--gold-light)}
+.workshop-level-card{border-color:rgba(231,192,110,.42)!important;padding:.62rem .75rem;margin:.62rem 0}.workshop-level-card h2{font-size:.88rem;line-height:1.3;margin:0 0 .25rem}.workshop-level-card p{font-size:.66rem;line-height:1.45;margin:0;color:var(--muted)}.workshop-menu-item{display:grid;gap:.28rem}.workshop-menu-item>.primary-button{width:100%}.workshop-requirement-note{margin:0;padding:0 .25rem;text-align:left}.workshop-equipment-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;width:min(780px,100%);margin:0 auto .9rem}.workshop-equipment-summary>div{display:grid;gap:.2rem;padding:.75rem;border:1px solid rgba(231,192,110,.32);border-radius:11px;text-align:center}.workshop-equipment-summary small{color:var(--muted)}.workshop-equipment-summary strong{font-size:1.25rem;color:var(--gold-light)}
 .equipment-status{font-size:.75rem!important;font-weight:800}.equipment-status.available{color:#8fd4aa!important}.equipment-status.unusable{color:#ff8e86!important}.equipment-status.repairing{color:#efc46f!important}.equipment-row.unusable,.equipment-row.repairing{border-color:rgba(235,126,111,.38)}
 .tool-detail-modal{display:grid;gap:.8rem}.tool-detail-modal img{display:block;width:100%;max-height:280px;object-fit:contain;border:1px solid rgba(231,192,110,.35);border-radius:12px;background:#17120f}.tool-detail-modal>small{text-align:center;color:var(--muted)}.tool-detail-modal p{line-height:1.75}.tool-detail-meta{display:flex;flex-wrap:wrap;gap:.45rem}.tool-detail-meta span{padding:.3rem .58rem;border:1px solid rgba(231,192,110,.3);border-radius:999px;font-size:.72rem;color:var(--gold-light)}
 .tool-break-alert{display:grid;gap:.25rem;margin:.8rem 0;padding:.85rem 1rem;border:1px solid rgba(255,116,104,.66);border-radius:11px;background:rgba(93,20,17,.22);text-align:center}.tool-break-alert strong{color:#ff9d94}.tool-break-alert span{font-size:.78rem;color:#f3cec8}
@@ -1891,4 +1936,771 @@ body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(7,minmax(0,1f
   .order-material-row strong{grid-column:auto}
   body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important}
   body[data-screen="phone"] .phone-tabs button{font-size:.64rem!important}
+}
+
+
+/* v0.10.15 Androidスマートフォンメニュー操作修正 */
+body[data-screen="phone"] .phone-ui{
+  position:relative!important;
+  isolation:isolate!important;
+}
+body[data-screen="phone"] .phone-tabs{
+  position:relative!important;
+  top:auto!important;
+  z-index:30!important;
+  flex:0 0 auto!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+body[data-screen="phone"] .phone-tabs button{
+  position:relative!important;
+  z-index:31!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  -webkit-user-select:none;
+  user-select:none;
+}
+body[data-screen="phone"] .phone-content{
+  position:relative!important;
+  z-index:1!important;
+  pointer-events:auto!important;
+}
+/* v0.10.16 食事アイコンをナイフとフォークへ変更 */
+.main-menu .meal-cutlery-icon{width:1.58rem;height:1.58rem;display:grid;place-items:center;color:#f2ca70}
+.main-menu .meal-cutlery-icon svg{width:100%;height:100%;display:block;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.main-menu .meal-cutlery-icon .meal-knife-blade{fill:currentColor;stroke:none}
+
+
+/* v0.10.19 上部ステータスバーの順番・2段折り返しを調整 */
+.game-header{
+  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-areas:
+    "status money"
+    "center center";
+  align-items:center!important;
+  column-gap:.55rem!important;
+  row-gap:.18rem!important;
+}
+.status-left{
+  grid-area:status;
+  width:100%;
+  min-width:0;
+  display:block!important;
+}
+.status-top-line{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start;
+  flex-wrap:wrap!important;
+  gap:.18rem .55rem!important;
+  min-width:0;
+  line-height:1.15!important;
+}
+.status-primary-line,
+.status-secondary-line{
+  display:flex;
+  align-items:center;
+  flex:0 0 auto;
+  flex-wrap:nowrap;
+  gap:.18rem .55rem;
+  min-width:0;
+}
+.status-top-line .header-status-item{
+  display:inline-block;
+  flex:0 0 auto;
+  margin:0!important;
+  padding:0!important;
+  white-space:nowrap;
+  font-size:.68rem!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+  color:#fff0cf!important;
+  text-shadow:0 2px 6px rgba(0,0,0,.95);
+}
+.status-top-line .header-player-name::before,
+.status-top-line .header-store-name::before,
+.status-top-line .header-hunger::before{
+  content:none!important;
+  margin:0!important;
+}
+.header-center{
+  grid-area:center;
+  position:relative;
+  width:100%;
+  min-width:0;
+  min-height:34px;
+  justify-content:center!important;
+}
+.header-center>.icon-button:first-child{position:absolute;left:0}
+.header-center>.header-actions{position:absolute;right:0;justify-content:flex-end}
+.header-money{
+  grid-area:money;
+  justify-self:end;
+  align-self:start;
+  font-size:.9rem!important;
+  line-height:1.15;
+}
+.main-header{
+  grid-template-areas:"status money";
+}
+.main-header .header-center{display:none!important}
+.screen-content{padding-top:96px}
+
+@media (orientation:portrait), (max-width:820px){
+  .game-header{
+    column-gap:.35rem!important;
+    row-gap:.15rem!important;
+    padding:5px 7px!important;
+  }
+  .status-top-line{gap:.12rem .38rem!important}
+  .status-primary-line,.status-secondary-line{gap:.12rem .38rem}
+  .status-top-line .header-status-item{font-size:.52rem!important}
+  .header-money{font-size:.76rem!important}
+  .header-center{min-height:32px}
+  .header-center>.icon-button:first-child,
+  .header-center>.header-actions .icon-button{width:31px!important;height:31px!important;min-height:31px!important}
+  .screen-content{padding-top:92px!important}
+}
+@media (max-width:430px){
+  .status-top-line{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr);
+    align-items:center!important;
+    gap:.1rem!important;
+  }
+  .status-primary-line,
+  .status-secondary-line{
+    width:100%;
+    gap:.08rem .3rem;
+    flex-wrap:nowrap;
+  }
+  .status-top-line .header-status-item{font-size:.48rem!important}
+  .header-money{font-size:.72rem!important}
+  .screen-content{padding-top:94px!important}
+}
+@media (orientation:landscape) and (max-height:540px){
+  .status-top-line{gap:.08rem .34rem!important}
+  .status-primary-line,.status-secondary-line{gap:.08rem .34rem}
+  .status-top-line .header-status-item{font-size:.5rem!important}
+  .header-money{font-size:.74rem!important}
+  .screen-content{padding-top:84px!important}
+}
+
+/* v0.10.20 御徒町・食事画面の文字背景を少し暗くして可読性を改善 */
+body[data-screen="okachimachi"] .summary-card,
+body[data-screen="okachimachi"] .okachimachi-facilities button,
+body[data-screen="okachimachi"] .action-panel > .small-note,
+body[data-screen="meal"] .meal-hunger-summary,
+body[data-screen="meal"] .meal-choice-card,
+body[data-screen="meal"] .meal-note{
+  background:rgba(8,6,4,.40)!important;
+  background-image:none!important;
+  box-shadow:0 4px 14px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(2px)!important;
+  -webkit-backdrop-filter:blur(2px)!important;
+}
+body[data-screen="okachimachi"] .summary-card,
+body[data-screen="okachimachi"] .okachimachi-facilities button,
+body[data-screen="meal"] .meal-hunger-summary,
+body[data-screen="meal"] .meal-choice-card{
+  border-color:rgba(239,203,129,.38)!important;
+}
+body[data-screen="okachimachi"] .action-panel > .small-note,
+body[data-screen="meal"] .meal-note{
+  width:fit-content;
+  max-width:100%;
+  margin-left:auto;
+  margin-right:auto;
+  padding:.48rem .7rem;
+  border-radius:9px;
+}
+body[data-screen="meal"] .meal-eating-panel h1,
+body[data-screen="meal"] .meal-eating-panel > strong{
+  background:rgba(8,6,4,.40)!important;
+  padding:.38rem .72rem;
+  border-radius:9px;
+  box-shadow:0 4px 14px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(2px)!important;
+  -webkit-backdrop-filter:blur(2px)!important;
+}
+
+/* v0.10.24 g-Lab.購入一覧・詳細画面 */
+.glab-repair-group{order:-1}
+.glab-simple-list{display:grid;gap:.5rem}
+.glab-simple-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1rem;padding:.72rem .8rem;border:1px solid rgba(231,192,110,.28);border-radius:9px;background:rgba(8,6,5,.42)}
+.glab-simple-row.repair{border-color:rgba(255,139,121,.42);background:rgba(67,17,13,.3)}
+.glab-simple-row>strong{font-size:.88rem;color:var(--gold-light);white-space:nowrap;text-align:right}
+.glab-tool-detail-page{display:grid;gap:.85rem;align-content:start;max-height:calc(100dvh - 120px);overflow:auto;padding-bottom:1rem}
+.glab-tool-detail-page>img{display:block;width:min(100%,360px);max-height:270px;margin:0 auto;object-fit:contain;border:1px solid rgba(231,192,110,.35);border-radius:12px;background:#17120f}
+.glab-tool-detail-page>p{margin:0;line-height:1.75}
+.glab-detail-price{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:.7rem .8rem;border-top:1px solid rgba(231,192,110,.28);border-bottom:1px solid rgba(231,192,110,.28)}
+.glab-detail-price span{color:var(--muted)}
+.glab-detail-price strong{font-size:1.2rem;color:var(--gold-light)}
+.glab-owned-message{display:grid;justify-items:center;gap:.25rem;padding:.85rem;border:1px solid rgba(143,212,170,.48);border-radius:10px;background:rgba(22,73,46,.25);text-align:center}
+.glab-owned-message strong{color:#a7e7bd}.glab-owned-message span{font-size:.82rem;color:var(--muted)}
+@media (orientation:portrait),(max-width:820px){
+  .glab-simple-row{padding:.68rem .72rem}.glab-tool-detail-page{max-height:none}.glab-tool-detail-page>img{max-height:220px}
+}
+
+
+/* v0.10.25 g-Lab.工具・設備の専門解説 */
+.tool-learning-guide{display:grid;gap:.9rem;color:var(--text)}
+.tool-guide-lead{margin:0;padding:.9rem 1rem;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;background:rgba(16,12,9,.5);font-size:.94rem;line-height:1.85}
+.tool-guide-section{display:grid;gap:.55rem;padding:.9rem 1rem;border:1px solid rgba(231,192,110,.22);border-radius:11px;background:rgba(8,6,5,.34)}
+.tool-guide-section h3{margin:0;color:var(--gold-light);font-size:1rem;letter-spacing:.03em}
+.tool-guide-section p{margin:0;line-height:1.82;font-size:.9rem}
+.tool-guide-section ul{display:grid;gap:.35rem;margin:.1rem 0 0;padding-left:1.25rem}
+.tool-guide-section li{line-height:1.65;font-size:.86rem;color:rgba(255,248,232,.9)}
+.tool-guide-section li::marker{color:var(--gold)}
+@media (orientation:portrait),(max-width:820px){
+  .tool-guide-lead{font-size:.9rem;padding:.78rem .82rem;line-height:1.78}
+  .tool-guide-section{padding:.78rem .82rem}
+  .tool-guide-section p{font-size:.86rem;line-height:1.76}
+  .tool-guide-section li{font-size:.82rem;line-height:1.58}
+}
+
+
+/* v0.10.27 g-Lab.商品概要と専門詳細を分離 */
+.tool-brief-card{display:grid;gap:.5rem;padding:.88rem 1rem;border:1px solid rgba(231,192,110,.25);border-radius:11px;background:rgba(8,6,5,.38)}
+.tool-brief-card p{margin:0;font-size:.92rem;line-height:1.72}
+.tool-brief-card .tool-brief-sub{font-size:.84rem;line-height:1.65;color:var(--muted)}
+.tool-guide-button{margin-top:-.15rem}
+.glab-tool-guide-page{display:grid;gap:.9rem;align-content:start;max-width:920px;width:min(100%,920px);margin:0 auto;padding:1rem;max-height:calc(100dvh - 120px);overflow:auto}
+.glab-tool-guide-page>img{display:block;width:min(100%,300px);max-height:220px;margin:0 auto;object-fit:contain;border:1px solid rgba(231,192,110,.35);border-radius:12px;background:#17120f}
+@media (orientation:portrait),(max-width:820px){
+  .tool-brief-card{padding:.76rem .82rem}
+  .tool-brief-card p{font-size:.87rem;line-height:1.66}
+  .tool-brief-card .tool-brief-sub{font-size:.8rem;line-height:1.58}
+  .glab-tool-guide-page{max-height:none;padding:.82rem}
+  .glab-tool-guide-page>img{max-height:190px}
+}
+
+/* v0.10.29 g-Lab.商品説明付近の詳細ボタン・不足金額表示 */
+.tool-brief-actions{display:flex;justify-content:flex-end;align-items:center;margin-top:.1rem}
+.tool-inline-guide-button{width:auto!important;min-width:6rem;min-height:2.35rem!important;padding:.48rem 1rem!important;font-size:.84rem!important}
+.glab-funds-shortage{display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.68rem .8rem;border:1px solid rgba(255,139,121,.48);border-radius:9px;background:rgba(82,18,15,.3)}
+.glab-funds-shortage span{font-size:.82rem;color:#f1cbc5}
+.glab-funds-shortage strong{font-size:.98rem;color:#ff9d94;white-space:nowrap}
+@media (orientation:portrait),(max-width:820px){
+  .tool-inline-guide-button{min-width:5.6rem;min-height:2.2rem!important;padding:.42rem .85rem!important;font-size:.8rem!important}
+  .glab-funds-shortage{align-items:flex-start;padding:.62rem .7rem}
+  .glab-funds-shortage span{font-size:.78rem;line-height:1.45}
+  .glab-funds-shortage strong{font-size:.9rem}
+}
+
+
+/* v0.10.30 御徒町画面の外部案内リンク */
+.okachimachi-info-links{
+  margin-top:.85rem;
+  padding-top:.85rem;
+  border-top:1px solid rgba(255,255,255,.16);
+  gap:.55rem;
+}
+.okachimachi-info-links .full-button{
+  min-height:46px;
+  background:rgba(16,12,9,.72);
+}
+
+
+/* v0.10.32 所持金増減アニメーションを大幅に拡大 */
+.header-money{
+  overflow:visible!important;
+  isolation:isolate;
+}
+.header-money.money-change-active{
+  z-index:140!important;
+}
+.header-money.money-change-active .header-money-value{
+  position:relative;
+  z-index:2;
+  animation:money-change-pop-xxl 1.05s ease-in-out both!important;
+  text-shadow:0 3px 10px rgba(0,0,0,.98),0 0 18px rgba(255,226,151,.7)!important;
+}
+.header-money-change{
+  z-index:3;
+  top:calc(100% + .4rem)!important;
+  font-size:2rem!important;
+  line-height:1!important;
+  letter-spacing:.02em;
+  text-shadow:0 3px 10px rgba(0,0,0,.98),0 0 16px currentColor!important;
+  animation:money-change-rise-xxl 1.05s ease-out both!important;
+}
+@keyframes money-change-pop-xxl{
+  0%,100%{transform:scale(1)}
+  12%{transform:scale(1.35)}
+  22%,72%{transform:scale(5)}
+  88%{transform:scale(1.22)}
+}
+@keyframes money-change-rise-xxl{
+  0%{opacity:0;transform:translateY(-8px) scale(.72)}
+  16%{opacity:1;transform:translateY(0) scale(1.08)}
+  30%,74%{opacity:1;transform:translateY(2px) scale(1.28)}
+  100%{opacity:0;transform:translateY(18px) scale(1.08)}
+}
+@media (orientation:portrait), (max-width:820px){
+  .header-money-change{font-size:1.72rem!important;top:calc(100% + .48rem)!important}
+  @keyframes money-change-pop-xxl{
+    0%,100%{transform:scale(1)}
+    12%{transform:scale(1.35)}
+    22%,72%{transform:scale(5.4)}
+    88%{transform:scale(1.22)}
+  }
+}
+@media (max-width:430px){
+  .header-money-change{font-size:1.58rem!important}
+}
+@media (orientation:landscape) and (max-height:540px){
+  .header-money-change{font-size:1.5rem!important;top:calc(100% + .28rem)!important}
+}
+
+
+/* v0.10.39 セキュリティ強化UI */
+.verification-panel{width:min(520px,calc(100vw - 28px));text-align:center}
+.verification-panel h1{margin:.1rem 0 .55rem;font-size:clamp(1.2rem,4vw,1.75rem)}
+.verification-panel p{line-height:1.7;margin:.3rem 0}
+.account-delete-button{border-width:2px!important}
+.account-confirmation .name-entry-field+ .name-entry-field{margin-top:.8rem}
+
+
+/* v0.10.40 現実の地金相場連動 */
+.metal-market-summary{display:grid;gap:.25rem;margin:.15rem 0 .75rem;padding:.68rem .78rem;border:1px solid rgba(117,221,156,.36);border-radius:11px;background:rgba(8,42,27,.72)}
+.metal-market-summary strong{font-size:.92rem;color:#9cf0b8}
+.metal-market-summary small{font-size:.75rem;line-height:1.45;color:rgba(255,255,255,.82)}
+.metal-market-summary.stale{border-color:rgba(235,189,102,.4);background:rgba(52,36,10,.72)}
+.metal-market-summary.stale strong{color:#f2d28e}
+.metal-market-summary.fallback{border-color:rgba(255,255,255,.16);background:rgba(12,16,23,.7)}
+.metal-market-summary.fallback strong{color:rgba(255,255,255,.9)}
+.metal-product-row .product-main>div{display:grid;gap:.12rem}
+.metal-product-row .metal-unit-price{color:#9cf0b8;font-weight:700}
+.metal-five-gram-price{white-space:nowrap}
+
+
+/* v0.10.41 地金1g売買・大量入力 */
+.metal-trade-list{gap:.9rem}
+.metal-trade-card{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:.65rem;padding:.85rem}
+.metal-trade-heading{display:grid!important;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:.65rem}
+.metal-trade-heading>div{display:grid;gap:.16rem}
+.metal-trade-heading strong{font-size:1rem}
+.metal-maximum{color:#ffe2a0!important;font-weight:700}
+.metal-quantity-area{display:grid!important;gap:.5rem}
+.metal-quantity-input{display:grid;grid-template-columns:auto minmax(110px,180px);justify-content:space-between;align-items:center;gap:.7rem;font-weight:700}
+.metal-input-wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.35rem;border:1px solid rgba(255,226,166,.72);border-radius:10px;padding:.15rem .6rem;background:rgba(0,0,0,.28)}
+.metal-input-wrap input{width:100%;min-width:0;height:42px;border:0;outline:0;background:transparent;color:#fff5df;text-align:right;font-size:1.28rem;font-weight:800;font-variant-numeric:tabular-nums}
+.metal-input-wrap input::-webkit-inner-spin-button,.metal-input-wrap input::-webkit-outer-spin-button{appearance:none;margin:0}
+.metal-input-wrap b{font-size:1rem;color:#ffe4a6}
+.metal-step-buttons{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.35rem}
+.metal-step-buttons button{min-height:38px;padding:.42rem .25rem;font-weight:800}
+.metal-max-button{min-height:40px}
+.metal-trade-preview{display:flex!important;align-items:center;justify-content:space-between;gap:.8rem;padding:.55rem .7rem;border-top:1px solid rgba(255,255,255,.14);border-bottom:1px solid rgba(255,255,255,.14);font-variant-numeric:tabular-nums}
+.metal-trade-preview span{color:rgba(255,255,255,.84)}
+.metal-trade-preview strong{font-size:1.08rem;color:#fff0bd;white-space:nowrap}
+.metal-trade-submit{min-height:44px}
+.metal-fraction-note{margin:0;text-align:center}
+@media (max-width:620px){
+  .metal-step-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .metal-quantity-input{grid-template-columns:1fr minmax(105px,145px)}
+  .metal-trade-preview{align-items:flex-end;flex-direction:column;gap:.2rem}
+}
+
+/* v0.10.44 素材屋トップ・純金属相場と前日比 */
+.supplier-category-menu{
+  width:min(440px,100%);
+  margin:auto;
+  gap:.8rem;
+}
+.supplier-category-menu .large-button{
+  min-height:64px;
+  font-size:1.12rem;
+}
+.supplier-metal-tabs{
+  margin-bottom:.75rem;
+}
+.metal-spot-panel{
+  display:grid;
+  gap:.7rem;
+}
+.metal-spot-heading{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:.75rem;
+  padding:.1rem .1rem .55rem;
+  border-bottom:1px solid rgba(255,255,255,.16);
+}
+.metal-spot-heading>div{
+  display:grid;
+  gap:.12rem;
+}
+.metal-spot-heading strong{
+  font-size:1.05rem;
+  color:#fff0bd;
+}
+.metal-spot-heading small{
+  font-size:.72rem;
+  line-height:1.4;
+  color:rgba(255,255,255,.74);
+}
+.metal-spot-list{
+  display:grid;
+  gap:.5rem;
+}
+.metal-spot-row{
+  display:grid;
+  grid-template-columns:minmax(6rem,.85fr) minmax(7.5rem,1fr) minmax(6.2rem,.7fr);
+  align-items:center;
+  gap:.65rem;
+  min-height:54px;
+  padding:.65rem .75rem;
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:11px;
+  background:rgba(8,11,15,.72);
+  font-variant-numeric:tabular-nums;
+}
+.metal-spot-row>strong{
+  font-size:.98rem;
+}
+.metal-spot-price{
+  text-align:right;
+  color:#fff4d6;
+  font-size:1rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+.metal-spot-change{
+  justify-self:end;
+  min-width:5.7rem;
+  text-align:right;
+  font-size:.96rem;
+  font-weight:900;
+  white-space:nowrap;
+}
+.metal-spot-change.up{color:#58e58a}
+.metal-spot-change.down{color:#ff7070}
+.metal-spot-change.flat{color:rgba(255,255,255,.82)}
+.metal-spot-change.unavailable{color:rgba(255,255,255,.5);font-size:.76rem;font-weight:700}
+.metal-spot-panel .metal-market-summary{
+  margin:.05rem 0 0;
+}
+@media (max-width:620px){
+  .metal-spot-heading{align-items:flex-start;flex-direction:column;gap:.18rem}
+  .metal-spot-row{grid-template-columns:minmax(4.5rem,.72fr) minmax(6.8rem,1fr) minmax(5.5rem,.72fr);gap:.35rem;padding:.58rem .55rem}
+  .metal-spot-row>strong{font-size:.88rem}
+  .metal-spot-price{font-size:.9rem}
+  .metal-spot-change{font-size:.86rem;min-width:5.2rem}
+}
+
+/* v0.10.44 地金相場の月間・年間履歴グラフ */
+.metal-market-detail-button{
+  margin-top:.7rem;
+}
+.metal-market-trade-buttons{
+  margin-top:.85rem;
+}
+.metal-market-return-button{
+  margin-bottom:.75rem;
+}
+.metal-history-panel{
+  display:grid;
+  gap:.72rem;
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding-bottom:1rem;
+}
+.metal-history-controls{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:.55rem;
+}
+.metal-history-period-nav{
+  display:grid;
+  grid-template-columns:minmax(4.8rem,auto) minmax(7.5rem,1fr) minmax(4.8rem,auto);
+  align-items:center;
+  gap:.45rem;
+}
+.metal-history-period-nav strong{
+  text-align:center;
+  color:#fff0bd;
+  font-size:1rem;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.metal-history-range-button{
+  min-width:5.4rem;
+}
+.metal-history-note{
+  margin:0;
+  color:rgba(255,255,255,.72);
+  font-size:.72rem;
+  line-height:1.55;
+}
+.metal-history-chart-stack{
+  display:grid;
+  gap:.7rem;
+}
+.metal-history-chart-card{
+  display:grid;
+  gap:.35rem;
+  padding:.64rem .65rem .58rem;
+  border:1px solid color-mix(in srgb, var(--metal-chart-color) 42%, rgba(255,255,255,.14));
+  border-radius:12px;
+  background:rgba(6,9,13,.82);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+}
+.metal-history-chart-heading{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:.6rem;
+}
+.metal-history-chart-heading strong{
+  display:inline-flex;
+  align-items:center;
+  gap:.42rem;
+  color:#fff;
+  font-size:.93rem;
+}
+.metal-history-chart-heading small{
+  color:rgba(255,255,255,.58);
+  font-size:.68rem;
+}
+.metal-history-swatch{
+  width:.72rem;
+  height:.72rem;
+  border-radius:50%;
+  background:var(--metal-chart-color);
+  box-shadow:0 0 9px color-mix(in srgb, var(--metal-chart-color) 65%, transparent);
+}
+.metal-line-chart{
+  display:block;
+  width:100%;
+  height:auto;
+  min-height:118px;
+  overflow:visible;
+}
+.metal-chart-grid{
+  stroke:rgba(255,255,255,.1);
+  stroke-width:1;
+}
+.metal-chart-axis-label{
+  fill:rgba(255,255,255,.62);
+  font-size:17px;
+  font-family:inherit;
+  font-variant-numeric:tabular-nums;
+}
+.metal-chart-point{
+  stroke:rgba(5,7,10,.9);
+  stroke-width:1.5;
+}
+.metal-history-stats{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.35rem;
+  color:rgba(255,255,255,.66);
+  font-size:.68rem;
+  font-variant-numeric:tabular-nums;
+}
+.metal-history-stats span{
+  display:grid;
+  gap:.08rem;
+  padding:.3rem .35rem;
+  border-radius:8px;
+  background:rgba(255,255,255,.045);
+  text-align:center;
+}
+.metal-history-stats b{
+  color:#fff;
+  font-size:.76rem;
+  white-space:nowrap;
+}
+.metal-history-empty{
+  display:grid;
+  place-items:center;
+  min-height:105px;
+  color:rgba(255,255,255,.58);
+  font-size:.76rem;
+  text-align:center;
+}
+.metal-history-close{
+  margin-top:.1rem;
+}
+@media (max-width:620px){
+  .metal-history-controls{
+    grid-template-columns:1fr;
+  }
+  .metal-history-range-button{
+    width:100%;
+  }
+  .metal-history-period-nav{
+    grid-template-columns:minmax(4.5rem,auto) minmax(7rem,1fr) minmax(4.5rem,auto);
+    gap:.3rem;
+  }
+  .metal-history-chart-card{
+    padding:.55rem .45rem .5rem;
+  }
+  .metal-chart-axis-label{
+    font-size:18px;
+  }
+  .metal-history-stats{
+    gap:.22rem;
+  }
+  .metal-history-stats span{
+    padding:.27rem .2rem;
+  }
+  .metal-history-stats b{
+    font-size:.7rem;
+  }
+}
+
+
+/* v0.10.45 工房・地金詳細と受注予約重量 */
+.metal-inventory-list{padding:0;overflow:hidden}
+.metal-inventory-row{
+  width:100%;
+  min-height:58px;
+  margin:0;
+  padding:.72rem .9rem;
+  border:0;
+  border-bottom:1px solid rgba(255,255,255,.09);
+  border-radius:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+  align-items:center;
+}
+.metal-inventory-row:last-child{border-bottom:0}
+.metal-inventory-row:hover,.metal-inventory-row:focus-visible{background:rgba(231,192,110,.1);outline:none}
+.metal-inventory-row span{font-size:1rem;font-weight:800;color:#fff0bd}
+.metal-inventory-row strong{margin-left:auto;font-size:1.05rem;font-variant-numeric:tabular-nums;color:#fff}
+.metal-inventory-row i{font-style:normal;font-size:1.45rem;color:rgba(255,255,255,.58)}
+.metal-inventory-detail-page{display:grid;gap:.9rem;max-width:820px}
+.metal-detail-heading{display:flex;align-items:center;gap:.8rem;padding-bottom:.65rem;border-bottom:1px solid rgba(255,255,255,.14)}
+.metal-detail-heading>div{display:grid;gap:.1rem}
+.metal-detail-heading small{color:var(--muted);font-size:.72rem}
+.metal-detail-heading h1{margin:0;color:#fff0bd;font-size:clamp(1.35rem,4vw,2rem)}
+.metal-composition-card,.metal-summary-card{padding:.85rem 1rem;border:1px solid rgba(231,192,110,.22);border-radius:12px;background:rgba(8,6,5,.42)}
+.metal-composition-card h2,.metal-summary-card h2{margin:0 0 .35rem;color:var(--gold-light);font-size:.94rem}
+.metal-composition-card p,.metal-summary-card p{margin:0;line-height:1.75;font-size:.9rem}
+.metal-summary-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1rem}
+.metal-professional-button{min-width:88px}
+.metal-inventory-metrics{display:grid;gap:0;margin:0;border:1px solid rgba(255,255,255,.14);border-radius:12px;overflow:hidden;background:rgba(5,8,12,.62)}
+.metal-inventory-metrics>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1rem;padding:.7rem .85rem;border-bottom:1px solid rgba(255,255,255,.09)}
+.metal-inventory-metrics>div:last-child{border-bottom:0}
+.metal-inventory-metrics dt{color:rgba(255,255,255,.78);font-size:.86rem}
+.metal-inventory-metrics dd{margin:0;color:#fff;font-size:1rem;font-weight:900;font-variant-numeric:tabular-nums}
+.metal-inventory-metrics .emphasis{background:rgba(231,192,110,.11)}
+.metal-inventory-metrics .emphasis dt,.metal-inventory-metrics .emphasis dd{color:#ffe2a0}
+.metal-reservation-note,.metal-reservation-warning,.metal-guide-caution{margin:0;padding:.7rem .85rem;border-radius:10px;font-size:.82rem;line-height:1.65}
+.metal-reservation-note{border:1px solid rgba(97,176,255,.28);background:rgba(12,48,78,.52);color:#cde7ff}
+.metal-reservation-warning{border:1px solid rgba(255,112,112,.38);background:rgba(76,14,14,.56);color:#ffd1d1;font-weight:700}
+.metal-professional-guide-page{display:grid;gap:.9rem;align-content:start;width:min(100%,940px);max-height:calc(100dvh - 120px);margin:0 auto;padding:1rem;overflow:auto;overscroll-behavior:contain}
+.metal-guide-title{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:.75rem;padding-bottom:.7rem;border-bottom:1px solid rgba(255,255,255,.14)}
+.metal-guide-title h1{margin:0 0 .25rem;color:#fff0bd;font-size:1.3rem}
+.metal-guide-title p{margin:0;color:rgba(255,255,255,.78);font-size:.84rem;line-height:1.65}
+.metal-guide-sections{display:grid;gap:.7rem}
+.metal-guide-caution{border:1px solid rgba(231,192,110,.26);background:rgba(52,36,10,.48);color:#f2ddb0}
+@media (max-width:620px){
+  .metal-summary-card{grid-template-columns:1fr}
+  .metal-professional-button{width:100%}
+  .metal-inventory-metrics>div{padding:.62rem .7rem}
+  .metal-inventory-metrics dt{font-size:.79rem}
+  .metal-inventory-metrics dd{font-size:.94rem}
+  .metal-professional-guide-page{max-height:none;padding:.82rem}
+}
+
+/* v0.10.47 御徒町施設の休業日・営業時間 */
+.facility-closed{display:flex;align-items:center;justify-content:center;gap:.55rem;opacity:.58;cursor:not-allowed;filter:saturate(.55)}
+.facility-closed small{font-size:.68rem;color:inherit}
+.okachimachi-business-note{margin:.7rem 0 0;text-align:center;line-height:1.55}
+.facility-closed-page{width:min(520px,92vw);margin:auto;text-align:center;display:grid;gap:.85rem}
+.facility-closed-page>strong{font-size:clamp(1.35rem,3vw,2rem);color:var(--gold-light)}
+.facility-closed-page p{margin:0;line-height:1.65}
+
+/* v0.10.52 ディスプレイ屋・ショーケース設備 */
+.display-shop-panel{max-width:960px;margin:0 auto}
+.display-shop-row{grid-template-columns:minmax(0,1fr) auto auto}
+.display-shop-row .product-main>div{display:grid;gap:.22rem}
+.display-shop-row .product-main small{line-height:1.5}
+.store-showcase-heading,.showcase-unit-header,.section-heading{display:flex;align-items:center;justify-content:space-between;gap:.8rem}
+.store-showcase-heading small,.showcase-unit-header small{color:var(--muted);font-variant-numeric:tabular-nums}
+.showcase-units{display:grid;gap:1rem}
+.showcase-unit{padding:.85rem;border:1px solid rgba(231,190,104,.28);border-radius:14px;background:rgba(0,0,0,.18)}
+.showcase-unit-header{margin-bottom:.65rem}
+.showcase-unit-header h3{margin:0;color:var(--gold-light)}
+.showcase-unit .showcase-grid{grid-template-columns:repeat(5,minmax(130px,1fr));overflow-x:auto;padding-bottom:.2rem}
+.showcase-unit .showcase-slot{min-height:190px}
+.showcase-empty-state{padding:1.5rem 1rem;border:1px dashed rgba(231,190,104,.34);border-radius:12px}
+.store-info-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.store-install-section{display:grid;gap:.55rem;margin:1rem 0;padding:1rem;border:1px solid rgba(231,190,104,.26);border-radius:12px;background:rgba(0,0,0,.18)}
+.store-install-section .section-heading h2{margin:0}
+.store-install-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.75rem;padding:.7rem;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.045)}
+.store-install-row>div{display:grid;gap:.18rem}
+.store-install-row small{color:var(--muted)}
+@media (max-width:760px){
+  .display-shop-row{grid-template-columns:1fr auto}
+  .display-shop-row>button{grid-column:1/-1;width:100%}
+  .showcase-unit .showcase-grid{grid-template-columns:repeat(5,minmax(145px,1fr))}
+  .store-info-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .store-showcase-heading,.showcase-unit-header,.section-heading{align-items:flex-start;flex-direction:column}
+  .section-heading .secondary-button{width:100%}
+  .store-install-row{grid-template-columns:1fr}
+  .store-install-row button{width:100%}
+}
+
+
+/* v0.10.54 店頭設備・ケース残数 */
+body[data-screen="store"] .store-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+.storefront-equipment-section{margin:.75rem 0 1rem}
+@media (orientation:portrait),(max-width:820px){
+  body[data-screen="store"] .store-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body[data-screen="store"] .store-summary>div:last-child{grid-column:auto}
+}
+
+/* v0.10.83 ルースを石種・カット別アイテムとして管理 */
+.loose-shop-groups{display:grid;gap:1rem}
+.loose-shop-gem-group{display:grid;gap:.55rem;padding:.75rem;border:1px solid rgba(231,192,110,.22);border-radius:12px;background:rgba(0,0,0,.16)}
+.loose-shop-gem-group>h2{margin:0;color:var(--gold-light);font-size:1rem}
+.polishing-shape-grid{margin-bottom:1rem}
+.jewelry-preview-loose{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.jewelry-loose-preview{width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.38))}
+.jewelry-preview.large .jewelry-loose-preview{width:92px;height:92px}
+.small-jewelry i{display:grid;place-items:center;width:30px;height:30px}
+.small-jewelry-loose{display:block;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 3px 7px rgba(0,0,0,.4))}
+@media (max-width:700px){
+  .loose-shop-gem-group{padding:.6rem}
+  .jewelry-loose-preview{width:68px;height:68px}
+}
+
+
+/* v0.10.85 ルース詳細・注文予約数 */
+.loose-shop-actions{display:flex;align-items:center;justify-content:flex-end;gap:.45rem;flex-wrap:wrap}
+.loose-shop-actions button{white-space:nowrap}
+.loose-inventory-row{width:100%;grid-template-columns:minmax(0,1fr) auto auto;color:var(--text);text-align:left;cursor:pointer}
+.loose-inventory-row:hover,.loose-inventory-row:focus-visible{background:rgba(231,192,110,.1);outline:none}
+.loose-row-counts{display:grid;justify-items:end;gap:.12rem}.loose-row-counts small{color:var(--muted);font-size:.72rem}
+.loose-inventory-detail-page{display:grid;gap:1rem}
+.loose-detail-heading{display:grid;grid-template-columns:minmax(160px,260px) minmax(0,1fr);align-items:center;gap:1.3rem}
+.loose-detail-heading h1{margin:.15rem 0;color:var(--gold-light);font-size:clamp(1.55rem,4vw,2.35rem)}
+.loose-detail-heading p{margin:.2rem 0;color:#f3dca7;font-weight:800}
+.loose-detail-image{min-height:220px;display:grid;place-items:center;border:1px solid rgba(231,192,110,.28);border-radius:16px;background:radial-gradient(circle,rgba(255,255,255,.12),rgba(0,0,0,.28) 68%)}
+.loose-detail-main-image{display:block;max-width:230px;max-height:230px;object-fit:contain;filter:drop-shadow(0 16px 28px rgba(0,0,0,.48))}
+.loose-detail-description-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.loose-detail-description-grid section{padding:.9rem 1rem;border:1px solid rgba(231,192,110,.22);border-radius:12px;background:rgba(8,6,5,.42)}
+.loose-detail-description-grid h2{margin:.05rem 0 .45rem;font-size:1rem;color:var(--gold-light)}
+.loose-detail-description-grid p{margin:0;line-height:1.75;color:#e9dcc5}
+.loose-inventory-metrics{display:grid;gap:0;margin:0;border:1px solid rgba(255,255,255,.14);border-radius:12px;overflow:hidden;background:rgba(5,8,12,.62)}
+.loose-inventory-metrics>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;padding:.78rem 1rem;border-bottom:1px solid rgba(255,255,255,.09)}
+.loose-inventory-metrics>div:last-child{border-bottom:0}.loose-inventory-metrics dt{color:var(--muted)}.loose-inventory-metrics dd{margin:0;color:#fff1c7;font-weight:900;text-align:right}
+.loose-inventory-metrics .emphasis{background:rgba(231,192,110,.11)}
+.loose-reservation-note,.loose-reservation-warning{margin:0;padding:.8rem 1rem;border-radius:10px;line-height:1.6}
+.loose-reservation-note{border:1px solid rgba(97,176,255,.28);background:rgba(12,48,78,.52);color:#cde7ff}
+.loose-reservation-warning{border:1px solid rgba(255,112,112,.38);background:rgba(76,14,14,.56);color:#ffd1d1;font-weight:700}
+.loose-detail-actions{grid-template-columns:repeat(2,minmax(0,1fr));display:grid}
+@media (orientation:portrait),(max-width:820px){
+  .loose-detail-heading{grid-template-columns:1fr;text-align:center}.loose-detail-image{min-height:190px}.loose-detail-main-image{max-width:200px;max-height:200px}
+  .loose-detail-description-grid{grid-template-columns:1fr}.loose-inventory-metrics>div{grid-template-columns:1fr;gap:.25rem}.loose-inventory-metrics dd{text-align:left}.loose-detail-actions{grid-template-columns:1fr}
+  .loose-shop-product-row{grid-template-columns:minmax(0,1fr) auto}.loose-shop-product-row>.loose-shop-actions{grid-column:1/-1}.loose-shop-product-row>strong{justify-self:end}
 }

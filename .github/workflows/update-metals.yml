@@ -1,0 +1,113 @@
+name: 地金相場更新とGitHub Pages公開
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # GitHub ActionsのcronはUTC。日本時間の平日9:43と14:17。
+    - cron: '43 0 * * 1-5'
+    - cron: '17 5 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+jobs:
+  update-metals:
+    permissions:
+      contents: write
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: APIキーを確認
+        env:
+          METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
+        run: |
+          if [ -z "$METALS_DEV_API_KEY" ]; then
+            echo "GitHub Secret『METALS_DEV_API_KEY』を設定してください。" >&2
+            exit 1
+          fi
+          echo "::add-mask::$METALS_DEV_API_KEY"
+
+      - name: Metals.Devから価格を取得して計算
+        env:
+          METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
+        run: python3 scripts/update-metals.py
+
+      - name: 生成JSONを検証
+        run: python3 -m json.tool data/metals.json > /dev/null
+
+      - name: 更新結果をコミット
+        run: |
+          if git diff --quiet -- data/metals.json; then
+            echo "価格ファイルに変更はありません。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/metals.json
+          git commit -m "地金相場を自動更新"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+  build-pages:
+    permissions:
+      contents: read
+      pages: read
+    if: always() && (github.event_name == 'push' || needs.update-metals.result == 'success')
+    needs:
+      - update-metals
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 公開する最新版を取得
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: GitHub Pagesを設定
+        uses: actions/configure-pages@v5
+
+      - name: 公開用フォルダを作成
+        run: |
+          mkdir -p _site
+          rsync -a ./ _site/ \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='_site/' \
+            --exclude='scripts/' \
+            --exclude='*.md' \
+            --exclude='firestore.rules'
+
+      - name: GitHub Pages用ファイルをアップロード
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy-pages:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    if: always() && needs.build-pages.result == 'success'
+    needs:
+      - build-pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pagesへ公開
+        id: deployment
+        uses: actions/deploy-pages@v4

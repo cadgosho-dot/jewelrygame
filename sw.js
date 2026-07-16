@@ -1,4 +1,4 @@
-const VERSION = '0.10.88';
+const VERSION = '0.10.100';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
@@ -7,6 +7,8 @@ const APP_SHELL = [
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './assets/images/main.webp', './assets/images/main-portrait.webp',
   './assets/images/tools/placeholder.svg', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
+  './assets/audio/bgm-main.ogg', './assets/audio/amb-main-clear.ogg', './assets/audio/amb-main-cloudy.ogg',
+  './assets/audio/amb-main-rain.ogg', './assets/audio/amb-main-snow.ogg',
 ];
 
 async function trimCache(cacheName, maxEntries = 320) {

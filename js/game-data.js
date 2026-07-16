@@ -1,9 +1,19 @@
-export const VERSION = '0.10.88';
+export const VERSION = '0.10.100';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
+export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
+export const STORE_MONTHLY_RENTS = Object.freeze({ 1: 80000, 2: 150000, 3: 300000 });
+export const WORKSHOP_MONTHLY_COST = 50000;
+export const WORKSHOP_EXPANSION_COSTS = Object.freeze({ 2: 50000, 3: 100000, 4: 200000, 5: 300000, 6: 500000, 7: 750000, 8: 1000000, 9: 1500000, 10: 2000000 });
+export const ARTISAN_LEVEL_XP = Object.freeze([0, 100, 400, 1000, 2500]);
+export const STORE_LEVEL_POINTS = Object.freeze([0, 10, 30, 60, 100, 160, 250, 380, 550, 800]);
 export const JEWELRY_BENCH_PRICE = 85000;
 export const POLISHING_MACHINE_PRICE = 400000;
 export const POLISHING_HOURS = 2;
+export const DAY_START_MINUTES = 9 * 60;
+export const DAY_END_MINUTES = 21 * 60;
+export const STORE_OPEN_MINUTES = 9 * 60;
+export const STORE_CLOSE_MINUTES = 19 * 60;
 
 export const METAL_WORKSHOP_ORDER = ['platinum', 'gold', 'silver'];
 
@@ -309,7 +319,7 @@ export const WORKSHOP_TOOLS = {
   },
   torch: {
     id: 'torch', name: 'バーナー', type: '工具', symbol: '♨', price: 30000, qualityPoints: 2,
-    initiallyAvailable: true, breakable: true, repairable: false,
+    initiallyAvailable: true, breakable: true, repairable: true,
     description: '焼きなまし、ろう付け、溶解などで地金へ制御された熱を与える加熱工具です。',
     detail: '炎の大きさ、温度分布、酸化・還元の状態を調整し、母材全体と接合部を適切な温度へ導きます。',
     guide: {
@@ -371,7 +381,8 @@ export const WORKSHOP_TOOLS = {
   },
   magnifier: {
     id: 'magnifier', name: '拡大鏡', type: '設備', symbol: '◎', price: 150000, qualityPoints: 4,
-    initiallyAvailable: true, breakable: true, repairable: false,
+    initiallyAvailable: false, breakable: true, repairable: true,
+    unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '両手を自由にしたまま、石留め、彫り、仕上げ、欠陥検査を拡大観察するための設備です。',
     detail: '作業距離と視野を確保しながら、肉眼では見落としやすい傷、隙間、爪の接触状態を確認します。',
     guide: {
@@ -433,7 +444,7 @@ export const WORKSHOP_TOOLS = {
   },
   benchPeg: {
     id: 'benchPeg', name: 'スリ板', type: '工具', symbol: '▱', price: 3000, qualityPoints: 1,
-    initiallyAvailable: true, breakable: true, repairable: false,
+    initiallyAvailable: true, breakable: false, repairable: false,
     description: '彫金机へ固定し、糸鋸、ヤスリ、切削、保持作業の支点として加工物を支える木製工具です。',
     detail: '作業内容に合わせて切り込みや形を作り、工具と加工物を安定させる消耗品です。',
     guide: {
@@ -495,7 +506,8 @@ export const WORKSHOP_TOOLS = {
   },
   engravingBlock: {
     id: 'engravingBlock', name: '彫刻台', type: '設備', symbol: '⬡', price: 75000, qualityPoints: 3,
-    initiallyAvailable: true, breakable: true, repairable: false,
+    initiallyAvailable: false, breakable: false, repairable: false,
+    unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '加工物を強固に保持し、角度と向きを滑らかに変えながら彫刻・石留めを行う回転式固定設備です。',
     detail: '重量のある球状台とジョー、ピン、治具を組み合わせ、工具の力を逃がさず精密作業を安定させます。',
     guide: {
@@ -526,7 +538,8 @@ export const WORKSHOP_TOOLS = {
   },
   stamps: {
     id: 'stamps', name: '刻印', type: '工具', symbol: 'Ａ', price: 150000, qualityPoints: 4,
-    initiallyAvailable: true, breakable: true, repairable: false,
+    initiallyAvailable: false, breakable: true, repairable: false,
+    unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '品位、メーカー記号、文字、数字、装飾模様を地金へ打ち込むための刻印工具一式です。',
     detail: '刻印面を地金へ垂直に当て、適切な受けと打撃で輪郭を一度に明瞭に転写します。',
     guide: {
@@ -588,7 +601,8 @@ export const WORKSHOP_TOOLS = {
   },
   buffer: {
     id: 'buffer', name: 'バッファー', type: '設備', symbol: '✺', price: 300000, qualityPoints: 5,
-    initiallyAvailable: true, breakable: true, repairable: true,
+    initiallyAvailable: false, breakable: true, repairable: true,
+    unlock: { enabled: true, minWorkshopLevel: 3 },
     description: '回転するバフと研磨剤で地金表面の微細傷を除去し、均一な光沢や鏡面を作る仕上げ設備です。',
     detail: '前工程の傷を段階的に細かくし、形を崩さずに反射面を整えるための高速回転設備です。',
     guide: {
@@ -619,7 +633,8 @@ export const WORKSHOP_TOOLS = {
   },
   ultrasonicCleaner: {
     id: 'ultrasonicCleaner', name: '超音波洗浄機', type: '設備', symbol: '≈', price: 90000, qualityPoints: 3,
-    initiallyAvailable: true, breakable: true, repairable: true,
+    initiallyAvailable: false, breakable: true, repairable: true,
+    unlock: { enabled: true, minWorkshopLevel: 3 },
     description: '液中の微細なキャビテーションを利用し、研磨剤、油分、細部の汚れを除去する洗浄設備です。',
     detail: '洗浄液、温度、時間、製品の材質と宝石の状態を判断して使用する必要があります。',
     guide: {
@@ -830,11 +845,11 @@ export const DISPLAY_SHOP_PRODUCTS = {
   },
   displaySupplies: {
     id: 'displaySupplies', name: 'ディスプレイ用品', price: 50000, symbol: '◇', levelGain: 1,
-    description: '50,000円。店舗へ設置すると、店舗レベルが1上がります。',
+    description: '50,000円。店舗へ設置すると、設置1点につき店舗レベルが1上がります。',
   },
   case: {
     id: 'case', name: 'ケース', price: 500, symbol: '□', levelGain: 1, purchaseLimit: 50,
-    description: '1個500円。小さな店舗には未設置分を含めて合計50個まで保有できます。店舗へ設置したケースは、商品が1点売れるごとに1個消費されます。',
+    description: '1個500円。店舗にケースが1個以上ある間、店舗レベルが1上がります。設置したケースは商品が1点売れるごとに1個消費されます。',
   },
 };
 
@@ -886,21 +901,27 @@ export const MINING_LOCATIONS = {
 export const CUSTOMERS = {
   misaki: {
     id: 'misaki', name: '山本美咲',
-    opening: '普段使いできる、あまり派手ではないリングを探しています。',
+    opening: '普段使いできるジュエリーを探しています。',
     preferenceText: 'アメシストのラウンドカット・シルバー・シンプルなリング',
     image: './assets/images/customers/customer-placeholder.svg',
-    request: { item: 'ring', gem: 'amethyst', looseShape: 'round', metal: 'silver', design: 'simple', budget: 30000, deadlineDays: 4 },
+    request: {
+      item: 'ring', gem: 'amethyst', looseShape: 'round', metal: 'silver', design: 'simple', budget: 30000, deadlineDays: 7, difficulty: 'basic', requiredTools: ['jewelryBench'],
+      preference: { type: 'gem', value: 'amethyst', label: 'アメシスト' },
+    },
   },
   kenta: {
     id: 'kenta', name: '佐藤健太',
-    opening: 'プレゼント用のペンダントを探しています。間に合うものがあると助かります。',
+    opening: 'プレゼント用のジュエリーを探しています。',
     preferenceText: 'アクアマリンのオーバルカット・ゴールド・シンプルなペンダント',
     image: './assets/images/customers/customer-placeholder.svg',
-    request: { item: 'pendant', gem: 'aquamarine', looseShape: 'oval', metal: 'gold', design: 'simple', budget: 60000, deadlineDays: 3 },
+    request: {
+      item: 'pendant', gem: 'aquamarine', looseShape: 'oval', metal: 'gold', design: 'simple', budget: 60000, deadlineDays: 7, difficulty: 'basic', requiredTools: ['jewelryBench'],
+      preference: { type: 'gem', value: 'aquamarine', label: 'アクアマリン' },
+    },
   },
 };
 
-export const WEATHER = ['晴れ', '曇り', '雨'];
+export const WEATHER = ['晴れ', '曇り', '雨', '雪'];
 
 export function roundThousand(value) {
   return Math.max(1000, Math.round(Number(value || 0) / 1000) * 1000);
@@ -932,19 +953,9 @@ export function looseSalePrice(gemId, shapeId) {
   return purchasePrice ? roundHundred(purchasePrice * 0.55) : 0;
 }
 
-export function recommendedPrice({ item, gem, looseShape, metal, design, finish, quality }) {
-  const itemData = ITEMS[item] || ITEMS.ring;
-  const metalData = METALS[metal] || METALS.silver;
-  const looseQuantity = Math.max(1, Number(itemData.looseQuantity) || 1);
-  const metalWeight = Math.max(0.1, Number(itemData.metalWeight) || 1);
-  return roundThousand(
-    itemData.basePrice
-    + (loosePurchasePrice(gem, looseShape) * looseQuantity)
-    + (metalData.price * metalWeight)
-    + DESIGNS[design].price
-    + FINISHES[finish].price
-    + QUALITIES[quality].price,
-  );
+export function recommendedPrice({ item, gem, looseShape, metal, quality }) {
+  const qualityMultiplier = quality === 'premium' ? 2.5 : quality === 'good' ? 2.2 : 2.0;
+  return roundThousand(productionCost({ item, gem, looseShape, metal }) * qualityMultiplier);
 }
 
 export function productionCost({ item, gem, looseShape, metal }) {
@@ -981,13 +992,15 @@ export function initialState() {
     game: {
       day: 1,
       startDate: localDateString(),
-      minutes: 8 * 60,
-      money: 15000,
+      minutes: DAY_START_MINUTES,
+      money: 30000,
       weather: '晴れ',
       screen: 'main',
       phoneTab: 'calendar',
     },
     artisan: { level: 1, xp: 0 },
+    workshop: { level: 1 },
+    business: { workshopSuspended: false, workshopUnpaid: 0, branchUnpaid: {}, monthlyReports: [], lastProcessedMonth: '' },
     wellbeing: { hunger: 7, maxHunger: 7, lastMeal: '', mealsEaten: 0 },
     inventory: {
       rough: Object.fromEntries(Object.keys(GEMS).map((key) => [key, 0])),
@@ -1033,7 +1046,8 @@ export function initialState() {
       displaySuppliesInstalled: 0,
       casesInstalled: 0,
       level: 1,
-      rating: 1,
+      points: 0,
+      rating: 50,
       salesCount: 0,
       totalRevenue: 0,
       totalProfit: 0,
@@ -1041,8 +1055,8 @@ export function initialState() {
       lastResult: null,
     },
     customers: {
-      misaki: { met: false, relation: '初来店', purchases: 0, visiting: false, lastVisitDay: null, ignoredToday: false },
-      kenta: { met: false, relation: '初来店', purchases: 0, visiting: false, lastVisitDay: null, ignoredToday: false },
+      misaki: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
+      kenta: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
     },
     orders: [],
     employee: { hired: false, name: '田中 葵', role: 'sales', working: true },
@@ -1063,20 +1077,40 @@ export function initialState() {
       successfulFinds: 0,
       unlockedLocations: ['river', 'mountain', 'cave'],
     },
-    progressFlags: {},
+    progressFlags: {
+      gameClearAchieved: false,
+      gameClearShown: false,
+      gameClearDay: null,
+    },
     miningMisses: 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 }
 
+function isRecord(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 function merge(base, saved) {
-  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return structuredClone(base);
+  if (!isRecord(base)) return structuredClone(saved === undefined ? base : saved);
+  if (!isRecord(saved)) return structuredClone(base);
   const out = structuredClone(base);
   for (const [key, value] of Object.entries(saved)) {
-    if (Array.isArray(value)) out[key] = structuredClone(value);
-    else if (value && typeof value === 'object' && out[key] && typeof out[key] === 'object' && !Array.isArray(out[key])) out[key] = merge(out[key], value);
-    else out[key] = value;
+    if (!Object.prototype.hasOwnProperty.call(out, key)) {
+      out[key] = structuredClone(value);
+      continue;
+    }
+    const current = out[key];
+    if (Array.isArray(current)) {
+      if (Array.isArray(value)) out[key] = structuredClone(value);
+      continue;
+    }
+    if (isRecord(current)) {
+      if (isRecord(value)) out[key] = merge(current, value);
+      continue;
+    }
+    out[key] = value;
   }
   return out;
 }
@@ -1136,11 +1170,19 @@ export function migrateState(saved) {
     const createdDate = new Date(state.createdAt || legacy.createdAt || Date.now());
     state.game.startDate = localDateString(Number.isNaN(createdDate.getTime()) ? new Date() : createdDate);
   }
-  state.game.minutes = Math.max(8 * 60, Math.min(22 * 60, Number(state.game.minutes) || 8 * 60));
-  state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 15000;
+  state.game.minutes = Math.max(DAY_START_MINUTES, Math.min(DAY_END_MINUTES, Number(state.game.minutes) || DAY_START_MINUTES));
+  state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 30000;
   state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
   state.game.screen = 'main';
-  state.game.phoneTab = ['calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(state.game.phoneTab) ? state.game.phoneTab : 'calendar';
+  state.game.phoneTab = ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(state.game.phoneTab) ? state.game.phoneTab : 'calendar';
+  state.progressFlags = state.progressFlags && typeof state.progressFlags === 'object' && !Array.isArray(state.progressFlags)
+    ? state.progressFlags
+    : {};
+  state.progressFlags.gameClearAchieved = Boolean(state.progressFlags.gameClearAchieved);
+  state.progressFlags.gameClearShown = state.progressFlags.gameClearAchieved && Boolean(state.progressFlags.gameClearShown);
+  state.progressFlags.gameClearDay = state.progressFlags.gameClearAchieved
+    ? Math.max(1, Math.floor(Number(state.progressFlags.gameClearDay) || state.game.day))
+    : null;
 
   const savedRough = state.inventory.rough && !Array.isArray(state.inventory.rough) ? state.inventory.rough : {};
   const rawSavedLoose = legacy.inventory?.loose && !Array.isArray(legacy.inventory.loose)
@@ -1237,6 +1279,26 @@ export function migrateState(saved) {
   state.tools.polishingMachine = Boolean(state.tools.items.polishingMachine);
   state.tools.polishingMachineDay = state.tools.items.polishingMachine?.acquiredDay || null;
   state.tools.otherEquipment = [];
+
+  state.artisan = { ...initialState().artisan, ...(state.artisan || {}) };
+  state.artisan.xp = Math.max(0, Math.floor(Number(state.artisan.xp) || 0));
+  state.artisan.level = ARTISAN_LEVEL_XP.reduce((level, threshold, index) => state.artisan.xp >= threshold ? index + 1 : level, 1);
+
+  const legacyWorkshopPoints = Object.entries(state.tools.items).reduce((total, [toolId, record]) => {
+    if (!record || record.status !== 'available') return total;
+    return total + Math.max(0, Number(WORKSHOP_TOOLS[toolId]?.qualityPoints) || 0);
+  }, 0);
+  const migratedWorkshopLevel = Math.max(1, Math.min(10, 1 + Math.floor(Math.sqrt(legacyWorkshopPoints))));
+  state.workshop = { ...initialState().workshop, ...(state.workshop || {}) };
+  state.workshop.level = Math.max(1, Math.min(10, Math.floor(Number(legacy.workshop?.level) || migratedWorkshopLevel || 1)));
+
+  state.business = { ...initialState().business, ...(state.business || {}) };
+  state.business.workshopSuspended = Boolean(state.business.workshopSuspended);
+  state.business.workshopUnpaid = Math.max(0, Math.floor(Number(state.business.workshopUnpaid) || 0));
+  state.business.branchUnpaid = state.business.branchUnpaid && typeof state.business.branchUnpaid === 'object' ? state.business.branchUnpaid : {};
+  state.business.monthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports.slice(-24) : [];
+  state.business.lastProcessedMonth = String(state.business.lastProcessedMonth || '');
+
   state.facilities = { ...initialState().facilities, ...(state.facilities || {}) };
   // 初期から利用できるのは素材屋、ルース屋、g-Lab.、ディスプレイ屋。
   state.facilities.materialShop = true;
@@ -1260,26 +1322,81 @@ export function migrateState(saved) {
   state.store.name = String(state.store.name || legacy.store?.storeName || '').trim().slice(0, 30);
   state.store.branchNumber = Math.max(1, Number(state.store.branchNumber) || 1);
   state.store.rentedDay = state.store.rented ? (Number(state.store.rentedDay) || 1) : null;
+  const usesSimplifiedStoreProgress = !versionBefore(legacy.version, '0.10.91');
+  const legacyStoreLevel = Math.max(1, Math.min(10, Math.floor(Number(legacy.store?.level ?? state.store.level) || 1)));
+  const legacyCompletedOrders = Array.isArray(legacy.orders)
+    ? legacy.orders.filter((order) => order?.status === '完了').length
+    : 0;
+  const legacyStorePoints = usesSimplifiedStoreProgress && Number.isFinite(Number(legacy.store?.points))
+    ? Math.max(0, Math.floor(Number(legacy.store.points)))
+    : Math.max(0, Math.floor(Number(legacy.store?.salesCount ?? state.store.salesCount) || 0)) + legacyCompletedOrders * 2;
+  const rawLegacyRating = Number(legacy.store?.rating ?? state.store.rating);
+  const migratedStoreRating = Number.isFinite(rawLegacyRating)
+    ? (usesSimplifiedStoreProgress ? Math.round(rawLegacyRating) : Math.round(50 + Math.max(0, rawLegacyRating - 1) * 12.5))
+    : 50;
+  state.store.points = Math.max(0, legacyStorePoints);
+  state.store.level = STORE_LEVEL_POINTS.reduce((level, threshold, index) => state.store.points >= threshold ? index + 1 : level, 1);
+  state.store.rating = Math.max(0, Math.min(100, migratedStoreRating));
+
   const savedBranches = Array.isArray(state.store.branches) ? state.store.branches : [];
   state.store.branches = savedBranches
     .filter((branch) => branch && Number(branch.number) >= 1)
-    .map((branch) => ({
-      id: branch.id || `branch-${Number(branch.number)}`,
-      number: Math.max(1, Number(branch.number) || 1),
-      label: `店舗${Math.max(1, Number(branch.number) || 1)}`,
-      name: String(branch.name || state.store.name || '').trim().slice(0, 30),
-      rentedDay: Math.max(1, Number(branch.rentedDay) || state.store.rentedDay || 1),
-    }));
+    .map((branch) => {
+      const branchPoints = usesSimplifiedStoreProgress && Number.isFinite(Number(branch.points))
+        ? Math.max(0, Math.floor(Number(branch.points)))
+        : Math.max(0, Math.floor(Number(branch.salesCount) || 0)) + Math.max(0, Math.floor(Number(branch.orderDeliveries) || 0)) * 2;
+      const branchRawRating = Number(branch.rating);
+      const branchRating = usesSimplifiedStoreProgress && Number.isFinite(branchRawRating)
+        ? Math.round(branchRawRating)
+        : state.store.rating;
+      return {
+        id: branch.id || `branch-${Number(branch.number)}`,
+        number: Math.max(1, Number(branch.number) || 1),
+        label: `店舗${Math.max(1, Number(branch.number) || 1)}`,
+        name: String(branch.name || state.store.name || '').trim().slice(0, 30),
+        rentedDay: Math.max(1, Number(branch.rentedDay) || state.store.rentedDay || 1),
+        suspended: Boolean(branch.suspended),
+        unpaidRent: Math.max(0, Number(branch.unpaidRent) || 0),
+        points: branchPoints,
+        level: STORE_LEVEL_POINTS.reduce((level, threshold, index) => branchPoints >= threshold ? index + 1 : level, 1),
+        rating: Math.max(0, Math.min(100, branchRating)),
+        salesCount: Math.max(0, Math.floor(Number(branch.salesCount) || 0)),
+        orderDeliveries: Math.max(0, Math.floor(Number(branch.orderDeliveries) || 0)),
+        displaySuppliesInstalled: Math.max(0, Math.floor(Number.isFinite(Number(branch.displaySuppliesInstalled)) ? Number(branch.displaySuppliesInstalled) : (Number(branch.number) === 1 ? Number(state.store.displaySuppliesInstalled) || 0 : 0))),
+        casesInstalled: Math.min(50, Math.max(0, Math.floor(Number.isFinite(Number(branch.casesInstalled)) ? Number(branch.casesInstalled) : (Number(branch.number) === 1 ? Number(state.store.casesInstalled) || 0 : 0)))),
+        showcases: Array.isArray(branch.showcases) ? structuredClone(branch.showcases) : [],
+        showcaseCount: Array.isArray(branch.showcases) ? branch.showcases.length : 0,
+      };
+    });
   if (state.store.rented && state.store.name && !state.store.branches.some((branch) => branch.number === 1)) {
-    state.store.branches.unshift({ id: 'branch-1', number: 1, label: '店舗1', name: state.store.name, rentedDay: state.store.rentedDay || 1 });
+    state.store.branches.unshift({
+      id: 'branch-1', number: 1, label: '店舗1', name: state.store.name, rentedDay: state.store.rentedDay || 1,
+      suspended: false, unpaidRent: 0, points: state.store.points, level: state.store.level, rating: state.store.rating,
+      salesCount: Math.max(0, Math.floor(Number(state.store.salesCount) || 0)), orderDeliveries: 0,
+      displaySuppliesInstalled: Math.max(0, Math.floor(Number(state.store.displaySuppliesInstalled) || 0)),
+      casesInstalled: Math.min(50, Math.max(0, Math.floor(Number(state.store.casesInstalled) || 0))),
+      showcases: [], showcaseCount: 0,
+    });
   }
   if (state.store.rented) state.facilities.realEstate = true;
+  const legacyRecommendedPrices = new Map(
+    (Array.isArray(state.inventory.jewelry) ? state.inventory.jewelry : [])
+      .filter((entry) => entry?.id)
+      .map((entry) => [entry.id, Math.max(1000, Math.round(Number(entry.recommendedPrice) || 1000))]),
+  );
   state.inventory.jewelry = Array.isArray(state.inventory.jewelry)
     ? state.inventory.jewelry
       .filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal] && DESIGNS[entry.design] && FINISHES[entry.finish] && QUALITIES[entry.quality])
       .map((entry) => {
         const looseShape = looseShapeIdsForGem(entry.gem).includes(entry.looseShape) ? entry.looseShape : defaultLooseShapeForGem(entry.gem);
-        return { ...entry, looseShape, name: itemName({ ...entry, looseShape }) };
+        const cost = Math.max(0, Math.round(Number(entry.cost) || productionCost({ ...entry, looseShape })));
+        return {
+          ...entry,
+          looseShape,
+          cost,
+          recommendedPrice: recommendedPrice({ ...entry, looseShape }),
+          name: itemName({ ...entry, looseShape }),
+        };
       })
     : [];
   state.inventory.capacity = state.store.expanded ? 20 : 10;
@@ -1289,37 +1406,103 @@ export function migrateState(saved) {
   }
   state.store.displaySuppliesInstalled = Math.max(0, Math.floor(Number(state.store.displaySuppliesInstalled) || 0));
   state.store.casesInstalled = Math.min(50, Math.max(0, Math.floor(Number(state.store.casesInstalled) || 0)));
+  for (const branch of state.store.branches) {
+    branch.displaySuppliesInstalled = Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0));
+    branch.casesInstalled = Math.min(50, Math.max(0, Math.floor(Number(branch.casesInstalled) || 0)));
+    const baseLevel = STORE_LEVEL_POINTS.reduce((level, threshold, index) => branch.points >= threshold ? index + 1 : level, 1);
+    branch.level = Math.min(10, baseLevel + branch.displaySuppliesInstalled + (branch.casesInstalled > 0 ? 1 : 0));
+  }
+  const activeBranch = state.store.branches.find((branch) => branch.number === Math.max(1, Number(state.store.branchNumber) || 1)) || state.store.branches[0];
+  if (activeBranch) {
+    state.store.displaySuppliesInstalled = activeBranch.displaySuppliesInstalled;
+    state.store.casesInstalled = activeBranch.casesInstalled;
+    state.store.level = activeBranch.level;
+    state.store.points = activeBranch.points;
+    state.store.rating = activeBranch.rating;
+  }
   const jewelryIds = new Set(state.inventory.jewelry.map((item) => item.id));
-  const rawShowcases = Array.isArray(state.store.showcases) ? state.store.showcases : [];
-  let normalizedShowcases = [];
-  if (rawShowcases.some((entry) => entry && Array.isArray(entry.slots))) {
-    normalizedShowcases = rawShowcases.map((entry, index) => ({
-      id: String(entry?.id || `showcase-${index + 1}`),
-      slots: Array.from({ length: 5 }, (_, slotIndex) => {
-        const slot = entry?.slots?.[slotIndex];
-        return slot && jewelryIds.has(slot.jewelryId) ? { jewelryId: slot.jewelryId, priceMode: PRICE_MODES[slot.priceMode] ? slot.priceMode : 'standard' } : null;
+  const jewelryById = new Map(state.inventory.jewelry.map((item) => [item.id, item]));
+  const normalizeShowcaseSlot = (slot) => {
+    if (!slot || !jewelryIds.has(slot.jewelryId)) return null;
+    const jewelry = jewelryById.get(slot.jewelryId);
+    const savedSellingPrice = Number(slot.sellingPrice);
+    if (Number.isFinite(savedSellingPrice) && savedSellingPrice >= 1000) {
+      return { jewelryId: slot.jewelryId, sellingPrice: Math.round(savedSellingPrice) };
+    }
+    const oldRecommendedPrice = legacyRecommendedPrices.get(slot.jewelryId) || jewelry?.recommendedPrice || 1000;
+    const oldMode = PRICE_MODES[slot.priceMode] || PRICE_MODES.standard;
+    return { jewelryId: slot.jewelryId, sellingPrice: roundThousand(oldRecommendedPrice * oldMode.multiplier) };
+  };
+  const normalizeShowcases = (rawShowcases) => {
+    const raw = Array.isArray(rawShowcases) ? rawShowcases : [];
+    let normalized = [];
+    if (raw.some((entry) => entry && Array.isArray(entry.slots))) {
+      normalized = raw.map((entry, index) => ({
+        id: String(entry?.id || `showcase-${index + 1}`),
+        slots: Array.from({ length: 5 }, (_, slotIndex) => normalizeShowcaseSlot(entry?.slots?.[slotIndex])),
+      }));
+    } else {
+      const legacySlots = raw.map((slot) => normalizeShowcaseSlot(slot)).filter(Boolean);
+      for (let index = 0; index < legacySlots.length; index += 5) {
+        normalized.push({
+          id: `showcase-${normalized.length + 1}`,
+          slots: Array.from({ length: 5 }, (_, slotIndex) => legacySlots[index + slotIndex] || null),
+        });
+      }
+    }
+    return normalized;
+  };
+  const maximumShowcases = state.store.expanded ? 5 : 3;
+  const legacyGlobalShowcases = normalizeShowcases(Array.isArray(state.store.showcases) ? state.store.showcases : []).slice(0, maximumShowcases);
+  const hasBranchShowcaseData = !versionBefore(legacy.version, '0.10.98')
+    && state.store.branches.some((branch) => Array.isArray(branch.showcases));
+  const usedJewelryIds = new Set();
+  for (const branch of state.store.branches.sort((left, right) => Number(left.number) - Number(right.number))) {
+    const sourceShowcases = hasBranchShowcaseData
+      ? normalizeShowcases(branch.showcases)
+      : (Number(branch.number) === 1 ? legacyGlobalShowcases : []);
+    branch.showcases = sourceShowcases.slice(0, maximumShowcases).map((showcase) => ({
+      ...showcase,
+      slots: showcase.slots.map((slot) => {
+        if (!slot || usedJewelryIds.has(slot.jewelryId)) return null;
+        usedJewelryIds.add(slot.jewelryId);
+        return slot;
       }),
     }));
-  } else {
-    // v0.10.51以前の1枠＝1商品データは、陳列中の商品を失わないよう5枠のショーケースへまとめる。
-    const legacySlots = rawShowcases
-      .filter((slot) => slot && jewelryIds.has(slot.jewelryId))
-      .map((slot) => ({ jewelryId: slot.jewelryId, priceMode: PRICE_MODES[slot.priceMode] ? slot.priceMode : 'standard' }));
-    for (let index = 0; index < legacySlots.length; index += 5) {
-      normalizedShowcases.push({
-        id: `showcase-${normalizedShowcases.length + 1}`,
-        slots: Array.from({ length: 5 }, (_, slotIndex) => legacySlots[index + slotIndex] || null),
-      });
+    branch.showcaseCount = branch.showcases.length;
+  }
+  const refreshedActiveBranch = state.store.branches.find((branch) => branch.number === Math.max(1, Number(state.store.branchNumber) || 1)) || state.store.branches[0];
+  state.store.showcases = refreshedActiveBranch?.showcases || [];
+  state.store.showcaseCount = state.store.showcases.length;
+  state.store.points = Math.max(0, Math.floor(Number(state.store.points) || 0));
+  state.store.level = refreshedActiveBranch ? refreshedActiveBranch.level : Math.min(10, STORE_LEVEL_POINTS.reduce((level, threshold, index) => state.store.points >= threshold ? index + 1 : level, 1) + state.store.displaySuppliesInstalled + (state.store.casesInstalled > 0 ? 1 : 0));
+  state.store.rating = Math.max(0, Math.min(100, Number.isFinite(Number(state.store.rating)) ? Math.round(Number(state.store.rating)) : 50));
+  const displayedJewelryIds = new Set(state.store.branches.flatMap((branch) => branch.showcases.flatMap((showcase) => showcase.slots)).filter(Boolean).map((slot) => slot.jewelryId));
+  const displayBranchByJewelryId = new Map();
+  for (const branch of state.store.branches) {
+    for (const showcase of branch.showcases) {
+      for (const slot of showcase.slots) {
+        if (slot) displayBranchByJewelryId.set(slot.jewelryId, branch.number);
+      }
     }
   }
-  const maximumShowcases = state.store.expanded ? 5 : 3;
-  state.store.showcases = normalizedShowcases.slice(0, maximumShowcases);
-  state.store.showcaseCount = state.store.showcases.length;
-  state.store.level = Math.max(1, 1 + state.store.displaySuppliesInstalled + (state.store.casesInstalled > 0 ? 1 : 0));
-  const displayedJewelryIds = new Set(state.store.showcases.flatMap((showcase) => showcase.slots).filter(Boolean).map((slot) => slot.jewelryId));
   for (const item of state.inventory.jewelry) {
-    if (item.status === 'displayed' && !displayedJewelryIds.has(item.id)) item.status = 'stored';
+    if (displayedJewelryIds.has(item.id)) {
+      item.status = 'displayed';
+      item.displayBranchNumber = displayBranchByJewelryId.get(item.id) || 1;
+    } else if (item.status === 'displayed') {
+      item.status = 'stored';
+      delete item.displayBranchNumber;
+    }
   }
+  const orderDifficultyDefaults = {
+    basic: { days: 7, artisanLevel: 1 },
+    general: { days: 10, artisanLevel: 2 },
+    complex: { days: 14, artisanLevel: 3 },
+    high: { days: 21, artisanLevel: 4 },
+    special: { days: 21, artisanLevel: 5 },
+  };
+  const migratedFromOldOrders = versionBefore(legacy.version, '0.10.94');
   state.orders = Array.isArray(state.orders)
     ? state.orders
       .filter((entry) => entry && entry.id && ITEMS[entry.item] && GEMS[entry.gem] && METALS[entry.metal])
@@ -1328,12 +1511,36 @@ export function migrateState(saved) {
         const item = ITEMS[entry.item];
         const preferredShape = customer?.request?.looseShape || defaultLooseShapeForGem(entry.gem);
         const looseShape = looseShapeIdsForGem(entry.gem).includes(entry.looseShape) ? entry.looseShape : (looseShapeIdsForGem(entry.gem).includes(preferredShape) ? preferredShape : defaultLooseShapeForGem(entry.gem));
+        const fallbackDifficulty = entry.design === 'simple' ? 'basic' : 'general';
+        const difficulty = orderDifficultyDefaults[entry.difficulty] ? entry.difficulty : fallbackDifficulty;
+        const difficultyData = orderDifficultyDefaults[difficulty];
+        const acceptedDay = Math.max(1, Number(entry.acceptedDay) || state.game.day);
+        const standardDeadline = acceptedDay + difficultyData.days;
+        const previousDeadline = Math.max(acceptedDay, Number(entry.deadlineDay) || standardDeadline);
+        const deadlineDay = migratedFromOldOrders && !['完了', '取消', '期限切れ'].includes(entry.status)
+          ? Math.max(previousDeadline, standardDeadline)
+          : previousDeadline;
+        const finish = FINISHES[entry.finish] ? entry.finish : 'mirror';
+        const quality = QUALITIES[entry.quality] ? entry.quality : 'standard';
+        const estimatedCost = Math.max(0, Math.round(Number(entry.estimatedCost) || productionCost({ ...entry, looseShape, finish, quality })));
+        const price = Math.max(1000, Math.round(Number(entry.price) || Number(entry.budget) || recommendedPrice({ ...entry, looseShape, finish, quality: 'good' })));
         return {
           ...entry,
           looseShape,
+          difficulty,
+          requiredArtisanLevel: Math.max(1, Math.min(5, Number(entry.requiredArtisanLevel) || difficultyData.artisanLevel)),
+          requiredTools: Array.isArray(entry.requiredTools) && entry.requiredTools.length ? [...new Set(entry.requiredTools.map(String))] : ['jewelryBench'],
           desiredConditions: String(entry.desiredConditions || customer?.preferenceText || `${GEMS[entry.gem].name}・${LOOSE_SHAPES[looseShape].name}・${METALS[entry.metal].name}・${DESIGNS[entry.design]?.name || '指定なし'}`),
           requiredMetalWeight: Math.max(0.1, Number(entry.requiredMetalWeight) || Number(item.metalWeight) || Number(METALS[entry.metal].unitWeight) || 5),
           requiredLooseQuantity: Math.max(1, Math.round(Number(entry.requiredLooseQuantity) || Number(item.looseQuantity) || 1)),
+          acceptedDay,
+          deadlineDay,
+          branchNumber: Math.max(1, Number(entry.branchNumber) || 1),
+          estimatedCost,
+          estimatedProfit: Math.round(Number(entry.estimatedProfit) || (price - estimatedCost)),
+          price,
+          overduePenaltyApplied: Boolean(entry.overduePenaltyApplied || entry.status === '期限切れ'),
+          status: ['受注', '完成', '完了', '取消', '期限切れ'].includes(entry.status) ? entry.status : '受注',
         };
       })
     : [];
@@ -1387,6 +1594,12 @@ export function migrateState(saved) {
     if (!state.miningProgress.unlockedLocations.includes(initialId)) state.miningProgress.unlockedLocations.push(initialId);
   }
 
+  const initialCustomers = initialState().customers;
+  state.customers = Object.fromEntries(Object.keys(initialCustomers).map((customerId) => [
+    customerId,
+    isRecord(state.customers?.[customerId]) ? merge(initialCustomers[customerId], state.customers[customerId]) : structuredClone(initialCustomers[customerId]),
+  ]));
+
   state.settings = { ...initialState().settings, ...(state.settings || {}) };
   delete state.settings.textSize;
   // v0.10.12ではBGMだけを控えめにし、環境音と効果音は従来の設定を維持する。
@@ -1396,8 +1609,33 @@ export function migrateState(saved) {
   state.settings.bgmVolume = Math.max(0, Math.min(1, Number(state.settings.bgmVolume)));
   if (Number(state.settings.ambientVolume) <= 0.35) state.settings.ambientVolume = 0.60;
   if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;
+  Object.values(state.customers || {}).forEach((customer) => {
+    customer.wishesHeard = Boolean(customer.wishesHeard);
+    customer.proposedItemIds = Array.isArray(customer.proposedItemIds)
+      ? [...new Set(customer.proposedItemIds.map(String))].slice(0, 2)
+      : [];
+    customer.visitingBranchNumber = customer.visiting
+      ? Math.max(1, Math.min(3, Math.floor(Number(customer.visitingBranchNumber) || Number(state.store.branchNumber) || 1)))
+      : null;
+    customer.activeRequest = customer.activeRequest && typeof customer.activeRequest === 'object'
+      ? structuredClone(customer.activeRequest)
+      : null;
+    if (state.game.minutes >= STORE_CLOSE_MINUTES) {
+      customer.visiting = false;
+      customer.visitingBranchNumber = null;
+      customer.activeRequest = null;
+      customer.wishesHeard = false;
+      customer.proposedItemIds = [];
+    }
+  });
   if (!state.store.rented) {
-    Object.values(state.customers).forEach((customer) => { customer.visiting = false; });
+    Object.values(state.customers).forEach((customer) => {
+      customer.visiting = false;
+      customer.visitingBranchNumber = null;
+      customer.activeRequest = null;
+      customer.wishesHeard = false;
+      customer.proposedItemIds = [];
+    });
   }
 
   // 主人公像・顔アイコン・キャラクター選択は使用しない。
@@ -1414,9 +1652,12 @@ export function clock(minutes) {
   return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
-export function nextWeather() {
+export function nextWeather(date = new Date()) {
+  const month = date instanceof Date && !Number.isNaN(date.getTime()) ? date.getMonth() + 1 : 1;
   const r = Math.random();
-  if (r < 0.55) return '晴れ';
-  if (r < 0.8) return '曇り';
+  const snowChance = month === 1 || month === 2 ? 0.05 : month === 12 ? 0.02 : 0;
+  if (r < snowChance) return '雪';
+  if (r < snowChance + 0.55) return '晴れ';
+  if (r < snowChance + 0.80) return '曇り';
   return '雨';
 }

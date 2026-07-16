@@ -1,5 +1,5 @@
 import {
-  VERSION, SAVE_KEY, STORE_LEASE_COST, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, METALS, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
+  VERSION, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, WORKSHOP_EXPANSION_COSTS, ARTISAN_LEVEL_XP, STORE_LEVEL_POINTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather,
@@ -831,7 +831,7 @@ function metalOwnedWeight(id) {
 function metalReservedWeight(id, excludeOrderId = '') {
   if (!Array.isArray(state?.orders)) return 0;
   const reserved = state.orders.reduce((total, order) => {
-    if (!order || order.id === excludeOrderId || order.metal !== id || order.jewelryId || ['完成', '完了', '取消'].includes(order.status)) return total;
+    if (!order || order.id === excludeOrderId || order.metal !== id || order.jewelryId || ['完成', '完了', '取消', '期限切れ'].includes(order.status)) return total;
     const fallback = Number(ITEMS[order.item]?.metalWeight) || Number(METALS[id]?.unitWeight) || 0;
     return total + Math.max(0, Number(order.requiredMetalWeight) || fallback);
   }, 0);
@@ -1160,7 +1160,9 @@ function saveLocalBackup() {
 }
 
 function saveGame(message = false) {
-  if (!state || !currentUser || sessionTakenOver) return;
+  if (!state) return;
+  syncGameClearState();
+  if (!currentUser || sessionTakenOver) return;
   saveLocalBackup();
   const snapshot = structuredClone(state);
   const userId = currentUser.uid;
@@ -1254,57 +1256,379 @@ function storeBranchLabel(number = 1) {
   return `店舗${branchNumber}`;
 }
 
+function storeLeaseCost(branchNumber = 1) {
+  return Math.max(0, Number(STORE_LEASE_COSTS[branchNumber]) || Number(STORE_LEASE_COST) || 0);
+}
+
+function storeMonthlyRent(branchNumber = 1) {
+  return Math.max(0, Number(STORE_MONTHLY_RENTS[branchNumber]) || 0);
+}
+
+function contractedStoreBranches() {
+  const branches = Array.isArray(state?.store?.branches) ? state.store.branches : [];
+  const normalized = branches
+    .filter((branch) => branch && Number(branch.number) >= 1 && Number(branch.number) <= MAX_STORE_BRANCHES)
+    .map((branch) => ({
+      ...branch,
+      id: branch.id || `branch-${Math.max(1, Number(branch.number) || 1)}`,
+      number: Math.max(1, Number(branch.number) || 1),
+      label: storeBranchLabel(branch.number),
+      name: String(branch.name || state.store.name || '').trim().slice(0, 30),
+      rentedDay: Math.max(1, Number(branch.rentedDay) || state.store.rentedDay || state.game.day),
+      suspended: Boolean(branch.suspended),
+      unpaidRent: Math.max(0, Number(branch.unpaidRent) || 0),
+      points: Math.max(0, Math.floor(Number(branch.points) || 0)),
+      level: Math.min(10, storeLevelForPoints(branch.points) + Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0)) + (Math.max(0, Math.floor(Number(branch.casesInstalled) || 0)) > 0 ? 1 : 0)),
+      rating: Math.max(0, Math.min(100, Number.isFinite(Number(branch.rating)) ? Math.round(Number(branch.rating)) : 50)),
+      salesCount: Math.max(0, Math.floor(Number(branch.salesCount) || 0)),
+      orderDeliveries: Math.max(0, Math.floor(Number(branch.orderDeliveries) || 0)),
+      displaySuppliesInstalled: Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0)),
+      casesInstalled: Math.min(50, Math.max(0, Math.floor(Number(branch.casesInstalled) || 0))),
+      showcases: Array.isArray(branch.showcases) ? branch.showcases : [],
+      showcaseCount: Array.isArray(branch.showcases) ? branch.showcases.length : 0,
+    }))
+    .sort((left, right) => left.number - right.number);
+  if (state?.store?.rented && !normalized.some((branch) => branch.number === 1)) {
+    normalized.unshift({
+      id: 'branch-1', number: 1, label: storeBranchLabel(1), name: String(state.store.name || '').trim().slice(0, 30),
+      rentedDay: Math.max(1, Number(state.store.rentedDay) || 1), suspended: false, unpaidRent: 0,
+      points: Math.max(0, Math.floor(Number(state.store.points) || 0)), level: Math.min(10, storeLevelForPoints(state.store.points) + Math.max(0, Math.floor(Number(state.store.displaySuppliesInstalled) || 0)) + (Math.max(0, Math.floor(Number(state.store.casesInstalled) || 0)) > 0 ? 1 : 0)),
+      rating: Math.max(0, Math.min(100, Number.isFinite(Number(state.store.rating)) ? Math.round(Number(state.store.rating)) : 50)), salesCount: 0, orderDeliveries: 0,
+      displaySuppliesInstalled: Math.max(0, Math.floor(Number(state.store.displaySuppliesInstalled) || 0)),
+      casesInstalled: Math.min(50, Math.max(0, Math.floor(Number(state.store.casesInstalled) || 0))),
+      showcases: Array.isArray(state.store.showcases) ? state.store.showcases : [],
+      showcaseCount: Array.isArray(state.store.showcases) ? state.store.showcases.length : 0,
+    });
+  }
+  return normalized;
+}
+
+function nextStoreBranchNumber() {
+  const branches = contractedStoreBranches();
+  if (!branches.length) return 1;
+  return Math.max(...branches.map((branch) => Number(branch.number) || 0)) + 1;
+}
+
+function currentStoreBranch() {
+  const number = Math.max(1, Number(state?.store?.branchNumber) || 1);
+  return (state?.store?.branches || []).find((branch) => Number(branch?.number) === number) || null;
+}
+
+function storeBranchOperating(branch = currentStoreBranch()) {
+  return Boolean(branch && !branch.suspended && Math.max(0, Number(branch.unpaidRent) || 0) === 0);
+}
+
+function storeBusinessOpen(minutes = state?.game?.minutes ?? DAY_START_MINUTES) {
+  const value = Number(minutes);
+  return Number.isFinite(value) && value >= STORE_OPEN_MINUTES && value < STORE_CLOSE_MINUTES;
+}
+
+function storeDeliveryOpen(minutes = state?.game?.minutes ?? DAY_START_MINUTES) {
+  const value = Number(minutes);
+  return Number.isFinite(value) && value >= STORE_OPEN_MINUTES && value <= STORE_CLOSE_MINUTES;
+}
+
+function canSpendStoreMinutes(minutes) {
+  const elapsed = Math.max(0, Math.round(Number(minutes) || 0));
+  return storeBusinessOpen() && state.game.minutes + elapsed <= STORE_CLOSE_MINUTES;
+}
+
+function closeVisitingCustomersAtStoreClosing() {
+  let closedCount = 0;
+  Object.values(state?.customers || {}).forEach((customer) => {
+    if (customer?.visiting) closedCount += 1;
+    customer.visiting = false;
+    customer.visitingBranchNumber = null;
+    customer.activeRequest = null;
+    customer.wishesHeard = false;
+    customer.proposedItemIds = [];
+  });
+  if (closedCount > 0) {
+    addNotification('店舗の営業を終了しました', '19:00になったため、本日の接客と注文受付を終了しました。');
+  }
+}
+
+function anyStoreBranchOperating() {
+  return contractedStoreBranches().some((branch) => storeBranchOperating(branch));
+}
+
+const ARTISAN_TITLES = Object.freeze(['', '見習い職人', 'ジュエリー職人', '熟練職人', '一級職人', 'マイスター']);
+
+function artisanTitle(level = state?.artisan?.level || 1) {
+  const value = Math.max(1, Math.min(5, Math.floor(Number(level) || 1)));
+  return ARTISAN_TITLES[value] || ARTISAN_TITLES[1];
+}
+
+function gameClearProgress() {
+  const branches = contractedStoreBranches();
+  const highestStoreLevel = branches.length ? Math.max(...branches.map((branch) => storeLevel(branch))) : 0;
+  const operatingStoreCount = branches.filter((branch) => storeBranchOperating(branch)).length;
+  const conditions = [
+    { id: 'artisan', label: '職人レベル', current: Math.max(1, Number(state?.artisan?.level) || 1), target: 5 },
+    { id: 'workshop', label: '工房レベル', current: workshopLevel(), target: 10 },
+    { id: 'store', label: '最高店舗レベル', current: highestStoreLevel, target: 10 },
+    { id: 'branches', label: '営業店舗数', current: operatingStoreCount, target: 3 },
+  ].map((condition) => ({ ...condition, achieved: condition.current >= condition.target }));
+  return {
+    artisanLevel: conditions[0].current,
+    workshopLevel: conditions[1].current,
+    highestStoreLevel: conditions[2].current,
+    operatingStoreCount: conditions[3].current,
+    contractedStoreCount: branches.length,
+    conditions,
+    complete: conditions.every((condition) => condition.achieved),
+  };
+}
+
+function syncGameClearState() {
+  if (!state) return false;
+  state.progressFlags = state.progressFlags && typeof state.progressFlags === 'object' ? state.progressFlags : {};
+  const progress = gameClearProgress();
+  if (!state.progressFlags.gameClearAchieved && progress.complete) {
+    state.progressFlags.gameClearAchieved = true;
+    state.progressFlags.gameClearShown = false;
+    state.progressFlags.gameClearDay = state.game.day;
+    addNotification('ゲームクリア', '職人Lv.5、工房Lv.10、店舗Lv.10、3店舗営業を達成しました。クリア後も引き続きプレイできます。');
+    return true;
+  }
+  return false;
+}
+
+function gameClearConditionRows(progress = gameClearProgress()) {
+  return progress.conditions.map((condition) => `<div class="game-clear-condition ${condition.achieved ? 'achieved' : ''}"><span>${condition.achieved ? '✓' : '○'}</span><strong>${esc(condition.label)}</strong><em>${condition.current}／${condition.target}</em></div>`).join('');
+}
+
+function maybeShowGameClearModal() {
+  if (!state || !currentUser || sessionTakenOver) return;
+  const newlyAchieved = syncGameClearState();
+  if (newlyAchieved) saveGame();
+  if (!state.progressFlags?.gameClearAchieved || state.progressFlags?.gameClearShown) return;
+  if (!modalEl.classList.contains('hidden')) return;
+  const progress = gameClearProgress();
+  state.progressFlags.gameClearShown = true;
+  saveGame();
+  playSfx('levelup');
+  showModal({
+    title: 'JEWELRY×JEWELRY クリア',
+    body: `<section class="game-clear-modal"><p class="game-clear-message">すべてのクリア条件を達成しました。</p><div class="game-clear-condition-list">${gameClearConditionRows(progress)}</div><p>これまでの店舗・在庫・所持金・ゲームデータはそのまま維持されます。</p><strong>このまま自由にプレイを続けられます。</strong></section>`,
+    confirm: 'ゲームを続ける',
+    action: 'modal-close',
+    hideCancel: true,
+    className: 'game-clear-dialog',
+  });
+}
+
+function workshopOperating() {
+  return !Boolean(state?.business?.workshopSuspended) && Math.max(0, Number(state?.business?.workshopUnpaid) || 0) === 0;
+}
+
+function artisanLevelForXp(xp = state?.artisan?.xp || 0) {
+  const value = Math.max(0, Math.floor(Number(xp) || 0));
+  return ARTISAN_LEVEL_XP.reduce((level, threshold, index) => value >= threshold ? index + 1 : level, 1);
+}
+
+function addArtisanXp(amount) {
+  const gain = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!gain) return;
+  const previousLevel = Math.max(1, Number(state.artisan.level) || 1);
+  state.artisan.xp = Math.max(0, Math.floor(Number(state.artisan.xp) || 0)) + gain;
+  state.artisan.level = artisanLevelForXp(state.artisan.xp);
+  if (state.artisan.level > previousLevel) addNotification('職人レベルが上がりました', `職人レベル${state.artisan.level}になりました。`);
+}
+
 function storeDisplayName() {
   const name = String(state?.store?.name || '').trim();
   return name || '店舗';
+}
+
+function normalizeSellingPrice(value, fallback = 1000) {
+  const numeric = Number(value);
+  const resolved = Number.isFinite(numeric) && numeric >= 1000 ? numeric : Number(fallback);
+  return Math.max(1000, Math.round(Number.isFinite(resolved) ? resolved : 1000));
+}
+
+function showcaseLocationForJewelry(itemId, branch = null) {
+  const branches = branch
+    ? [branch]
+    : (Array.isArray(state?.store?.branches) ? state.store.branches : []);
+  for (const candidateBranch of branches) {
+    const showcases = branchShowcases(candidateBranch);
+    for (let showcaseIndex = 0; showcaseIndex < showcases.length; showcaseIndex += 1) {
+      const showcase = showcases[showcaseIndex];
+      const slotIndex = (showcase?.slots || []).findIndex((entry) => entry?.jewelryId === itemId);
+      if (slotIndex >= 0) {
+        return { branch: candidateBranch, showcaseIndex, slotIndex, slot: showcase.slots[slotIndex] };
+      }
+    }
+  }
+  if (!branch && (!state?.store?.branches || state.store.branches.length === 0)) {
+    const showcases = branchShowcases(null);
+    for (let showcaseIndex = 0; showcaseIndex < showcases.length; showcaseIndex += 1) {
+      const slotIndex = (showcases[showcaseIndex]?.slots || []).findIndex((entry) => entry?.jewelryId === itemId);
+      if (slotIndex >= 0) return { branch: null, showcaseIndex, slotIndex, slot: showcases[showcaseIndex].slots[slotIndex] };
+    }
+  }
+  return null;
+}
+
+function showcaseSlotForJewelry(itemId, branch = null) {
+  return showcaseLocationForJewelry(itemId, branch)?.slot || null;
+}
+
+function jewelryDisplayBranch(itemId) {
+  return showcaseLocationForJewelry(itemId)?.branch || null;
+}
+
+function showcaseSellingPrice(slot, item) {
+  return normalizeSellingPrice(slot?.sellingPrice, item?.recommendedPrice || 1000);
+}
+
+function sellingPriceForJewelry(item) {
+  if (!item) return 1000;
+  return showcaseSellingPrice(showcaseSlotForJewelry(item.id), item);
+}
+
+function sellingPriceStatus(item, sellingPrice = sellingPriceForJewelry(item)) {
+  const recommended = normalizeSellingPrice(item?.recommendedPrice, 1000);
+  const price = normalizeSellingPrice(sellingPrice, recommended);
+  if (price < recommended) return { id: 'cheap', name: '安い', saleBonus: 0.2 };
+  if (price > recommended) return { id: 'expensive', name: '高い', saleBonus: -0.2 };
+  return { id: 'appropriate', name: '適正', saleBonus: 0 };
 }
 
 function storeMaximumShowcases() {
   return state?.store?.expanded ? 5 : 3;
 }
 
-function installedShowcaseCount() {
-  return Array.isArray(state?.store?.showcases) ? state.store.showcases.length : 0;
+function installedShowcaseCount(branch = currentStoreBranch()) {
+  return branchShowcases(branch).length;
 }
 
-function storeShowcaseCapacity() {
-  return installedShowcaseCount() * 5;
+function storeShowcaseCapacity(branch = currentStoreBranch()) {
+  return installedShowcaseCount(branch) * 5;
 }
 
-function storeShowcaseUsedSlots() {
-  return (state?.store?.showcases || []).reduce((sum, showcase) => sum + (showcase?.slots || []).filter(Boolean).length, 0);
+function storeShowcaseUsedSlots(branch = currentStoreBranch()) {
+  return branchShowcases(branch).reduce((sum, showcase) => sum + (showcase?.slots || []).filter(Boolean).length, 0);
 }
 
 function storeMaximumCases() {
   return 50;
 }
 
-function storeCaseRemaining() {
-  return Math.min(storeMaximumCases(), Math.max(0, Math.floor(Number(state?.store?.casesInstalled) || 0)));
+function storeDisplaySuppliesInstalled(branch = currentStoreBranch()) {
+  if (branch && Number.isFinite(Number(branch.displaySuppliesInstalled))) {
+    return Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0));
+  }
+  return Math.max(0, Math.floor(Number(state?.store?.displaySuppliesInstalled) || 0));
 }
 
-function storeLevel() {
-  const displayLevel = Math.max(0, Math.floor(Number(state?.store?.displaySuppliesInstalled) || 0));
-  const caseLevel = storeCaseRemaining() > 0 ? 1 : 0;
-  return Math.max(1, 1 + displayLevel + caseLevel);
+function storeCaseRemaining(branch = currentStoreBranch()) {
+  const value = branch && Number.isFinite(Number(branch.casesInstalled)) ? branch.casesInstalled : state?.store?.casesInstalled;
+  return Math.min(storeMaximumCases(), Math.max(0, Math.floor(Number(value) || 0)));
 }
 
-function syncStoreLevel() {
-  state.store.level = storeLevel();
+function branchShowcases(branch = currentStoreBranch()) {
+  if (branch) {
+    if (!Array.isArray(branch.showcases)) branch.showcases = [];
+    return branch.showcases;
+  }
+  if (!Array.isArray(state?.store?.showcases)) state.store.showcases = [];
+  return state.store.showcases;
+}
+
+function mirrorCurrentStoreDisplay(branch = currentStoreBranch()) {
+  if (!branch) return;
+  state.store.displaySuppliesInstalled = storeDisplaySuppliesInstalled(branch);
+  state.store.casesInstalled = storeCaseRemaining(branch);
+  state.store.showcases = branchShowcases(branch);
+  state.store.showcaseCount = state.store.showcases.length;
+}
+
+function storeBranchByNumber(number = state?.store?.branchNumber || 1) {
+  const branchNumber = Math.max(1, Number(number) || 1);
+  return (state?.store?.branches || []).find((branch) => Number(branch?.number) === branchNumber) || null;
+}
+
+function storeLevelForPoints(points = 0) {
+  const value = Math.max(0, Math.floor(Number(points) || 0));
+  return STORE_LEVEL_POINTS.reduce((level, threshold, index) => value >= threshold ? index + 1 : level, 1);
+}
+
+function storeDisplayLevelBonus(branch = currentStoreBranch()) {
+  const displayBonus = storeDisplaySuppliesInstalled(branch);
+  const caseBonus = storeCaseRemaining(branch) > 0 ? 1 : 0;
+  return displayBonus + caseBonus;
+}
+
+function storeLevel(branch = currentStoreBranch()) {
+  const baseLevel = branch ? storeLevelForPoints(branch.points) : storeLevelForPoints(state?.store?.points);
+  return Math.min(10, baseLevel + storeDisplayLevelBonus(branch));
+}
+
+function storeRating(branch = currentStoreBranch()) {
+  const value = branch ? branch.rating : state?.store?.rating;
+  const numeric = Number(value);
+  return Math.max(0, Math.min(100, Number.isFinite(numeric) ? Math.round(numeric) : 50));
+}
+
+function nextStoreLevelPoints(branch = currentStoreBranch()) {
+  if (storeLevel(branch) >= 10) return null;
+  const baseLevel = branch ? storeLevelForPoints(branch.points) : storeLevelForPoints(state?.store?.points);
+  return baseLevel >= 10 ? null : STORE_LEVEL_POINTS[baseLevel];
+}
+
+function syncStoreLevel(branch = currentStoreBranch()) {
+  if (branch) {
+    branch.points = Math.max(0, Math.floor(Number(branch.points) || 0));
+    branch.level = storeLevel(branch);
+    branch.rating = storeRating(branch);
+    state.store.points = branch.points;
+    state.store.level = branch.level;
+    state.store.rating = branch.rating;
+    return branch.level;
+  }
+  state.store.points = Math.max(0, Math.floor(Number(state.store.points) || 0));
+  state.store.level = storeLevel(null);
+  state.store.rating = storeRating(null);
   return state.store.level;
 }
 
-function consumeStoreCase() {
-  const remaining = storeCaseRemaining();
+function addStoreProgress({ branchNumber = state?.store?.branchNumber || 1, points = 0, rating = 0, sale = false, orderDelivery = false } = {}) {
+  const branch = storeBranchByNumber(branchNumber);
+  if (!branch) return null;
+  const previousLevel = storeLevel(branch);
+  branch.points = Math.max(0, Math.floor(Number(branch.points) || 0)) + Math.max(0, Math.floor(Number(points) || 0));
+  branch.rating = Math.max(0, Math.min(100, storeRating(branch) + Math.round(Number(rating) || 0)));
+  if (sale) branch.salesCount = Math.max(0, Math.floor(Number(branch.salesCount) || 0)) + 1;
+  if (orderDelivery) branch.orderDeliveries = Math.max(0, Math.floor(Number(branch.orderDeliveries) || 0)) + 1;
+  branch.level = storeLevel(branch);
+  syncStoreLevel(branch);
+  if (branch.level > previousLevel) {
+    addNotification('店舗レベルが上がりました', `${storeBranchLabel(branch.number)}が店舗レベル${branch.level}になりました。`);
+  }
+  return branch;
+}
+
+function salesStoreBranch() {
+  const selected = currentStoreBranch();
+  if (storeBranchOperating(selected)) return selected;
+  return (state?.store?.branches || []).find((branch) => storeBranchOperating(branch)) || null;
+}
+
+function consumeStoreCase(branch = salesStoreBranch() || currentStoreBranch()) {
+  const remaining = storeCaseRemaining(branch);
   if (remaining <= 0) return false;
+  if (branch) branch.casesInstalled = remaining - 1;
   state.store.casesInstalled = remaining - 1;
-  syncStoreLevel();
+  syncStoreLevel(branch);
   return true;
 }
 
-function findEmptyShowcasePosition() {
-  for (let showcaseIndex = 0; showcaseIndex < (state?.store?.showcases || []).length; showcaseIndex += 1) {
-    const showcase = state.store.showcases[showcaseIndex];
+function findEmptyShowcasePosition(branch = currentStoreBranch()) {
+  const showcases = branchShowcases(branch);
+  for (let showcaseIndex = 0; showcaseIndex < showcases.length; showcaseIndex += 1) {
+    const showcase = showcases[showcaseIndex];
     const slotIndex = (showcase?.slots || []).findIndex((slot) => !slot);
     if (slotIndex >= 0) return { showcaseIndex, slotIndex };
   }
@@ -1416,15 +1740,15 @@ function showToast(message, type = 'info', withSound = true) {
   if (withSound) playSfx(type === 'error' ? 'error' : type === 'sale' ? 'sale' : 'select');
 }
 
-function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャンセル', danger = false, hideCancel = false, action = '', className = '' }) {
+function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャンセル', cancelAction = 'modal-close', confirmDisabled = false, danger = false, hideCancel = false, action = '', className = '' }) {
   modalEl.innerHTML = `
     <div class="modal-backdrop">
       <section class="modal-card ${esc(className)}" role="dialog" aria-modal="true">
         ${title ? `<h2>${esc(title)}</h2>` : ''}
         <div class="modal-body">${body}</div>
         <div class="modal-actions">
-          ${hideCancel ? '' : `<button class="secondary-button" data-action="modal-close">${esc(cancel)}</button>`}
-          <button class="${danger ? 'danger-button' : 'primary-button'}" data-action="${esc(action)}">${esc(confirm)}</button>
+          ${hideCancel ? '' : `<button class="secondary-button" data-action="${esc(cancelAction)}">${esc(cancel)}</button>`}
+          <button class="${danger ? 'danger-button' : 'primary-button'}" data-action="${esc(action)}" ${confirmDisabled ? 'disabled' : ''}>${esc(confirm)}</button>
         </div>
       </section>
     </div>`;
@@ -1434,6 +1758,7 @@ function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャ
 function closeModal() {
   modalEl.classList.add('hidden');
   modalEl.innerHTML = '';
+  queueMicrotask(() => maybeShowGameClearModal());
 }
 
 function addNotification(title, body, type = 'info') {
@@ -1540,7 +1865,11 @@ function workshopQualityPoints() {
 }
 
 function workshopLevel() {
-  return Math.max(1, Math.min(10, 1 + Math.floor(Math.sqrt(workshopQualityPoints()))));
+  return Math.max(1, Math.min(10, Math.floor(Number(state?.workshop?.level) || 1)));
+}
+
+function workshopExpansionCost() {
+  return Math.max(0, Number(WORKSHOP_EXPANSION_COSTS[workshopLevel() + 1]) || 0);
 }
 
 function workshopToolStatusText(toolId, record = workshopToolRecord(toolId)) {
@@ -1603,8 +1932,12 @@ function processCompletedWorkshopRepairs() {
   return messages;
 }
 
+function canSpendMinutes(minutes) {
+  return state.game.minutes + Math.max(0, Math.round(Number(minutes) || 0)) <= DAY_END_MINUTES;
+}
+
 function canSpendHours(hours) {
-  return state.game.minutes + hours * 60 <= 22 * 60;
+  return canSpendMinutes(Number(hours) * 60);
 }
 
 function hasCraftedJewelry() {
@@ -1612,11 +1945,11 @@ function hasCraftedJewelry() {
 }
 
 function canServeCustomers() {
-  return Boolean(state?.store?.rented && hasCraftedJewelry());
+  return Boolean(state?.store?.rented && storeBusinessOpen() && storeBranchOperating(currentStoreBranch()) && hasCraftedJewelry());
 }
 
 function canAcceptOrders() {
-  return Boolean(state?.store?.rented && toolUsable('jewelryBench'));
+  return Boolean(state?.store?.rented && storeBusinessOpen() && storeBranchOperating(currentStoreBranch()) && workshopOperating() && toolUsable('jewelryBench'));
 }
 
 function hungerLevel() {
@@ -1632,18 +1965,25 @@ function hungerPips(level = hungerLevel()) {
   return `<span class="hunger-pips" aria-label="空腹度 ${safe}／7">${Array.from({ length: 7 }, (_, index) => `<i class="${index < safe ? 'filled' : ''}"></i>`).join('')}</span>`;
 }
 
-function spendHours(hours) {
-  const elapsed = Math.max(0, Math.round(Number(hours) || 0));
+function spendMinutes(minutes) {
+  const elapsedMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+  const hungerCost = Math.floor(elapsedMinutes / 60);
   const before = hungerLevel();
-  state.game.minutes = Math.min(22 * 60, state.game.minutes + elapsed * 60);
-  state.wellbeing.hunger = Math.max(0, before - elapsed);
+  const beforeMinutes = state.game.minutes;
+  state.game.minutes = Math.min(DAY_END_MINUTES, state.game.minutes + elapsedMinutes);
+  if (beforeMinutes < STORE_CLOSE_MINUTES && state.game.minutes >= STORE_CLOSE_MINUTES) closeVisitingCustomersAtStoreClosing();
+  state.wellbeing.hunger = Math.max(0, before - hungerCost);
   if (before > 0 && state.wellbeing.hunger === 0) {
     addNotification('空腹になりました', '食事をするか、今日は休んでください。', 'warning');
   }
 }
 
+function spendHours(hours) {
+  spendMinutes(Math.max(0, Math.round(Number(hours) || 0)) * 60);
+}
+
 function weatherIcon(label) {
-  return label === '雨' ? '☂' : label === '曇り' ? '☁' : '☀';
+  return label === '雪' ? '❄' : label === '雨' ? '☂' : label === '曇り' ? '☁' : '☀';
 }
 
 function parseGameStartDate() {
@@ -1682,7 +2022,7 @@ function currentCalendarEvents() {
   if (!state) return [];
   const events = [];
   state.orders
-    .filter((order) => order.status !== '完了' && order.deadlineDay === state.game.day)
+    .filter((order) => !orderClosed(order) && order.deadlineDay === state.game.day)
     .forEach((order) => events.push(`${order.customerName}さんの注文納期`));
   Object.keys(CUSTOMERS)
     .filter((id) => state.customers[id]?.visiting)
@@ -1877,66 +2217,74 @@ function renderClosedOkachimachiFacility(facilityId, availability) {
 }
 
 function render() {
-  document.body.dataset.screen = screen;
-  delete document.body.dataset.textSize;
-  applyCurrentBackground();
-  if (state) {
-    const hour = Math.floor(state.game.minutes / 60);
-    document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
-  }
-  switchAudio(audioFor(screen));
-  updateMainEnvironment({
-    active: screen === 'main' && Boolean(state),
-    weather: state?.game?.weather || '晴れ',
-    minutes: state?.game?.minutes ?? 9 * 60,
-  });
+  try {
+    document.body.dataset.screen = screen;
+    delete document.body.dataset.textSize;
+    applyCurrentBackground();
+    if (state) {
+      const hour = Math.floor(state.game.minutes / 60);
+      document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
+    }
+    updateMainEnvironment({
+      active: screen === 'main' && Boolean(state),
+      weather: state?.game?.weather || '晴れ',
+      minutes: state?.game?.minutes ?? 9 * 60,
+    });
+    switchAudio(audioFor(screen));
 
-  const renderers = {
-    loading: renderLoading,
-    login: renderLogin,
-    emailVerification: renderEmailVerification,
-    title: renderTitle,
-    nameSetup: renderNameSetup,
-    settingsTitle: () => renderSettings(true),
-    main: renderMain,
-    mining: renderMining,
-    miningGame: renderMiningGame,
-    miningResult: renderMiningResult,
-    okachimachi: renderOkachimachi,
-    supplier: renderSupplier,
-    supplierMetals: renderSupplierMetals,
-    supplierMetalHistory: renderSupplierMetalHistory,
-    supplierRough: renderSupplierRough,
-    looseShop: renderLooseShop,
-    looseInventoryDetail: renderLooseInventoryDetail,
-    displayShop: renderDisplayShop,
-    realEstate: renderRealEstate,
-    workshop: renderWorkshop,
-    craft: renderCraft,
-    polishing: renderPolishing,
-    completion: renderCompletion,
-    inventory: renderInventory,
-    metalInventoryDetail: renderMetalInventoryDetail,
-    metalProfessionalGuide: renderMetalProfessionalGuide,
-    glab: renderGlab,
-    glabTool: renderGlabToolDetail,
-    glabToolGuide: renderGlabToolGuide,
-    store: renderStore,
-    customer: renderCustomer,
-    orders: renderOrders,
-    expansion: renderExpansion,
-    employee: renderEmployee,
-    phone: renderPhone,
-    meal: renderMeal,
-    settings: () => renderSettings(false),
-    dayResult: renderDayResult,
-  };
-  const currentFacilityId = facilityIdForScreen(screen);
-  const currentFacilityAvailability = currentFacilityId ? okachimachiFacilityAvailability(currentFacilityId) : null;
-  root.innerHTML = currentFacilityAvailability && !currentFacilityAvailability.open
-    ? renderClosedOkachimachiFacility(currentFacilityId, currentFacilityAvailability)
-    : (renderers[screen] || renderMain)();
-  applyAudioSettings();
+    const renderers = {
+      loading: renderLoading,
+      login: renderLogin,
+      emailVerification: renderEmailVerification,
+      title: renderTitle,
+      nameSetup: renderNameSetup,
+      settingsTitle: () => renderSettings(true),
+      main: renderMain,
+      mining: renderMining,
+      miningGame: renderMiningGame,
+      miningResult: renderMiningResult,
+      okachimachi: renderOkachimachi,
+      supplier: renderSupplier,
+      supplierMetals: renderSupplierMetals,
+      supplierMetalHistory: renderSupplierMetalHistory,
+      supplierRough: renderSupplierRough,
+      looseShop: renderLooseShop,
+      looseInventoryDetail: renderLooseInventoryDetail,
+      displayShop: renderDisplayShop,
+      realEstate: renderRealEstate,
+      workshop: renderWorkshop,
+      craft: renderCraft,
+      polishing: renderPolishing,
+      completion: renderCompletion,
+      inventory: renderInventory,
+      metalInventoryDetail: renderMetalInventoryDetail,
+      metalProfessionalGuide: renderMetalProfessionalGuide,
+      glab: renderGlab,
+      glabTool: renderGlabToolDetail,
+      glabToolGuide: renderGlabToolGuide,
+      store: renderStore,
+      customer: renderCustomer,
+      orders: renderOrders,
+      expansion: renderExpansion,
+      employee: renderEmployee,
+      phone: renderPhone,
+      meal: renderMeal,
+      settings: () => renderSettings(false),
+      dayResult: renderDayResult,
+    };
+    const currentFacilityId = facilityIdForScreen(screen);
+    const currentFacilityAvailability = currentFacilityId ? okachimachiFacilityAvailability(currentFacilityId) : null;
+    root.innerHTML = currentFacilityAvailability && !currentFacilityAvailability.open
+      ? renderClosedOkachimachiFacility(currentFacilityId, currentFacilityAvailability)
+      : (renderers[screen] || renderMain)();
+    applyAudioSettings();
+    queueMicrotask(() => maybeShowGameClearModal());
+  } catch (error) {
+    console.error('画面描画エラー', error);
+    sleepCurtainEl?.classList.remove('active');
+    clearMorningBrief();
+    root.innerHTML = `<main class="title-screen"><section class="title-actions glass-panel login-panel"><strong>画面を安全に復帰しました</strong><p class="small-note">表示処理中に問題が発生したため、暗転したままにならないよう停止しました。</p><button class="primary-button full-button" data-action="reload-page">再読み込みする</button></section></main>`;
+  }
 }
 
 function renderLoading() {
@@ -2014,13 +2362,199 @@ function renderNameSetup() {
     </main>`;
 }
 
+const ORDER_DIFFICULTIES = Object.freeze({
+  basic: { id: 'basic', label: '基本', days: 7, artisanLevel: 1 },
+  general: { id: 'general', label: '一般', days: 10, artisanLevel: 2 },
+  complex: { id: 'complex', label: '複雑', days: 14, artisanLevel: 3 },
+  high: { id: 'high', label: '高難度', days: 21, artisanLevel: 4 },
+  special: { id: 'special', label: '特別', days: 21, artisanLevel: 5 },
+});
+const CLOSED_ORDER_STATUSES = Object.freeze(['完了', '取消', '期限切れ']);
+
+const STORE_CUSTOMER_PROFILES = Object.freeze({
+  1: Object.freeze({ id: 'general', name: '幅広い一般客', description: '商品・予算・希望が幅広い標準的な客層です。' }),
+  2: Object.freeze({ id: 'quality', name: '品質を重視する客層', description: '良品・上質の商品が少し売れやすく、一般以上の注文が少し増えます。' }),
+  3: Object.freeze({ id: 'premium', name: '予算が高い客層', description: '高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすくなります。' }),
+});
+const HIGH_VALUE_GEMS = Object.freeze(['diamond', 'ruby', 'emerald', 'sapphire', 'paraibatourmaline', 'tanzanite', 'imperialtopaz']);
+const HIGH_VALUE_METALS = Object.freeze(['gold', 'platinum']);
+
+function randomFrom(values, fallback = null) {
+  const rows = Array.isArray(values) ? values.filter(Boolean) : [];
+  return rows.length ? rows[Math.floor(Math.random() * rows.length)] : fallback;
+}
+
+function storeCustomerProfile(branchNumber = state?.store?.branchNumber || 1) {
+  const number = Math.max(1, Math.min(3, Math.floor(Number(branchNumber) || 1)));
+  return STORE_CUSTOMER_PROFILES[number] || STORE_CUSTOMER_PROFILES[1];
+}
+
+function customerVisitDifficulty(branchNumber, baseDifficulty = 'basic') {
+  const branch = Math.max(1, Math.min(3, Math.floor(Number(branchNumber) || 1)));
+  const artisan = Math.max(1, Math.min(5, Math.floor(Number(state?.artisan?.level) || 1)));
+  const fallback = ORDER_DIFFICULTIES[baseDifficulty] ? baseDifficulty : 'basic';
+  if (branch === 1 || artisan <= 1) return fallback;
+  const roll = Math.random();
+  if (branch === 2) {
+    if (artisan >= 3 && roll < 0.10) return 'complex';
+    if (artisan >= 2 && roll < 0.55) return 'general';
+    return fallback;
+  }
+  if (artisan >= 5) {
+    if (roll < 0.20) return 'special';
+    if (roll < 0.45) return 'high';
+    if (roll < 0.75) return 'complex';
+    if (roll < 0.95) return 'general';
+    return 'basic';
+  }
+  if (artisan === 4) {
+    if (roll < 0.25) return 'high';
+    if (roll < 0.60) return 'complex';
+    if (roll < 0.90) return 'general';
+    return 'basic';
+  }
+  if (artisan === 3) {
+    if (roll < 0.30) return 'complex';
+    if (roll < 0.75) return 'general';
+    return 'basic';
+  }
+  return roll < 0.55 ? 'general' : 'basic';
+}
+
+function customerVisitRequest(customerId, branchNumber) {
+  const customer = CUSTOMERS[customerId];
+  const baseRequest = structuredClone(customer?.request || {});
+  const branch = Math.max(1, Math.min(3, Math.floor(Number(branchNumber) || 1)));
+  if (branch === 1) return baseRequest;
+
+  const request = { ...baseRequest };
+  request.preference = structuredClone(baseRequest.preference || { type: 'gem', value: baseRequest.gem, label: GEMS[baseRequest.gem]?.name || '石指定' });
+  request.difficulty = customerVisitDifficulty(branch, baseRequest.difficulty || 'basic');
+  request.requiredArtisanLevel = ORDER_DIFFICULTIES[request.difficulty]?.artisanLevel || 1;
+  request.deadlineDays = ORDER_DIFFICULTIES[request.difficulty]?.days || 7;
+
+  if (branch === 2) {
+    if (request.difficulty !== 'basic') {
+      request.design = randomFrom(['classic', 'modern'], request.design || 'simple');
+      request.preference = { type: 'design', value: request.design, label: DESIGNS[request.design]?.name || 'デザイン指定' };
+    }
+    const qualityBudget = recommendedPrice({ ...request, looseShape: normalizeLooseShape(request.gem, request.looseShape), quality: 'good' });
+    request.budget = roundThousand(Math.max(Number(baseRequest.budget) * 1.20, qualityBudget));
+    request.storeProfile = 'quality';
+    return request;
+  }
+
+  request.item = randomFrom(Object.keys(ITEMS), request.item || 'ring');
+  request.gem = randomFrom(HIGH_VALUE_GEMS.filter((gemId) => GEMS[gemId]), request.gem);
+  request.looseShape = normalizeLooseShape(request.gem, request.looseShape);
+  request.metal = randomFrom(HIGH_VALUE_METALS.filter((metalId) => METALS[metalId]), request.metal);
+  request.design = randomFrom(['classic', 'modern'], request.design || 'modern');
+  request.preference = Math.random() < 0.65
+    ? { type: 'gem', value: request.gem, label: GEMS[request.gem]?.name || '石指定' }
+    : { type: 'metal', value: request.metal, label: METALS[request.metal]?.name || '地金指定' };
+  const premiumBudget = recommendedPrice({ ...request, quality: 'premium' });
+  request.budget = roundThousand(Math.max(Number(baseRequest.budget) * 1.75, premiumBudget * 1.10));
+  request.storeProfile = 'premium';
+  return request;
+}
+
+function activeCustomerRequest(customerId) {
+  const active = state?.customers?.[customerId]?.activeRequest;
+  return active && typeof active === 'object' ? active : CUSTOMERS[customerId]?.request || {};
+}
+
+function customerRequestDescription(request = {}) {
+  const rows = [
+    GEMS[request.gem]?.name,
+    looseShapeLabel(normalizeLooseShape(request.gem, request.looseShape)),
+    METALS[request.metal]?.name,
+    DESIGNS[request.design]?.name,
+    ITEMS[request.item]?.name,
+  ].filter(Boolean);
+  return rows.join('・') || '指定なし';
+}
+
+function storeProductSaleBonus(item, branchNumber = state?.store?.branchNumber || 1) {
+  const branch = Math.max(1, Math.min(3, Math.floor(Number(branchNumber) || 1)));
+  if (!item || branch === 1) return 0;
+  if (branch === 2) {
+    if (item.quality === 'premium') return 0.16;
+    if (item.quality === 'good') return 0.10;
+    return -0.03;
+  }
+  let bonus = item.quality === 'premium' ? 0.12 : item.quality === 'good' ? 0.04 : 0;
+  if (HIGH_VALUE_GEMS.includes(item.gem) || HIGH_VALUE_METALS.includes(item.metal)) bonus += 0.08;
+  return bonus;
+}
+
+function orderClosed(order) {
+  return CLOSED_ORDER_STATUSES.includes(order?.status);
+}
+
+function orderDifficultyId(orderLike = {}) {
+  if (ORDER_DIFFICULTIES[orderLike.difficulty]) return orderLike.difficulty;
+  return orderLike.design === 'simple' ? 'basic' : 'general';
+}
+
+function orderDifficulty(orderLike = {}) {
+  return ORDER_DIFFICULTIES[orderDifficultyId(orderLike)];
+}
+
+function orderRequiredTools(orderLike = {}) {
+  const tools = Array.isArray(orderLike.requiredTools) ? orderLike.requiredTools.filter((toolId) => WORKSHOP_TOOLS[toolId]) : [];
+  return tools.length ? [...new Set(tools)] : ['jewelryBench'];
+}
+
+function orderLimit() {
+  return Math.max(1, Math.min(5, Math.floor(Number(state?.artisan?.level) || 1)));
+}
+
 function activeOrderCount() {
   if (!Array.isArray(state?.orders)) return 0;
-  return state.orders.filter((order) => !['完了', '取消'].includes(order.status)).length;
+  return state.orders.filter((order) => !orderClosed(order)).length;
+}
+
+function orderMaterialsObtainable(request = {}) {
+  const shape = normalizeLooseShape(request.gem, request.looseShape);
+  return Boolean(ITEMS[request.item] && GEMS[request.gem] && METALS[request.metal] && DESIGNS[request.design] && looseShapeIdsForGem(request.gem).includes(shape));
+}
+
+function orderFeasibility(request = {}) {
+  const difficulty = orderDifficulty(request);
+  const requiredArtisanLevel = Math.max(1, Math.min(5, Number(request.requiredArtisanLevel) || difficulty.artisanLevel));
+  const requiredTools = orderRequiredTools(request);
+  const artisanReady = Math.max(1, Number(state?.artisan?.level) || 1) >= requiredArtisanLevel;
+  const equipmentReady = requiredTools.every((toolId) => toolUsable(toolId));
+  const materialsObtainable = orderMaterialsObtainable(request);
+  const reasons = [];
+  if (!artisanReady) reasons.push(`職人Lv.${requiredArtisanLevel}が必要`);
+  if (!equipmentReady) reasons.push(`必要設備：${requiredTools.map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId).join('、')}`);
+  if (!materialsObtainable) reasons.push('材料をゲーム内で入手できない');
+  return { possible: artisanReady && equipmentReady && materialsObtainable, difficulty, requiredArtisanLevel, requiredTools, artisanReady, equipmentReady, materialsObtainable, reasons };
+}
+
+function orderEstimatedFigures(request = {}) {
+  const looseShape = normalizeLooseShape(request.gem, request.looseShape);
+  const draft = { ...request, looseShape, finish: 'mirror', quality: 'standard' };
+  const estimatedCost = Math.max(0, Math.round(productionCost(draft)));
+  const estimated = recommendedPrice({ ...draft, quality: 'good' }) + 5000;
+  const price = Math.max(1000, Math.min(Math.max(1000, Number(request.budget) || estimated), estimated));
+  return { estimatedCost, price, estimatedProfit: price - estimatedCost };
+}
+
+function orderDisplayStatus(order) {
+  if (order?.status === '期限切れ') return '期限切れ';
+  if (order?.status === '完成') return '納品可能';
+  if (order?.status === '受注') {
+    const requirements = orderRequirements(order);
+    const feasibility = orderFeasibility(order);
+    return requirements.enoughMetal && requirements.enoughLoose && feasibility.artisanReady && feasibility.equipmentReady ? '製作可能' : '未製作';
+  }
+  return order?.status || '未製作';
 }
 
 function validPhoneTab(value) {
-  return ['calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(value) ? value : 'calendar';
+  return ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(value) ? value : 'calendar';
 }
 
 function materialRequirementsFor({ item, gem, looseShape, metal, orderId = null }) {
@@ -2460,6 +2994,43 @@ function renderLooseShop() {
     </div>`);
 }
 
+function renderDisplayShop() {
+  const inventory = state.store.displayInventory || {};
+  const products = Object.values(DISPLAY_SHOP_PRODUCTS);
+  const productRows = products.map((product) => {
+    const owned = Math.max(0, Math.floor(Number(inventory[product.id]) || 0));
+    const installed = product.id === 'showcase'
+      ? installedShowcaseCount()
+      : product.id === 'displaySupplies'
+        ? storeDisplaySuppliesInstalled(currentStoreBranch())
+        : storeCaseRemaining(currentStoreBranch());
+    const totalOwned = owned + (product.id === 'case' ? installed : 0);
+    const limitReached = Boolean(product.purchaseLimit) && totalOwned >= Number(product.purchaseLimit);
+    const disabled = limitReached || state.game.money < product.price || !canSpendHours(1);
+    const ownedText = product.id === 'case'
+      ? `未設置 ${owned}個・店舗の残数 ${installed}個`
+      : `未設置 ${owned}個・設置済み ${installed}${product.id === 'showcase' ? '台' : '個'}`;
+    const limitText = product.purchaseLimit ? `<small>保有上限：未設置分と設置中を合わせて${product.purchaseLimit}個</small>` : '';
+    return `<article class="product-row display-shop-row">
+      <div class="product-main">
+        <span class="material-chip" aria-hidden="true">${esc(product.symbol)}</span>
+        <div><strong>${esc(product.name)}</strong><small>${esc(product.description)}</small><small>${ownedText}</small>${limitText}</div>
+      </div>
+      <strong>${yen(product.price)}</strong>
+      <button class="primary-button" data-action="buy-display-product" data-id="${esc(product.id)}" ${disabled ? 'disabled' : ''}>購入する</button>
+    </article>`;
+  }).join('');
+
+  return shell('ディスプレイ屋', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel display-shop-panel">
+        <div class="product-list">${productRows}</div>
+        <p class="small-note">購入は1回につき1個で、手続きに1時間かかります。購入後は店舗画面または店舗情報から設置できます。</p>
+      </section>
+    </div>`, { help: 'ショーケース、ディスプレイ用品、ケースを購入できます。購入した商品は店舗へ設置して使用します。' });
+}
+
 function renderRealEstate() {
   const nextBranchNumber = nextStoreBranchNumber();
   const contractAvailable = nextBranchNumber <= MAX_STORE_BRANCHES;
@@ -2478,8 +3049,9 @@ function renderRealEstate() {
       </section>`);
   }
 
-  const affordable = state.game.money >= STORE_LEASE_COST;
-  const hasTime = canSpendHours(1);
+  const leaseCost = storeLeaseCost(nextBranchNumber);
+  const monthlyRent = storeMonthlyRent(nextBranchNumber);
+  const affordable = state.game.money >= leaseCost;
   const needsStoreName = !String(state.store.name || '').trim();
   const branchLabel = storeBranchLabel(nextBranchNumber);
 
@@ -2489,8 +3061,9 @@ function renderRealEstate() {
       <article class="summary-card">
         <div class="result-stats">
           <span>店舗：小さな店舗</span>
-          <span>契約費：${yen(STORE_LEASE_COST)}</span>
-          <span>手続き：1時間</span>
+          <span>契約費：${yen(leaseCost)}</span>
+          <span>月額家賃：${yen(monthlyRent)}</span>
+          <span>契約月の家賃：無料</span>
           <span>ショーケース：なし</span>
           <span>設置上限：3台（1台につき完成品5個）</span>
           <span>完成品保管：10点</span>
@@ -2500,9 +3073,8 @@ function renderRealEstate() {
         <span>店舗名</span>
         <input id="store-name-input" type="text" maxlength="30" autocomplete="organization" enterkeyhint="done" placeholder="店舗名を入力">
       </label>` : ''}
-      <button class="primary-button full-button" data-action="rent-next-store" ${affordable && hasTime ? '' : 'disabled'}>契約</button>
-      ${affordable ? '' : `<p class="error-text">契約費が${yen(STORE_LEASE_COST - state.game.money)}足りません。</p>`}
-      ${hasTime ? '' : '<p class="error-text">今日は契約手続きをする時間がありません。</p>'}
+      <button class="primary-button full-button" data-action="rent-next-store" ${affordable ? '' : 'disabled'}>契約</button>
+      ${affordable ? '' : `<p class="error-text">契約費が${yen(leaseCost - state.game.money)}足りません。</p>`}
       <button class="secondary-button full-button" data-action="real-estate-menu">戻る</button>
     </section>`, { help: '表示中の条件で次の店舗を契約します。契約した店舗は店舗画面の一覧から選択できます。' });
 }
@@ -2529,14 +3101,15 @@ function renderWorkshop() {
           <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="finished"><small>完成品</small><strong>${stored}/${state.inventory.capacity}</strong></button>
           <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="equipment"><small>工具・設備</small><strong>${equipmentTotal}点</strong></button>
         </div>
-        <article class="summary-card workshop-level-card"><h2>工房レベル ${workshopLevel()}</h2><p>使用可能な工具・設備の価格に応じた工房評価は${workshopQualityPoints()}です。工房レベルが高いほど、完成品の品質が上がりやすくなります。</p></article>
+        <article class="summary-card workshop-level-card"><h2>工房レベル ${workshopLevel()}</h2><p>${workshopLevel() >= 10 ? '工房は最大レベルです。' : `次の拡張費：${yen(workshopExpansionCost())}`}</p>${workshopLevel() >= 10 ? '' : `<button class="secondary-button full-button" data-action="confirm-workshop-expansion" ${state.game.money >= workshopExpansionCost() ? '' : 'disabled'}>工房を拡張する</button>`}</article>
+        ${workshopOperating() ? '' : `<section class="tool-break-alert"><strong>工房は作業停止中です</strong><span>未払いの工房維持費 ${yen(state.business.workshopUnpaid)}を収支画面から支払ってください。</span></section>`}
         <div class="button-stack workshop-menu">
           <div class="workshop-menu-item">
-            <button class="primary-button large-button" data-action="nav" data-screen="polishing" ${toolUsable('polishingMachine') ? '' : 'disabled'}>原石研磨</button>
+            <button class="primary-button large-button" data-action="nav" data-screen="polishing" ${workshopOperating() && toolUsable('polishingMachine') ? '' : 'disabled'}>原石研磨</button>
             ${toolUsable('polishingMachine') ? '' : `<p class="small-note workshop-requirement-note">${toolOwned('polishingMachine') ? `研磨機は${workshopToolStatusText('polishingMachine')}です。修理完了まで原石研磨はできません。` : '原石研磨には、御徒町のg-Lab.で購入できる研磨機が必要です。'}</p>`}
           </div>
           <div class="workshop-menu-item">
-            <button class="primary-button large-button" data-action="open-craft" ${toolUsable('jewelryBench') ? '' : 'disabled'}>ジュエリー作成</button>
+            <button class="primary-button large-button" data-action="open-craft" ${workshopOperating() && toolUsable('jewelryBench') ? '' : 'disabled'}>ジュエリー作成</button>
             ${toolUsable('jewelryBench') ? '' : '<p class="small-note workshop-requirement-note">ジュエリー作成には、御徒町のg-Lab.で購入できる彫金机が必要です。</p>'}
           </div>
           <div class="workshop-menu-item">
@@ -2549,6 +3122,7 @@ function renderWorkshop() {
 }
 
 function renderPolishing() {
+  if (!workshopOperating()) return shell('原石研磨', '<div class="empty-state"><strong>工房は作業停止中です。</strong><p>未払いの工房維持費を支払うと再開できます。</p></div>');
   if (!toolUsable('polishingMachine')) {
     return shell('原石研磨', `
       <section class="center-card glass-panel">
@@ -2643,6 +3217,7 @@ function craftLooseShapeChoice(gemId, current, locked = false) {
 }
 
 function renderCraft() {
+  if (!workshopOperating()) return shell('ジュエリー作成', '<div class="empty-state"><strong>工房は作業停止中です。</strong><p>未払いの工房維持費を支払うと再開できます。</p></div>');
   if (!toolUsable('jewelryBench')) {
     return shell('ジュエリー作成', `
       <section class="center-card glass-panel">
@@ -2680,7 +3255,7 @@ function renderCraft() {
           <div><dt>制作時間</dt><dd>${hours}時間</dd></div>
           <div><dt>原価</dt><dd>${yen(cost)}</dd></div>
           <div><dt>品質予想</dt><dd>${esc(QUALITIES[quality].name)}</dd></div>
-          <div><dt>推奨価格</dt><dd>${yen(price)}</dd></div>
+          <div><dt>おすすめ価格</dt><dd>${yen(price)}</dd></div>
         </dl>
       </section>
       <section class="craft-options glass-panel">
@@ -2720,7 +3295,8 @@ function renderCompletion() {
       <h1>${esc(jewelry.name)}が完成しました。</h1>
       <div class="result-stats">
         <span>品質：${esc(QUALITIES[jewelry.quality].name)}</span>
-        <span>推奨価格：${yen(jewelry.recommendedPrice)}</span>
+        <span>原価：${yen(jewelry.cost)}</span>
+        <span>おすすめ価格：${yen(jewelry.recommendedPrice)}</span>
         <span>経験値：＋${jewelry.xp}</span>
       </div>
       ${screenData.toolFailure ? `<div class="tool-break-alert"><strong>${esc(screenData.toolFailure)}が壊れました</strong><span>${WORKSHOP_TOOLS[Object.keys(WORKSHOP_TOOLS).find((id) => WORKSHOP_TOOLS[id].name === screenData.toolFailure)]?.repairable ? 'g-Lab.で修理を依頼できます。' : '工房からなくなりました。g-Lab.で再購入できます。'}</span></div>` : ''}
@@ -2887,11 +3463,14 @@ function renderFinishedItems() {
   const items = state.inventory.jewelry.filter((item) => item.status !== 'sold');
   if (!items.length) return '<div class="empty-state"><strong>完成品はありません。</strong><p>工房でジュエリーを作ると、ここに表示されます。</p></div>';
   return `<div class="jewelry-grid">${items.map((item) => {
-    const status = item.status === 'displayed' ? '陳列中' : item.status === 'order' ? '注文品' : '保管中';
+    const displayBranch = item.status === 'displayed' ? jewelryDisplayBranch(item.id) : null;
+    const status = item.status === 'displayed' ? `${storeBranchLabel(displayBranch?.number || item.displayBranchNumber || 1)}に陳列中` : item.status === 'order' ? '注文品' : '保管中';
+    const sellingPrice = item.status === 'displayed' ? sellingPriceForJewelry(item) : null;
+    const profit = sellingPrice === null ? item.recommendedPrice - item.cost : sellingPrice - item.cost;
     return `<article class="jewelry-card">
       <div class="small-jewelry metal-${item.metal}" style="--gem:${GEMS[item.gem].hue}"><span>${ITEMS[item.item].symbol}</span><i>${looseVisual(item.gem, 'small-jewelry-loose', '', item.looseShape)}</i></div>
-      <div><h3>${esc(item.name)}</h3><p>${esc(QUALITIES[item.quality].name)}・${yen(item.recommendedPrice)}</p><small>状態：${status}</small></div>
-      ${item.status === 'stored' ? state.store.rented ? `<button class="primary-button" data-action="place-item" data-id="${item.id}">店舗に並べる</button>` : '<button class="secondary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>' : ''}
+      <div><h3>${esc(item.name)}</h3><p>${esc(QUALITIES[item.quality].name)}・原価 ${yen(item.cost)}</p><small>おすすめ ${yen(item.recommendedPrice)}${sellingPrice === null ? '' : `・設定 ${yen(sellingPrice)}`}・予想利益 ${yen(profit)}</small><small>状態：${status}</small></div>
+      ${item.status === 'stored' ? state.store.rented ? `<button class="primary-button" data-action="place-item" data-id="${item.id}">現在の店舗に並べる</button>` : '<button class="secondary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>' : item.status === 'displayed' && contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
     </article>`;
   }).join('')}</div>`;
 }
@@ -2911,21 +3490,25 @@ function renderStore() {
       <section class="center-card glass-panel store-branch-menu">
         <h1>${esc(state.store.name || '店舗')}</h1>
         <div class="button-stack">
-          ${branches.map((branch) => `<button class="primary-button full-button" data-action="open-store-branch" data-id="${esc(branch.id)}">${esc(branch.label || storeBranchLabel(branch.number))}</button>`).join('')}
+          ${branches.map((branch) => `<button class="primary-button full-button" data-action="open-store-branch" data-id="${esc(branch.id)}"><strong>${esc(branch.label || storeBranchLabel(branch.number))}${branch.suspended ? '（休業中）' : !storeBusinessOpen() ? '（営業時間外）' : ''}</strong><small>Lv.${storeLevel(branch)}・評価 ${storeRating(branch)}/100・陳列 ${storeShowcaseUsedSlots(branch)}点</small></button>`).join('')}
         </div>
       </section>`, { help: '開く店舗を選択してください。店舗は「店舗1」「店舗2」のように表示されます。' });
   }
 
   const branch = branches.find((entry) => entry.id === branchId) || branches[0];
+  state.store.branchNumber = Math.max(1, Number(branch.number) || 1);
+  mirrorCurrentStoreDisplay(branch);
   const displayName = String(branch.name || state.store.name || '店舗').trim();
-  const activeVisitors = canServeCustomers() ? Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting) : [];
+  const businessOpen = storeBusinessOpen();
+  const activeVisitors = canServeCustomers() ? Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting && Number(state.customers[id].visitingBranchNumber || branch.number) === Number(branch.number)) : [];
+  const customerProfile = storeCustomerProfile(branch.number);
   const canExpand = expansionEligible();
   const available = state.inventory.jewelry.filter((item) => item.status === 'stored');
-  const emptySlots = Math.max(0, storeShowcaseCapacity() - storeShowcaseUsedSlots());
+  const emptySlots = Math.max(0, storeShowcaseCapacity(branch) - storeShowcaseUsedSlots(branch));
   const displayInventory = state.store.displayInventory || {};
   const displaySuppliesOwned = Math.max(0, Math.floor(Number(displayInventory.displaySupplies) || 0));
   const casesOwned = Math.max(0, Math.floor(Number(displayInventory.case) || 0));
-  const casesRemaining = storeCaseRemaining();
+  const casesRemaining = storeCaseRemaining(branch);
   const canInstallDisplaySupplies = displaySuppliesOwned > 0;
   const canInstallCase = casesOwned > 0 && casesRemaining < storeMaximumCases();
   return shell(displayName, `
@@ -2933,22 +3516,26 @@ function renderStore() {
       <section class="store-scene"></section>
       <section class="store-panel glass-panel">
         <h1 class="store-name-title">${esc(displayName)}</h1>
+        ${storeBranchOperating(branch) ? '' : `<section class="tool-break-alert"><strong>この店舗は休業中です</strong><span>未払い家賃 ${yen(branch.unpaidRent)}を収支画面から支払ってください。</span></section>`}
+        ${storeBranchOperating(branch) && !businessOpen ? '<section class="tool-break-alert"><strong>本日の店舗営業は終了しました</strong><span>営業時間は9:00～19:00です。商品の陳列、販売価格の変更、注文確認は21:00まで行えます。</span></section>' : ''}
         <div class="store-summary">
-          <div><small>店舗レベル</small><strong>Lv.${storeLevel()}</strong></div>
-          <div><small>店舗評価</small><strong>★ ${state.store.rating.toFixed(1)}</strong></div>
-          <div><small>累計販売</small><strong>${state.store.salesCount}点</strong></div>
+          <div><small>店舗レベル</small><strong>Lv.${storeLevel(branch)}</strong></div>
+          <div><small>店舗評価</small><strong>${storeRating(branch)} / 100</strong></div>
+          <div><small>店舗実績</small><strong>${Math.max(0, Number(branch.points) || 0)}pt</strong></div>
+          <div><small>設備補正</small><strong>＋${storeDisplayLevelBonus(branch)}</strong></div>
           <div><small>ケース残数</small><strong>${casesRemaining}/${storeMaximumCases()}個</strong></div>
         </div>
+        <section class="store-customer-profile"><small>主な客層</small><strong>${esc(customerProfile.name)}</strong><span>${esc(customerProfile.description)}</span></section>
         <section class="store-install-section storefront-equipment-section">
           <div class="section-heading"><h2>店頭設備</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>
-          <article class="store-install-row"><div><strong>ディスプレイ用品</strong><small>設置済み ${state.store.displaySuppliesInstalled}・未設置 ${displaySuppliesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button></article>
+          <article class="store-install-row"><div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}・未設置 ${displaySuppliesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button></article>
           <article class="store-install-row"><div><strong>ケース</strong><small>残数 ${casesRemaining}/${storeMaximumCases()}個・未設置 ${casesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="case" ${canInstallCase ? '' : 'disabled'}>店頭に設置</button></article>
-          <p class="small-note">ケースは商品が1点売れるごとに1個減ります。残数が0個でも商品は販売できますが、ケースによる店舗レベル加算はありません。</p>
+          <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1されます。ケースは販売ごとに1個減ります。</p>
         </section>
         ${hasCraftedJewelry() ? '' : '<section class="visitor-box"><h2>接客はまだ利用できません。</h2><p>まず工房でジュエリーを1点制作してください。制作後からお客様が来店するようになります。</p><button class="secondary-button" data-action="nav" data-screen="workshop">工房へ</button></section>'}
         ${activeVisitors.length ? `<section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>` : ''}
-        <div class="store-showcase-heading"><h2>ショーケース</h2><small>${installedShowcaseCount()}/${storeMaximumShowcases()}台・${storeShowcaseUsedSlots()}/${storeShowcaseCapacity()}点</small></div>
-        ${installedShowcaseCount() ? `<div class="showcase-units">${state.store.showcases.map((showcase, showcaseIndex) => renderShowcaseUnit(showcase, showcaseIndex)).join('')}</div>` : '<section class="empty-state showcase-empty-state"><strong>ショーケースがありません。</strong><p>御徒町のディスプレイ屋でショーケースを購入し、店舗情報から設置してください。</p></section>'}
+        <div class="store-showcase-heading"><h2>ショーケース</h2><small>${installedShowcaseCount(branch)}/${storeMaximumShowcases()}台・${storeShowcaseUsedSlots(branch)}/${storeShowcaseCapacity(branch)}点</small></div>
+        ${installedShowcaseCount(branch) ? `<div class="showcase-units">${branchShowcases(branch).map((showcase, showcaseIndex) => renderShowcaseUnit(showcase, showcaseIndex, branch)).join('')}</div>` : '<section class="empty-state showcase-empty-state"><strong>ショーケースがありません。</strong><p>御徒町のディスプレイ屋でショーケースを購入し、店舗情報から設置してください。</p></section>'}
         ${available.length && emptySlots > 0 ? `<details class="available-items"><summary>商品を並べる</summary><div class="compact-list">${available.map((item) => `<button data-action="place-item" data-id="${item.id}"><span>${esc(item.name)}</span><small>${yen(item.recommendedPrice)}</small></button>`).join('')}</div></details>` : ''}
         ${available.length && emptySlots === 0 ? '<p class="small-note">商品を並べるには、空きのあるショーケースが必要です。</p>' : ''}
         <div class="button-grid">
@@ -2959,48 +3546,97 @@ function renderStore() {
         </div>
         ${canExpand ? '<p class="success-text">店舗を拡張できます。</p>' : ''}
       </section>
-    </div>`, { help: 'ショーケース1台には完成品を5個まで並べられます。ディスプレイ用品とケースは店頭へ設置でき、ケースは販売ごとに1個消費されます。ケースがなくても販売できます。' });
+    </div>`, { help: 'ショーケース1台には完成品を5個まで並べられます。販売価格は商品ごとに直接設定でき、原価・おすすめ価格・予想利益を確認できます。ディスプレイ用品とケースは店頭へ設置でき、ケースは販売ごとに1個消費されます。' });
 }
 
-function renderShowcaseUnit(showcase, showcaseIndex) {
+function renderShowcaseUnit(showcase, showcaseIndex, branch = currentStoreBranch()) {
   const slots = Array.from({ length: 5 }, (_, slotIndex) => showcase?.slots?.[slotIndex] || null);
   const used = slots.filter(Boolean).length;
-  return `<section class="showcase-unit"><div class="showcase-unit-header"><h3>ショーケース ${showcaseIndex + 1}</h3><small>${used}/5点</small></div><div class="showcase-grid">${slots.map((slot, slotIndex) => renderShowcaseSlot(slot, showcaseIndex, slotIndex)).join('')}</div></section>`;
+  return `<section class="showcase-unit"><div class="showcase-unit-header"><h3>ショーケース ${showcaseIndex + 1}</h3><small>${used}/5点</small></div><div class="showcase-grid">${slots.map((slot, slotIndex) => renderShowcaseSlot(slot, showcaseIndex, slotIndex, branch)).join('')}</div></section>`;
 }
 
-function renderShowcaseSlot(slot, showcaseIndex, slotIndex) {
+function renderShowcaseSlot(slot, showcaseIndex, slotIndex, branch = currentStoreBranch()) {
   if (!slot) return `<article class="showcase-slot empty"><strong>${slotIndex + 1}</strong><span>空き</span></article>`;
   const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
   if (!item) return `<article class="showcase-slot empty"><strong>${slotIndex + 1}</strong><span>空き</span></article>`;
-  const priceMode = PRICE_MODES[slot.priceMode] || PRICE_MODES.standard;
-  const price = roundThousand(item.recommendedPrice * priceMode.multiplier);
+  const price = showcaseSellingPrice(slot, item);
+  const priceStatus = sellingPriceStatus(item, price);
+  const expectedProfit = price - Math.max(0, Number(item.cost) || 0);
   return `<article class="showcase-slot">
     <div class="slot-number">${slotIndex + 1}</div>
     <div class="small-jewelry metal-${item.metal}" style="--gem:${GEMS[item.gem].hue}"><span>${ITEMS[item.item].symbol}</span><i>${looseVisual(item.gem, 'small-jewelry-loose', '', item.looseShape)}</i></div>
-    <div class="slot-details"><strong>${esc(item.name)}</strong><small>${yen(price)}</small>
-      <select data-action="price-mode" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">
-        ${Object.values(PRICE_MODES).map((mode) => `<option value="${mode.id}" ${slot.priceMode === mode.id ? 'selected' : ''}>${esc(mode.name)}</option>`).join('')}
-      </select>
+    <div class="slot-details"><strong>${esc(item.name)}</strong>
+      <div class="slot-price-breakdown">
+        <small>原価 ${yen(item.cost)}</small>
+        <small>おすすめ ${yen(item.recommendedPrice)}</small>
+        <small>予想利益 ${yen(expectedProfit)}</small>
+      </div>
+      <label class="selling-price-field"><span>販売価格</span><input type="number" min="1000" step="1" inputmode="numeric" value="${price}" data-action="selling-price" data-showcase="${showcaseIndex}" data-slot="${slotIndex}"></label>
+      <span class="price-status ${priceStatus.id}">価格：${esc(priceStatus.name)}</span>
       <button class="text-button" data-action="remove-showcase" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">商品を下げる</button>
+      ${contractedStoreBranches().length > 1 ? `<button class="text-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
     </div>
   </article>`;
 }
 
+function customerPreferenceLabel(request) {
+  const preference = request?.preference || { type: 'gem', value: request?.gem };
+  if (preference.label) return String(preference.label);
+  if (preference.type === 'metal') return METALS[preference.value]?.name || '地金指定';
+  if (preference.type === 'design') return DESIGNS[preference.value]?.name || 'デザイン指定';
+  if (preference.type === 'color') return String(preference.value || '色指定');
+  return GEMS[preference.value]?.name || '石指定';
+}
+
+function customerPreferenceMatches(item, request) {
+  const preference = request?.preference || { type: 'gem', value: request?.gem };
+  if (preference.type === 'metal') return item.metal === preference.value;
+  if (preference.type === 'design') return item.design === preference.value;
+  if (preference.type === 'color') {
+    const acceptedGems = Array.isArray(preference.gems) ? preference.gems : [];
+    return acceptedGems.includes(item.gem);
+  }
+  return item.gem === preference.value;
+}
+
+function customerMatchResult(item, request, branchNumber = state?.store?.branchNumber || 1) {
+  const price = sellingPriceForJewelry(item);
+  const budget = Math.max(1000, Number(request?.budget) || 1000);
+  const matches = Number(item.item === request?.item)
+    + Number(price <= budget)
+    + Number(customerPreferenceMatches(item, request));
+  const farOverBudget = price > budget * 1.25;
+  const labels = ['ほとんど売れない', '売れにくい', '購入の可能性あり', 'かなり売れやすい'];
+  const chances = [0.05, 0.20, 0.55, 0.90];
+  const baseChance = chances[matches] + storeProductSaleBonus(item, branchNumber);
+  return {
+    matches,
+    price,
+    farOverBudget,
+    label: farOverBudget ? '予算を大きく超えている' : labels[matches],
+    chance: farOverBudget ? 0 : clamp(baseChance, 0.02, 0.95),
+  };
+}
+
 function renderCustomer() {
   if (!state.store.rented) return shell('お客様', '<div class="empty-state"><strong>店舗を借りてから接客できます。</strong><p>御徒町の不動産屋で契約してください。</p><button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button></div>');
+  if (!storeBusinessOpen()) return shell('お客様', '<div class="empty-state"><strong>店舗の営業時間外です。</strong><p>接客と注文受付は9:00～19:00です。</p><button class="primary-button" data-action="nav" data-screen="store">店舗へ戻る</button></div>');
   if (!hasCraftedJewelry()) return shell('お客様', '<div class="empty-state"><strong>まだ接客できません。</strong><p>工房でジュエリーを1点制作すると接客が解放されます。</p><button class="primary-button" data-action="nav" data-screen="workshop">工房へ</button></div>');
   const customerId = screenData.customerId;
   const customer = CUSTOMERS[customerId];
   const customerState = state.customers[customerId];
   if (!customer || !customerState?.visiting) return shell('お客様', '<div class="empty-state"><strong>現在、接客中のお客様はいません。</strong></div>');
+  if (Number(customerState.visitingBranchNumber || state.store.branchNumber) !== Number(state.store.branchNumber)) return shell('お客様', '<div class="empty-state"><strong>このお客様は別の店舗へ来店しています。</strong><p>来店中の店舗を開いて接客してください。</p><button class="primary-button" data-action="nav" data-screen="store">店舗一覧へ</button></div>');
+  const request = activeCustomerRequest(customerId);
+  const proposedIds = Array.isArray(customerState.proposedItemIds) ? customerState.proposedItemIds : [];
   const candidates = state.inventory.jewelry
-    .filter((item) => item.status === 'stored' || item.status === 'displayed')
-    .map((item) => ({ item, score: matchScore(item, customer.request) }))
-    .sort((a, b) => b.score - a.score);
-  const activeOrders = state.orders.filter((order) => !['完了', '取消'].includes(order.status)).length;
-  const orderLimit = state.store.expanded ? 2 : 1;
-  const orderEquipmentReady = canAcceptOrders();
-  const canAcceptThisOrder = orderEquipmentReady && activeOrders < orderLimit;
+    .filter((item) => item.status === 'displayed' && showcaseSlotForJewelry(item.id, storeBranchByNumber(customerState.visitingBranchNumber)))
+    .map((item) => ({ item, result: customerMatchResult(item, request, customerState.visitingBranchNumber) }))
+    .sort((a, b) => b.result.matches - a.result.matches || Math.abs(a.result.price - request.budget) - Math.abs(b.result.price - request.budget));
+  const activeOrders = activeOrderCount();
+  const activeOrderLimit = orderLimit();
+  const canAcceptThisOrder = customerState.wishesHeard && activeOrders < activeOrderLimit && canSpendStoreMinutes(30);
+  const canProposeProduct = customerState.wishesHeard && proposedIds.length < 2 && candidates.some(({ item }) => !proposedIds.includes(item.id)) && canSpendStoreMinutes(60);
   const playerGreeting = state.playerName ? `${state.playerName}さん、こんにちは。` : '';
   const storeGreeting = state.store.name
     ? customerState.met
@@ -3008,53 +3644,85 @@ function renderCustomer() {
       : `${storeDisplayName()}で相談できると聞いて来ました。`
     : '';
   const customerOpening = `${playerGreeting}${storeGreeting}${customer.opening}`;
+  const showingProducts = customerState.wishesHeard && screenData.view === 'products';
+  const requestDetails = customerState.wishesHeard ? `
+    <article class="request-card customer-wish-card">
+      <small>お客様の希望</small>
+      <dl class="customer-wish-list">
+        <div><dt>商品種類</dt><dd>${esc(ITEMS[request.item]?.name || '指定なし')}</dd></div>
+        <div><dt>予算</dt><dd>${yen(request.budget)}</dd></div>
+        <div><dt>優先する希望</dt><dd>${esc(customerPreferenceLabel(request))}</dd></div>
+      </dl>
+    </article>` : '<p class="small-note">まず希望を聞くと、商品種類・予算・最優先の希望が分かります。</p>';
+  const productList = showingProducts ? `
+    <section class="customer-product-proposal">
+      <div class="customer-proposal-heading"><h2>店頭商品を提案</h2><span>提案 ${proposedIds.length}／2点</span></div>
+      ${candidates.length ? `<div class="candidate-list">${candidates.map(({ item, result }) => {
+        const proposed = proposedIds.includes(item.id);
+        return `<article class="${proposed ? 'already-proposed' : ''}"><div><strong>${esc(item.name)}</strong><small>販売価格 ${yen(result.price)}・${esc(result.label)}</small></div><button class="primary-button" data-action="customer-buy" data-customer="${customerId}" data-id="${item.id}" ${proposed || proposedIds.length >= 2 ? 'disabled' : ''}>${proposed ? '提案済み' : '提案する'}</button></article>`;
+      }).join('')}</div>` : '<p class="small-note">現在の店舗に陳列中の商品がありません。</p>'}
+    </section>` : '';
   return shell(customer.name, `
     <div class="customer-layout">
       <section class="customer-stage"><div class="customer-placeholder"><span>人物画像</span><small>後から透過画像を重ねられます</small></div></section>
       <section class="dialog-panel glass-panel">
         <p class="dialog-text">${esc(customerOpening)}</p>
-        <article class="request-card"><small>希望</small><strong>${esc(customer.preferenceText)}</strong><span>予算：${yen(customer.request.budget)}</span></article>
-        <h2>商品を見せる</h2>
-        ${candidates.length ? `<div class="candidate-list">${candidates.slice(0, 4).map(({ item, score }) => `<article><div><strong>${esc(item.name)}</strong><small>${score >= 4 ? 'ぴったり' : score >= 2 ? 'おすすめ' : '少し違う'}・${yen(item.recommendedPrice)}</small></div><button class="primary-button" data-action="customer-buy" data-customer="${customerId}" data-id="${item.id}">見せる</button></article>`).join('')}</div>` : '<p class="small-note">販売できる完成品がありません。</p>'}
-        <div class="dialog-actions">
-          <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>注文を受ける</button>
-          <button class="text-button" data-action="ignore-customer" data-id="${customerId}">今回は対応しない</button>
+        ${requestDetails}
+        <div class="customer-service-choices">
+          <button class="primary-button" data-action="hear-customer-wishes" data-customer="${customerId}" ${customerState.wishesHeard ? 'disabled' : ''}>${customerState.wishesHeard ? '希望を確認済み' : '希望を聞く'}</button>
+          <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>
+          <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダーを提案</button>
+          <button class="text-button" data-action="ignore-customer" data-id="${customerId}">接客を終了</button>
         </div>
-        ${!orderEquipmentReady ? '<p class="error-text">注文を受けるには、店舗と使用可能な彫金机が必要です。</p>' : activeOrders >= orderLimit ? `<p class="error-text">同時に受けられる注文は${orderLimit}件までです。</p>` : ''}
+        ${productList}
+        ${customerState.wishesHeard && proposedIds.length >= 2 ? '<p class="small-note">店頭商品の提案は2点までです。</p>' : ''}
+        ${customerState.wishesHeard && activeOrders >= activeOrderLimit ? `<p class="error-text">職人レベルにより、同時に受けられる注文は${activeOrderLimit}件までです。</p>` : ''}
+        ${customerState.wishesHeard && !canSpendStoreMinutes(30) ? '<p class="small-note">本日の接客・注文受付を完了できる時間が残っていません。</p>' : ''}
       </section>
-    </div>`, { help: '希望に合う完成品を見せるか、注文を受けるか、今回は対応しないかを選べます。' });
+    </div>`, { help: '希望を聞き、店頭商品を最大2点まで提案するか、オーダーを提案するか、接客を終了します。購入判定は商品種類・予算・優先する希望の3項目で行います。' });
 }
 
 function renderOrders() {
-  const active = state.orders.filter((order) => !['完了', '取消'].includes(order.status));
-  const completed = state.orders.filter((order) => ['完了', '取消'].includes(order.status));
+  const active = state.orders.filter((order) => !orderClosed(order));
+  const completed = state.orders.filter((order) => orderClosed(order));
   const rows = active.map((order) => {
     const customer = CUSTOMERS[order.customerId];
     const requirements = orderRequirements(order);
+    const feasibility = orderFeasibility(order);
+    const difficulty = orderDifficulty(order);
     const remaining = order.deadlineDay - state.game.day;
-    const deadlineText = `${gameDateLabel(order.deadlineDay)}（${remaining < 0 ? `${Math.abs(remaining)}日超過` : remaining === 0 ? '本日' : `あと${remaining}日`}）`;
-    const isCrafted = ['完成', '完了'].includes(order.status);
+    const deadlineText = `${gameDateLabel(order.deadlineDay)}（${remaining === 0 ? '本日' : `あと${Math.max(0, remaining)}日`}）`;
+    const isCrafted = order.status === '完成';
+    const deliveryBranch = storeBranchByNumber(order.branchNumber);
+    const canDeliverNow = storeDeliveryOpen() && storeBranchOperating(deliveryBranch);
     const materialsReady = requirements.enoughMetal && requirements.enoughLoose;
-    const craftReady = order.status === '受注' && materialsReady && toolUsable('jewelryBench');
+    const craftReady = order.status === '受注' && materialsReady && feasibility.artisanReady && feasibility.equipmentReady;
     const missingRows = [];
     if (!requirements.enoughMetal) missingRows.push(`${METALS[order.metal].name} ${requirements.missingMetalWeight}g`);
     if (!requirements.enoughLoose) missingRows.push(`${GEMS[order.gem].name}・${looseShapeLabel(order.looseShape)}ルース ${requirements.missingLooseQuantity}個`);
+    if (!feasibility.artisanReady) missingRows.push(`職人Lv.${feasibility.requiredArtisanLevel}`);
+    if (!feasibility.equipmentReady) missingRows.push(...feasibility.requiredTools.filter((toolId) => !toolUsable(toolId)).map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId));
     const orderContent = `${GEMS[order.gem].name}の${looseShapeLabel(order.looseShape)}を使った${DESIGNS[order.design]?.name || ''}${ITEMS[order.item].name}`;
     const image = customer?.image || './assets/images/customers/customer-placeholder.svg';
-    return `<article class="order-sheet ${remaining < 0 ? 'overdue' : ''}">
+    const estimatedCost = Math.max(0, Number(order.estimatedCost) || 0);
+    const estimatedProfit = Number.isFinite(Number(order.estimatedProfit)) ? Number(order.estimatedProfit) : Number(order.price) - estimatedCost;
+    return `<article class="order-sheet">
       <header class="order-sheet-header">
         <div class="order-customer-image"><img src="${esc(image)}?v=${VERSION}" alt="${esc(order.customerName)}さん"></div>
-        <div class="order-customer-summary"><small>注文者</small><h2>${esc(order.customerName)}</h2><span class="order-progress-badge">${esc(order.status)}</span></div>
+        <div class="order-customer-summary"><small>注文者</small><h2>${esc(order.customerName)}</h2><span class="order-progress-badge">${esc(orderDisplayStatus(order))}</span></div>
       </header>
       <dl class="order-detail-grid">
-        <div><dt>注文内容</dt><dd>${esc(orderContent)}</dd></div>
+        <div class="wide"><dt>注文内容</dt><dd>${esc(orderContent)}</dd></div>
         <div><dt>商品種類</dt><dd>${esc(ITEMS[order.item].name)}</dd></div>
-        <div><dt>石種</dt><dd>${esc(GEMS[order.gem].name)}</dd></div>
-        <div><dt>カット</dt><dd>${esc(looseShapeLabel(order.looseShape))}</dd></div>
-        <div><dt>予算</dt><dd>${yen(order.budget)}</dd></div>
+        <div><dt>石</dt><dd>${esc(GEMS[order.gem].name)}・${esc(looseShapeLabel(order.looseShape))}</dd></div>
+        <div><dt>地金</dt><dd>${esc(METALS[order.metal].name)}</dd></div>
+        <div><dt>デザイン</dt><dd>${esc(DESIGNS[order.design]?.name || '指定なし')}</dd></div>
+        <div><dt>難易度</dt><dd>${esc(difficulty.label)}・職人Lv.${feasibility.requiredArtisanLevel}</dd></div>
+        <div><dt>受注金額</dt><dd>${yen(order.price)}</dd></div>
+        <div><dt>予想原価</dt><dd>${yen(estimatedCost)}</dd></div>
+        <div><dt>予想利益</dt><dd>${yen(estimatedProfit)}</dd></div>
         <div><dt>納期</dt><dd>${esc(deadlineText)}</dd></div>
         <div class="wide"><dt>希望条件</dt><dd>${esc(order.desiredConditions || customer?.preferenceText || '指定なし')}</dd></div>
-        <div><dt>現在の進行状況</dt><dd>${esc(order.status)}</dd></div>
       </dl>
       <section class="order-material-section">
         <h3>必要材料</h3>
@@ -3064,24 +3732,25 @@ function renderOrders() {
           <div class="order-material-row" role="row"><strong>${esc(GEMS[order.gem].name)}・${esc(looseShapeLabel(order.looseShape))}</strong><span>${requirements.requiredLooseQuantity}個</span><span>${requirements.availableLooseQuantity}個</span></div>
         </div>
       </section>
-      <section class="order-shortage ${materialsReady ? 'ready' : 'missing'}">
-        <strong>不足している材料</strong>
-        ${isCrafted ? '<p>制作済みのため、材料判定は完了しています。</p>' : materialsReady ? '<p>不足している材料はありません。</p>' : `<ul>${missingRows.map((row) => `<li>${esc(row)}</li>`).join('')}</ul>`}
+      <section class="order-shortage ${materialsReady && feasibility.artisanReady && feasibility.equipmentReady ? 'ready' : 'missing'}">
+        <strong>製作判定</strong>
+        ${isCrafted ? '<p>制作済みです。納期内に納品できます。</p>' : craftReady ? '<p>製作可能です。</p>' : `<ul>${missingRows.map((row) => `<li>${esc(row)}</li>`).join('')}</ul>`}
       </section>
       <div class="order-sheet-actions">
         ${order.status === '受注' ? `<button class="primary-button full-button order-craft-button" data-action="craft-order" data-id="${order.id}" ${craftReady ? '' : 'disabled'}><strong>このジュエリーを制作する</strong></button>` : ''}
-        ${order.status === '完成' ? `<button class="primary-button full-button" data-action="deliver-order" data-id="${order.id}">納品する</button>` : ''}
-        ${order.status === '受注' && !materialsReady ? '<p class="error-text">必要な地金とルースが揃うまで制作画面へ進めません。</p>' : ''}
-        ${order.status === '受注' && materialsReady && !toolUsable('jewelryBench') ? '<p class="error-text">制作には使用可能な彫金机が必要です。</p>' : ''}
+        ${order.status === '完成' ? `<button class="primary-button full-button" data-action="deliver-order" data-id="${order.id}" ${canDeliverNow ? '' : 'disabled'}>${storeDeliveryOpen() ? '納品する' : '店舗営業時間外'}</button>` : ''}
+        ${['受注', '完成'].includes(order.status) ? `<button class="text-button full-button" data-action="confirm-cancel-order" data-id="${order.id}">注文をキャンセル</button>` : ''}
       </div>
     </article>`;
   }).join('');
 
   return shell('注文書', `
     <section class="wide-panel glass-panel order-sheet-panel">
+      <div class="order-limit-summary"><span>同時受注</span><strong>${active.length}／${orderLimit()}件</strong><small>職人レベルと同じ件数まで</small></div>
+      ${storeDeliveryOpen() ? '' : '<p class="small-note">注文書の確認と制作は可能ですが、注文品の納品は店舗営業時間の9:00～19:00に行ってください。</p>'}
       ${rows || '<div class="empty-state"><strong>現在の注文はありません。</strong><p>注文を受けると、工房の注文書から内容と必要材料を確認できます。</p><button class="secondary-button" data-action="nav" data-screen="workshop">工房へ戻る</button></div>'}
-      ${completed.length ? `<details class="completed-order-history"><summary>完了した注文</summary><div class="history-list">${completed.map((order) => `<p>${esc(order.customerName)}：${esc(GEMS[order.gem].name)}・${esc(looseShapeLabel(order.looseShape))}${esc(ITEMS[order.item].name)}（${esc(order.status)}）</p>`).join('')}</div></details>` : ''}
-    </section>`, { help: '注文者、注文内容、納期、必要な地金とルース、現在の所持量、不足材料を確認できます。材料がすべて揃っている場合だけ、注文品の制作画面へ進めます。' });
+      ${completed.length ? `<details class="completed-order-history"><summary>完了・期限切れの注文</summary><div class="history-list">${completed.map((order) => `<p>${esc(order.customerName)}：${esc(GEMS[order.gem].name)}・${esc(looseShapeLabel(order.looseShape))}${esc(ITEMS[order.item].name)}（${esc(order.status)}）</p>`).join('')}</div></details>` : ''}
+    </section>`, { help: '受注金額、予想原価・利益、納期、必要職人レベル、必要設備、材料の所持状況を確認できます。同時受注数は職人レベルと同じです。' });
 }
 
 function renderExpansion() {
@@ -3093,7 +3762,7 @@ function renderExpansion() {
   const canInstallShowcase = Number(inventory.showcase || 0) > 0 && installedShowcaseCount() < maxShowcases;
   const displayProductRows = [DISPLAY_SHOP_PRODUCTS.showcase, DISPLAY_SHOP_PRODUCTS.displaySupplies, DISPLAY_SHOP_PRODUCTS.case].map((product) => {
     const owned = Math.max(0, Number(inventory[product.id]) || 0);
-    const installed = product.id === 'showcase' ? installedShowcaseCount() : product.id === 'displaySupplies' ? state.store.displaySuppliesInstalled : storeCaseRemaining();
+    const installed = product.id === 'showcase' ? installedShowcaseCount() : product.id === 'displaySupplies' ? storeDisplaySuppliesInstalled(currentStoreBranch()) : storeCaseRemaining(currentStoreBranch());
     const installedText = product.id === 'case' ? `残数 ${installed}/${maxCases}個` : `設置済み ${installed}`;
     const canInstall = product.id === 'showcase' ? canInstallShowcase : product.id === 'case' ? owned > 0 && installed < maxCases : owned > 0;
     return `<article class="store-install-row"><div><strong>${esc(product.name)}</strong><small>未設置 ${owned}・${installedText}</small></div><button class="primary-button" data-action="install-display-product" data-id="${esc(product.id)}" ${canInstall ? '' : 'disabled'}>店頭に設置</button></article>`;
@@ -3103,13 +3772,13 @@ function renderExpansion() {
       <h1>${esc(storeDisplayName())}</h1>
       <p>${state.store.expanded ? '拡張済みの店舗' : '小さな店舗'}</p>
       <div class="stat-grid store-info-stats">
-        <div><small>店舗レベル</small><strong>Lv.${storeLevel()}</strong></div>
+        <div><small>店舗レベル</small><strong>Lv.${storeLevel(currentStoreBranch())}</strong></div>
         <div><small>ショーケース</small><strong>${installedShowcaseCount()}/${maxShowcases}台</strong></div>
-        <div><small>同時注文可能数</small><strong>${state.store.expanded ? 2 : 1}件</strong></div>
-        <div><small>ケース残数</small><strong>${storeCaseRemaining()}/${maxCases}個</strong></div>
+        <div><small>同時注文可能数</small><strong>${orderLimit()}件</strong></div>
+        <div><small>ケース残数</small><strong>${storeCaseRemaining(currentStoreBranch())}/${maxCases}個</strong></div>
         <div><small>店員</small><strong>${state.employee.hired ? state.employee.name : 'なし'}</strong></div>
       </div>
-      <section class="store-install-section"><div class="section-heading"><h2>店頭へ設置</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>${displayProductRows}<p class="small-note">ディスプレイ用品は設置数に応じて店舗レベルが上がります。ケースは残数が1個以上ある間だけ店舗レベルが1上がり、商品が1点売れるごとに1個減ります。</p></section>
+      <section class="store-install-section"><div class="section-heading"><h2>店頭へ設置</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>${displayProductRows}<p class="small-note">ディスプレイ用品は設置1点につき店舗レベル＋1、ケースは1個以上ある間＋1です。</p></section>
       ${state.store.expanded ? '<p>この基本版での店舗拡張は完了しています。</p>' : `
         <h2>拡張条件</h2>
         <ul class="condition-list">
@@ -3186,35 +3855,49 @@ async function eatMeal(mealId) {
   if (state.game.money < meal.price) return showToast('所持金が足りません。', 'error');
 
   mealTransitioning = true;
-  selectedMeal = mealId;
+  const stateBeforeMeal = structuredClone(state);
+  try {
+    selectedMeal = mealId;
 
-  // 店を決定して食事画面へ移る瞬間に支払いを確定する。
-  state.game.money -= meal.price;
-  addFinance(`${meal.name}で食事`, 0, meal.price);
-  startMoneyFeedback(-meal.price, 1200);
-  saveGame();
-  setScreen('meal', { mealId, eating: true }, false);
+    // 店を決定して食事画面へ移る瞬間に支払いを確定する。
+    state.game.money -= meal.price;
+    addFinance(`${meal.name}で食事`, 0, meal.price);
+    startMoneyFeedback(-meal.price, 1200);
+    saveGame();
+    setScreen('meal', { mealId, eating: true }, false);
 
-  // 食事中の画面は、店内へ移動してから合計3秒間表示する。
-  await wait(420);
-  playSfx('eat');
-  await wait(2580);
+    // 食事中の画面は、店内へ移動してから合計3秒間表示する。
+    await wait(420);
+    playSfx('eat');
+    await wait(2580);
 
-  state.wellbeing.hunger = Math.min(7, before + meal.recovery);
-  state.wellbeing.lastMeal = mealId;
-  state.wellbeing.mealsEaten += 1;
-  state.daily.meals.push({ id: mealId, name: meal.name, price: meal.price, recovery: state.wellbeing.hunger - before });
-  saveGame();
+    state.wellbeing.hunger = Math.min(7, before + meal.recovery);
+    state.wellbeing.lastMeal = mealId;
+    state.wellbeing.mealsEaten += 1;
+    state.daily.meals.push({ id: mealId, name: meal.name, price: meal.price, recovery: state.wellbeing.hunger - before });
+    saveGame();
 
-  hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
-  clearTimeout(hungerFeedbackTimer);
-  setScreen('main', {}, false);
-  playSfx('levelup');
-  hungerFeedbackTimer = setTimeout(() => {
-    hungerFeedback = null;
-    if (screen === 'main') render();
-  }, 1550);
-  mealTransitioning = false;
+    hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
+    clearTimeout(hungerFeedbackTimer);
+    setScreen('main', {}, false);
+    playSfx('levelup');
+    hungerFeedbackTimer = setTimeout(() => {
+      hungerFeedback = null;
+      if (screen === 'main') render();
+    }, 1550);
+  } catch (error) {
+    console.error('食事処理エラー', error);
+    state = stateBeforeMeal;
+    screen = 'main';
+    screenData = {};
+    navigation = [];
+    pendingDayMoneyDelta = 0;
+    saveGame();
+    render();
+    try { showToast('食事処理を中断し、直前の状態へ戻しました。', 'error'); } catch (_) {}
+  } finally {
+    mealTransitioning = false;
+  }
 }
 
 function renderPhone() {
@@ -3225,6 +3908,7 @@ function renderPhone() {
     <div class="phone-stage">
       <section class="phone-ui">
         <nav class="phone-tabs">
+          <button class="${phoneTab === 'profile' ? 'active' : ''}" data-action="phone-tab" data-tab="profile">プロフィール</button>
           <button class="${phoneTab === 'calendar' ? 'active' : ''}" data-action="phone-tab" data-tab="calendar">カレンダー</button>
           <button class="${phoneTab === 'notifications' ? 'active' : ''}" data-action="phone-tab" data-tab="notifications">通知</button>
           <button class="${phoneTab === 'finance' ? 'active' : ''}" data-action="phone-tab" data-tab="finance">収支</button>
@@ -3235,7 +3919,7 @@ function renderPhone() {
         </nav>
         <div class="phone-content">${renderPhoneContent()}</div>
       </section>
-    </div>`, { help: 'カレンダー、通知、収支、アイテム、スマホゲーム、AI、設定を利用できます。アイテムの使用や装備変更、ゲームデータのコピーでは時間は進みません。' });
+    </div>`, { help: 'プロフィール、カレンダー、通知、収支、アイテム、スマホゲーム、AI、設定を利用できます。プロフィールではゲームクリア条件の進捗を確認できます。' });
 }
 
 
@@ -3330,6 +4014,29 @@ function togglePhoneEquipment(equipmentId) {
   render();
 }
 
+function renderPhoneProfile() {
+  const progress = gameClearProgress();
+  const cleared = Boolean(state.progressFlags?.gameClearAchieved);
+  const clearDay = Math.max(1, Number(state.progressFlags?.gameClearDay) || state.game.day);
+  return `<section class="phone-profile-screen">
+    <header class="phone-profile-heading">
+      <div><small>プレイヤー</small><h2>${esc(state.playerName || '名前未設定')}</h2><span>${esc(artisanTitle())}</span></div>
+      <strong class="game-clear-status ${cleared ? 'cleared' : ''}">${cleared ? 'ゲームクリア済み' : '挑戦中'}</strong>
+    </header>
+    <section class="profile-level-summary">
+      <div><small>職人</small><strong>Lv.${progress.artisanLevel}</strong><span>${esc(artisanTitle(progress.artisanLevel))}</span></div>
+      <div><small>工房</small><strong>Lv.${progress.workshopLevel}</strong><span>最大 Lv.10</span></div>
+      <div><small>最高店舗</small><strong>Lv.${progress.highestStoreLevel}</strong><span>最大 Lv.10</span></div>
+      <div><small>営業店舗</small><strong>${progress.operatingStoreCount}店</strong><span>契約 ${progress.contractedStoreCount}店</span></div>
+    </section>
+    <section class="game-clear-progress-card">
+      <header><div><small>ゲームクリア条件</small><h3>${cleared ? `${clearDay}日目に達成` : '4条件を達成するとクリア'}</h3></div><strong>${progress.conditions.filter((condition) => condition.achieved).length}／4</strong></header>
+      <div class="game-clear-condition-list">${gameClearConditionRows(progress)}</div>
+      <p>${cleared ? 'クリア後もゲームデータを維持したまま、自由にプレイできます。' : '報酬やリセットはなく、達成後もそのままゲームを続けられます。'}</p>
+    </section>
+  </section>`;
+}
+
 function renderPhoneAI() {
   return `<section class="phone-ai-screen">
     <button class="primary-button phone-ai-copy-button" data-action="copy-ai-game-data">ゲームデータコピー</button>
@@ -3394,8 +4101,14 @@ function aiOrderRows() {
     looseShape: looseShapeLabel(order.looseShape),
     metal: METALS[order.metal]?.name || order.metal,
     design: DESIGNS[order.design]?.name || order.design,
+    difficulty: orderDifficulty(order).label,
+    requiredArtisanLevel: Number(order.requiredArtisanLevel) || orderDifficulty(order).artisanLevel,
+    requiredEquipment: orderRequiredTools(order).map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId),
+    displayStatus: orderDisplayStatus(order),
     budget: Number(order.budget) || 0,
     price: Number(order.price) || 0,
+    estimatedCost: Number(order.estimatedCost) || 0,
+    estimatedProfit: Number(order.estimatedProfit) || 0,
     acceptedDay: Number(order.acceptedDay) || null,
     acceptedDate: order.acceptedDay ? gameDateLabel(order.acceptedDay) : null,
     deadlineDay: Number(order.deadlineDay) || null,
@@ -3429,21 +4142,24 @@ function aiWorkshopToolRows() {
 }
 
 function aiCurrentCapabilities() {
-  const remainingHours = Math.max(0, Math.floor((22 * 60 - state.game.minutes) / 60));
+  const remainingHours = Math.max(0, Math.floor((DAY_END_MINUTES - state.game.minutes) / 60));
   const roughCount = Object.values(state.inventory.rough || {}).reduce((sum, qty) => sum + Math.max(0, Number(qty) || 0), 0);
   const looseCount = looseInventoryTotal();
   const metalCount = Object.values(state.inventory.metals || {}).reduce((sum, qty) => sum + Math.max(0, Number(qty) || 0), 0);
   const storedCount = state.inventory.jewelry.filter((item) => item.status !== 'sold').length;
-  const activeOrders = state.orders.filter((order) => !['完了', '取消'].includes(order.status)).length;
+  const activeOrders = activeOrderCount();
   return {
     remainingActionHoursToday: remainingHours,
     canMine: hungerLevel() > 0 && availableMiningLocations().some((place) => place.hours <= remainingHours),
     canPolishRoughStone: hungerLevel() > 0 && toolUsable('polishingMachine') && roughCount > 0 && remainingHours >= POLISHING_HOURS,
     canCraftJewelry: hungerLevel() > 0 && toolUsable('jewelryBench') && looseCount > 0 && metalCount > 0 && storedCount < state.inventory.capacity,
     canUseStore: Boolean(state.store.rented),
+    storeBusinessOpenNow: storeBusinessOpen(),
+    storeDeliveryOpenNow: storeDeliveryOpen(),
     canServeCustomers: canServeCustomers(),
     canAcceptOrders: canAcceptOrders(),
-    canAcceptAnotherOrder: canServeCustomers() && canAcceptOrders() && activeOrders < (state.store.expanded ? 2 : 1),
+    canAcceptAnotherOrder: canServeCustomers() && canAcceptOrders() && activeOrders < orderLimit(),
+      simultaneousOrderLimit: orderLimit(),
     canBuyOrSellMetals: hungerLevel() > 0 && okachimachiFacilityAvailability('materialShop').open && remainingHours >= 1,
     canSellRoughStones: hungerLevel() > 0 && okachimachiFacilityAvailability('materialShop').open && roughCount > 0 && remainingHours >= 1,
     canBuyOrSellLooseStones: hungerLevel() > 0 && okachimachiFacilityAvailability('looseShop').open && remainingHours >= 1,
@@ -3479,10 +4195,10 @@ function aiCurrentRules() {
   return {
     playStyle: '自由に遊ぶことを重視するゲーム。依頼されない限り、最適行動や次にするべきことを押しつけない。',
     dayAndTime: {
-      dayStartsAt: '8:00',
-      actionLimit: '22:00まで',
+      dayStartsAt: '9:00',
+      actionLimit: '21:00まで',
       currentDateStartsFromRealDate: true,
-      actionTimeRule: '行動ごとに時間を消費し、残り時間が足りない行動は選べない。御徒町の施設は18:00以降利用できない。',
+      actionTimeRule: '行動ごとに時間を消費し、21:00を超える行動は選べない。店舗営業は9:00～19:00で、接客・注文受付は19:00まで。御徒町の施設は18:00以降利用できない。',
     },
     hunger: {
       maximum: 7,
@@ -3498,7 +4214,7 @@ function aiCurrentRules() {
       menuOrder: ['原石研磨', 'ジュエリー作成', '注文書'],
       jewelryCreation: '彫金机が使用可能な時だけ選択できる。石種とカット形状を選び、対応するルースと地金を使用する。石種が同じでもカットが違うルースは代用できない。',
       roughPolishing: `研磨機が使用可能な時だけ選択でき、石種とカットを選んで原石1個を対応するルース1個へ加工する。所要時間は${POLISHING_HOURS}時間。`,
-      orderSheet: '現在の注文がある場合だけ選択できる。注文ごとに石種とカットが指定され、対応するルースと必要な地金がすべて揃った場合だけ制作画面へ進める。',
+      orderSheet: '現在の注文がある場合だけ選択できる。受注金額、予想原価・利益、納期、必要職人レベル、必要設備、材料を確認する。納期を過ぎた注文は翌朝に期限切れとなる。',
       quality: '職人レベルと、使用可能な工具・設備による工房レベルが完成品の品質に影響する。内部確率や計算式は回答しない。',
       storageCapacity: state.inventory.capacity,
       currentWorkshopLevel: workshopLevel(),
@@ -3514,10 +4230,10 @@ function aiCurrentRules() {
     commerce: {
       materialShop: '地金を1g単位で購入・売却でき、所持している原石も売却できる。地金は直接入力と±1g・±10g・±100gで数量を選び、全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
       looseShop: 'ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。購入・売却は1回1個で1時間。',
-      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能だが、ケースによる店舗レベル加算はない。注文受付には店舗と使用可能な彫金机の両方が必要。',
+      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。販売価格はプレイヤーが直接設定し、原価・おすすめ価格・設定価格・予想利益を確認できる。おすすめ価格は標準品質が原価の2倍、良品が2.2倍、上質が2.5倍で、1,000円単位に丸める。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
     },
     facilities: Object.entries(facilityNames).map(([id, name]) => { const availability = okachimachiFacilityAvailability(id); return { id, name, status: availability.open ? '利用可能' : availability.status, reason: availability.reason || null }; }),
-    smartphoneMenus: ['カレンダー', '通知', '収支', 'アイテム', 'スマホゲーム', 'AI', '設定'],
+    smartphoneMenus: ['プロフィール', 'カレンダー', '通知', '収支', 'アイテム', 'スマホゲーム', 'AI', '設定'],
   };
 }
 
@@ -3530,6 +4246,8 @@ function buildAIConsultationText() {
       relation: customer.relation,
       purchases: Number(customer.purchases) || 0,
       visiting: Boolean(customer.visiting),
+      visitingStore: customer.visiting ? storeBranchLabel(customer.visitingBranchNumber || state.store.branchNumber) : null,
+      activeRequest: customer.visiting ? activeCustomerRequest(customerId) : null,
       lastVisitDay: customer.lastVisitDay || null,
     }));
   const equipment = Object.values(EQUIPMENT_ITEMS)
@@ -3552,24 +4270,32 @@ function buildAIConsultationText() {
       usable: Boolean(item.usable),
       description: item.description,
     }));
-  const showcases = (state.store.showcases || []).map((showcase, showcaseIndex) => ({
-    showcase: showcaseIndex + 1,
-    capacity: 5,
-    slots: Array.from({ length: 5 }, (_, slotIndex) => {
-      const slot = showcase?.slots?.[slotIndex];
-      if (!slot) return { slot: slotIndex + 1, empty: true };
-      const jewelry = state.inventory.jewelry.find((item) => item.id === slot.jewelryId);
-      const priceMode = PRICE_MODES[slot.priceMode] || PRICE_MODES.standard;
-      return {
-        slot: slotIndex + 1,
-        empty: false,
-        jewelryId: slot.jewelryId,
-        jewelryName: jewelry?.name || '不明',
-        priceMode: priceMode.name,
-        displayPrice: jewelry ? roundThousand(jewelry.recommendedPrice * priceMode.multiplier) : null,
-      };
-    }),
+  const branchShowcaseData = (state.store.branches || []).map((branch) => ({
+    branchNumber: branch.number,
+    branchLabel: storeBranchLabel(branch.number),
+    showcases: branchShowcases(branch).map((showcase, showcaseIndex) => ({
+      showcase: showcaseIndex + 1,
+      capacity: 5,
+      slots: Array.from({ length: 5 }, (_, slotIndex) => {
+        const slot = showcase?.slots?.[slotIndex];
+        if (!slot) return { slot: slotIndex + 1, empty: true };
+        const jewelry = state.inventory.jewelry.find((item) => item.id === slot.jewelryId);
+        const displayPrice = jewelry ? showcaseSellingPrice(slot, jewelry) : null;
+        return {
+          slot: slotIndex + 1,
+          empty: false,
+          jewelryId: slot.jewelryId,
+          jewelryName: jewelry?.name || '不明',
+          productionCost: jewelry?.cost ?? null,
+          recommendedPrice: jewelry?.recommendedPrice ?? null,
+          displayPrice,
+          expectedProfit: jewelry && displayPrice !== null ? displayPrice - jewelry.cost : null,
+          priceStatus: jewelry ? sellingPriceStatus(jewelry, displayPrice).name : null,
+        };
+      }),
+    })),
   }));
+  const showcases = branchShowcaseData.find((entry) => Number(entry.branchNumber) === Number(state.store.branchNumber))?.showcases || [];
   const gameData = {
     exportInformation: {
       gameVersion: VERSION,
@@ -3592,6 +4318,14 @@ function buildAIConsultationText() {
       lastSavedAt: state.updatedAt,
     },
     currentCapabilities: aiCurrentCapabilities(),
+    gameClear: {
+      achieved: Boolean(state.progressFlags?.gameClearAchieved),
+      shown: Boolean(state.progressFlags?.gameClearShown),
+      achievedDay: state.progressFlags?.gameClearDay || null,
+      progress: gameClearProgress(),
+      continueAfterClear: true,
+      resetOnClear: false,
+    },
     store: {
       rented: Boolean(state.store.rented),
       name: state.store.rented ? storeDisplayName() : '',
@@ -3600,17 +4334,19 @@ function buildAIConsultationText() {
       branches: state.store.branches,
       rentedDay: state.store.rentedDay,
       expanded: Boolean(state.store.expanded),
-      storeLevel: storeLevel(),
+      storeLevel: storeLevel(currentStoreBranch()),
+      storePoints: Math.max(0, Number(currentStoreBranch()?.points) || 0),
       showcaseCount: installedShowcaseCount(),
       showcaseMaximum: storeMaximumShowcases(),
       showcaseCapacity: storeShowcaseCapacity(),
       displayInventory: state.store.displayInventory,
-      displaySuppliesInstalled: state.store.displaySuppliesInstalled,
-      casesInstalled: storeCaseRemaining(),
+      displaySuppliesInstalled: storeDisplaySuppliesInstalled(currentStoreBranch()),
+      casesInstalled: storeCaseRemaining(currentStoreBranch()),
       caseMaximum: storeMaximumCases(),
       caseSaleConsumption: '商品1点の販売につきケース1個。ケース0個でも販売可能。',
       showcases,
-      rating: state.store.rating,
+      branchShowcases: branchShowcaseData,
+      rating: storeRating(currentStoreBranch()),
       salesCount: state.store.salesCount,
       totalRevenue: state.store.totalRevenue,
       totalProfit: state.store.totalProfit,
@@ -3618,8 +4354,8 @@ function buildAIConsultationText() {
     },
     jewelry: {
       allCreatedJewelry: aiJewelryRows(),
-      activeOrders: aiOrderRows().filter((order) => !['完了', '取消'].includes(order.status)),
-      completedOrders: aiOrderRows().filter((order) => ['完了', '取消'].includes(order.status)),
+      activeOrders: aiOrderRows().filter((order) => !orderClosed(order)),
+      completedOrders: aiOrderRows().filter((order) => orderClosed(order)),
       storageUsed: state.inventory.jewelry.filter((item) => item.status !== 'sold').length,
       storageCapacity: state.inventory.capacity,
     },
@@ -3642,7 +4378,9 @@ function buildAIConsultationText() {
     },
     workshop: {
       level: workshopLevel(),
-      points: workshopQualityPoints(),
+      expansionCost: workshopExpansionCost(),
+      operating: workshopOperating(),
+      unpaidMaintenance: Math.max(0, Number(state.business.workshopUnpaid) || 0),
       jewelryBenchUsable: toolUsable('jewelryBench'),
       polishingMachineUsable: toolUsable('polishingMachine'),
       morningMessages: [...(state.tools?.morningMessages || [])],
@@ -3734,6 +4472,7 @@ async function copyGameDataForAI() {
 }
 
 function renderPhoneContent() {
+  if (phoneTab === 'profile') return renderPhoneProfile();
   if (phoneTab === 'calendar') {
     const today = gameDate();
     const year = today.getFullYear();
@@ -3749,7 +4488,7 @@ function renderPhoneContent() {
       eventMap.set(key, rows);
     };
     state.orders
-      .filter((order) => !['完了', '取消'].includes(order.status))
+      .filter((order) => !orderClosed(order))
       .forEach((order) => addCalendarEvent(order.deadlineDay, `${order.customerName}さんの注文納期`));
     Object.keys(CUSTOMERS)
       .filter((id) => state.customers[id]?.visiting)
@@ -3795,7 +4534,9 @@ function renderPhoneContent() {
   if (phoneTab === 'finance') {
     const income = state.finance.reduce((sum, row) => sum + row.income, 0);
     const expense = state.finance.reduce((sum, row) => sum + row.expense, 0);
+    const outstanding = totalOutstandingBusinessCost();
     return `<div class="phone-totals"><div><small>収入</small><strong>${yen(income)}</strong></div><div><small>支出</small><strong>${yen(expense)}</strong></div></div>
+      <article class="phone-card"><strong>毎月の固定費</strong><span>工房 ${yen(WORKSHOP_MONTHLY_COST)}・店舗家賃は店舗ごとに支払います。</span><small>未払い：${yen(outstanding)}</small>${outstanding ? '<button class="primary-button full-button" data-action="pay-outstanding-costs">未払いを支払う</button>' : ''}</article>
       ${state.finance.slice().reverse().map((row) => `<article class="finance-row"><span>${row.day}日目 ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || '<div class="phone-empty">収支の記録はありません。</div>'}`;
   }
   if (phoneTab === 'items') return renderPhoneItems();
@@ -4110,6 +4851,7 @@ function buyJewelryBench() { buyWorkshopTool('jewelryBench'); }
 function buyPolishingMachine() { buyWorkshopTool('polishingMachine'); }
 
 function polishRough() {
+  if (!workshopOperating()) return showToast('工房は作業停止中です。', 'error');
   const gem = GEMS[selectedPolishing];
   selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape);
   if (!toolUsable('polishingMachine')) return showToast(toolOwned('polishingMachine') ? `研磨機は${workshopToolStatusText('polishingMachine')}です。` : '研磨機が必要です。', 'error');
@@ -4119,6 +4861,7 @@ function polishRough() {
   state.inventory.loose[selectedPolishing][selectedPolishingShape] += 1;
   spendHours(POLISHING_HOURS);
   state.daily.polished.push({ gem: selectedPolishing, looseShape: selectedPolishingShape, qty: 1 });
+  addArtisanXp(1);
   saveGame();
   playSfx('success');
   vibrate([35, 25, 55]);
@@ -4127,11 +4870,15 @@ function polishRough() {
 }
 
 function qualityProbabilities() {
-  const level = workshopLevel();
   const artisanLevel = Math.max(1, Number(state.artisan.level) || 1);
-  const standard = Math.max(0.05, Math.min(0.80, 0.75 - (artisanLevel - 1) * 0.22 - (level - 1) * 0.045));
-  const premium = Math.max(0.02, Math.min(0.55, 0.02 + (artisanLevel - 1) * 0.12 + (level - 1) * 0.035));
-  return { standard, premium, good: Math.max(0, 1 - standard - premium) };
+  if (artisanLevel <= 1) return { standard: 1, good: 0, premium: 0 };
+  if (artisanLevel === 2) {
+    const good = 0.25;
+    return { standard: 1 - good, good, premium: 0 };
+  }
+  const premium = Math.min(0.35, 0.08 + (artisanLevel - 3) * 0.07);
+  const good = Math.min(0.50, 0.32 + (artisanLevel - 3) * 0.04);
+  return { standard: Math.max(0.15, 1 - good - premium), good, premium };
 }
 
 function qualityRoll() {
@@ -4153,13 +4900,14 @@ function confirmCraft() {
   const requirements = materialRequirementsFor(craftDraft);
   showModal({
     title: 'この内容で制作しますか？',
-    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>工房レベル：${workshopLevel()}（工房評価 ${workshopQualityPoints()}）</p><p>${esc(GEMS[craftDraft.gem].name)}・${esc(looseShapeLabel(craftDraft.looseShape))}ルース${requirements.requiredLooseQuantity}個・${esc(METALS[craftDraft.metal].name)}${requirements.requiredMetalWeight}gを使用します。</p>`,
+    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>工房レベル：${workshopLevel()}</p><p>${esc(GEMS[craftDraft.gem].name)}・${esc(looseShapeLabel(craftDraft.looseShape))}ルース${requirements.requiredLooseQuantity}個・${esc(METALS[craftDraft.metal].name)}${requirements.requiredMetalWeight}gを使用します。</p>`,
     confirm: '制作する', action: 'craft',
   });
 }
 
 function craft() {
   closeModal();
+  if (!workshopOperating()) return showToast('工房は作業停止中です。', 'error');
   if (!toolUsable('jewelryBench')) return showToast('ジュエリー作成には使用可能な彫金机が必要です。', 'error');
   const hours = productionHours(craftDraft, state.employee);
   if (!canSpendHours(hours)) return showToast('今日は制作する時間がありません。', 'error');
@@ -4170,7 +4918,7 @@ function craft() {
   state.inventory.metals[craftDraft.metal] = roundedMetalWeight(requirements.ownedMetalWeight - requirements.requiredMetalWeight);
   spendHours(hours);
   const quality = qualityRoll();
-  const xp = ITEMS[craftDraft.item].id === 'earrings' ? 12 : 10;
+  const xp = 5;
   const jewelry = {
     id: uid(),
     ...craftDraft,
@@ -4184,10 +4932,7 @@ function craft() {
   };
   state.inventory.jewelry.push(jewelry);
   state.daily.crafted.push(jewelry.id);
-  state.artisan.xp += xp;
-  const previousLevel = state.artisan.level;
-  state.artisan.level = state.artisan.xp >= 250 ? 3 : state.artisan.xp >= 100 ? 2 : 1;
-  if (state.artisan.level > previousLevel) addNotification('職人レベルが上がりました', `職人レベル${state.artisan.level}になりました。`);
+  addArtisanXp(xp);
   if (craftDraft.orderId) {
     const order = state.orders.find((entry) => entry.id === craftDraft.orderId);
     if (order) {
@@ -4210,44 +4955,92 @@ function placeItem(itemId) {
     showToast(facilityUnlocked('realEstate') ? '先に御徒町の不動産屋で店舗を借りてください。' : '不動産屋はまだ利用できません。', 'error');
     return setScreen('okachimachi');
   }
+  const branch = currentStoreBranch();
+  if (!branch) return showToast('陳列する店舗を開いてください。', 'error');
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
   if (!item || item.status !== 'stored') return showToast('この商品は並べられません。', 'error');
-  if (!installedShowcaseCount()) return showToast('ショーケースを購入して店舗へ設置してください。', 'error');
-  const position = findEmptyShowcasePosition();
-  if (!position) return showToast('ショーケースに空きがありません。', 'error');
-  state.store.showcases[position.showcaseIndex].slots[position.slotIndex] = { jewelryId: itemId, priceMode: 'standard' };
+  if (!installedShowcaseCount(branch)) return showToast('ショーケースを購入して、この店舗へ設置してください。', 'error');
+  const position = findEmptyShowcasePosition(branch);
+  if (!position) return showToast('この店舗のショーケースに空きがありません。', 'error');
+  branchShowcases(branch)[position.showcaseIndex].slots[position.slotIndex] = { jewelryId: itemId, sellingPrice: normalizeSellingPrice(item.recommendedPrice) };
   item.status = 'displayed';
+  item.displayBranchNumber = branch.number;
+  mirrorCurrentStoreDisplay(branch);
   saveGame();
-  showToast('商品をショーケースに並べました。');
-  setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false);
+  showToast(`${storeBranchLabel(branch.number)}のショーケースに並べました。`);
+  setScreen('store', { branchId: branch.id }, false);
 }
 
 function removeShowcase(showcaseIndex, slotIndex) {
-  const slot = state.store.showcases?.[showcaseIndex]?.slots?.[slotIndex];
+  const branch = currentStoreBranch();
+  const showcases = branchShowcases(branch);
+  const slot = showcases?.[showcaseIndex]?.slots?.[slotIndex];
   if (!slot) return;
   const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
-  if (item) item.status = 'stored';
-  state.store.showcases[showcaseIndex].slots[slotIndex] = null;
+  if (item) {
+    item.status = 'stored';
+    delete item.displayBranchNumber;
+  }
+  showcases[showcaseIndex].slots[slotIndex] = null;
+  mirrorCurrentStoreDisplay(branch);
   saveGame();
   showToast('商品をショーケースから下げました。');
   render();
 }
 
-function matchScore(item, request) {
-  let score = 0;
-  if (item.item === request.item) score += 2;
-  if (item.gem === request.gem) score += 2;
-  if (item.looseShape === normalizeLooseShape(request.gem, request.looseShape)) score += 1;
-  if (item.metal === request.metal) score += 2;
-  if (item.design === request.design) score += 1;
-  if (item.recommendedPrice <= request.budget) score += 1;
-  return score;
+function moveShowcaseItem(itemId, targetBranchNumber) {
+  const source = showcaseLocationForJewelry(itemId);
+  const targetBranch = storeBranchByNumber(targetBranchNumber);
+  if (!source?.slot || !targetBranch) return showToast('移動する商品または店舗が見つかりません。', 'error');
+  if (Number(source.branch?.number) === Number(targetBranch.number)) return showToast('すでにこの店舗へ陳列されています。', 'error');
+  if (!installedShowcaseCount(targetBranch)) return showToast(`${storeBranchLabel(targetBranch.number)}にショーケースがありません。`, 'error');
+  const target = findEmptyShowcasePosition(targetBranch);
+  if (!target) return showToast(`${storeBranchLabel(targetBranch.number)}のショーケースに空きがありません。`, 'error');
+  const savedSlot = { ...source.slot };
+  source.branch.showcases[source.showcaseIndex].slots[source.slotIndex] = null;
+  branchShowcases(targetBranch)[target.showcaseIndex].slots[target.slotIndex] = savedSlot;
+  const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
+  if (item) {
+    item.status = 'displayed';
+    item.displayBranchNumber = targetBranch.number;
+  }
+  mirrorCurrentStoreDisplay(currentStoreBranch());
+  saveGame();
+  closeModal();
+  showToast(`${storeBranchLabel(targetBranch.number)}へ商品を移動しました。`);
+  render();
+}
+
+function showMoveShowcaseItemModal(itemId) {
+  const source = showcaseLocationForJewelry(itemId);
+  const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
+  if (!source?.branch || !item) return showToast('移動する商品が見つかりません。', 'error');
+  const targets = contractedStoreBranches().filter((branch) => Number(branch.number) !== Number(source.branch.number));
+  if (!targets.length) return showToast('移動できる別店舗がありません。', 'error');
+  const rows = targets.map((branch) => {
+    const hasShowcase = installedShowcaseCount(branch) > 0;
+    const hasSpace = Boolean(findEmptyShowcasePosition(branch));
+    const disabled = !hasShowcase || !hasSpace;
+    const note = !hasShowcase ? 'ショーケースなし' : !hasSpace ? '空きなし' : `${storeShowcaseUsedSlots(branch)}/${storeShowcaseCapacity(branch)}点`;
+    return `<button class="secondary-button full-button" data-action="confirm-move-showcase-item" data-id="${itemId}" data-branch="${branch.number}" ${disabled ? 'disabled' : ''}><strong>${esc(storeBranchLabel(branch.number))}</strong><small>${esc(note)}</small></button>`;
+  }).join('');
+  showModal({
+    title: '商品を別店舗へ移動',
+    body: `<p><strong>${esc(item.name)}</strong>を${esc(storeBranchLabel(source.branch.number))}から移動します。</p><div class="button-stack">${rows}</div><p class="small-note">移動に時間と費用はかかりません。設定販売価格も維持されます。</p>`,
+    confirm: '閉じる', action: 'modal-close', hideCancel: true,
+  });
 }
 
 function removeJewelry(itemId) {
-  state.store.showcases = (state.store.showcases || []).map((showcase) => ({ ...showcase, slots: (showcase.slots || []).map((slot) => slot?.jewelryId === itemId ? null : slot) }));
+  for (const branch of state.store.branches || []) {
+    branch.showcases = branchShowcases(branch).map((showcase) => ({ ...showcase, slots: (showcase.slots || []).map((slot) => slot?.jewelryId === itemId ? null : slot) }));
+  }
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
-  if (item) item.status = 'sold';
+  if (item) {
+    item.status = 'sold';
+    delete item.displayBranchNumber;
+  }
+  mirrorCurrentStoreDisplay(currentStoreBranch());
 }
 
 function customerBuy(customerId, itemId) {
@@ -4255,87 +5048,225 @@ function customerBuy(customerId, itemId) {
   const customer = CUSTOMERS[customerId];
   const customerState = state.customers[customerId];
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
-  if (!customer || !item) return;
-  if (!canSpendHours(1)) return showToast('今日は接客する時間がありません。', 'error');
-  const score = matchScore(item, customer.request);
-  const price = item.recommendedPrice;
-  const willBuy = score >= 5 || (score >= 3 && Math.random() < 0.65);
+  const visitBranch = storeBranchByNumber(customerState?.visitingBranchNumber || state.store.branchNumber);
+  if (!customer || !customerState?.visiting || !item || item.status !== 'displayed' || !showcaseSlotForJewelry(item.id, visitBranch)) return showToast('この商品は現在の店舗では提案できません。', 'error');
+  if (!customerState.wishesHeard) return showToast('先にお客様の希望を聞いてください。', 'error');
+  customerState.proposedItemIds = Array.isArray(customerState.proposedItemIds) ? customerState.proposedItemIds : [];
+  if (customerState.proposedItemIds.includes(itemId)) return showToast('この商品はすでに提案しています。', 'error');
+  if (customerState.proposedItemIds.length >= 2) return showToast('店頭商品を提案できるのは2点までです。', 'error');
+  if (!canSpendStoreMinutes(60)) return showToast('店舗営業時間内に接客を完了できません。', 'error');
+  const request = activeCustomerRequest(customerId);
+  const result = customerMatchResult(item, request, customerState.visitingBranchNumber);
+  const price = result.price;
+  const willBuy = Math.random() < result.chance;
+  customerState.proposedItemIds.push(itemId);
   spendHours(1);
   customerState.met = true;
   customerState.lastVisitDay = state.game.day;
-  customerState.visiting = false;
   if (willBuy) {
+    customerState.visiting = false;
+    customerState.visitingBranchNumber = null;
+    customerState.activeRequest = null;
+    customerState.wishesHeard = false;
+    customerState.proposedItemIds = [];
     removeJewelry(itemId);
     state.game.money += price;
     startMoneyFeedback(price);
     state.store.salesCount += 1;
     state.store.totalRevenue += price;
     state.store.totalProfit += price - item.cost;
-    state.store.rating = clamp(state.store.rating + (score >= 7 ? 0.2 : 0.1), 1, 5);
+    addStoreProgress({ branchNumber: state.store.branchNumber, points: 1, rating: 1, sale: true });
     customerState.purchases += 1;
     customerState.relation = customerState.purchases >= 3 ? '常連客' : 'リピーター';
     addFinance(`${customer.name}さんへ販売`, price, 0);
-    const caseUsed = consumeStoreCase();
+    const saleBranch = storeBranchByNumber(state.store.branchNumber);
+    const caseUsed = consumeStoreCase(saleBranch);
     const proposalMessage = state.playerName ? `<p>${esc(state.playerName)}さんのご提案を気に入っていただけました。</p>` : '';
-    const caseMessage = caseUsed ? `<p>ケースを1個使用しました。残り${storeCaseRemaining()}個です。</p>` : '<p>ケースなしで販売しました。</p>';
+    const caseMessage = caseUsed ? `<p>ケースを1個使用しました。残り${storeCaseRemaining(saleBranch)}個です。</p>` : '<p>ケースなしで販売しました。</p>';
     showModal({ title: '商品を購入していただきました。', body: `${proposalMessage}<p>${esc(item.name)}</p><p>売上：${yen(price)}</p>${caseMessage}`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
-  } else {
-    showModal({ title: '今回は購入されませんでした。', body: '<p>希望とは少し違ったようです。注文を受けなくても、また来店することがあります。</p>', confirm: '閉じる', action: 'modal-close', hideCancel: true });
+    saveGame();
+    setTimeout(() => { if (screen === 'customer') setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false); }, 50);
+    return;
   }
+
+  const storeStillOpen = storeBusinessOpen();
+  const canTryAgain = storeStillOpen && customerState.visiting && customerState.proposedItemIds.length < 2;
   saveGame();
-  setTimeout(() => { if (screen === 'customer') setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false); }, 50);
+  render();
+  showModal({
+    title: '今回は購入されませんでした。',
+    body: !storeStillOpen
+      ? `<p>${esc(result.label)}商品でした。</p><p>19:00になったため、本日の接客は終了しました。</p>`
+      : canTryAgain
+        ? `<p>${esc(result.label)}商品でした。</p><p>別の商品をあと1点提案するか、オーダーを提案できます。</p>`
+        : '<p>店頭商品を2点提案しました。オーダーを提案するか、接客を終了できます。</p>',
+    confirm: '閉じる', action: 'modal-close', hideCancel: true,
+  });
+  if (!storeStillOpen) setTimeout(() => { if (screen === 'customer') setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false); }, 50);
 }
 
 function acceptOrder(customerId) {
-  if (!state?.store?.rented) return showToast('注文を受けるには店舗が必要です。', 'error');
-  if (!toolUsable('jewelryBench')) return showToast('注文を受けるには、g-Lab.で購入できる使用可能な彫金机が必要です。', 'error');
+  if (!state?.store?.rented || !anyStoreBranchOperating()) return showToast('注文を受けるには営業中の店舗が必要です。', 'error');
+  if (!workshopOperating()) return showToast('工房が停止しているため注文を受けられません。', 'error');
   if (!canServeCustomers()) return showToast('現在は接客できません。', 'error');
   const customer = CUSTOMERS[customerId];
   const customerState = state.customers[customerId];
-  const active = state.orders.filter((order) => order.status !== '完了').length;
-  const limit = state.store.expanded ? 2 : 1;
-  if (active >= limit) return showToast(`同時に受けられる注文は${limit}件までです。`, 'error');
-  if (!canSpendHours(1)) return showToast('今日は接客する時間がありません。', 'error');
-  const request = customer.request;
-  const estimated = recommendedPrice({ ...request, finish: 'mirror', quality: 'good' }) + 5000;
+  if (!customer || !customerState?.visiting) return showToast('現在このお客様へ提案できません。', 'error');
+  if (!customerState.wishesHeard) return showToast('先にお客様の希望を聞いてください。', 'error');
+  const limit = orderLimit();
+  if (activeOrderCount() >= limit) return showToast(`同時に受けられる注文は${limit}件までです。`, 'error');
+  if (!canSpendStoreMinutes(30)) return showToast('店舗営業時間内に注文相談を完了できません。', 'error');
+  const request = activeCustomerRequest(customerId);
+  const feasibility = orderFeasibility(request);
+  const difficulty = feasibility.difficulty;
+  const figures = orderEstimatedFigures(request);
+  const toolsLabel = feasibility.requiredTools.map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId).join('、');
+  showModal({
+    title: '注文内容を確認',
+    body: `<dl class="order-offer-grid">
+      <div><dt>商品種類</dt><dd>${esc(ITEMS[request.item]?.name || '不明')}</dd></div>
+      <div><dt>石</dt><dd>${esc(GEMS[request.gem]?.name || '不明')}・${esc(looseShapeLabel(normalizeLooseShape(request.gem, request.looseShape)))}</dd></div>
+      <div><dt>地金</dt><dd>${esc(METALS[request.metal]?.name || '不明')}</dd></div>
+      <div><dt>デザイン</dt><dd>${esc(DESIGNS[request.design]?.name || '不明')}</dd></div>
+      <div><dt>受注金額</dt><dd>${yen(figures.price)}</dd></div>
+      <div><dt>予想原価</dt><dd>${yen(figures.estimatedCost)}</dd></div>
+      <div><dt>予想利益</dt><dd>${yen(figures.estimatedProfit)}</dd></div>
+      <div><dt>納期</dt><dd>${difficulty.days}日後</dd></div>
+      <div><dt>必要職人レベル</dt><dd>Lv.${feasibility.requiredArtisanLevel}</dd></div>
+      <div><dt>必要設備</dt><dd>${esc(toolsLabel)}</dd></div>
+      <div><dt>材料入手</dt><dd>${feasibility.materialsObtainable ? '可能' : '不可能'}</dd></div>
+      <div class="wide"><dt>製作可能</dt><dd class="${feasibility.possible ? 'possible' : 'impossible'}">${feasibility.possible ? 'はい' : `いいえ（${esc(feasibility.reasons.join('・'))}）`}</dd></div>
+    </dl>`,
+    confirm: '受注する', cancel: '今回は断る', cancelAction: `decline-order:${customerId}`,
+    confirmDisabled: !feasibility.possible, action: `confirm-order:${customerId}`, className: 'order-offer-modal',
+  });
+}
+
+function confirmOrder(customerId) {
+  const customer = CUSTOMERS[customerId];
+  const customerState = state.customers?.[customerId];
+  if (!customer || !customerState?.visiting || !customerState.wishesHeard) return closeModal();
+  const limit = orderLimit();
+  if (activeOrderCount() >= limit) return showToast(`同時に受けられる注文は${limit}件までです。`, 'error');
+  if (!canSpendStoreMinutes(30)) return showToast('店舗営業時間内に注文相談を完了できません。', 'error');
+  const request = activeCustomerRequest(customerId);
+  const feasibility = orderFeasibility(request);
+  if (!feasibility.possible) return showToast('現在はこの注文を製作できません。', 'error');
+  const difficulty = feasibility.difficulty;
+  const figures = orderEstimatedFigures(request);
   const order = {
     id: uid(), customerId, customerName: customer.name,
     item: request.item, gem: request.gem, looseShape: normalizeLooseShape(request.gem, request.looseShape), metal: request.metal, design: request.design,
-    budget: request.budget, price: Math.min(request.budget, estimated),
-    desiredConditions: customer.preferenceText,
+    difficulty: difficulty.id, requiredArtisanLevel: feasibility.requiredArtisanLevel, requiredTools: feasibility.requiredTools,
+    budget: request.budget, price: figures.price, estimatedCost: figures.estimatedCost, estimatedProfit: figures.estimatedProfit,
+    desiredConditions: customerRequestDescription(request),
     requiredMetalWeight: ITEMS[request.item].metalWeight,
     requiredLooseQuantity: ITEMS[request.item].looseQuantity,
-    acceptedDay: state.game.day, deadlineDay: state.game.day + request.deadlineDays,
+    acceptedDay: state.game.day, deadlineDay: state.game.day + difficulty.days,
+    branchNumber: Math.max(1, Number(state.store.branchNumber) || 1), overduePenaltyApplied: false,
     status: '受注', jewelryId: null,
   };
   state.orders.push(order);
-  spendHours(1);
+  spendMinutes(30);
   customerState.met = true;
   customerState.visiting = false;
+  customerState.visitingBranchNumber = null;
+  customerState.activeRequest = null;
   customerState.lastVisitDay = state.game.day;
-  addNotification('注文を受けました', `${storeDisplayName()}で受けた${customer.name}さんの注文は${order.deadlineDay}日目が納期です。`);
+  customerState.wishesHeard = false;
+  customerState.proposedItemIds = [];
+  addNotification('注文を受けました', `${customer.name}さんの注文は${gameDateLabel(order.deadlineDay)}が納期です。`);
+  closeModal();
   saveGame();
   showToast('注文を受けました。');
   setScreen('orders', {}, false);
+}
+
+function declineOrderOffer(customerId) {
+  const customerState = state.customers?.[customerId];
+  if (!customerState?.visiting) return closeModal();
+  customerState.met = true;
+  customerState.visiting = false;
+  customerState.visitingBranchNumber = null;
+  customerState.activeRequest = null;
+  customerState.lastVisitDay = state.game.day;
+  customerState.wishesHeard = false;
+  customerState.proposedItemIds = [];
+  closeModal();
+  saveGame();
+  showToast('今回は注文を受けませんでした。', 'info', false);
+  setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false);
+}
+
+function hearCustomerWishes(customerId) {
+  const customerState = state.customers?.[customerId];
+  if (!customerState?.visiting) return showToast('現在このお客様は来店していません。', 'error');
+  customerState.wishesHeard = true;
+  customerState.proposedItemIds = Array.isArray(customerState.proposedItemIds) ? customerState.proposedItemIds.slice(0, 2) : [];
+  screenData.view = 'wishes';
+  saveGame();
+  render();
+}
+
+function openCustomerProducts(customerId) {
+  const customerState = state.customers?.[customerId];
+  if (!customerState?.visiting) return showToast('現在このお客様は来店していません。', 'error');
+  if (!customerState.wishesHeard) return showToast('先にお客様の希望を聞いてください。', 'error');
+  if ((customerState.proposedItemIds || []).length >= 2) return showToast('店頭商品を提案できるのは2点までです。', 'error');
+  screenData.view = 'products';
+  render();
 }
 
 function ignoreCustomer(customerId) {
   const customerState = state.customers[customerId];
   if (!customerState) return;
   customerState.visiting = false;
+  customerState.visitingBranchNumber = null;
+  customerState.activeRequest = null;
   customerState.ignoredToday = true;
+  customerState.wishesHeard = false;
+  customerState.proposedItemIds = [];
   saveGame();
   showToast('今回は対応しませんでした。');
   setScreen('store', { branchId: `branch-${Math.max(1, Number(state.store.branchNumber) || 1)}` }, false);
+}
+
+function confirmCancelOrder(orderId) {
+  const order = state.orders.find((entry) => entry.id === orderId);
+  if (!order || !['受注', '完成'].includes(order.status)) return showToast('キャンセルできる注文がありません。', 'error');
+  showModal({
+    title: 'この注文をキャンセルしますか？',
+    body: '<p>店舗評価が1下がります。制作済みの商品は通常在庫へ戻ります。</p>',
+    confirm: 'キャンセルする', cancel: '戻る', danger: true, action: `cancel-order:${orderId}`,
+  });
+}
+
+function cancelOrder(orderId) {
+  const order = state.orders.find((entry) => entry.id === orderId);
+  if (!order || !['受注', '完成'].includes(order.status)) return closeModal();
+  const item = state.inventory.jewelry.find((entry) => entry.id === order.jewelryId);
+  if (item) item.status = 'stored';
+  order.status = '取消';
+  addStoreProgress({ branchNumber: order.branchNumber, rating: -1 });
+  closeModal();
+  saveGame();
+  showToast('注文をキャンセルしました。', 'info', false);
+  render();
 }
 
 function deliverOrder(orderId) {
   const order = state.orders.find((entry) => entry.id === orderId);
   const item = state.inventory.jewelry.find((entry) => entry.id === order?.jewelryId);
   if (!order || !item || order.status !== '完成') return showToast('納品できる商品がありません。', 'error');
-  if (!canSpendHours(1)) return showToast('今日は納品する時間がありません。', 'error');
-  spendHours(1);
-  const lateDays = Math.max(0, state.game.day - order.deadlineDay);
+  const deliveryBranch = storeBranchByNumber(order.branchNumber);
+  if (!storeBranchOperating(deliveryBranch)) return showToast('注文を受けた店舗が休業中のため納品できません。', 'error');
+  if (!storeDeliveryOpen()) return showToast('注文品を納品できるのは9:00～19:00です。', 'error');
+  if (state.game.day > Number(order.deadlineDay)) {
+    expireOrder(order);
+    saveGame();
+    render();
+    return showToast('納期を過ぎたため納品できません。', 'error');
+  }
   order.status = '完了';
   item.status = 'sold';
   state.game.money += order.price;
@@ -4343,14 +5274,44 @@ function deliverOrder(orderId) {
   state.store.salesCount += 1;
   state.store.totalRevenue += order.price;
   state.store.totalProfit += order.price - item.cost;
-  state.store.rating = clamp(state.store.rating + (lateDays ? -0.05 : 0.2), 1, 5);
+  addArtisanXp(10);
+  addStoreProgress({ branchNumber: order.branchNumber, points: 2, rating: 2, orderDelivery: true });
   const customerState = state.customers[order.customerId];
-  customerState.purchases += 1;
-  customerState.relation = customerState.purchases >= 3 ? '常連客' : 'リピーター';
+  if (customerState) {
+    customerState.purchases += 1;
+    customerState.relation = customerState.purchases >= 3 ? '常連客' : 'リピーター';
+  }
   addFinance(`${order.customerName}さんへ注文品を納品`, order.price, 0);
-  const caseUsed = consumeStoreCase();
+  const caseUsed = consumeStoreCase(deliveryBranch);
   saveGame();
-  showModal({ title: '注文品を納品しました。', body: `<p>${esc(item.name)}</p><p>売上：${yen(order.price)}</p><p>${lateDays ? '少し遅れての納品になりました。' : '納期内に納品できました。'}</p>${caseUsed ? `<p>ケースを1個使用しました。残り${storeCaseRemaining()}個です。</p>` : '<p>ケースなしで納品しました。</p>'}`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
+  showModal({ title: '注文品を納品しました。', body: `<p>${esc(item.name)}</p><p>売上：${yen(order.price)}</p><p>納期内に納品できました。</p>${caseUsed ? `<p>ケースを1個使用しました。残り${storeCaseRemaining(deliveryBranch)}個です。</p>` : '<p>ケースなしで納品しました。</p>'}`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
+  render();
+}
+
+function confirmWorkshopExpansion() {
+  const current = workshopLevel();
+  if (current >= 10) return showToast('工房は最大レベルです。');
+  const cost = workshopExpansionCost();
+  showModal({
+    title: `工房をレベル${current + 1}へ拡張しますか？`,
+    body: `<p>拡張費：${yen(cost)}</p><p>拡張するとすぐに工房レベルが上がります。</p>`,
+    confirm: '拡張する', cancel: 'やめる', action: 'expand-workshop',
+  });
+}
+
+function expandWorkshop() {
+  const current = workshopLevel();
+  const cost = workshopExpansionCost();
+  if (current >= 10 || !cost) return closeModal();
+  if (state.game.money < cost) return showToast('工房の拡張費が足りません。', 'error');
+  closeModal();
+  state.game.money -= cost;
+  startMoneyFeedback(-cost);
+  state.workshop.level = current + 1;
+  addFinance(`工房をレベル${state.workshop.level}へ拡張`, 0, cost);
+  addNotification('工房レベルが上がりました', `工房レベル${state.workshop.level}になりました。`);
+  saveGame();
+  showToast(`工房レベル${state.workshop.level}になりました。`, 'info', false);
   render();
 }
 
@@ -4368,12 +5329,11 @@ function rentNextStore() {
     input?.focus();
     return;
   }
-  if (state.game.money < STORE_LEASE_COST) return showToast('店舗の契約費が足りません。', 'error');
-  if (!canSpendHours(1)) return showToast('今日は契約手続きをする時間がありません。', 'error');
+  const leaseCost = storeLeaseCost(branchNumber);
+  if (state.game.money < leaseCost) return showToast('店舗の契約費が足りません。', 'error');
 
-  state.game.money -= STORE_LEASE_COST;
-  startMoneyFeedback(-STORE_LEASE_COST);
-  spendHours(1);
+  state.game.money -= leaseCost;
+  startMoneyFeedback(-leaseCost);
 
   if (!currentStoreName) {
     state.store.name = storeName;
@@ -4388,21 +5348,34 @@ function rentNextStore() {
     state.store.displaySuppliesInstalled = 0;
     state.store.casesInstalled = 0;
     state.store.level = 1;
+    state.store.points = 0;
+    state.store.rating = 50;
   }
 
   const branchLabel = storeBranchLabel(branchNumber);
-  state.store.branches = contractedStoreBranches();
+  state.store.branches = contractedStoreBranches().filter((branch) => Number(branch.number) !== branchNumber);
   state.store.branches.push({
     id: `branch-${branchNumber}`,
     number: branchNumber,
     label: branchLabel,
     name: storeName,
     rentedDay: state.game.day,
+    suspended: false,
+    unpaidRent: 0,
+    points: 0,
+    level: 1,
+    rating: 50,
+    salesCount: 0,
+    orderDeliveries: 0,
+    displaySuppliesInstalled: 0,
+    casesInstalled: 0,
+    showcases: [],
+    showcaseCount: 0,
   });
   state.store.rented = true;
   state.facilities.realEstate = true;
 
-  addFinance(`${storeName} ${branchLabel}を契約`, 0, STORE_LEASE_COST);
+  addFinance(`${storeName} ${branchLabel}を契約`, 0, leaseCost);
   addNotification('店舗を契約しました', `${branchLabel}が店舗画面から選択できるようになりました。`);
   saveGame();
   showToast(`${branchLabel}を契約しました。`, 'info', false);
@@ -4416,7 +5389,7 @@ function buyDisplayProduct(productId) {
   if (!availability.open) return showToast(availability.reason, 'error');
   if (product.purchaseLimit) {
     const owned = Math.max(0, Number(state.store.displayInventory?.[productId]) || 0);
-    const installed = productId === 'case' ? storeCaseRemaining() : 0;
+    const installed = productId === 'case' ? storeCaseRemaining(currentStoreBranch()) : 0;
     if (owned + installed >= Number(product.purchaseLimit)) return showToast(`${product.name}は現在、未設置分と設置中を合わせて${product.purchaseLimit}個まで保有できます。`, 'error');
   }
   if (state.game.money < product.price) return showToast('購入費が足りません。', 'error');
@@ -4435,19 +5408,29 @@ function installDisplayProduct(productId) {
   if (!state.store.rented) return showToast('店舗を契約してから設置できます。', 'error');
   const product = DISPLAY_SHOP_PRODUCTS[productId];
   const owned = Math.max(0, Number(state.store.displayInventory?.[productId]) || 0);
+  const branch = currentStoreBranch();
+  const previousLevel = storeLevel(branch);
   if (!product || owned <= 0) return showToast('設置できる商品を所持していません。', 'error');
   if (productId === 'showcase') {
-    if (installedShowcaseCount() >= storeMaximumShowcases()) return showToast(`この店舗にはショーケースを${storeMaximumShowcases()}台まで設置できます。`, 'error');
-    state.store.showcases.push({ id: `showcase-${Date.now()}-${installedShowcaseCount() + 1}`, slots: [null, null, null, null, null] });
-    state.store.showcaseCount = installedShowcaseCount();
+    if (installedShowcaseCount(branch) >= storeMaximumShowcases()) return showToast(`この店舗にはショーケースを${storeMaximumShowcases()}台まで設置できます。`, 'error');
+    branchShowcases(branch).push({ id: `showcase-${Date.now()}-${installedShowcaseCount(branch) + 1}`, slots: [null, null, null, null, null] });
+    branch.showcaseCount = installedShowcaseCount(branch);
+    mirrorCurrentStoreDisplay(branch);
   } else if (productId === 'displaySupplies') {
-    state.store.displaySuppliesInstalled += 1;
+    if (branch) branch.displaySuppliesInstalled = storeDisplaySuppliesInstalled(branch) + 1;
+    state.store.displaySuppliesInstalled = storeDisplaySuppliesInstalled(branch);
   } else if (productId === 'case') {
-    if (storeCaseRemaining() >= storeMaximumCases()) return showToast(`小さな店舗にはケースを${storeMaximumCases()}個まで設置できます。`, 'error');
-    state.store.casesInstalled = storeCaseRemaining() + 1;
+    if (storeCaseRemaining(branch) >= storeMaximumCases()) return showToast(`小さな店舗にはケースを${storeMaximumCases()}個まで設置できます。`, 'error');
+    if (branch) branch.casesInstalled = storeCaseRemaining(branch) + 1;
+    state.store.casesInstalled = storeCaseRemaining(branch);
   }
   state.store.displayInventory[productId] = owned - 1;
-  syncStoreLevel();
+  mirrorCurrentStoreDisplay(branch);
+  syncStoreLevel(branch);
+  const newLevel = storeLevel(branch);
+  if (newLevel > previousLevel) {
+    addNotification('店舗レベルが上がりました', `${storeBranchLabel(branch?.number || state.store.branchNumber)}が店舗レベル${newLevel}になりました。`);
+  }
   saveGame();
   showToast(`${product.name}を店舗へ設置しました。`);
   render();
@@ -4471,24 +5454,133 @@ function expandStore() {
   render();
 }
 
+function monthIndex(date) {
+  return date.getFullYear() * 12 + date.getMonth();
+}
+
+function previousMonthKey(date) {
+  const previous = new Date(date.getFullYear(), date.getMonth() - 1, 1, 12, 0, 0, 0);
+  return `${previous.getFullYear()}-${String(previous.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function payFixedCost(label, amount, onUnpaid) {
+  const due = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!due) return { paid: 0, unpaid: 0 };
+  const paid = Math.min(Math.max(0, Math.floor(Number(state.game.money) || 0)), due);
+  state.game.money -= paid;
+  if (paid) addFinance(label, 0, paid);
+  const unpaid = due - paid;
+  if (unpaid) onUnpaid(unpaid);
+  return { paid, unpaid };
+}
+
+function processMonthlyFixedCosts() {
+  const today = gameDate();
+  if (today.getDate() !== 1) return null;
+  const targetKey = previousMonthKey(today);
+  if (state.business.lastProcessedMonth === targetKey) return null;
+
+  const start = parseGameStartDate();
+  const targetDate = new Date(today.getFullYear(), today.getMonth() - 1, 1, 12, 0, 0, 0);
+  const report = { month: targetKey, workshop: 0, rents: [], paid: 0, unpaid: 0 };
+
+  if (monthIndex(targetDate) - monthIndex(start) >= 2) {
+    report.workshop = WORKSHOP_MONTHLY_COST;
+    const result = payFixedCost(`${targetKey} 工房維持費`, WORKSHOP_MONTHLY_COST, (unpaid) => {
+      state.business.workshopUnpaid += unpaid;
+      state.business.workshopSuspended = true;
+    });
+    report.paid += result.paid;
+    report.unpaid += result.unpaid;
+  }
+
+  for (const branch of [...(state.store.branches || [])].sort((a, b) => Number(a.number) - Number(b.number))) {
+    const contractDate = gameDateForDay(branch.rentedDay || 1);
+    if (monthIndex(targetDate) - monthIndex(contractDate) < 1) continue;
+    const rent = storeMonthlyRent(Number(branch.number));
+    const result = payFixedCost(`${targetKey} ${storeBranchLabel(branch.number)}家賃`, rent, (unpaid) => {
+      branch.unpaidRent = Math.max(0, Number(branch.unpaidRent) || 0) + unpaid;
+      branch.suspended = true;
+    });
+    report.rents.push({ branchNumber: Number(branch.number), amount: rent, paid: result.paid, unpaid: result.unpaid });
+    report.paid += result.paid;
+    report.unpaid += result.unpaid;
+  }
+
+  state.business.lastProcessedMonth = targetKey;
+  state.business.monthlyReports.push(report);
+  state.business.monthlyReports = state.business.monthlyReports.slice(-24);
+  const summary = report.unpaid
+    ? `${targetKey}分の固定費を処理しました。未払いは${yen(report.unpaid)}です。`
+    : `${targetKey}分の固定費 ${yen(report.paid)}を支払いました。`;
+  addNotification('月初の固定費', summary, report.unpaid ? 'warning' : 'info');
+  return report;
+}
+
+function totalOutstandingBusinessCost() {
+  return Math.max(0, Number(state.business.workshopUnpaid) || 0)
+    + (state.store.branches || []).reduce((sum, branch) => sum + Math.max(0, Number(branch.unpaidRent) || 0), 0);
+}
+
+function payOutstandingBusinessCosts() {
+  let available = Math.max(0, Math.floor(Number(state.game.money) || 0));
+  const total = totalOutstandingBusinessCost();
+  if (!total) return showToast('未払いの固定費はありません。');
+  if (!available) return showToast('支払いに使える所持金がありません。', 'error');
+  const before = available;
+
+  const workshopDue = Math.max(0, Number(state.business.workshopUnpaid) || 0);
+  if (workshopDue && available) {
+    const paid = Math.min(available, workshopDue);
+    available -= paid;
+    state.business.workshopUnpaid -= paid;
+    addFinance('未払い工房維持費を支払い', 0, paid);
+    if (state.business.workshopUnpaid <= 0) {
+      state.business.workshopUnpaid = 0;
+      state.business.workshopSuspended = false;
+    }
+  }
+  for (const branch of [...(state.store.branches || [])].sort((a, b) => Number(a.number) - Number(b.number))) {
+    const due = Math.max(0, Number(branch.unpaidRent) || 0);
+    if (!due || !available) continue;
+    const paid = Math.min(available, due);
+    available -= paid;
+    branch.unpaidRent -= paid;
+    addFinance(`${storeBranchLabel(branch.number)}の未払い家賃を支払い`, 0, paid);
+    if (branch.unpaidRent <= 0) {
+      branch.unpaidRent = 0;
+      branch.suspended = false;
+    }
+  }
+  const paidTotal = before - available;
+  state.game.money = available;
+  startMoneyFeedback(-paidTotal);
+  saveGame();
+  showToast(`${yen(paidTotal)}を支払いました。`, 'info', false);
+  render();
+}
+
 function settleDay() {
   const moneyBeforeSettlement = state.game.money;
   const sold = [];
-  let visitors = state.store.rented ? Math.floor(Math.random() * 4) + 1 : 0;
-  if (state.store.rented && state.store.expanded) visitors += Math.floor(Math.random() * 3) + 1;
-  if (state.store.rented && state.game.weather === '雨') visitors = Math.max(0, visitors - 1);
-  if (state.store.rented && state.employee.hired && state.employee.working && state.employee.role === 'sales') visitors += 1;
+  const activeSalesBranch = salesStoreBranch();
+  const storeOperating = Boolean(state.store.rented && activeSalesBranch);
+  let visitors = storeOperating ? Math.floor(Math.random() * 4) + 1 : 0;
+  if (storeOperating && state.store.expanded) visitors += Math.floor(Math.random() * 3) + 1;
+  if (storeOperating && ['雨', '雪'].includes(state.game.weather)) visitors = Math.max(0, visitors - 1);
+  if (storeOperating && state.employee.hired && state.employee.working && state.employee.role === 'sales') visitors += 1;
 
-  if (state.store.rented) for (let showcaseIndex = 0; showcaseIndex < state.store.showcases.length; showcaseIndex += 1) {
-    const showcase = state.store.showcases[showcaseIndex];
+  const activeShowcases = activeSalesBranch ? branchShowcases(activeSalesBranch) : [];
+  if (storeOperating) for (let showcaseIndex = 0; showcaseIndex < activeShowcases.length; showcaseIndex += 1) {
+    const showcase = activeShowcases[showcaseIndex];
     for (let slotIndex = 0; slotIndex < (showcase?.slots || []).length; slotIndex += 1) {
       const slot = showcase.slots[slotIndex];
       if (!slot) continue;
       const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
       if (!item) { showcase.slots[slotIndex] = null; continue; }
-      const mode = PRICE_MODES[slot.priceMode] || PRICE_MODES.standard;
-      const price = roundThousand(item.recommendedPrice * mode.multiplier);
-      let chance = 0.24 + visitors * 0.055 + mode.saleBonus + QUALITIES[item.quality].saleBonus + state.store.rating * 0.018;
+      const price = showcaseSellingPrice(slot, item);
+      const priceStatus = sellingPriceStatus(item, price);
+      let chance = 0.24 + visitors * 0.055 + priceStatus.saleBonus + QUALITIES[item.quality].saleBonus + storeProductSaleBonus(item, activeSalesBranch.number) + (storeRating(activeSalesBranch) / 100) * 0.036;
       if (state.employee.hired && state.employee.working && state.employee.role === 'sales') chance += 0.1;
       chance = clamp(chance, 0.08, 0.9);
       if (Math.random() < chance) {
@@ -4497,9 +5589,9 @@ function settleDay() {
         state.store.salesCount += 1;
         state.store.totalRevenue += price;
         state.store.totalProfit += price - item.cost;
-        state.store.rating = clamp(state.store.rating + 0.04, 1, 5);
+        addStoreProgress({ branchNumber: activeSalesBranch.number, points: 1, rating: 1, sale: true });
         addFinance(`${item.name}を販売`, price, 0);
-        const caseUsed = consumeStoreCase();
+        const caseUsed = consumeStoreCase(activeSalesBranch);
         sold.push({ itemId: item.id, name: item.name, price, profit: price - item.cost, caseUsed });
       }
     }
@@ -4509,7 +5601,7 @@ function settleDay() {
   state.daily.visitors = visitors;
   state.daily.sold.push(...sold);
 
-  if (state.store.rented && state.employee.hired && state.employee.working) {
+  if (storeOperating && state.employee.hired && state.employee.working) {
     const salary = 2000;
     state.game.money = Math.max(0, state.game.money - salary);
     addFinance(`${state.employee.name}さんの給与`, 0, salary);
@@ -4526,7 +5618,7 @@ function settleDay() {
     crafted: structuredClone(state.daily.crafted),
     sold: structuredClone(state.daily.sold),
     casesUsed: state.daily.sold.filter((entry) => entry?.caseUsed).length,
-    casesRemaining: storeCaseRemaining(),
+    casesRemaining: storeCaseRemaining(salesStoreBranch() || currentStoreBranch()),
     meals: structuredClone(state.daily.meals || []),
     visitors,
     income: state.daily.income,
@@ -4535,49 +5627,91 @@ function settleDay() {
   state.store.lastResult = result;
 
   state.game.day += 1;
-  state.game.minutes = 8 * 60;
-  state.game.weather = nextWeather();
+  state.game.minutes = DAY_START_MINUTES;
+  state.game.weather = nextWeather(gameDate());
   state.wellbeing.hunger = 7;
   processCompletedWorkshopRepairs();
+  processMonthlyFixedCosts();
+  processExpiredOrders();
   state.daily = { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 };
-  Object.values(state.customers).forEach((customer) => { customer.ignoredToday = false; });
+  Object.values(state.customers).forEach((customer) => {
+    customer.visiting = false;
+    customer.visitingBranchNumber = null;
+    customer.activeRequest = null;
+    customer.ignoredToday = false;
+    customer.wishesHeard = false;
+    customer.proposedItemIds = [];
+  });
   scheduleCustomerVisit();
   updateOrderNotifications();
   saveGame();
   setScreen('dayResult', {}, false);
 }
 
+function startCustomerVisit(customerId, branchNumber = state?.store?.branchNumber || 1) {
+  const customer = state.customers?.[customerId];
+  const branch = storeBranchByNumber(branchNumber);
+  if (!customer || !storeBranchOperating(branch)) return false;
+  customer.visiting = true;
+  customer.visitingBranchNumber = Math.max(1, Math.min(3, Math.floor(Number(branch.number) || 1)));
+  customer.activeRequest = customerVisitRequest(customerId, customer.visitingBranchNumber);
+  customer.wishesHeard = false;
+  customer.proposedItemIds = [];
+  return true;
+}
+
 function scheduleCustomerVisit() {
-  if (!canServeCustomers()) {
-    Object.values(state.customers).forEach((customer) => { customer.visiting = false; });
+  const visitBranch = salesStoreBranch();
+  if (!visitBranch || !storeBusinessOpen() || !hasCraftedJewelry()) {
+    Object.values(state.customers).forEach((customer) => {
+      customer.visiting = false;
+      customer.visitingBranchNumber = null;
+      customer.activeRequest = null;
+      customer.wishesHeard = false;
+      customer.proposedItemIds = [];
+    });
     return;
   }
   if (Object.values(state.customers).some((customer) => customer.visiting)) return;
   const employeeBonus = state.employee.hired && state.employee.working && state.employee.role === 'service' ? 0.12 : 0;
-  if (!state.customers.misaki.met && state.game.day >= 2 && Math.random() < 0.38 + employeeBonus) {
-    state.customers.misaki.visiting = true;
-    addNotification('お客様が来店しています', `${CUSTOMERS.misaki.name}さんが${storeDisplayName()}に来ています。`);
+  const profileBonus = Number(visitBranch.number) === 2 ? 0.03 : Number(visitBranch.number) === 3 ? 0.05 : 0;
+  const notifyVisit = (id) => addNotification('お客様が来店しています', `${CUSTOMERS[id].name}さんが${storeBranchLabel(visitBranch.number)}に来ています。`);
+  if (!state.customers.misaki.met && state.game.day >= 2 && Math.random() < 0.38 + employeeBonus + profileBonus) {
+    if (startCustomerVisit('misaki', visitBranch.number)) notifyVisit('misaki');
     return;
   }
-  if (state.customers.misaki.met && !state.customers.kenta.met && state.game.day >= 3 && Math.random() < 0.32 + employeeBonus) {
-    state.customers.kenta.visiting = true;
-    addNotification('お客様が来店しています', `${CUSTOMERS.kenta.name}さんが${storeDisplayName()}に来ています。`);
+  if (state.customers.misaki.met && !state.customers.kenta.met && state.game.day >= 3 && Math.random() < 0.32 + employeeBonus + profileBonus) {
+    if (startCustomerVisit('kenta', visitBranch.number)) notifyVisit('kenta');
     return;
   }
   const known = Object.keys(CUSTOMERS).filter((id) => state.customers[id].met && state.game.day - (state.customers[id].lastVisitDay || 0) >= 3);
-  if (known.length && Math.random() < 0.18 + employeeBonus) {
-    const id = known[Math.floor(Math.random() * known.length)];
-    state.customers[id].visiting = true;
-    addNotification('お客様が来店しています', `${CUSTOMERS[id].name}さんが${storeDisplayName()}に来ています。`);
+  if (known.length && Math.random() < 0.18 + employeeBonus + profileBonus) {
+    const id = randomFrom(known);
+    if (id && startCustomerVisit(id, visitBranch.number)) notifyVisit(id);
   }
 }
 
+function expireOrder(order) {
+  if (!order || orderClosed(order) || state.game.day <= Number(order.deadlineDay)) return false;
+  const item = state.inventory.jewelry.find((entry) => entry.id === order.jewelryId);
+  if (item) item.status = 'stored';
+  order.status = '期限切れ';
+  order.overduePenaltyApplied = true;
+  addStoreProgress({ branchNumber: order.branchNumber, rating: -2 });
+  addNotification('注文が期限切れになりました', `${order.customerName}さんの注文は納期を過ぎたため、店舗評価が2下がりました。`, 'warning');
+  return true;
+}
+
+function processExpiredOrders() {
+  state.orders.filter((order) => !orderClosed(order)).forEach((order) => expireOrder(order));
+}
+
 function updateOrderNotifications() {
-  state.orders.filter((order) => !['完了', '取消'].includes(order.status)).forEach((order) => {
-    const remaining = order.deadlineDay - state.game.day;
+  state.orders.filter((order) => !orderClosed(order)).forEach((order) => {
+    const remaining = Number(order.deadlineDay) - state.game.day;
+    if (remaining === 3) addNotification('注文の納期まで3日です', `${order.customerName}さんの注文は3日後が納期です。`, 'warning');
     if (remaining === 1) addNotification('明日が納期です', `${order.customerName}さんの注文は明日が納期です。`, 'warning');
-    if (remaining === 0) addNotification('本日が納期です', `${order.customerName}さんの注文は本日が納期です。`, 'warning');
-    if (remaining < 0 && order.status !== '完成') addNotification('注文の納期を過ぎています', `${order.customerName}さんの注文を確認してください。`, 'warning');
+    if (remaining === 0) addNotification('本日が納期です', `${order.customerName}さんの注文は本日中に納品してください。`, 'warning');
   });
 }
 
@@ -4593,24 +5727,39 @@ async function beginSleepTransition() {
   if (sleepTransitioning) return;
   sleepTransitioning = true;
   closeModal();
+  const stateBeforeSleep = structuredClone(state);
 
-  // 「寝る」を押した直後から就寝専用BGMと夜の環境音へ切り替える。
-  await switchAudio('sleep');
+  try {
+    // 「寝る」を押した直後から就寝専用BGMと夜の環境音へ切り替える。
+    await switchAudio('sleep');
 
-  // 画面をゆっくり暗くし、完全な暗転の中で翌日の処理を行う。
-  sleepCurtainEl?.classList.add('active');
-  await wait(850);
-  settleDay();
-  await wait(420);
-  sleepCurtainEl?.classList.remove('active');
-  await wait(120);
-  if (pendingDayMoneyDelta) {
-    startMoneyFeedback(pendingDayMoneyDelta, 1200);
+    // 画面をゆっくり暗くし、完全な暗転の中で翌日の処理を行う。
+    sleepCurtainEl?.classList.add('active');
+    await wait(850);
+    settleDay();
+    await wait(420);
+    sleepCurtainEl?.classList.remove('active');
+    await wait(120);
+    if (pendingDayMoneyDelta) {
+      startMoneyFeedback(pendingDayMoneyDelta, 1200);
+      pendingDayMoneyDelta = 0;
+      render();
+    }
+    await wait(580);
+  } catch (error) {
+    console.error('翌日処理エラー', error);
+    state = stateBeforeSleep;
+    screen = 'main';
+    screenData = {};
+    navigation = [];
     pendingDayMoneyDelta = 0;
+    saveGame();
     render();
+    try { showToast('翌日の処理を中断し、暗転前の状態へ戻しました。', 'error'); } catch (_) {}
+  } finally {
+    sleepCurtainEl?.classList.remove('active');
+    sleepTransitioning = false;
   }
-  await wait(580);
-  sleepTransitioning = false;
 }
 
 function showPlayerNameExecution(kind) {
@@ -4735,6 +5884,7 @@ root.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
   const action = button.dataset.action;
+  if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
   const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'next-day']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
@@ -4891,6 +6041,7 @@ root.addEventListener('click', async (event) => {
       const branch = (state.store.branches || []).find((entry) => entry.id === button.dataset.id);
       if (!branch) break;
       state.store.branchNumber = Math.max(1, Number(branch.number) || 1);
+      mirrorCurrentStoreDisplay(branch);
       saveGame();
       setScreen('store', { branchId: branch.id });
       break;
@@ -4914,7 +6065,7 @@ root.addEventListener('click', async (event) => {
         existing.name = storeName;
         existing.label = storeBranchLabel(branchNumber);
       } else {
-        state.store.branches.push({ id: `branch-${branchNumber}`, number: branchNumber, label: storeBranchLabel(branchNumber), name: storeName, rentedDay: state.store.rentedDay || state.game.day });
+        state.store.branches.push({ id: `branch-${branchNumber}`, number: branchNumber, label: storeBranchLabel(branchNumber), name: storeName, rentedDay: state.store.rentedDay || state.game.day, suspended: false, unpaidRent: 0, points: 0, level: 1, rating: 50, salesCount: 0, orderDeliveries: 0, displaySuppliesInstalled: 0, casesInstalled: 0, showcases: [], showcaseCount: 0 });
       }
       saveGame();
       showToast(`${storeDisplayName()}を登録しました。`);
@@ -4922,6 +6073,7 @@ root.addEventListener('click', async (event) => {
       break;
     }
     case 'back': goBack(); break;
+    case 'title-back': screen = 'title'; screenData = {}; navigation = []; render(); break;
     case 'main': goMain(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'modal-close': closeModal(); break;
@@ -4977,6 +6129,9 @@ root.addEventListener('click', async (event) => {
     case 'buy-workshop-tool': buyWorkshopTool(button.dataset.id); break;
     case 'buy-display-product': buyDisplayProduct(button.dataset.id); break;
     case 'install-display-product': installDisplayProduct(button.dataset.id); break;
+    case 'confirm-workshop-expansion': confirmWorkshopExpansion(); break;
+    case 'expand-workshop': expandWorkshop(); break;
+    case 'pay-outstanding-costs': payOutstandingBusinessCosts(); break;
     case 'repair-workshop-tool': repairWorkshopTool(button.dataset.id); break;
     case 'purchase': purchase(button.dataset.kind, button.dataset.id, button.dataset.shape); break;
     case 'sell-rough': sellRough(button.dataset.id, false); break;
@@ -5006,25 +6161,35 @@ root.addEventListener('click', async (event) => {
     case 'inventory-tab': screenData.tab = button.dataset.tab; render(); break;
     case 'place-item': placeItem(button.dataset.id); break;
     case 'remove-showcase': removeShowcase(Number(button.dataset.showcase), Number(button.dataset.slot)); break;
+    case 'move-showcase-item': showMoveShowcaseItemModal(button.dataset.id); break;
+    case 'confirm-move-showcase-item': moveShowcaseItem(button.dataset.id, Number(button.dataset.branch)); break;
     case 'customer':
-      if (!canServeCustomers()) showToast(state.store.rented ? 'まずジュエリーを1点制作してください。' : '先に御徒町の不動産屋で店舗を借りてください。', 'error');
+      if (!state.store.rented) showToast('先に御徒町の不動産屋で店舗を借りてください。', 'error');
+      else if (!storeBusinessOpen()) showToast('接客できるのは9:00～19:00です。', 'error');
+      else if (!hasCraftedJewelry()) showToast('まずジュエリーを1点制作してください。', 'error');
+      else if (!anyStoreBranchOperating()) showToast('営業中の店舗がありません。', 'error');
       else setScreen('customer', { customerId: button.dataset.id });
       break;
+    case 'hear-customer-wishes': hearCustomerWishes(button.dataset.customer); break;
+    case 'open-customer-products': openCustomerProducts(button.dataset.customer); break;
     case 'ignore-customer': ignoreCustomer(button.dataset.id); break;
     case 'customer-buy': customerBuy(button.dataset.customer, button.dataset.id); break;
     case 'accept-order': acceptOrder(button.dataset.customer); break;
     case 'craft-order': {
       const order = state.orders.find((entry) => entry.id === button.dataset.id);
       if (!order || order.status !== '受注') showToast('制作できる注文が見つかりません。', 'error');
-      else if (!toolUsable('jewelryBench')) showToast('注文品の制作には、g-Lab.で購入できる彫金机が必要です。', 'error');
       else {
+        const feasibility = orderFeasibility(order);
         const requirements = orderRequirements(order);
-        if (!requirements.enoughMetal || !requirements.enoughLoose) showToast('必要な材料が揃っていません。', 'error');
+        if (!feasibility.artisanReady) showToast(`この注文には職人Lv.${feasibility.requiredArtisanLevel}が必要です。`, 'error');
+        else if (!feasibility.equipmentReady) showToast('注文品の制作に必要な設備が使用できません。', 'error');
+        else if (!requirements.enoughMetal || !requirements.enoughLoose) showToast('必要な材料が揃っていません。', 'error');
         else { craftDraft = defaultDraft(order.id); setScreen('craft', { orderId: order.id }); }
       }
       break;
     }
     case 'deliver-order': deliverOrder(button.dataset.id); break;
+    case 'confirm-cancel-order': confirmCancelOrder(button.dataset.id); break;
     case 'expand-store': expandStore(); break;
     case 'hire-employee': state.employee.hired = true; state.employee.working = true; saveGame(); showToast('店員を雇いました。'); render(); break;
     case 'employee-role': state.employee.role = button.dataset.role; saveGame(); render(); break;
@@ -5062,11 +6227,13 @@ root.addEventListener('click', async (event) => {
 
 root.addEventListener('change', (event) => {
   const target = event.target;
-  if (target.matches('[data-action="price-mode"]')) {
-    const slot = state.store.showcases?.[Number(target.dataset.showcase)]?.slots?.[Number(target.dataset.slot)];
-    if (slot && PRICE_MODES[target.value]) slot.priceMode = target.value;
+  if (target.matches('[data-action="selling-price"]')) {
+    const slot = branchShowcases(currentStoreBranch())?.[Number(target.dataset.showcase)]?.slots?.[Number(target.dataset.slot)];
+    if (!slot) return;
+    const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+    slot.sellingPrice = normalizeSellingPrice(target.value, item?.recommendedPrice || 1000);
     saveGame();
-    showToast('価格を変更しました。');
+    showToast(`販売価格を${yen(slot.sellingPrice)}に変更しました。`);
     render();
     return;
   }
@@ -5268,6 +6435,8 @@ modalEl.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
   const action = button.dataset.action;
+  if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
+  if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
   const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'next-day']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
@@ -5281,6 +6450,8 @@ modalEl.addEventListener('click', async (event) => {
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;
     case 'craft': craft(); break;
+    case 'expand-workshop': expandWorkshop(); break;
+    case 'confirm-move-showcase-item': moveShowcaseItem(button.dataset.id, Number(button.dataset.branch)); break;
     case 'do-sleep': await beginSleepTransition(); break;
     case 'logout-name-check': showPlayerNameExecution('logout'); break;
     case 'delete-save-name-check': showPlayerNameExecution('delete'); break;

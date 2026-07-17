@@ -1,15 +1,7 @@
 (() => {
   'use strict';
 
-  // SO-52Cで制作してきた実表示領域を基準に、他端末では全体を等倍比率で縮拡大する。
-  // 縦 360×800 / 横 800×360 は、制作画像の20:9比率にも一致する。
-  const REFERENCE = Object.freeze({
-    portrait: Object.freeze({ width: 360, height: 800 }),
-    landscape: Object.freeze({ width: 800, height: 360 }),
-  });
-
   const safeArea = document.querySelector('#viewport-safe-area');
-  const stage = document.querySelector('#device-stage');
   const frame = document.querySelector('#game-frame');
   let deferredInstallPrompt = null;
   let resizeTimer = 0;
@@ -33,25 +25,27 @@
   }
 
   function updateStage() {
-    if (!safeArea || !stage) return;
-    const bounds = safeArea.getBoundingClientRect();
-    const landscape = bounds.width > bounds.height;
-    const reference = landscape ? REFERENCE.landscape : REFERENCE.portrait;
-    const scale = Math.max(0.1, Math.min(bounds.width / reference.width, bounds.height / reference.height));
+    if (!safeArea) return;
+    const visual = window.visualViewport;
+    const viewportWidth = Math.max(1, Math.round(visual?.width || window.innerWidth || document.documentElement.clientWidth));
+    const viewportHeight = Math.max(1, Math.round(visual?.height || window.innerHeight || document.documentElement.clientHeight));
+    const viewportLeft = Math.max(0, Math.round(visual?.offsetLeft || 0));
+    const viewportTop = Math.max(0, Math.round(visual?.offsetTop || 0));
+    const landscape = viewportWidth > viewportHeight;
 
-    document.documentElement.style.setProperty('--reference-width', `${reference.width}px`);
-    document.documentElement.style.setProperty('--reference-height', `${reference.height}px`);
-    document.documentElement.style.setProperty('--stage-scale', String(scale));
-    document.documentElement.style.setProperty('--render-width', `${reference.width * scale}px`);
-    document.documentElement.style.setProperty('--render-height', `${reference.height * scale}px`);
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--jwj-viewport-width', `${viewportWidth}px`);
+    rootStyle.setProperty('--jwj-viewport-height', `${viewportHeight}px`);
+    rootStyle.setProperty('--jwj-viewport-left', `${viewportLeft}px`);
+    rootStyle.setProperty('--jwj-viewport-top', `${viewportTop}px`);
     document.documentElement.dataset.orientation = landscape ? 'landscape' : 'portrait';
 
     postToGame({
       type: 'jwj-shell-viewport',
       orientation: landscape ? 'landscape' : 'portrait',
-      referenceWidth: reference.width,
-      referenceHeight: reference.height,
-      scale,
+      referenceWidth: viewportWidth,
+      referenceHeight: viewportHeight,
+      scale: 1,
     });
   }
 
@@ -129,6 +123,7 @@
   window.addEventListener('resize', scheduleStageUpdate, { passive: true });
   window.addEventListener('orientationchange', () => window.setTimeout(updateStage, 120), { passive: true });
   window.visualViewport?.addEventListener('resize', scheduleStageUpdate, { passive: true });
+  window.visualViewport?.addEventListener('scroll', scheduleStageUpdate, { passive: true });
 
   updateStage();
 })();

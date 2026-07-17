@@ -465,6 +465,11 @@ let metalQuantityHoldTimeout = null;
 let metalQuantityHoldInterval = null;
 let metalQuantityHoldButton = null;
 let metalQuantityHoldTriggered = false;
+let displayCasePurchaseDraft = 1;
+let displayCaseHoldTimeout = null;
+let displayCaseHoldInterval = null;
+let displayCaseHoldButton = null;
+let displayCaseHoldTriggered = false;
 
 function validPositivePrice(value) {
   const price = Number(value);
@@ -974,6 +979,78 @@ function finishMetalQuantityHold(button) {
   const held = metalQuantityHoldButton === button && metalQuantityHoldTriggered;
   clearMetalQuantityHold();
   metalQuantityHoldTriggered = false;
+  if (held && button) button.dataset.skipNextClick = 'true';
+}
+
+function displayCasePurchaseMaximum() {
+  const product = DISPLAY_SHOP_PRODUCTS.case;
+  if (!product) return 0;
+  const inventory = state.store.displayInventory || {};
+  const owned = Math.max(0, Math.floor(Number(inventory.case) || 0));
+  const installed = Math.max(0, Math.floor(Number(storeCaseRemaining(currentStoreBranch())) || 0));
+  const limitRemaining = Math.max(0, Math.floor(Number(product.purchaseLimit) || 0) - owned - installed);
+  const affordable = Math.max(0, Math.floor(Number(state.game.money || 0) / Math.max(1, Number(product.price) || 1)));
+  return Math.max(0, Math.min(limitRemaining, affordable));
+}
+
+function setDisplayCasePurchaseQuantity(value) {
+  const maximum = displayCasePurchaseMaximum();
+  displayCasePurchaseDraft = Math.max(0, Math.min(maximum, Math.floor(Number(value) || 0)));
+  return displayCasePurchaseDraft;
+}
+
+function displayCasePurchaseQuantity() {
+  const maximum = displayCasePurchaseMaximum();
+  const initial = Number.isFinite(Number(displayCasePurchaseDraft)) ? displayCasePurchaseDraft : 1;
+  return setDisplayCasePurchaseQuantity(maximum > 0 ? Math.max(1, initial) : 0);
+}
+
+function syncDisplayCasePurchaseCard() {
+  const quantity = displayCasePurchaseQuantity();
+  const card = root.querySelector('[data-display-case-purchase-card]');
+  if (!card) return;
+  const input = card.querySelector('[data-display-case-quantity-input]');
+  if (input && document.activeElement !== input) input.value = String(quantity);
+  if (input) input.max = String(displayCasePurchaseMaximum());
+  const total = card.querySelector('[data-display-case-total]');
+  if (total) total.textContent = `合計：${yen(quantity * DISPLAY_SHOP_PRODUCTS.case.price)}`;
+  const submit = card.querySelector('[data-action="buy-display-product"][data-id="case"]');
+  if (submit) submit.disabled = quantity < 1 || !canSpendHours(1);
+}
+
+function adjustDisplayCasePurchaseQuantity(delta) {
+  setDisplayCasePurchaseQuantity(displayCasePurchaseQuantity() + Number(delta || 0));
+  syncDisplayCasePurchaseCard();
+}
+
+function clearDisplayCaseHold() {
+  if (displayCaseHoldTimeout) window.clearTimeout(displayCaseHoldTimeout);
+  if (displayCaseHoldInterval) window.clearInterval(displayCaseHoldInterval);
+  displayCaseHoldTimeout = null;
+  displayCaseHoldInterval = null;
+  displayCaseHoldButton?.classList.remove('is-holding');
+  displayCaseHoldButton = null;
+}
+
+function startDisplayCaseHold(button) {
+  clearDisplayCaseHold();
+  if (!button || button.disabled) return;
+  displayCaseHoldButton = button;
+  displayCaseHoldTriggered = false;
+  button.classList.add('is-holding');
+  displayCaseHoldTimeout = window.setTimeout(() => {
+    displayCaseHoldTriggered = true;
+    adjustDisplayCasePurchaseQuantity(button.dataset.delta);
+    displayCaseHoldInterval = window.setInterval(() => {
+      adjustDisplayCasePurchaseQuantity(button.dataset.delta);
+    }, 110);
+  }, 420);
+}
+
+function finishDisplayCaseHold(button) {
+  const held = displayCaseHoldButton === button && displayCaseHoldTriggered;
+  clearDisplayCaseHold();
+  displayCaseHoldTriggered = false;
   if (held && button) button.dataset.skipNextClick = 'true';
 }
 
@@ -2286,6 +2363,7 @@ function header(title, { back = true, main = true, help = '' } = {}) {
         </div>
       </div>
       <div class="header-money-area">
+        ${help ? `<button class="icon-button header-help-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
         ${main ? '<button class="small-button header-main-button" data-action="main">メイン画面</button>' : ''}
         <span class="header-money ${moneyFeedback ? `money-change-active money-${moneyFeedback.direction}` : ''}" aria-label="所持金">
           <span class="header-money-value">${yen(moneyFeedback?.displayAmount ?? state.game.money)}</span>
@@ -2295,9 +2373,7 @@ function header(title, { back = true, main = true, help = '' } = {}) {
       <div class="header-center">
         ${back ? '<button class="icon-button" data-action="back" aria-label="戻る">←</button>' : ''}
         ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
-        <div class="header-actions">
-          ${help ? `<button class="icon-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
-        </div>
+        <div class="header-actions"></div>
       </div>
     </header>`;
 }
@@ -3028,25 +3104,37 @@ function renderSupplierMetals() {
     const disabled = quantity < 1 || !canSpendHours(1);
     return `<article class="product-row metal-product-row metal-trade-card" data-metal-trade-card="${mode}:${product.id}">
       <div class="product-main metal-trade-heading">
-        <span class="material-chip">地金</span>
-        <div>
-          <strong>${esc(product.name)}</strong>
-          <small>現在${metalWeightLabel(owned)}g所持しています</small>
-          ${reserved > 0 ? `<small>注文に使用予定：${metalWeightLabel(reserved)}g</small><small>使用できる重量：${metalWeightLabel(available)}g</small>` : ''}
-          ${mode === 'buy' ? `<small>保管上限：${metalWeightLabel(storageLimit)}g</small><small class="metal-maximum">現在購入できる最大重量：${maximum}g</small>` : `<small class="metal-maximum">売却できる最大重量：${maximum}g</small>`}
+        <div class="metal-title-status-row">
+          <strong class="metal-product-name">${esc(product.name)}</strong>
+          <div class="metal-owned-limit">
+            <small>現在所持：${metalWeightLabel(owned)}g</small>
+            <small>保管上限：${metalWeightLabel(storageLimit)}g</small>
+          </div>
+        </div>
+        <div class="metal-limit-price-row">
+          <small class="metal-maximum">${mode === 'buy' ? '現在購入できる最大量' : '現在売却できる最大量'}：${maximum}g</small>
           <small class="metal-unit-price">${mode === 'buy' ? '購入' : '売却'}価格　${yen(perGram)}／g</small>
         </div>
+        ${reserved > 0 ? `<div class="metal-reservation-summary"><small>注文に使用予定：${metalWeightLabel(reserved)}g</small><small>使用できる重量：${metalWeightLabel(available)}g</small></div>` : ''}
       </div>
-      <div class="metal-quantity-area">
-        <div class="metal-quantity-input"><span>${mode === 'buy' ? '購入' : '売却'}重量</span><span class="metal-vertical-stepper" aria-label="重量を増減">
+      ${mode === 'buy' ? `<div class="metal-purchase-control-row">
+        <span class="metal-quantity-label">購入重量</span>
+        <span class="metal-vertical-stepper" aria-label="重量を増減">
           <button type="button" class="metal-stepper-button metal-stepper-up" data-action="metal-qty-step" data-mode="${mode}" data-id="${product.id}" data-delta="1" aria-label="${esc(product.name)}を1g増やす。長押しで連続増加">▲</button>
-          <span class="metal-input-wrap"><input type="number" min="0" max="${maximum}" step="1" inputmode="numeric" pattern="[0-9]*" value="${quantity}" data-metal-trade-input data-mode="${mode}" data-id="${product.id}" aria-label="${esc(product.name)}の${mode === 'buy' ? '購入' : '売却'}重量"><b>g</b></span>
+          <span class="metal-input-wrap"><input type="number" min="0" max="${maximum}" step="1" inputmode="numeric" pattern="[0-9]*" value="${quantity}" data-metal-trade-input data-mode="${mode}" data-id="${product.id}" aria-label="${esc(product.name)}の購入重量"><b>g</b></span>
+          <button type="button" class="metal-stepper-button metal-stepper-down" data-action="metal-qty-step" data-mode="${mode}" data-id="${product.id}" data-delta="-1" aria-label="${esc(product.name)}を1g減らす。長押しで連続減少">▼</button>
+        </span>
+        <button class="primary-button metal-inline-purchase" data-action="buy-metal" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入</button>
+      </div>` : `<div class="metal-quantity-area">
+        <div class="metal-quantity-input"><span>売却重量</span><span class="metal-vertical-stepper" aria-label="重量を増減">
+          <button type="button" class="metal-stepper-button metal-stepper-up" data-action="metal-qty-step" data-mode="${mode}" data-id="${product.id}" data-delta="1" aria-label="${esc(product.name)}を1g増やす。長押しで連続増加">▲</button>
+          <span class="metal-input-wrap"><input type="number" min="0" max="${maximum}" step="1" inputmode="numeric" pattern="[0-9]*" value="${quantity}" data-metal-trade-input data-mode="${mode}" data-id="${product.id}" aria-label="${esc(product.name)}の売却重量"><b>g</b></span>
           <button type="button" class="metal-stepper-button metal-stepper-down" data-action="metal-qty-step" data-mode="${mode}" data-id="${product.id}" data-delta="-1" aria-label="${esc(product.name)}を1g減らす。長押しで連続減少">▼</button>
         </span></div>
-        <button type="button" class="secondary-button full-button metal-max-button" data-action="metal-qty-max" data-mode="${mode}" data-id="${product.id}" ${maximum < 1 ? 'disabled' : ''}>${mode === 'buy' ? '購入可能な最大量' : '全部売る'}</button>
-      </div>
+        <button type="button" class="secondary-button full-button metal-max-button" data-action="metal-qty-max" data-mode="${mode}" data-id="${product.id}" ${maximum < 1 ? 'disabled' : ''}>全部売る</button>
+      </div>`}
       <div class="metal-trade-preview" data-metal-trade-preview>${metalTradePreviewMarkup(mode, product.id, quantity)}</div>
-      <button class="primary-button full-button metal-trade-submit" data-action="${mode === 'buy' ? 'buy-metal' : 'sell-metal'}" data-id="${product.id}" ${disabled ? 'disabled' : ''}>${mode === 'buy' ? '購入する' : '売却する'}</button>
+      ${mode === 'sell' ? `<button class="primary-button full-button metal-trade-submit" data-action="sell-metal" data-id="${product.id}" ${disabled ? 'disabled' : ''}>売却する</button>` : ''}
       ${mode === 'sell' && reserved > 0 ? '<p class="small-note metal-fraction-note">注文に使用予定の地金は売却できません。</p>' : mode === 'sell' && owned > 0 && maximum < 1 ? '<p class="small-note metal-fraction-note">1g未満の端数は所持品に残ります。</p>' : ''}
     </article>`;
   }).join('');
@@ -3198,6 +3286,27 @@ function renderDisplayShop() {
       ? `未設置 ${owned}個・店舗の残数 ${installed}個`
       : `未設置 ${owned}個・設置済み ${installed}${product.id === 'showcase' ? '台' : '個'}`;
     const limitText = product.purchaseLimit ? `<small>保有上限：未設置分と設置中を合わせて${product.purchaseLimit}個</small>` : '';
+    if (product.id === 'case') {
+      const quantity = displayCasePurchaseQuantity();
+      const maximum = displayCasePurchaseMaximum();
+      const caseDisabled = quantity < 1 || !canSpendHours(1);
+      return `<article class="product-row display-shop-row display-case-purchase-row" data-display-case-purchase-card>
+        <div class="product-main">
+          <span class="material-chip" aria-hidden="true">${esc(product.symbol)}</span>
+          <div><strong>${esc(product.name)}</strong><small>${esc(product.description)}</small><small>${ownedText}</small>${limitText}</div>
+        </div>
+        <strong>${yen(product.price)}／個</strong>
+        <div class="display-case-quantity-area">
+          <span class="metal-vertical-stepper" aria-label="ケース購入数を増減">
+            <button type="button" class="metal-stepper-button metal-stepper-up" data-action="display-case-qty-step" data-delta="1" aria-label="ケースを1個増やす。長押しで連続増加">▲</button>
+            <span class="metal-input-wrap"><input type="number" min="0" max="${maximum}" step="1" inputmode="numeric" pattern="[0-9]*" value="${quantity}" data-display-case-quantity-input aria-label="ケースの購入数"><b>個</b></span>
+            <button type="button" class="metal-stepper-button metal-stepper-down" data-action="display-case-qty-step" data-delta="-1" aria-label="ケースを1個減らす。長押しで連続減少">▼</button>
+          </span>
+          <strong class="display-case-total" data-display-case-total>合計：${yen(quantity * product.price)}</strong>
+          <button class="primary-button full-button" data-action="buy-display-product" data-id="case" ${caseDisabled ? 'disabled' : ''}>購入する</button>
+        </div>
+      </article>`;
+    }
     return `<article class="product-row display-shop-row">
       <div class="product-main">
         <span class="material-chip" aria-hidden="true">${esc(product.symbol)}</span>
@@ -3213,9 +3322,9 @@ function renderDisplayShop() {
       <section class="scene-space"></section>
       <section class="action-panel glass-panel display-shop-panel">
         <div class="product-list">${productRows}</div>
-        <p class="small-note">購入は1回につき1個で、手続きに1時間かかります。購入後は店舗画面または店舗情報から設置できます。</p>
+        <p class="small-note">ショーケースとディスプレイ用品は1回につき1個、ケースは購入数を選択できます。手続きに1時間かかります。購入後は店舗画面または店舗情報から設置できます。</p>
       </section>
-    </div>`, { help: 'ショーケース、ディスプレイ用品、ケースを購入できます。購入した商品は店舗へ設置して使用します。' });
+    </div>`, { help: 'ショーケース、ディスプレイ用品、ケースを購入できます。ケースは▲▼のタップまたは長押しで購入数を調整できます。購入した商品は店舗へ設置して使用します。' });
 }
 
 function renderRealEstate() {
@@ -4047,7 +4156,6 @@ async function eatMeal(mealId) {
   const stateBeforeMeal = structuredClone(state);
   try {
     selectedMeal = mealId;
-    showToast('店内と料理を読み込んでいます…');
     await preloadMealAssets(mealId);
 
     // 店を決定して食事画面へ移る瞬間に支払いを確定する。
@@ -5592,20 +5700,24 @@ function buyDisplayProduct(productId) {
   if (!product) return;
   const availability = okachimachiFacilityAvailability('displayShop');
   if (!availability.open) return showToast(availability.reason, 'error');
+  const quantity = productId === 'case' ? displayCasePurchaseQuantity() : 1;
+  if (quantity < 1) return showToast('購入する数量を選択してください。', 'error');
   if (product.purchaseLimit) {
     const owned = Math.max(0, Number(state.store.displayInventory?.[productId]) || 0);
     const installed = productId === 'case' ? storeCaseRemaining(currentStoreBranch()) : 0;
-    if (owned + installed >= Number(product.purchaseLimit)) return showToast(`${product.name}は現在、未設置分と設置中を合わせて${product.purchaseLimit}個まで保有できます。`, 'error');
+    if (owned + installed + quantity > Number(product.purchaseLimit)) return showToast(`${product.name}は現在、未設置分と設置中を合わせて${product.purchaseLimit}個まで保有できます。`, 'error');
   }
-  if (state.game.money < product.price) return showToast('購入費が足りません。', 'error');
+  const totalPrice = product.price * quantity;
+  if (state.game.money < totalPrice) return showToast('購入費が足りません。', 'error');
   if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
-  state.game.money -= product.price;
-  startMoneyFeedback(-product.price);
+  state.game.money -= totalPrice;
+  startMoneyFeedback(-totalPrice);
   spendHours(1);
-  state.store.displayInventory[productId] = Math.max(0, Number(state.store.displayInventory[productId]) || 0) + 1;
-  addFinance(`${product.name}を購入`, 0, product.price);
+  state.store.displayInventory[productId] = Math.max(0, Number(state.store.displayInventory[productId]) || 0) + quantity;
+  addFinance(`${product.name}を${quantity}個購入`, 0, totalPrice);
+  if (productId === 'case') displayCasePurchaseDraft = 1;
   saveGame();
-  showToast(`${product.name}を購入しました。`);
+  showToast(`${product.name}を${quantity}個購入しました。`);
   render();
 }
 
@@ -6086,28 +6198,38 @@ async function executeAccountDeletion() {
 }
 
 root.addEventListener('pointerdown', (event) => {
-  const button = event.target.closest('[data-action="metal-qty-step"]');
-  if (!button || button.disabled) return;
-  startMetalQuantityHold(button);
+  const metalButton = event.target.closest('[data-action="metal-qty-step"]');
+  if (metalButton && !metalButton.disabled) {
+    startMetalQuantityHold(metalButton);
+    return;
+  }
+  const caseButton = event.target.closest('[data-action="display-case-qty-step"]');
+  if (caseButton && !caseButton.disabled) startDisplayCaseHold(caseButton);
 });
 
 root.addEventListener('pointerup', (event) => {
-  const button = event.target.closest('[data-action="metal-qty-step"]') || metalQuantityHoldButton;
-  if (button) finishMetalQuantityHold(button);
+  const metalButton = event.target.closest('[data-action="metal-qty-step"]') || metalQuantityHoldButton;
+  if (metalButton) finishMetalQuantityHold(metalButton);
+  const caseButton = event.target.closest('[data-action="display-case-qty-step"]') || displayCaseHoldButton;
+  if (caseButton) finishDisplayCaseHold(caseButton);
 });
 
 root.addEventListener('pointercancel', () => {
   clearMetalQuantityHold();
   metalQuantityHoldTriggered = false;
+  clearDisplayCaseHold();
+  displayCaseHoldTriggered = false;
 });
 
 root.addEventListener('contextmenu', (event) => {
-  if (event.target.closest('[data-action="metal-qty-step"]')) event.preventDefault();
+  if (event.target.closest('[data-action="metal-qty-step"], [data-action="display-case-qty-step"]')) event.preventDefault();
 });
 
 window.addEventListener('blur', () => {
   clearMetalQuantityHold();
   metalQuantityHoldTriggered = false;
+  clearDisplayCaseHold();
+  displayCaseHoldTriggered = false;
 });
 
 root.addEventListener('click', async (event) => {
@@ -6353,6 +6475,13 @@ root.addEventListener('click', async (event) => {
       adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
       break;
     case 'metal-qty-max': setMetalTradeQuantity(button.dataset.mode, button.dataset.id, metalTradeMaximum(button.dataset.mode, button.dataset.id)); syncMetalTradeCard(button.dataset.mode, button.dataset.id); break;
+    case 'display-case-qty-step':
+      if (button.dataset.skipNextClick === 'true') {
+        delete button.dataset.skipNextClick;
+        break;
+      }
+      adjustDisplayCasePurchaseQuantity(button.dataset.delta);
+      break;
     case 'buy-metal': buyMetal(button.dataset.id); break;
     case 'sell-metal': sellMetal(button.dataset.id); break;
     case 'loose-shop-tab': screenData = { tab: button.dataset.tab }; render(); break;
@@ -6517,6 +6646,12 @@ root.addEventListener('input', (event) => {
     const quantity = setMetalTradeQuantity(mode, id, target.value);
     target.value = String(quantity);
     syncMetalTradeCard(mode, id);
+    return;
+  }
+  if (target.matches('[data-display-case-quantity-input]')) {
+    const quantity = setDisplayCasePurchaseQuantity(target.value);
+    target.value = String(quantity);
+    syncDisplayCasePurchaseCard();
     return;
   }
   if (!target.matches('[data-setting]') || target.type !== 'range') return;

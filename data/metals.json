@@ -1,20 +1,20 @@
 {
   "schemaVersion": 4,
-  "status": "live",
+  "status": "fallback",
   "source": {
     "name": "Metals.Dev",
     "endpoint": "latest",
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-07-17T08:37:10.250Z",
-  "updatedAt": "2026-07-17T08:38:19Z",
-  "marketDateJst": "2026-07-17",
+  "marketTimestamp": null,
+  "updatedAt": null,
+  "marketDateJst": null,
   "previousMarketDateJst": null,
   "spotPerGram": {
-    "gold": 20834.9091,
-    "silver": 288.7604,
-    "platinum": 8261.4094
+    "gold": null,
+    "silver": null,
+    "platinum": null
   },
   "previousSpotPerGram": null,
   "changeFromPreviousDayPerGram": {
@@ -22,64 +22,53 @@
     "silver": null,
     "platinum": null
   },
-  "historyRetentionYears": 5,
-  "historyDaily": [
-    {
-      "date": "2026-07-17",
-      "spotPerGram": {
-        "gold": 20834.9091,
-        "silver": 288.7604,
-        "platinum": 8261.4094
-      }
-    }
-  ],
   "gamePricesPerGram": {
-    "K18": 17970,
-    "Pt900": 8550,
-    "SV925": 347
+    "K18": 2400,
+    "Pt900": 3600,
+    "SV925": 600
   },
   "gamePurchasePricesPerGram": {
-    "K18": 17970,
-    "Pt900": 8550,
-    "SV925": 347
+    "K18": 2400,
+    "Pt900": 3600,
+    "SV925": 600
   },
   "gameSellPricesPerGram": {
-    "K18": 15310,
-    "Pt900": 6990,
-    "SV925": 240
+    "K18": 2050,
+    "Pt900": 2940,
+    "SV925": 415
   },
   "gamePurchasePrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 17970
+      "price": 2400
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 8550
+      "price": 3600
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 347
+      "price": 600
     }
   },
   "gameSellPrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 15310
+      "price": 2050
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 6990
+      "price": 2940
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 240
+      "price": 415
     }
   },
   "calculation": {
@@ -104,5 +93,8 @@
       "sellMultiplier": 0.9,
       "roundingYenPerGram": 1
     }
-  }
+  },
+  "note": "GitHub Actionsの初回正常実行後に、純金・純プラチナ・純銀の現実相場、前日比、5年間の日次履歴、K18・Pt900・SV925の購入価格と売却価格へ置き換わります。",
+  "historyRetentionYears": 5,
+  "historyDaily": []
 }

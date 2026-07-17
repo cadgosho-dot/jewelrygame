@@ -1,15 +1,12 @@
 :root{
   color-scheme:dark;
-  --reference-width:360px;
-  --reference-height:800px;
-  --stage-scale:1;
-  --render-width:360px;
-  --render-height:800px;
 }
 *{box-sizing:border-box}
 html,body{
   width:100%;
   height:100%;
+  min-width:100%;
+  min-height:100%;
   margin:0;
   overflow:hidden;
   overscroll-behavior:none;
@@ -23,54 +20,56 @@ body{
 }
 #viewport-safe-area{
   position:fixed;
-  top:env(safe-area-inset-top,0px);
-  right:env(safe-area-inset-right,0px);
-  bottom:env(safe-area-inset-bottom,0px);
-  left:env(safe-area-inset-left,0px);
-  display:grid;
-  place-items:center;
+  inset:auto;
+  left:var(--jwj-viewport-left,0px);
+  top:var(--jwj-viewport-top,0px);
+  width:var(--jwj-viewport-width,100vw);
+  height:var(--jwj-viewport-height,100dvh);
+  padding:
+    env(safe-area-inset-top,0px)
+    env(safe-area-inset-right,0px)
+    env(safe-area-inset-bottom,0px)
+    env(safe-area-inset-left,0px);
   overflow:hidden;
   background:#090603;
 }
 /*
-  v0.10.15:
-  変形済みiframeのタップ座標がAndroidでずれる問題を避けるため、
-  transformではなくCSS zoomでゲーム画面を縮拡大する。
-  外枠は実際の表示サイズを持ち、iframe内部は常に360×800 / 800×360。
+  v0.10.137:
+  固定の360×800 / 800×360比率による縮小表示を廃止。
+  端末・ブラウザで実際に利用できる表示領域へiframeを直接広げる。
+  transform / zoomを使用しないため、Androidのタップ座標もずれない。
 */
 #device-stage{
   position:relative;
-  width:var(--render-width);
-  height:var(--render-height);
-  flex:none;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
   overflow:hidden;
   background:#090603;
-  contain:layout paint size;
 }
 #game-frame{
   position:absolute;
-  left:0;
-  top:0;
+  inset:0;
   display:block;
-  width:var(--reference-width);
-  height:var(--reference-height);
+  width:100%;
+  height:100%;
   margin:0;
   border:0;
   background:#090603;
-  zoom:var(--stage-scale);
   pointer-events:auto;
   touch-action:auto;
 }
-/* zoom非対応環境だけ従来方式へ戻す */
-@supports not (zoom:1){
-  #device-stage{
-    width:var(--reference-width);
-    height:var(--reference-height);
-    transform:scale(var(--stage-scale));
-    transform-origin:center center;
+
+
+/* v0.10.138: 横画面は実表示の縦高を基準にし、横幅は端末へ追従する。 */
+@media (orientation:landscape){
+  #viewport-safe-area{
+    width:var(--jwj-viewport-width,100vw);
+    height:var(--jwj-viewport-height,100dvh);
   }
-  #game-frame{zoom:1}
-}
-@media (prefers-reduced-motion:reduce){
-  #device-stage{transition:none}
+  #device-stage,#game-frame{
+    width:100%;
+    height:100%;
+  }
 }

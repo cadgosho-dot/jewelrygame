@@ -461,6 +461,10 @@ let metalMarket = {
   sellPerGramByMetalId: { ...METAL_MARKET_FALLBACK.sellPerGramByMetalId },
 };
 const metalTradeDraft = { buy: {}, sell: {} };
+let metalQuantityHoldTimeout = null;
+let metalQuantityHoldInterval = null;
+let metalQuantityHoldButton = null;
+let metalQuantityHoldTriggered = false;
 
 function validPositivePrice(value) {
   const price = Number(value);
@@ -940,6 +944,37 @@ function adjustMetalTradeQuantity(mode, id, delta) {
   const current = metalTradeQuantity(mode, id);
   setMetalTradeQuantity(mode, id, current + Number(delta || 0));
   syncMetalTradeCard(mode, id);
+}
+
+function clearMetalQuantityHold() {
+  if (metalQuantityHoldTimeout) window.clearTimeout(metalQuantityHoldTimeout);
+  if (metalQuantityHoldInterval) window.clearInterval(metalQuantityHoldInterval);
+  metalQuantityHoldTimeout = null;
+  metalQuantityHoldInterval = null;
+  metalQuantityHoldButton?.classList.remove('is-holding');
+  metalQuantityHoldButton = null;
+}
+
+function startMetalQuantityHold(button) {
+  clearMetalQuantityHold();
+  if (!button || button.disabled) return;
+  metalQuantityHoldButton = button;
+  metalQuantityHoldTriggered = false;
+  button.classList.add('is-holding');
+  metalQuantityHoldTimeout = window.setTimeout(() => {
+    metalQuantityHoldTriggered = true;
+    adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
+    metalQuantityHoldInterval = window.setInterval(() => {
+      adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
+    }, 110);
+  }, 420);
+}
+
+function finishMetalQuantityHold(button) {
+  const held = metalQuantityHoldButton === button && metalQuantityHoldTriggered;
+  clearMetalQuantityHold();
+  metalQuantityHoldTriggered = false;
+  if (held && button) button.dataset.skipNextClick = 'true';
 }
 
 const PHONE_GAME_URL = 'https://cadgosho-dot.github.io/glab-gem-game/g-lab-gem-game-github-pages/';
@@ -2173,6 +2208,10 @@ function backgroundAssetFor(target) {
 }
 
 function applyCurrentBackground() {
+  if (backgroundFor(screen) === 'phone') {
+    document.documentElement.style.setProperty('--screen-bg', 'none');
+    return;
+  }
   document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${backgroundAssetFor(screen)}.webp?v=${VERSION}')`);
 }
 
@@ -2225,7 +2264,7 @@ function header(title, { back = true, main = true, help = '' } = {}) {
   const currentDate = gameDate();
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
   const dateLabel = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
-  const weekdayLabel = `${weekdays[currentDate.getDay()]}曜日`;
+  const weekdayLabel = `（${weekdays[currentDate.getDay()]}）`;
   const playerLabel = state.playerName || '名前未設定';
   const storeLabel = state.store?.rented && state.store?.name ? state.store.name : '店名未設定';
   return `
@@ -2246,16 +2285,18 @@ function header(title, { back = true, main = true, help = '' } = {}) {
           </div>
         </div>
       </div>
-      <span class="header-money ${moneyFeedback ? `money-change-active money-${moneyFeedback.direction}` : ''}" aria-label="所持金">
-        <span class="header-money-value">${yen(moneyFeedback?.displayAmount ?? state.game.money)}</span>
-        ${moneyFeedback ? `<span class="header-money-change ${moneyFeedback.direction}">${moneyFeedback.delta > 0 ? '+' : '−'}${moneyFeedback.amount.toLocaleString('ja-JP')}円</span>` : ''}
-      </span>
+      <div class="header-money-area">
+        ${main ? '<button class="small-button header-main-button" data-action="main">メイン画面</button>' : ''}
+        <span class="header-money ${moneyFeedback ? `money-change-active money-${moneyFeedback.direction}` : ''}" aria-label="所持金">
+          <span class="header-money-value">${yen(moneyFeedback?.displayAmount ?? state.game.money)}</span>
+          ${moneyFeedback ? `<span class="header-money-change ${moneyFeedback.direction}">${moneyFeedback.delta > 0 ? '+' : '−'}${moneyFeedback.amount.toLocaleString('ja-JP')}円</span>` : ''}
+        </span>
+      </div>
       <div class="header-center">
         ${back ? '<button class="icon-button" data-action="back" aria-label="戻る">←</button>' : ''}
         ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
         <div class="header-actions">
           ${help ? `<button class="icon-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
-          ${main ? '<button class="small-button header-main-button" data-action="main">メイン画面</button>' : ''}
         </div>
       </div>
     </header>`;
@@ -2774,15 +2815,15 @@ function renderGlab() {
     const status = workshopToolCatalogStatus(tool);
     const locked = !toolOwned(tool.id) && !workshopToolUnlocked(tool);
     const owned = toolOwned(tool.id);
-    return `<div class="glab-simple-row ${locked ? 'locked' : ''} ${owned ? 'owned' : ''}">
-      <button class="tool-name-button" data-action="glab-tool-detail" data-id="${esc(tool.id)}">${esc(tool.name)}</button>
-      <div class="glab-row-status"><strong>${yen(tool.price)}</strong><span>${esc(status)}</span></div>
-    </div>`;
+    return `<button type="button" class="glab-simple-row ${locked ? 'locked' : ''} ${owned ? 'owned' : ''}" data-action="glab-tool-detail" data-id="${esc(tool.id)}">
+      <span class="glab-row-name">${esc(tool.name)}</span>
+      <span class="glab-row-status"><strong>${yen(tool.price)}</strong><span>${esc(status)}</span></span>
+    </button>`;
   };
-  const repairRow = (tool) => `<div class="glab-simple-row repair">
-    <button class="tool-name-button" data-action="glab-tool-detail" data-id="${esc(tool.id)}">${esc(tool.name)}</button>
+  const repairRow = (tool) => `<button type="button" class="glab-simple-row repair" data-action="glab-tool-detail" data-id="${esc(tool.id)}">
+    <span class="glab-row-name">${esc(tool.name)}</span>
     <strong>修理費 ${yen(workshopToolRepairPrice(tool.id))}</strong>
-  </div>`;
+  </button>`;
   return shell('g-Lab.', `
     <div class="split-layout">
       <section class="scene-space"></section>
@@ -2790,7 +2831,6 @@ function renderGlab() {
         ${repairTools.length ? `<section class="glab-catalog-group glab-repair-group"><h2>修理受付</h2><div class="glab-simple-list">${repairTools.map(repairRow).join('')}</div></section>` : ''}
         <section class="glab-catalog-group">
           <h2>工具・設備一覧（${catalogTools.length}種類）</h2>
-          <p class="small-note">登録済みの工具・設備をすべて表示しています。未解放品も名前と価格を確認できます。</p>
           ${catalogGroups.map((group) => `<section class="glab-level-group"><h3>工房レベル${group.level}</h3><div class="glab-simple-list">${group.tools.map(catalogRow).join('')}</div></section>`).join('')}
         </section>
         <div class="button-stack">
@@ -2798,7 +2838,7 @@ function renderGlab() {
           <button class="secondary-button full-button" data-action="glab-info">g-Lab.について</button>
         </div>
       </section>
-    </div>`, { help: '登録済みの工具・設備をすべて表示しています。名前を押すと詳細を確認でき、条件を満たした品は購入できます。' });
+    </div>`);
 }
 
 function renderToolBrief(tool, guideAction = 'glab-tool-guide') {
@@ -2998,10 +3038,11 @@ function renderSupplierMetals() {
         </div>
       </div>
       <div class="metal-quantity-area">
-        <label class="metal-quantity-input"><span>${mode === 'buy' ? '購入' : '売却'}重量</span><span class="metal-input-wrap"><input type="number" min="0" max="${maximum}" step="1" inputmode="numeric" pattern="[0-9]*" value="${quantity}" data-metal-trade-input data-mode="${mode}" data-id="${product.id}" aria-label="${esc(product.name)}の${mode === 'buy' ? '購入' : '売却'}重量"><b>g</b></span></label>
-        <div class="metal-step-buttons" aria-label="重量を増減">
-          ${[-100, -10, -1, 1, 10, 100].map((delta) => `<button type="button" class="secondary-button" data-action="metal-qty-adjust" data-mode="${mode}" data-id="${product.id}" data-delta="${delta}">${delta > 0 ? '+' : '−'}${Math.abs(delta)}</button>`).join('')}
-        </div>
+        <div class="metal-quantity-input"><span>${mode === 'buy' ? '購入' : '売却'}重量</span><span class="metal-vertical-stepper" aria-label="重量を増減">
+          <button type="button" class="metal-stepper-button metal-stepper-up" data-action="metal-qty-step" data-mode="${mode}" data-id="${product.id}" data-delta="1" aria-label="${esc(product.name)}を1g増やす。長押しで連続増加">▲</button>
+          <span class="metal-input-wrap"><input type="number" min="0" max="${maximum}" step="1" inputmode="numeric" pattern="[0-9]*" value="${quantity}" data-metal-trade-input data-mode="${mode}" data-id="${product.id}" aria-label="${esc(product.name)}の${mode === 'buy' ? '購入' : '売却'}重量"><b>g</b></span>
+          <button type="button" class="metal-stepper-button metal-stepper-down" data-action="metal-qty-step" data-mode="${mode}" data-id="${product.id}" data-delta="-1" aria-label="${esc(product.name)}を1g減らす。長押しで連続減少">▼</button>
+        </span></div>
         <button type="button" class="secondary-button full-button metal-max-button" data-action="metal-qty-max" data-mode="${mode}" data-id="${product.id}" ${maximum < 1 ? 'disabled' : ''}>${mode === 'buy' ? '購入可能な最大量' : '全部売る'}</button>
       </div>
       <div class="metal-trade-preview" data-metal-trade-preview>${metalTradePreviewMarkup(mode, product.id, quantity)}</div>
@@ -3029,7 +3070,7 @@ function renderSupplierMetals() {
       <section class="action-panel glass-panel">
         ${view === 'market' ? marketContent : tradeContent}
       </section>
-    </div>`, { help: '地金画面では純プラチナ・純金・純銀の現実相場を確認できます。詳細では月間・年間の履歴を最大5年間表示し、購入・売却は1g単位で行います。' });
+    </div>`, { help: '地金画面では純プラチナ・純金・純銀の現実相場を確認できます。詳細では月間・年間の履歴を最大5年間表示します。購入・売却重量は直接入力でき、入力欄の▲▼はタップで1g、長押しで連続増減します。' });
 }
 
 function renderSupplierRough() {
@@ -3071,12 +3112,11 @@ function renderLooseShop() {
   if (!selectedGem) {
     const gems = Object.values(GEMS).filter((gem) => !isSelling || looseTotalForGem(gem.id) > 0);
     const gemChoices = gems.map((gem) => {
-      const shapeCount = looseShapeIdsForGem(gem.id).length;
       const owned = looseTotalForGem(gem.id);
       const available = looseAvailableTotalForGem(gem.id);
       const status = isSelling
         ? `<small>所持：${owned}個・売却可能：${available}個</small>`
-        : `<small>${shapeCount}種類のカットから選択</small>`;
+        : '';
       return `<button type="button" class="loose-shop-gem-choice" data-action="select-loose-shop-gem" data-id="${esc(gem.id)}">
         ${looseVisual(gem.id, 'loose-shop-gem-image', '', defaultLooseShapeForGem(gem.id))}
         <span><strong>${esc(gem.name)}</strong>${status}</span>
@@ -3084,7 +3124,7 @@ function renderLooseShop() {
       </button>`;
     }).join('');
     shopContent = `<section class="loose-shop-gem-selection">
-      <header class="loose-shop-step-heading"><small>STEP 1</small><h2>石種を選択</h2><p>最初にルースの石種を選んでください。</p></header>
+      <header class="loose-shop-step-heading"><h2>石種を選択</h2></header>
       <div class="loose-shop-gem-grid">
         ${gemChoices || '<div class="empty-state sell-empty-state"><strong>売却できるルースはありません。</strong><p>所持しているルースがある場合、石種がここに表示されます。</p></div>'}
       </div>
@@ -3120,7 +3160,7 @@ function renderLooseShop() {
       <button type="button" class="secondary-button loose-shop-gem-back" data-action="loose-shop-gem-back">← 石種一覧へ戻る</button>
       <header class="loose-shop-step-heading loose-shop-selected-gem">
         ${looseVisual(selectedGem.id, 'loose-shop-selected-gem-image', '', defaultLooseShapeForGem(selectedGem.id))}
-        <div><small>STEP 2</small><h2>${esc(selectedGem.name)}のカットを選択</h2><p>${isSelling ? '売却するカットを選んでください。' : '購入するカットを選んでください。'}</p></div>
+        <div><h2>${esc(selectedGem.name)}のカットを選択</h2></div>
       </header>
       <div class="product-list loose-shop-cut-list">
         ${productRows || '<div class="empty-state sell-empty-state"><strong>この石種で売却できるルースはありません。</strong><p>別の石種を選択してください。</p></div>'}
@@ -3133,11 +3173,10 @@ function renderLooseShop() {
       <section class="scene-space"></section>
       <section class="action-panel glass-panel">
         <div class="tab-row loose-shop-tabs">
-          <button class="${tab === 'buy' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="buy">販売</button>
-          <button class="${tab === 'sell' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="sell">売却</button>
+          <button class="${tab === 'buy' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="buy">ルースを買う</button>
+          <button class="${tab === 'sell' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="sell">ルースを売る</button>
         </div>
         ${shopContent}
-        <p class="small-note">石種を選んだ後にカットを選択します。販売価格は石種の基準価格にカット倍率を掛け、100円単位で決定します。売却価格は販売価格の55％です。注文に使用予定のルースは売却できません。購入は1回1個、売却は1個または売却可能分の「全部売る」を選べ、どちらも1回の手続きに1時間かかります。</p>
       </section>
     </div>`);
 }
@@ -3520,8 +3559,6 @@ function renderLooseInventoryDetail() {
   const shapeId = normalizeLooseShape(gem.id, screenData.looseShape);
   const shape = LOOSE_SHAPES[shapeId];
   const metrics = looseInventoryMetrics(gem.id, shapeId);
-  const useNames = Object.values(ITEMS).map((item) => item.name).join('・');
-  const cutMultiplier = looseCutPriceMultiplier(gem.id, shapeId);
   const purchasePrice = loosePurchasePrice(gem.id, shapeId);
   const salePrice = looseSalePrice(gem.id, shapeId);
   return shell(`${gem.name}・${shape.name}`, `
@@ -3537,21 +3574,15 @@ function renderLooseInventoryDetail() {
       <dl class="loose-inventory-metrics">
         <div><dt>所持数</dt><dd>${metrics.owned}個</dd></div>
         <div><dt>注文に使用予定の数</dt><dd>${metrics.reserved}個</dd></div>
-        <div class="emphasis"><dt>実際に使用できる数</dt><dd>${metrics.available}個</dd></div>
-        <div><dt>石種の基準価格</dt><dd>${yen(gem.price)}</dd></div>
-        <div><dt>カット価格倍率</dt><dd>${cutMultiplier.toFixed(2)}倍</dd></div>
         <div><dt>ルース屋の販売価格</dt><dd>${yen(purchasePrice)}</dd></div>
-        <div><dt>ルース屋の売却率</dt><dd>販売価格の55％</dd></div>
         <div><dt>ルース屋の売却価格</dt><dd>${yen(salePrice)}</dd></div>
-        <div><dt>ジュエリー制作での使用先</dt><dd>${esc(useNames)}</dd></div>
       </dl>
-      <p class="small-note">販売価格は「${yen(gem.price)} × ${cutMultiplier.toFixed(2)}倍」を100円単位で丸めています。売却価格も販売価格の55％を100円単位で丸めています。</p>
       ${metrics.shortage > 0 ? `<p class="loose-reservation-warning">受注中の注文に必要なルースが${metrics.shortage}個不足しています。</p>` : metrics.reserved > 0 ? '<p class="loose-reservation-note">注文に使用予定のルースは、通常制作と売却には使用できません。</p>' : ''}
       <div class="button-stack loose-detail-actions">
         <button type="button" class="primary-button" data-action="nav" data-screen="looseShop">ルース屋へ</button>
         <button type="button" class="secondary-button" data-action="back">戻る</button>
       </div>
-    </section>`, { help: '石種とカットごとの所持数、注文使用予定数、使用可能数、基準価格、カット倍率、販売価格と売却価格の計算内訳を確認できます。' });
+    </section>`);
 }
 
 function metalInventoryMetrics(metalId) {
@@ -3670,20 +3701,32 @@ function renderStore() {
         <h1 class="store-name-title">${esc(displayName)}</h1>
         ${storeBranchOperating(branch) ? '' : `<section class="tool-break-alert"><strong>この店舗は休業中です</strong><span>未払い家賃 ${yen(branch.unpaidRent)}を収支画面から支払ってください。</span></section>`}
         ${storeBranchOperating(branch) && !businessOpen ? '<section class="tool-break-alert"><strong>本日の店舗営業は終了しました</strong><span>営業時間は9:00～19:00です。商品の陳列、販売価格の変更、注文確認は21:00まで行えます。</span></section>' : ''}
-        <div class="store-summary">
-          <div><small>店舗レベル</small><strong>Lv.${storeLevel(branch)}</strong></div>
-          <div><small>店舗評価</small><strong>${storeRating(branch)} / 100</strong></div>
-          <div><small>店舗実績</small><strong>${Math.max(0, Number(branch.points) || 0)}pt</strong></div>
-          <div><small>設備補正</small><strong>＋${storeDisplayLevelBonus(branch)}</strong></div>
-          <div><small>ケース残数</small><strong>${casesRemaining}/${storeMaximumCases()}個</strong></div>
-        </div>
-        <section class="store-customer-profile"><small>主な客層</small><strong>${esc(customerProfile.name)}</strong><span>${esc(customerProfile.description)}</span></section>
-        ${hasCraftedJewelry() ? '' : '<section class="visitor-box"><h2>接客はまだ利用できません。</h2><p>まず工房でジュエリーを1点制作してください。制作後からお客様が来店するようになります。</p><button class="secondary-button" data-action="nav" data-screen="workshop">工房へ</button></section>'}
-        ${activeVisitors.length ? `<section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>` : ''}
         <div class="store-showcase-heading"><h2>ショーケース</h2><small>${installedShowcaseCount(branch)}/${storeMaximumShowcases()}台・${storeShowcaseUsedSlots(branch)}/${storeShowcaseCapacity(branch)}点</small></div>
         ${installedShowcaseCount(branch) ? `<div class="showcase-units">${branchShowcases(branch).map((showcase, showcaseIndex) => renderShowcaseUnit(showcase, showcaseIndex, branch)).join('')}</div>` : '<section class="empty-state showcase-empty-state"><strong>ショーケースがありません。</strong><p>御徒町のディスプレイ屋でショーケースを購入し、店舗情報から設置してください。</p></section>'}
         ${available.length && emptySlots > 0 ? `<details class="available-items"><summary>商品を並べる</summary><div class="compact-list">${available.map((item) => `<button data-action="place-item" data-id="${item.id}"><span>${esc(item.name)}</span><small>${yen(item.recommendedPrice)}</small></button>`).join('')}</div></details>` : ''}
         ${available.length && emptySlots === 0 ? '<p class="small-note">商品を並べるには、空きのあるショーケースが必要です。</p>' : ''}
+        <section class="store-service-section">
+          <div class="section-heading"><h2>接客</h2></div>
+          <section class="store-customer-profile"><small>主な客層</small><strong>${esc(customerProfile.name)}</strong><span>${esc(customerProfile.description)}</span></section>
+          ${hasCraftedJewelry() ? '' : '<section class="visitor-box"><h2>接客はまだ利用できません。</h2><p>まず工房でジュエリーを1点制作してください。制作後からお客様が来店するようになります。</p><button class="secondary-button" data-action="nav" data-screen="workshop">工房へ</button></section>'}
+          ${activeVisitors.length ? `<section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>` : ''}
+        </section>
+        <section class="store-install-section storefront-equipment-section">
+          <div class="section-heading"><h2>店頭設備</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>
+          <article class="store-install-row"><div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}・未設置 ${displaySuppliesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button></article>
+          <article class="store-install-row"><div><strong>ケース</strong><small>残数 ${casesRemaining}/${storeMaximumCases()}個・未設置 ${casesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="case" ${canInstallCase ? '' : 'disabled'}>店頭に設置</button></article>
+          <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1されます。ケースは販売ごとに1個減ります。</p>
+        </section>
+        <section class="store-evaluation-section">
+          <div class="section-heading"><h2>評価</h2></div>
+          <div class="store-summary">
+            <div><small>店舗レベル</small><strong>Lv.${storeLevel(branch)}</strong></div>
+            <div><small>店舗評価</small><strong>${storeRating(branch)} / 100</strong></div>
+            <div><small>店舗実績</small><strong>${Math.max(0, Number(branch.points) || 0)}pt</strong></div>
+            <div><small>設備補正</small><strong>＋${storeDisplayLevelBonus(branch)}</strong></div>
+            <div><small>ケース残数</small><strong>${casesRemaining}/${storeMaximumCases()}個</strong></div>
+          </div>
+        </section>
         <div class="button-grid">
           <button class="secondary-button" data-action="nav" data-screen="inventory">完成品を見る</button>
           <button class="secondary-button" data-action="nav" data-screen="orders" ${activeOrderCount() > 0 ? '' : 'disabled'}>工房の注文書</button>
@@ -3691,12 +3734,6 @@ function renderStore() {
           ${state.store.expanded ? '<button class="secondary-button" data-action="nav" data-screen="employee">店員</button>' : ''}
         </div>
         ${canExpand ? '<p class="success-text">店舗を拡張できます。</p>' : ''}
-        <section class="store-install-section storefront-equipment-section">
-          <div class="section-heading"><h2>店頭設備</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>
-          <article class="store-install-row"><div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}・未設置 ${displaySuppliesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button></article>
-          <article class="store-install-row"><div><strong>ケース</strong><small>残数 ${casesRemaining}/${storeMaximumCases()}個・未設置 ${casesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="case" ${canInstallCase ? '' : 'disabled'}>店頭に設置</button></article>
-          <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1されます。ケースは販売ごとに1個減ります。</p>
-        </section>
       </section>
     </div>`, { help: 'ショーケース1台には完成品を5個まで並べられます。販売価格は商品ごとに直接設定でき、原価・おすすめ価格・予想利益を確認できます。ディスプレイ用品とケースは店頭へ設置でき、ケースは販売ごとに1個消費されます。' });
 }
@@ -3981,7 +4018,7 @@ function renderMeal() {
   return shell('食事', `
     <section class="meal-choice-panel glass-panel">
       <div class="meal-hunger-summary">
-        <div><small>現在の空腹度</small><strong>${current}／7</strong></div>
+        <div class="meal-current-hunger"><small>現在の空腹度</small><strong>${current}／7</strong></div>
         ${hungerPips(current)}
       </div>
       <div class="meal-choice-grid">
@@ -4020,11 +4057,11 @@ async function eatMeal(mealId) {
     saveGame();
     setScreen('meal', { mealId, eating: true }, false);
 
-    // 読み込み済みの店内と料理を、画面へ移動してから合計3秒間表示する。
+    // 読み込み済みの店内と料理を、画面へ移動してから合計2.5秒間表示する。
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     await wait(420);
     playSfx('eat');
-    await wait(2580);
+    await wait(2080);
 
     state.wellbeing.hunger = Math.min(7, before + meal.recovery);
     state.wellbeing.lastMeal = mealId;
@@ -4383,7 +4420,7 @@ function aiCurrentRules() {
       repairRule: '修理可能設備は工房から消えず、使用不能になる。g-Lab.で本体価格の60％を支払うと修理中になり、7日後の朝に使用可能へ戻って通知される。',
     },
     commerce: {
-      materialShop: '地金を1g単位で購入・売却でき、所持している原石も売却できる。地金は直接入力と±1g・±10g・±100gで数量を選び、全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
+      materialShop: '地金を1g単位で購入・売却でき、所持している原石も売却できる。地金は直接入力、または入力欄の▲▼で数量を選び、長押しすると連続で増減する。全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
       looseShop: 'ルース屋は最初に石種を選び、次にカットを選ぶ。ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。購入は1回1個、売却は1個または注文予約分を除いた売却可能数の全部売るを選べ、各手続きは1時間。',
       store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。販売価格はプレイヤーが直接設定し、原価・おすすめ価格・設定価格・予想利益を確認できる。おすすめ価格は標準品質が原価の2倍、良品が2.2倍、上質が2.5倍で、1,000円単位に丸める。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
     },
@@ -4760,9 +4797,9 @@ function renderDayResult() {
             <div><span>支出</span><strong>${yen(result.expense)}</strong></div>
           </div>
           <p class="goodnight">お疲れ様でした。<br>おやすみなさい...${esc(state.playerName || 'プレイヤー')}...</p>
-        </div>
-        <div class="day-result-actions">
-          <button class="primary-button full-button" data-action="next-day">次の日へ</button>
+          <div class="day-result-actions">
+            <button class="primary-button full-button" data-action="next-day">次の日へ</button>
+          </div>
         </div>
       </section>
     </main>`;
@@ -6048,6 +6085,31 @@ async function executeAccountDeletion() {
   }
 }
 
+root.addEventListener('pointerdown', (event) => {
+  const button = event.target.closest('[data-action="metal-qty-step"]');
+  if (!button || button.disabled) return;
+  startMetalQuantityHold(button);
+});
+
+root.addEventListener('pointerup', (event) => {
+  const button = event.target.closest('[data-action="metal-qty-step"]') || metalQuantityHoldButton;
+  if (button) finishMetalQuantityHold(button);
+});
+
+root.addEventListener('pointercancel', () => {
+  clearMetalQuantityHold();
+  metalQuantityHoldTriggered = false;
+});
+
+root.addEventListener('contextmenu', (event) => {
+  if (event.target.closest('[data-action="metal-qty-step"]')) event.preventDefault();
+});
+
+window.addEventListener('blur', () => {
+  clearMetalQuantityHold();
+  metalQuantityHoldTriggered = false;
+});
+
 root.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
@@ -6283,7 +6345,13 @@ root.addEventListener('click', async (event) => {
       render();
       break;
     }
-    case 'metal-qty-adjust': adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta); break;
+    case 'metal-qty-step':
+      if (button.dataset.skipNextClick === 'true') {
+        delete button.dataset.skipNextClick;
+        break;
+      }
+      adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
+      break;
     case 'metal-qty-max': setMetalTradeQuantity(button.dataset.mode, button.dataset.id, metalTradeMaximum(button.dataset.mode, button.dataset.id)); syncMetalTradeCard(button.dataset.mode, button.dataset.id); break;
     case 'buy-metal': buyMetal(button.dataset.id); break;
     case 'sell-metal': sellMetal(button.dataset.id); break;

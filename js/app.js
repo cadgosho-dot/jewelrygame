@@ -373,7 +373,7 @@ function looseVariantRows({ ownedOnly = false } = {}) {
   })).filter((entry) => !ownedOnly || entry.owned > 0);
 }
 
-const MEAL_FOOD_IMAGES = {
+const MEAL_FOOD_IMAGES = Object.freeze({
   convenience: './assets/images/foods/convenience.png',
   chinese: './assets/images/foods/chinese.png',
   korean: './assets/images/foods/korean.png',
@@ -382,11 +382,50 @@ const MEAL_FOOD_IMAGES = {
   ramen: './assets/images/foods/ramen.png',
   soba: './assets/images/foods/soba.png',
   hamburger: './assets/images/foods/hamburger.png',
-};
+});
+
+const imagePreloadCache = new Map();
+
+function isPortraitLayout() {
+  return window.innerHeight >= window.innerWidth;
+}
+
+function versionedAsset(path) {
+  return path ? `${path}?v=${VERSION}` : '';
+}
 
 function mealFoodImage(mealId) {
-  return MEAL_FOOD_IMAGES[mealId] || '';
+  return versionedAsset(MEAL_FOOD_IMAGES[mealId] || '');
 }
+
+function mealBackgroundImage(mealId) {
+  if (!MEALS[mealId]) return '';
+  return versionedAsset(`./assets/images/meal-${mealId}${isPortraitLayout() ? '-portrait' : ''}.webp`);
+}
+
+function preloadImage(src) {
+  if (!src) return Promise.resolve(false);
+  if (imagePreloadCache.has(src)) return imagePreloadCache.get(src);
+  const promise = new Promise((resolve) => {
+    const image = new Image();
+    image.onload = async () => {
+      try { await image.decode?.(); } catch (_) {}
+      resolve(true);
+    };
+    image.onerror = () => resolve(false);
+    image.src = src;
+  });
+  imagePreloadCache.set(src, promise);
+  return promise;
+}
+
+async function preloadMealAssets(mealId) {
+  return Promise.all([
+    preloadImage(mealBackgroundImage(mealId)),
+    preloadImage(mealFoodImage(mealId)),
+  ]);
+}
+
 
 const METAL_MARKET_FALLBACK = Object.freeze({
   status: 'fallback',
@@ -615,8 +654,8 @@ function metalSpotDifferenceMarkup(id) {
 
 function metalSpotMarketMarkup() {
   const rows = [
-    { id: 'gold', label: '純金' },
     { id: 'platinum', label: '純プラチナ' },
+    { id: 'gold', label: '純金' },
     { id: 'silver', label: '純銀' },
   ];
   const marketDate = metalMarketDateLabel(metalMarket.marketDateJst)
@@ -645,8 +684,8 @@ function metalSpotMarketMarkup() {
 
 
 const METAL_HISTORY_SERIES = Object.freeze([
-  { id: 'gold', label: 'ゴールド（純金）', color: '#f39a2f' },
   { id: 'platinum', label: 'プラチナ（純プラチナ）', color: '#c7ccd3' },
+  { id: 'gold', label: 'ゴールド（純金）', color: '#f39a2f' },
   { id: 'silver', label: 'シルバー（純銀）', color: '#4aa3ff' },
 ]);
 
@@ -810,10 +849,10 @@ function renderSupplierMetalHistory() {
           </div>
           <button type="button" class="secondary-button metal-history-range-button" data-action="metal-history-range" data-range="${range === 'year' ? 'month' : 'year'}">${range === 'year' ? '月間' : '年間'}</button>
         </div>
-        <p class="metal-history-note">${range === 'year' ? '年間表示は、記録された各月の平均価格です。' : 'GitHub Actionsが記録した実際の日付の相場を表示します。市場休場日など、更新記録がない日は点を表示しません。'}</p>
         <div class="metal-history-chart-stack">
           ${METAL_HISTORY_SERIES.map((series) => metalHistoryChartCard(rows, series, xMaximum, xTicks, labelForRow, averageMode)).join('')}
         </div>
+        <p class="metal-history-note">${range === 'year' ? '年間表示は、記録された各月の平均価格です。' : 'GitHub Actionsが記録した実際の日付の相場を表示します。市場休場日など、更新記録がない日は点を表示しません。'}</p>
         <button type="button" class="primary-button full-button metal-history-close" data-action="metal-history-close">閉じる</button>
       </section>
     </div>`, { help: '地金相場の履歴を実際の年月日で表示します。月間は日ごと、年間は月ごとの平均価格です。履歴は最大5年間保持します。' });
@@ -1822,6 +1861,29 @@ function workshopToolUnlocked(toolOrId) {
   return Boolean(tool && (tool.initiallyAvailable || workshopToolUnlockConditionsMet(tool)));
 }
 
+function workshopToolCatalogVisible(tool) {
+  return Boolean(tool && Number(tool.price) > 0 && (tool.initiallyAvailable || tool.unlock?.enabled));
+}
+
+function workshopToolUnlockLevel(tool) {
+  if (!tool || tool.initiallyAvailable) return 1;
+  return Math.max(1, Number(tool.unlock?.minWorkshopLevel) || 1);
+}
+
+function workshopToolUnlockText(tool) {
+  if (workshopToolUnlocked(tool)) return '購入可能';
+  const level = workshopToolUnlockLevel(tool);
+  return level > 1 ? `工房レベル${level}で購入可能` : '条件達成後に購入可能';
+}
+
+function workshopToolCatalogStatus(tool) {
+  const record = workshopToolRecord(tool.id);
+  if (record?.status === 'repairing') return '修理中';
+  if (record?.status === 'unusable') return tool.repairable ? '故障中・修理受付中' : '故障中・新品購入が必要';
+  if (record) return '購入済み';
+  return workshopToolUnlockText(tool);
+}
+
 function workshopToolRepairPrice(toolId) {
   const price = Number(WORKSHOP_TOOLS[toolId]?.price || 0);
   return Math.max(1000, Math.round((price * 0.60) / 1000) * 1000);
@@ -2089,7 +2151,7 @@ async function beginNextDay() {
 function backgroundFor(target) {
   const map = {
     loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', mining: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'workshop', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'okachimachi', supplierMetals: 'okachimachi', supplierMetalHistory: 'okachimachi', supplierRough: 'okachimachi', looseShop: 'okachimachi', looseInventoryDetail: 'workshop', realEstate: 'okachimachi',
+    craft: 'workshop', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'okachimachi', supplierMetals: 'okachimachi', supplierMetalHistory: 'okachimachi', supplierRough: 'okachimachi', looseShop: 'okachimachi', looseInventoryDetail: 'workshop', realEstate: 'okachimachi',
     store: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', meal: 'meal', settings: 'main', settingsTitle: 'main', dayResult: 'sleep',
   };
@@ -2099,7 +2161,7 @@ function backgroundFor(target) {
 
 function backgroundAssetFor(target) {
   const base = backgroundFor(target);
-  const portrait = window.matchMedia('(orientation: portrait), (max-width: 820px)').matches;
+  const portrait = isPortraitLayout();
   if (base === 'meal') {
     const mealId = screenData?.mealId;
     if (mealId && MEALS[mealId]) return `meal-${mealId}${portrait ? '-portrait' : ''}`;
@@ -2162,7 +2224,7 @@ function header(title, { back = true, main = true, help = '' } = {}) {
   const isMainMenu = !title && !back && !main;
   const currentDate = gameDate();
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-  const dateLabel = `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
+  const dateLabel = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日`;
   const weekdayLabel = `${weekdays[currentDate.getDay()]}曜日`;
   const playerLabel = state.playerName || '名前未設定';
   const storeLabel = state.store?.rented && state.store?.name ? state.store.name : '店名未設定';
@@ -2193,7 +2255,7 @@ function header(title, { back = true, main = true, help = '' } = {}) {
         ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
         <div class="header-actions">
           ${help ? `<button class="icon-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
-          ${main ? '<button class="small-button" data-action="main">メイン画面</button>' : ''}
+          ${main ? '<button class="small-button header-main-button" data-action="main">メイン画面</button>' : ''}
         </div>
       </div>
     </header>`;
@@ -2257,6 +2319,8 @@ function render() {
       polishing: renderPolishing,
       completion: renderCompletion,
       inventory: renderInventory,
+      workshopTool: renderWorkshopToolDetail,
+      workshopToolGuide: renderWorkshopToolGuide,
       metalInventoryDetail: renderMetalInventoryDetail,
       metalProfessionalGuide: renderMetalProfessionalGuide,
       glab: renderGlab,
@@ -2695,15 +2759,26 @@ function renderMiningResult() {
 }
 
 function renderGlab() {
-  const saleTools = Object.values(WORKSHOP_TOOLS).filter((tool) => workshopToolUnlocked(tool) && !toolOwned(tool.id));
+  const catalogTools = Object.values(WORKSHOP_TOOLS)
+    .filter(workshopToolCatalogVisible)
+    .sort((a, b) => workshopToolUnlockLevel(a) - workshopToolUnlockLevel(b));
+  const catalogGroups = [...new Set(catalogTools.map(workshopToolUnlockLevel))].map((level) => ({
+    level,
+    tools: catalogTools.filter((tool) => workshopToolUnlockLevel(tool) === level),
+  }));
   const repairTools = Object.values(WORKSHOP_TOOLS).filter((tool) => {
     const record = workshopToolRecord(tool.id);
     return Boolean(tool.repairable && record && record.status === 'unusable');
   });
-  const saleRow = (tool) => `<div class="glab-simple-row">
-    <button class="tool-name-button" data-action="glab-tool-detail" data-id="${esc(tool.id)}">${esc(tool.name)}</button>
-    <strong>${yen(tool.price)}</strong>
-  </div>`;
+  const catalogRow = (tool) => {
+    const status = workshopToolCatalogStatus(tool);
+    const locked = !toolOwned(tool.id) && !workshopToolUnlocked(tool);
+    const owned = toolOwned(tool.id);
+    return `<div class="glab-simple-row ${locked ? 'locked' : ''} ${owned ? 'owned' : ''}">
+      <button class="tool-name-button" data-action="glab-tool-detail" data-id="${esc(tool.id)}">${esc(tool.name)}</button>
+      <div class="glab-row-status"><strong>${yen(tool.price)}</strong><span>${esc(status)}</span></div>
+    </div>`;
+  };
   const repairRow = (tool) => `<div class="glab-simple-row repair">
     <button class="tool-name-button" data-action="glab-tool-detail" data-id="${esc(tool.id)}">${esc(tool.name)}</button>
     <strong>修理費 ${yen(workshopToolRepairPrice(tool.id))}</strong>
@@ -2714,26 +2789,26 @@ function renderGlab() {
       <section class="action-panel glass-panel glab-catalog-panel">
         ${repairTools.length ? `<section class="glab-catalog-group glab-repair-group"><h2>修理受付</h2><div class="glab-simple-list">${repairTools.map(repairRow).join('')}</div></section>` : ''}
         <section class="glab-catalog-group">
-          ${saleTools.length
-            ? `<h2>購入できる工具・設備</h2><div class="glab-simple-list">${saleTools.map(saleRow).join('')}</div>`
-            : '<div class="empty-state"><strong>現在必要な工具・設備はありません</strong></div>'}
+          <h2>工具・設備一覧（${catalogTools.length}種類）</h2>
+          <p class="small-note">登録済みの工具・設備をすべて表示しています。未解放品も名前と価格を確認できます。</p>
+          ${catalogGroups.map((group) => `<section class="glab-level-group"><h3>工房レベル${group.level}</h3><div class="glab-simple-list">${group.tools.map(catalogRow).join('')}</div></section>`).join('')}
         </section>
         <div class="button-stack">
           <button class="primary-button full-button" data-action="nav" data-screen="workshop">工房へ</button>
           <button class="secondary-button full-button" data-action="glab-info">g-Lab.について</button>
         </div>
       </section>
-    </div>`, { help: '工具・設備の名前を押すと詳細を確認できます。購入や修理の手続きは詳細画面で行います。' });
+    </div>`, { help: '登録済みの工具・設備をすべて表示しています。名前を押すと詳細を確認でき、条件を満たした品は購入できます。' });
 }
 
-function renderToolBrief(tool) {
+function renderToolBrief(tool, guideAction = 'glab-tool-guide') {
   const description = String(tool?.description || '').trim();
   const detail = String(tool?.detail || '').trim();
   return `<section class="tool-brief-card">
     ${description ? `<p>${esc(description)}</p>` : ''}
     ${detail && detail !== description ? `<p class="tool-brief-sub">${esc(detail)}</p>` : ''}
     <div class="tool-brief-actions">
-      <button class="secondary-button tool-inline-guide-button" data-action="glab-tool-guide" data-id="${esc(tool.id)}">詳細</button>
+      <button class="secondary-button tool-inline-guide-button" data-action="${esc(guideAction)}" data-id="${esc(tool.id)}">詳しい説明を見る</button>
     </div>
   </section>`;
 }
@@ -2752,6 +2827,48 @@ function renderToolLearningGuide(tool) {
   </article>`;
 }
 
+function renderWorkshopToolDetail() {
+  const tool = WORKSHOP_TOOLS[screenData.toolId];
+  const record = workshopToolRecord(screenData.toolId);
+  if (!tool || !record) return shell('工具・設備', '<section class="center-card glass-panel"><p>所持している工具・設備の情報を確認できません。</p></section>');
+
+  const status = workshopToolStatusText(tool.id, record);
+  const repairNote = record.status === 'unusable'
+    ? (tool.repairable ? '<p class="small-note">この工具・設備はg-Lab.で修理を依頼できます。</p>' : '<p class="small-note">この工具は修理できないため、g-Lab.で新品を購入してください。</p>')
+    : record.status === 'repairing'
+      ? '<p class="small-note">修理完了日になると自動的に使用可能へ戻ります。</p>'
+      : '<p class="small-note">現在、工房作業に使用できます。</p>';
+
+  return shell(tool.name, `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel glab-tool-detail-page workshop-owned-tool-detail-page">
+        <img src="./assets/images/tools/placeholder.svg?v=${VERSION}" alt="${esc(tool.name)}の工具・設備画像">
+        ${renderToolBrief(tool, 'workshop-tool-guide')}
+        <div class="tool-detail-meta">
+          <span>${esc(tool.type)}</span>
+          <span>工房評価 ＋${tool.qualityPoints}</span>
+          <span>${esc(status)}</span>
+        </div>
+        ${repairNote}
+        ${record.status === 'unusable' || record.status === 'repairing'
+          ? `<button class="secondary-button full-button" data-action="owned-tool-glab-detail" data-id="${esc(tool.id)}">g-Lab.の受付を確認する</button>`
+          : ''}
+      </section>
+    </div>`, { help: '工房で所持している工具・設備の用途、工房評価、現在状態、詳しい使い方を確認できます。' });
+}
+
+function renderWorkshopToolGuide() {
+  const tool = WORKSHOP_TOOLS[screenData.toolId];
+  const record = workshopToolRecord(screenData.toolId);
+  if (!tool || !record) return shell('工具・設備の詳細', '<section class="center-card glass-panel"><p>詳細情報を確認できません。</p></section>');
+  return shell(`${tool.name}の詳しい説明`, `
+    <section class="glass-panel glab-tool-guide-page workshop-tool-guide-page">
+      <img src="./assets/images/tools/placeholder.svg?v=${VERSION}" alt="${esc(tool.name)}の工具・設備画像">
+      ${renderToolLearningGuide(tool)}
+    </section>`, { main: false });
+}
+
 function renderGlabToolDetail() {
   const tool = WORKSHOP_TOOLS[screenData.toolId];
   if (!tool) return shell('工具・設備', '<section class="center-card glass-panel"><p>商品情報を確認できません。</p></section>');
@@ -2761,12 +2878,14 @@ function renderGlabToolDetail() {
   let actionArea = '';
 
   if (!record) {
+    const unlocked = workshopToolUnlocked(tool);
     const shortage = Math.max(0, tool.price - state.game.money);
     actionArea = `
       <div class="glab-detail-price"><span>価格</span><strong>${yen(tool.price)}</strong></div>
-      ${shortage > 0 ? `<div class="glab-funds-shortage"><span>購入するには、所持金が</span><strong>${yen(shortage)}不足しています</strong></div>` : ''}
-      <button class="primary-button full-button" data-action="buy-workshop-tool" data-id="${esc(tool.id)}" ${affordable && hasTime ? '' : 'disabled'}>購入する</button>
-      ${hasTime ? '' : '<p class="error-text">今日は購入手続きをする時間がありません。</p>'}`;
+      ${unlocked && shortage > 0 ? `<div class="glab-funds-shortage"><span>購入するには、所持金が</span><strong>${yen(shortage)}不足しています</strong></div>` : ''}
+      ${unlocked ? '' : `<div class="glab-unlock-message"><strong>未解放</strong><span>${esc(workshopToolUnlockText(tool))}</span></div>`}
+      <button class="primary-button full-button" data-action="buy-workshop-tool" data-id="${esc(tool.id)}" ${unlocked && affordable && hasTime ? '' : 'disabled'}>${unlocked ? '購入する' : workshopToolUnlockText(tool)}</button>
+      ${unlocked && !hasTime ? '<p class="error-text">今日は購入手続きをする時間がありません。</p>' : ''}`;
   } else if (record.status === 'unusable' && tool.repairable) {
     const repairPrice = workshopToolRepairPrice(tool.id);
     const repairAffordable = state.game.money >= repairPrice;
@@ -2854,9 +2973,10 @@ function renderSupplierMetals() {
       : 'market';
   const view = ['market', 'buy', 'sell'].includes(normalizedView) ? normalizedView : 'market';
   const mode = view === 'sell' ? 'sell' : 'buy';
+  const orderedMetals = METAL_WORKSHOP_ORDER.map((id) => METALS[id]).filter(Boolean);
   const products = view === 'sell'
-    ? Object.values(METALS).filter((product) => metalOwnedWeight(product.id) > 0)
-    : Object.values(METALS);
+    ? orderedMetals.filter((product) => metalOwnedWeight(product.id) > 0)
+    : orderedMetals;
   const productRows = view === 'market' ? '' : products.map((product) => {
     const owned = metalOwnedWeight(product.id);
     const reserved = metalReservedWeight(product.id);
@@ -2909,7 +3029,7 @@ function renderSupplierMetals() {
       <section class="action-panel glass-panel">
         ${view === 'market' ? marketContent : tradeContent}
       </section>
-    </div>`, { help: '地金画面では純金・純プラチナ・純銀の現実相場を確認できます。詳細では月間・年間の履歴を最大5年間表示し、購入・売却は1g単位で行います。' });
+    </div>`, { help: '地金画面では純プラチナ・純金・純銀の現実相場を確認できます。詳細では月間・年間の履歴を最大5年間表示し、購入・売却は1g単位で行います。' });
 }
 
 function renderSupplierRough() {
@@ -2945,39 +3065,69 @@ function renderLooseShop() {
   const requestedTab = screenData.tab || 'buy';
   const tab = ['buy', 'sell'].includes(requestedTab) ? requestedTab : 'buy';
   const isSelling = tab === 'sell';
-  const variants = looseVariantRows({ ownedOnly: isSelling });
-  const groups = Object.values(GEMS).map((gem) => ({
-    gem,
-    rows: variants.filter((entry) => entry.gem.id === gem.id),
-  })).filter((group) => group.rows.length);
-  const productRows = groups.map(({ gem, rows }) => `<section class="loose-shop-gem-group">
-    <h2>${esc(gem.name)}</h2>
-    <div class="product-list">${rows.map(({ shapeId, shape, owned, reserved, available }) => {
-      const purchasePrice = loosePurchasePrice(gem.id, shapeId);
-      const salePrice = looseSalePrice(gem.id, shapeId);
-      const detailButton = `<button class="secondary-button" data-action="open-loose-detail" data-id="${gem.id}" data-shape="${shapeId}">詳細</button>`;
+  const selectedGem = GEMS[screenData.gemId] || null;
+
+  let shopContent = '';
+  if (!selectedGem) {
+    const gems = Object.values(GEMS).filter((gem) => !isSelling || looseTotalForGem(gem.id) > 0);
+    const gemChoices = gems.map((gem) => {
+      const shapeCount = looseShapeIdsForGem(gem.id).length;
+      const owned = looseTotalForGem(gem.id);
+      const available = looseAvailableTotalForGem(gem.id);
+      const status = isSelling
+        ? `<small>所持：${owned}個・売却可能：${available}個</small>`
+        : `<small>${shapeCount}種類のカットから選択</small>`;
+      return `<button type="button" class="loose-shop-gem-choice" data-action="select-loose-shop-gem" data-id="${esc(gem.id)}">
+        ${looseVisual(gem.id, 'loose-shop-gem-image', '', defaultLooseShapeForGem(gem.id))}
+        <span><strong>${esc(gem.name)}</strong>${status}</span>
+        <i aria-hidden="true">›</i>
+      </button>`;
+    }).join('');
+    shopContent = `<section class="loose-shop-gem-selection">
+      <header class="loose-shop-step-heading"><small>STEP 1</small><h2>石種を選択</h2><p>最初にルースの石種を選んでください。</p></header>
+      <div class="loose-shop-gem-grid">
+        ${gemChoices || '<div class="empty-state sell-empty-state"><strong>売却できるルースはありません。</strong><p>所持しているルースがある場合、石種がここに表示されます。</p></div>'}
+      </div>
+    </section>`;
+  } else {
+    const rows = looseVariantRows({ ownedOnly: isSelling }).filter((entry) => entry.gem.id === selectedGem.id);
+    const productRows = rows.map(({ shapeId, shape, owned, reserved, available }) => {
+      const purchasePrice = loosePurchasePrice(selectedGem.id, shapeId);
+      const salePrice = looseSalePrice(selectedGem.id, shapeId);
+      const detailButton = `<button class="secondary-button" data-action="open-loose-detail" data-id="${selectedGem.id}" data-shape="${shapeId}">詳細</button>`;
       if (isSelling) {
         const disabled = available < 1 || !canSpendHours(1);
         return `<article class="product-row loose-shop-product-row">
           <div class="product-main">
-            ${looseVisual(gem.id, 'loose-inline', '', shapeId)}
-            <div><strong>${esc(gem.name)}・${esc(shape.name)}</strong><small>所持：${owned}個</small><small>注文予定：${reserved}個・売却可能：${available}個</small></div>
+            ${looseVisual(selectedGem.id, 'loose-inline', '', shapeId)}
+            <div><strong>${esc(shape.name)}</strong><small>所持：${owned}個</small><small>注文予定：${reserved}個・売却可能：${available}個</small></div>
           </div>
-          <strong>${yen(salePrice)}</strong>
-          <div class="loose-shop-actions">${detailButton}<button class="primary-button" data-action="sell-loose" data-id="${gem.id}" data-shape="${shapeId}" ${disabled ? 'disabled' : ''}>1個売る</button></div>
+          <strong>${yen(salePrice)}／個</strong>
+          <div class="loose-shop-actions">${detailButton}<button class="primary-button" data-action="sell-loose" data-id="${selectedGem.id}" data-shape="${shapeId}" ${disabled ? 'disabled' : ''}>1個売る</button><button class="secondary-button" data-action="sell-all-loose" data-id="${selectedGem.id}" data-shape="${shapeId}" ${disabled ? 'disabled' : ''}>全部売る</button></div>
         </article>`;
       }
       const disabled = state.game.money < purchasePrice || !canSpendHours(1);
       return `<article class="product-row loose-shop-product-row">
         <div class="product-main">
-          ${looseVisual(gem.id, 'loose-inline', '', shapeId)}
-          <div><strong>${esc(gem.name)}・${esc(shape.name)}</strong><small>所持：${owned}個</small>${reserved > 0 ? `<small>注文予定：${reserved}個・使用可能：${available}個</small>` : ''}</div>
+          ${looseVisual(selectedGem.id, 'loose-inline', '', shapeId)}
+          <div><strong>${esc(shape.name)}</strong><small>所持：${owned}個</small>${reserved > 0 ? `<small>注文予定：${reserved}個・使用可能：${available}個</small>` : ''}</div>
         </div>
         <strong>${yen(purchasePrice)}</strong>
-        <div class="loose-shop-actions">${detailButton}<button class="primary-button" data-action="purchase" data-kind="loose" data-id="${gem.id}" data-shape="${shapeId}" ${disabled ? 'disabled' : ''}>購入する</button></div>
+        <div class="loose-shop-actions">${detailButton}<button class="primary-button" data-action="purchase" data-kind="loose" data-id="${selectedGem.id}" data-shape="${shapeId}" ${disabled ? 'disabled' : ''}>購入する</button></div>
       </article>`;
-    }).join('')}</div>
-  </section>`).join('');
+    }).join('');
+    shopContent = `<section class="loose-shop-cut-selection">
+      <button type="button" class="secondary-button loose-shop-gem-back" data-action="loose-shop-gem-back">← 石種一覧へ戻る</button>
+      <header class="loose-shop-step-heading loose-shop-selected-gem">
+        ${looseVisual(selectedGem.id, 'loose-shop-selected-gem-image', '', defaultLooseShapeForGem(selectedGem.id))}
+        <div><small>STEP 2</small><h2>${esc(selectedGem.name)}のカットを選択</h2><p>${isSelling ? '売却するカットを選んでください。' : '購入するカットを選んでください。'}</p></div>
+      </header>
+      <div class="product-list loose-shop-cut-list">
+        ${productRows || '<div class="empty-state sell-empty-state"><strong>この石種で売却できるルースはありません。</strong><p>別の石種を選択してください。</p></div>'}
+      </div>
+    </section>`;
+  }
+
   return shell('ルース屋', `
     <div class="split-layout">
       <section class="scene-space"></section>
@@ -2986,10 +3136,8 @@ function renderLooseShop() {
           <button class="${tab === 'buy' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="buy">販売</button>
           <button class="${tab === 'sell' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="sell">売却</button>
         </div>
-        <div class="loose-shop-groups">
-          ${productRows || '<div class="empty-state sell-empty-state"><strong>売却できるルースはありません。</strong><p>所持数が1個以上ある石種・カットだけ表示されます。</p></div>'}
-        </div>
-        <p class="small-note">石種の基準価格にカット倍率を掛け、100円単位で価格を決定します。売却価格は販売価格の55％です。注文に使用予定のルースは売却できません。購入・売却は1回につき1個で、手続きに1時間かかります。</p>
+        ${shopContent}
+        <p class="small-note">石種を選んだ後にカットを選択します。販売価格は石種の基準価格にカット倍率を掛け、100円単位で決定します。売却価格は販売価格の55％です。注文に使用予定のルースは売却できません。購入は1回1個、売却は1個または売却可能分の「全部売る」を選べ、どちらも1回の手続きに1時間かかります。</p>
       </section>
     </div>`);
 }
@@ -3101,13 +3249,8 @@ function renderWorkshop() {
           <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="finished"><small>完成品</small><strong>${stored}/${state.inventory.capacity}</strong></button>
           <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="equipment"><small>工具・設備</small><strong>${equipmentTotal}点</strong></button>
         </div>
-        <article class="summary-card workshop-level-card"><h2>工房レベル ${workshopLevel()}</h2><p>${workshopLevel() >= 10 ? '工房は最大レベルです。' : `次の拡張費：${yen(workshopExpansionCost())}`}</p>${workshopLevel() >= 10 ? '' : `<button class="secondary-button full-button" data-action="confirm-workshop-expansion" ${state.game.money >= workshopExpansionCost() ? '' : 'disabled'}>工房を拡張する</button>`}</article>
         ${workshopOperating() ? '' : `<section class="tool-break-alert"><strong>工房は作業停止中です</strong><span>未払いの工房維持費 ${yen(state.business.workshopUnpaid)}を収支画面から支払ってください。</span></section>`}
         <div class="button-stack workshop-menu">
-          <div class="workshop-menu-item">
-            <button class="primary-button large-button" data-action="nav" data-screen="polishing" ${workshopOperating() && toolUsable('polishingMachine') ? '' : 'disabled'}>原石研磨</button>
-            ${toolUsable('polishingMachine') ? '' : `<p class="small-note workshop-requirement-note">${toolOwned('polishingMachine') ? `研磨機は${workshopToolStatusText('polishingMachine')}です。修理完了まで原石研磨はできません。` : '原石研磨には、御徒町のg-Lab.で購入できる研磨機が必要です。'}</p>`}
-          </div>
           <div class="workshop-menu-item">
             <button class="primary-button large-button" data-action="open-craft" ${workshopOperating() && toolUsable('jewelryBench') ? '' : 'disabled'}>ジュエリー作成</button>
             ${toolUsable('jewelryBench') ? '' : '<p class="small-note workshop-requirement-note">ジュエリー作成には、御徒町のg-Lab.で購入できる彫金机が必要です。</p>'}
@@ -3116,9 +3259,18 @@ function renderWorkshop() {
             <button class="primary-button large-button order-sheet-menu-button" data-action="nav" data-screen="orders" ${activeOrders > 0 ? '' : 'disabled'}>注文書${activeOrders > 0 ? `（${activeOrders}件）` : ''}</button>
             ${activeOrders > 0 ? '' : '<p class="small-note workshop-requirement-note">現在の注文がないため、注文書は選択できません。</p>'}
           </div>
+          <div class="workshop-menu-item">
+            <button class="primary-button large-button" data-action="nav" data-screen="polishing" ${workshopOperating() && toolUsable('polishingMachine') ? '' : 'disabled'}>原石研磨</button>
+            ${toolUsable('polishingMachine') ? '' : `<p class="small-note workshop-requirement-note">${toolOwned('polishingMachine') ? `宝石研磨用平面研磨盤は${workshopToolStatusText('polishingMachine')}です。修理完了まで原石研磨はできません。` : '原石研磨には、御徒町のg-Lab.で購入できる宝石研磨用平面研磨盤が必要です。'}</p>`}
+          </div>
         </div>
+        <article class="summary-card workshop-level-card workshop-level-bottom-card">
+          <h2>工房レベル ${workshopLevel()}</h2>
+          <p>${workshopLevel() >= 10 ? '工房は最大レベルです。' : `次の拡張費：${yen(workshopExpansionCost())}`}</p>
+        </article>
+        ${workshopLevel() >= 10 ? '' : `<button class="secondary-button full-button workshop-expansion-bottom-button" data-action="confirm-workshop-expansion" ${state.game.money >= workshopExpansionCost() ? '' : 'disabled'}>工房拡張</button>`}
       </section>
-    </div>`, { help: '工房では原石研磨、ジュエリー作成、受注中の商品を確認する注文書を利用できます。注文書は現在の注文がある場合だけ開けます。' });
+    </div>`, { help: '工房ではジュエリー作成、受注中の商品を確認する注文書、原石研磨を利用できます。工房レベルと工房拡張は画面の一番下に表示します。注文書は現在の注文がある場合だけ開けます。' });
 }
 
 function renderPolishing() {
@@ -3126,10 +3278,10 @@ function renderPolishing() {
   if (!toolUsable('polishingMachine')) {
     return shell('原石研磨', `
       <section class="center-card glass-panel">
-        <h1>${toolOwned('polishingMachine') ? workshopToolStatusText('polishingMachine') : '研磨機がありません。'}</h1>
-        <p>${toolOwned('polishingMachine') ? '研磨機が使用できる状態へ戻るまで、原石研磨はできません。' : '原石をルースへ加工するには、g-Lab.で研磨機を購入してください。'}</p>
+        <h1>${toolOwned('polishingMachine') ? workshopToolStatusText('polishingMachine') : '宝石研磨用平面研磨盤がありません。'}</h1>
+        <p>${toolOwned('polishingMachine') ? '宝石研磨用平面研磨盤が使用できる状態へ戻るまで、原石研磨はできません。' : '原石をルースへ加工するには、g-Lab.で宝石研磨用平面研磨盤を購入してください。'}</p>
         <button class="primary-button full-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>
-      </section>`, { help: '原石研磨機は御徒町のg-Lab.で購入できます。' });
+      </section>`, { help: '宝石研磨用平面研磨盤は御徒町のg-Lab.で購入できます。' });
   }
   if (!GEMS[selectedPolishing]) selectedPolishing = Object.keys(GEMS)[0];
   selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape);
@@ -3332,16 +3484,16 @@ function renderToolEquipmentInventory() {
     .filter(([, record]) => Boolean(record))
     .map(([toolId, record]) => ({ toolId, record, tool: WORKSHOP_TOOLS[toolId] }))
     .filter((entry) => entry.tool);
-  if (!items.length) return '<div class="empty-state"><strong>工具・設備はありません。</strong><p>g-Lab.で彫金机や研磨機などを購入すると、ここに表示されます。</p></div>';
+  if (!items.length) return '<div class="empty-state"><strong>工具・設備はありません。</strong><p>g-Lab.で彫金机や宝石研磨用平面研磨盤などを購入すると、ここに表示されます。</p></div>';
   return `<section class="workshop-equipment-summary"><div><small>工房レベル</small><strong>${workshopLevel()}</strong></div><div><small>工房評価</small><strong>${workshopQualityPoints()}</strong></div></section>
     <div class="equipment-list">${items.map(({ toolId, record, tool }) => {
       const status = workshopToolStatusText(toolId, record);
       const statusClass = record.status === 'available' ? 'available' : record.status === 'repairing' ? 'repairing' : 'unusable';
-      return `<article class="equipment-row ${statusClass}">
+      return `<button type="button" class="equipment-row equipment-detail-button ${statusClass}" data-action="tool-detail" data-id="${esc(toolId)}">
         <span class="equipment-icon" aria-hidden="true">${esc(tool.symbol || '⚒')}</span>
-        <div><button class="tool-name-button" data-action="tool-detail" data-id="${esc(toolId)}">${esc(tool.name)}</button><small>${esc(tool.type)}・${esc(tool.description)}</small></div>
+        <span class="equipment-row-copy"><strong>${esc(tool.name)}</strong><small>${esc(tool.type)}・${esc(tool.description)}</small></span>
         <span class="equipment-status ${statusClass}">${esc(status)}</span>
-      </article>`;
+      </button>`;
     }).join('')}</div>`;
 }
 
@@ -3526,12 +3678,6 @@ function renderStore() {
           <div><small>ケース残数</small><strong>${casesRemaining}/${storeMaximumCases()}個</strong></div>
         </div>
         <section class="store-customer-profile"><small>主な客層</small><strong>${esc(customerProfile.name)}</strong><span>${esc(customerProfile.description)}</span></section>
-        <section class="store-install-section storefront-equipment-section">
-          <div class="section-heading"><h2>店頭設備</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>
-          <article class="store-install-row"><div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}・未設置 ${displaySuppliesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button></article>
-          <article class="store-install-row"><div><strong>ケース</strong><small>残数 ${casesRemaining}/${storeMaximumCases()}個・未設置 ${casesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="case" ${canInstallCase ? '' : 'disabled'}>店頭に設置</button></article>
-          <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1されます。ケースは販売ごとに1個減ります。</p>
-        </section>
         ${hasCraftedJewelry() ? '' : '<section class="visitor-box"><h2>接客はまだ利用できません。</h2><p>まず工房でジュエリーを1点制作してください。制作後からお客様が来店するようになります。</p><button class="secondary-button" data-action="nav" data-screen="workshop">工房へ</button></section>'}
         ${activeVisitors.length ? `<section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>` : ''}
         <div class="store-showcase-heading"><h2>ショーケース</h2><small>${installedShowcaseCount(branch)}/${storeMaximumShowcases()}台・${storeShowcaseUsedSlots(branch)}/${storeShowcaseCapacity(branch)}点</small></div>
@@ -3545,6 +3691,12 @@ function renderStore() {
           ${state.store.expanded ? '<button class="secondary-button" data-action="nav" data-screen="employee">店員</button>' : ''}
         </div>
         ${canExpand ? '<p class="success-text">店舗を拡張できます。</p>' : ''}
+        <section class="store-install-section storefront-equipment-section">
+          <div class="section-heading"><h2>店頭設備</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>
+          <article class="store-install-row"><div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}・未設置 ${displaySuppliesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button></article>
+          <article class="store-install-row"><div><strong>ケース</strong><small>残数 ${casesRemaining}/${storeMaximumCases()}個・未設置 ${casesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="case" ${canInstallCase ? '' : 'disabled'}>店頭に設置</button></article>
+          <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1されます。ケースは販売ごとに1個減ります。</p>
+        </section>
       </section>
     </div>`, { help: 'ショーケース1台には完成品を5個まで並べられます。販売価格は商品ごとに直接設定でき、原価・おすすめ価格・予想利益を確認できます。ディスプレイ用品とケースは店頭へ設置でき、ケースは販売ごとに1個消費されます。' });
 }
@@ -3822,7 +3974,7 @@ function renderMeal() {
     return shell('食事', `
       <section class="meal-eating-panel glass-panel" aria-live="polite">
         <h1>${esc(meal.name)}</h1>
-        ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
+        ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
         <strong>食事中…</strong>
       </section>`, { help: `${meal.name}で食事をしています。` });
   }
@@ -3858,6 +4010,8 @@ async function eatMeal(mealId) {
   const stateBeforeMeal = structuredClone(state);
   try {
     selectedMeal = mealId;
+    showToast('店内と料理を読み込んでいます…');
+    await preloadMealAssets(mealId);
 
     // 店を決定して食事画面へ移る瞬間に支払いを確定する。
     state.game.money -= meal.price;
@@ -3866,7 +4020,8 @@ async function eatMeal(mealId) {
     saveGame();
     setScreen('meal', { mealId, eating: true }, false);
 
-    // 食事中の画面は、店内へ移動してから合計3秒間表示する。
+    // 読み込み済みの店内と料理を、画面へ移動してから合計3秒間表示する。
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     await wait(420);
     playSfx('eat');
     await wait(2580);
@@ -3968,7 +4123,7 @@ function renderPhoneItems() {
         </article>`;
       }).join('')}</div>` : '<div class="phone-empty compact">装備品はありません。</div>'}
     </section>
-    <p class="small-note item-inventory-note">彫金机・研磨機など工房専用の工具と設備は、工房の「工具・設備」で確認します。</p>
+    <p class="small-note item-inventory-note">彫金机・宝石研磨用平面研磨盤など工房専用の工具と設備は、工房の「工具・設備」で確認します。</p>
   </section>`;
 }
 
@@ -4211,9 +4366,9 @@ function aiCurrentRules() {
       note: '未解放の採掘場所、未発生の原石候補、内部抽選率は回答に含めない。',
     },
     workshop: {
-      menuOrder: ['原石研磨', 'ジュエリー作成', '注文書'],
+      menuOrder: ['ジュエリー作成', '注文書', '原石研磨', '工房レベル', '工房拡張'],
       jewelryCreation: '彫金机が使用可能な時だけ選択できる。石種とカット形状を選び、対応するルースと地金を使用する。石種が同じでもカットが違うルースは代用できない。',
-      roughPolishing: `研磨機が使用可能な時だけ選択でき、石種とカットを選んで原石1個を対応するルース1個へ加工する。所要時間は${POLISHING_HOURS}時間。`,
+      roughPolishing: `宝石研磨用平面研磨盤が使用可能な時だけ選択でき、石種とカットを選んで原石1個を対応するルース1個へ加工する。所要時間は${POLISHING_HOURS}時間。`,
       orderSheet: '現在の注文がある場合だけ選択できる。受注金額、予想原価・利益、納期、必要職人レベル、必要設備、材料を確認する。納期を過ぎた注文は翌朝に期限切れとなる。',
       quality: '職人レベルと、使用可能な工具・設備による工房レベルが完成品の品質に影響する。内部確率や計算式は回答しない。',
       storageCapacity: state.inventory.capacity,
@@ -4229,7 +4384,7 @@ function aiCurrentRules() {
     },
     commerce: {
       materialShop: '地金を1g単位で購入・売却でき、所持している原石も売却できる。地金は直接入力と±1g・±10g・±100gで数量を選び、全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
-      looseShop: 'ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。購入・売却は1回1個で1時間。',
+      looseShop: 'ルース屋は最初に石種を選び、次にカットを選ぶ。ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。購入は1回1個、売却は1個または注文予約分を除いた売却可能数の全部売るを選べ、各手続きは1時間。',
       store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。販売価格はプレイヤーが直接設定し、原価・おすすめ価格・設定価格・予想利益を確認できる。おすすめ価格は標準品質が原価の2倍、良品が2.2倍、上質が2.5倍で、1,000円単位に丸める。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
     },
     facilities: Object.entries(facilityNames).map(([id, name]) => { const availability = okachimachiFacilityAvailability(id); return { id, name, status: availability.open ? '利用可能' : availability.status, reason: availability.reason || null }; }),
@@ -4590,21 +4745,25 @@ function renderDayResult() {
   return `
     <main class="day-result-screen">
       <section class="sleep-card glass-panel">
-        <h1>${result.day}日目の結果</h1>
-        <div class="result-list">
-          <div><span>採掘した原石</span><strong>${result.mined.length ? result.mined.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、') : 'なし'}</strong></div>
-          <div><span>研磨</span><strong>${result.polished?.length ? result.polished.map((entry) => `${GEMS[entry.gem].name}・${looseShapeLabel(normalizeLooseShape(entry.gem, entry.looseShape))}${entry.qty}個`).join('、') : 'なし'}</strong></div>
-          <div><span>原石売却</span><strong>${(result.roughSold || []).reduce((sum, entry) => sum + (Number(entry.qty) || 1), 0)}個</strong></div>
-          <div><span>ルース売却</span><strong>${result.looseSold?.length || 0}個</strong></div>
-          <div><span>制作</span><strong>${result.crafted.length}点</strong></div>
-          <div><span>販売</span><strong>${result.sold.length}点</strong></div>
-          <div><span>食事</span><strong>${result.meals?.length ? result.meals.map((entry) => entry.name).join('、') : 'なし'}</strong></div>
-          <div><span>来店人数</span><strong>${result.visitors}人</strong></div>
-          <div><span>売上</span><strong>${yen(result.income)}</strong></div>
-          <div><span>支出</span><strong>${yen(result.expense)}</strong></div>
+        <div class="day-result-scroll" tabindex="0" aria-label="1日の結果一覧">
+          <h1>${result.day}日目の結果</h1>
+          <div class="result-list">
+            <div><span>採掘した原石</span><strong>${result.mined.length ? result.mined.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、') : 'なし'}</strong></div>
+            <div><span>研磨</span><strong>${result.polished?.length ? result.polished.map((entry) => `${GEMS[entry.gem].name}・${looseShapeLabel(normalizeLooseShape(entry.gem, entry.looseShape))}${entry.qty}個`).join('、') : 'なし'}</strong></div>
+            <div><span>原石売却</span><strong>${(result.roughSold || []).reduce((sum, entry) => sum + (Number(entry.qty) || 1), 0)}個</strong></div>
+            <div><span>ルース売却</span><strong>${(result.looseSold || []).reduce((sum, entry) => sum + (Number(entry.qty) || 1), 0)}個</strong></div>
+            <div><span>制作</span><strong>${result.crafted.length}点</strong></div>
+            <div><span>販売</span><strong>${result.sold.length}点</strong></div>
+            <div><span>食事</span><strong>${result.meals?.length ? result.meals.map((entry) => entry.name).join('、') : 'なし'}</strong></div>
+            <div><span>来店人数</span><strong>${result.visitors}人</strong></div>
+            <div><span>売上</span><strong>${yen(result.income)}</strong></div>
+            <div><span>支出</span><strong>${yen(result.expense)}</strong></div>
+          </div>
+          <p class="goodnight">お疲れ様でした。<br>おやすみなさい...${esc(state.playerName || 'プレイヤー')}...</p>
         </div>
-        <p class="goodnight">お疲れ様でした。<br>おやすみなさい...${esc(state.playerName || 'プレイヤー')}...</p>
-        <button class="primary-button full-button" data-action="next-day">次の日へ</button>
+        <div class="day-result-actions">
+          <button class="primary-button full-button" data-action="next-day">次の日へ</button>
+        </div>
       </section>
     </main>`;
 }
@@ -4790,21 +4949,30 @@ function sellRough(id, sellAll = false) {
   render();
 }
 
-function sellLoose(id, shapeId = '') {
+function sellLoose(id, shapeId = '', sellAll = false) {
   const gem = GEMS[id];
   const resolvedShape = normalizeLooseShape(id, shapeId);
-  if (!gem || looseAvailableQuantity(id, resolvedShape) < 1) return showToast('使用可能なルースがありません。注文に使用予定のルースは売却できません。', 'error');
+  const available = Math.max(0, Math.floor(looseAvailableQuantity(id, resolvedShape)));
+  if (!gem || available < 1) return showToast('使用可能なルースがありません。注文に使用予定のルースは売却できません。', 'error');
   if (!canSpendHours(1)) return showToast('今日は売却手続きをする時間がありません。', 'error');
-  const price = looseSalePrice(id, resolvedShape);
-  state.inventory.loose[id][resolvedShape] -= 1;
-  state.game.money += price;
+  const qty = sellAll ? available : 1;
+  const unitPrice = looseSalePrice(id, resolvedShape);
+  const totalPrice = unitPrice * qty;
+  state.inventory.loose[id][resolvedShape] -= qty;
+  state.game.money += totalPrice;
   spendHours(1);
-  state.daily.looseSold.push({ gem: id, looseShape: resolvedShape, qty: 1, price });
+  state.daily.looseSold.push({ gem: id, looseShape: resolvedShape, qty, price: totalPrice, unitPrice });
   const itemLabel = `${gem.name}・${looseShapeLabel(resolvedShape)}ルース`;
-  addFinance(`${itemLabel}をルース屋へ売却`, price, 0);
+  addFinance(`${itemLabel}をルース屋へ${qty}個売却`, totalPrice, 0);
   saveGame();
-  startMoneyFeedback(price);
-  showToast(`${itemLabel}を${yen(price)}で売却しました。`, 'info', false);
+  startMoneyFeedback(totalPrice);
+  showToast(
+    qty === 1
+      ? `${itemLabel}を${yen(totalPrice)}で売却しました。`
+      : `${itemLabel}を${qty}個、${yen(totalPrice)}で売却しました。`,
+    'info',
+    false
+  );
   render();
 }
 
@@ -4821,7 +4989,7 @@ function buyWorkshopTool(toolId) {
   syncLegacyToolFlags();
   addFinance(`g-Lab.で${tool.name}を購入`, 0, tool.price);
   if (toolId === 'jewelryBench') addNotification('彫金机を購入しました', '工房でジュエリーを制作できるようになりました。');
-  if (toolId === 'polishingMachine') addNotification('研磨機を購入しました', '工房で原石をルースへ研磨できるようになりました。');
+  if (toolId === 'polishingMachine') addNotification('宝石研磨用平面研磨盤を購入しました', '工房で原石をルースへ研磨できるようになりました。');
   saveGame();
   showToast(`${tool.name}を購入しました。`, 'info', false);
   render();
@@ -4854,7 +5022,7 @@ function polishRough() {
   if (!workshopOperating()) return showToast('工房は作業停止中です。', 'error');
   const gem = GEMS[selectedPolishing];
   selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape);
-  if (!toolUsable('polishingMachine')) return showToast(toolOwned('polishingMachine') ? `研磨機は${workshopToolStatusText('polishingMachine')}です。` : '研磨機が必要です。', 'error');
+  if (!toolUsable('polishingMachine')) return showToast(toolOwned('polishingMachine') ? `宝石研磨用平面研磨盤は${workshopToolStatusText('polishingMachine')}です。` : '宝石研磨用平面研磨盤が必要です。', 'error');
   if (!gem || state.inventory.rough[selectedPolishing] < 1) return showToast('選択した原石を持っていません。', 'error');
   if (!canSpendHours(POLISHING_HOURS)) return showToast('今日は研磨する時間がありません。', 'error');
   state.inventory.rough[selectedPolishing] -= 1;
@@ -6119,11 +6287,15 @@ root.addEventListener('click', async (event) => {
     case 'metal-qty-max': setMetalTradeQuantity(button.dataset.mode, button.dataset.id, metalTradeMaximum(button.dataset.mode, button.dataset.id)); syncMetalTradeCard(button.dataset.mode, button.dataset.id); break;
     case 'buy-metal': buyMetal(button.dataset.id); break;
     case 'sell-metal': sellMetal(button.dataset.id); break;
-    case 'loose-shop-tab': screenData.tab = button.dataset.tab; render(); break;
+    case 'loose-shop-tab': screenData = { tab: button.dataset.tab }; render(); break;
+    case 'select-loose-shop-gem': screenData.gemId = button.dataset.id; render(); break;
+    case 'loose-shop-gem-back': delete screenData.gemId; render(); break;
     case 'open-loose-detail': setScreen('looseInventoryDetail', { gemId: button.dataset.id, looseShape: button.dataset.shape }); break;
     case 'glab-info': openGlabAbout(); break;
     case 'okachimachi-external': openOkachimachiExternal(button.dataset.url); break;
-    case 'tool-detail': showWorkshopToolDetail(button.dataset.id); break;
+    case 'tool-detail': setScreen('workshopTool', { toolId: button.dataset.id }); break;
+    case 'workshop-tool-guide': setScreen('workshopToolGuide', { toolId: button.dataset.id }); break;
+    case 'owned-tool-glab-detail': setScreen('glabTool', { toolId: button.dataset.id }); break;
     case 'glab-tool-detail': setScreen('glabTool', { toolId: button.dataset.id }); break;
     case 'glab-tool-guide': setScreen('glabToolGuide', { toolId: button.dataset.id }); break;
     case 'buy-workshop-tool': buyWorkshopTool(button.dataset.id); break;
@@ -6136,7 +6308,8 @@ root.addEventListener('click', async (event) => {
     case 'purchase': purchase(button.dataset.kind, button.dataset.id, button.dataset.shape); break;
     case 'sell-rough': sellRough(button.dataset.id, false); break;
     case 'sell-all-rough': sellRough(button.dataset.id, true); break;
-    case 'sell-loose': sellLoose(button.dataset.id, button.dataset.shape); break;
+    case 'sell-loose': sellLoose(button.dataset.id, button.dataset.shape, false); break;
+    case 'sell-all-loose': sellLoose(button.dataset.id, button.dataset.shape, true); break;
     case 'buy-jewelry-bench': buyJewelryBench(); break;
     case 'buy-polishing-machine': buyPolishingMachine(); break;
     case 'select-polishing': selectedPolishing = button.dataset.id; selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape); render(); break;

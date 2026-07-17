@@ -1,4 +1,4 @@
-const VERSION = '0.10.100';
+const VERSION = '0.10.113';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
@@ -9,6 +9,22 @@ const APP_SHELL = [
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
   './assets/audio/bgm-main.ogg', './assets/audio/amb-main-clear.ogg', './assets/audio/amb-main-cloudy.ogg',
   './assets/audio/amb-main-rain.ogg', './assets/audio/amb-main-snow.ogg',
+];
+
+const OPTIONAL_MEDIA = [
+  './assets/images/mining.webp', './assets/images/workshop.webp', './assets/images/glab.webp',
+  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/store.webp',
+  './assets/images/phone.webp', './assets/images/sleep.webp', './assets/images/meal-menu.webp',
+  './assets/images/meal-convenience.webp', './assets/images/meal-convenience-portrait.webp',
+  './assets/images/meal-chinese.webp', './assets/images/meal-chinese-portrait.webp',
+  './assets/images/meal-korean.webp', './assets/images/meal-korean-portrait.webp',
+  './assets/images/meal-indian.webp', './assets/images/meal-indian-portrait.webp',
+  './assets/images/meal-kebab.webp', './assets/images/meal-kebab-portrait.webp',
+  './assets/images/meal-ramen.webp', './assets/images/meal-ramen-portrait.webp',
+  './assets/images/meal-soba.webp', './assets/images/meal-soba-portrait.webp',
+  './assets/images/meal-hamburger.webp', './assets/images/meal-hamburger-portrait.webp',
+  './assets/images/foods/convenience.png', './assets/images/foods/chinese.png', './assets/images/foods/korean.png', './assets/images/foods/indian.png',
+  './assets/images/foods/kebab.png', './assets/images/foods/ramen.png', './assets/images/foods/soba.png', './assets/images/foods/hamburger.png',
 ];
 
 async function trimCache(cacheName, maxEntries = 320) {
@@ -30,7 +46,8 @@ async function networkFirst(request, fallback = './index.html') {
 
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
-  const cached = await cache.match(request);
+  const appCache = await caches.open(APP_CACHE);
+  const cached = (await cache.match(request)) || (await appCache.match(request, { ignoreSearch: true }));
   const update = fetch(request).then((response) => {
     if (response.ok) {
       cache.put(request, response.clone());
@@ -47,7 +64,14 @@ async function staleWhileRevalidate(request) {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(APP_CACHE).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches.open(APP_CACHE)
+      .then(async (cache) => {
+        await cache.addAll(APP_SHELL);
+        await Promise.allSettled(OPTIONAL_MEDIA.map((asset) => cache.add(asset)));
+      })
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (event) => {

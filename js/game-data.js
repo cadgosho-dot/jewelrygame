@@ -1,4 +1,4 @@
-export const VERSION = '0.10.100';
+export const VERSION = '0.10.113';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -220,7 +220,7 @@ export const WORKSHOP_TOOLS = {
     },
   },
   polishingMachine: {
-    id: 'polishingMachine', name: '研磨機', type: '設備', symbol: '◉', price: 400000, qualityPoints: 6,
+    id: 'polishingMachine', name: '宝石研磨用平面研磨盤', type: '設備', symbol: '◉', price: 400000, qualityPoints: 6,
     initiallyAvailable: true, breakable: true, repairable: true,
     description: '原石の整形からファセット面の研磨までを行い、原石をルースへ仕上げるための精密設備です。',
     detail: '回転盤、角度調整機構、インデックス、ドップ軸を使い、石の面角度と対称性を管理しながら段階的に研削・研磨します。',
@@ -380,7 +380,7 @@ export const WORKSHOP_TOOLS = {
     },
   },
   magnifier: {
-    id: 'magnifier', name: '拡大鏡', type: '設備', symbol: '◎', price: 150000, qualityPoints: 4,
+    id: 'magnifier', name: '作業用拡大鏡', type: '設備', symbol: '◎', price: 150000, qualityPoints: 4,
     initiallyAvailable: false, breakable: true, repairable: true,
     unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '両手を自由にしたまま、石留め、彫り、仕上げ、欠陥検査を拡大観察するための設備です。',
@@ -537,7 +537,7 @@ export const WORKSHOP_TOOLS = {
     },
   },
   stamps: {
-    id: 'stamps', name: '刻印', type: '工具', symbol: 'Ａ', price: 150000, qualityPoints: 4,
+    id: 'stamps', name: '刻印セット', type: '工具', symbol: 'Ａ', price: 150000, qualityPoints: 4,
     initiallyAvailable: false, breakable: true, repairable: false,
     unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '品位、メーカー記号、文字、数字、装飾模様を地金へ打ち込むための刻印工具一式です。',

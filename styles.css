@@ -114,13 +114,22 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
 .craft-layout{display:grid;grid-template-columns:minmax(280px,38%) minmax(0,1fr);gap:clamp(12px,2vw,24px);min-height:100%}
 .preview-panel,.craft-options{border-radius:16px;padding:clamp(14px,2vw,24px)}
 .preview-panel{align-self:start;text-align:center;position:sticky;top:0}
-.jewelry-preview{height:240px;display:grid;place-items:center;position:relative;margin-bottom:.8rem;border-radius:16px;background:radial-gradient(circle at 50% 48%,rgba(255,255,255,.16),rgba(0,0,0,.08) 45%,rgba(0,0,0,.42));overflow:hidden}
+.jewelry-preview{height:240px;display:grid;place-items:center;position:relative;margin-bottom:.8rem;border-radius:16px;background:radial-gradient(circle at 50% 48%,rgba(255,255,255,.16),rgba(0,0,0,.08) 45%,rgba(0,0,0,.42));overflow:hidden;color:#d8e1e4}
 .jewelry-preview.large{height:290px}
-.jewelry-preview .preview-item{font-size:8rem;line-height:1;color:#bfc5c7;text-shadow:0 5px 18px rgba(0,0,0,.6)}
-.jewelry-preview.metal-gold .preview-item,.small-jewelry.metal-gold span{color:#d7a82c}
-.jewelry-preview.metal-platinum .preview-item,.small-jewelry.metal-platinum span{color:#d8e1e4}
-.jewelry-preview.metal-silver .preview-item,.small-jewelry.metal-silver span{color:#bfc8cc}
-.jewelry-preview i{position:absolute;font-style:normal;font-size:3rem;color:var(--gem);text-shadow:0 0 16px rgba(255,255,255,.6);top:50%;left:50%;transform:translate(-50%,-50%)}
+.jewelry-preview.metal-gold,.small-jewelry.metal-gold{color:#d7a82c}
+.jewelry-preview.metal-platinum,.small-jewelry.metal-platinum{color:#cfd7dc}
+.jewelry-preview.metal-silver,.small-jewelry.metal-silver{color:#ffffff}
+.jewelry-item-shape{display:block;position:relative;z-index:1;background:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+.jewelry-item-shape.large{width:210px;height:210px}
+.jewelry-item-shape.small{width:54px;height:54px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.45))}
+.jewelry-item-shape.item-ring{-webkit-mask-image:url('./assets/images/jewelry-items/ring.png');mask-image:url('./assets/images/jewelry-items/ring.png')}
+.jewelry-item-shape.item-ring-plain{-webkit-mask-image:url('./assets/images/jewelry-items/ring-plain.png');mask-image:url('./assets/images/jewelry-items/ring-plain.png')}
+.jewelry-item-shape.item-pendant{-webkit-mask-image:url('./assets/images/jewelry-items/pendant.png');mask-image:url('./assets/images/jewelry-items/pendant.png')}
+.jewelry-item-shape.item-earrings{-webkit-mask-image:url('./assets/images/jewelry-items/earrings.png');mask-image:url('./assets/images/jewelry-items/earrings.png')}
+.jewelry-item-shape.large.item-pendant{width:165px;height:226px}
+.jewelry-item-shape.large.item-earrings{width:228px;height:206px}
+.jewelry-item-shape.small.item-pendant{width:40px;height:58px}
+.jewelry-item-shape.small.item-earrings{width:58px;height:52px}
 .preview-details{display:grid;gap:.4rem;margin:1rem 0 0}
 .preview-details>div{display:flex;justify-content:space-between;gap:1rem;border-bottom:1px solid rgba(255,255,255,.08);padding:.45rem 0}
 .preview-details dt{color:var(--muted)}.preview-details dd{margin:0;color:var(--gold-light)}
@@ -134,6 +143,7 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
 .result-card h1{font-size:clamp(1.25rem,3vw,2rem)}
 .gem-symbol{display:grid;place-items:center;min-height:180px;margin-bottom:.6rem}
 .gem-result-image{max-width:min(56vw,220px);max-height:220px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.35));}
+.mining-broken-rock-image{max-width:min(64vw,250px);max-height:250px;filter:drop-shadow(0 12px 22px rgba(0,0,0,.38));object-fit:contain;}
 .gem-empty-dot{font-size:5rem;color:#8a7f72}
 .result-stats{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin:1rem 0}
 .result-stats span{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:.45rem .7rem}
@@ -146,8 +156,8 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
 .jewelry-card{display:grid;grid-template-columns:72px minmax(0,1fr);gap:.75rem;align-items:center;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:.8rem;background:rgba(255,255,255,.045)}
 .jewelry-card button{grid-column:1/-1}
 .jewelry-card h3,.jewelry-card p{margin:.15rem 0}.jewelry-card small{color:var(--muted)}
-.small-jewelry{position:relative;width:68px;height:68px;display:grid;place-items:center;background:rgba(0,0,0,.25);border-radius:50%}
-.small-jewelry span{font-size:3rem}.small-jewelry i{position:absolute;font-style:normal;color:var(--gem);font-size:1.25rem}
+.small-jewelry{position:relative;width:68px;height:68px;display:grid;place-items:center;background:rgba(0,0,0,.25);border-radius:18px;overflow:hidden}
+.small-jewelry i{position:absolute;inset:0;display:block;font-style:normal;pointer-events:none}
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}.empty-state strong{display:block;color:var(--text);font-size:1.15rem;margin-bottom:.4rem}
 .gem-thumb,.gem-inline,.choice-gem{display:block;object-fit:contain}
 .gem-inline{width:44px;height:44px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.28))}
@@ -218,8 +228,8 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
 }
 
 /* Overlays */
-#toast{position:fixed;z-index:100;left:50%;top:18%;transform:translate(-50%,-18px);opacity:0;pointer-events:none;transition:.2s;padding:.8rem 1.1rem;border-radius:10px;background:rgba(7,5,4,.95);border:1px solid var(--line);box-shadow:0 12px 35px rgba(0,0,0,.48);max-width:min(90vw,520px);text-align:center}
-#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast{position:fixed;z-index:100;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;padding:.8rem 1.1rem;border-radius:10px;background:rgba(7,5,4,.95);border:1px solid var(--line);box-shadow:0 12px 35px rgba(0,0,0,.48);max-width:min(90vw,520px);text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 #toast[data-type="error"]{border-color:#c65c51;color:#ffd2cc}
 #modal-layer{position:fixed;z-index:120;inset:0}.modal-backdrop{height:100%;display:grid;place-items:center;background:rgba(0,0,0,.74);padding:18px}.modal-card{width:min(520px,94vw);max-height:86vh;overflow:auto;background:#1a120d;border:1px solid var(--line);border-radius:15px;padding:1.2rem;box-shadow:0 26px 80px #000}.modal-card h2{margin:.1rem 0 .8rem;color:var(--gold-light)}.modal-body{line-height:1.7}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-top:1rem}.modal-actions>*:only-child{grid-column:1/-1}
 
@@ -229,7 +239,7 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
   .floating-notice{top:104px;width:min(92vw,440px);justify-content:center;border-radius:12px;flex-wrap:wrap}
   .split-layout,.store-layout,.customer-layout{grid-template-columns:1fr;grid-template-rows:minmax(210px,38vh) auto;height:auto;min-height:100%}
   .scene-space,.store-scene,.customer-stage{min-height:210px}.action-panel,.store-panel,.dialog-panel{align-self:auto;overflow:visible}
-  .craft-layout{grid-template-columns:1fr}.preview-panel{position:relative}.jewelry-preview{height:210px}.jewelry-preview.large{height:230px}.jewelry-preview .preview-item{font-size:6rem}
+  .craft-layout{grid-template-columns:1fr}.preview-panel{position:relative}.jewelry-preview{height:210px}.jewelry-preview.large{height:230px}
   .choice-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.choice-card{padding:.58rem;min-height:62px}.choice-card strong{font-size:.82rem}.choice-card small{font-size:.68rem}
   .product-row{grid-template-columns:minmax(0,1fr) auto}.product-row button{grid-column:1/-1}
   .product-row .sell-action-row{grid-column:1/-1;display:grid!important;grid-template-columns:1fr 1fr}
@@ -2328,7 +2338,7 @@ body[data-screen="meal"] .meal-eating-panel > strong{
   .metal-trade-preview{align-items:flex-end;flex-direction:column;gap:.2rem}
 }
 
-/* v0.10.44 素材屋トップ・純金属相場と前日比 */
+/* v0.10.44 地金屋トップ・純金属相場と前日比 */
 .supplier-category-menu{
   width:min(440px,100%);
   margin:auto;
@@ -2690,14 +2700,29 @@ body[data-screen="store"] .store-summary{grid-template-columns:repeat(4,minmax(0
 .loose-shop-gem-group{display:grid;gap:.55rem;padding:.75rem;border:1px solid rgba(231,192,110,.22);border-radius:12px;background:rgba(0,0,0,.16)}
 .loose-shop-gem-group>h2{margin:0;color:var(--gold-light);font-size:1rem}
 .polishing-shape-grid{margin-bottom:1rem}
-.jewelry-preview-loose{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.jewelry-preview-loose{position:absolute;inset:0;display:block;pointer-events:none;z-index:2}
+.jewelry-loose-set{position:absolute;inset:0;display:block}
+.jewelry-loose-set.small{inset:0}
+.jewelry-loose-set .center-gem{position:absolute;display:grid;place-items:center;transform:translate(-50%,-50%)}
 .jewelry-loose-preview{width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.38))}
 .jewelry-preview.large .jewelry-loose-preview{width:92px;height:92px}
-.small-jewelry i{display:grid;place-items:center;width:30px;height:30px}
-.small-jewelry-loose{display:block;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 3px 7px rgba(0,0,0,.4))}
+.small-jewelry-loose{display:block;width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 3px 7px rgba(0,0,0,.4))}
+.jewelry-preview.item-ring .center-gem{top:57%;left:50%}
+.jewelry-preview.item-pendant .center-gem{top:63%;left:50%}
+.jewelry-preview.item-earrings .center-gem{top:27%;left:50%}
+.jewelry-preview.item-earrings .jewelry-loose-preview{width:122px;height:122px}
+.small-jewelry.item-ring .center-gem{top:36px;left:50%}
+.small-jewelry.item-pendant .center-gem{top:37px;left:50%}
+.small-jewelry.item-earrings .center-gem{top:18px;left:34px}
+.small-jewelry.item-earrings .small-jewelry-loose{width:34px;height:34px}
 @media (max-width:700px){
   .loose-shop-gem-group{padding:.6rem}
+  .jewelry-item-shape.large{width:184px;height:184px}
+  .jewelry-item-shape.large.item-pendant{width:142px;height:195px}
+  .jewelry-item-shape.large.item-earrings{width:190px;height:172px}
   .jewelry-loose-preview{width:68px;height:68px}
+  .jewelry-preview.large .jewelry-loose-preview{width:80px;height:80px}
+  .jewelry-preview.item-earrings .jewelry-loose-preview{width:104px;height:104px}
 }
 
 
@@ -3107,8 +3132,9 @@ body[data-screen="phone"] .phone-content{
 .loose-shop-gem-choice i{font-size:1.35rem;color:var(--gold-light);font-style:normal}
 .loose-shop-gem-image{display:block;width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 5px 10px rgba(0,0,0,.42))}
 .loose-shop-gem-back{justify-self:start;width:auto!important;margin-bottom:.05rem}
-.loose-shop-selected-gem{grid-template-columns:66px minmax(0,1fr);align-items:center;padding:.55rem .7rem;border:1px solid rgba(231,192,110,.24);border-radius:12px;background:rgba(0,0,0,.12)}
-.loose-shop-selected-gem-image{display:block;width:62px;height:62px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(0,0,0,.45))}
+/* v0.10.159 旧版キャッシュでも「○○のカットを選択」と左画像を表示しない */
+.loose-shop-selected-gem,
+.loose-shop-selected-gem-image{display:none!important}
 .loose-shop-cut-list{display:grid;gap:.6rem}
 .loose-shop-cut-list .loose-shop-product-row .product-main>div{display:grid;gap:.12rem}
 .loose-shop-cut-list .loose-shop-actions{display:grid!important;grid-template-columns:repeat(3,max-content);gap:.4rem!important}
@@ -3121,8 +3147,6 @@ body[data-screen="phone"] .phone-content{
   .loose-shop-cut-list .loose-shop-actions button{grid-column:auto!important;white-space:normal!important;padding:.55rem .35rem!important}
 }
 @media (max-width:380px){
-  .loose-shop-selected-gem{grid-template-columns:52px minmax(0,1fr)}
-  .loose-shop-selected-gem-image{width:48px;height:48px}
   .loose-shop-cut-list .loose-shop-actions{grid-template-columns:1fr 1fr!important}
   .loose-shop-cut-list .loose-shop-actions .secondary-button:first-child{grid-column:1/-1}
 }
@@ -3379,6 +3403,12 @@ body:not([data-screen="main"]) .game-header .header-actions{
 /* v0.10.120 店舗画面の表示順調整 */
 .store-service-section,.store-evaluation-section{display:grid;gap:.55rem;margin:1rem 0}
 .store-service-section>.section-heading,.store-evaluation-section>.section-heading{margin-bottom:0}
+.store-type-section{display:grid;gap:.28rem;margin:.65rem 0 1rem;padding:.85rem 1rem;border:1px solid rgba(231,190,104,.32);border-radius:12px;background:rgba(67,47,24,.3)}
+.store-type-section small{color:var(--muted)}
+.store-type-section strong{color:var(--gold-light);font-size:1.15rem}
+.store-type-section p{margin:0;line-height:1.65}
+.store-expansion-section{display:grid;gap:.65rem;margin:1rem 0 0;padding:1rem;border:1px solid rgba(231,190,104,.32);border-radius:12px;background:rgba(0,0,0,.2)}
+.store-expansion-section .section-heading h2,.store-expansion-section p{margin:0}
 
 
 /* v0.10.121 工房在庫・関連詳細画面の上部バー重なり防止 */
@@ -3819,5 +3849,1179 @@ body:not([data-screen="main"]) .header-money-area .header-help-button{
   body[data-screen="main"] .main-menu button>strong{
     font-size:clamp(.58rem,1.55vw,.76rem);
     white-space:nowrap;
+  }
+}
+
+/* v0.10.140 食事中の料理画像を中央配置・全体表示 */
+body[data-screen="meal"] .meal-eating-panel{
+  width:min(760px,100%)!important;
+  height:100%!important;
+  max-height:100%!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  padding:clamp(8px,1.5vw,16px)!important;
+  grid-template-rows:auto minmax(0,1fr) auto!important;
+  align-items:center!important;
+  justify-items:center!important;
+  overflow:hidden!important;
+}
+body[data-screen="meal"] .meal-food-display{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  margin:0 auto!important;
+  overflow:hidden!important;
+}
+body[data-screen="meal"] .meal-food-display img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  margin:auto!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+}
+
+
+
+/* v0.10.141 ログイン画面を見やすくし、開始手順を明確化 */
+body[data-screen="login"] #background-shade{
+  background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,.42) 52%,rgba(0,0,0,.78))!important;
+}
+body[data-screen="login"] .login-screen{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(360px,470px);
+  align-items:center;
+  gap:clamp(20px,5vw,76px);
+  min-height:100%;
+  overflow:auto;
+  padding:max(20px,var(--safe-top)) clamp(20px,5vw,72px) max(20px,var(--safe-bottom));
+}
+body[data-screen="login"] .login-hero{
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:.55rem;
+  min-width:0;
+  text-align:center;
+  text-shadow:0 3px 18px rgba(0,0,0,.95),0 1px 2px #000;
+}
+body[data-screen="login"] .login-brand{
+  color:#b7ef8e;
+  font-size:clamp(1.65rem,4.5vw,4rem);
+  font-weight:900;
+  letter-spacing:.045em;
+  line-height:1.08;
+}
+body[data-screen="login"] .login-hero strong{
+  color:#fff4dc;
+  font-size:clamp(.95rem,1.8vw,1.35rem);
+  line-height:1.5;
+}
+body[data-screen="login"] .login-hero small{
+  color:#ead7b7;
+  font-size:clamp(.75rem,1.2vw,.95rem);
+}
+body[data-screen="login"] .login-panel{
+  width:100%;
+  max-height:calc(100dvh - max(40px,var(--safe-top)) - max(40px,var(--safe-bottom)));
+  margin:0!important;
+  padding:clamp(18px,2.5vw,28px);
+  gap:.8rem;
+  overflow:auto;
+  border:1px solid rgba(255,226,166,.72)!important;
+  border-radius:20px;
+  background:rgba(13,10,8,.965)!important;
+  box-shadow:0 22px 65px rgba(0,0,0,.7)!important;
+  backdrop-filter:blur(12px)!important;
+  -webkit-backdrop-filter:blur(12px)!important;
+}
+body[data-screen="login"] .login-intro{
+  display:grid;
+  gap:.35rem;
+  text-align:center;
+}
+body[data-screen="login"] .login-kicker{
+  justify-self:center;
+  padding:.28rem .62rem;
+  border:1px solid rgba(183,239,142,.52);
+  border-radius:999px;
+  color:#d9ffc1;
+  background:rgba(76,120,49,.22);
+  font-size:.72rem;
+  font-weight:800;
+}
+body[data-screen="login"] .login-intro h1{
+  margin:.1rem 0 0;
+  color:#fff7e8;
+  font-size:clamp(1.45rem,3vw,1.9rem);
+  line-height:1.25;
+}
+body[data-screen="login"] .login-intro p{
+  margin:0;
+  color:#f1dfc1;
+  font-size:.9rem;
+  line-height:1.65;
+}
+body[data-screen="login"] .login-panel .google-login-button{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  align-items:center;
+  gap:.75rem;
+  min-height:72px;
+  padding:.65rem .8rem;
+  border:2px solid #fff;
+  border-radius:14px;
+  background:#fff!important;
+  background-image:none!important;
+  color:#241b14!important;
+  box-shadow:0 7px 20px rgba(0,0,0,.36)!important;
+  text-align:left;
+}
+body[data-screen="login"] .login-panel .google-login-button:hover,
+body[data-screen="login"] .login-panel .google-login-button:focus-visible{
+  transform:translateY(-1px);
+  border-color:#ffe0a0;
+  background:#fffaf0!important;
+}
+body[data-screen="login"] .login-panel .google-login-button:disabled{
+  opacity:.78;
+  cursor:wait;
+}
+body[data-screen="login"] .google-login-mark{
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  border:1px solid #d9d9d9;
+  color:#345fc1;
+  background:#fff;
+  font-family:Arial,sans-serif;
+  font-size:1.35rem;
+  font-weight:900;
+}
+body[data-screen="login"] .google-login-copy{
+  display:grid;
+  gap:.16rem;
+  min-width:0;
+}
+body[data-screen="login"] .google-login-copy strong{
+  color:#21170f;
+  font-size:1rem;
+  line-height:1.3;
+}
+body[data-screen="login"] .google-login-copy small{
+  color:#665d55;
+  font-size:.72rem;
+  line-height:1.35;
+}
+body[data-screen="login"] .google-login-arrow{
+  color:#725324;
+  font-family:Arial,sans-serif;
+  font-size:2rem;
+  line-height:1;
+}
+body[data-screen="login"] .login-benefits{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.35rem;
+}
+body[data-screen="login"] .login-benefits span{
+  display:grid;
+  place-items:center;
+  min-height:32px;
+  padding:.3rem .35rem;
+  border:1px solid rgba(255,226,166,.25);
+  border-radius:8px;
+  color:#ffe8b8;
+  background:rgba(255,255,255,.045);
+  font-size:.66rem;
+  font-weight:800;
+  text-align:center;
+}
+body[data-screen="login"] .login-purpose-note,
+body[data-screen="login"] .login-safety-note{
+  margin:0;
+  text-align:center;
+  line-height:1.55;
+}
+body[data-screen="login"] .login-purpose-note{
+  color:#e8d9c0;
+  font-size:.76rem;
+}
+body[data-screen="login"] .login-safety-note{
+  display:block;
+  color:#bfb29d;
+  font-size:.68rem;
+}
+body[data-screen="login"] .email-login-details{
+  margin-top:.15rem;
+  padding-top:.75rem;
+  border-top:1px solid rgba(232,191,104,.25);
+}
+body[data-screen="login"] .email-login-details summary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:.6rem .7rem;
+  border:1px solid rgba(232,191,104,.42);
+  border-radius:10px;
+  color:#ffe4a5;
+  background:rgba(255,255,255,.025);
+  font-size:.8rem;
+  font-weight:800;
+}
+body[data-screen="login"] .email-login-heading{
+  display:grid;
+  gap:.2rem;
+  text-align:center;
+}
+body[data-screen="login"] .email-login-heading strong{color:#fff1cf}
+body[data-screen="login"] .email-login-heading small{color:#c8b89a;font-size:.72rem}
+body[data-screen="login"] .email-login-fields{gap:.7rem}
+body[data-screen="login"] .login-field{color:#ffe2a0;font-weight:700}
+body[data-screen="login"] .login-field input{border-width:2px;background:#fff;color:#20160f}
+body[data-screen="login"] .login-panel .email-login-button{border-color:#e7c66e;background:#6f4a22!important;color:#fff5de!important;font-weight:800}
+body[data-screen="login"] .login-panel .email-signup-button{background:transparent!important;color:#ffe0a0!important;font-weight:800}
+
+@media (orientation:portrait), (max-width:820px){
+  body[data-screen="login"] #background-shade{
+    background:linear-gradient(180deg,rgba(0,0,0,.20),rgba(0,0,0,.30) 42%,rgba(0,0,0,.86) 68%,rgba(0,0,0,.94))!important;
+  }
+  body[data-screen="login"] .login-screen{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:stretch;
+    gap:16px;
+    padding:max(16px,var(--safe-top)) 14px max(14px,var(--safe-bottom));
+  }
+  body[data-screen="login"] .login-hero{
+    flex:1 0 auto;
+    align-content:start;
+    padding-top:clamp(6px,3.5dvh,30px);
+  }
+  body[data-screen="login"] .login-brand{font-size:clamp(1.45rem,7.2vw,2.55rem)}
+  body[data-screen="login"] .login-hero strong{font-size:.82rem;max-width:28em}
+  body[data-screen="login"] .login-hero small{font-size:.7rem}
+  body[data-screen="login"] .login-panel{
+    flex:0 1 auto;
+    align-self:center;
+    width:min(470px,100%);
+    max-height:69dvh;
+    padding:16px;
+    gap:.65rem;
+    border-radius:18px;
+  }
+  body[data-screen="login"] .login-intro h1{font-size:1.4rem}
+  body[data-screen="login"] .login-intro p{font-size:.82rem;line-height:1.5}
+  body[data-screen="login"] .login-panel .google-login-button{min-height:68px}
+}
+
+@media (orientation:portrait) and (max-height:720px){
+  body[data-screen="login"] .login-hero strong,
+  body[data-screen="login"] .login-hero small{display:none}
+  body[data-screen="login"] .login-panel{max-height:78dvh}
+  body[data-screen="login"] .login-purpose-note{display:none}
+}
+
+@media (orientation:landscape) and (max-height:560px){
+  body[data-screen="login"] .login-screen{
+    grid-template-columns:minmax(0,1fr) minmax(350px,450px);
+    padding:9px 14px;
+    gap:18px;
+  }
+  body[data-screen="login"] .login-panel{
+    max-height:calc(100dvh - 18px);
+    padding:12px 15px;
+    gap:.5rem;
+  }
+  body[data-screen="login"] .login-kicker,
+  body[data-screen="login"] .login-purpose-note{display:none}
+  body[data-screen="login"] .login-intro h1{font-size:1.25rem}
+  body[data-screen="login"] .login-intro p{font-size:.76rem;line-height:1.4}
+  body[data-screen="login"] .login-panel .google-login-button{min-height:58px}
+  body[data-screen="login"] .login-benefits span{min-height:28px}
+}
+
+/* v0.10.142 スマートフォン設定・プロフィールの文字視認性改善 */
+body[data-screen="phone"] .settings-form.compact .player-name-setting,
+body[data-screen="phone"] .settings-form.compact .store-name-setting{
+  padding:.8rem;
+  margin:0;
+  border:1px solid rgba(231,192,110,.42);
+  border-radius:12px;
+  background:rgba(255,255,255,.075);
+}
+body[data-screen="phone"] .settings-form.compact .player-name-setting label,
+body[data-screen="phone"] .settings-form.compact .store-name-setting label,
+body[data-screen="phone"] .settings-form.compact .player-name-setting label>span,
+body[data-screen="phone"] .settings-form.compact .store-name-setting label>span{
+  color:#fff3d4!important;
+  font-weight:800;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .settings-form.compact .player-name-setting input,
+body[data-screen="phone"] .settings-form.compact .store-name-setting input{
+  background:#fff!important;
+  color:#24180f!important;
+  border-color:#d7bd85!important;
+  caret-color:#24180f;
+  opacity:1!important;
+}
+body[data-screen="phone"] .settings-form.compact .player-name-setting input:focus,
+body[data-screen="phone"] .settings-form.compact .store-name-setting input:focus{
+  border-color:#f0c86e!important;
+  outline:2px solid rgba(240,200,110,.34)!important;
+}
+body[data-screen="phone"] .settings-form.compact .store-name-setting>small{
+  color:#eadfc9!important;
+  opacity:1!important;
+  line-height:1.55;
+}
+body[data-screen="phone"] .phone-profile-screen{
+  color:#fff1d6!important;
+}
+body[data-screen="phone"] .phone-profile-heading,
+body[data-screen="phone"] .game-clear-progress-card,
+body[data-screen="phone"] .profile-level-summary>div{
+  background:rgba(255,255,255,.075)!important;
+}
+body[data-screen="phone"] .phone-profile-heading small,
+body[data-screen="phone"] .phone-profile-heading span,
+body[data-screen="phone"] .profile-level-summary small,
+body[data-screen="phone"] .profile-level-summary span,
+body[data-screen="phone"] .game-clear-progress-card small,
+body[data-screen="phone"] .game-clear-progress-card>p{
+  color:#eadfc9!important;
+  opacity:1!important;
+}
+body[data-screen="phone"] .game-clear-status{
+  color:#fff4dc!important;
+  background:rgba(255,255,255,.08)!important;
+  border-color:rgba(255,235,196,.44)!important;
+  font-weight:800;
+}
+body[data-screen="phone"] .game-clear-status.cleared{
+  color:#fff0b8!important;
+  background:rgba(197,140,48,.28)!important;
+  border-color:rgba(242,203,119,.78)!important;
+}
+body[data-screen="phone"] .game-clear-progress-card h3,
+body[data-screen="phone"] .game-clear-condition strong{
+  color:#fff5df!important;
+}
+body[data-screen="phone"] .game-clear-condition{
+  background:rgba(255,255,255,.065)!important;
+  border-color:rgba(255,255,255,.22)!important;
+}
+body[data-screen="phone"] .game-clear-condition>span,
+body[data-screen="phone"] .game-clear-condition>em{
+  color:#eadfc9!important;
+  opacity:1!important;
+}
+body[data-screen="phone"] .game-clear-condition.achieved{
+  background:rgba(55,126,82,.24)!important;
+  border-color:rgba(132,211,164,.66)!important;
+}
+body[data-screen="phone"] .game-clear-condition.achieved>span,
+body[data-screen="phone"] .game-clear-condition.achieved>em{
+  color:#c8f7d8!important;
+}
+
+
+/* v0.10.143 スマートフォン情報表示整理 */
+body[data-screen="phone"] .finance-summary-title{
+  margin:.1rem 0 .75rem!important;
+  text-align:center;
+  color:#fff3d4!important;
+  font-size:1.08rem;
+  font-weight:800;
+}
+
+/* v0.10.148 各画面の上部バー文字をメイン画面と同程度へ拡大 */
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-top-line .header-status-item{
+  font-size:.82rem!important;
+  line-height:1.22!important;
+}
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money{
+  font-size:1.06rem!important;
+}
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+  font-size:1rem!important;
+  line-height:1.15!important;
+}
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+  font-size:.76rem!important;
+}
+@media (orientation:portrait), (max-width:820px){
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-top-line .header-status-item{
+    font-size:.7rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money{
+    font-size:.88rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    font-size:.88rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    font-size:.68rem!important;
+  }
+}
+@media (max-width:430px){
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-top-line .header-status-item{
+    font-size:.66rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money{
+    font-size:.8rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    font-size:.82rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    font-size:.64rem!important;
+  }
+}
+@media (orientation:landscape) and (max-height:540px){
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-top-line .header-status-item{
+    font-size:.67rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money{
+    font-size:.84rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    font-size:.82rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    font-size:.64rem!important;
+  }
+}
+
+
+
+/* v0.10.149 現在時刻を独立した大時計として表示 */
+.game-header{
+  grid-template-areas:
+    "status money"
+    "center center"
+    "clock clock"!important;
+  row-gap:.3rem!important;
+}
+.game-header.main-header{
+  grid-template-areas:
+    "status money"
+    "clock clock"!important;
+}
+.game-time-panel{
+  grid-area:clock;
+  justify-self:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:.18rem .58rem;
+  width:min(430px,100%);
+  min-height:45px;
+  padding:.32rem .9rem;
+  border:1px solid rgba(242,203,116,.82);
+  border-radius:12px;
+  background:rgba(8,7,8,.82);
+  color:#fff;
+  box-shadow:0 7px 20px rgba(0,0,0,.38),inset 0 0 18px rgba(255,220,145,.035);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 2px 7px rgba(0,0,0,.95);
+}
+.game-time-icon{
+  flex:0 0 auto;
+  font-size:1.18rem;
+  line-height:1;
+}
+.game-time-value{
+  flex:0 0 auto;
+  color:#fff;
+  font-size:clamp(1.45rem,3vw,1.92rem);
+  line-height:1;
+  letter-spacing:.07em;
+  font-weight:900;
+}
+.game-time-note{
+  flex:0 1 auto;
+  color:#f4e5c5;
+  font-size:.7rem;
+  line-height:1.25;
+  font-weight:800;
+  white-space:nowrap;
+}
+.game-time-panel.okachimachi-warning{
+  border-color:rgba(255,226,93,.95);
+  box-shadow:0 7px 20px rgba(0,0,0,.38),0 0 18px rgba(255,222,79,.18);
+}
+.game-time-panel.okachimachi-warning .game-time-value,
+.game-time-panel.okachimachi-warning .game-time-note{color:#ffe85f}
+.game-time-panel.ending{
+  border-color:rgba(255,163,71,.98);
+  box-shadow:0 7px 20px rgba(0,0,0,.4),0 0 20px rgba(255,132,43,.2);
+}
+.game-time-panel.ending .game-time-value,
+.game-time-panel.ending .game-time-note{color:#ffad58}
+.game-time-panel.ended{
+  border-color:rgba(255,91,91,.98);
+  background:rgba(39,6,8,.86);
+  box-shadow:0 7px 20px rgba(0,0,0,.42),0 0 20px rgba(255,69,69,.22);
+}
+.game-time-panel.ended .game-time-value,
+.game-time-panel.ended .game-time-note{color:#ff7777}
+
+/* 絶対配置の上部バーが大時計分だけ高くなるため、本文の開始位置を下げる。 */
+.screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+  padding-top:154px!important;
+}
+body[data-screen="phone"] .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+  padding-top:160px!important;
+}
+:is(
+  body[data-screen="inventory"],
+  body[data-screen="looseInventoryDetail"],
+  body[data-screen="metalInventoryDetail"],
+  body[data-screen="metalProfessionalGuide"],
+  body[data-screen="workshopTool"],
+  body[data-screen="workshopToolGuide"]
+) .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+  padding-top:clamp(10px,2vw,18px)!important;
+}
+body[data-screen="main"] .floating-notice{
+  top:calc(max(8px,var(--safe-top)) + 142px)!important;
+}
+@media (orientation:portrait), (max-width:820px){
+  .game-time-panel{
+    width:min(390px,100%);
+    min-height:43px;
+    padding:.3rem .65rem;
+    gap:.15rem .45rem;
+  }
+  .game-time-icon{font-size:1.02rem}
+  .game-time-value{font-size:1.48rem}
+  .game-time-note{font-size:.62rem}
+  .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+    padding-top:158px!important;
+  }
+  body[data-screen="phone"] .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+    padding-top:164px!important;
+  }
+  :is(
+    body[data-screen="inventory"],
+    body[data-screen="looseInventoryDetail"],
+    body[data-screen="metalInventoryDetail"],
+    body[data-screen="metalProfessionalGuide"],
+    body[data-screen="workshopTool"],
+    body[data-screen="workshopToolGuide"]
+  ) .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+    padding-top:10px!important;
+  }
+  body[data-screen="main"] .floating-notice{
+    top:calc(max(8px,var(--safe-top)) + 146px)!important;
+  }
+}
+@media (max-width:430px){
+  .game-time-panel{
+    width:min(330px,100%);
+    min-height:41px;
+    padding:.27rem .5rem;
+  }
+  .game-time-value{font-size:1.38rem}
+  .game-time-note{font-size:.58rem}
+}
+@media (orientation:landscape) and (max-height:540px){
+  .game-time-panel{
+    width:min(390px,100%);
+    min-height:38px;
+    padding:.2rem .6rem;
+  }
+  .game-time-icon{font-size:.92rem}
+  .game-time-value{font-size:1.26rem}
+  .game-time-note{font-size:.58rem}
+  .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+    padding-top:137px!important;
+  }
+  body[data-screen="phone"] .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+    padding-top:141px!important;
+  }
+  :is(
+    body[data-screen="inventory"],
+    body[data-screen="looseInventoryDetail"],
+    body[data-screen="metalInventoryDetail"],
+    body[data-screen="metalProfessionalGuide"],
+    body[data-screen="workshopTool"],
+    body[data-screen="workshopToolGuide"]
+  ) .screen-shell:has(> .game-header > .game-time-panel) > .screen-content{
+    padding-top:8px!important;
+  }
+  body[data-screen="main"] .floating-notice{
+    top:calc(max(4px,var(--safe-top)) + 125px)!important;
+  }
+}
+
+
+/* v0.10.150 店舗契約の不足額を中央表示 */
+.store-contract-shortage{width:100%;text-align:center;font-weight:700}
+
+
+/* v0.10.151 ルース石種・カットの詳しい説明 */
+.loose-knowledge-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1rem}
+.loose-knowledge-card>div{min-width:0}
+.loose-knowledge-button{min-width:9.5rem;white-space:nowrap}
+.loose-professional-guide-page{display:grid;gap:.9rem;align-content:start;width:min(100%,940px);max-height:calc(100dvh - 150px);margin:0 auto;padding:1rem;overflow:auto;overscroll-behavior:contain}
+.loose-guide-title{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1rem;padding-bottom:.72rem;border-bottom:1px solid rgba(255,255,255,.14)}
+.loose-guide-title>div:first-child{display:grid;gap:.14rem}
+.loose-guide-title small{color:rgba(255,255,255,.68);font-size:.76rem}
+.loose-guide-title h1{margin:0;color:#fff0bd;font-size:clamp(1.35rem,4vw,2rem)}
+.loose-guide-title p{margin:0;color:rgba(255,255,255,.82);font-size:.88rem;line-height:1.6}
+.loose-guide-hardness{display:grid;gap:.12rem;min-width:8.5rem;padding:.68rem .85rem;border:1px solid rgba(231,192,110,.35);border-radius:12px;background:rgba(52,36,10,.55);text-align:center}
+.loose-guide-hardness strong{font-size:1.25rem;color:#ffe2a0;font-variant-numeric:tabular-nums}
+.loose-guide-sections{display:grid;gap:.7rem}
+.loose-guide-caution{margin:0;padding:.72rem .88rem;border:1px solid rgba(231,192,110,.28);border-radius:10px;background:rgba(52,36,10,.48);color:#f2ddb0;font-size:.82rem;line-height:1.7}
+.loose-cut-guide-title{grid-template-columns:1fr}
+@media (max-width:620px){
+  .loose-knowledge-card{grid-template-columns:1fr}
+  .loose-knowledge-button{width:100%}
+  .loose-professional-guide-page{max-height:none;padding:.82rem}
+  .loose-guide-title{grid-template-columns:1fr}
+  .loose-guide-hardness{width:100%}
+}
+
+/* v0.10.154 ルース屋3メニュー */
+.loose-shop-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:430px){.loose-shop-tabs{gap:.3rem}.loose-shop-tabs button{padding:.5rem .25rem;font-size:.78rem}}
+
+/* v0.10.158 地金屋の売買ボタン文字を統一 */
+.metal-market-trade-buttons .large-button{
+  font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;
+  font-size:1.05rem;
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:0;
+}
+
+/* v0.10.160 工房ルース一覧の左右配置を統一 */
+.loose-inventory-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(112px,max-content) 16px;
+  align-items:center;
+  gap:.75rem;
+}
+.loose-inventory-row .material-name{
+  width:100%;
+  min-width:0;
+  justify-self:stretch;
+  justify-content:flex-start;
+  text-align:left;
+}
+.loose-inventory-row .material-name>span:last-child{
+  min-width:0;
+  text-align:left;
+}
+.loose-inventory-row .loose-mini{
+  flex:0 0 44px;
+}
+.loose-inventory-row .loose-row-counts{
+  min-width:112px;
+  justify-self:end;
+  justify-items:end;
+  text-align:right;
+}
+.loose-inventory-row .loose-row-counts strong,
+.loose-inventory-row .loose-row-counts small{
+  width:100%;
+  text-align:right;
+}
+.loose-inventory-row>i{
+  justify-self:end;
+  text-align:right;
+}
+@media (max-width:520px){
+  .loose-inventory-row{
+    grid-template-columns:minmax(0,1fr) minmax(92px,118px) 12px;
+    gap:.45rem;
+  }
+  .loose-inventory-row .material-name{gap:.4rem}
+  .loose-inventory-row .loose-mini{width:38px;height:38px;flex-basis:38px}
+  .loose-inventory-row .loose-row-counts{min-width:92px;max-width:118px}
+}
+
+/* v0.10.162 スマートフォン全体の文字視認性改善 */
+body[data-screen="phone"] .phone-content{
+  color:#fff3d4!important;
+}
+body[data-screen="phone"] .phone-content h1,
+body[data-screen="phone"] .phone-content h2,
+body[data-screen="phone"] .phone-content h3,
+body[data-screen="phone"] .phone-content h4,
+body[data-screen="phone"] .phone-content p,
+body[data-screen="phone"] .phone-content label,
+body[data-screen="phone"] .phone-content .phone-empty,
+body[data-screen="phone"] .phone-content .finance-row,
+body[data-screen="phone"] .phone-content .settings-form,
+body[data-screen="phone"] .phone-content .settings-form>small,
+body[data-screen="phone"] .phone-content .settings-form>label>span,
+body[data-screen="phone"] .phone-content .toggle-row>span,
+body[data-screen="phone"] .phone-content .home-install-setting strong,
+body[data-screen="phone"] .phone-content .home-install-setting small,
+body[data-screen="phone"] .phone-content .phone-ai-screen p,
+body[data-screen="phone"] .phone-content .phone-item-section h2,
+body[data-screen="phone"] .phone-content .phone-item-row>div>strong,
+body[data-screen="phone"] .phone-content .phone-item-row small,
+body[data-screen="phone"] .phone-content .item-status-label{
+  color:#fff3d4!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .phone-item-row>div>span,
+body[data-screen="phone"] .phone-content .phone-item-section>header>strong{
+  color:#f4cf79!important;
+}
+body[data-screen="phone"] .phone-content .finance-row{
+  border-bottom-color:rgba(255,236,199,.26)!important;
+}
+body[data-screen="phone"] .phone-content .finance-row .income{
+  color:#8ee0aa!important;
+}
+body[data-screen="phone"] .phone-content .finance-row .expense{
+  color:#ff9a91!important;
+}
+body[data-screen="phone"] .phone-content .phone-card,
+body[data-screen="phone"] .phone-content .phone-totals>div,
+body[data-screen="phone"] .phone-content .calendar-day:not(.outside){
+  color:#2b2119!important;
+}
+body[data-screen="phone"] .phone-content .phone-card strong,
+body[data-screen="phone"] .phone-content .phone-card span,
+body[data-screen="phone"] .phone-content .phone-totals strong,
+body[data-screen="phone"] .phone-content .calendar-day strong{
+  color:#2b2119!important;
+}
+body[data-screen="phone"] .phone-content .phone-card small,
+body[data-screen="phone"] .phone-content .phone-totals small,
+body[data-screen="phone"] .phone-content .calendar-day small{
+  color:#6f604f!important;
+  opacity:1!important;
+}
+body[data-screen="phone"] .phone-content .game-calendar>h2,
+body[data-screen="phone"] .phone-content .calendar-today-events h3{
+  color:#fff3d4!important;
+}
+body[data-screen="phone"] .phone-content .calendar-weekdays span{
+  color:#eadfc9!important;
+}
+body[data-screen="phone"] .phone-content .calendar-weekdays span:first-child{
+  color:#ff9a91!important;
+}
+body[data-screen="phone"] .phone-content .calendar-weekdays span:last-child{
+  color:#9dc8ff!important;
+}
+body[data-screen="phone"] .phone-content .calendar-day.outside{
+  color:transparent!important;
+}
+body[data-screen="phone"] .phone-content .settings-form.compact>label{
+  padding:.55rem .65rem;
+  border:1px solid rgba(255,236,199,.2);
+  border-radius:10px;
+  background:rgba(255,255,255,.055);
+}
+body[data-screen="phone"] .phone-content .home-install-setting{
+  border-color:rgba(255,236,199,.28)!important;
+  background:rgba(255,255,255,.055)!important;
+}
+body[data-screen="phone"] .phone-content .settings-form input[type="range"]{
+  accent-color:#d8aa56;
+  opacity:1!important;
+}
+body[data-screen="phone"] .phone-content .settings-form input[type="checkbox"]{
+  accent-color:#d8aa56;
+}
+body[data-screen="phone"] .phone-content .account-danger-actions{
+  border-top-color:rgba(255,236,199,.22)!important;
+}
+body[data-screen="phone"] .phone-content .account-danger-actions .account-mini-button{
+  color:#2b2119!important;
+  border-color:#d6c8b4!important;
+  background:#fff!important;
+}
+body[data-screen="phone"] .phone-content .account-danger-actions .account-mini-button.danger{
+  color:#9a2f28!important;
+  border-color:#cf8179!important;
+}
+
+/* v0.10.162 収支の期間切り替え・スマートフォン文字視認性 */
+body[data-screen="phone"] .finance-period-tabs{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  margin:0 0 .75rem;
+}
+body[data-screen="phone"] .finance-period-tabs button{
+  min-height:42px!important;
+  padding:.45rem .2rem!important;
+  border:1px solid #d6c8b4!important;
+  border-radius:9px!important;
+  background:#fff!important;
+  color:#2b2119!important;
+  font:800 .82rem/1.1 "Yu Mincho","Hiragino Mincho ProN",serif!important;
+}
+body[data-screen="phone"] .finance-period-tabs button.active{
+  color:#4e3215!important;
+  border-color:#c8943c!important;
+  outline:2px solid rgba(200,148,60,.42)!important;
+  outline-offset:-3px!important;
+}
+body[data-screen="phone"] .finance-totals{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+body[data-screen="phone"] .finance-totals .income{
+  color:#297743!important;
+}
+body[data-screen="phone"] .finance-totals .expense{
+  color:#a13d36!important;
+}
+body[data-screen="phone"] .phone-content .phone-profile-screen,
+body[data-screen="phone"] .phone-content .phone-item-inventory,
+body[data-screen="phone"] .phone-content .phone-ai-screen,
+body[data-screen="phone"] .phone-content .game-calendar,
+body[data-screen="phone"] .phone-content .settings-form,
+body[data-screen="phone"] .phone-content .finance-summary-title,
+body[data-screen="phone"] .phone-content .finance-row{
+  color:#fff3d4!important;
+}
+body[data-screen="phone"] .phone-content .phone-profile-screen small,
+body[data-screen="phone"] .phone-content .phone-item-inventory small,
+body[data-screen="phone"] .phone-content .phone-ai-screen small,
+body[data-screen="phone"] .phone-content .game-calendar>small,
+body[data-screen="phone"] .phone-content .settings-form>small{
+  color:#eadfc9!important;
+  opacity:1!important;
+}
+@media (max-width:430px){
+  body[data-screen="phone"] .finance-period-tabs{gap:4px}
+  body[data-screen="phone"] .finance-period-tabs button{min-height:38px!important;font-size:.72rem!important}
+  body[data-screen="phone"] .finance-totals{gap:.35rem}
+  body[data-screen="phone"] .finance-totals>div{padding:.55rem .35rem}
+  body[data-screen="phone"] .finance-totals strong{font-size:.82rem}
+}
+
+/* v0.10.164 ジュエリー制作のルース選択手順を整理 */
+.craft-loose-gem-grid{
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+}
+.craft-loose-gem-card{
+  align-content:start;
+  text-align:center;
+}
+.craft-loose-gem-card .choice-visual{
+  min-height:58px;
+}
+.craft-current-loose{
+  color:var(--gold-light)!important;
+  font-weight:800;
+}
+.craft-loose-empty{
+  padding:1.4rem .8rem;
+}
+.craft-metal-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+.craft-metal-grid .choice-card{
+  text-align:center;
+  align-content:center;
+}
+.craft-metal-grid .choice-card strong{
+  white-space:nowrap;
+}
+.craft-loose-selection-page{
+  display:grid;
+  gap:1rem;
+  align-content:start;
+}
+.craft-loose-selection-heading{
+  text-align:center;
+}
+.craft-loose-selection-heading h1,
+.craft-loose-selection-heading p{
+  margin:.25rem 0;
+}
+.craft-loose-selection-heading small{
+  color:var(--gold-light);
+  font-weight:800;
+}
+.craft-loose-cut-list{
+  display:grid;
+  gap:.7rem;
+}
+.craft-loose-cut-card{
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:center;
+  gap:.9rem;
+  padding:.8rem;
+  border:1px solid rgba(231,192,110,.28);
+  border-radius:12px;
+  background:rgba(255,255,255,.045);
+}
+.craft-loose-cut-card.selected{
+  border-color:#f1ca73;
+  background:linear-gradient(145deg,rgba(161,111,42,.32),rgba(77,51,26,.34));
+}
+.craft-loose-cut-image{
+  display:grid;
+  place-items:center;
+  min-height:76px;
+}
+.craft-loose-cut-image .choice-loose{
+  width:72px;
+  height:72px;
+}
+.craft-loose-cut-copy{
+  display:grid;
+  gap:.25rem;
+  min-width:0;
+}
+.craft-loose-cut-copy strong{
+  color:var(--gold-light);
+  font-size:1rem;
+}
+.craft-loose-cut-copy small{
+  color:var(--muted);
+}
+.craft-use-loose-button{
+  min-width:112px;
+}
+.craft-loose-bottom-back{
+  margin-top:.25rem;
+}
+.craft-time-warning{
+  text-align:center;
+  font-weight:800;
+}
+@media (orientation:portrait),(max-width:820px){
+  .craft-loose-cut-card{
+    grid-template-columns:72px minmax(0,1fr) auto;
+    gap:.65rem;
+  }
+  .craft-loose-cut-image{
+    min-height:64px;
+  }
+  .craft-loose-cut-image .choice-loose{
+    width:60px;
+    height:60px;
+  }
+  .craft-use-loose-button{
+    min-width:96px;
+    padding-inline:.65rem;
+  }
+}
+@media (max-width:430px){
+  .craft-metal-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+  .craft-metal-grid .choice-card{
+    padding:.5rem .3rem;
+  }
+  .craft-metal-grid .choice-card strong{
+    font-size:.74rem;
+  }
+  .craft-metal-grid .choice-card small{
+    font-size:.6rem;
+  }
+  .craft-loose-cut-card{
+    grid-template-columns:64px minmax(0,1fr);
+  }
+  .craft-use-loose-button{
+    grid-column:1/-1;
+    width:100%;
+  }
+}
+
+/* v0.10.165 ジュエリー制作の完成予定詳細を画面下部へ統合 */
+.craft-layout.craft-layout-no-preview{
+  grid-template-columns:minmax(0,760px);
+  justify-content:center;
+  align-content:start;
+}
+.craft-layout-no-preview .craft-options{
+  width:min(760px,100%);
+  max-width:760px;
+  justify-self:center;
+}
+.craft-final-summary{
+  display:grid;
+  gap:.55rem;
+  margin:1.25rem 0 1rem;
+  padding:1rem;
+  border-top:1px solid rgba(241,202,115,.7);
+  border-bottom:1px solid rgba(241,202,115,.35);
+}
+.craft-summary-loose{
+  margin:0;
+  color:var(--gold-light);
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.craft-final-summary h2{
+  margin:0;
+  font-size:clamp(1.05rem,2.6vw,1.45rem);
+  line-height:1.45;
+  color:#fff0c0;
+}
+.craft-summary-details{
+  display:grid;
+  gap:.35rem;
+  margin:.15rem 0 0;
+}
+.craft-summary-details>div{
+  display:flex;
+  justify-content:space-between;
+  gap:1rem;
+  padding:.38rem 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.craft-summary-details>div:last-child{
+  border-bottom:0;
+}
+.craft-summary-details dt{
+  color:var(--muted);
+}
+.craft-summary-details dd{
+  margin:0;
+  color:var(--gold-light);
+  font-weight:800;
+  text-align:right;
+}
+.craft-metal-shortage{
+  display:grid;
+  gap:.6rem;
+  margin-top:.45rem;
+}
+.craft-metal-shortage p{
+  margin:0;
+  color:#ffb5a7;
+  font-weight:800;
+  text-align:center;
+}
+@media (max-width:430px){
+  .craft-final-summary{
+    padding:.85rem .35rem;
+  }
+  .craft-summary-details>div{
+    gap:.6rem;
+  }
+}
+
+/* v0.10.171 ルース使用有無の選択 */
+.choice-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.craft-loose-mode-grid .choice-card{min-height:68px}
+@media (max-width:520px){
+  .choice-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+
+/* v0.10.173 デザイン名・表面の組み合わせ選択 */
+.craft-surface-field{margin-bottom:1rem}
+.craft-surface-grid .choice-card{min-height:64px}
+.craft-surface-grid .choice-card[aria-pressed="true"]{border-color:rgba(255,226,166,.92);box-shadow:0 0 0 1px rgba(255,226,166,.35) inset,0 8px 22px rgba(0,0,0,.24)}
+.craft-surface-note{margin:.55rem 0 0;text-align:left;line-height:1.65;color:rgba(255,255,255,.78)}
+@media (max-width:700px){
+  .craft-surface-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .craft-surface-grid .choice-card{padding:.5rem .35rem;min-height:58px}
+  .craft-surface-grid .choice-card strong{font-size:.78rem}
+  .craft-surface-note{font-size:.72rem}
+}
+
+/* v0.10.178 御徒町・食事画面の可読性用の影を文字だけへ変更 */
+body[data-screen="okachimachi"] .summary-card,
+body[data-screen="okachimachi"] .okachimachi-facilities button,
+body[data-screen="okachimachi"] .action-panel > .small-note,
+body[data-screen="meal"] .meal-hunger-summary,
+body[data-screen="meal"] .meal-choice-card,
+body[data-screen="meal"] .meal-note,
+body[data-screen="meal"] .meal-eating-panel h1,
+body[data-screen="meal"] .meal-eating-panel > strong{
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+body[data-screen="okachimachi"] .screen-content :is(h1,h2,h3,p,strong,small,span,label,button),
+body[data-screen="meal"] .screen-content :is(h1,h2,h3,p,strong,small,span,label,button){
+  text-shadow:0 1px 3px rgba(0,0,0,.42)!important;
+}
+
+
+/* v0.10.179 次の日への暗転・地金屋表示調整 */
+#sleep-curtain.next-day-blackout,
+#sleep-curtain.next-day-blackout.active{
+  transition:none!important;
+}
+body[data-screen="supplierMetals"] .metal-product-name{
+  background:transparent!important;
+  box-shadow:none!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.28)!important;
+}
+body[data-screen="supplierMetals"] .metal-purchase-control-row{
+  width:100%;
+  grid-template-columns:auto minmax(118px,180px) auto;
+  justify-content:end;
+  justify-items:end;
+}
+body[data-screen="supplierMetals"] .metal-purchase-control-row .metal-quantity-label,
+body[data-screen="supplierMetals"] .metal-purchase-control-row .metal-vertical-stepper,
+body[data-screen="supplierMetals"] .metal-inline-purchase{
+  justify-self:end;
+  text-align:right;
+}
+body[data-screen="supplierMetals"] .metal-quantity-area{
+  width:100%;
+  justify-items:end;
+}
+body[data-screen="supplierMetals"] .metal-quantity-input{
+  width:min(100%,365px);
+  grid-template-columns:auto minmax(118px,180px);
+  justify-content:end;
+  justify-items:end;
+}
+body[data-screen="supplierMetals"] .metal-quantity-input>span:first-child{
+  justify-self:end;
+  text-align:right;
+  white-space:nowrap;
+}
+body[data-screen="supplierMetals"] .metal-quantity-input .metal-vertical-stepper{
+  justify-self:end;
+  width:clamp(118px,18vw,180px);
+}
+body[data-screen="supplierMetals"] .metal-max-button,
+body[data-screen="supplierMetals"] .metal-trade-submit{
+  width:auto!important;
+  min-width:96px;
+  justify-self:end;
+}
+@media (max-width:430px){
+  body[data-screen="supplierMetals"] .metal-purchase-control-row{
+    grid-template-columns:auto minmax(102px,138px) auto;
+  }
+  body[data-screen="supplierMetals"] .metal-quantity-input{
+    grid-template-columns:auto minmax(102px,138px);
+  }
+  body[data-screen="supplierMetals"] .metal-quantity-input .metal-vertical-stepper{
+    width:min(138px,42vw);
   }
 }

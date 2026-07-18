@@ -28,7 +28,7 @@ let selectedMining = null;
 let miningGame = null;
 let selectedPolishing = 'garnet';
 let selectedPolishingShape = 'round';
-let phoneTab = 'calendar';
+let phoneTab = 'notifications';
 let itemUseFeedback = null;
 let itemUseFeedbackTimer = null;
 let selectedMeal = 'convenience';
@@ -39,6 +39,7 @@ let titleSettings = loadTitleSettings();
 let currentUser = null;
 let cloudSave = null;
 let authReady = false;
+let authEntryRequested = false;
 let saveQueue = Promise.resolve();
 let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 let stopSessionWatch = null;
@@ -55,7 +56,28 @@ let moneyFeedback = null;
 let moneyFeedbackTimer = null;
 let moneyAnimationFrame = null;
 let pendingDayMoneyDelta = 0;
-let appInstalled = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+const MINING_ROCK_IMAGE_POOL = Object.freeze([
+  "./assets/images/mining-rocks/rock-01.png",
+  "./assets/images/mining-rocks/rock-02.png",
+  "./assets/images/mining-rocks/rock-03.png",
+  "./assets/images/mining-rocks/rock-04.png",
+  "./assets/images/mining-rocks/rock-05.png",
+  "./assets/images/mining-rocks/rock-06.png",
+  "./assets/images/mining-rocks/rock-07.png",
+  "./assets/images/mining-rocks/rock-08.png",
+  "./assets/images/mining-rocks/rock-09.png",
+  "./assets/images/mining-rocks/rock-10.png",
+]);
+
+const MINING_BROKEN_ROCK_IMAGE_POOL = Object.freeze([
+  "./assets/images/mining-rocks-broken/broken-01.png",
+  "./assets/images/mining-rocks-broken/broken-02.png",
+  "./assets/images/mining-rocks-broken/broken-03.png",
+  "./assets/images/mining-rocks-broken/broken-04.png",
+  "./assets/images/mining-rocks-broken/broken-05.png",
+]);
 
 const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
   garnet: {
@@ -309,6 +331,288 @@ const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
   tourmaline: '多彩な色を持つ宝石で、ゲーム内のルースはピンクトルマリンとして扱います。',
   tanzanite: '青から紫を帯びる色調が特徴のゾイサイトです。見る方向で色の印象が変わります。',
   citrine: '黄色から橙黄色を示すクォーツで、明るく温かい色調が特徴です。',
+});
+
+
+const GEM_LOOSE_GUIDES = Object.freeze({
+  garnet: {
+    hardness: '6.5〜7.5', mineral: 'ガーネット・グループ',
+    overview: 'ガーネットは単一の鉱物名ではなく、似た結晶構造を持つ複数の鉱物からなるグループです。赤色系のアルマンディンやパイロープのほか、橙、黄、緑、紫など幅広い色があり、種類によって比重、屈折率、硬さ、内包物の特徴が異なります。',
+    sections: [
+      { title: '色と鉱物種', body: 'ゲーム内では赤系ガーネットとして扱います。実物では鉄、マグネシウム、マンガン、カルシウム、クロムなどの組成差によって色が変わります。同じガーネットでも種類を特定しなければ、硬さや比重を一つの数値だけで判断できません。' },
+      { title: '輝きと品質の見方', body: '透明度、色の均一さ、暗すぎない明度、肉眼で目立つ内包物の少なさが見た目を左右します。濃色石は深くしすぎると黒く沈みやすいため、原石の色と透明度に合わせて厚みを調整します。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は種類により6.5〜7.5です。一般に日常用ジュエリーへ使える硬さがありますが、強い衝撃で欠ける可能性があります。硬度は傷への強さであり、割れにくさそのものではありません。' },
+      { title: '処理・鑑別上の注意', body: '多くのガーネットは無処理で流通しますが、種類の混同、合成石や類似石との取り違え、まれな充填処理には注意が必要です。色だけで種類を断定せず、屈折率、比重、分光特性、内包物を総合して確認します。' },
+      { title: '加工・石留め・手入れ', body: '輪郭の欠け、ガードルの薄さ、内部亀裂を確認してから留めます。温かい石けん水での洗浄が基本です。亀裂が多い石や処理石には超音波洗浄を避け、強い加熱や急冷も行いません。' },
+    ],
+  },
+  amethyst: {
+    hardness: '7', mineral: 'クォーツ（石英）',
+    overview: 'アメシストは紫色のクォーツです。紫色は微量の鉄と自然放射線などの影響で生じ、赤紫、青紫、淡紫から濃紫まで幅があります。結晶の成長帯に沿った色むらや方向性が見られることがあります。',
+    sections: [
+      { title: '色と結晶の特徴', body: '色の濃さだけでなく、赤味と青味のバランス、明るさ、色帯の目立ちにくさが評価に影響します。原石の色帯をどの方向へ向けるかで、正面から見た色の均一さが変わります。' },
+      { title: '輝きと内包物', body: '透明度の高い石ではファセットの対称性と研磨状態が輝きを左右します。液体や気体を含む内包物、微細な亀裂、双晶に関連する模様が見られることがあり、位置によって耐久性にも影響します。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は7です。通常使用には比較的向きますが、石英は硬くても脆さがあり、鋭い稜線や薄いガードルは衝撃で欠けます。ダイヤモンド、コランダム、トパーズなど硬い石と一緒に保管すると擦り傷が付くことがあります。' },
+      { title: '処理と色の安定性', body: '加熱により色を変化させ、シトリン系の色にする場合があります。強い加熱や長時間の強い光で色調が変わる可能性があるため、修理時の火や高温洗浄には注意します。' },
+      { title: '加工・石留め・手入れ', body: '研磨では稜線のだれ、面の平坦性、色帯の向きを確認します。石留めではガードル付近の亀裂へ力を集中させません。温かい石けん水と柔らかいブラシが基本で、急激な温度変化を避けます。' },
+    ],
+  },
+  aquamarine: {
+    hardness: '7.5〜8', mineral: 'ベリル（緑柱石）',
+    overview: 'アクアマリンは青から青緑色のベリルです。比較的透明度の高い結晶が得られやすく、大きなルースにも加工されます。色は淡い水色から濃い青まであり、方向によって色の濃さが異なる多色性を示します。',
+    sections: [
+      { title: '色と方向性', body: '青味の強さ、彩度、明るさ、緑味の程度が印象を左右します。原石の結晶軸に対する向きで色が変わるため、カット方向は色の濃さと歩留まりの両方を考えて決めます。' },
+      { title: '透明度とカット', body: '肉眼で清潔に見える石が多く、ファセットの乱れ、窓抜け、研磨傷が目立ちやすい宝石です。淡色石では十分な深さと適切な角度を確保し、色と輝きが薄くならないようにします。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は7.5〜8です。擦り傷には比較的強い一方、強い衝撃や内部亀裂によって欠けることがあります。大きな石ほど石留め中の圧力差や熱衝撃に注意が必要です。' },
+      { title: '処理と鑑別', body: '青緑色をより青く見せる加熱処理が広く行われます。処理の有無は見た目だけで判断できない場合があります。合成ベリルやガラスなどの類似石とは、屈折率、比重、多色性、内包物で区別します。' },
+      { title: '加工・石留め・手入れ', body: 'ガードルが極端に薄い部分や既存の欠けを避けて爪を配置します。通常は温かい石けん水で洗浄できますが、亀裂や液体内包物が多い石には超音波・スチーム・急加熱を避けます。' },
+    ],
+  },
+  diamond: {
+    hardness: '10', mineral: '炭素の結晶',
+    overview: 'ダイヤモンドは炭素からなる結晶で、非常に高い屈折率と分散を持ち、白い輝きと虹色のファイアを生みます。モース硬度は最高の10ですが、一定方向に完全な劈開があり、強い衝撃で欠けたり割れたりすることがあります。',
+    sections: [
+      { title: '輝きの仕組み', body: '明るさ、ファイア、シンチレーションは、クラウン角、パビリオン角、テーブル径、全体の対称性、研磨状態の組み合わせで変わります。深すぎる石は暗く、浅すぎる石は窓抜けや光漏れが生じやすくなります。' },
+      { title: '品質評価', body: '一般にカラー、クラリティ、カット、カラット重量の4Cで評価します。内包物の種類と位置は見た目だけでなく耐久性にも関係し、ガードル付近のフェザーや大きな劈開性亀裂には注意が必要です。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は10で、傷への抵抗は非常に高い宝石です。ただし硬度と靭性は別で、劈開方向への衝撃、極端に薄いガードル、尖ったコーナーは欠けの原因になります。ダイヤモンド同士は互いを傷付けるため個別保管します。' },
+      { title: '処理・合成・類似石', body: '高温高圧処理、照射、レーザードリル、亀裂充填などの処理石があり、HPHT法やCVD法による合成ダイヤモンドも流通します。外観だけで判別できないため、専門機器と検査手順が必要です。' },
+      { title: '加工・石留め・手入れ', body: '石留め前に欠け、フェザー、ガードル厚、劈開方向を確認します。油膜で輝きが鈍りやすいため洗浄は有効ですが、充填処理石は熱・超音波・薬品に注意します。修理時は処理情報を確認してから加熱します。' },
+    ],
+  },
+  emerald: {
+    hardness: '7.5〜8', mineral: 'ベリル（緑柱石）',
+    overview: 'エメラルドはクロムやバナジウムなどで緑色を示すベリルです。天然由来の内包物や亀裂が多いことが一般的で、それらは庭園を意味する「ジャルダン」と呼ばれることがあります。色、透明感、内包物のバランスが重要です。',
+    sections: [
+      { title: '色と評価', body: '青緑から黄緑までの色相、彩度、明度、色むらを見ます。鮮やかな緑で暗すぎず、正面から色が均一に見えるものが魅力的です。厚みを増やしすぎると暗くなり、浅すぎると色が薄く見えます。' },
+      { title: '内包物と透明度', body: '三相内包物、液体、結晶、成長管、亀裂などが見られます。内包物は天然らしさの手掛かりになりますが、表面に達する亀裂やガードル付近の亀裂は石留め・洗浄・修理のリスクを高めます。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は7.5〜8ですが、内包物と亀裂が多いため実際の取り扱いは慎重に行います。擦り傷への抵抗だけで安全性を判断せず、衝撃、圧力、熱、急激な温度変化を避けます。' },
+      { title: '含浸処理と鑑別', body: '表面に達する亀裂を目立ちにくくするため、オイルや樹脂による含浸が広く行われます。処理材や程度によって耐熱性・耐薬品性が変わります。合成エメラルドや類似石との識別には内包物と各種測定が重要です。' },
+      { title: '加工・石留め・手入れ', body: '角を保護するエメラルドカットや覆輪が使われます。爪を倒す際は一方向へ強い圧力を掛けず、既存亀裂の位置を避けます。超音波・スチーム・強い洗剤・加熱を避け、柔らかい布と温かい石けん水で短時間洗浄します。' },
+    ],
+  },
+  moonstone: {
+    hardness: '6〜6.5', mineral: '長石グループ',
+    overview: 'ムーンストーンは長石の内部構造によって青白い光が浮かぶアデュラレッセンスを示す宝石です。光の帯や面が石の表面を滑るように動き、地色、透明度、光の強さと位置が見た目を左右します。',
+    sections: [
+      { title: '光学効果', body: '異なる長石層の微細な積層で光が散乱し、青白いシーンが現れます。最も強い光がカボションの中央に出るよう、原石の層に対する方向を見極めて研磨します。' },
+      { title: '品質の見方', body: '地色が無色に近く透明度が高いもの、青い光が強く、正面で中央に現れ、石を動かすと滑らかに移動するものが魅力的です。亀裂、曇り、不要な色むら、表面傷も確認します。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は6〜6.5です。完全な劈開を持つため、衝撃で割れたり層に沿って欠けたりしやすい宝石です。リングでは特に保護性の高いデザインが必要です。' },
+      { title: '類似石と処理', body: 'ラブラドライト系の長石、人工ガラス、乳白色の類似石と混同されることがあります。光の現れ方、屈折率、比重、内包物を確認します。コーティングや充填の可能性も考慮します。' },
+      { title: '加工・石留め・手入れ', body: '光学効果の方向を優先してカボションにし、ドームを薄くしすぎません。覆輪や低い爪で縁を保護し、強い圧力を避けます。超音波、スチーム、急熱を避け、温かい石けん水で優しく洗います。' },
+    ],
+  },
+  ruby: {
+    hardness: '9', mineral: 'コランダム（鋼玉）',
+    overview: 'ルビーはクロムによって赤色を示すコランダムです。赤の色相、彩度、明度、透明度、蛍光、内包物、カットが総合的な見た目を作ります。紫味、橙味、暗さの程度によって印象が変わります。',
+    sections: [
+      { title: '色と蛍光', body: '鮮やかで適度な明るさの赤が魅力とされます。クロムによる赤色蛍光が見た目を明るくする場合があり、鉄分が多い石では蛍光が弱くなる傾向があります。照明条件でも色の印象が変わります。' },
+      { title: '内包物と特徴', body: 'ルチル針、結晶、成長線、双晶面、ヒールドフラクチャーなどが見られます。内包物は産地や処理の手掛かりになる一方、表面に達する亀裂やガードル付近の欠陥は耐久性に影響します。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は9で、ダイヤモンドに次いで傷に強い宝石です。通常のジュエリーに適しますが、強い衝撃、薄いガードル、尖った部分、内部亀裂による欠けには注意します。' },
+      { title: '加熱・充填・合成', body: '色や透明度を改善する加熱処理が一般的です。鉛ガラス充填や拡散処理など、取り扱いへ大きく影響する処理もあります。合成ルビーも流通するため、修理前に処理と天然・合成の情報を確認します。' },
+      { title: '加工・石留め・手入れ', body: '通常の無充填石は比較的扱いやすいものの、充填石や亀裂の多い石には熱、酸、超音波、スチームを避けます。爪を均等に倒し、欠けや双晶面へ力を集中させません。' },
+    ],
+  },
+  peridot: {
+    hardness: '6.5〜7', mineral: 'オリビン（かんらん石）',
+    overview: 'ペリドットは宝石質オリビンで、黄緑から緑色を示します。鉄が色の主因で、他の多くの宝石のように別元素による着色ではありません。比較的強い複屈折を持ち、石を通して稜線が二重に見えることがあります。',
+    sections: [
+      { title: '色と見え方', body: '明るい黄緑からオリーブグリーンまであり、黄味、褐色味、暗さの程度で印象が変わります。厚すぎる石は暗く、浅すぎる石は窓抜けしやすいため、色を保ちながら光を返す深さが必要です。' },
+      { title: '内包物と複屈折', body: '円盤状のストレス亀裂を伴うリリーパッド状内包物や鉱物結晶が知られています。複屈折が強いため、パビリオン稜線が二重に見えることがあり、カットの対称性確認ではその影響を考慮します。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は6.5〜7です。日常用に使えますが、擦り傷、角欠け、急激な温度変化、強い衝撃には注意が必要です。リングでは低い石座や覆輪など保護性を高めます。' },
+      { title: '処理と類似石', body: '一般に大きな処理は少ない宝石ですが、ガラスや他の緑色石との取り違えに注意します。屈折率、複屈折、比重、内包物を組み合わせて確認します。' },
+      { title: '加工・石留め・手入れ', body: '薄いガードルや尖った角を避け、爪を一度に強く倒しません。酸や急熱、スチーム、超音波洗浄は避けるのが安全です。温かい石けん水と柔らかいブラシで優しく洗浄します。' },
+    ],
+  },
+  sapphire: {
+    hardness: '9', mineral: 'コランダム（鋼玉）',
+    overview: 'サファイアは赤色以外の宝石質コランダムの総称で、ゲーム内では青色サファイアとして扱います。鉄とチタンなどが青色に関与し、色帯、多色性、内包物、加熱処理の状態が見た目に影響します。',
+    sections: [
+      { title: '色と多色性', body: '青の色相、彩度、明度、色むら、灰色味や緑味の程度を見ます。結晶方向による多色性と色帯があるため、正面から最も良い色が出るように方向を決めます。' },
+      { title: '内包物とカット', body: 'ルチルシルク、結晶、成長帯、ヒールドフラクチャーなどが見られます。濃色石は深くすると暗くなりやすく、淡色石は浅いと色が抜けやすいため、色と輝きのバランスが重要です。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は9で、擦り傷に強く日常用ジュエリーへ適します。ただし強い衝撃、内部亀裂、薄いガードル、尖った角による欠けは起こり得ます。' },
+      { title: '処理・合成・鑑別', body: '色や透明度を改善する加熱処理が一般的です。拡散処理、充填、照射などもあり、合成サファイアも広く流通します。修理時は処理の種類によって加熱・薬品・再研磨の可否が変わります。' },
+      { title: '加工・石留め・手入れ', body: '無充填で状態の良い石は比較的扱いやすいですが、表面到達亀裂や処理石は慎重に扱います。爪圧を均等にし、コーナーへ力を集中させません。処理不明の場合は温かい石けん水を基本とします。' },
+    ],
+  },
+  opal: {
+    hardness: '5〜6.5', mineral: '含水非晶質シリカ',
+    overview: 'オパールは規則的に並んだ微小なシリカ球によって遊色効果を示すことがある宝石です。地色、遊色の色数・明るさ・模様・見る角度、透明度、母岩の有無などで印象が大きく変わります。',
+    sections: [
+      { title: '遊色効果', body: '微小構造による光の回折で虹色が現れます。赤を含む広い色域、強い明るさ、石全体へ均等に広がる模様、動かしたときの変化が魅力になります。遊色を示さないコモンオパールもあります。' },
+      { title: '構造と種類', body: '単体のソリッドオパールのほか、薄いオパール層を台材へ貼ったダブレットや、さらに透明キャップを重ねたトリプレットがあります。構造によって水分、熱、薬品、再研磨への耐性が異なります。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は5〜6.5で、擦り傷が付きやすい宝石です。水分を含み、乾燥や急激な温度変化でひび割れるクレージングが起こる場合があります。薄い縁や高いドームも欠けやすい部分です。' },
+      { title: '処理と注意点', body: '含浸、染色、煙処理、表面処理などがあります。ダブレット・トリプレットは接着層があるため、長時間の浸水、溶剤、超音波、スチーム、加熱を避けます。' },
+      { title: '加工・石留め・手入れ', body: '遊色が最も良く出る方向を上面にし、通常はカボションへ仕上げます。覆輪や保護爪を使い、圧力を分散します。柔らかい湿った布で拭き、極端な乾燥・高温・急冷を避けます。' },
+    ],
+  },
+  imperialtopaz: {
+    hardness: '8', mineral: 'トパーズ',
+    overview: 'インペリアルトパーズは、黄橙、橙、桃橙、赤味を帯びた温かな色調を持つトパーズに使われる流通名です。呼称範囲は市場で一定ではないため、色、産地、処理の情報を個別に確認します。',
+    sections: [
+      { title: '色と多色性', body: '黄、橙、桃、赤の混ざり方と彩度、明るさが魅力を左右します。結晶方向による多色性があるため、カット方向によって正面色が変わります。暗くしすぎず、温かい色を保つ厚みが重要です。' },
+      { title: '透明度とカット', body: '透明度の高い石が多く、窓抜け、ファセットのずれ、研磨傷が目立ちます。長い結晶形状を生かしてオーバル、ペア、マーキスなどへ加工されることがあります。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は8で傷には比較的強い一方、底面方向に完全な劈開があります。衝撃や石留め圧で劈開に沿って割れる危険があるため、硬度だけを見て強い石と判断してはいけません。' },
+      { title: '処理と色の安定性', body: '加熱や照射による色調整が行われることがあります。色の安定性は処理と石の状態により異なり、強い熱や長時間の強光を避けた方が安全です。' },
+      { title: '加工・石留め・手入れ', body: '劈開方向、ガードルの欠け、内部亀裂を確認し、爪圧を一点へ集中させません。超音波、スチーム、急熱を避け、温かい石けん水で洗います。リカット時も劈開方向を意識します。' },
+    ],
+  },
+  turquoise: {
+    hardness: '5〜6', mineral: '含水リン酸銅アルミニウム',
+    overview: 'トルコ石は青から青緑色の不透明宝石で、細粒の集合体として産出します。色の均一さ、鮮やかさ、緻密さ、母岩模様の入り方が見た目を左右し、産地や処理によって性質が大きく変わります。',
+    sections: [
+      { title: '色とマトリックス', body: '空色、青緑、緑味の強い色まで幅があります。褐色や黒色の母岩模様はマトリックスと呼ばれ、均一な青を好む評価と、自然な模様を好む評価の両方があります。' },
+      { title: '構造と多孔性', body: '微細な結晶の集合体で、石によっては多孔質です。皮脂、化粧品、洗剤、汗を吸収すると色や光沢が変化しやすく、表面状態が品質と耐久性に直結します。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は5〜6で、擦り傷と欠けに注意が必要です。高温、乾燥、薬品、酸、強い光、急激な湿度変化で変色や劣化が起こる可能性があります。' },
+      { title: '処理と類似品', body: '安定化処理、含浸、染色、ワックス、再構成品が広く見られます。処理の種類によって研磨、加熱、薬品への反応が大きく異なります。ハウライトなどを染色した類似品にも注意します。' },
+      { title: '加工・石留め・手入れ', body: '通常はカボションにし、覆輪などで縁を保護します。接着や石留め時に過熱せず、酸洗い、超音波、スチーム、溶剤を避けます。乾いた柔らかい布で拭き、必要な場合だけ短時間の弱い石けん水を使います。' },
+    ],
+  },
+  lapislazuli: {
+    hardness: '5〜6', mineral: 'ラズライトを主成分とする岩石',
+    overview: 'ラピスラズリは単一鉱物ではなく、青色のラズライトを主成分に、方解石、黄鉄鉱などを含む岩石です。濃く均一な青、適度な金色の黄鉄鉱、白い方解石の少なさなどが外観を左右します。',
+    sections: [
+      { title: '色と構成鉱物', body: '群青色から紫味の青が主体です。金色の点は黄鉄鉱、白色部分は方解石であることが多く、それぞれの量と配置で印象が変わります。黄鉄鉱が多すぎると青が弱く見える場合があります。' },
+      { title: '不透明石としての評価', body: '透明度ではなく、色の深さ、均一性、模様、表面の緻密さ、研磨光沢で見ます。粒界や異なる鉱物の境界は欠けや磨耗の起点になるため、加工前に全体を観察します。' },
+      { title: '耐久性とモース硬度', body: '構成鉱物によって差がありますが、目安のモース硬度は5〜6です。比較的柔らかく、傷、欠け、薬品、酸に注意します。方解石を含む部分は特に酸へ弱くなります。' },
+      { title: '処理と類似品', body: '染色、含浸、ワックス処理が行われることがあります。染色ハウライト、合成材料、着色ガラスなどの類似品もあります。色の集中、表面の染料、内包鉱物、比重などを確認します。' },
+      { title: '加工・石留め・手入れ', body: 'カボション、ビーズ、平板に加工されます。縁を薄くしすぎず、覆輪や接着面で応力を分散します。超音波、スチーム、酸、強い洗剤、長時間の浸水を避け、柔らかい布で拭きます。' },
+    ],
+  },
+  paraibatourmaline: {
+    hardness: '7〜7.5', mineral: '銅を含むトルマリン',
+    overview: 'パライバトルマリンは銅を主要な着色要因として、鮮烈な青、青緑、緑などを示すトルマリンです。「パライバ」は現在、特定の色と化学的特徴を持つ銅含有トルマリンの流通名として使われ、産地情報は別に確認します。',
+    sections: [
+      { title: 'ネオン感のある色', body: '銅に由来する強い青から緑の色が特徴です。彩度、明度、緑味や紫味、色むら、透明度のバランスを見ます。小粒でも色が強いことがありますが、暗すぎる石や内包物の多い石はカット設計が重要です。' },
+      { title: '内包物と多色性', body: '液体を含む内包物、針状・管状内包物、亀裂などが見られることがあります。トルマリン特有の多色性があり、結晶軸方向で色が濃く見えるため、方向を誤ると正面が暗くなる場合があります。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は7〜7.5です。擦り傷には一定の抵抗がありますが、靭性は非常に高いわけではなく、内部亀裂、熱衝撃、強い打撃に注意します。' },
+      { title: '加熱処理と鑑別', body: '色を明るく整える加熱処理が行われることがあります。パライバ呼称には銅の確認が重要で、色だけでは判定できません。産地判別や処理判定には高度な分析が必要な場合があります。' },
+      { title: '加工・石留め・手入れ', body: '色方向と内包物を確認し、暗くなり過ぎない深さへ仕上げます。液体内包物のある石は加熱で破損する危険があります。超音波・スチームを避け、温かい石けん水で優しく洗浄します。' },
+    ],
+  },
+  tourmaline: {
+    hardness: '7〜7.5', mineral: 'トルマリン・グループ',
+    overview: 'トルマリンは複雑な化学組成を持つ鉱物グループで、ほぼ全ての色が見られます。ゲーム内ではピンクトルマリンとして扱います。強い多色性と、結晶軸方向で色が濃く見えやすい性質がカットへ影響します。',
+    sections: [
+      { title: '色と多色性', body: 'ピンク、赤、緑、青、黄、褐色、無色、複色など多様です。ピンク系では彩度、明るさ、褐色味や紫味、色帯の程度を見ます。方向によって色の濃さが変わるため、原石の向きが重要です。' },
+      { title: '結晶と内包物', body: '長い柱状結晶が多く、成長管、液体内包物、針状内包物、亀裂が見られます。結晶軸方向が暗くなりやすいため、細長い形や段状ファセットで色を調整する場合があります。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は7〜7.5です。日常用に使える硬さがありますが、靭性は中程度で、強打、熱衝撃、内部亀裂による破損に注意します。' },
+      { title: '処理と色の安定性', body: '加熱や照射による色調整が行われることがあります。処理後の色が熱や強光で変化する場合があり、液体内包物を含む石は加熱に弱いことがあります。' },
+      { title: '加工・石留め・手入れ', body: '多色性を生かしつつ暗くならない方向へカットします。石留め前に管状内包物や表面亀裂を確認し、爪圧を分散します。温かい石けん水が基本で、超音波・スチーム・急熱は避けます。' },
+    ],
+  },
+  tanzanite: {
+    hardness: '6〜7', mineral: 'ゾイサイト',
+    overview: 'タンザナイトは青から紫色を示すゾイサイトです。強い多色性を持ち、見る方向や照明で青、紫、赤紫、褐色の成分が変化して見えます。多くは加熱によって青紫色を整えています。',
+    sections: [
+      { title: '多色性と色', body: '強い多色性が特徴で、カット方向によって青優勢、紫優勢、混合色になります。彩度、明るさ、灰色味の少なさ、色むら、照明下での変化を確認します。' },
+      { title: '透明度とカット', body: '透明度の高い石では窓抜け、面のずれ、研磨傷が目立ちます。原石の多色性方向と歩留まりを考えながら、正面に魅力的な青紫色を出す角度を選びます。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は6〜7です。完全な劈開があり、衝撃、曲げ方向の圧力、急激な温度変化で割れやすい宝石です。リングでは特に保護性の高い石座が必要です。' },
+      { title: '加熱処理と安定性', body: '褐色や緑味を減らし青紫色を引き出す加熱処理が一般的です。処理後は通常の使用で安定しますが、高熱、急冷、超音波、スチームは破損リスクがあります。' },
+      { title: '加工・石留め・手入れ', body: '劈開方向と内部亀裂を確認し、爪を一度に強く倒しません。尖った形では先端を保護します。柔らかい布と温かい石けん水で洗い、修理時は石を外してから加熱作業を行うのが安全です。' },
+    ],
+  },
+  citrine: {
+    hardness: '7', mineral: 'クォーツ（石英）',
+    overview: 'シトリンは黄色から橙色を示すクォーツです。天然の黄色石英は比較的少なく、市場ではアメシストやスモーキークォーツを加熱して得たものも多く流通します。明るさ、彩度、褐色味、色帯が印象を左右します。',
+    sections: [
+      { title: '色と見え方', body: '淡いレモン色、黄金色、橙黄色、褐色を帯びた色まで幅があります。濃すぎると暗く、淡すぎると色が抜けて見えるため、カットの深さと色のバランスが重要です。' },
+      { title: '透明度と内包物', body: '透明度の高い石が多く、ファセットのずれ、窓抜け、研磨傷、色帯が目立ちやすい宝石です。液体内包物、微細亀裂、双晶に関連する構造が見られることがあります。' },
+      { title: '耐久性とモース硬度', body: 'モース硬度は7です。日常使用へ比較的向きますが、硬い宝石との接触による傷、強い衝撃による角欠け、急激な温度変化に注意します。' },
+      { title: '加熱処理と類似石', body: 'アメシストなどの加熱による黄色化が一般的です。色だけで天然発色か処理発色かを判断するのは困難です。黄色ガラス、合成クォーツ、他の黄色石との識別には測定と内包物観察が必要です。' },
+      { title: '加工・石留め・手入れ', body: '明るい石では対称性と研磨状態を丁寧に整えます。ガードルの亀裂や欠けを避けて爪を配置します。温かい石けん水が基本で、長時間の強い加熱や急冷を避けます。' },
+    ],
+  },
+});
+
+const LOOSE_CUT_GUIDES = Object.freeze({
+  round: {
+    category: '円形のブリリアント系ファセットカット',
+    overview: 'ラウンドカットは円形の外形と放射状のファセット配置を持ち、正面から入った光を明るさ、ファイア、きらめきとして返しやすい代表的なカットです。対称性を確認しやすく、さまざまな石座に合わせやすい一方、原石からの歩留まりは低くなりやすい形です。',
+    sections: [
+      { title: '外形とファセット構成', body: '一般にクラウン、ガードル、パビリオンで構成し、中心から均等に放射するファセットを作ります。円形の真円度、テーブルの中心、キューレットの位置、左右のファセットサイズを揃えることが重要です。' },
+      { title: '光の戻り方', body: 'クラウン角とパビリオン角が石の屈折率に合うと、正面へ強く光を返します。浅すぎると窓抜け、深すぎると暗い消光が増えます。色石ではダイヤモンド用の比率をそのまま使わず、色と屈折率に合わせます。' },
+      { title: '原石と歩留まり', body: '角のある原石から真円を取るため、重量を失いやすいカットです。結晶形、内包物、色帯を見ながら、直径、深さ、色の出方のどれを優先するか決めます。' },
+      { title: '石留めとの相性', body: '4本爪、6本爪、覆輪、彫り留めなど幅広い留め方に対応します。ガードル厚が均一であれば力を分散しやすく、サイズ規格にも合わせやすい形です。' },
+      { title: '品質確認', body: '真円度、テーブルの中心、ファセットのミート、研磨傷、ガードル厚、窓抜け、暗い領域の偏りを確認します。正面だけでなく傾けたときの明暗の動きも見ます。' },
+    ],
+  },
+  oval: {
+    category: '楕円形のブリリアント系ファセットカット',
+    overview: 'オーバルカットはラウンドの輝きを保ちながら縦長の外形を作るカットです。同じ重量でも表面積を大きく見せやすく、指を長く見せる効果があります。中央に蝶ネクタイ状の暗部が出る「ボウタイ」が品質確認の重要点です。',
+    sections: [
+      { title: '外形と縦横比', body: '楕円の左右対称、上下の丸み、肩の滑らかさを揃えます。縦横比に絶対的な正解はありませんが、用途、石の色、原石形状、石座規格に合わせて選びます。' },
+      { title: 'ボウタイと光', body: '長軸中央に暗い帯が出るボウタイは、ファセット角度と観察方向によって生じます。完全になくすことより、正面で強すぎず、傾けると明暗が動く状態を目指します。' },
+      { title: '色と深さ', body: '中央や両端で色が偏る場合があります。深すぎると中央が暗く、浅すぎると窓抜けします。多色性のある石では長軸方向の色も確認します。' },
+      { title: '石留めとの相性', body: '4本爪、6本爪、覆輪に向きます。長軸両端はラウンドより衝撃を受けやすいため、爪位置と石座の支えを確認します。左右の肩へ均等に圧力を掛けます。' },
+      { title: '品質確認', body: '左右対称、縦軸の直線、両端の形、テーブルの中心、ボウタイの強さ、窓抜け、ガードル厚を確認します。石座へ入れたとき傾いて見えないかも重要です。' },
+    ],
+  },
+  pear: {
+    category: 'しずく形のブリリアント系ファセットカット',
+    overview: 'ペアシェイプは片側が丸く、反対側が一点へ細くなるしずく形です。丸みと先端のバランスにより、柔らかさと方向性を同時に表現できます。ブリリアント系の輝きを持ちますが、ボウタイと尖った先端の保護が重要です。',
+    sections: [
+      { title: '外形と対称性', body: '中心軸に対して左右を対称にし、丸い側の肩から先端までを滑らかにつなぎます。先端が軸からずれる、片側の肩だけ張る、丸い側が平らになると不自然に見えます。' },
+      { title: '光とボウタイ', body: '中央にボウタイが現れやすいカットです。パビリオンの角度とファセット配置を調整し、暗部が強すぎないようにします。先端付近まで適度に光が動くことが望まれます。' },
+      { title: '向きとデザイン', body: '先端を上・下・横のどちらへ向けるかで印象が変わります。ペンダントではしずく、リングでは指先方向、複数石では花弁など、方向性をデザイン要素として使えます。' },
+      { title: '石留めとの相性', body: '丸い側を2〜4本の爪で支え、先端にはV字爪や保護爪を置くのが基本です。先端へ直接強い圧力を掛けると欠けやすいため、石座側に逃げと支えを作ります。' },
+      { title: '品質確認', body: '左右対称、先端の中心、肩の形、丸い端の曲線、ボウタイ、ガードル厚、先端の欠けを確認します。先端が極端に薄い石は再研磨や石座設計を検討します。' },
+    ],
+  },
+  marquise: {
+    category: '両端が尖った舟形のブリリアント系カット',
+    overview: 'マーキスは縦長で両端が尖った舟形のカットです。同じ重量でも大きく見えやすく、指やデザインに長い流れを作ります。左右対称と両端の保護が特に重要で、中央にはボウタイが出やすい形です。',
+    sections: [
+      { title: '外形と縦横比', body: '両端を中心軸上へ揃え、左右の腹の膨らみを対称にします。細長すぎると先端が弱くなり、幅広すぎるとマーキスらしい伸びが失われます。用途と原石に合わせて比率を決めます。' },
+      { title: '光とボウタイ', body: '中央の横方向に暗い帯が出やすい形です。角度とファセットを調整して暗部を弱め、両端にも光が届くようにします。深さ不足では窓抜け、過深では中央が暗くなります。' },
+      { title: '大きく見せる効果', body: '縦方向の表面積が大きく、同重量のラウンドより存在感を出しやすいカットです。リングでは指を長く見せ、複数石では葉、花、羽根の形として使えます。' },
+      { title: '石留めとの相性', body: '両端にV字爪または保護爪を必ず設け、側面を追加爪で支えます。先端とガードルへ局所的な圧力を掛けず、石座内で動かないよう均等に固定します。' },
+      { title: '品質確認', body: '両端の中心、左右対称、腹の曲線、ボウタイ、先端の欠け、ガードル厚を確認します。石座へ入れた際に長軸がリング中心とずれていないかも見ます。' },
+    ],
+  },
+  emerald: {
+    category: '長方形または八角形のステップカット',
+    overview: 'エメラルドカットは角を落とした長方形の外形と、ガードルに平行な段状ファセットを持つステップカットです。ブリリアント系の細かなきらめきより、広い面の明暗、透明感、色、奥行きを見せます。内包物と研磨状態が見えやすいカットです。',
+    sections: [
+      { title: '段状ファセット', body: 'クラウンとパビリオンに平行な段を作り、鏡が連続するような明暗を生みます。各段の幅、平行、ミート、テーブルの中心が揃うと、整然としたホール・オブ・ミラー効果が出ます。' },
+      { title: '透明度と色', body: '広いテーブルを通して内部が見えやすいため、内包物、色帯、研磨傷が目立ちます。一方、色の深い石では広い面が色を強く見せ、落ち着いた光沢を作ります。' },
+      { title: '角を落とす理由', body: '長方形の鋭い角は欠けやすいため、四隅を切り落として八角形にします。角の大きさを均一にし、石座の爪が安全に掛かる幅を確保します。' },
+      { title: '石留めとの相性', body: '四隅または八隅を爪で支える石座、覆輪、レール留めなどに向きます。角と長辺へ均等に圧力を掛け、石座の底がパビリオンへ接触しないようにします。' },
+      { title: '品質確認', body: '外形の直角と平行、角落としの均一、テーブル中心、段の平行、窓抜け、消光、研磨傷、ガードル厚を確認します。少しの傾きや面ずれが目立ちやすいカットです。' },
+    ],
+  },
+  trilliant: {
+    category: '三角形のブリリアントまたはミックスカット',
+    overview: 'トリリアントは三角形の外形を持つカットで、直線的で現代的な印象と大きな表面積が特徴です。辺を直線にする形、わずかに膨らませる形、角を尖らせる形や切り落とす形があり、ファセット構成も多様です。',
+    sections: [
+      { title: '外形とファセット', body: '三辺と三角のバランスを揃え、中心が偏らないようにします。ブリリアント系は細かな輝き、ステップやミックス系は広い明暗を作ります。石の色と屈折率に合わせて構成を選びます。' },
+      { title: '光と深さ', body: '表面積を大きく見せやすい反面、浅すぎると中央が大きく窓抜けします。角付近が暗くなりすぎないようにし、正面と傾けたときの光の動きを確認します。' },
+      { title: '角の形状', body: '尖った角はシャープですが欠けやすく、切り落とした角は耐久性と石留めの安全性を高めます。天然石の亀裂や劈開が角へ達していないかを確認します。' },
+      { title: '石留めとの相性', body: '三つの角をV字爪や保護爪で支える方法が基本です。辺だけを押して固定すると角に応力が集中するため、石座底部と各爪の高さを合わせます。' },
+      { title: '品質確認', body: '三辺の対称、中心位置、角の欠け、窓抜け、色むら、ガードル厚を確認します。サイドストーンとして使う場合は左右一組の形と寸法を揃えます。' },
+    ],
+  },
+  roundCabochon: {
+    category: '円形のドーム状カボション',
+    overview: 'ラウンドカボションは円形の外形に、滑らかなドーム状の上面を作るカットです。ファセット反射ではなく、色、模様、透明感、遊色、シラー、スター、キャッツアイなどの光学効果を広い面で見せます。',
+    sections: [
+      { title: 'ドームと底面', body: '上面は均一な曲面にし、頂点を中心へ置きます。底面は平面またはわずかな曲面にし、石座への収まりと光学効果を調整します。ドーム高は石種と模様に合わせます。' },
+      { title: '光学効果の方向', body: 'ムーンストーンのシラー、オパールの遊色、スターやキャッツアイは原石の構造方向で現れ方が変わります。最も強い効果が正面中央へ出るように方向を決めます。' },
+      { title: '色と模様', body: '不透明石や半透明石では、色むら、マトリックス、模様の配置がデザインになります。円形は中心性が強いため、主要な模様を中心へ配置すると安定して見えます。' },
+      { title: '石留めとの相性', body: '覆輪、伏せ込み、複数爪に向きます。ガードルまたは底面の縁を均等に支え、ドーム表面へ工具を当てません。柔らかい石では覆輪の圧力を少しずつ加えます。' },
+      { title: '品質確認', body: '真円度、頂点の中心、曲面の滑らかさ、研磨むら、平らな部分、底面の傾き、縁の欠けを確認します。光学効果は複数方向の照明で動きを見ます。' },
+    ],
+  },
+  ovalCabochon: {
+    category: '楕円形のドーム状カボション',
+    overview: 'オーバルカボションは縦長の楕円外形と滑らかなドームを持つカットです。原石の長さを生かしやすく、模様や光学効果へ方向性を持たせられます。リング、ペンダント、ブローチなど幅広いデザインに使われます。',
+    sections: [
+      { title: '外形とドーム', body: '左右対称の楕円にし、頂点を長軸と短軸の交点へ置きます。肩の丸み、両端の形、ドームの高さを揃え、横から見ても傾きのない曲面へ仕上げます。' },
+      { title: '模様と方向性', body: '縦長の面を使って、帯状のシラー、遊色、マトリックス、縞模様を見せられます。最も魅力的な模様が長軸へ沿うか、中央へ集まるように原石を配置します。' },
+      { title: '大きさと歩留まり', body: '長い原石や不規則な板状原石から取りやすく、ラウンドより重量を残せる場合があります。薄すぎると色と光学効果が弱く、高すぎると石座が大きくなります。' },
+      { title: '石留めとの相性', body: '覆輪、4本爪、6本爪に向きます。長軸両端と側面へ均等に力を分散し、底面を石座へ安定させます。柔らかい石では金属縁のバリや局部圧力を避けます。' },
+      { title: '品質確認', body: '左右対称、両端の形、頂点の中心、曲面の連続性、研磨光沢、底面の傾き、縁の欠けを確認します。光学効果が中央から外れていないかも見ます。' },
+    ],
+  },
 });
 
 function looseOwned(gemId, shapeId) {
@@ -649,7 +953,7 @@ function metalMarketSummary() {
   }
   const timestamp = metalPriceDateLabel(metalMarket.updatedAt || metalMarket.marketTimestamp);
   const stale = metalMarketIsStale();
-  return `<div class="metal-market-summary ${stale ? 'stale' : ''}"><strong>${stale ? '前回取得した地金相場' : '現実の地金相場と連動'}</strong><small>最終更新：${esc(timestamp)}　取得元：${esc(metalMarket.sourceName)}</small></div>`;
+  return `<div class="metal-market-summary ${stale ? 'stale' : ''}"><strong>${stale ? '前回取得した地金相場' : '現実の地金相場と連動してます'}</strong><small>最終更新：${esc(timestamp)}　取得元：${esc(metalMarket.sourceName)}</small></div>`;
 }
 
 function metalSpotDifferenceMarkup(id) {
@@ -1058,6 +1362,13 @@ const PHONE_GAME_URL = 'https://cadgosho-dot.github.io/glab-gem-game/g-lab-gem-g
 const PHONE_GAME_RETURN_KEY = `${SAVE_KEY}-phone-game-return`;
 const GLAB_ABOUT_URL = 'https://share.google/eBzOWpwGACREtEKMf';
 const GLAB_ABOUT_RETURN_KEY = `${SAVE_KEY}-glab-about-return`;
+const GLAB_SNS_URLS = Object.freeze({
+  X: 'https://x.com/glab_gala_gosho',
+  Instagram: 'https://www.instagram.com/g_lab_okachimachi?igsh=N2QyNHU4YTFxcWxj',
+  YouTube: 'https://youtube.com/@glab3836?si=Siz3n2QMjtSSvjNi',
+  TikTok: 'https://www.tiktok.com/@glabokachimachi?_r=1&_t=ZS-987UDkk0VgC',
+});
+const GLAB_SNS_RETURN_KEY = `${SAVE_KEY}-glab-sns-return`;
 const OKACHIMACHI_ABOUT_URL = 'https://ja.wikipedia.org/wiki/%E5%BE%A1%E5%BE%92%E7%94%BA';
 const JEWELRY_TOWN_OKACHIMACHI_URL = 'https://jto-net.com/origin/';
 const OKACHIMACHI_EXTERNAL_RETURN_KEY = `${SAVE_KEY}-okachimachi-external-return`;
@@ -1134,6 +1445,14 @@ function glabAboutReturnRequested() {
 
 function clearGlabAboutReturnRequest() {
   try { sessionStorage.removeItem(GLAB_ABOUT_RETURN_KEY); } catch (_) {}
+}
+
+function glabSnsReturnRequested() {
+  try { return sessionStorage.getItem(GLAB_SNS_RETURN_KEY) === '1'; } catch (_) { return false; }
+}
+
+function clearGlabSnsReturnRequest() {
+  try { sessionStorage.removeItem(GLAB_SNS_RETURN_KEY); } catch (_) {}
 }
 
 function okachimachiExternalReturnRequested() {
@@ -1236,6 +1555,16 @@ function openGlabAbout() {
   navigateExternal(GLAB_ABOUT_URL);
 }
 
+function openGlabSns(platform) {
+  if (!state) return;
+  const url = GLAB_SNS_URLS[platform];
+  if (!url) return;
+  state.game.screen = 'glabSns';
+  saveGame();
+  try { sessionStorage.setItem(GLAB_SNS_RETURN_KEY, '1'); } catch (_) {}
+  navigateExternal(url);
+}
+
 function openOkachimachiExternal(url) {
   if (!state) return;
   const allowed = new Set([OKACHIMACHI_ABOUT_URL, JEWELRY_TOWN_OKACHIMACHI_URL]);
@@ -1293,10 +1622,22 @@ function hasSave() {
   return Boolean(cloudSave || localStorage.getItem(localSaveKey()));
 }
 
+function isUnneededHungerNotification(note) {
+  const title = String(note?.title || '').trim();
+  const body = String(note?.body || '').trim();
+  return title.includes('空腹になりました') || body.includes('空腹になりました');
+}
+
+function visibleNotifications() {
+  return (state?.notifications || []).filter((note) => !isUnneededHungerNotification(note));
+}
+
 function loadGame() {
   try {
     const raw = cloudSave || JSON.parse(localStorage.getItem(localSaveKey()) || 'null');
-    return raw ? migrateState(raw) : null;
+    const loaded = raw ? migrateState(raw) : null;
+    if (loaded?.notifications) loaded.notifications = loaded.notifications.filter((note) => !isUnneededHungerNotification(note));
+    return loaded;
   } catch (_) {
     return null;
   }
@@ -1792,9 +2133,9 @@ function facilityUnlocked(id) {
 
 const OKACHIMACHI_CLOSE_MINUTES = 18 * 60;
 const OKACHIMACHI_FACILITY_SCREENS = Object.freeze({
-  supplier: 'materialShop', supplierMetals: 'materialShop', supplierMetalHistory: 'materialShop', supplierRough: 'materialShop',
+  supplier: 'materialShop', supplierMetals: 'materialShop', supplierMetalHistory: 'materialShop', supplierRough: 'looseShop',
   looseShop: 'looseShop',
-  glab: 'glab', glabTool: 'glab', glabToolGuide: 'glab',
+  glab: 'glab', glabSns: 'glab', glabTool: 'glab', glabToolGuide: 'glab',
   jewelryShop: 'jewelryShop', settingShop: 'settingShop', castingShop: 'castingShop',
   displayShop: 'displayShop', realEstate: 'realEstate', recruitment: 'recruitment',
 });
@@ -1874,6 +2215,22 @@ function looseVisual(id, className = 'loose-inline', alt = '', shapeId = 'defaul
   return `<span class="${className}" style="--gem:${gem.hue}" role="img" aria-label="${esc(label)}">◆</span>`;
 }
 
+
+function jewelryItemVisual(itemId, className = 'jewelry-item-shape', useLoose = true) {
+  if (!ITEMS[itemId]) return '';
+  const itemClass = itemId === 'ring' && useLoose === false ? 'item-ring-plain' : `item-${itemId}`;
+  return `<span class="${className} ${itemClass}" aria-hidden="true"></span>`;
+}
+
+function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large') {
+  const gem = GEMS[gemId];
+  if (!gem) return '';
+  const looseClass = mode === 'small' ? 'small-jewelry-loose' : 'jewelry-loose-preview';
+  const wrapperClass = mode === 'small' ? 'jewelry-loose-set small' : 'jewelry-loose-set';
+  const single = looseVisual(gemId, looseClass, '', shapeId);
+  return `<span class="${wrapperClass} item-${itemId}" aria-hidden="true"><span class="center-gem">${single}</span></span>`;
+}
+
 function equipmentVisual(itemOrId, className = 'equipment-item-image', alt = '') {
   const item = typeof itemOrId === 'string' ? EQUIPMENT_ITEMS[itemOrId] : itemOrId;
   if (!item) return '';
@@ -1913,13 +2270,15 @@ function closeModal() {
 }
 
 function addNotification(title, body, type = 'info') {
-  state.notifications.unshift({ id: uid(), title, body, type, day: state.game.day, unread: true });
-  state.notifications = state.notifications.slice(0, 80);
+  const notification = { id: uid(), title, body, type, day: state.game.day, unread: true };
+  if (isUnneededHungerNotification(notification)) return;
+  state.notifications.unshift(notification);
+  state.notifications = state.notifications.filter((note) => !isUnneededHungerNotification(note)).slice(0, 80);
 }
 
 function addFinance(label, income = 0, expense = 0) {
   state.finance.push({ id: uid(), day: state.game.day, label, income, expense });
-  state.finance = state.finance.slice(-50);
+  state.finance = state.finance.slice(-2000);
   state.daily.income += income;
   state.daily.expense += expense;
 }
@@ -2147,9 +2506,6 @@ function spendMinutes(minutes) {
   state.game.minutes = Math.min(DAY_END_MINUTES, state.game.minutes + elapsedMinutes);
   if (beforeMinutes < STORE_CLOSE_MINUTES && state.game.minutes >= STORE_CLOSE_MINUTES) closeVisitingCustomersAtStoreClosing();
   state.wellbeing.hunger = Math.max(0, before - hungerCost);
-  if (before > 0 && state.wellbeing.hunger === 0) {
-    addNotification('空腹になりました', '食事をするか、今日は休んでください。', 'warning');
-  }
 }
 
 function spendHours(hours) {
@@ -2245,7 +2601,7 @@ async function showMorningBrief() {
   }
 
   if (!hasEvents) {
-    await wait(2000);
+    await wait(3000);
     morningBriefEl.classList.remove('active');
     await wait(300);
     clearMorningBrief();
@@ -2253,17 +2609,27 @@ async function showMorningBrief() {
 }
 
 async function beginNextDay() {
-  if (morningBriefShowing) return;
-  goMain();
-  await wait(40);
-  playSfx('alarm', { gain: .92 });
-  await showMorningBrief();
+  if (morningBriefShowing || sleepTransitioning) return;
+  sleepTransitioning = true;
+  try {
+    sleepCurtainEl?.classList.add('next-day-blackout', 'active');
+    playSfx('sleep', { gain: .9 });
+    await wait(2000);
+    goMain();
+    await wait(40);
+    sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
+    playSfx('alarm', { gain: .92 });
+    await showMorningBrief();
+  } finally {
+    sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
+    sleepTransitioning = false;
+  }
 }
 
 function backgroundFor(target) {
   const map = {
     loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', mining: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'workshop', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'okachimachi', supplierMetals: 'okachimachi', supplierMetalHistory: 'okachimachi', supplierRough: 'okachimachi', looseShop: 'okachimachi', looseInventoryDetail: 'workshop', realEstate: 'okachimachi',
+    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', meal: 'meal', settings: 'main', settingsTitle: 'main', dayResult: 'sleep',
   };
@@ -2307,13 +2673,17 @@ function audioFor(target) {
 function setScreen(target, data = {}, push = true) {
   if (push && screen !== target) navigation.push({ screen, data: screenData });
   if (target === 'mining' && screen !== 'mining') selectedMining = null;
+  if (target === 'phone' && screen !== 'phone') {
+    phoneTab = 'notifications';
+    if (state?.game) state.game.phoneTab = 'notifications';
+  }
   screen = target;
   screenData = data;
   if (state) state.game.screen = target;
   render();
-  if (target === 'supplierMetals' || target === 'supplierMetalHistory') {
+  if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory') {
     loadMetalMarket().then(() => {
-      if ((screen === 'supplierMetals' || screen === 'supplierMetalHistory') && state) render();
+      if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory') && state) render();
     });
   }
 }
@@ -2336,6 +2706,36 @@ function goMain() {
   setScreen('main', {}, false);
 }
 
+function timeRemainingLabel(minutes) {
+  const remaining = Math.max(0, Math.round(Number(minutes) || 0));
+  const hours = Math.floor(remaining / 60);
+  const restMinutes = remaining % 60;
+  if (hours > 0 && restMinutes > 0) return `あと${hours}時間${restMinutes}分`;
+  if (hours > 0) return `あと${hours}時間`;
+  return `あと${restMinutes}分`;
+}
+
+function gameTimePanel() {
+  const minutes = Math.max(DAY_START_MINUTES, Number(state?.game?.minutes) || DAY_START_MINUTES);
+  let tone = 'normal';
+  let note = '';
+  if (minutes >= DAY_END_MINUTES) {
+    tone = 'ended';
+    note = '本日の行動時間は終了しました';
+  } else if (minutes >= DAY_END_MINUTES - 60) {
+    tone = 'ending';
+    note = `行動終了まで ${timeRemainingLabel(DAY_END_MINUTES - minutes)}`;
+  } else if (minutes >= OKACHIMACHI_CLOSE_MINUTES - 60 && minutes < OKACHIMACHI_CLOSE_MINUTES) {
+    tone = 'okachimachi-warning';
+    note = `御徒町終了まで ${timeRemainingLabel(OKACHIMACHI_CLOSE_MINUTES - minutes)}`;
+  }
+  return `<div class="game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}">
+    <span class="game-time-icon" aria-hidden="true">🕒</span>
+    <strong class="game-time-value">${clock(minutes)}</strong>
+    ${note ? `<small class="game-time-note">${esc(note)}</small>` : ''}
+  </div>`;
+}
+
 function header(title, { back = true, main = true, help = '' } = {}) {
   const isMainMenu = !title && !back && !main;
   const currentDate = gameDate();
@@ -2346,14 +2746,13 @@ function header(title, { back = true, main = true, help = '' } = {}) {
   const storeLabel = state.store?.rented && state.store?.name ? state.store.name : '店名未設定';
   return `
     <header class="game-header ${isMainMenu ? 'main-header' : ''}">
-      <div class="status-left" aria-label="日付、曜日、何日目、天気、時間、名前、空腹度、店名">
+      <div class="status-left" aria-label="日付、曜日、何日目、天気、名前、空腹度、店名">
         <div class="status-top-line">
           <div class="status-primary-line">
             <span class="header-status-item header-calendar-date">${esc(dateLabel)}</span>
             <span class="header-status-item header-weekday">${esc(weekdayLabel)}</span>
             <span class="header-status-item header-day">${state.game.day}日目</span>
             <span class="header-status-item header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
-            <span class="header-status-item header-time">${clock(state.game.minutes)}</span>
           </div>
           <div class="status-secondary-line">
             <span class="header-status-item header-player-name">${esc(playerLabel)}</span>
@@ -2375,6 +2774,7 @@ function header(title, { back = true, main = true, help = '' } = {}) {
         ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
         <div class="header-actions"></div>
       </div>
+      ${gameTimePanel()}
     </header>`;
 }
 
@@ -2384,8 +2784,8 @@ function shell(title, body, options = {}) {
 
 function renderClosedOkachimachiFacility(facilityId, availability) {
   const names = {
-    materialShop: '素材屋', looseShop: 'ルース屋', glab: 'g-Lab.', jewelryShop: 'ジュエリー店',
-    settingShop: '空枠屋', castingShop: 'キャスト屋', displayShop: 'ディスプレイ屋', realEstate: '不動産屋', recruitment: '人材紹介',
+    materialShop: '地金屋', looseShop: 'ルース屋', glab: 'g-Lab.', jewelryShop: 'ジュエリー店',
+    settingShop: 'GOSHO（卸専門）', castingShop: 'キャスト屋', displayShop: 'ディスプレイ屋', realEstate: '不動産屋', recruitment: '人材紹介',
   };
   return shell(names[facilityId] || '御徒町の施設', `
     <section class="center-card glass-panel facility-closed-page">
@@ -2429,10 +2829,13 @@ function render() {
       supplierRough: renderSupplierRough,
       looseShop: renderLooseShop,
       looseInventoryDetail: renderLooseInventoryDetail,
+      looseGemGuide: renderLooseGemGuide,
+      looseCutGuide: renderLooseCutGuide,
       displayShop: renderDisplayShop,
       realEstate: renderRealEstate,
       workshop: renderWorkshop,
       craft: renderCraft,
+      craftLoose: renderCraftLooseSelection,
       polishing: renderPolishing,
       completion: renderCompletion,
       inventory: renderInventory,
@@ -2441,12 +2844,12 @@ function render() {
       metalInventoryDetail: renderMetalInventoryDetail,
       metalProfessionalGuide: renderMetalProfessionalGuide,
       glab: renderGlab,
+      glabSns: renderGlabSns,
       glabTool: renderGlabToolDetail,
       glabToolGuide: renderGlabToolGuide,
       store: renderStore,
       customer: renderCustomer,
       orders: renderOrders,
-      expansion: renderExpansion,
       employee: renderEmployee,
       phone: renderPhone,
       meal: renderMeal,
@@ -2474,29 +2877,55 @@ function renderLoading() {
 
 function renderLogin() {
   return `
-    <main class="title-screen">
+    <main class="title-screen login-screen">
+      <section class="login-hero" aria-label="ゲーム紹介">
+        <span class="login-brand">JEWELRY × JEWELRY</span>
+        <strong>宝石を採掘し、ジュエリーを作り、店を育てる</strong>
+        <small>無料のジュエリーショップ経営ゲーム</small>
+      </section>
       <section class="title-actions glass-panel login-panel">
-        <button class="primary-button large-button full-button" data-action="google-login">Googleアカウントを選んでスタート</button>
-        <p class="small-note login-main-note">Googleにログイン済みの携帯では、アカウントを選ぶだけで開始します。ゲーム内でGoogleのパスワードを入力することはありません。</p>
-        <small class="login-keep-note">認証状態はこの端末に保存され、次回からは通常「スタート」だけで続けられます。</small>
+        <header class="login-intro">
+          <span class="login-kicker">無料・ブラウザですぐ遊べます</span>
+          <h1>ゲームを始める</h1>
+          <p>初めての方も、続きから遊ぶ方も<br>下のボタンを押してください。</p>
+        </header>
+        <button class="google-login-button full-button" data-action="google-login">
+          <span class="google-login-mark" aria-hidden="true">G</span>
+          <span class="google-login-copy">
+            <strong class="google-login-title">Googleで始める・続ける</strong>
+            <small class="google-login-subtitle">Googleの画面でアカウントを選択</small>
+          </span>
+          <span class="google-login-arrow" aria-hidden="true">›</span>
+        </button>
+        <div class="login-benefits" aria-label="ログインの特徴">
+          <span>登録無料</span>
+          <span>データ自動保存</span>
+          <span>スマホ・PCで共有</span>
+        </div>
+        <p class="login-purpose-note">セーブデータを守り、別の端末でも続けられるようにログインします。</p>
+        <small class="login-safety-note">ゲーム画面でGoogleのパスワードを入力することはありません。</small>
         <details class="email-login-details">
-          <summary>メールアドレスでログインする</summary>
+          <summary>Googleを使わず、メールアドレスで始める</summary>
           <div class="email-login-fields">
-            <label class="login-field"><span>メールアドレス</span><input id="login-email" type="email" autocomplete="email" inputmode="email"></label>
+            <div class="email-login-heading">
+              <strong>メールアドレスで始める</strong>
+              <small>ログインまたは新規登録を選べます。</small>
+            </div>
+            <label class="login-field"><span>メールアドレス</span><input id="login-email" type="email" autocomplete="email" inputmode="email" placeholder="example@email.com"></label>
             <label class="login-field password-login-field">
               <span>ゲーム用パスワード</span>
               <span class="password-input-wrap">
-                <input id="login-password" type="password" autocomplete="current-password" minlength="10" aria-describedby="login-password-help">
+                <input id="login-password" type="password" autocomplete="current-password" minlength="10" aria-describedby="login-password-help" placeholder="10文字以上">
                 <button type="button" class="password-visibility-button" data-action="toggle-login-password" aria-pressed="false" aria-label="パスワードを表示する">表示</button>
               </span>
             </label>
             <div id="login-password-help" class="password-help" role="note">
-              <strong>このゲーム専用のパスワードを設定してください。</strong>
-              <small>新規登録は10文字以上です。普段のメールやGoogleのパスワードは入力しないでください。</small>
+              <strong>新規登録ではゲーム専用のパスワードを設定します。</strong>
+              <small>普段のメールやGoogleのパスワードは使用しないでください。</small>
             </div>
-            <button class="secondary-button full-button" data-action="email-login">メールでログイン</button>
-            <button class="text-button" data-action="password-reset">パスワードを忘れた場合</button>
-            <button class="text-button" data-action="email-signup">メールで新規アカウントを作成</button>
+            <button class="secondary-button full-button email-login-button" data-action="email-login">ログインして始める</button>
+            <button class="secondary-button full-button email-signup-button" data-action="email-signup">初めての方：新規登録</button>
+            <button class="text-button" data-action="password-reset">パスワードを忘れた方はこちら</button>
           </div>
         </details>
       </section>
@@ -2664,7 +3093,7 @@ function storeProductSaleBonus(item, branchNumber = state?.store?.branchNumber |
     return -0.03;
   }
   let bonus = item.quality === 'premium' ? 0.12 : item.quality === 'good' ? 0.04 : 0;
-  if (HIGH_VALUE_GEMS.includes(item.gem) || HIGH_VALUE_METALS.includes(item.metal)) bonus += 0.08;
+  if ((item.useLoose !== false && HIGH_VALUE_GEMS.includes(item.gem)) || HIGH_VALUE_METALS.includes(item.metal)) bonus += 0.08;
   return bonus;
 }
 
@@ -2735,31 +3164,60 @@ function orderDisplayStatus(order) {
 }
 
 function validPhoneTab(value) {
-  return ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(value) ? value : 'calendar';
+  return ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(value) ? value : 'notifications';
 }
 
-function materialRequirementsFor({ item, gem, looseShape, metal, orderId = null }) {
+function validFinancePeriod(value) {
+  return ['today', 'month', 'year', 'cumulative'].includes(value) ? value : 'today';
+}
+
+function financePeriodRows(period = state?.game?.financePeriod) {
+  const resolved = validFinancePeriod(period);
+  const current = gameDate();
+  return (state?.finance || []).filter((row) => {
+    if (resolved === 'cumulative') return true;
+    const rowDate = gameDateForDay(row.day);
+    if (resolved === 'today') return Number(row.day) === Number(state.game.day);
+    if (resolved === 'month') {
+      return rowDate.getFullYear() === current.getFullYear() && rowDate.getMonth() === current.getMonth();
+    }
+    return rowDate.getFullYear() === current.getFullYear();
+  });
+}
+
+function financePeriodHeading(period = state?.game?.financePeriod) {
+  const resolved = validFinancePeriod(period);
+  const current = gameDate();
+  if (resolved === 'today') return `今日の収支（${current.getMonth() + 1}月${current.getDate()}日）`;
+  if (resolved === 'month') return `${current.getFullYear()}年${current.getMonth() + 1}月の収支`;
+  if (resolved === 'year') return `${current.getFullYear()}年の収支`;
+  return 'これまでの累計収支';
+}
+
+function materialRequirementsFor({ item, gem, looseShape, metal, orderId = null, useLoose = true }) {
   const order = orderId ? state.orders.find((entry) => entry.id === orderId) : null;
   const itemData = ITEMS[item] || ITEMS.ring;
+  const usesLoose = order ? true : useLoose !== false;
   const resolvedLooseShape = normalizeLooseShape(gem, order?.looseShape || looseShape);
   const requiredMetalWeight = roundedMetalWeight(Math.max(0.1, Number(order?.requiredMetalWeight) || Number(itemData.metalWeight) || 1));
-  const requiredLooseQuantity = Math.max(1, Math.round(Number(order?.requiredLooseQuantity) || Number(itemData.looseQuantity) || 1));
+  const requiredLooseQuantity = usesLoose ? Math.max(1, Math.round(Number(order?.requiredLooseQuantity) || Number(itemData.looseQuantity) || 1)) : 0;
   const ownedMetalWeight = metalOwnedWeight(metal);
   const reservedMetalWeight = metalReservedWeight(metal);
   const availableMetalWeight = metalAvailableWeight(metal, order?.id || '');
-  const ownedLooseQuantity = looseOwned(gem, resolvedLooseShape);
-  const reservedLooseQuantity = looseReservedQuantity(gem, resolvedLooseShape);
-  const reservedLooseOtherOrders = order ? looseReservedQuantity(gem, resolvedLooseShape, order.id) : reservedLooseQuantity;
-  const availableLooseQuantity = Math.max(0, ownedLooseQuantity - reservedLooseOtherOrders);
+  const ownedLooseQuantity = usesLoose ? looseOwned(gem, resolvedLooseShape) : 0;
+  const reservedLooseQuantity = usesLoose ? looseReservedQuantity(gem, resolvedLooseShape) : 0;
+  const reservedLooseOtherOrders = usesLoose ? (order ? looseReservedQuantity(gem, resolvedLooseShape, order.id) : reservedLooseQuantity) : 0;
+  const availableLooseQuantity = usesLoose ? Math.max(0, ownedLooseQuantity - reservedLooseOtherOrders) : 0;
   const missingMetalWeight = roundedMetalWeight(Math.max(0, requiredMetalWeight - availableMetalWeight));
-  const missingLooseQuantity = Math.max(0, requiredLooseQuantity - availableLooseQuantity);
+  const missingLooseQuantity = usesLoose ? Math.max(0, requiredLooseQuantity - availableLooseQuantity) : 0;
   return {
+    usesLoose,
     looseShape: resolvedLooseShape,
     requiredMetalWeight, requiredLooseQuantity, ownedMetalWeight, reservedMetalWeight, availableMetalWeight,
     ownedLooseQuantity, reservedLooseQuantity, reservedLooseOtherOrders, availableLooseQuantity,
     missingMetalWeight, missingLooseQuantity,
     enoughMetal: availableMetalWeight + 1e-9 >= requiredMetalWeight,
-    enoughLoose: availableLooseQuantity >= requiredLooseQuantity,
+    enoughLoose: !usesLoose || availableLooseQuantity >= requiredLooseQuantity,
   };
 }
 
@@ -2768,7 +3226,7 @@ function orderRequirements(order) {
 }
 
 function renderMain() {
-  const unread = state.notifications.filter((note) => note.unread).length;
+  const unread = visibleNotifications().filter((note) => note.unread).length;
   const activeOrders = activeOrderCount();
   const visiting = canServeCustomers()
     ? Object.entries(state.customers).filter(([, customer]) => customer.visiting).map(([id]) => CUSTOMERS[id]?.name)
@@ -2847,7 +3305,7 @@ function renderMiningGame() {
           const remainingHits = Math.max(0, 5 - hits);
           return `<button type="button" class="mining-rock hit-${hits}" data-action="hit-rock" data-index="${index}" aria-label="岩${index + 1}、あと${remainingHits}回">
             <span class="rock-visual" aria-hidden="true">
-              <img class="mining-rock-image" src="./assets/images/mining-rock.png" alt="" draggable="false">
+              <img class="mining-rock-image" src="${esc(miningGame.rockImages?.[index] || MINING_ROCK_IMAGE_POOL[index % MINING_ROCK_IMAGE_POOL.length] || "./assets/images/mining-rock.png")}" alt="" draggable="false">
               <span class="rock-cracks"></span>
             </span>
             ${equipmentVisual(miningTool, 'mining-pickaxe-image', '')}
@@ -2858,11 +3316,13 @@ function renderMiningGame() {
 }
 
 function renderMiningResult() {
-  const result = screenData.result;
+  const result = screenData.result || { missRockImage: pickRandomMiningBrokenRockImage() };
+  const success = Boolean(result?.gem);
+  const missRockImage = result?.missRockImage || pickRandomMiningBrokenRockImage();
   return shell('採掘結果', `
     <section class="center-card glass-panel result-card">
-      <div class="gem-symbol">${result ? roughVisual(result.gem, 'gem-result-image') : '<span class="gem-empty-dot">·</span>'}</div>
-      ${result ? `
+      <div class="gem-symbol">${success ? roughVisual(result.gem, 'gem-result-image') : `<img class="mining-broken-rock-image" src="${esc(missRockImage)}" alt="砕けた岩" draggable="false">`}</div>
+      ${success ? `
         <h1>${esc(GEMS[result.gem].name)}の原石を見つけました。</h1>
         <p>原石を1個入手しました。</p>
         ${result.unlockedLocation ? `<p class="success-text">新しい採掘場所「${esc(result.unlockedLocation)}」を発見しました。</p>` : ''}` : `
@@ -2912,9 +3372,25 @@ function renderGlab() {
         <div class="button-stack">
           <button class="primary-button full-button" data-action="nav" data-screen="workshop">工房へ</button>
           <button class="secondary-button full-button" data-action="glab-info">g-Lab.について</button>
+          <button class="secondary-button full-button" data-action="nav" data-screen="glabSns">SNS</button>
         </div>
       </section>
     </div>`);
+}
+
+
+function renderGlabSns() {
+  const platforms = Object.keys(GLAB_SNS_URLS);
+  return shell('SNS', `
+    <div class="split-layout">
+      <section class="scene-space"></section>
+      <section class="action-panel glass-panel glab-sns-panel">
+        <div class="button-stack glab-sns-menu">
+          ${platforms.map((platform) => `<button type="button" class="secondary-button full-button" data-action="glab-sns-link" data-platform="${esc(platform)}">${esc(platform)}</button>`).join('')}
+        </div>
+        <p class="small-note">各SNSは同じ画面で開きます。端末やブラウザの「戻る」でこの画面へ戻れます。</p>
+      </section>
+    </div>`, { help: 'g-Lab.の公式SNSを開く画面です。外部SNSから戻ると、このSNS画面へ復帰します。' });
 }
 
 function renderToolBrief(tool, guideAction = 'glab-tool-guide') {
@@ -2980,8 +3456,8 @@ function renderWorkshopToolGuide() {
   if (!tool || !record) return shell('工具・設備の詳細', '<section class="center-card glass-panel"><p>詳細情報を確認できません。</p></section>');
   return shell(`${tool.name}の詳しい説明`, `
     <section class="glass-panel glab-tool-guide-page workshop-tool-guide-page">
-      <img src="./assets/images/tools/placeholder.svg?v=${VERSION}" alt="${esc(tool.name)}の工具・設備画像">
       ${renderToolLearningGuide(tool)}
+      <button type="button" class="secondary-button full-button" data-action="back">戻る</button>
     </section>`, { main: false });
 }
 
@@ -3039,8 +3515,8 @@ function renderGlabToolGuide() {
   if (!tool) return shell('工具・設備の詳細', '<section class="center-card glass-panel"><p>詳細情報を確認できません。</p></section>');
   return shell(`${tool.name}の詳細`, `
     <section class="glass-panel glab-tool-guide-page">
-      <img src="./assets/images/tools/placeholder.svg?v=${VERSION}" alt="${esc(tool.name)}の工具・設備画像">
       ${renderToolLearningGuide(tool)}
+      <button type="button" class="secondary-button full-button" data-action="back">戻る</button>
     </section>`, { main: false });
 }
 
@@ -3050,36 +3526,27 @@ function renderOkachimachi() {
       <section class="scene-space"></section>
       <section class="action-panel glass-panel">
         <div class="button-stack okachimachi-facilities">
-          ${facilityButton({ id: 'materialShop', label: '素材屋', screen: 'supplier', primary: true })}
-          ${facilityButton({ id: 'looseShop', label: 'ルース屋', screen: 'looseShop' })}
+          ${facilityButton({ id: 'looseShop', label: 'ルース屋', screen: 'looseShop', primary: true })}
           ${facilityButton({ id: 'glab', label: 'g-Lab.', screen: 'glab' })}
+          ${facilityButton({ id: 'materialShop', label: '地金屋', screen: 'supplierMetals' })}
           ${facilityButton({ id: 'jewelryShop', label: 'ジュエリー店', screen: 'jewelryShop' })}
-          ${facilityButton({ id: 'settingShop', label: '空枠屋', screen: 'settingShop' })}
+          ${facilityButton({ id: 'settingShop', label: 'GOSHO（卸専門）', screen: 'settingShop' })}
           ${facilityButton({ id: 'castingShop', label: 'キャスト屋', screen: 'castingShop' })}
           ${facilityButton({ id: 'displayShop', label: 'ディスプレイ屋', screen: 'displayShop' })}
           ${facilityButton({ id: 'realEstate', label: '不動産屋', screen: 'realEstate' })}
           ${facilityButton({ id: 'recruitment', label: '人材紹介', screen: 'recruitment' })}
         </div>
-        <p class="small-note okachimachi-business-note">各施設は18:00まで利用できます。g-Lab.以外は土日祝休業、g-Lab.は12月31日〜1月2日のみ休業です。</p>
         <div class="button-stack okachimachi-info-links" aria-label="御徒町の案内">
           <button type="button" class="secondary-button full-button" data-action="okachimachi-external" data-url="${OKACHIMACHI_ABOUT_URL}">御徒町について</button>
           <button type="button" class="secondary-button full-button" data-action="okachimachi-external" data-url="${JEWELRY_TOWN_OKACHIMACHI_URL}">ジュエリータウンおかちまち</button>
         </div>
       </section>
-    </div>`, { help: '御徒町では施設を選択できます。初期から利用できるのは素材屋、ルース屋、g-Lab.、ディスプレイ屋です。' });
+    </div>`, { help: '御徒町では施設を選択できます。初期から利用できるのは地金屋、ルース屋、g-Lab.、ディスプレイ屋です。各施設は18:00まで利用できます。g-Lab.以外は土日祝休業、g-Lab.は12月31日〜1月2日のみ休業です。' });
 }
 
 function renderSupplier() {
-  return shell('素材屋', `
-    <div class="split-layout">
-      <section class="scene-space"></section>
-      <section class="action-panel glass-panel">
-        <div class="button-stack supplier-category-menu">
-          <button type="button" class="primary-button large-button full-button" data-action="supplier-category" data-screen="supplierMetals">地金</button>
-          <button type="button" class="secondary-button large-button full-button" data-action="supplier-category" data-screen="supplierRough">原石</button>
-        </div>
-      </section>
-    </div>`);
+  // v0.10.154以前の保存画面との互換用。現在は地金屋から地金画面へ直接入ります。
+  return renderSupplierMetals();
 }
 
 function renderSupplierMetals() {
@@ -3161,7 +3628,7 @@ function renderSupplierMetals() {
     </div>`, { help: '地金画面では純プラチナ・純金・純銀の現実相場を確認できます。詳細では月間・年間の履歴を最大5年間表示します。購入・売却重量は直接入力でき、入力欄の▲▼はタップで1g、長押しで連続増減します。' });
 }
 
-function renderSupplierRough() {
+function roughSaleContentMarkup() {
   const products = Object.values(GEMS).filter((product) => Number(state.inventory.rough[product.id]) > 0);
   const productRows = products.map((product) => {
     const owned = state.inventory.rough[product.id];
@@ -3179,25 +3646,29 @@ function renderSupplierRough() {
       </div>
     </article>`;
   }).join('');
-  return shell('原石', `
-    <div class="split-layout">
-      <section class="scene-space"></section>
-      <section class="action-panel glass-panel">
-        <div class="product-list">
-          ${productRows || '<div class="empty-state sell-empty-state"><strong>売却できる原石はありません。</strong><p>所持数が1個以上ある原石だけ表示されます。</p></div>'}
-        </div>
-      </section>
-    </div>`);
+  return `<section class="loose-shop-rough-sale">
+    <div class="product-list">
+      ${productRows || '<div class="empty-state sell-empty-state"><strong>売却できる原石はありません。</strong><p>所持数が1個以上ある原石だけ表示されます。</p></div>'}
+    </div>
+  </section>`;
 }
 
-function renderLooseShop() {
-  const requestedTab = screenData.tab || 'buy';
-  const tab = ['buy', 'sell'].includes(requestedTab) ? requestedTab : 'buy';
+function renderSupplierRough() {
+  // v0.10.154以前の保存画面との互換用。原石売却はルース屋へ統合済みです。
+  return renderLooseShop('rough');
+}
+
+function renderLooseShop(forcedTab = '') {
+  const requestedTab = forcedTab || screenData.tab || 'buy';
+  const tab = ['buy', 'sell', 'rough'].includes(requestedTab) ? requestedTab : 'buy';
   const isSelling = tab === 'sell';
-  const selectedGem = GEMS[screenData.gemId] || null;
+  const isRoughSelling = tab === 'rough';
+  const selectedGem = isRoughSelling ? null : (GEMS[screenData.gemId] || null);
 
   let shopContent = '';
-  if (!selectedGem) {
+  if (isRoughSelling) {
+    shopContent = roughSaleContentMarkup();
+  } else if (!selectedGem) {
     const gems = Object.values(GEMS).filter((gem) => !isSelling || looseTotalForGem(gem.id) > 0);
     const gemChoices = gems.map((gem) => {
       const owned = looseTotalForGem(gem.id);
@@ -3246,13 +3717,10 @@ function renderLooseShop() {
     }).join('');
     shopContent = `<section class="loose-shop-cut-selection">
       <button type="button" class="secondary-button loose-shop-gem-back" data-action="loose-shop-gem-back">← 石種一覧へ戻る</button>
-      <header class="loose-shop-step-heading loose-shop-selected-gem">
-        ${looseVisual(selectedGem.id, 'loose-shop-selected-gem-image', '', defaultLooseShapeForGem(selectedGem.id))}
-        <div><h2>${esc(selectedGem.name)}のカットを選択</h2></div>
-      </header>
       <div class="product-list loose-shop-cut-list">
         ${productRows || '<div class="empty-state sell-empty-state"><strong>この石種で売却できるルースはありません。</strong><p>別の石種を選択してください。</p></div>'}
       </div>
+      <button type="button" class="secondary-button loose-shop-gem-back loose-shop-gem-back-bottom" data-action="loose-shop-gem-back">← 石種一覧へ戻る</button>
     </section>`;
   }
 
@@ -3263,6 +3731,7 @@ function renderLooseShop() {
         <div class="tab-row loose-shop-tabs">
           <button class="${tab === 'buy' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="buy">ルースを買う</button>
           <button class="${tab === 'sell' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="sell">ルースを売る</button>
+          <button class="${tab === 'rough' ? 'active' : ''}" data-action="loose-shop-tab" data-tab="rough">原石を売る</button>
         </div>
         ${shopContent}
       </section>
@@ -3322,7 +3791,7 @@ function renderDisplayShop() {
       <section class="scene-space"></section>
       <section class="action-panel glass-panel display-shop-panel">
         <div class="product-list">${productRows}</div>
-        <p class="small-note">ショーケースとディスプレイ用品は1回につき1個、ケースは購入数を選択できます。手続きに1時間かかります。購入後は店舗画面または店舗情報から設置できます。</p>
+        <p class="small-note">ショーケースとディスプレイ用品は1回につき1個、ケースは購入数を選択できます。手続きに1時間かかります。購入後は店舗画面の「店頭設備」から設置できます。</p>
       </section>
     </div>`, { help: 'ショーケース、ディスプレイ用品、ケースを購入できます。ケースは▲▼のタップまたは長押しで購入数を調整できます。購入した商品は店舗へ設置して使用します。' });
 }
@@ -3362,7 +3831,6 @@ function renderRealEstate() {
           <span>契約月の家賃：無料</span>
           <span>ショーケース：なし</span>
           <span>設置上限：3台（1台につき完成品5個）</span>
-          <span>完成品保管：10点</span>
         </div>
       </article>
       ${needsStoreName ? `<label class="name-entry-field">
@@ -3370,7 +3838,7 @@ function renderRealEstate() {
         <input id="store-name-input" type="text" maxlength="30" autocomplete="organization" enterkeyhint="done" placeholder="店舗名を入力">
       </label>` : ''}
       <button class="primary-button full-button" data-action="rent-next-store" ${affordable ? '' : 'disabled'}>契約</button>
-      ${affordable ? '' : `<p class="error-text">契約費が${yen(leaseCost - state.game.money)}足りません。</p>`}
+      ${affordable ? '' : `<p class="error-text store-contract-shortage">契約費が${yen(leaseCost - state.game.money)}足りません。</p>`}
       <button class="secondary-button full-button" data-action="real-estate-menu">戻る</button>
     </section>`, { help: '表示中の条件で次の店舗を契約します。契約した店舗は店舗画面の一覧から選択できます。' });
 }
@@ -3477,6 +3945,7 @@ function defaultDraft(orderId = null) {
   return {
     orderId,
     item: order?.item || 'ring',
+    useLoose: order ? true : null,
     gem,
     looseShape: normalizeLooseShape(gem, looseShape),
     metal: order?.metal || firstOwned(state.inventory.metals, 'silver'),
@@ -3491,29 +3960,153 @@ function firstOwned(collection, fallback) {
 
 function craftChoice(label, group, entries, current, locked = false) {
   return `<fieldset class="craft-field"><legend>${esc(label)}</legend><div class="choice-grid ${Object.keys(entries).length > 3 ? 'many' : 'three'}">
-    ${Object.values(entries).map((entry) => {
-      const owned = group === 'gem'
-        ? (craftDraft?.orderId ? looseAvailableQuantity(entry.id, craftDraft.looseShape, craftDraft.orderId) : looseAvailableTotalForGem(entry.id))
-        : group === 'metal' ? metalAvailableWeight(entry.id, craftDraft?.orderId || '')
-          : null;
-      const ownedLabel = (group === 'metal' || group === 'gem')
-        ? (craftDraft?.orderId ? 'この注文に使用可能' : '使用可能')
-        : '所持';
-      return `<button type="button" class="choice-card ${current === entry.id ? 'selected' : ''}" data-action="craft-choice" data-group="${group}" data-id="${entry.id}" ${locked && current !== entry.id ? 'disabled' : ''}>
-        ${group === 'gem' ? `<span class="choice-visual">${looseVisual(entry.id, 'choice-loose', '', craftDraft?.orderId && entry.id === craftDraft.gem ? craftDraft.looseShape : firstOwnedLooseShapeForGem(entry.id))}</span>` : ''}
-        <strong>${esc(entry.name)}</strong>${owned !== null ? `<small>${ownedLabel} ${group === 'metal' ? `${metalWeightLabel(owned)}g` : `${owned}個`}</small>` : ''}
+    ${Object.values(entries).map((entry) => `<button type="button" class="choice-card ${current === entry.id ? 'selected' : ''}" data-action="craft-choice" data-group="${group}" data-id="${entry.id}" ${locked && current !== entry.id ? 'disabled' : ''}>
+      <strong>${esc(entry.name)}</strong>
+    </button>`).join('')}
+  </div></fieldset>`;
+}
+
+function craftLooseModeChoice(locked = false) {
+  const useLoose = craftDraft?.useLoose;
+  return `<fieldset class="craft-field craft-loose-mode-field"><legend>ルース</legend><div class="choice-grid two craft-loose-mode-grid">
+    <button type="button" class="choice-card ${useLoose === true ? 'selected' : ''}" data-action="craft-loose-mode" data-mode="use">
+      <strong>使用する</strong>
+    </button>
+    <button type="button" class="choice-card ${useLoose === false ? 'selected' : ''}" data-action="craft-loose-mode" data-mode="none" ${locked ? 'disabled' : ''}>
+      <strong>使用しない</strong>
+    </button>
+  </div></fieldset>`;
+}
+
+
+function craftSurfaceParts(finishId = 'mirror') {
+  switch (finishId) {
+    case 'matte': return { base: 'matte', decorated: false };
+    case 'decorated': return { base: null, decorated: true };
+    case 'mirrorDecorated': return { base: 'mirror', decorated: true };
+    case 'matteDecorated': return { base: 'matte', decorated: true };
+    case 'mirror':
+    default: return { base: 'mirror', decorated: false };
+  }
+}
+
+function craftSurfaceFinishId(base, decorated) {
+  if (decorated && base === 'mirror') return 'mirrorDecorated';
+  if (decorated && base === 'matte') return 'matteDecorated';
+  if (decorated) return 'decorated';
+  if (base === 'matte') return 'matte';
+  return 'mirror';
+}
+
+function craftSurfaceChoice(current = 'mirror') {
+  const surface = craftSurfaceParts(current);
+  return `<fieldset class="craft-field craft-surface-field"><legend>表面</legend>
+    <div class="choice-grid three craft-surface-grid">
+      <button type="button" class="choice-card ${surface.base === 'mirror' ? 'selected' : ''}" data-action="craft-surface-choice" data-id="mirror" aria-pressed="${surface.base === 'mirror'}"><strong>鏡面</strong></button>
+      <button type="button" class="choice-card ${surface.base === 'matte' ? 'selected' : ''}" data-action="craft-surface-choice" data-id="matte" aria-pressed="${surface.base === 'matte'}"><strong>つや消し</strong></button>
+      <button type="button" class="choice-card ${surface.decorated ? 'selected' : ''}" data-action="craft-surface-choice" data-id="decorated" aria-pressed="${surface.decorated}"><strong>装飾あり</strong></button>
+    </div>
+    <p class="small-note craft-surface-note">鏡面とつや消しはどちらか一方を選択します。装飾ありは単独、または鏡面・つや消しとの組み合わせが可能です。</p>
+  </fieldset>`;
+}
+
+function craftAvailableLooseGems(orderId = null) {
+  const order = orderId ? state.orders.find((entry) => entry.id === orderId) : null;
+  return Object.values(GEMS).filter((gem) => {
+    if (order) {
+      if (gem.id !== order.gem) return false;
+      const shapeId = normalizeLooseShape(order.gem, order.looseShape);
+      return looseAvailableQuantity(gem.id, shapeId, orderId) > 0;
+    }
+    return looseAvailableTotalForGem(gem.id) > 0;
+  });
+}
+
+function craftLooseGemChoice(orderId = null) {
+  const order = orderId ? state.orders.find((entry) => entry.id === orderId) : null;
+  const gems = craftAvailableLooseGems(orderId);
+  if (!gems.length) {
+    return `<fieldset class="craft-field craft-loose-field"><legend>ルースの選択</legend><div class="empty-state craft-loose-empty"><strong>使用できるルースを持っていません。</strong><p>原石を研磨するか、ルース屋で購入してください。</p></div></fieldset>`;
+  }
+  return `<fieldset class="craft-field craft-loose-field"><legend>ルースの選択</legend><div class="choice-grid many craft-loose-gem-grid">
+    ${gems.map((gem) => {
+      const selected = craftDraft?.gem === gem.id;
+      const selectedShape = selected
+        ? normalizeLooseShape(gem.id, craftDraft.looseShape)
+        : order
+          ? normalizeLooseShape(order.gem, order.looseShape)
+          : firstOwnedLooseShapeForGem(gem.id);
+      const available = order
+        ? looseAvailableQuantity(gem.id, selectedShape, orderId)
+        : looseAvailableTotalForGem(gem.id);
+      return `<button type="button" class="choice-card craft-loose-gem-card ${selected ? 'selected' : ''}" data-action="craft-loose-gem" data-id="${esc(gem.id)}">
+        <span class="choice-visual">${looseVisual(gem.id, 'choice-loose', '', selectedShape)}</span>
+        <strong>${esc(gem.name)}</strong>
+        <small>${order ? 'この注文に使用可能' : '使用可能'} ${available}個</small>
+        ${selected ? `<small class="craft-current-loose">選択中：${esc(looseShapeLabel(selectedShape))}</small>` : ''}
       </button>`;
     }).join('')}
   </div></fieldset>`;
 }
 
-function craftLooseShapeChoice(gemId, current, locked = false) {
-  return `<fieldset class="craft-field"><legend>カット</legend><div class="choice-grid many">
-    ${looseShapeIdsForGem(gemId).map((shapeId) => `<button type="button" class="choice-card ${current === shapeId ? 'selected' : ''}" data-action="craft-shape-choice" data-shape="${shapeId}" ${locked && current !== shapeId ? 'disabled' : ''}>
-      <span class="choice-visual">${looseVisual(gemId, 'choice-loose', '', shapeId)}</span>
-      <strong>${esc(looseShapeLabel(shapeId))}</strong><small>${craftDraft?.orderId ? 'この注文に使用可能' : '使用可能'} ${looseAvailableQuantity(gemId, shapeId, craftDraft?.orderId || '')}個${looseReservedQuantity(gemId, shapeId) > 0 ? `・注文予定 ${looseReservedQuantity(gemId, shapeId)}個` : ''}</small>
-    </button>`).join('')}
+function craftMetalChoice(current, locked = false) {
+  const metals = METAL_WORKSHOP_ORDER.map((metalId) => METALS[metalId]).filter(Boolean);
+  return `<fieldset class="craft-field"><legend>地金</legend><div class="choice-grid three craft-metal-grid">
+    ${metals.map((metal) => {
+      const available = metalAvailableWeight(metal.id, craftDraft?.orderId || '');
+      return `<button type="button" class="choice-card ${current === metal.id ? 'selected' : ''}" data-action="craft-choice" data-group="metal" data-id="${esc(metal.id)}" ${locked && current !== metal.id ? 'disabled' : ''}>
+        <strong>${esc(metal.shortName || metal.alloy || metal.name)}</strong>
+        <small>${craftDraft?.orderId ? 'この注文に使用可能' : '使用可能'} ${metalWeightLabel(available)}g</small>
+      </button>`;
+    }).join('')}
   </div></fieldset>`;
+}
+
+function renderCraftLooseSelection() {
+  if (!craftDraft) craftDraft = defaultDraft(screenData.orderId || null);
+  const orderId = craftDraft.orderId || screenData.orderId || null;
+  const order = orderId ? state.orders.find((entry) => entry.id === orderId) : null;
+  const gemId = GEMS[screenData.gemId] ? screenData.gemId : craftDraft.gem;
+  const gem = GEMS[gemId];
+  const shapeIds = (order
+    ? [normalizeLooseShape(order.gem, order.looseShape)]
+    : looseShapeIdsForGem(gemId)
+  ).filter((shapeId) => looseAvailableQuantity(gemId, shapeId, orderId || '') > 0);
+
+  return shell(`${gem.name}のカットを選ぶ`, `
+    <section class="wide-panel glass-panel craft-loose-selection-page">
+      <header class="craft-loose-selection-heading">
+        <small>ルースの選択</small>
+        <h1>${esc(gem.name)}</h1>
+        <p>使用するカットを選び、「これを使う」を押してください。</p>
+      </header>
+      <div class="craft-loose-cut-list">
+        ${shapeIds.length ? shapeIds.map((shapeId) => {
+          const available = looseAvailableQuantity(gemId, shapeId, orderId || '');
+          const selected = craftDraft.gem === gemId && normalizeLooseShape(gemId, craftDraft.looseShape) === shapeId;
+          return `<article class="craft-loose-cut-card ${selected ? 'selected' : ''}">
+            <div class="craft-loose-cut-image">${looseVisual(gemId, 'choice-loose', '', shapeId)}</div>
+            <div class="craft-loose-cut-copy"><strong>${esc(looseShapeLabel(shapeId))}</strong><small>${order ? 'この注文に使用可能' : '使用可能'} ${available}個</small></div>
+            <button type="button" class="primary-button craft-use-loose-button" data-action="craft-use-loose" data-id="${esc(gemId)}" data-shape="${esc(shapeId)}">これを使う</button>
+          </article>`;
+        }).join('') : '<div class="empty-state"><strong>使用できるカットがありません。</strong><p>ジュエリーを作る画面へ戻り、別の石種を選択してください。</p></div>'}
+      </div>
+      <button type="button" class="secondary-button full-button craft-loose-bottom-back" data-action="back">戻る</button>
+    </section>`, { back: false, help: '所持しているルースのうち、使用できるカットだけを表示しています。「これを使う」で制作に使うルースを決定します。' });
+}
+
+function rerenderCraftPreservingPosition() {
+  const content = root.querySelector('.screen-content');
+  const options = root.querySelector('.craft-options');
+  const contentScrollTop = content?.scrollTop || 0;
+  const optionsScrollTop = options?.scrollTop || 0;
+  render();
+  requestAnimationFrame(() => {
+    const nextContent = root.querySelector('.screen-content');
+    const nextOptions = root.querySelector('.craft-options');
+    if (nextContent) nextContent.scrollTop = contentScrollTop;
+    if (nextOptions) nextOptions.scrollTop = optionsScrollTop;
+  });
 }
 
 function renderCraft() {
@@ -3528,7 +4121,7 @@ function renderCraft() {
   }
   const orderId = screenData.orderId || null;
   if (!craftDraft || craftDraft.orderId !== orderId) craftDraft = defaultDraft(orderId);
-  craftDraft.looseShape = normalizeLooseShape(craftDraft.gem, craftDraft.looseShape);
+  if (craftDraft.useLoose !== false) craftDraft.looseShape = normalizeLooseShape(craftDraft.gem, craftDraft.looseShape);
   const locked = Boolean(orderId);
   const order = locked ? state.orders.find((entry) => entry.id === orderId) : null;
   const hours = productionHours(craftDraft, state.employee);
@@ -3536,61 +4129,69 @@ function renderCraft() {
   const quality = expectedQuality();
   const price = recommendedPrice({ ...craftDraft, quality });
   const requirements = materialRequirementsFor(craftDraft);
-  const enoughGem = requirements.enoughLoose;
+  const looseModeSelected = typeof craftDraft.useLoose === 'boolean';
+  const enoughGem = craftDraft.useLoose === false ? true : requirements.enoughLoose;
   const enoughMetal = requirements.enoughMetal;
   const capacityOk = state.inventory.jewelry.filter((item) => item.status !== 'sold').length < state.inventory.capacity;
-  const canCraft = enoughGem && enoughMetal && capacityOk && canSpendHours(hours);
-  const looseItemName = `${GEMS[craftDraft.gem].name}・${looseShapeLabel(craftDraft.looseShape)}`;
+  const canCraft = looseModeSelected && enoughGem && enoughMetal && capacityOk && canSpendHours(hours);
+  const selectableLooseExists = craftDraft.useLoose === true && craftAvailableLooseGems(orderId).length > 0;
+  const looseSummaryName = craftDraft.useLoose === true ? `${GEMS[craftDraft.gem].name}・${looseShapeLabel(craftDraft.looseShape)}ルース` : 'ルースなし';
 
   return shell(order ? '注文の商品を作る' : 'ジュエリーを作る', `
-    <div class="craft-layout">
-      <section class="preview-panel glass-panel">
-        <div class="jewelry-preview metal-${craftDraft.metal}" style="--gem:${GEMS[craftDraft.gem].hue}">
-          <span class="preview-item">${ITEMS[craftDraft.item].symbol}</span>
-          <span class="jewelry-preview-loose">${looseVisual(craftDraft.gem, 'jewelry-loose-preview', '', craftDraft.looseShape)}</span>
-        </div>
-        <h2>${esc(itemName(craftDraft))}</h2>
-        ${order ? `<span class="order-badge">${esc(order.customerName)}さんの注文品</span>` : ''}
-        <dl class="preview-details">
-          <div><dt>制作時間</dt><dd>${hours}時間</dd></div>
-          <div><dt>原価</dt><dd>${yen(cost)}</dd></div>
-          <div><dt>品質予想</dt><dd>${esc(QUALITIES[quality].name)}</dd></div>
-          <div><dt>おすすめ価格</dt><dd>${yen(price)}</dd></div>
-        </dl>
-      </section>
+    <div class="craft-layout craft-layout-no-preview">
       <section class="craft-options glass-panel">
-        ${craftChoice('アイテム', 'item', ITEMS, craftDraft.item, locked)}
-        ${craftChoice('石種', 'gem', GEMS, craftDraft.gem, locked)}
-        ${craftLooseShapeChoice(craftDraft.gem, craftDraft.looseShape, locked)}
-        ${craftChoice('地金', 'metal', METALS, craftDraft.metal, locked)}
+        ${craftChoice('アイテムの選択', 'item', ITEMS, craftDraft.item, locked)}
+        ${craftLooseModeChoice(locked)}
+        ${craftDraft.useLoose === true ? craftLooseGemChoice(orderId) : ''}
+        ${craftMetalChoice(craftDraft.metal, locked)}
         ${craftChoice('デザイン', 'design', DESIGNS, craftDraft.design, locked)}
-        ${craftChoice('仕上げ', 'finish', FINISHES, craftDraft.finish, false)}
-        <article class="craft-material-summary">
-          <div><span>必要なルース</span><strong>${esc(looseItemName)} ${requirements.requiredLooseQuantity}個</strong><small>${order ? 'この注文に使用可能' : '使用可能'} ${requirements.availableLooseQuantity}個${requirements.reservedLooseQuantity > 0 ? `・注文予定 ${requirements.reservedLooseQuantity}個` : ''}</small></div>
-          <div><span>必要な地金</span><strong>${esc(METALS[craftDraft.metal].name)} ${requirements.requiredMetalWeight}g</strong><small>${order ? '所持' : '使用可能'} ${metalWeightLabel(requirements.availableMetalWeight)}g${!order && requirements.reservedMetalWeight > 0 ? `・注文予定 ${metalWeightLabel(requirements.reservedMetalWeight)}g` : ''}</small></div>
-        </article>
+        ${craftSurfaceChoice(craftDraft.finish)}
+
+        ${looseModeSelected && (craftDraft.useLoose === false || selectableLooseExists) ? `<section class="craft-final-summary" aria-label="完成予定の詳細">
+          <p class="craft-summary-loose">${craftDraft.useLoose === true ? `◇${esc(looseSummaryName)}` : esc(looseSummaryName)}</p>
+          <h2>${esc(itemName(craftDraft))}</h2>
+          ${order ? `<span class="order-badge">${esc(order.customerName)}さんの注文品</span>` : ''}
+          <dl class="craft-summary-details">
+            <div><dt>制作時間</dt><dd>${hours}時間</dd></div>
+            <div><dt>原価</dt><dd>${yen(cost)}</dd></div>
+            <div><dt>品質予想</dt><dd>${esc(QUALITIES[quality].name)}</dd></div>
+            <div><dt>おすすめ価格</dt><dd>${yen(price)}</dd></div>
+          </dl>
+          ${enoughMetal ? '' : `<div class="craft-metal-shortage">
+            <p>${esc(METALS[craftDraft.metal].name)}が${metalWeightLabel(requirements.missingMetalWeight)}g足りません。</p>
+            <button type="button" class="secondary-button full-button" data-action="nav" data-screen="supplierMetals" data-tab="buy">地金屋へ</button>
+          </div>`}
+        </section>` : ''}
+
         <div class="validation-list">
-          ${enoughGem ? '' : `<p>・${esc(looseItemName)}のルースが${requirements.missingLooseQuantity}個足りません。</p>`}
-          ${enoughMetal ? '' : `<p>・${esc(METALS[craftDraft.metal].name)}が${requirements.missingMetalWeight}g足りません。</p>`}
           ${capacityOk ? '' : '<p>・完成品の保管場所に空きがありません。</p>'}
-          ${canSpendHours(hours) ? '' : '<p>・今日は制作する時間がありません。</p>'}
+          ${canSpendHours(hours) ? '' : '<p class="craft-time-warning">今日は制作する時間がありません。</p>'}
         </div>
         <button class="primary-button full-button" data-action="confirm-craft" ${canCraft ? '' : 'disabled'}>制作する</button>
-        ${!enoughGem && toolUsable('polishingMachine') && state.inventory.rough[craftDraft.gem] > 0 ? '<button class="secondary-button full-button" data-action="nav" data-screen="polishing">原石を研磨する</button>' : ''}
-        ${!enoughGem ? '<button class="secondary-button full-button" data-action="nav" data-screen="looseShop">ルース屋でルースを見る</button>' : ''}
-        ${!enoughMetal ? '<button class="secondary-button full-button" data-action="nav" data-screen="supplierMetals" data-tab="buy">素材屋で地金を見る</button>' : ''}
+        ${craftDraft.useLoose === true && !enoughGem && toolUsable('polishingMachine') && state.inventory.rough[craftDraft.gem] > 0 ? '<button class="secondary-button full-button" data-action="nav" data-screen="polishing">原石を研磨する</button>' : ''}
+        ${craftDraft.useLoose === true && !enoughGem ? '<button class="secondary-button full-button" data-action="nav" data-screen="looseShop">ルース屋へ</button>' : ''}
       </section>
-    </div>`, { help: '石種とカットを別々に選び、所持している対応ルースを使って制作します。注文品では石種とカットが固定されます。' });
+    </div>`, { help: 'アイテム、ルースを使用するか、地金、デザイン、表面の順に選びます。ルースを使用する場合だけ、所持している石種とカットを選びます。各項目を選んでも完成予定の詳細へ自動移動しません。ルースは石種を選んだ後、別画面で使用するカットを決定します。最後に画面下部で完成予定を確認してください。' });
 }
 
 function renderCompletion() {
   const jewelry = state.inventory.jewelry.find((item) => item.id === completionId);
   if (!jewelry) return shell('完成', '<p>完成品が見つかりません。</p>');
+  const usesLoose = jewelry.useLoose !== false;
+  const order = jewelry.orderId ? state.orders.find((entry) => entry.id === jewelry.orderId) : null;
+  const isPendingOrderDelivery = Boolean(order && order.status === '完成' && order.jewelryId === jewelry.id && jewelry.status === 'order');
+  const completionActions = isPendingOrderDelivery
+    ? `<button class="primary-button" data-action="deliver-order-completion" data-id="${order.id}">お客様へ納品する</button>
+       <button class="secondary-button" data-action="remake-order-completion" data-id="${order.id}" data-jewelry="${jewelry.id}">作り直す</button>`
+    : `${state.store.rented ? `<button class="primary-button" data-action="place-from-completion" data-id="${jewelry.id}">店舗に並べる</button>` : '<button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>'}
+       <button class="secondary-button" data-action="nav" data-screen="inventory">保管する</button>
+       <button class="secondary-button" data-action="open-craft">もう一度作る</button>
+       <button class="text-button" data-action="nav" data-screen="workshop">工房へ戻る</button>`;
   return shell('完成', `
     <section class="center-card glass-panel result-card">
-      <div class="jewelry-preview large metal-${jewelry.metal}" style="--gem:${GEMS[jewelry.gem].hue}">
-        <span class="preview-item">${ITEMS[jewelry.item].symbol}</span>
-        <span class="jewelry-preview-loose">${looseVisual(jewelry.gem, 'jewelry-loose-preview', '', jewelry.looseShape)}</span>
+      <div class="jewelry-preview large metal-${jewelry.metal} item-${jewelry.item}" style="--gem:${GEMS[jewelry.gem]?.hue || '#ffffff'}">
+        ${jewelryItemVisual(jewelry.item, 'jewelry-item-shape large', usesLoose)}
+        ${usesLoose ? `<span class="jewelry-preview-loose">${jewelryLooseSetVisual(jewelry.item, jewelry.gem, jewelry.looseShape, 'large')}</span>` : ''}
       </div>
       <h1>${esc(jewelry.name)}が完成しました。</h1>
       <div class="result-stats">
@@ -3600,13 +4201,8 @@ function renderCompletion() {
         <span>経験値：＋${jewelry.xp}</span>
       </div>
       ${screenData.toolFailure ? `<div class="tool-break-alert"><strong>${esc(screenData.toolFailure)}が壊れました</strong><span>${WORKSHOP_TOOLS[Object.keys(WORKSHOP_TOOLS).find((id) => WORKSHOP_TOOLS[id].name === screenData.toolFailure)]?.repairable ? 'g-Lab.で修理を依頼できます。' : '工房からなくなりました。g-Lab.で再購入できます。'}</span></div>` : ''}
-      <div class="button-stack">
-        ${jewelry.status === 'order' ? `<button class="primary-button" data-action="nav" data-screen="orders">注文書を見る</button>` : state.store.rented ? `<button class="primary-button" data-action="place-from-completion" data-id="${jewelry.id}">店舗に並べる</button>` : '<button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>'}
-        <button class="secondary-button" data-action="nav" data-screen="inventory">保管する</button>
-        <button class="secondary-button" data-action="open-craft">もう一度作る</button>
-        <button class="text-button" data-action="nav" data-screen="workshop">工房へ戻る</button>
-      </div>
-    </section>`, { main: true });
+      <div class="button-stack">${completionActions}</div>
+    </section>`, isPendingOrderDelivery ? { back: false, main: false } : { main: true });
 }
 
 function renderInventory() {
@@ -3677,8 +4273,8 @@ function renderLooseInventoryDetail() {
         <div><small>ルースの種類</small><h1>${esc(gem.name)}</h1><p>${esc(shape.name)}</p></div>
       </header>
       <div class="loose-detail-description-grid">
-        <section><h2>石種について</h2><p>${esc(GEM_LOOSE_DESCRIPTIONS[gem.id] || `${gem.name}のルースです。`)}</p></section>
-        <section><h2>カットについて</h2><p>${esc(LOOSE_SHAPE_DESCRIPTIONS[shapeId] || `${shape.name}の形状です。`)}</p></section>
+        <section class="loose-knowledge-card"><div><h2>石種について</h2><p>${esc(GEM_LOOSE_DESCRIPTIONS[gem.id] || `${gem.name}のルースです。`)}</p></div><button type="button" class="secondary-button loose-knowledge-button" data-action="loose-gem-guide-open" data-id="${esc(gem.id)}">詳しい説明を見る</button></section>
+        <section class="loose-knowledge-card"><div><h2>カットについて</h2><p>${esc(LOOSE_SHAPE_DESCRIPTIONS[shapeId] || `${shape.name}の形状です。`)}</p></div><button type="button" class="secondary-button loose-knowledge-button" data-action="loose-cut-guide-open" data-shape="${esc(shapeId)}">詳しい説明を見る</button></section>
       </div>
       <dl class="loose-inventory-metrics">
         <div><dt>所持数</dt><dd>${metrics.owned}個</dd></div>
@@ -3688,10 +4284,50 @@ function renderLooseInventoryDetail() {
       </dl>
       ${metrics.shortage > 0 ? `<p class="loose-reservation-warning">受注中の注文に必要なルースが${metrics.shortage}個不足しています。</p>` : metrics.reserved > 0 ? '<p class="loose-reservation-note">注文に使用予定のルースは、通常制作と売却には使用できません。</p>' : ''}
       <div class="button-stack loose-detail-actions">
-        <button type="button" class="primary-button" data-action="nav" data-screen="looseShop">ルース屋へ</button>
-        <button type="button" class="secondary-button" data-action="back">戻る</button>
+        <button type="button" class="secondary-button full-button" data-action="back">戻る</button>
       </div>
     </section>`);
+}
+
+
+function renderLooseGemGuide() {
+  const gem = GEMS[screenData.gemId];
+  const guide = gem ? GEM_LOOSE_GUIDES[gem.id] : null;
+  if (!gem || !guide) return shell('石種の詳しい説明', '<div class="empty-state"><strong>石種情報が見つかりません。</strong></div>');
+  const sections = Array.isArray(guide.sections) ? guide.sections : [];
+  return shell(`${gem.name} 詳しい説明`, `
+    <section class="glass-panel loose-professional-guide-page">
+      <header class="loose-guide-title">
+        <div><small>石種の詳しい説明</small><h1>${esc(gem.name)}</h1><p>${esc(guide.mineral || '')}</p></div>
+        <div class="loose-guide-hardness"><small>モース硬度</small><strong>${esc(guide.hardness || '不明')}</strong></div>
+      </header>
+      <p class="tool-guide-lead">${esc(guide.overview || '')}</p>
+      <div class="loose-guide-sections">
+        ${sections.map((section) => `<section class="tool-guide-section"><h3>${esc(section.title || '')}</h3><p>${esc(section.body || '')}</p></section>`).join('')}
+      </div>
+      <p class="loose-guide-caution">モース硬度は表面の傷つきにくさを示す相対的な尺度です。衝撃への強さ、劈開、内部亀裂、処理状態、熱や薬品への安定性は別に確認してください。</p>
+      <button type="button" class="primary-button full-button" data-action="back">戻る</button>
+    </section>`, { main: false, help: '鉱物種、色、内包物、モース硬度、処理、石留め、手入れまで、選択した石種の詳しい特徴を確認できます。' });
+}
+
+function renderLooseCutGuide() {
+  const shapeId = screenData.looseShape;
+  const shape = LOOSE_SHAPES[shapeId];
+  const guide = shape ? LOOSE_CUT_GUIDES[shapeId] : null;
+  if (!shape || !guide) return shell('カットの詳しい説明', '<div class="empty-state"><strong>カット情報が見つかりません。</strong></div>');
+  const sections = Array.isArray(guide.sections) ? guide.sections : [];
+  return shell(`${shape.name} 詳しい説明`, `
+    <section class="glass-panel loose-professional-guide-page">
+      <header class="loose-guide-title loose-cut-guide-title">
+        <div><small>カットの詳しい説明</small><h1>${esc(shape.name)}</h1><p>${esc(guide.category || '')}</p></div>
+      </header>
+      <p class="tool-guide-lead">${esc(guide.overview || '')}</p>
+      <div class="loose-guide-sections">
+        ${sections.map((section) => `<section class="tool-guide-section"><h3>${esc(section.title || '')}</h3><p>${esc(section.body || '')}</p></section>`).join('')}
+      </div>
+      <p class="loose-guide-caution">適切な角度や深さは石種の屈折率、色、透明度、内包物、原石形状によって変わります。名称が同じでも実際のファセット構成や縦横比は一つではありません。</p>
+      <button type="button" class="primary-button full-button" data-action="back">戻る</button>
+    </section>`, { main: false, help: '外形、ファセット構成、光の戻り方、歩留まり、石留め、品質確認まで、選択したカットを詳しく確認できます。' });
 }
 
 function metalInventoryMetrics(metalId) {
@@ -3760,7 +4396,7 @@ function renderFinishedItems() {
     const sellingPrice = item.status === 'displayed' ? sellingPriceForJewelry(item) : null;
     const profit = sellingPrice === null ? item.recommendedPrice - item.cost : sellingPrice - item.cost;
     return `<article class="jewelry-card">
-      <div class="small-jewelry metal-${item.metal}" style="--gem:${GEMS[item.gem].hue}"><span>${ITEMS[item.item].symbol}</span><i>${looseVisual(item.gem, 'small-jewelry-loose', '', item.looseShape)}</i></div>
+      <div class="small-jewelry metal-${item.metal} item-${item.item}" style="--gem:${GEMS[item.gem]?.hue || '#ffffff'}">${jewelryItemVisual(item.item, 'jewelry-item-shape small', item.useLoose !== false)}${item.useLoose !== false ? `<i>${jewelryLooseSetVisual(item.item, item.gem, item.looseShape, 'small')}</i>` : ''}</div>
       <div><h3>${esc(item.name)}</h3><p>${esc(QUALITIES[item.quality].name)}・原価 ${yen(item.cost)}</p><small>おすすめ ${yen(item.recommendedPrice)}${sellingPrice === null ? '' : `・設定 ${yen(sellingPrice)}`}・予想利益 ${yen(profit)}</small><small>状態：${status}</small></div>
       ${item.status === 'stored' ? state.store.rented ? `<button class="primary-button" data-action="place-item" data-id="${item.id}">現在の店舗に並べる</button>` : '<button class="secondary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>' : item.status === 'displayed' && contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
     </article>`;
@@ -3798,20 +4434,31 @@ function renderStore() {
   const available = state.inventory.jewelry.filter((item) => item.status === 'stored');
   const emptySlots = Math.max(0, storeShowcaseCapacity(branch) - storeShowcaseUsedSlots(branch));
   const displayInventory = state.store.displayInventory || {};
+  const showcasesOwned = Math.max(0, Math.floor(Number(displayInventory.showcase) || 0));
   const displaySuppliesOwned = Math.max(0, Math.floor(Number(displayInventory.displaySupplies) || 0));
   const casesOwned = Math.max(0, Math.floor(Number(displayInventory.case) || 0));
   const casesRemaining = storeCaseRemaining(branch);
+  const canInstallShowcase = showcasesOwned > 0 && installedShowcaseCount(branch) < storeMaximumShowcases();
   const canInstallDisplaySupplies = displaySuppliesOwned > 0;
   const canInstallCase = casesOwned > 0 && casesRemaining < storeMaximumCases();
+  const storeTypeName = state.store.expanded ? '拡張済みの店舗' : '小さな店舗';
+  const storeTypeDescription = state.store.expanded
+    ? 'ショーケースを最大5台まで設置でき、完成品を20点まで保管できます。店員を1人雇えます。'
+    : 'ショーケースを最大3台まで設置でき、完成品を10点まで保管できます。店舗を拡張すると、ショーケースと保管数が増え、店員を1人雇えるようになります。';
   return shell(displayName, `
     <div class="store-layout">
       <section class="store-scene"></section>
       <section class="store-panel glass-panel">
         <h1 class="store-name-title">${esc(displayName)}</h1>
+        <section class="store-type-section">
+          <small>店舗タイプ</small>
+          <strong>${esc(storeTypeName)}</strong>
+          <p>${esc(storeTypeDescription)}</p>
+        </section>
         ${storeBranchOperating(branch) ? '' : `<section class="tool-break-alert"><strong>この店舗は休業中です</strong><span>未払い家賃 ${yen(branch.unpaidRent)}を収支画面から支払ってください。</span></section>`}
-        ${storeBranchOperating(branch) && !businessOpen ? '<section class="tool-break-alert"><strong>本日の店舗営業は終了しました</strong><span>営業時間は9:00～19:00です。商品の陳列、販売価格の変更、注文確認は21:00まで行えます。</span></section>' : ''}
+        ${storeBranchOperating(branch) && !businessOpen ? '<section class="tool-break-alert"><strong>本日の店舗営業は終了しました</strong><span>営業時間は9:00～19:00です。</span></section>' : ''}
         <div class="store-showcase-heading"><h2>ショーケース</h2><small>${installedShowcaseCount(branch)}/${storeMaximumShowcases()}台・${storeShowcaseUsedSlots(branch)}/${storeShowcaseCapacity(branch)}点</small></div>
-        ${installedShowcaseCount(branch) ? `<div class="showcase-units">${branchShowcases(branch).map((showcase, showcaseIndex) => renderShowcaseUnit(showcase, showcaseIndex, branch)).join('')}</div>` : '<section class="empty-state showcase-empty-state"><strong>ショーケースがありません。</strong><p>御徒町のディスプレイ屋でショーケースを購入し、店舗情報から設置してください。</p></section>'}
+        ${installedShowcaseCount(branch) ? `<div class="showcase-units">${branchShowcases(branch).map((showcase, showcaseIndex) => renderShowcaseUnit(showcase, showcaseIndex, branch)).join('')}</div>` : '<section class="empty-state showcase-empty-state"><strong>ショーケースがありません。</strong><p>御徒町のディスプレイ屋でショーケースを購入し、下の「店頭設備」から設置してください。</p></section>'}
         ${available.length && emptySlots > 0 ? `<details class="available-items"><summary>商品を並べる</summary><div class="compact-list">${available.map((item) => `<button data-action="place-item" data-id="${item.id}"><span>${esc(item.name)}</span><small>${yen(item.recommendedPrice)}</small></button>`).join('')}</div></details>` : ''}
         ${available.length && emptySlots === 0 ? '<p class="small-note">商品を並べるには、空きのあるショーケースが必要です。</p>' : ''}
         <section class="store-service-section">
@@ -3822,6 +4469,7 @@ function renderStore() {
         </section>
         <section class="store-install-section storefront-equipment-section">
           <div class="section-heading"><h2>店頭設備</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>
+          <article class="store-install-row"><div><strong>ショーケース</strong><small>設置済み ${installedShowcaseCount(branch)}/${storeMaximumShowcases()}台・未設置 ${showcasesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="showcase" ${canInstallShowcase ? '' : 'disabled'}>店頭に設置</button></article>
           <article class="store-install-row"><div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}・未設置 ${displaySuppliesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button></article>
           <article class="store-install-row"><div><strong>ケース</strong><small>残数 ${casesRemaining}/${storeMaximumCases()}個・未設置 ${casesOwned}</small></div><button class="primary-button" data-action="install-display-product" data-id="case" ${canInstallCase ? '' : 'disabled'}>店頭に設置</button></article>
           <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1されます。ケースは販売ごとに1個減ります。</p>
@@ -3833,18 +4481,28 @@ function renderStore() {
             <div><small>店舗評価</small><strong>${storeRating(branch)} / 100</strong></div>
             <div><small>店舗実績</small><strong>${Math.max(0, Number(branch.points) || 0)}pt</strong></div>
             <div><small>設備補正</small><strong>＋${storeDisplayLevelBonus(branch)}</strong></div>
-            <div><small>ケース残数</small><strong>${casesRemaining}/${storeMaximumCases()}個</strong></div>
           </div>
         </section>
         <div class="button-grid">
           <button class="secondary-button" data-action="nav" data-screen="inventory">完成品を見る</button>
           <button class="secondary-button" data-action="nav" data-screen="orders" ${activeOrderCount() > 0 ? '' : 'disabled'}>工房の注文書</button>
-          <button class="secondary-button" data-action="nav" data-screen="expansion">店舗情報</button>
           ${state.store.expanded ? '<button class="secondary-button" data-action="nav" data-screen="employee">店員</button>' : ''}
         </div>
-        ${canExpand ? '<p class="success-text">店舗を拡張できます。</p>' : ''}
+        <section class="store-expansion-section">
+          <div class="section-heading"><h2>拡張条件</h2></div>
+          ${state.store.expanded ? '<p class="success-text">店舗の拡張は完了しています。</p><p>ショーケースを最大5台まで設置でき、店員を1人雇えます。</p>' : `
+            <ul class="condition-list">
+              <li class="${state.store.salesCount >= 5 ? 'done' : ''}">商品を5点販売：${state.store.salesCount}/5</li>
+              <li class="${state.store.totalRevenue >= 100000 ? 'done' : ''}">累計売上100,000円：${yen(state.store.totalRevenue)}</li>
+              <li class="${state.game.money >= 50000 ? 'done' : ''}">所持金50,000円：${yen(state.game.money)}</li>
+            </ul>
+            <p>拡張費：${yen(50000)}</p>
+            ${canExpand ? '<p class="success-text">すべての拡張条件を満たしています。</p>' : ''}
+            <button class="primary-button full-button" data-action="expand-store" ${canExpand ? '' : 'disabled'}>店舗を拡張する</button>
+            <p class="small-note">条件を満たしても、拡張するかどうかは自由です。</p>`}
+        </section>
       </section>
-    </div>`, { help: 'ショーケース1台には完成品を5個まで並べられます。販売価格は商品ごとに直接設定でき、原価・おすすめ価格・予想利益を確認できます。ディスプレイ用品とケースは店頭へ設置でき、ケースは販売ごとに1個消費されます。' });
+    </div>`, { help: '現在の店舗タイプと拡張条件を確認できます。ショーケース1台には完成品を5個まで並べられます。ショーケース、ディスプレイ用品、ケースは店頭設備から設置でき、ケースは販売ごとに1個消費されます。' });
 }
 
 function renderShowcaseUnit(showcase, showcaseIndex, branch = currentStoreBranch()) {
@@ -3862,7 +4520,7 @@ function renderShowcaseSlot(slot, showcaseIndex, slotIndex, branch = currentStor
   const expectedProfit = price - Math.max(0, Number(item.cost) || 0);
   return `<article class="showcase-slot">
     <div class="slot-number">${slotIndex + 1}</div>
-    <div class="small-jewelry metal-${item.metal}" style="--gem:${GEMS[item.gem].hue}"><span>${ITEMS[item.item].symbol}</span><i>${looseVisual(item.gem, 'small-jewelry-loose', '', item.looseShape)}</i></div>
+    <div class="small-jewelry metal-${item.metal} item-${item.item}" style="--gem:${GEMS[item.gem]?.hue || '#ffffff'}">${jewelryItemVisual(item.item, 'jewelry-item-shape small', item.useLoose !== false)}${item.useLoose !== false ? `<i>${jewelryLooseSetVisual(item.item, item.gem, item.looseShape, 'small')}</i>` : ''}</div>
     <div class="slot-details"><strong>${esc(item.name)}</strong>
       <div class="slot-price-breakdown">
         <small>原価 ${yen(item.cost)}</small>
@@ -3890,6 +4548,7 @@ function customerPreferenceMatches(item, request) {
   const preference = request?.preference || { type: 'gem', value: request?.gem };
   if (preference.type === 'metal') return item.metal === preference.value;
   if (preference.type === 'design') return item.design === preference.value;
+  if (item.useLoose === false) return false;
   if (preference.type === 'color') {
     const acceptedGems = Array.isArray(preference.gems) ? preference.gems : [];
     return acceptedGems.includes(item.gem);
@@ -4051,45 +4710,6 @@ function renderOrders() {
     </section>`, { help: '受注金額、予想原価・利益、納期、必要職人レベル、必要設備、材料の所持状況を確認できます。同時受注数は職人レベルと同じです。' });
 }
 
-function renderExpansion() {
-  if (!state.store.rented) return shell('店舗情報', '<div class="empty-state"><strong>店舗を借りてから確認できます。</strong><p>御徒町の不動産屋で契約してください。</p><button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button></div>');
-  const eligible = expansionEligible();
-  const inventory = state.store.displayInventory || {};
-  const maxShowcases = storeMaximumShowcases();
-  const maxCases = storeMaximumCases();
-  const canInstallShowcase = Number(inventory.showcase || 0) > 0 && installedShowcaseCount() < maxShowcases;
-  const displayProductRows = [DISPLAY_SHOP_PRODUCTS.showcase, DISPLAY_SHOP_PRODUCTS.displaySupplies, DISPLAY_SHOP_PRODUCTS.case].map((product) => {
-    const owned = Math.max(0, Number(inventory[product.id]) || 0);
-    const installed = product.id === 'showcase' ? installedShowcaseCount() : product.id === 'displaySupplies' ? storeDisplaySuppliesInstalled(currentStoreBranch()) : storeCaseRemaining(currentStoreBranch());
-    const installedText = product.id === 'case' ? `残数 ${installed}/${maxCases}個` : `設置済み ${installed}`;
-    const canInstall = product.id === 'showcase' ? canInstallShowcase : product.id === 'case' ? owned > 0 && installed < maxCases : owned > 0;
-    return `<article class="store-install-row"><div><strong>${esc(product.name)}</strong><small>未設置 ${owned}・${installedText}</small></div><button class="primary-button" data-action="install-display-product" data-id="${esc(product.id)}" ${canInstall ? '' : 'disabled'}>店頭に設置</button></article>`;
-  }).join('');
-  return shell('店舗情報', `
-    <section class="center-card glass-panel expansion-card">
-      <h1>${esc(storeDisplayName())}</h1>
-      <p>${state.store.expanded ? '拡張済みの店舗' : '小さな店舗'}</p>
-      <div class="stat-grid store-info-stats">
-        <div><small>店舗レベル</small><strong>Lv.${storeLevel(currentStoreBranch())}</strong></div>
-        <div><small>ショーケース</small><strong>${installedShowcaseCount()}/${maxShowcases}台</strong></div>
-        <div><small>同時注文可能数</small><strong>${orderLimit()}件</strong></div>
-        <div><small>ケース残数</small><strong>${storeCaseRemaining(currentStoreBranch())}/${maxCases}個</strong></div>
-        <div><small>店員</small><strong>${state.employee.hired ? state.employee.name : 'なし'}</strong></div>
-      </div>
-      <section class="store-install-section"><div class="section-heading"><h2>店頭へ設置</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>${displayProductRows}<p class="small-note">ディスプレイ用品は設置1点につき店舗レベル＋1、ケースは1個以上ある間＋1です。</p></section>
-      ${state.store.expanded ? '<p>この基本版での店舗拡張は完了しています。</p>' : `
-        <h2>拡張条件</h2>
-        <ul class="condition-list">
-          <li class="${state.store.salesCount >= 5 ? 'done' : ''}">商品を5点販売：${state.store.salesCount}/5</li>
-          <li class="${state.store.totalRevenue >= 100000 ? 'done' : ''}">累計売上100,000円：${yen(state.store.totalRevenue)}</li>
-          <li class="${state.game.money >= 50000 ? 'done' : ''}">所持金50,000円：${yen(state.game.money)}</li>
-        </ul>
-        <p>拡張費：${yen(50000)}</p>
-        <button class="primary-button full-button" data-action="expand-store" ${eligible ? '' : 'disabled'}>店舗を拡張する</button>
-        <p class="small-note">条件を満たしても、拡張するかどうかは自由です。</p>`}
-    </section>`, { help: 'ショーケース、ディスプレイ用品、ケースを店頭へ設置できます。小さな店舗のケース設置上限は50個で、販売ごとに1個消費されます。' });
-}
-
 function renderEmployee() {
   if (!state.store.rented) return shell('店員', '<div class="empty-state"><strong>店舗を借りてから利用できます。</strong></div>');
   if (!state.store.expanded) return shell('店員', '<div class="empty-state"><strong>店舗拡張後に利用できます。</strong></div>');
@@ -4202,15 +4822,16 @@ async function eatMeal(mealId) {
 
 function renderPhone() {
   phoneTab = validPhoneTab(phoneTab);
+  state.notifications = visibleNotifications();
   if (state?.game) state.game.phoneTab = phoneTab;
   if (phoneTab === 'notifications') state.notifications.forEach((note) => { note.unread = false; });
   return shell('スマートフォン', `
     <div class="phone-stage">
       <section class="phone-ui">
         <nav class="phone-tabs">
+          <button class="${phoneTab === 'notifications' ? 'active' : ''}" data-action="phone-tab" data-tab="notifications">通知</button>
           <button class="${phoneTab === 'profile' ? 'active' : ''}" data-action="phone-tab" data-tab="profile">プロフィール</button>
           <button class="${phoneTab === 'calendar' ? 'active' : ''}" data-action="phone-tab" data-tab="calendar">カレンダー</button>
-          <button class="${phoneTab === 'notifications' ? 'active' : ''}" data-action="phone-tab" data-tab="notifications">通知</button>
           <button class="${phoneTab === 'finance' ? 'active' : ''}" data-action="phone-tab" data-tab="finance">収支</button>
           <button class="${phoneTab === 'items' ? 'active' : ''}" data-action="phone-tab" data-tab="items">アイテム</button>
           <button class="phone-game-tab" data-action="open-phone-game" aria-label="スマホゲームを開く">スマホゲーム</button>
@@ -4219,7 +4840,7 @@ function renderPhone() {
         </nav>
         <div class="phone-content">${renderPhoneContent()}</div>
       </section>
-    </div>`, { help: 'プロフィール、カレンダー、通知、収支、アイテム、スマホゲーム、AI、設定を利用できます。プロフィールではゲームクリア条件の進捗を確認できます。' });
+    </div>`, { help: '通知、プロフィール、カレンダー、収支、アイテム、スマホゲーム、AI、設定を利用できます。プロフィールではゲームクリア条件の進捗を確認できます。' });
 }
 
 
@@ -4244,7 +4865,7 @@ function renderPhoneItems() {
   return `<section class="phone-item-inventory">
     ${feedback}
     <section class="phone-item-section">
-      <header><div><h2>アイテム</h2><small>食べ物・回復品・イベントで入手した品</small></div><strong>${usableItems.reduce((sum, item) => sum + Number(state.inventory.items[item.id] || 0), 0)}個</strong></header>
+      <header><div><h2>アイテム</h2></div><strong>${usableItems.reduce((sum, item) => sum + Number(state.inventory.items[item.id] || 0), 0)}個</strong></header>
       ${usableItems.length ? `<div class="phone-item-list">${usableItems.map((item) => {
         const quantity = Number(state.inventory.items[item.id] || 0);
         const hungerEffect = Number(item.effect?.hunger || 0);
@@ -4254,21 +4875,21 @@ function renderPhoneItems() {
           <div><strong>${esc(item.name)}</strong><small>${esc(item.category)}・${esc(item.description)}</small><span>所持 ${quantity}個</span></div>
           ${item.usable ? `<button class="secondary-button" data-action="use-phone-item" data-id="${esc(item.id)}" ${effectAvailable ? '' : 'disabled'}>${effectAvailable ? '使う' : '満腹'}</button>` : '<span class="item-status-label">使用不可</span>'}
         </article>`;
-      }).join('')}</div>` : '<div class="phone-empty compact">工房で確認する材料・完成品以外のアイテムは、まだ持っていません。</div>'}
+      }).join('')}</div>` : ''}
     </section>
     <section class="phone-item-section equipment-section">
-      <header><div><h2>装備品</h2><small>身につけたり、行動に使用する道具</small></div><strong>${equipmentItems.reduce((sum, item) => sum + Number(state.inventory.equipment[item.id] || 0), 0)}点</strong></header>
+      <header><div><h2>装備品</h2></div></header>
       ${equipmentItems.length ? `<div class="phone-item-list">${equipmentItems.map((item) => {
         const quantity = Number(state.inventory.equipment[item.id] || 0);
-        const equipped = state.inventory.equipped?.[item.slot] === item.id;
+        const isBasicPickaxe = item.id === 'basicPickaxe';
+        const equipped = isBasicPickaxe || state.inventory.equipped?.[item.slot] === item.id;
         return `<article class="phone-item-row equipment-item ${equipped ? 'equipped' : ''}">
           <span class="phone-item-icon equipment-image-icon" aria-hidden="true">${equipmentVisual(item, 'phone-equipment-image', '')}</span>
           <div><strong>${esc(item.name)}${equipped ? '<em>装備中</em>' : ''}</strong><small>${esc(item.category)}・${esc(item.description)}</small><span>所持 ${quantity}点</span></div>
-          <button class="secondary-button" data-action="toggle-equipment" data-id="${esc(item.id)}">${equipped ? '外す' : '装備'}</button>
+          ${isBasicPickaxe ? '' : `<button class="secondary-button" data-action="toggle-equipment" data-id="${esc(item.id)}">${equipped ? '外す' : '装備'}</button>`}
         </article>`;
       }).join('')}</div>` : '<div class="phone-empty compact">装備品はありません。</div>'}
     </section>
-    <p class="small-note item-inventory-note">彫金机・宝石研磨用平面研磨盤など工房専用の工具と設備は、工房の「工具・設備」で確認します。</p>
   </section>`;
 }
 
@@ -4378,8 +4999,8 @@ function aiJewelryRows() {
     id: jewelry.id,
     name: jewelry.name || itemName(jewelry),
     item: ITEMS[jewelry.item]?.name || jewelry.item,
-    gem: GEMS[jewelry.gem]?.name || jewelry.gem,
-    looseShape: looseShapeLabel(jewelry.looseShape),
+    gem: jewelry.useLoose === false ? 'ルースなし' : (GEMS[jewelry.gem]?.name || jewelry.gem),
+    looseShape: jewelry.useLoose === false ? 'なし' : looseShapeLabel(jewelry.looseShape),
     metal: METALS[jewelry.metal]?.name || jewelry.metal,
     design: DESIGNS[jewelry.design]?.name || jewelry.design,
     finish: FINISHES[jewelry.finish]?.name || jewelry.finish,
@@ -4461,7 +5082,7 @@ function aiCurrentCapabilities() {
     canAcceptAnotherOrder: canServeCustomers() && canAcceptOrders() && activeOrders < orderLimit(),
       simultaneousOrderLimit: orderLimit(),
     canBuyOrSellMetals: hungerLevel() > 0 && okachimachiFacilityAvailability('materialShop').open && remainingHours >= 1,
-    canSellRoughStones: hungerLevel() > 0 && okachimachiFacilityAvailability('materialShop').open && roughCount > 0 && remainingHours >= 1,
+    canSellRoughStones: hungerLevel() > 0 && okachimachiFacilityAvailability('looseShop').open && roughCount > 0 && remainingHours >= 1,
     canBuyOrSellLooseStones: hungerLevel() > 0 && okachimachiFacilityAvailability('looseShop').open && remainingHours >= 1,
     canUseDisplayShop: hungerLevel() > 0 && okachimachiFacilityAvailability('displayShop').open && remainingHours >= 1,
     hungerRestricted: hungerLocked(),
@@ -4470,8 +5091,8 @@ function aiCurrentCapabilities() {
 
 function aiCurrentRules() {
   const facilityNames = {
-    materialShop: '素材屋', looseShop: 'ルース屋', glab: 'g-Lab.', jewelryShop: 'ジュエリー店',
-    settingShop: '空枠屋', castingShop: 'キャスト屋', displayShop: 'ディスプレイ屋', realEstate: '不動産屋', recruitment: '人材紹介',
+    materialShop: '地金屋', looseShop: 'ルース屋', glab: 'g-Lab.', jewelryShop: 'ジュエリー店',
+    settingShop: 'GOSHO（卸専門）', castingShop: 'キャスト屋', displayShop: 'ディスプレイ屋', realEstate: '不動産屋', recruitment: '人材紹介',
   };
   const unlockedMining = availableMiningLocations().map((location) => ({
     id: location.id,
@@ -4528,12 +5149,12 @@ function aiCurrentRules() {
       repairRule: '修理可能設備は工房から消えず、使用不能になる。g-Lab.で本体価格の60％を支払うと修理中になり、7日後の朝に使用可能へ戻って通知される。',
     },
     commerce: {
-      materialShop: '地金を1g単位で購入・売却でき、所持している原石も売却できる。地金は直接入力、または入力欄の▲▼で数量を選び、長押しすると連続で増減する。全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
-      looseShop: 'ルース屋は最初に石種を選び、次にカットを選ぶ。ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。購入は1回1個、売却は1個または注文予約分を除いた売却可能数の全部売るを選べ、各手続きは1時間。',
+      materialShop: '地金屋では地金を1g単位で購入・売却できる。地金は直接入力、または入力欄の▲▼で数量を選び、長押しすると連続で増減する。全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
+      looseShop: 'ルース屋には「ルースを買う」「ルースを売る」「原石を売る」がある。ルースは最初に石種を選び、次にカットを選ぶ。ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。ルース購入は1回1個、ルース売却と原石売却は1個または売却可能数の全部売るを選べ、各手続きは1時間。',
       store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。販売価格はプレイヤーが直接設定し、原価・おすすめ価格・設定価格・予想利益を確認できる。おすすめ価格は標準品質が原価の2倍、良品が2.2倍、上質が2.5倍で、1,000円単位に丸める。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
     },
     facilities: Object.entries(facilityNames).map(([id, name]) => { const availability = okachimachiFacilityAvailability(id); return { id, name, status: availability.open ? '利用可能' : availability.status, reason: availability.reason || null }; }),
-    smartphoneMenus: ['プロフィール', 'カレンダー', '通知', '収支', 'アイテム', 'スマホゲーム', 'AI', '設定'],
+    smartphoneMenus: ['通知', 'プロフィール', 'カレンダー', '収支', 'アイテム', 'スマホゲーム', 'AI', '設定'],
   };
 }
 
@@ -4815,10 +5436,6 @@ function renderPhoneContent() {
     }
     const todayEvents = eventMap.get(dateKey(today)) || [];
     return `<section class="game-calendar">
-      <header class="calendar-heading">
-        <div><small>ゲーム開始日</small><strong>${esc(gameDateLabel(1))}</strong></div>
-        <div><small>現在</small><strong>${esc(gameDateLabel())}</strong></div>
-      </header>
       <h2>${year}年${month + 1}月</h2>
       <div class="calendar-weekdays" aria-hidden="true">${['日','月','火','水','木','金','土'].map((day) => `<span>${day}</span>`).join('')}</div>
       <div class="calendar-grid">${cells.join('')}</div>
@@ -4829,15 +5446,27 @@ function renderPhoneContent() {
     </section>`;
   }
   if (phoneTab === 'notifications') {
-    return state.notifications.length ? state.notifications.map((note) => `<article class="phone-card"><strong>${esc(note.title)}</strong><span>${esc(note.body)}</span><small>${note.day}日目</small></article>`).join('') : '<div class="phone-empty">通知はありません。</div>';
+    const notifications = visibleNotifications();
+    return notifications.length ? notifications.map((note) => `<article class="phone-card"><strong>${esc(note.title)}</strong><span>${esc(note.body)}</span><small>${note.day}日目</small></article>`).join('') : '<div class="phone-empty">通知はありません。</div>';
   }
   if (phoneTab === 'finance') {
-    const income = state.finance.reduce((sum, row) => sum + row.income, 0);
-    const expense = state.finance.reduce((sum, row) => sum + row.expense, 0);
+    const period = validFinancePeriod(state.game.financePeriod);
+    state.game.financePeriod = period;
+    const rows = financePeriodRows(period);
+    const income = rows.reduce((sum, row) => sum + Number(row.income || 0), 0);
+    const expense = rows.reduce((sum, row) => sum + Number(row.expense || 0), 0);
+    const balance = income - expense;
     const outstanding = totalOutstandingBusinessCost();
-    return `<div class="phone-totals"><div><small>収入</small><strong>${yen(income)}</strong></div><div><small>支出</small><strong>${yen(expense)}</strong></div></div>
+    return `<nav class="finance-period-tabs" aria-label="収支の表示期間">
+        <button class="${period === 'today' ? 'active' : ''}" data-action="finance-period" data-period="today">今日</button>
+        <button class="${period === 'month' ? 'active' : ''}" data-action="finance-period" data-period="month">今月</button>
+        <button class="${period === 'year' ? 'active' : ''}" data-action="finance-period" data-period="year">今年</button>
+        <button class="${period === 'cumulative' ? 'active' : ''}" data-action="finance-period" data-period="cumulative">累計</button>
+      </nav>
+      <h2 class="finance-summary-title">${esc(financePeriodHeading(period))}</h2>
+      <div class="phone-totals finance-totals"><div><small>収入</small><strong>${yen(income)}</strong></div><div><small>支出</small><strong>${yen(expense)}</strong></div><div><small>差引</small><strong class="${balance >= 0 ? 'income' : 'expense'}">${balance >= 0 ? '+' : '-'}${yen(Math.abs(balance))}</strong></div></div>
       <article class="phone-card"><strong>毎月の固定費</strong><span>工房 ${yen(WORKSHOP_MONTHLY_COST)}・店舗家賃は店舗ごとに支払います。</span><small>未払い：${yen(outstanding)}</small>${outstanding ? '<button class="primary-button full-button" data-action="pay-outstanding-costs">未払いを支払う</button>' : ''}</article>
-      ${state.finance.slice().reverse().map((row) => `<article class="finance-row"><span>${row.day}日目 ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || '<div class="phone-empty">収支の記録はありません。</div>'}`;
+      ${rows.slice().reverse().map((row) => `<article class="finance-row"><span>${row.day}日目 ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || `<div class="phone-empty">${period === 'today' ? '今日' : period === 'month' ? '今月' : period === 'year' ? '今年' : '累計'}の収支記録はありません。</div>`}`;
   }
   if (phoneTab === 'items') return renderPhoneItems();
   if (phoneTab === 'ai') return renderPhoneAI();
@@ -4932,6 +5561,21 @@ function shuffleRockIndices() {
   return values;
 }
 
+function pickRandomMiningRockImages(count = 5) {
+  const pool = [...MINING_ROCK_IMAGE_POOL];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, Math.max(0, count));
+}
+
+function pickRandomMiningBrokenRockImage() {
+  if (!MINING_BROKEN_ROCK_IMAGE_POOL.length) return MINING_ROCK_IMAGE_POOL[0] || './assets/images/mining-rock.png';
+  const index = Math.floor(Math.random() * MINING_BROKEN_ROCK_IMAGE_POOL.length);
+  return MINING_BROKEN_ROCK_IMAGE_POOL[index];
+}
+
 function mine() {
   const location = selectedMining ? MINING_LOCATIONS[selectedMining] : null;
   if (!location) return showToast('採掘場所を選んでください。', 'error');
@@ -4940,6 +5584,7 @@ function mine() {
   miningGame = {
     locationId: selectedMining,
     hits: [0, 0, 0, 0, 0],
+    rockImages: pickRandomMiningRockImages(5),
     winningRocks: shuffled.slice(0, 2),
     busy: false,
     resolved: false,
@@ -4963,7 +5608,7 @@ function finishMiningRock(index, button) {
   const location = MINING_LOCATIONS[miningGame.locationId];
   const success = miningGame.winningRocks.includes(index);
   spendHours(location.hours);
-  let result = null;
+  let result = { missRockImage: pickRandomMiningBrokenRockImage() };
   if (success) {
     const gem = weightedPick(location.gems);
     state.inventory.rough[gem] += 1;
@@ -5081,7 +5726,7 @@ function sellRough(id, sellAll = false) {
   state.game.money += totalPrice;
   spendHours(1);
   state.daily.roughSold.push({ gem: id, qty, price: totalPrice, unitPrice });
-  addFinance(`${gem.name}原石を素材屋へ${qty}個売却`, totalPrice, 0);
+  addFinance(`${gem.name}原石をルース屋へ${qty}個売却`, totalPrice, 0);
   saveGame();
   startMoneyFeedback(totalPrice);
   showToast(
@@ -5209,11 +5854,12 @@ function expectedQuality() {
 
 function confirmCraft() {
   if (!toolUsable('jewelryBench')) return showToast('ジュエリー作成には使用可能な彫金机が必要です。', 'error');
+  if (!craftDraft || typeof craftDraft.useLoose !== 'boolean') return showToast('ルースを使用するか選択してください。', 'error');
   const hours = productionHours(craftDraft, state.employee);
   const requirements = materialRequirementsFor(craftDraft);
   showModal({
     title: 'この内容で制作しますか？',
-    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>工房レベル：${workshopLevel()}</p><p>${esc(GEMS[craftDraft.gem].name)}・${esc(looseShapeLabel(craftDraft.looseShape))}ルース${requirements.requiredLooseQuantity}個・${esc(METALS[craftDraft.metal].name)}${requirements.requiredMetalWeight}gを使用します。</p>`,
+    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>工房レベル：${workshopLevel()}</p><p>${craftDraft.useLoose === true ? `${esc(GEMS[craftDraft.gem].name)}・${esc(looseShapeLabel(craftDraft.looseShape))}ルース${requirements.requiredLooseQuantity}個・` : 'ルースは使用せず、'}${esc(METALS[craftDraft.metal].name)}${requirements.requiredMetalWeight}gを使用します。</p>`,
     confirm: '制作する', action: 'craft',
   });
 }
@@ -5222,12 +5868,13 @@ function craft() {
   closeModal();
   if (!workshopOperating()) return showToast('工房は作業停止中です。', 'error');
   if (!toolUsable('jewelryBench')) return showToast('ジュエリー作成には使用可能な彫金机が必要です。', 'error');
+  if (!craftDraft || typeof craftDraft.useLoose !== 'boolean') return showToast('ルースを使用するか選択してください。', 'error');
   const hours = productionHours(craftDraft, state.employee);
   if (!canSpendHours(hours)) return showToast('今日は制作する時間がありません。', 'error');
   const requirements = materialRequirementsFor(craftDraft);
   if (!requirements.enoughLoose || !requirements.enoughMetal) return showToast('材料が足りません。', 'error');
   if (state.inventory.jewelry.filter((item) => item.status !== 'sold').length >= state.inventory.capacity) return showToast('完成品の保管場所に空きがありません。', 'error');
-  state.inventory.loose[craftDraft.gem][craftDraft.looseShape] -= requirements.requiredLooseQuantity;
+  if (craftDraft.useLoose === true) state.inventory.loose[craftDraft.gem][craftDraft.looseShape] -= requirements.requiredLooseQuantity;
   state.inventory.metals[craftDraft.metal] = roundedMetalWeight(requirements.ownedMetalWeight - requirements.requiredMetalWeight);
   spendHours(hours);
   const quality = qualityRoll();
@@ -5258,8 +5905,8 @@ function craft() {
   completionId = jewelry.id;
   craftDraft = null;
   saveGame();
-  playSfx('success');
-  vibrate([40, 30, 70]);
+  playSfx('jewelry-complete', { gain: 1.2 });
+  vibrate([45, 25, 65, 25, 100]);
   setScreen('completion', { toolFailure: brokenToolName });
 }
 
@@ -5567,13 +6214,29 @@ function cancelOrder(orderId) {
   render();
 }
 
-function deliverOrder(orderId) {
+function remakeOrderFromCompletion(orderId, jewelryId) {
+  const order = state.orders.find((entry) => entry.id === orderId);
+  const item = state.inventory.jewelry.find((entry) => entry.id === jewelryId);
+  if (!order || !item || order.status !== '完成' || order.jewelryId !== item.id || item.status !== 'order') {
+    return showToast('作り直せる注文品が見つかりません。', 'error');
+  }
+  item.status = 'stored';
+  order.status = '受注';
+  order.jewelryId = null;
+  completionId = null;
+  craftDraft = defaultDraft(order.id);
+  saveGame();
+  setScreen('craft', { orderId: order.id }, false);
+  showToast('完成した商品を保管し、同じ注文を作り直します。', 'info', false);
+}
+
+function deliverOrder(orderId, { immediateFromCompletion = false } = {}) {
   const order = state.orders.find((entry) => entry.id === orderId);
   const item = state.inventory.jewelry.find((entry) => entry.id === order?.jewelryId);
   if (!order || !item || order.status !== '完成') return showToast('納品できる商品がありません。', 'error');
   const deliveryBranch = storeBranchByNumber(order.branchNumber);
-  if (!storeBranchOperating(deliveryBranch)) return showToast('注文を受けた店舗が休業中のため納品できません。', 'error');
-  if (!storeDeliveryOpen()) return showToast('注文品を納品できるのは9:00～19:00です。', 'error');
+  if (!immediateFromCompletion && !storeBranchOperating(deliveryBranch)) return showToast('注文を受けた店舗が休業中のため納品できません。', 'error');
+  if (!immediateFromCompletion && !storeDeliveryOpen()) return showToast('注文品を納品できるのは9:00～19:00です。', 'error');
   if (state.game.day > Number(order.deadlineDay)) {
     expireOrder(order);
     saveGame();
@@ -5597,7 +6260,17 @@ function deliverOrder(orderId) {
   addFinance(`${order.customerName}さんへ注文品を納品`, order.price, 0);
   const caseUsed = consumeStoreCase(deliveryBranch);
   saveGame();
-  showModal({ title: '注文品を納品しました。', body: `<p>${esc(item.name)}</p><p>売上：${yen(order.price)}</p><p>納期内に納品できました。</p>${caseUsed ? `<p>ケースを1個使用しました。残り${storeCaseRemaining(deliveryBranch)}個です。</p>` : '<p>ケースなしで納品しました。</p>'}`, confirm: '閉じる', action: 'modal-close', hideCancel: true });
+  if (immediateFromCompletion) {
+    completionId = null;
+    setScreen('orders', {}, false);
+  }
+  showModal({
+    title: 'ありがとうございました！',
+    body: `<p>${esc(item.name)}をお客様へ納品しました。</p><p><strong>売上：${yen(order.price)}</strong></p><p>所持金が${yen(order.price)}増えました。</p><p>現在の所持金：${yen(state.game.money)}</p>${caseUsed ? `<p>ケースを1個使用しました。残り${storeCaseRemaining(deliveryBranch)}個です。</p>` : '<p>ケースなしで納品しました。</p>'}`,
+    confirm: '閉じる',
+    action: 'modal-close',
+    hideCancel: true,
+  });
   render();
 }
 
@@ -6247,9 +6920,26 @@ root.addEventListener('click', async (event) => {
   }
   if (!['mine', 'hit-rock'].includes(action)) playSfx('select');
   switch (action) {
-    case 'google-login':
-      try { await googleLogin(); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+    case 'google-login': {
+      const title = button.querySelector('.google-login-title');
+      const subtitle = button.querySelector('.google-login-subtitle');
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      if (title) title.textContent = 'Googleを開いています…';
+      if (subtitle) subtitle.textContent = 'アカウント選択画面へ進みます';
+      authEntryRequested = true;
+      try {
+        await googleLogin();
+      } catch (error) {
+        authEntryRequested = false;
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        if (title) title.textContent = 'Googleで始める・続ける';
+        if (subtitle) subtitle.textContent = 'Googleの画面でアカウントを選択';
+        showToast(firebaseErrorMessage(error), 'error');
+      }
       break;
+    }
     case 'toggle-login-password': {
       const input = document.querySelector('#login-password');
       if (!input) break;
@@ -6265,7 +6955,17 @@ root.addEventListener('click', async (event) => {
       const email = document.querySelector('#login-email')?.value.trim() || '';
       const password = document.querySelector('#login-password')?.value || '';
       if (!email || !password) { showToast('メールアドレスとパスワードを入力してください。', 'error'); break; }
-      try { await emailLogin(email, password); } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+      button.disabled = true;
+      button.textContent = 'ログインしています…';
+      authEntryRequested = true;
+      try {
+        await emailLogin(email, password);
+      } catch (error) {
+        authEntryRequested = false;
+        button.disabled = false;
+        button.textContent = 'ログインして始める';
+        showToast(firebaseErrorMessage(error), 'error');
+      }
       break;
     }
     case 'email-signup': {
@@ -6373,6 +7073,9 @@ root.addEventListener('click', async (event) => {
       render();
       break;
     }
+    case 'glab-sns-link':
+      openGlabSns(button.dataset.platform || '');
+      break;
     case 'return-okachimachi':
       setScreen('okachimachi', {}, false);
       break;
@@ -6484,10 +7187,15 @@ root.addEventListener('click', async (event) => {
       break;
     case 'buy-metal': buyMetal(button.dataset.id); break;
     case 'sell-metal': sellMetal(button.dataset.id); break;
-    case 'loose-shop-tab': screenData = { tab: button.dataset.tab }; render(); break;
+    case 'loose-shop-tab':
+      if (screen === 'supplierRough') setScreen('looseShop', { tab: button.dataset.tab }, false);
+      else { screenData = { tab: button.dataset.tab }; render(); }
+      break;
     case 'select-loose-shop-gem': screenData.gemId = button.dataset.id; render(); break;
     case 'loose-shop-gem-back': delete screenData.gemId; render(); break;
     case 'open-loose-detail': setScreen('looseInventoryDetail', { gemId: button.dataset.id, looseShape: button.dataset.shape }); break;
+    case 'loose-gem-guide-open': setScreen('looseGemGuide', { gemId: button.dataset.id }); break;
+    case 'loose-cut-guide-open': setScreen('looseCutGuide', { looseShape: button.dataset.shape }); break;
     case 'glab-info': openGlabAbout(); break;
     case 'okachimachi-external': openOkachimachiExternal(button.dataset.url); break;
     case 'tool-detail': setScreen('workshopTool', { toolId: button.dataset.id }); break;
@@ -6519,15 +7227,54 @@ root.addEventListener('click', async (event) => {
       if (!toolUsable('jewelryBench')) showToast('ジュエリー作成には、g-Lab.で購入できる彫金机が必要です。', 'error');
       else { craftDraft = defaultDraft(); setScreen('craft', {}); }
       break;
+    case 'craft-loose-mode':
+      if (craftDraft) {
+        const useLoose = button.dataset.mode === 'use';
+        craftDraft.useLoose = useLoose;
+        if (useLoose) {
+          const selection = firstOwnedLooseSelection(craftDraft.gem || 'amethyst');
+          craftDraft.gem = selection.gem;
+          craftDraft.looseShape = normalizeLooseShape(selection.gem, selection.looseShape);
+        }
+        rerenderCraftPreservingPosition();
+      }
+      break;
+    case 'craft-loose-gem':
+      if (craftDraft) craftDraft.useLoose = true;
+      setScreen('craftLoose', { gemId: button.dataset.id, orderId: craftDraft?.orderId || null });
+      break;
+    case 'craft-use-loose':
+      if (craftDraft) {
+        craftDraft.useLoose = true;
+        craftDraft.gem = button.dataset.id;
+        craftDraft.looseShape = normalizeLooseShape(craftDraft.gem, button.dataset.shape);
+      }
+      goBack();
+      break;
+    case 'craft-surface-choice':
+      if (craftDraft) {
+        const selected = button.dataset.id;
+        const current = craftSurfaceParts(craftDraft.finish);
+        if (selected === 'decorated') {
+          const decorated = !current.decorated;
+          craftDraft.finish = craftSurfaceFinishId(decorated ? current.base : (current.base || 'mirror'), decorated);
+        } else if (selected === 'mirror' || selected === 'matte') {
+          const base = current.base === selected && current.decorated ? null : selected;
+          craftDraft.finish = craftSurfaceFinishId(base, current.decorated);
+        }
+        rerenderCraftPreservingPosition();
+      }
+      break;
     case 'craft-choice':
       craftDraft[button.dataset.group] = button.dataset.id;
-      if (button.dataset.group === 'gem') craftDraft.looseShape = firstOwnedLooseShapeForGem(craftDraft.gem);
-      render();
+      rerenderCraftPreservingPosition();
       break;
     case 'craft-shape-choice': craftDraft.looseShape = normalizeLooseShape(craftDraft.gem, button.dataset.shape); render(); break;
     case 'confirm-craft': confirmCraft(); break;
     case 'craft': craft(); break;
     case 'place-from-completion': placeItem(button.dataset.id); break;
+    case 'deliver-order-completion': deliverOrder(button.dataset.id, { immediateFromCompletion: true }); break;
+    case 'remake-order-completion': remakeOrderFromCompletion(button.dataset.id, button.dataset.jewelry); break;
     case 'inventory-tab': screenData.tab = button.dataset.tab; render(); break;
     case 'place-item': placeItem(button.dataset.id); break;
     case 'remove-showcase': removeShowcase(Number(button.dataset.showcase), Number(button.dataset.slot)); break;
@@ -6572,6 +7319,11 @@ root.addEventListener('click', async (event) => {
       saveGame();
       break;
     case 'phone-tab': phoneTab = validPhoneTab(button.dataset.tab); if (state?.game) state.game.phoneTab = phoneTab; itemUseFeedback = null; render(); saveGame(); break;
+    case 'finance-period':
+      state.game.financePeriod = validFinancePeriod(button.dataset.period);
+      render();
+      saveGame();
+      break;
     case 'use-phone-item': usePhoneItem(button.dataset.id); break;
     case 'toggle-equipment': togglePhoneEquipment(button.dataset.id); break;
     case 'eat-meal': await eatMeal(button.dataset.id); break;
@@ -6672,10 +7424,28 @@ function startNewGame() {
   requestAnimationFrame(() => document.querySelector('#player-name-setup')?.focus());
 }
 
+function enterGameAfterLogin() {
+  if (!hasSave()) {
+    startNewGame();
+    return;
+  }
+  state = loadGame();
+  if (!state) {
+    screen = 'title';
+    render();
+    showToast('セーブデータを読み込めませんでした。', 'error');
+    return;
+  }
+  navigation = [];
+  phoneTab = validPhoneTab(state.game?.phoneTab);
+  setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
+}
+
 window.addEventListener('beforeunload', () => saveLocalBackup());
 window.addEventListener('pageshow', () => {
   if (phoneGameReturnRequested() && screen === 'phone') clearPhoneGameReturnRequest();
   if (glabAboutReturnRequested() && screen === 'glab') clearGlabAboutReturnRequest();
+  if (glabSnsReturnRequested() && screen === 'glabSns') clearGlabSnsReturnRequest();
   if (okachimachiExternalReturnRequested() && screen === 'okachimachi') clearOkachimachiExternalReturnRequest();
 });
 if ('serviceWorker' in navigator) {
@@ -6685,7 +7455,7 @@ if ('serviceWorker' in navigator) {
 async function boot() {
   render();
   loadMetalMarket().then(() => {
-    if ((screen === 'supplierMetals' || screen === 'supplierMetalHistory') && state) render();
+    if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory') && state) render();
   });
   try {
     await initializeFirebase();
@@ -6698,6 +7468,7 @@ async function boot() {
       if (stopSessionWatch) stopSessionWatch();
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (!user) {
+        authEntryRequested = false;
         cloudSave = null;
         screen = 'login';
         render();
@@ -6730,7 +7501,8 @@ async function boot() {
           state = loadGame();
           if (state) {
             navigation = [];
-            phoneTab = validPhoneTab(state.game?.phoneTab);
+            phoneTab = 'notifications';
+            state.game.phoneTab = 'notifications';
             screen = 'phone';
             state.game.screen = 'phone';
             clearPhoneGameReturnRequest();
@@ -6752,6 +7524,19 @@ async function boot() {
           }
           clearGlabAboutReturnRequest();
         }
+        if (glabSnsReturnRequested()) {
+          state = loadGame();
+          if (state) {
+            navigation = [{ screen: 'glab', data: {} }];
+            screenData = {};
+            screen = 'glabSns';
+            state.game.screen = 'glabSns';
+            clearGlabSnsReturnRequest();
+            render();
+            return;
+          }
+          clearGlabSnsReturnRequest();
+        }
         if (okachimachiExternalReturnRequested()) {
           state = loadGame();
           if (state) {
@@ -6765,10 +7550,16 @@ async function boot() {
           }
           clearOkachimachiExternalReturnRequest();
         }
+        if (authEntryRequested) {
+          authEntryRequested = false;
+          enterGameAfterLogin();
+          return;
+        }
         screen = 'title';
         render();
       } catch (error) {
         console.error(error);
+        authEntryRequested = false;
         screen = 'login';
         render();
         showToast('クラウドデータを読み込めませんでした。', 'error');
@@ -6777,6 +7568,7 @@ async function boot() {
   } catch (error) {
     console.error(error);
     authReady = true;
+    authEntryRequested = false;
     screen = 'login';
     render();
     showToast('ログイン機能を初期化できませんでした。', 'error');

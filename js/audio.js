@@ -14,7 +14,7 @@ const validKeys = new Set([
   'meal', 'meal-convenience', 'meal-soba', 'meal-ramen', 'meal-hamburger',
   'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab',
 ]);
-const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm']);
+const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete']);
 
 function createAudio(url, loop = false) {
   const audio = new Audio(url);

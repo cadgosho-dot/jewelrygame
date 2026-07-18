@@ -1,4 +1,4 @@
-const VERSION = '0.10.138';
+const VERSION = '0.10.181';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
@@ -9,6 +9,7 @@ const APP_SHELL = [
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
   './assets/audio/bgm-main.ogg', './assets/audio/amb-main-clear.ogg', './assets/audio/amb-main-cloudy.ogg',
   './assets/audio/amb-main-rain.ogg', './assets/audio/amb-main-snow.ogg',
+  './assets/audio/sfx-jewelry-complete.ogg',
 ];
 
 const OPTIONAL_MEDIA = [
@@ -25,6 +26,9 @@ const OPTIONAL_MEDIA = [
   './assets/images/meal-hamburger.webp', './assets/images/meal-hamburger-portrait.webp',
   './assets/images/foods/convenience.png', './assets/images/foods/chinese.png', './assets/images/foods/korean.png', './assets/images/foods/indian.png',
   './assets/images/foods/kebab.png', './assets/images/foods/ramen.png', './assets/images/foods/soba.png', './assets/images/foods/hamburger.png',
+  './assets/images/mining-rocks/rock-01.png', './assets/images/mining-rocks/rock-02.png', './assets/images/mining-rocks/rock-03.png', './assets/images/mining-rocks/rock-04.png', './assets/images/mining-rocks/rock-05.png',
+  './assets/images/mining-rocks/rock-06.png', './assets/images/mining-rocks/rock-07.png', './assets/images/mining-rocks/rock-08.png', './assets/images/mining-rocks/rock-09.png', './assets/images/mining-rocks/rock-10.png',
+  './assets/images/mining-rocks-broken/broken-01.png', './assets/images/mining-rocks-broken/broken-02.png', './assets/images/mining-rocks-broken/broken-03.png', './assets/images/mining-rocks-broken/broken-04.png', './assets/images/mining-rocks-broken/broken-05.png',
 ];
 
 async function trimCache(cacheName, maxEntries = 320) {

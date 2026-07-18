@@ -18,7 +18,6 @@ jobs:
   update-metals:
     permissions:
       contents: write
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -27,6 +26,53 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
+
+      - name: Push前の正常な相場履歴を引き継ぐ
+        if: github.event_name == 'push'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "比較できるPush前コミットがないため、履歴引き継ぎを省略します。"
+            exit 0
+          fi
+          if ! curl --fail --silent --show-error --location --retry 3 \
+            -H "Accept: application/vnd.github.raw+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/data/metals.json?ref=${BEFORE_SHA}" \
+            --output /tmp/metals-before-push.json; then
+            echo "Push前の地金相場ファイルを取得できなかったため、履歴引き継ぎを省略します。"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          current_path = Path('data/metals.json')
+          previous_path = Path('/tmp/metals-before-push.json')
+          try:
+              current = json.loads(current_path.read_text(encoding='utf-8'))
+              previous = json.loads(previous_path.read_text(encoding='utf-8'))
+          except (OSError, json.JSONDecodeError):
+              print('履歴引き継ぎ用JSONを読み取れなかったため省略します。')
+              raise SystemExit(0)
+
+          previous_spot = previous.get('spotPerGram') or {}
+          previous_is_live = (
+              previous.get('status') == 'live'
+              and all(isinstance(previous_spot.get(key), (int, float)) and previous_spot[key] > 0
+                      for key in ('gold', 'silver', 'platinum'))
+          )
+          if current.get('status') != 'live' and previous_is_live:
+              current_path.write_text(
+                  json.dumps(previous, ensure_ascii=False, indent=2) + '\n',
+                  encoding='utf-8',
+              )
+              print('Push前の正常な相場・前日比・履歴を引き継ぎました。')
+          else:
+              print('現在の相場JSONをそのまま更新基準にします。')
+          PY
 
       - name: APIキーを確認
         env:
@@ -44,7 +90,21 @@ jobs:
         run: python3 scripts/update-metals.py
 
       - name: 生成JSONを検証
-        run: python3 -m json.tool data/metals.json > /dev/null
+        run: |
+          python3 -m json.tool data/metals.json > /dev/null
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('data/metals.json').read_text(encoding='utf-8'))
+          if data.get('status') != 'live':
+              raise SystemExit('地金相場がlive状態ではないため公開を中止します。')
+          spot = data.get('spotPerGram') or {}
+          for metal in ('gold', 'silver', 'platinum'):
+              value = spot.get(metal)
+              if not isinstance(value, (int, float)) or value <= 0:
+                  raise SystemExit(f'{metal}の地金相場が不正なため公開を中止します。')
+          PY
 
       - name: 更新結果をコミット
         run: |
@@ -63,7 +123,7 @@ jobs:
     permissions:
       contents: read
       pages: read
-    if: always() && (github.event_name == 'push' || needs.update-metals.result == 'success')
+    if: needs.update-metals.result == 'success'
     needs:
       - update-metals
     runs-on: ubuntu-latest

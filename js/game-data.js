@@ -1,4 +1,4 @@
-export const VERSION = '0.10.138';
+export const VERSION = '0.10.181';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -816,14 +816,16 @@ export const ITEMS = {
 
 export const DESIGNS = {
   simple: { id: 'simple', name: 'シンプル', price: 0, hours: 0 },
-  classic: { id: 'classic', name: 'クラシック', price: 3000, hours: 1 },
-  modern: { id: 'modern', name: 'モダン', price: 4000, hours: 1 },
+  classic: { id: 'classic', name: 'ノーマル', price: 3000, hours: 1 },
+  modern: { id: 'modern', name: 'ゴージャス', price: 4000, hours: 1 },
 };
 
 export const FINISHES = {
   mirror: { id: 'mirror', name: '鏡面', price: 0, hours: 0 },
   matte: { id: 'matte', name: 'つや消し', price: 1000, hours: 0 },
   decorated: { id: 'decorated', name: '装飾あり', price: 3000, hours: 1 },
+  mirrorDecorated: { id: 'mirrorDecorated', name: '鏡面・装飾あり', price: 3000, hours: 1 },
+  matteDecorated: { id: 'matteDecorated', name: 'つや消し・装飾あり', price: 4000, hours: 1 },
 };
 
 export const QUALITIES = {
@@ -953,17 +955,18 @@ export function looseSalePrice(gemId, shapeId) {
   return purchasePrice ? roundHundred(purchasePrice * 0.55) : 0;
 }
 
-export function recommendedPrice({ item, gem, looseShape, metal, quality }) {
+export function recommendedPrice({ item, gem, looseShape, metal, quality, useLoose = true }) {
   const qualityMultiplier = quality === 'premium' ? 2.5 : quality === 'good' ? 2.2 : 2.0;
-  return roundThousand(productionCost({ item, gem, looseShape, metal }) * qualityMultiplier);
+  return roundThousand(productionCost({ item, gem, looseShape, metal, useLoose }) * qualityMultiplier);
 }
 
-export function productionCost({ item, gem, looseShape, metal }) {
+export function productionCost({ item, gem, looseShape, metal, useLoose = true }) {
   const itemData = ITEMS[item] || ITEMS.ring;
   const metalData = METALS[metal] || METALS.silver;
-  const looseQuantity = Math.max(1, Number(itemData.looseQuantity) || 1);
+  const looseQuantity = useLoose === false ? 0 : Math.max(1, Number(itemData.looseQuantity) || 1);
   const metalWeight = Math.max(0.1, Number(itemData.metalWeight) || 1);
-  return Math.round((loosePurchasePrice(gem, looseShape) * looseQuantity) + (metalData.price * metalWeight));
+  const looseCost = looseQuantity > 0 ? loosePurchasePrice(gem, looseShape) * looseQuantity : 0;
+  return Math.round(looseCost + (metalData.price * metalWeight));
 }
 
 export function productionHours({ item, design, finish }, employee = null) {
@@ -972,7 +975,8 @@ export function productionHours({ item, design, finish }, employee = null) {
   return Math.max(1, base - (assisted ? 1 : 0));
 }
 
-export function itemName({ gem, looseShape, metal, item }) {
+export function itemName({ gem, looseShape, metal, item, useLoose = true }) {
+  if (useLoose === false) return `${METALS[metal].name}${ITEMS[item].name}`;
   const shapeId = looseShapeIdsForGem(gem).includes(looseShape) ? looseShape : defaultLooseShapeForGem(gem);
   return `${GEMS[gem].name}・${LOOSE_SHAPES[shapeId].name}・${METALS[metal].name}${ITEMS[item].name}`;
 }
@@ -996,7 +1000,8 @@ export function initialState() {
       money: 30000,
       weather: '晴れ',
       screen: 'main',
-      phoneTab: 'calendar',
+      phoneTab: 'notifications',
+      financePeriod: 'today',
     },
     artisan: { level: 1, xp: 0 },
     workshop: { level: 1 },
@@ -1174,7 +1179,7 @@ export function migrateState(saved) {
   state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 30000;
   state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
   state.game.screen = 'main';
-  state.game.phoneTab = ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(state.game.phoneTab) ? state.game.phoneTab : 'calendar';
+  state.game.phoneTab = ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(state.game.phoneTab) ? state.game.phoneTab : 'notifications';
   state.progressFlags = state.progressFlags && typeof state.progressFlags === 'object' && !Array.isArray(state.progressFlags)
     ? state.progressFlags
     : {};
@@ -1300,7 +1305,7 @@ export function migrateState(saved) {
   state.business.lastProcessedMonth = String(state.business.lastProcessedMonth || '');
 
   state.facilities = { ...initialState().facilities, ...(state.facilities || {}) };
-  // 初期から利用できるのは素材屋、ルース屋、g-Lab.、ディスプレイ屋。
+  // 初期から利用できるのは地金屋、ルース屋、g-Lab.、ディスプレイ屋。
   state.facilities.materialShop = true;
   state.facilities.looseShop = true;
   state.facilities.glab = true;
@@ -1390,12 +1395,14 @@ export function migrateState(saved) {
       .map((entry) => {
         const looseShape = looseShapeIdsForGem(entry.gem).includes(entry.looseShape) ? entry.looseShape : defaultLooseShapeForGem(entry.gem);
         const cost = Math.max(0, Math.round(Number(entry.cost) || productionCost({ ...entry, looseShape })));
+        const useLoose = entry.useLoose !== false;
         return {
           ...entry,
+          useLoose,
           looseShape,
           cost,
-          recommendedPrice: recommendedPrice({ ...entry, looseShape }),
-          name: itemName({ ...entry, looseShape }),
+          recommendedPrice: recommendedPrice({ ...entry, useLoose, looseShape }),
+          name: itemName({ ...entry, useLoose, looseShape }),
         };
       })
     : [];
@@ -1551,8 +1558,23 @@ export function migrateState(saved) {
     type: note?.type || 'info',
     day: Number(note?.day) || state.game.day,
     unread: note?.unread !== false,
-  })).filter((note) => !(/採掘結果|原石を入手|原石を採掘/.test(note.title) && note.title !== '新しい採掘場所を発見しました'));
-  state.finance = Array.isArray(state.finance) ? state.finance.slice(-50) : [];
+  })).filter((note) => {
+    const miningResult = /採掘結果|原石を入手|原石を採掘/.test(note.title) && note.title !== '新しい採掘場所を発見しました';
+    const hungerNotice = String(note.title || '').includes('空腹になりました') || String(note.body || '').includes('空腹になりました');
+    return !miningResult && !hungerNotice;
+  });
+  state.finance = Array.isArray(state.finance)
+    ? state.finance.slice(-2000).map((row, index) => ({
+        id: row?.id || `legacy-finance-${index}`,
+        day: Math.max(1, Number(row?.day) || state.game.day),
+        label: String(row?.label || '収支'),
+        income: Math.max(0, Number(row?.income) || 0),
+        expense: Math.max(0, Number(row?.expense) || 0),
+      }))
+    : [];
+  state.game.financePeriod = ['today', 'month', 'year', 'cumulative'].includes(state.game.financePeriod)
+    ? state.game.financePeriod
+    : 'today';
   state.wellbeing = { ...initialState().wellbeing, ...(state.wellbeing || {}) };
   state.wellbeing.maxHunger = 7;
   state.wellbeing.hunger = Math.max(0, Math.min(7, Math.round(Number(state.wellbeing.hunger) || 0)));

@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-07-18T01:12:07.872Z",
-  "updatedAt": "2026-07-18T01:13:26Z",
+  "marketTimestamp": "2026-07-18T05:16:06.881Z",
+  "updatedAt": "2026-07-18T05:16:22Z",
   "marketDateJst": "2026-07-18",
   "previousMarketDateJst": "2026-07-17",
   "spotPerGram": {
-    "gold": 20977.4862,
-    "silver": 291.9714,
-    "platinum": 8300.1916
+    "gold": 20978.3973,
+    "silver": 291.984,
+    "platinum": 8300.552
   },
   "previousSpotPerGram": {
     "gold": 20834.0451,
@@ -22,9 +22,9 @@
     "platinum": 8252.3783
   },
   "changeFromPreviousDayPerGram": {
-    "gold": 143.4411,
-    "silver": 3.3835,
-    "platinum": 47.8133
+    "gold": 144.3522,
+    "silver": 3.3961,
+    "platinum": 48.1737
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -39,9 +39,9 @@
     {
       "date": "2026-07-18",
       "spotPerGram": {
-        "gold": 20977.4862,
-        "silver": 291.9714,
-        "platinum": 8300.1916
+        "gold": 20978.3973,
+        "silver": 291.984,
+        "platinum": 8300.552
       }
     }
   ],

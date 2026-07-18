@@ -1,9 +1,9 @@
-const VERSION = '0.10.182';
+const VERSION = '0.10.183';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
-  './', './index.html', './game.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/japan-holidays.js', './js/firebase-config.js',
+  './', './index.html', './game.html', './auth.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './assets/images/main.webp', './assets/images/main-portrait.webp',
   './assets/images/tools/placeholder.svg', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',

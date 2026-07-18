@@ -40,6 +40,8 @@ let currentUser = null;
 let cloudSave = null;
 let authReady = false;
 let authEntryRequested = false;
+const GOOGLE_LOGIN_REDIRECT_KEY = 'jxj-google-login-redirect';
+const GOOGLE_LOGIN_ERROR_KEY = 'jxj-google-login-error';
 let saveQueue = Promise.resolve();
 let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 let stopSessionWatch = null;
@@ -2706,6 +2708,36 @@ function goMain() {
   setScreen('main', {}, false);
 }
 
+function timeRemainingLabel(minutes) {
+  const remaining = Math.max(0, Math.round(Number(minutes) || 0));
+  const hours = Math.floor(remaining / 60);
+  const restMinutes = remaining % 60;
+  if (hours > 0 && restMinutes > 0) return `あと${hours}時間${restMinutes}分`;
+  if (hours > 0) return `あと${hours}時間`;
+  return `あと${restMinutes}分`;
+}
+
+function gameTimePanel() {
+  const minutes = Math.max(DAY_START_MINUTES, Number(state?.game?.minutes) || DAY_START_MINUTES);
+  let tone = 'normal';
+  let note = '';
+  if (minutes >= DAY_END_MINUTES) {
+    tone = 'ended';
+    note = '本日の行動時間は終了しました';
+  } else if (minutes >= DAY_END_MINUTES - 60) {
+    tone = 'ending';
+    note = `行動終了まで ${timeRemainingLabel(DAY_END_MINUTES - minutes)}`;
+  } else if (minutes >= OKACHIMACHI_CLOSE_MINUTES - 60 && minutes < OKACHIMACHI_CLOSE_MINUTES) {
+    tone = 'okachimachi-warning';
+    note = `御徒町終了まで ${timeRemainingLabel(OKACHIMACHI_CLOSE_MINUTES - minutes)}`;
+  }
+  return `<div class="game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}">
+    <span class="game-time-icon" aria-hidden="true">🕒</span>
+    <strong class="game-time-value">${clock(minutes)}</strong>
+    ${note ? `<small class="game-time-note">${esc(note)}</small>` : ''}
+  </div>`;
+}
+
 function header(title, { back = true, main = true, help = '' } = {}) {
   const isMainMenu = !title && !back && !main;
   const currentDate = gameDate();
@@ -2716,14 +2748,13 @@ function header(title, { back = true, main = true, help = '' } = {}) {
   const storeLabel = state.store?.rented && state.store?.name ? state.store.name : '店名未設定';
   return `
     <header class="game-header ${isMainMenu ? 'main-header' : ''}">
-      <div class="status-left" aria-label="日付、曜日、何日目、天気、時間、名前、空腹度、店名">
+      <div class="status-left" aria-label="日付、曜日、何日目、天気、名前、空腹度、店名">
         <div class="status-top-line">
           <div class="status-primary-line">
             <span class="header-status-item header-calendar-date">${esc(dateLabel)}</span>
             <span class="header-status-item header-weekday">${esc(weekdayLabel)}</span>
             <span class="header-status-item header-day">${state.game.day}日目</span>
             <span class="header-status-item header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
-            <span class="header-status-item header-time">${clock(state.game.minutes)}</span>
           </div>
           <div class="status-secondary-line">
             <span class="header-status-item header-player-name">${esc(playerLabel)}</span>
@@ -2745,6 +2776,7 @@ function header(title, { back = true, main = true, help = '' } = {}) {
         ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
         <div class="header-actions"></div>
       </div>
+      ${gameTimePanel()}
     </header>`;
 }
 
@@ -2845,41 +2877,63 @@ function renderLoading() {
   return `<main class="title-screen"><section class="title-actions glass-panel login-panel"><div class="loading-spinner" aria-hidden="true"></div><p>読み込んでいます…</p></section></main>`;
 }
 
+function markGoogleLoginRedirect() {
+  try { localStorage.setItem(GOOGLE_LOGIN_REDIRECT_KEY, '1'); } catch (_) {}
+}
+
+function googleLoginRedirectRequested() {
+  try { return localStorage.getItem(GOOGLE_LOGIN_REDIRECT_KEY) === '1'; } catch (_) { return false; }
+}
+
+function clearGoogleLoginRedirect() {
+  try { localStorage.removeItem(GOOGLE_LOGIN_REDIRECT_KEY); } catch (_) {}
+}
+
+function takeGoogleLoginError() {
+  try {
+    const message = localStorage.getItem(GOOGLE_LOGIN_ERROR_KEY) || '';
+    localStorage.removeItem(GOOGLE_LOGIN_ERROR_KEY);
+    return message;
+  } catch (_) {
+    return '';
+  }
+}
+
 function renderLogin() {
   return `
     <main class="title-screen login-screen">
       <section class="login-hero" aria-label="ゲーム紹介">
         <span class="login-brand">JEWELRY × JEWELRY</span>
         <strong>宝石を採掘し、ジュエリーを作り、店を育てる</strong>
-        <small>無料のジュエリーショップ経営ゲーム</small>
+        <small>ジュエリーショップ経営ゲーム</small>
       </section>
       <section class="title-actions glass-panel login-panel">
         <header class="login-intro">
-          <span class="login-kicker">無料・ブラウザですぐ遊べます</span>
+          <span class="login-kicker">ログイン</span>
           <h1>ゲームを始める</h1>
-          <p>初めての方も、続きから遊ぶ方も<br>下のボタンを押してください。</p>
+          <p>Googleアカウントを選ぶと、<br>ゲームへ戻って自動的に始まります。</p>
         </header>
         <button class="google-login-button full-button" data-action="google-login">
           <span class="google-login-mark" aria-hidden="true">G</span>
           <span class="google-login-copy">
-            <strong class="google-login-title">Googleで始める・続ける</strong>
-            <small class="google-login-subtitle">Googleの画面でアカウントを選択</small>
+            <strong class="google-login-title">Googleアカウントを選ぶ</strong>
+            <small class="google-login-subtitle">Googleの画面へ移動します</small>
           </span>
           <span class="google-login-arrow" aria-hidden="true">›</span>
         </button>
-        <div class="login-benefits" aria-label="ログインの特徴">
-          <span>登録無料</span>
-          <span>データ自動保存</span>
-          <span>スマホ・PCで共有</span>
-        </div>
-        <p class="login-purpose-note">セーブデータを守り、別の端末でも続けられるようにログインします。</p>
-        <small class="login-safety-note">ゲーム画面でGoogleのパスワードを入力することはありません。</small>
+        <ol class="login-flow" aria-label="Googleログインの手順">
+          <li><span>1</span>上のボタンを押す</li>
+          <li><span>2</span>Googleアカウントを選ぶ</li>
+          <li><span>3</span>ゲームへ自動で戻る</li>
+        </ol>
+        <p class="login-safety-note">Googleのパスワードを、このゲーム内で入力することはありません。</p>
+        <div class="login-divider" aria-hidden="true"><span>または</span></div>
         <details class="email-login-details">
-          <summary>Googleを使わず、メールアドレスで始める</summary>
+          <summary>メールアドレスでログイン・新規登録</summary>
           <div class="email-login-fields">
             <div class="email-login-heading">
-              <strong>メールアドレスで始める</strong>
-              <small>ログインまたは新規登録を選べます。</small>
+              <strong>メールアドレスを使用する</strong>
+              <small>ログインと新規登録の両方に対応しています。</small>
             </div>
             <label class="login-field"><span>メールアドレス</span><input id="login-email" type="email" autocomplete="email" inputmode="email" placeholder="example@email.com"></label>
             <label class="login-field password-login-field">
@@ -2893,8 +2947,8 @@ function renderLogin() {
               <strong>新規登録ではゲーム専用のパスワードを設定します。</strong>
               <small>普段のメールやGoogleのパスワードは使用しないでください。</small>
             </div>
-            <button class="secondary-button full-button email-login-button" data-action="email-login">ログインして始める</button>
-            <button class="secondary-button full-button email-signup-button" data-action="email-signup">初めての方：新規登録</button>
+            <button class="secondary-button full-button email-login-button" data-action="email-login">ログイン</button>
+            <button class="secondary-button full-button email-signup-button" data-action="email-signup">新規登録</button>
             <button class="text-button" data-action="password-reset">パスワードを忘れた方はこちら</button>
           </div>
         </details>
@@ -6895,17 +6949,19 @@ root.addEventListener('click', async (event) => {
       const subtitle = button.querySelector('.google-login-subtitle');
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
-      if (title) title.textContent = 'Googleを開いています…';
-      if (subtitle) subtitle.textContent = 'アカウント選択画面へ進みます';
+      if (title) title.textContent = 'Googleへ移動しています…';
+      if (subtitle) subtitle.textContent = 'アカウント選択後、自動で戻ります';
       authEntryRequested = true;
+      markGoogleLoginRedirect();
       try {
         await googleLogin();
       } catch (error) {
+        clearGoogleLoginRedirect();
         authEntryRequested = false;
         button.disabled = false;
         button.removeAttribute('aria-busy');
-        if (title) title.textContent = 'Googleで始める・続ける';
-        if (subtitle) subtitle.textContent = 'Googleの画面でアカウントを選択';
+        if (title) title.textContent = 'Googleアカウントを選ぶ';
+        if (subtitle) subtitle.textContent = 'Googleの画面へ移動します';
         showToast(firebaseErrorMessage(error), 'error');
       }
       break;
@@ -7429,6 +7485,7 @@ async function boot() {
   });
   try {
     await initializeFirebase();
+    authEntryRequested = googleLoginRedirectRequested();
     observeAuth(async (user) => {
       authReady = true;
       currentUser = user;
@@ -7438,10 +7495,13 @@ async function boot() {
       if (stopSessionWatch) stopSessionWatch();
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (!user) {
+        const googleLoginError = takeGoogleLoginError();
+        clearGoogleLoginRedirect();
         authEntryRequested = false;
         cloudSave = null;
         screen = 'login';
         render();
+        if (googleLoginError) queueMicrotask(() => showToast(googleLoginError, 'error'));
         return;
       }
       if (needsEmailVerification(user)) {
@@ -7521,6 +7581,7 @@ async function boot() {
           clearOkachimachiExternalReturnRequest();
         }
         if (authEntryRequested) {
+          clearGoogleLoginRedirect();
           authEntryRequested = false;
           enterGameAfterLogin();
           return;
@@ -7529,6 +7590,7 @@ async function boot() {
         render();
       } catch (error) {
         console.error(error);
+        clearGoogleLoginRedirect();
         authEntryRequested = false;
         screen = 'login';
         render();
@@ -7537,6 +7599,7 @@ async function boot() {
     });
   } catch (error) {
     console.error(error);
+    clearGoogleLoginRedirect();
     authReady = true;
     authEntryRequested = false;
     screen = 'login';

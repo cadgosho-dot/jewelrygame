@@ -5,7 +5,6 @@ import {
   GoogleAuthProvider,
   EmailAuthProvider,
   onAuthStateChanged,
-  signInWithPopup,
   setPersistence,
   browserLocalPersistence,
   signInWithEmailAndPassword,
@@ -83,10 +82,9 @@ export async function googleLogin() {
   if (previewMode) return null;
   if (!auth) throw new Error('Firebaseの初期化が完了していません。');
   if (auth.currentUser) return auth.currentUser;
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  const authBridgeUrl = new URL('./auth.html', window.location.href).href;
+  window.top.location.assign(authBridgeUrl);
+  return null;
 }
 
 export async function emailLogin(email, password) {
@@ -257,7 +255,10 @@ export function firebaseErrorMessage(error) {
     'auth/invalid-login-credentials': 'メールアドレスまたはパスワードが正しくありません。',
     'auth/wrong-password': 'メールアドレスまたはパスワードが正しくありません。',
     'auth/popup-closed-by-user': 'Googleログインがキャンセルされました。',
-    'auth/popup-blocked': 'Googleアカウント選択画面を開けませんでした。ブラウザのポップアップを許可してください。',
+    'auth/popup-blocked': 'Googleログインを開始できませんでした。もう一度お試しください。',
+    'auth/redirect-cancelled-by-user': 'Googleログインがキャンセルされました。',
+    'auth/web-storage-unsupported': 'このブラウザではログイン情報を保存できません。通常のブラウザで開いてください。',
+    'auth/operation-not-supported-in-this-environment': 'この環境ではGoogleログインを利用できません。通常のブラウザで開いてください。',
     'auth/network-request-failed': '通信できません。インターネット接続を確認してください。',
     'auth/too-many-requests': '短時間に操作が集中しました。しばらく待ってからお試しください。',
     'auth/requires-recent-login': '安全のため、いったんログアウトして再ログインしてから実行してください。',

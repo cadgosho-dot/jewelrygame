@@ -2706,36 +2706,6 @@ function goMain() {
   setScreen('main', {}, false);
 }
 
-function timeRemainingLabel(minutes) {
-  const remaining = Math.max(0, Math.round(Number(minutes) || 0));
-  const hours = Math.floor(remaining / 60);
-  const restMinutes = remaining % 60;
-  if (hours > 0 && restMinutes > 0) return `あと${hours}時間${restMinutes}分`;
-  if (hours > 0) return `あと${hours}時間`;
-  return `あと${restMinutes}分`;
-}
-
-function gameTimePanel() {
-  const minutes = Math.max(DAY_START_MINUTES, Number(state?.game?.minutes) || DAY_START_MINUTES);
-  let tone = 'normal';
-  let note = '';
-  if (minutes >= DAY_END_MINUTES) {
-    tone = 'ended';
-    note = '本日の行動時間は終了しました';
-  } else if (minutes >= DAY_END_MINUTES - 60) {
-    tone = 'ending';
-    note = `行動終了まで ${timeRemainingLabel(DAY_END_MINUTES - minutes)}`;
-  } else if (minutes >= OKACHIMACHI_CLOSE_MINUTES - 60 && minutes < OKACHIMACHI_CLOSE_MINUTES) {
-    tone = 'okachimachi-warning';
-    note = `御徒町終了まで ${timeRemainingLabel(OKACHIMACHI_CLOSE_MINUTES - minutes)}`;
-  }
-  return `<div class="game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}">
-    <span class="game-time-icon" aria-hidden="true">🕒</span>
-    <strong class="game-time-value">${clock(minutes)}</strong>
-    ${note ? `<small class="game-time-note">${esc(note)}</small>` : ''}
-  </div>`;
-}
-
 function header(title, { back = true, main = true, help = '' } = {}) {
   const isMainMenu = !title && !back && !main;
   const currentDate = gameDate();
@@ -2746,13 +2716,14 @@ function header(title, { back = true, main = true, help = '' } = {}) {
   const storeLabel = state.store?.rented && state.store?.name ? state.store.name : '店名未設定';
   return `
     <header class="game-header ${isMainMenu ? 'main-header' : ''}">
-      <div class="status-left" aria-label="日付、曜日、何日目、天気、名前、空腹度、店名">
+      <div class="status-left" aria-label="日付、曜日、何日目、天気、時間、名前、空腹度、店名">
         <div class="status-top-line">
           <div class="status-primary-line">
             <span class="header-status-item header-calendar-date">${esc(dateLabel)}</span>
             <span class="header-status-item header-weekday">${esc(weekdayLabel)}</span>
             <span class="header-status-item header-day">${state.game.day}日目</span>
             <span class="header-status-item header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
+            <span class="header-status-item header-time">${clock(state.game.minutes)}</span>
           </div>
           <div class="status-secondary-line">
             <span class="header-status-item header-player-name">${esc(playerLabel)}</span>
@@ -2774,7 +2745,6 @@ function header(title, { back = true, main = true, help = '' } = {}) {
         ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
         <div class="header-actions"></div>
       </div>
-      ${gameTimePanel()}
     </header>`;
 }
 

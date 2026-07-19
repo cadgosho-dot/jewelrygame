@@ -5,7 +5,8 @@ const ambients = new Map();
 let currentKey = null;
 let suspended = document.hidden;
 let initialized = false;
-let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false });
+let externalPriorityActive = false;
+let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false, externalAudioPriority: false });
 
 let mainEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear' };
 
@@ -62,6 +63,7 @@ export function configureAudio(provider) {
 export async function unlockAudio() {
   if (initialized) return;
   initialized = true;
+  if (settingsProvider().externalAudioPriority) return;
   try {
     const audio = createAudio(`${AUDIO_DIR}/sfx-select.ogg`);
     audio.volume = 0.001;
@@ -83,6 +85,7 @@ const AMBIENT_SCALE = {
 };
 
 function targetVolume(kind, key, settings) {
+  if (settings.externalAudioPriority) return 0;
   const muted = kind === 'bgm' ? settings.bgmMuted : settings.ambientMuted;
   if (muted) return 0;
   const base = Number(kind === 'bgm' ? settings.bgmVolume : settings.ambientVolume) || 0;
@@ -92,8 +95,16 @@ function targetVolume(kind, key, settings) {
 
 export function applyAudioSettings() {
   const settings = settingsProvider();
+  const wasExternalPriority = externalPriorityActive;
+  externalPriorityActive = Boolean(settings.externalAudioPriority);
+  if (externalPriorityActive) {
+    tracks.forEach((audio) => audio.pause());
+    ambients.forEach((audio) => audio.pause());
+    return;
+  }
   tracks.forEach((audio, key) => { audio.volume = targetVolume('bgm', key, settings); });
   ambients.forEach((audio, key) => { audio.volume = targetVolume('ambient', key, settings); });
+  if (wasExternalPriority && initialized && !suspended && currentKey) startCurrentAudio().catch(() => {});
 }
 
 function fade(audio, target, duration = 450) {
@@ -121,6 +132,7 @@ function stopLoopPair(key, reset = true) {
 async function startCurrentAudio() {
   if (!currentKey || suspended) return;
   const settings = settingsProvider();
+  if (settings.externalAudioPriority) return;
   const track = loopAudio('bgm', currentKey);
   const ambient = loopAudio('ambient', currentKey);
   if (track) {
@@ -193,7 +205,7 @@ export function updateMainEnvironment({ active = false, weather = '晴れ', minu
 
 export function playSfx(name, options = {}) {
   const settings = settingsProvider();
-  if (suspended || settings.sfxMuted || !validSfx.has(name)) return;
+  if (suspended || settings.externalAudioPriority || settings.sfxMuted || !validSfx.has(name)) return;
   const audio = createAudio(`${AUDIO_DIR}/sfx-${name}.ogg`);
   audio.volume = Math.max(0, Math.min(1, Number(settings.sfxVolume) * (options.gain || 1)));
   if (options.rate) audio.playbackRate = options.rate;

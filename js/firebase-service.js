@@ -8,6 +8,7 @@ import {
   setPersistence,
   browserLocalPersistence,
   signInWithEmailAndPassword,
+  signInWithPopup,
   createUserWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -78,13 +79,14 @@ export function observeAuth(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-export async function googleLogin() {
-  if (previewMode) return null;
-  if (!auth) throw new Error('Firebaseの初期化が完了していません。');
-  if (auth.currentUser) return auth.currentUser;
-  const authBridgeUrl = new URL('./auth.html', window.location.href).href;
-  window.top.location.assign(authBridgeUrl);
-  return null;
+export function googleLogin() {
+  if (previewMode) return Promise.resolve(null);
+  if (!auth) return Promise.reject(new Error('Firebaseの初期化が完了していません。'));
+  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  // ユーザーのタップ処理中に直接呼び出し、iOSでもポップアップがブロックされにくくする。
+  return signInWithPopup(auth, provider).then((result) => result.user);
 }
 
 export async function emailLogin(email, password) {
@@ -255,8 +257,10 @@ export function firebaseErrorMessage(error) {
     'auth/invalid-login-credentials': 'メールアドレスまたはパスワードが正しくありません。',
     'auth/wrong-password': 'メールアドレスまたはパスワードが正しくありません。',
     'auth/popup-closed-by-user': 'Googleログインがキャンセルされました。',
-    'auth/popup-blocked': 'Googleログインを開始できませんでした。もう一度お試しください。',
+    'auth/cancelled-popup-request': '別のGoogleログイン画面が開いています。開いている画面で操作してください。',
+    'auth/popup-blocked': 'Googleログイン画面を開けませんでした。SafariまたはChromeの通常タブでゲームを開き、もう一度お試しください。',
     'auth/redirect-cancelled-by-user': 'Googleログインがキャンセルされました。',
+    'auth/internal-error': 'Googleログインを完了できませんでした。ページを再読み込みして、もう一度お試しください。',
     'auth/web-storage-unsupported': 'このブラウザではログイン情報を保存できません。通常のブラウザで開いてください。',
     'auth/operation-not-supported-in-this-environment': 'この環境ではGoogleログインを利用できません。通常のブラウザで開いてください。',
     'auth/network-request-failed': '通信できません。インターネット接続を確認してください。',

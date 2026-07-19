@@ -1,4 +1,4 @@
-const VERSION = '0.10.183';
+const VERSION = '0.10.204';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
@@ -14,7 +14,7 @@ const APP_SHELL = [
 
 const OPTIONAL_MEDIA = [
   './assets/images/mining.webp', './assets/images/workshop.webp', './assets/images/glab.webp',
-  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/store.webp',
+  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop.webp', './assets/images/display-shop.webp', './assets/images/display-shop-portrait.webp', './assets/images/store.webp',
   './assets/images/phone.webp', './assets/images/sleep.webp', './assets/images/meal-menu.webp',
   './assets/images/meal-convenience.webp', './assets/images/meal-convenience-portrait.webp',
   './assets/images/meal-chinese.webp', './assets/images/meal-chinese-portrait.webp',
@@ -26,6 +26,7 @@ const OPTIONAL_MEDIA = [
   './assets/images/meal-hamburger.webp', './assets/images/meal-hamburger-portrait.webp',
   './assets/images/foods/convenience.png', './assets/images/foods/chinese.png', './assets/images/foods/korean.png', './assets/images/foods/indian.png',
   './assets/images/foods/kebab.png', './assets/images/foods/ramen.png', './assets/images/foods/soba.png', './assets/images/foods/hamburger.png',
+  './assets/images/display-products/showcase.png', './assets/images/display-products/display-supplies.png', './assets/images/display-products/case.png',
   './assets/images/mining-rocks/rock-01.png', './assets/images/mining-rocks/rock-02.png', './assets/images/mining-rocks/rock-03.png', './assets/images/mining-rocks/rock-04.png', './assets/images/mining-rocks/rock-05.png',
   './assets/images/mining-rocks/rock-06.png', './assets/images/mining-rocks/rock-07.png', './assets/images/mining-rocks/rock-08.png', './assets/images/mining-rocks/rock-09.png', './assets/images/mining-rocks/rock-10.png',
   './assets/images/mining-rocks-broken/broken-01.png', './assets/images/mining-rocks-broken/broken-02.png', './assets/images/mining-rocks-broken/broken-03.png', './assets/images/mining-rocks-broken/broken-04.png', './assets/images/mining-rocks-broken/broken-05.png',

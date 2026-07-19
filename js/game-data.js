@@ -1,4 +1,4 @@
-export const VERSION = '0.10.183';
+export const VERSION = '0.10.204';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -87,24 +87,32 @@ export const METALS = {
 };
 
 export const GEMS = {
-  garnet: { id: 'garnet', name: 'ガーネット', roughPrice: 4000, price: 4500, hue: '#7d1f2d' },
-  amethyst: { id: 'amethyst', name: 'アメシスト', roughPrice: 3000, price: 4000, hue: '#8e62c7' },
-  aquamarine: { id: 'aquamarine', name: 'アクアマリン', roughPrice: 5000, price: 7000, hue: '#78cddd' },
-  diamond: { id: 'diamond', name: 'ダイヤモンド', roughPrice: 20000, price: 35000, hue: '#dcecf2' },
-  emerald: { id: 'emerald', name: 'エメラルド', roughPrice: 12000, price: 18000, hue: '#11a67a' },
-  moonstone: { id: 'moonstone', name: 'ムーンストーン', roughPrice: 4500, price: 5500, hue: '#c9e4ef' },
-  ruby: { id: 'ruby', name: 'ルビー', roughPrice: 13000, price: 15000, hue: '#c51f55' },
-  peridot: { id: 'peridot', name: 'ペリドット', roughPrice: 4000, price: 5000, hue: '#98cf3d' },
-  sapphire: { id: 'sapphire', name: 'サファイア', roughPrice: 10000, price: 15000, hue: '#3158a5' },
-  opal: { id: 'opal', name: 'オパール', roughPrice: 9000, price: 9000, hue: '#ffbe60' },
-  imperialtopaz: { id: 'imperialtopaz', name: 'インペリアルトパーズ', roughPrice: 11000, price: 12000, hue: '#e7b07c' },
-  turquoise: { id: 'turquoise', name: 'トルコ石', roughPrice: 5000, price: 3000, hue: '#36c9d0' },
-  lapislazuli: { id: 'lapislazuli', name: 'ラピスラズリ', roughPrice: 4500, price: 2000, hue: '#2f55c8' },
-  paraibatourmaline: { id: 'paraibatourmaline', name: 'パライバトルマリン', roughPrice: 15000, price: 30000, hue: '#1ed8dd' },
-  tourmaline: { id: 'tourmaline', name: 'トルマリン', roughPrice: 7000, price: 8000, hue: '#c36f98' },
-  tanzanite: { id: 'tanzanite', name: 'タンザナイト', roughPrice: 11000, price: 11000, hue: '#6a68df' },
-  citrine: { id: 'citrine', name: 'シトリン', roughPrice: 3500, price: 3500, hue: '#d89a22' },
+  garnet: { id: 'garnet', name: 'ガーネット', roughPrice: 4000, price: 4500, looseRank: 'C', hue: '#7d1f2d' },
+  amethyst: { id: 'amethyst', name: 'アメシスト', roughPrice: 3000, price: 4000, looseRank: 'D', hue: '#8e62c7' },
+  aquamarine: { id: 'aquamarine', name: 'アクアマリン', roughPrice: 5000, price: 7000, looseRank: 'C', hue: '#78cddd' },
+  diamond: { id: 'diamond', name: 'ダイヤモンド', roughPrice: 20000, price: 35000, looseRank: 'S', hue: '#dcecf2' },
+  emerald: { id: 'emerald', name: 'エメラルド', roughPrice: 12000, price: 18000, looseRank: 'A', hue: '#11a67a' },
+  moonstone: { id: 'moonstone', name: 'ムーンストーン', roughPrice: 4500, price: 5500, looseRank: 'C', hue: '#c9e4ef' },
+  ruby: { id: 'ruby', name: 'ルビー', roughPrice: 13000, price: 15000, looseRank: 'A', hue: '#c51f55' },
+  peridot: { id: 'peridot', name: 'ペリドット', roughPrice: 4000, price: 5000, looseRank: 'C', hue: '#98cf3d' },
+  sapphire: { id: 'sapphire', name: 'サファイア', roughPrice: 10000, price: 15000, looseRank: 'A', hue: '#3158a5' },
+  opal: { id: 'opal', name: 'オパール', roughPrice: 9000, price: 9000, looseRank: 'B', hue: '#ffbe60' },
+  imperialtopaz: { id: 'imperialtopaz', name: 'インペリアルトパーズ', roughPrice: 11000, price: 12000, looseRank: 'B', hue: '#e7b07c' },
+  turquoise: { id: 'turquoise', name: 'トルコ石', roughPrice: 5000, price: 3000, looseRank: 'D', hue: '#36c9d0' },
+  lapislazuli: { id: 'lapislazuli', name: 'ラピスラズリ', roughPrice: 4500, price: 2000, looseRank: 'D', hue: '#2f55c8' },
+  paraibatourmaline: { id: 'paraibatourmaline', name: 'パライバトルマリン', roughPrice: 15000, price: 30000, looseRank: 'S', hue: '#1ed8dd' },
+  tourmaline: { id: 'tourmaline', name: 'トルマリン', roughPrice: 7000, price: 8000, looseRank: 'C', hue: '#c36f98' },
+  tanzanite: { id: 'tanzanite', name: 'タンザナイト', roughPrice: 11000, price: 11000, looseRank: 'B', hue: '#6a68df' },
+  citrine: { id: 'citrine', name: 'シトリン', roughPrice: 3500, price: 3500, looseRank: 'D', hue: '#d89a22' },
 };
+
+export const LOOSE_RANK_PRICE_MULTIPLIERS = Object.freeze({
+  D: 0.75,
+  C: 1.00,
+  B: 1.60,
+  A: 2.50,
+  S: 4.00,
+});
 
 
 export const LOOSE_SHAPES = {
@@ -842,15 +850,15 @@ export const PRICE_MODES = {
 
 export const DISPLAY_SHOP_PRODUCTS = {
   showcase: {
-    id: 'showcase', name: 'ショーケース', price: 150000, symbol: '▤', levelGain: 0,
+    id: 'showcase', name: 'ショーケース', price: 150000, symbol: '▤', levelGain: 0, image: './assets/images/display-products/showcase.png',
     description: '1台150,000円。店舗へ設置すると、完成品を5個まで陳列できます。小さな店舗には3台まで設置できます。',
   },
   displaySupplies: {
-    id: 'displaySupplies', name: 'ディスプレイ用品', price: 50000, symbol: '◇', levelGain: 1,
+    id: 'displaySupplies', name: 'ディスプレイ用品', price: 50000, symbol: '◇', levelGain: 1, image: './assets/images/display-products/display-supplies.png',
     description: '50,000円。店舗へ設置すると、設置1点につき店舗レベルが1上がります。',
   },
   case: {
-    id: 'case', name: 'ケース', price: 500, symbol: '□', levelGain: 1, purchaseLimit: 50,
+    id: 'case', name: 'ケース', price: 500, symbol: '□', levelGain: 1, purchaseLimit: 50, image: './assets/images/display-products/case.png',
     description: '1個500円。店舗にケースが1個以上ある間、店舗レベルが1上がります。設置したケースは商品が1点売れるごとに1個消費されます。',
   },
 };
@@ -947,7 +955,9 @@ export function looseCutPriceMultiplier(gemId, shapeId) {
 
 export function loosePurchasePrice(gemId, shapeId) {
   const gem = GEMS[gemId];
-  return gem ? roundHundred(gem.price * looseCutPriceMultiplier(gemId, shapeId)) : 0;
+  if (!gem) return 0;
+  const rankMultiplier = LOOSE_RANK_PRICE_MULTIPLIERS[gem.looseRank] || 1;
+  return roundHundred(gem.price * rankMultiplier * looseCutPriceMultiplier(gemId, shapeId));
 }
 
 export function looseSalePrice(gemId, shapeId) {
@@ -1002,6 +1012,7 @@ export function initialState() {
       screen: 'main',
       phoneTab: 'notifications',
       financePeriod: 'today',
+      calendarEvents: {},
     },
     artisan: { level: 1, xp: 0 },
     workshop: { level: 1 },
@@ -1075,6 +1086,8 @@ export function initialState() {
       bgmMuted: false,
       ambientMuted: false,
       sfxMuted: false,
+      externalAudioPriority: false,
+      phoneHomeImage: '',
       vibration: true,
       showHints: true,
     },
@@ -1180,6 +1193,12 @@ export function migrateState(saved) {
   state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
   state.game.screen = 'main';
   state.game.phoneTab = ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(state.game.phoneTab) ? state.game.phoneTab : 'notifications';
+  const rawCalendarEvents = state.game.calendarEvents && typeof state.game.calendarEvents === 'object' && !Array.isArray(state.game.calendarEvents)
+    ? state.game.calendarEvents
+    : {};
+  state.game.calendarEvents = Object.fromEntries(Object.entries(rawCalendarEvents)
+    .filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && String(value || '').trim())
+    .map(([key, value]) => [key, String(value).trim().slice(0, 120)]));
   state.progressFlags = state.progressFlags && typeof state.progressFlags === 'object' && !Array.isArray(state.progressFlags)
     ? state.progressFlags
     : {};
@@ -1530,7 +1549,11 @@ export function migrateState(saved) {
         const finish = FINISHES[entry.finish] ? entry.finish : 'mirror';
         const quality = QUALITIES[entry.quality] ? entry.quality : 'standard';
         const estimatedCost = Math.max(0, Math.round(Number(entry.estimatedCost) || productionCost({ ...entry, looseShape, finish, quality })));
-        const price = Math.max(1000, Math.round(Number(entry.price) || Number(entry.budget) || recommendedPrice({ ...entry, looseShape, finish, quality: 'good' })));
+        const orderLaborFees = { basic: 5000, general: 10000, complex: 20000, high: 35000, special: 50000 };
+        const minimumProfitablePrice = roundThousand(estimatedCost + (orderLaborFees[difficulty] || 5000) + Math.max(5000, Math.round(estimatedCost * 0.35)));
+        const legacyPrice = Math.max(1000, Math.round(Number(entry.price) || Number(entry.budget) || recommendedPrice({ ...entry, looseShape, finish, quality: 'good' })));
+        const activeOrder = !['完了', '取消', '期限切れ'].includes(entry.status);
+        const price = activeOrder ? Math.max(legacyPrice, minimumProfitablePrice) : legacyPrice;
         return {
           ...entry,
           looseShape,
@@ -1544,7 +1567,8 @@ export function migrateState(saved) {
           deadlineDay,
           branchNumber: Math.max(1, Number(entry.branchNumber) || 1),
           estimatedCost,
-          estimatedProfit: Math.round(Number(entry.estimatedProfit) || (price - estimatedCost)),
+          budget: Math.max(price, Math.round(Number(entry.budget) || 0)),
+          estimatedProfit: activeOrder ? price - estimatedCost : Math.round(Number(entry.estimatedProfit) || (price - estimatedCost)),
           price,
           overduePenaltyApplied: Boolean(entry.overduePenaltyApplied || entry.status === '期限切れ'),
           status: ['受注', '完成', '完了', '取消', '期限切れ'].includes(entry.status) ? entry.status : '受注',
@@ -1631,6 +1655,12 @@ export function migrateState(saved) {
   state.settings.bgmVolume = Math.max(0, Math.min(1, Number(state.settings.bgmVolume)));
   if (Number(state.settings.ambientVolume) <= 0.35) state.settings.ambientVolume = 0.60;
   if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;
+  state.settings.externalAudioPriority = Boolean(state.settings.externalAudioPriority);
+  state.settings.phoneHomeImage = typeof state.settings.phoneHomeImage === 'string'
+    && state.settings.phoneHomeImage.startsWith('data:image/')
+    && state.settings.phoneHomeImage.length <= 900000
+      ? state.settings.phoneHomeImage
+      : '';
   Object.values(state.customers || {}).forEach((customer) => {
     customer.wishesHeard = Boolean(customer.wishesHeard);
     customer.proposedItemIds = Array.isArray(customer.proposedItemIds)

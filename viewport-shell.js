@@ -108,6 +108,10 @@
       const allowed = new Set([
         'https://cadgosho-dot.github.io/glab-gem-game/g-lab-gem-game-github-pages/',
         'https://share.google/eBzOWpwGACREtEKMf',
+        'https://x.com/glab_gala_gosho',
+        'https://www.instagram.com/g_lab_okachimachi?igsh=N2QyNHU4YTFxcWxj',
+        'https://youtube.com/@glab3836?si=Siz3n2QMjtSSvjNi',
+        'https://www.tiktok.com/@glabokachimachi?_r=1&_t=ZS-987UDkk0VgC',
         'https://ja.wikipedia.org/wiki/%E5%BE%A1%E5%BE%92%E7%94%BA',
         'https://jto-net.com/origin/',
       ]);

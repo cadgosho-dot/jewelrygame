@@ -1,4 +1,4 @@
-const VERSION = '0.10.204';
+const VERSION = '0.10.213';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
@@ -14,7 +14,7 @@ const APP_SHELL = [
 
 const OPTIONAL_MEDIA = [
   './assets/images/mining.webp', './assets/images/workshop.webp', './assets/images/glab.webp',
-  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop.webp', './assets/images/display-shop.webp', './assets/images/display-shop-portrait.webp', './assets/images/store.webp',
+  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop.webp', './assets/images/display-shop.webp', './assets/images/display-shop-portrait.webp', './assets/images/real-estate.webp', './assets/images/real-estate-portrait.webp', './assets/images/store.webp',
   './assets/images/phone.webp', './assets/images/sleep.webp', './assets/images/meal-menu.webp',
   './assets/images/meal-convenience.webp', './assets/images/meal-convenience-portrait.webp',
   './assets/images/meal-chinese.webp', './assets/images/meal-chinese-portrait.webp',

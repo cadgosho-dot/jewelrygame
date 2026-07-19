@@ -53,6 +53,7 @@ let deferredInstallPrompt = null;
 let shellInstallAvailable = false;
 let shellInstalled = false;
 let shellInstallRequestId = 0;
+let shellViewportOrientation = '';
 const shellInstallResolvers = new Map();
 let moneyFeedback = null;
 let moneyFeedbackTimer = null;
@@ -692,8 +693,17 @@ const MEAL_FOOD_IMAGES = Object.freeze({
 
 const imagePreloadCache = new Map();
 
+function measuredPortraitLayout() {
+  const viewport = window.visualViewport;
+  const width = Math.max(1, Number(viewport?.width) || window.innerWidth || document.documentElement.clientWidth || 1);
+  const height = Math.max(1, Number(viewport?.height) || window.innerHeight || document.documentElement.clientHeight || 1);
+  return height >= width;
+}
+
 function isPortraitLayout() {
-  return window.innerHeight >= window.innerWidth;
+  if (shellViewportOrientation === 'portrait') return true;
+  if (shellViewportOrientation === 'landscape') return false;
+  return measuredPortraitLayout();
 }
 
 function versionedAsset(path) {
@@ -1504,6 +1514,22 @@ function navigateExternal(url) {
 window.addEventListener('message', (event) => {
   if (!VIEWPORT_SHELL_EMBEDDED || event.origin !== window.location.origin || event.source !== window.parent) return;
   const data = event.data || {};
+  if (data.type === 'jwj-shell-viewport') {
+    const nextOrientation = data.orientation === 'portrait' || data.orientation === 'landscape'
+      ? data.orientation
+      : '';
+    if (!nextOrientation) return;
+    const orientationChanged = shellViewportOrientation !== nextOrientation;
+    shellViewportOrientation = nextOrientation;
+    document.documentElement.dataset.orientation = nextOrientation;
+    if (orientationChanged) {
+      applyCurrentBackground();
+      if (screen === 'meal' && screenData?.mealId && MEALS[screenData.mealId]) {
+        preloadImage(mealBackgroundImage(screenData.mealId));
+      }
+    }
+    return;
+  }
   if (data.type === 'jwj-shell-install-status') {
     shellInstallAvailable = Boolean(data.available);
     shellInstalled = Boolean(data.installed);
@@ -1643,7 +1669,7 @@ async function requestHomeInstall() {
   if (isAndroid) {
     showModal({
       title: 'ホーム画面に追加',
-      body: '<div class="install-help"><p>現在の画面では直接追加の確認を表示できません。Chromeでゲームを開き直してから、設定の「ゲームをホーム画面に追加」をもう一度押してください。</p><p class="small-note">ブラウザのメニューを開く必要はありません。</p></div>',
+      body: '<div class="install-help"><p>現在の画面では直接追加の確認を表示できません。Chromeでゲームを開き直してから、設定の「JEWELRY×JEWELRYをホーム画面へ追加」をもう一度押してください。</p><p class="small-note">ブラウザのメニューを開く必要はありません。</p></div>',
       cancel: 'Chromeで開く',
       cancelAction: 'open-install-browser',
       confirm: '閉じる',
@@ -2804,12 +2830,13 @@ function backgroundFor(target) {
 function backgroundAssetFor(target) {
   if (target === 'looseShop' || target === 'supplierRough') return 'loose-shop';
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait' : 'display-shop';
+  if (target === 'realEstate') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
   const base = backgroundFor(target);
   const portrait = isPortraitLayout();
   if (base === 'meal') {
     const mealId = screenData?.mealId;
     if (mealId && MEALS[mealId]) return `meal-${mealId}${portrait ? '-portrait' : ''}`;
-    return portrait ? 'main-portrait' : 'meal-menu';
+    return 'meal-menu';
   }
   if (portrait && base === 'main') return 'main-portrait';
   if (portrait && base === 'okachimachi') return 'okachimachi-portrait';
@@ -3610,7 +3637,7 @@ function renderGlab() {
   const catalogMarkup = catalogTools.length
     ? `<section class="glab-catalog-group">
         <h2>購入できる工具・設備（${catalogTools.length}種類）</h2>
-        ${catalogGroups.map((group) => `<section class="glab-level-group"><h3>工房レベル${group.level}で購入可能</h3><div class="glab-simple-list">${group.tools.map(catalogRow).join('')}</div></section>`).join('')}
+        ${catalogGroups.map((group) => `<section class="glab-level-group"><h3>工房レベル${group.level}で購入可能な工具・設備</h3><div class="glab-simple-list">${group.tools.map(catalogRow).join('')}</div></section>`).join('')}
       </section>`
     : `<section class="glab-catalog-group"><div class="empty-state"><strong>現在購入する工具・設備はありません。</strong><p>購入済みで使用可能な工具は、この一覧には表示されません。</p></div></section>`;
   return shell('g-Lab.', `
@@ -5293,8 +5320,10 @@ function renderPhoneProfile() {
 
 function renderPhoneAI() {
   return `<section class="phone-ai-screen">
-    <button class="primary-button phone-ai-copy-button" data-action="copy-ai-game-data">ゲームデータコピー</button>
-    <p>ゲームデータをコピーし、実際のAIへ入力する事で現状を分析できます。</p>
+    <article class="phone-ai-panel">
+      <button class="primary-button phone-ai-copy-button" data-action="copy-ai-game-data">ゲームデータコピー</button>
+      <p>ゲームデータをコピーし、実際のAIへ入力する事で現状を分析できます。</p>
+    </article>
   </section>`;
 }
 
@@ -5787,7 +5816,7 @@ function renderPhoneContent() {
   }
   if (phoneTab === 'notifications') {
     const notifications = visibleNotifications();
-    return notifications.length ? notifications.map((note) => `<article class="phone-card"><strong>${esc(note.title)}</strong><span>${esc(note.body)}</span><small>${note.day}日目</small></article>`).join('') : '<div class="phone-empty">通知はありません。</div>';
+    return `<section class="phone-standard-list phone-notification-list">${notifications.length ? notifications.map((note) => `<article class="phone-card"><strong>${esc(note.title)}</strong><span>${esc(note.body)}</span><small>${note.day}日目</small></article>`).join('') : '<div class="phone-empty">通知はありません。</div>'}</section>`;
   }
   if (phoneTab === 'finance') {
     const period = validFinancePeriod(state.game.financePeriod);
@@ -5797,7 +5826,7 @@ function renderPhoneContent() {
     const expense = rows.reduce((sum, row) => sum + Number(row.expense || 0), 0);
     const balance = income - expense;
     const outstanding = totalOutstandingBusinessCost();
-    return `<nav class="finance-period-tabs" aria-label="収支の表示期間">
+    return `<section class="phone-finance-screen"><nav class="finance-period-tabs" aria-label="収支の表示期間">
         <button class="${period === 'today' ? 'active' : ''}" data-action="finance-period" data-period="today">今日</button>
         <button class="${period === 'month' ? 'active' : ''}" data-action="finance-period" data-period="month">今月</button>
         <button class="${period === 'year' ? 'active' : ''}" data-action="finance-period" data-period="year">今年</button>
@@ -5806,7 +5835,7 @@ function renderPhoneContent() {
       <h2 class="finance-summary-title">${esc(financePeriodHeading(period))}</h2>
       <div class="phone-totals finance-totals"><div><small>収入</small><strong>${yen(income)}</strong></div><div><small>支出</small><strong>${yen(expense)}</strong></div><div><small>差引</small><strong class="${balance >= 0 ? 'income' : 'expense'}">${balance >= 0 ? '+' : '-'}${yen(Math.abs(balance))}</strong></div></div>
       <article class="phone-card"><strong>毎月の固定費</strong><span>工房 ${yen(WORKSHOP_MONTHLY_COST)}・店舗家賃は店舗ごとに支払います。</span><small>未払い：${yen(outstanding)}</small>${outstanding ? '<button class="primary-button full-button" data-action="pay-outstanding-costs">未払いを支払う</button>' : ''}</article>
-      ${rows.slice().reverse().map((row) => `<article class="finance-row"><span>${financeRowDateLabel(row.day)} ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || `<div class="phone-empty">${period === 'today' ? '今日' : period === 'month' ? '今月' : period === 'year' ? '今年' : '累計'}の収支記録はありません。</div>`}`;
+      <div class="phone-finance-list">${rows.slice().reverse().map((row) => `<article class="finance-row"><span>${financeRowDateLabel(row.day)} ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || `<div class="phone-empty">${period === 'today' ? '今日' : period === 'month' ? '今月' : period === 'year' ? '今年' : '累計'}の収支記録はありません。</div>`}</div></section>`;
   }
   if (phoneTab === 'items') return renderPhoneItems();
   if (phoneTab === 'ai') return renderPhoneAI();
@@ -5842,14 +5871,14 @@ function renderSettingsForm(titleMode, compact) {
     <label class="toggle-row"><span>効果音を消す</span><input type="checkbox" data-setting="sfxMuted" data-title-mode="${titleMode}" ${settings.sfxMuted ? 'checked' : ''}></label>
     <label class="toggle-row external-audio-priority-setting"><span><strong>YouTubeなど外部音声を優先</strong><small>必要なときだけオンにすると、ゲームの音声をすべて停止します。</small></span><input type="checkbox" data-setting="externalAudioPriority" data-title-mode="${titleMode}" ${settings.externalAudioPriority ? 'checked' : ''}></label>
     ${!titleMode ? `<section class="phone-home-background-setting">
-      <button type="button" class="secondary-button full-button phone-home-picker-button" data-action="choose-phone-home-image"><strong>ホーム画面</strong><small>携帯の画像フォルダから背景を選択</small></button>
+      <button type="button" class="secondary-button full-button phone-home-picker-button" data-action="choose-phone-home-image"><strong>スマートフォンホーム画面</strong><small>携帯の画像フォルダから背景を選択</small></button>
       <input type="file" accept="image/*" data-phone-home-image-input hidden>
       ${(phoneHomeImageDraft || settings.phoneHomeImage) ? `<figure class="phone-home-image-preview"><img src="${phoneHomeImageDraft || settings.phoneHomeImage}" alt="選択したホーム画面画像"></figure>` : '<p class="small-note">現在は標準のスマートフォン背景です。</p>'}
       <button type="button" class="primary-button full-button" data-action="apply-phone-home-image" ${phoneHomeImageDraft ? '' : 'disabled'}>ホーム画面にする</button>
       ${settings.phoneHomeImage ? '<button type="button" class="text-button full-button" data-action="clear-phone-home-image">標準の背景に戻す</button>' : ''}
     </section>
     <section class="home-install-setting">
-      <div><strong>ゲームをホーム画面に追加</strong><small>${installStatusText()}</small></div>
+      <div><strong>JEWELRY×JEWELRYをホーム画面へ追加</strong><small>${installStatusText()}</small></div>
       <button type="button" class="secondary-button full-button install-home-button" data-action="install-app" ${isStandaloneApp() ? 'disabled' : ''}>${isStandaloneApp() ? '追加済み' : 'ホーム画面に追加する'}</button>
     </section>` : ''}
     <small>バージョン ${VERSION}</small>
@@ -7346,7 +7375,7 @@ root.addEventListener('click', async (event) => {
             hideCancel: true,
           });
         } else {
-          showToast(firebaseErrorMessage(error), 'error');
+          showToast(firebaseErrorMessage(error, 'google-login'), 'error');
         }
       }
       break;
@@ -7375,7 +7404,7 @@ root.addEventListener('click', async (event) => {
         authEntryRequested = false;
         button.disabled = false;
         button.textContent = 'ログインして始める';
-        showToast(firebaseErrorMessage(error), 'error');
+        showToast(firebaseErrorMessage(error, 'email-login'), 'error');
       }
       break;
     }
@@ -7384,10 +7413,31 @@ root.addEventListener('click', async (event) => {
       const password = document.querySelector('#login-password')?.value || '';
       if (!email || !password) { showToast('メールアドレスとゲーム用パスワードを入力してください。', 'error'); break; }
       if (password.length < 10) { showToast('ゲーム用パスワードは10文字以上で設定してください。', 'error'); break; }
+      button.disabled = true;
+      button.textContent = '新規登録しています…';
+      authEntryRequested = true;
       try {
-        await emailSignup(email, password);
-        showToast('確認メールを送信しました。リンクを開いてメッセージをタップし、確認してください。');
-      } catch (error) { showToast(firebaseErrorMessage(error), 'error'); }
+        const signupResult = await emailSignup(email, password);
+        if (signupResult?.verificationSent) {
+          showToast('確認メールを送信しました。リンクを開いてメッセージをタップし、確認してください。');
+        } else {
+          showModal({
+            title: 'アカウント作成は完了しました',
+            body: '<p>新規アカウントは作成されましたが、確認メールの送信だけ失敗しました。</p><p>この画面を閉じ、メール確認画面の「確認メールを再送」を押してください。</p>',
+            confirm: '閉じる',
+            action: 'modal-close',
+            hideCancel: true,
+          });
+        }
+      } catch (error) {
+        authEntryRequested = false;
+        showToast(firebaseErrorMessage(error, 'email-signup'), 'error');
+      } finally {
+        if (button.isConnected) {
+          button.disabled = false;
+          button.textContent = '新規登録';
+        }
+      }
       break;
     }
     case 'password-reset': {
@@ -7410,7 +7460,7 @@ root.addEventListener('click', async (event) => {
         await resendVerificationEmail();
         showToast('確認メールを再送しました。リンクを開いてメッセージをタップし、確認してください。');
       } catch (error) {
-        showToast(firebaseErrorMessage(error), 'error');
+        showToast(firebaseErrorMessage(error, 'email-verification'), 'error');
       } finally {
         button.disabled = false;
         button.textContent = '確認メールを再送';

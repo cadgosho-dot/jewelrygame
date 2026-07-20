@@ -5503,9 +5503,9 @@ body[data-screen="supplierMetals"] .metal-market-summary:not(.stale):not(.fallba
   background:rgba(48,105,70,.24);
 }
 
-/* v0.10.210 ルース屋の文字だけへ薄い影を追加 */
+/* v0.10.218 ルース屋の文字だけへ薄い影を追加 */
 body[data-screen="looseShop"] .screen-content :is(h1,h2,h3,p,strong,small,span,label,button,input,b,dt,dd){
-  text-shadow:0 1px 2px rgba(0,0,0,.32)!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.26)!important;
 }
 
 /* v0.10.213 スマートフォン内の枠と文字をアイテム画面のデザインへ統一 */
@@ -5811,4 +5811,665 @@ body[data-screen="phone"] .phone-ai-panel p{
     padding:.68rem!important;
   }
   body[data-screen="phone"] .calendar-day:not(.outside){min-height:46px;padding:.28rem!important}
+}
+
+/* v0.10.214 縦画面の上部バーを3段へ整理し、文字と操作の重なりを防止 */
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+@media (orientation:portrait) and (max-width:820px){
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:
+      "status"
+      "money"
+      "center"!important;
+    align-items:stretch!important;
+    min-height:0!important;
+    padding:7px 8px!important;
+    column-gap:0!important;
+    row-gap:5px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-left{
+    grid-area:status!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-top-line{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:3px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-primary-line,
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-secondary-line{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    flex-wrap:wrap!important;
+    gap:2px 9px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-top-line .header-status-item{
+    flex:0 0 auto!important;
+    max-width:100%!important;
+    font-size:11px!important;
+    line-height:1.2!important;
+    letter-spacing:0!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area{
+    grid-area:money!important;
+    justify-self:stretch!important;
+    align-self:center!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    gap:5px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-help-button{
+    width:31px!important;
+    height:31px!important;
+    min-width:31px!important;
+    min-height:31px!important;
+    font-size:14px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    min-width:78px!important;
+    height:31px!important;
+    min-height:31px!important;
+    padding:0 8px!important;
+    font-size:11px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money{
+    flex:0 0 auto!important;
+    min-width:0!important;
+    font-size:14px!important;
+    line-height:1!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-center{
+    grid-area:center!important;
+    display:grid!important;
+    grid-template-columns:38px minmax(0,1fr) 38px!important;
+    align-items:center!important;
+    gap:5px!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:38px!important;
+    padding:0!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-center>[data-action="back"]{
+    position:static!important;
+    justify-self:start!important;
+    width:38px!important;
+    height:38px!important;
+    min-width:38px!important;
+    min-height:38px!important;
+    font-size:17px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title{
+    grid-column:2!important;
+    justify-self:stretch!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    text-align:center!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:17px!important;
+    line-height:1.15!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-actions{
+    grid-column:3!important;
+    position:static!important;
+    justify-self:end!important;
+    width:38px!important;
+    min-width:38px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .screen-content{
+    padding-top:145px!important;
+  }
+}
+@media (orientation:portrait) and (max-width:380px){
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-primary-line,
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-secondary-line{
+    gap:2px 7px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .status-top-line .header-status-item{
+    font-size:10px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    min-width:72px!important;
+    padding:0 6px!important;
+    font-size:10px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money{
+    font-size:13px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    font-size:16px!important;
+  }
+}
+
+/* v0.10.215 カレンダー入力欄・スマートフォン設定文字・ルース在庫修正 */
+body[data-screen="phone"] #modal-layer .calendar-event-editor>span{
+  color:#fff3d4;
+}
+body[data-screen="phone"] #modal-layer .calendar-event-editor textarea{
+  border-color:rgba(231,192,110,.48);
+  background:rgba(11,9,7,.96);
+  color:#fff3d4;
+  caret-color:#f4cf79;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.035);
+}
+body[data-screen="phone"] #modal-layer .calendar-event-editor textarea::placeholder{
+  color:rgba(255,243,212,.58);
+  opacity:1;
+}
+body[data-screen="phone"] #modal-layer .calendar-event-editor small{
+  color:#eadfc9;
+  opacity:.88;
+}
+body[data-screen="phone"] .phone-content .phone-home-picker-button strong{
+  color:#2b2119!important;
+  text-shadow:none!important;
+  opacity:1!important;
+}
+body[data-screen="phone"] .phone-content .phone-home-picker-button small{
+  color:#5f5144!important;
+  text-shadow:none!important;
+  opacity:1!important;
+}
+
+
+
+/* v0.10.219 食後の小さなメッセージ */
+#toast[data-type="meal-complete"]{
+  top:auto;
+  bottom:13%;
+  padding:.38rem .68rem;
+  max-width:min(82vw,320px);
+  border-color:rgba(255,226,158,.32);
+  background:rgba(8,6,5,.82);
+  box-shadow:0 5px 16px rgba(0,0,0,.28);
+  color:#fff0c8;
+  font-size:.8rem;
+  line-height:1.3;
+  transform:translateX(-50%) scale(.97);
+}
+#toast[data-type="meal-complete"].show{
+  transform:translateX(-50%) scale(1);
+}
+
+
+/* v0.10.220 カレンダーの曜日色と祝日名表示 */
+.calendar-day.saturday:not(.holiday)>strong{
+  color:#2d65a2;
+}
+.calendar-day.sunday>strong,
+.calendar-day.holiday>strong{
+  color:#a33f39;
+}
+.calendar-day .calendar-holiday-label{
+  margin-top:.12rem;
+  color:#a33f39;
+  font-size:.55rem;
+  font-weight:800;
+  line-height:1.15;
+  -webkit-line-clamp:2;
+}
+.calendar-day .calendar-event-summary{
+  margin-top:.18rem;
+}
+body[data-screen="phone"] .calendar-day.saturday:not(.holiday)>strong{
+  color:#9dc8ff!important;
+}
+body[data-screen="phone"] .calendar-day.sunday>strong,
+body[data-screen="phone"] .calendar-day.holiday>strong{
+  color:#ff9a91!important;
+}
+body[data-screen="phone"] .calendar-day .calendar-holiday-label{
+  color:#ff9a91!important;
+  opacity:1!important;
+}
+@media (orientation:portrait),(max-width:820px){
+  body[data-screen="phone"] .calendar-day .calendar-holiday-label{
+    display:-webkit-box!important;
+    margin-top:.08rem;
+    font-size:.5rem;
+    line-height:1.08;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+}
+@media (max-width:430px){
+  body[data-screen="phone"] .calendar-day .calendar-holiday-label{
+    font-size:.46rem;
+  }
+}
+
+
+/* v0.10.221 K18YG地金画像を地金屋と工房の持ち物欄へ追加 */
+.metal-name-wrap{
+  display:inline-flex;
+  align-items:center;
+  gap:.55rem;
+  min-width:0;
+}
+.metal-inline-visual{
+  display:block;
+  width:clamp(56px,10vw,84px);
+  height:auto;
+  flex:0 0 auto;
+  object-fit:contain;
+}
+.metal-inventory-row .material-name{
+  flex-wrap:nowrap;
+}
+.metal-inventory-row .material-name > span:last-child,
+.metal-name-wrap > span:last-child{
+  min-width:0;
+}
+@media (max-width:620px){
+  .metal-inline-visual{width:clamp(48px,18vw,72px)}
+  .metal-name-wrap{gap:.42rem}
+}
+
+
+/* v0.10.222 SV925画像と地金名表記の調整 */
+.metal-inline-visual.metal-visual-silver{
+  width:64px;
+  max-height:56px;
+}
+@media (max-width:620px){
+  .metal-inline-visual.metal-visual-silver{
+    width:54px;
+    max-height:48px;
+  }
+}
+
+
+/* v0.10.223 地金購入時の「購入後」表示を削除 */
+.metal-trade-preview .metal-trade-total-only{
+  margin-left:auto;
+}
+
+
+/* v0.10.225 店舗拡大条件・店頭ケース画像・キーボード表示・完成品表記を調整 */
+:root{
+  --visual-viewport-height:100dvh;
+}
+
+/* 拡大条件は枠と背景を共通にし、文字だけを達成・未達成で色分け */
+.condition-list li.condition-met,
+.condition-list li.condition-unmet{
+  color:inherit;
+  border-color:rgba(255,255,255,.12);
+  background:rgba(255,255,255,.045);
+}
+.condition-list li.condition-met :is(strong,span,em){
+  color:#8fe2a2;
+}
+.condition-list li.condition-unmet :is(strong,span,em){
+  color:#ff9e9e;
+}
+
+/* 店頭設備のケースだけを少し小さくし、画像全体を表示 */
+body[data-screen="store"] .store-case-install-row .display-product-case{
+  padding:9px;
+}
+body[data-screen="store"] .store-case-install-row .display-product-case img{
+  width:82%;
+  height:82%;
+  max-width:82%;
+  max-height:82%;
+  object-fit:contain;
+}
+
+/* ソフトウェアキーボード表示中も入力欄を見える範囲へ収める */
+body.keyboard-open #root{
+  height:var(--visual-viewport-height)!important;
+}
+body.keyboard-open .screen-shell,
+body.keyboard-open .main-screen,
+body.keyboard-open .day-result-screen{
+  height:100%!important;
+}
+body.keyboard-open .screen-content{
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scroll-padding-top:14px;
+  scroll-padding-bottom:clamp(120px,32vh,260px);
+  -webkit-overflow-scrolling:touch;
+}
+body.keyboard-open .showcase-detail-panel{
+  margin:0 auto max(28px,var(--safe-bottom))!important;
+  align-self:start;
+}
+body.keyboard-open #modal-layer{
+  top:0!important;
+  right:0!important;
+  bottom:auto!important;
+  left:0!important;
+  height:var(--visual-viewport-height)!important;
+  max-height:var(--visual-viewport-height)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+body.keyboard-open #modal-layer .modal-backdrop{
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:var(--visual-viewport-height)!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  overflow:visible!important;
+  padding-top:max(8px,env(safe-area-inset-top))!important;
+  padding-bottom:max(24px,env(safe-area-inset-bottom))!important;
+}
+body.keyboard-open #modal-layer .modal-card{
+  max-height:none!important;
+  margin:0 auto!important;
+  overflow:visible!important;
+}
+body.keyboard-open #modal-layer .calendar-event-editor textarea,
+body.keyboard-open .showcase-detail-price-field input{
+  scroll-margin-top:18px;
+  scroll-margin-bottom:18px;
+}
+
+
+/* v0.10.226 工房の完成品一覧を簡略化し、商品詳細へ遷移 */
+.finished-item-card{
+  width:100%;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+  appearance:none;
+  font:inherit;
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.finished-item-card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(231,192,110,.52);
+  background:rgba(231,192,110,.08);
+}
+.finished-item-card:focus-visible{
+  outline:2px solid var(--gold-light);
+  outline-offset:2px;
+}
+.finished-item-summary{
+  display:grid;
+  gap:.18rem;
+  min-width:0;
+}
+.finished-item-summary h3,
+.finished-item-summary p{
+  margin:0;
+}
+.finished-item-summary h3{
+  color:#fff0bd;
+  font-size:1rem;
+  overflow-wrap:anywhere;
+}
+.finished-item-summary p{
+  color:#fff;
+  font-weight:800;
+}
+.finished-item-summary small{
+  color:var(--muted);
+}
+.finished-item-detail-actions{
+  display:grid;
+  gap:.55rem;
+}
+@media (max-width:520px){
+  .finished-item-grid{grid-template-columns:1fr}
+  .finished-item-card{grid-template-columns:64px minmax(0,1fr);padding:.7rem}
+  .finished-item-card .small-jewelry{width:60px;height:60px}
+}
+
+
+/* v0.10.227 Pt900画像・ショーケース陳列導線・商品表示を調整 */
+
+/* 商品本体を下、ルース画像を上に統一 */
+.small-jewelry > .jewelry-item-shape{
+  z-index:1;
+}
+.small-jewelry > i,
+.small-jewelry .jewelry-loose-set,
+.jewelry-preview-loose{
+  z-index:3;
+}
+
+/* ショーケース内の商品文字だけを少し小さくする */
+.showcase-item-button > strong{
+  font-size:.8rem;
+  line-height:1.3;
+}
+.showcase-summary-price{
+  font-size:.88rem;
+}
+
+/* 空き枠をタップして商品を選べるようにする */
+.showcase-slot.empty{
+  padding:.55rem;
+  align-content:stretch;
+}
+.showcase-empty-button{
+  appearance:none;
+  -webkit-appearance:none;
+  width:100%;
+  min-height:100%;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:.32rem;
+  border:0!important;
+  border-radius:10px!important;
+  background:transparent!important;
+  color:var(--muted)!important;
+  box-shadow:none!important;
+  padding:.7rem!important;
+  text-align:center!important;
+}
+.showcase-empty-button span{
+  color:var(--gold-light);
+  font-size:1rem;
+  font-weight:800;
+}
+.showcase-empty-button small{
+  font-size:.7rem;
+  line-height:1.4;
+}
+.showcase-empty-button:hover,
+.showcase-empty-button:focus-visible{
+  background:rgba(255,255,255,.055)!important;
+  outline:2px solid rgba(231,190,104,.45);
+  outline-offset:-2px;
+}
+
+/* 店舗専用の完成品選択画面 */
+.showcase-selection-panel{
+  display:grid;
+  gap:1rem;
+}
+.showcase-selection-target{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.8rem;
+  padding:.7rem .85rem;
+  border:1px solid rgba(231,190,104,.28);
+  border-radius:11px;
+  background:rgba(0,0,0,.18);
+}
+.showcase-selection-target small{color:var(--muted)}
+.showcase-selection-target strong{color:var(--gold-light);text-align:right}
+.showcase-selection-card{
+  grid-template-columns:72px minmax(0,1fr);
+}
+.showcase-selection-copy h3,
+.showcase-selection-copy p{
+  margin:.12rem 0;
+}
+.showcase-selection-copy small{color:var(--muted)}
+.showcase-selection-card > button{
+  grid-column:1/-1;
+}
+@media (max-width:520px){
+  .showcase-selection-target{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .showcase-selection-target strong{text-align:left}
+}
+
+
+/* v0.10.228 設定の誕生日入力とカレンダー表示 */
+.birthday-setting{
+  display:grid;
+  gap:.55rem;
+  padding-bottom:.9rem;
+  margin-bottom:.2rem;
+  border-bottom:1px solid rgba(255,226,166,.24);
+}
+.birthday-setting label{
+  display:grid;
+  grid-template-columns:130px minmax(0,1fr);
+  align-items:center;
+  gap:.8rem;
+}
+.birthday-setting input[type="date"]{
+  width:100%;
+  min-height:42px;
+  box-sizing:border-box;
+  border:1px solid rgba(255,226,166,.42);
+  border-radius:9px;
+  padding:.55rem .65rem;
+  background:#fff;
+  color:#24180f;
+  font:inherit;
+  color-scheme:light;
+}
+.birthday-setting>small{line-height:1.55;color:var(--muted)}
+.calendar-birthday-note{
+  margin:0 0 .7rem;
+  padding:.6rem .72rem;
+  border:1px solid rgba(231,192,110,.34);
+  border-radius:9px;
+  background:rgba(231,192,110,.1);
+  color:var(--gold-light);
+  font-size:.82rem;
+  text-align:center;
+}
+body[data-screen="phone"] .settings-form.compact .birthday-setting{
+  margin:0!important;
+  padding:.78rem!important;
+  border:1px solid var(--phone-item-frame-border-accent)!important;
+  border-radius:var(--phone-item-frame-radius)!important;
+  background:var(--phone-item-frame-bg)!important;
+}
+body[data-screen="phone"] .settings-form.compact .birthday-setting label,
+body[data-screen="phone"] .settings-form.compact .birthday-setting label>span{
+  color:var(--phone-item-text)!important;
+  font-weight:800;
+}
+body[data-screen="phone"] .settings-form.compact .birthday-setting input[type="date"]{
+  background:#fff!important;
+  color:#24180f!important;
+  border-color:#d7bd85!important;
+  opacity:1!important;
+}
+body[data-screen="phone"] .settings-form.compact .birthday-setting>small{
+  color:var(--phone-item-muted)!important;
+  opacity:1!important;
+}
+@media (max-width:620px){
+  .birthday-setting label{grid-template-columns:1fr}
+}
+
+
+/* v0.10.229 上部バー内の文字を少しだけ拡大 */
+body:not([data-screen="title"]):not([data-screen="login"]) .game-header .status-top-line .header-status-item{
+  font-size:.87rem!important;
+}
+body:not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money{
+  font-size:1.1rem!important;
+}
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+  font-size:1.05rem!important;
+}
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+  font-size:.8rem!important;
+}
+@media (orientation:portrait) and (max-width:820px){
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .status-top-line .header-status-item{
+    font-size:12px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money{
+    font-size:15px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    font-size:18px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    font-size:12px!important;
+  }
+  body[data-screen="main"] .game-header .status-top-line .header-status-item{
+    font-size:.74rem!important;
+  }
+  body[data-screen="main"] .game-header .header-money{
+    font-size:.92rem!important;
+  }
+}
+@media (orientation:portrait) and (max-width:380px){
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .status-top-line .header-status-item{
+    font-size:11px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money{
+    font-size:14px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    font-size:17px!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    font-size:11px!important;
+  }
+}
+@media (max-width:430px){
+  body[data-screen="main"] .game-header .status-top-line .header-status-item{
+    font-size:.7rem!important;
+  }
+  body[data-screen="main"] .game-header .header-money{
+    font-size:.84rem!important;
+  }
+}
+@media (orientation:landscape) and (max-height:540px){
+  body:not([data-screen="title"]):not([data-screen="login"]) .game-header .status-top-line .header-status-item{
+    font-size:.71rem!important;
+  }
+  body:not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money{
+    font-size:.88rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong{
+    font-size:.86rem!important;
+  }
+  body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area .header-main-button{
+    font-size:.68rem!important;
+  }
 }

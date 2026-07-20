@@ -1,6 +1,6 @@
 import {
   VERSION, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, WORKSHOP_EXPANSION_COSTS, ARTISAN_LEVEL_XP, STORE_LEVEL_POINTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
-  PRICE_MODES, DISPLAY_SHOP_PRODUCTS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState,
+  PRICE_MODES, DISPLAY_SHOP_PRODUCTS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather,
 } from './game-data.js';
@@ -620,7 +620,18 @@ const LOOSE_CUT_GUIDES = Object.freeze({
 
 function looseOwned(gemId, shapeId) {
   const normalizedShape = normalizeLooseShape(gemId, shapeId);
-  return Math.max(0, Number(state?.inventory?.loose?.[gemId]?.[normalizedShape]) || 0);
+  return Math.max(0, Math.floor(Number(state?.inventory?.loose?.[gemId]?.[normalizedShape]) || 0));
+}
+
+function adjustLooseInventory(gemId, shapeId, delta) {
+  if (!state?.inventory?.loose || !GEMS[gemId]) return 0;
+  const normalizedShape = normalizeLooseShape(gemId, shapeId);
+  if (!state.inventory.loose[gemId] || !Object.prototype.hasOwnProperty.call(state.inventory.loose[gemId], normalizedShape)) return 0;
+  const current = looseOwned(gemId, normalizedShape);
+  const change = Math.trunc(Number(delta) || 0);
+  const next = Math.max(0, current + change);
+  state.inventory.loose[gemId][normalizedShape] = next;
+  return next - current;
 }
 
 function looseReservedQuantity(gemId, shapeId, excludeOrderId = '') {
@@ -704,6 +715,41 @@ function isPortraitLayout() {
   if (shellViewportOrientation === 'portrait') return true;
   if (shellViewportOrientation === 'landscape') return false;
   return measuredPortraitLayout();
+}
+
+const KEYBOARD_AWARE_FIELD_SELECTOR = '[data-action="selling-price"], [data-calendar-event-input]';
+let focusedKeyboardField = null;
+let keyboardVisibilityTimer = 0;
+
+function keyboardViewportMetrics() {
+  const viewport = window.visualViewport;
+  const fullHeight = Math.max(1, Number(window.innerHeight) || document.documentElement.clientHeight || 1);
+  const visibleHeight = Math.max(1, Number(viewport?.height) || fullHeight);
+  const hiddenHeight = Math.max(0, fullHeight - visibleHeight - Math.max(0, Number(viewport?.offsetTop) || 0));
+  return { viewport, fullHeight, visibleHeight, hiddenHeight };
+}
+
+function keepFocusedKeyboardFieldVisible({ smooth = false } = {}) {
+  const field = focusedKeyboardField;
+  if (!(field instanceof HTMLElement) || !field.isConnected) return;
+  const { viewport, visibleHeight } = keyboardViewportMetrics();
+  const visibleTop = Math.max(0, Number(viewport?.offsetTop) || 0) + 10;
+  const visibleBottom = visibleTop + visibleHeight - 16;
+  const rect = field.getBoundingClientRect();
+  if (rect.top < visibleTop || rect.bottom > visibleBottom) {
+    field.scrollIntoView({ block: 'center', inline: 'nearest', behavior: smooth ? 'smooth' : 'auto' });
+  }
+}
+
+function updateKeyboardViewportLayout({ smooth = false } = {}) {
+  const { visibleHeight, hiddenHeight, fullHeight } = keyboardViewportMetrics();
+  document.documentElement.style.setProperty('--visual-viewport-height', `${Math.round(visibleHeight)}px`);
+  const keyboardOpen = Boolean(focusedKeyboardField) && hiddenHeight > Math.max(90, fullHeight * 0.13);
+  document.body.classList.toggle('keyboard-open', keyboardOpen);
+  clearTimeout(keyboardVisibilityTimer);
+  if (keyboardOpen) {
+    keyboardVisibilityTimer = window.setTimeout(() => keepFocusedKeyboardFieldVisible({ smooth }), 80);
+  }
 }
 
 function versionedAsset(path) {
@@ -1297,8 +1343,9 @@ function metalTradePreviewMarkup(mode, id, quantity) {
   const owned = metalOwnedWeight(id);
   const unitPrice = metalTradePricePerGram(mode, id);
   const total = quantity * unitPrice;
-  const after = roundedMetalWeight(mode === 'buy' ? owned + quantity : owned - quantity);
-  return `<span>${mode === 'buy' ? '購入後' : '売却後'}：${metalWeightLabel(after)}g</span><strong>合計：${yen(total)}</strong>`;
+  if (mode === 'buy') return `<strong class="metal-trade-total-only">合計：${yen(total)}</strong>`;
+  const after = roundedMetalWeight(owned - quantity);
+  return `<span>売却後：${metalWeightLabel(after)}g</span><strong>合計：${yen(total)}</strong>`;
 }
 
 function syncMetalTradeCard(mode, id) {
@@ -1742,6 +1789,7 @@ function loadTitleSettings() {
     const saved = JSON.parse(localStorage.getItem(settingsKey) || 'null');
     const settings = { ...initialState().settings, ...(saved || {}) };
     delete settings.textSize;
+    settings.birthday = normalizeBirthday(settings.birthday);
     settings.bgmVolume = Number.isFinite(Number(settings.bgmVolume)) ? Math.max(0, Math.min(1, Number(settings.bgmVolume))) : 0.35;
     // 旧初期値75％だけを初回に35％へ移行し、その後の手動設定は尊重する。
     if (localStorage.getItem(bgmMigrationKey) !== '1') {
@@ -1783,10 +1831,22 @@ function visibleNotifications() {
   return (state?.notifications || []).filter((note) => !isUnneededHungerNotification(note));
 }
 
+function localSavedState() {
+  try {
+    return JSON.parse(localStorage.getItem(localSaveKey()) || 'null');
+  } catch (_) {
+    return null;
+  }
+}
+
+function preferredSavedState() {
+  return chooseNewestSavedState(localSavedState(), cloudSave);
+}
+
 function loadGame() {
   try {
-    const raw = cloudSave || JSON.parse(localStorage.getItem(localSaveKey()) || 'null');
-    const loaded = raw ? migrateState(raw) : null;
+    const preferred = preferredSavedState();
+    const loaded = preferred.state ? migrateState(preferred.state) : null;
     if (loaded?.notifications) loaded.notifications = loaded.notifications.filter((note) => !isUnneededHungerNotification(note));
     return loaded;
   } catch (_) {
@@ -1803,9 +1863,9 @@ function saveLocalBackup() {
 }
 
 function saveGame(message = false) {
-  if (!state) return;
+  if (!state) return Promise.resolve();
   syncGameClearState();
-  if (!currentUser || sessionTakenOver) return;
+  if (!currentUser || sessionTakenOver) return Promise.resolve();
   saveLocalBackup();
   const snapshot = structuredClone(state);
   const userId = currentUser.uid;
@@ -1817,6 +1877,7 @@ function saveGame(message = false) {
       showToast('クラウド保存に失敗しました。通信を確認してください。', 'error');
     });
   if (message) showToast('保存しました。');
+  return saveQueue;
 }
 
 function esc(value = '') {
@@ -2370,6 +2431,19 @@ function looseVisual(id, className = 'loose-inline', alt = '', shapeId = 'defaul
   return `<span class="${className}" style="--gem:${gem.hue}" role="img" aria-label="${esc(label)}">◆</span>`;
 }
 
+function metalVisual(id, className = 'metal-inline-visual', alt = '') {
+  const metal = METALS[id];
+  if (!metal) return '';
+  const imageMap = {
+    gold: './assets/images/metals/k18yg.png',
+    platinum: './assets/images/metals/pt900.png',
+    silver: './assets/images/metals/sv925.png',
+  };
+  const imagePath = imageMap[id] || '';
+  const label = alt || `${metal.shortName || metal.alloy || metal.name}地金`;
+  if (imagePath) return `<img class="${className} metal-visual-${esc(id)}" src="${imagePath}" alt="${esc(label)}" draggable="false">`;
+  return '';
+}
 
 function jewelryItemVisual(itemId, className = 'jewelry-item-shape', useLoose = true) {
   if (!ITEMS[itemId]) return '';
@@ -2494,20 +2568,6 @@ function workshopToolCatalogVisible(tool) {
 function workshopToolUnlockLevel(tool) {
   if (!tool || tool.initiallyAvailable) return 1;
   return Math.max(1, Number(tool.unlock?.minWorkshopLevel) || 1);
-}
-
-function workshopToolUnlockText(tool) {
-  if (workshopToolUnlocked(tool)) return '購入可能';
-  const level = workshopToolUnlockLevel(tool);
-  return level > 1 ? `工房レベル${level}で購入可能` : '条件達成後に購入可能';
-}
-
-function workshopToolCatalogStatus(tool) {
-  const record = workshopToolRecord(tool.id);
-  if (record?.status === 'repairing') return '修理中';
-  if (record?.status === 'unusable') return tool.repairable ? '故障中・修理受付中' : '故障中・新品購入が必要';
-  if (record) return '購入済み';
-  return workshopToolUnlockText(tool);
 }
 
 function workshopToolRepairPrice(toolId) {
@@ -2712,22 +2772,45 @@ function calendarUserEventForDate(key) {
   return String(calendarUserEvents()[key] || '').trim();
 }
 
+function configuredBirthday() {
+  return normalizeBirthday(state?.settings?.birthday);
+}
+
+function birthdayMatchesDate(date) {
+  return isBirthdayOnDate(configuredBirthday(), date);
+}
+
+function birthdayJapaneseLabel(value = configuredBirthday()) {
+  const birthday = normalizeBirthday(value);
+  if (!birthday) return '';
+  return `${Number(birthday.slice(0, 4))}年${Number(birthday.slice(5, 7))}月${Number(birthday.slice(8, 10))}日`;
+}
+
+function calendarDateFromKey(key) {
+  const match = String(key || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function calendarDateLabelFromKey(key) {
   const match = String(key || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return '';
   const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
   if (Number.isNaN(date.getTime())) return '';
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）`;
+  const holidayName = japaneseHolidayName(date);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）${holidayName ? `・${holidayName}` : ''}`;
 }
 
 function openCalendarEventEditor(key) {
   const label = calendarDateLabelFromKey(key);
   if (!label) return;
   const current = calendarUserEventForDate(key);
+  const birthdayNote = birthdayMatchesDate(calendarDateFromKey(key)) ? '<p class="calendar-birthday-note">設定した誕生日です。</p>' : '';
   showModal({
     title: `${label}の予定`,
-    body: `<label class="calendar-event-editor"><span>予定を入力</span><textarea data-calendar-event-input data-date="${esc(key)}" maxlength="120" rows="4" placeholder="予定を入力してください">${esc(current)}</textarea><small>120文字まで入力できます。</small></label>${current ? `<button type="button" class="text-button calendar-event-delete-button" data-action="calendar-event-delete" data-date="${esc(key)}">この予定を削除</button>` : ''}`,
+    body: `${birthdayNote}<label class="calendar-event-editor"><span>予定を入力</span><textarea data-calendar-event-input data-date="${esc(key)}" maxlength="120" rows="4" placeholder="予定を入力してください">${esc(current)}</textarea><small>120文字まで入力できます。</small></label>${current ? `<button type="button" class="text-button calendar-event-delete-button" data-action="calendar-event-delete" data-date="${esc(key)}">この予定を削除</button>` : ''}`,
     confirm: '保存する',
     cancel: 'キャンセル',
     action: 'calendar-event-save',
@@ -2738,6 +2821,9 @@ function openCalendarEventEditor(key) {
 function currentCalendarEvents() {
   if (!state) return [];
   const events = [];
+  const holidayName = japaneseHolidayName(gameDate());
+  if (holidayName) events.push(`祝日：${holidayName}`);
+  if (birthdayMatchesDate(gameDate())) events.push('誕生日');
   state.orders
     .filter((order) => !orderClosed(order) && order.deadlineDay === state.game.day)
     .forEach((order) => events.push(`${order.customerName}さんの注文納期`));
@@ -2819,8 +2905,8 @@ async function beginNextDay() {
 function backgroundFor(target) {
   const map = {
     loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', mining: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
-    store: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
+    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
+    store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', meal: 'meal', settings: 'main', settingsTitle: 'main', dayResult: 'sleep',
   };
   return map[target] || 'main';
@@ -3030,6 +3116,7 @@ function render() {
       polishing: renderPolishing,
       completion: renderCompletion,
       inventory: renderInventory,
+      finishedItemDetail: renderFinishedItemDetail,
       workshopTool: renderWorkshopToolDetail,
       workshopToolGuide: renderWorkshopToolGuide,
       metalInventoryDetail: renderMetalInventoryDetail,
@@ -3039,6 +3126,7 @@ function render() {
       glabTool: renderGlabToolDetail,
       glabToolGuide: renderGlabToolGuide,
       store: renderStore,
+      showcaseSelect: renderShowcaseSelection,
       showcaseDetail: renderShowcaseItemDetail,
       customer: renderCustomer,
       orders: renderOrders,
@@ -3617,11 +3705,10 @@ function renderGlab() {
     return Boolean(tool.repairable && record && ['unusable', 'repairing'].includes(record.status));
   });
   const catalogRow = (tool) => {
-    const status = workshopToolCatalogStatus(tool);
     const locked = !workshopToolUnlocked(tool);
     return `<button type="button" class="glab-simple-row ${locked ? 'locked' : ''}" data-action="glab-tool-detail" data-id="${esc(tool.id)}">
       <span class="glab-row-name">${esc(tool.name)}</span>
-      <span class="glab-row-status"><strong>${yen(tool.price)}</strong><span>${esc(status)}</span></span>
+      <span class="glab-row-status"><strong>${yen(tool.price)}</strong></span>
     </button>`;
   };
   const repairRow = (tool) => {
@@ -3752,8 +3839,8 @@ function renderGlabToolDetail() {
     actionArea = `
       <div class="glab-detail-price"><span>価格</span><strong>${yen(tool.price)}</strong></div>
       ${unlocked && shortage > 0 ? `<div class="glab-funds-shortage"><span>購入するには、所持金が</span><strong>${yen(shortage)}不足しています</strong></div>` : ''}
-      ${unlocked ? '' : `<div class="glab-unlock-message"><strong>未解放</strong><span>${esc(workshopToolUnlockText(tool))}</span></div>`}
-      <button class="primary-button full-button" data-action="buy-workshop-tool" data-id="${esc(tool.id)}" ${unlocked && affordable && hasTime ? '' : 'disabled'}>${unlocked ? '購入する' : workshopToolUnlockText(tool)}</button>
+      ${unlocked ? '' : '<div class="glab-unlock-message"><strong>未解放</strong></div>'}
+      <button class="primary-button full-button" data-action="buy-workshop-tool" data-id="${esc(tool.id)}" ${unlocked && affordable && hasTime ? '' : 'disabled'}>${unlocked ? '購入する' : '未解放'}</button>
       ${unlocked && !hasTime ? '<p class="error-text">今日は購入手続きをする時間がありません。</p>' : ''}`;
   } else if (record.status === 'unusable' && tool.repairable) {
     const repairPrice = workshopToolRepairPrice(tool.id);
@@ -3849,7 +3936,7 @@ function renderSupplierMetals() {
     return `<article class="product-row metal-product-row metal-trade-card" data-metal-trade-card="${mode}:${product.id}">
       <div class="product-main metal-trade-heading">
         <div class="metal-title-status-row">
-          <strong class="metal-product-name">${esc(product.name)}</strong>
+          <strong class="metal-product-name"><span class="metal-name-wrap">${metalVisual(product.id, 'metal-inline-visual')}<span>${esc(product.name)}</span></span></strong>
           <div class="metal-owned-limit">
             <small>現在所持：${metalWeightLabel(owned)}g</small>
             <small>保管上限：${metalWeightLabel(storageLimit)}g</small>
@@ -4017,6 +4104,7 @@ function renderLooseShop(forcedTab = '') {
 
 function renderDisplayProductVisual(product, extraClass = '') {
   const classes = ['display-product-visual'];
+  if (product?.id) classes.push(`display-product-${product.id}`);
   if (extraClass) classes.push(extraClass);
   if (product?.image) {
     return `<span class="${classes.join(' ')}"><img src="${product.image}" alt="${esc(product.name)}" loading="lazy" decoding="async"></span>`;
@@ -4468,8 +4556,7 @@ function renderCompletion() {
   const completionActions = isPendingOrderDelivery
     ? `<button class="primary-button" data-action="deliver-order-completion" data-id="${order.id}">お客様へ納品する</button>
        <button class="secondary-button" data-action="remake-order-completion" data-id="${order.id}" data-jewelry="${jewelry.id}">作り直す</button>`
-    : `${state.store.rented ? `<button class="primary-button" data-action="place-from-completion" data-id="${jewelry.id}">店舗に並べる</button>` : '<button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>'}
-       <button class="secondary-button" data-action="nav" data-screen="inventory">保管する</button>
+    : `<button class="primary-button" data-action="nav" data-screen="inventory" data-tab="finished">保管する</button>
        <button class="secondary-button" data-action="open-craft">もう一度作る</button>
        <button class="text-button" data-action="nav" data-screen="workshop">工房へ戻る</button>`;
   return shell('完成', `
@@ -4540,7 +4627,7 @@ function renderMaterialInventory(kind) {
   }
 
   const items = METAL_WORKSHOP_ORDER.map((id) => METALS[id]).filter(Boolean);
-  return `<div class="inventory-single-list metal-inventory-list">${items.map((metal) => `<button type="button" class="material-row metal-inventory-row" data-action="metal-inventory-detail" data-id="${esc(metal.id)}"><span>${esc(metal.shortName || metal.alloy || metal.name)}</span><strong>${metalWeightLabel(state.inventory.metals[metal.id])}g</strong><i aria-hidden="true">›</i></button>`).join('')}</div>`;
+  return `<div class="inventory-single-list metal-inventory-list">${items.map((metal) => `<button type="button" class="material-row metal-inventory-row" data-action="metal-inventory-detail" data-id="${esc(metal.id)}"><span class="material-name">${metalVisual(metal.id, 'metal-inline-visual')}<span>${esc(metal.shortName || metal.alloy || metal.name)}</span></span><strong>${metalWeightLabel(state.inventory.metals[metal.id])}g</strong><i aria-hidden="true">›</i></button>`).join('')}</div>`;
 }
 
 function renderLooseInventoryDetail() {
@@ -4672,20 +4759,49 @@ function renderMetalProfessionalGuide() {
     </section>`, { main: false, help: '品位、加工、溶接、石留め、回収、安全管理まで、職人向けの地金特性を確認できます。' });
 }
 
+function finishedItemStatus(item) {
+  if (!item) return '';
+  const displayBranch = item.status === 'displayed' ? jewelryDisplayBranch(item.id) : null;
+  if (item.status === 'displayed') return `${storeBranchLabel(displayBranch?.number || item.displayBranchNumber || 1)}に陳列中`;
+  if (item.status === 'order') return '注文品';
+  return '保管中';
+}
+
 function renderFinishedItems() {
   const items = state.inventory.jewelry.filter((item) => item.status !== 'sold');
   if (!items.length) return '<div class="empty-state"><strong>完成品はありません。</strong><p>工房でジュエリーを作ると、ここに表示されます。</p></div>';
-  return `<div class="jewelry-grid">${items.map((item) => {
-    const displayBranch = item.status === 'displayed' ? jewelryDisplayBranch(item.id) : null;
-    const status = item.status === 'displayed' ? `${storeBranchLabel(displayBranch?.number || item.displayBranchNumber || 1)}に陳列中` : item.status === 'order' ? '注文品' : '保管中';
-    const sellingPrice = item.status === 'displayed' ? sellingPriceForJewelry(item) : null;
-    const profit = sellingPrice === null ? item.recommendedPrice - item.cost : sellingPrice - item.cost;
-    return `<article class="jewelry-card">
+  return `<div class="jewelry-grid finished-item-grid">${items.map((item) => `<button type="button" class="jewelry-card finished-item-card" data-action="open-finished-item-detail" data-id="${esc(item.id)}" aria-label="${esc(item.name)}の商品詳細を開く">
       <div class="small-jewelry metal-${item.metal} item-${item.item}" style="--gem:${GEMS[item.gem]?.hue || '#ffffff'}">${jewelryItemVisual(item.item, 'jewelry-item-shape small', item.useLoose !== false)}${item.useLoose !== false ? `<i>${jewelryLooseSetVisual(item.item, item.gem, item.looseShape, 'small')}</i>` : ''}</div>
-      <div><h3>${esc(item.name)}</h3><p>${esc(QUALITIES[item.quality].name)}・原価 ${yen(item.cost)}</p><small>おすすめ ${yen(item.recommendedPrice)}${sellingPrice === null ? '' : `・設定 ${yen(sellingPrice)}`}・予想利益 ${yen(profit)}</small><small>状態：${status}</small></div>
-      ${item.status === 'stored' ? state.store.rented ? `<button class="primary-button" data-action="place-item" data-id="${item.id}">現在の店舗に並べる</button>` : '<button class="secondary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>' : item.status === 'displayed' && contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
-    </article>`;
-  }).join('')}</div>`;
+      <div class="finished-item-summary"><h3>${esc(item.name)}</h3><p>原価 ${yen(item.cost)}</p><small>状態：${esc(finishedItemStatus(item))}</small></div>
+    </button>`).join('')}</div>`;
+}
+
+function renderFinishedItemDetail() {
+  const item = state.inventory.jewelry.find((entry) => entry.id === screenData.itemId && entry.status !== 'sold');
+  if (!item) return shell('商品詳細', '<section class="center-card glass-panel"><div class="empty-state"><strong>商品が見つかりません。</strong><p>完成品一覧へ戻って確認してください。</p></div><button class="primary-button full-button" data-action="back">完成品一覧へ戻る</button></section>');
+  const location = item.status === 'displayed' ? showcaseLocationForJewelry(item.id) : null;
+  const sellingPrice = location?.slot ? showcaseSellingPrice(location.slot, item) : null;
+  const looseLabel = item.useLoose === false ? 'ルースなし' : `${GEMS[item.gem]?.name || '石'}・${looseShapeLabel(item.looseShape)}`;
+  const status = finishedItemStatus(item);
+  const expectedProfit = sellingPrice === null ? null : sellingPrice - Math.max(0, Number(item.cost) || 0);
+  return shell('商品詳細', `
+    <section class="showcase-detail-panel glass-panel finished-item-detail-panel">
+      <div class="showcase-detail-visual jewelry-preview large metal-${item.metal} item-${item.item}" style="--gem:${GEMS[item.gem]?.hue || '#ffffff'}">
+        ${jewelryItemVisual(item.item, 'jewelry-item-shape large', item.useLoose !== false)}
+        ${item.useLoose !== false ? `<span class="jewelry-preview-loose">${jewelryLooseSetVisual(item.item, item.gem, item.looseShape, 'large')}</span>` : ''}
+      </div>
+      <h1>${esc(item.name)}</h1>
+      <dl class="showcase-detail-grid">
+        <div><dt>商品種類</dt><dd>${esc(ITEMS[item.item]?.name || '')}</dd></div>
+        <div><dt>地金</dt><dd>${esc(METALS[item.metal]?.name || '')}</dd></div>
+        <div><dt>ルース</dt><dd>${esc(looseLabel)}</dd></div>
+        <div><dt>品質</dt><dd>${esc(QUALITIES[item.quality]?.name || '')}</dd></div>
+        <div><dt>原価</dt><dd>${yen(item.cost)}</dd></div>
+        <div><dt>おすすめ価格</dt><dd>${yen(item.recommendedPrice)}</dd></div>
+        ${sellingPrice === null ? '' : `<div><dt>販売価格</dt><dd>${yen(sellingPrice)}</dd></div><div><dt>予想利益</dt><dd>${yen(expectedProfit)}</dd></div>`}
+        <div><dt>状態</dt><dd>${esc(status)}</dd></div>
+      </dl>
+    </section>`, { help: '完成品の種類、素材、品質、原価、状態を確認できます。' });
 }
 
 function renderStore() {
@@ -4715,8 +4831,6 @@ function renderStore() {
   const businessOpen = storeBusinessOpen();
   const activeVisitors = canServeCustomers() ? Object.keys(CUSTOMERS).filter((id) => state.customers[id].visiting && Number(state.customers[id].visitingBranchNumber || branch.number) === Number(branch.number)) : [];
   const canExpand = expansionEligible();
-  const available = state.inventory.jewelry.filter((item) => item.status === 'stored');
-  const emptySlots = Math.max(0, storeShowcaseCapacity(branch) - storeShowcaseUsedSlots(branch));
   const displayInventory = state.store.displayInventory || {};
   const showcasesOwned = Math.max(0, Math.floor(Number(displayInventory.showcase) || 0));
   const displaySuppliesOwned = Math.max(0, Math.floor(Number(displayInventory.displaySupplies) || 0));
@@ -4742,13 +4856,10 @@ function renderStore() {
         ${storeBranchOperating(branch) && !businessOpen ? '<section class="tool-break-alert"><strong>本日の店舗営業は終了しました</strong><span>営業時間は9:00～19:00です。</span></section>' : ''}
         <div class="store-showcase-heading"><h2>ショーケース</h2><small>${installedShowcaseCount(branch)}/${storeMaximumShowcases()}台・${storeShowcaseUsedSlots(branch)}/${storeShowcaseCapacity(branch)}点</small></div>
         ${installedShowcaseCount(branch) ? `<div class="showcase-units">${branchShowcases(branch).map((showcase, showcaseIndex) => renderShowcaseUnit(showcase, showcaseIndex, branch)).join('')}</div>` : '<section class="empty-state showcase-empty-state"><strong>ショーケースがありません。</strong><p>御徒町のディスプレイ屋でショーケースを購入し、下の「店頭設備」から設置してください。</p></section>'}
-        ${available.length && emptySlots > 0 ? `<details class="available-items"><summary>商品を並べる</summary><div class="compact-list">${available.map((item) => `<button data-action="place-item" data-id="${item.id}"><span>${esc(item.name)}</span><small>${yen(item.recommendedPrice)}</small></button>`).join('')}</div></details>` : ''}
-        ${available.length && emptySlots === 0 ? '<p class="small-note">商品を並べるには、空きのあるショーケースが必要です。</p>' : ''}
-        <section class="store-service-section">
+        ${activeVisitors.length ? `<section class="store-service-section">
           <div class="section-heading"><h2>接客</h2></div>
-          ${hasCraftedJewelry() ? '' : '<section class="visitor-box"><h2>接客はまだ利用できません。</h2><p>まず工房でジュエリーを1点制作してください。制作後からお客様が来店するようになります。</p><button class="secondary-button" data-action="nav" data-screen="workshop">工房へ</button></section>'}
-          ${activeVisitors.length ? `<section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>` : ''}
-        </section>
+          <section class="visitor-box"><h2>お客様が来店しています。</h2>${activeVisitors.map((id) => `<div><strong>${esc(CUSTOMERS[id].name)}</strong><button class="primary-button" data-action="customer" data-id="${id}">接客する</button><button class="text-button" data-action="ignore-customer" data-id="${id}">今回は対応しない</button></div>`).join('')}</section>
+        </section>` : ''}
         <section class="store-install-section storefront-equipment-section">
           <div class="section-heading"><h2>店頭設備</h2><button class="secondary-button" data-action="nav" data-screen="displayShop">ディスプレイ屋へ</button></div>
           <article class="store-install-row">
@@ -4792,7 +4903,6 @@ function renderStore() {
           </div>
         </section>
         <div class="button-grid">
-          <button class="secondary-button" data-action="nav" data-screen="inventory">完成品を見る</button>
           <button class="secondary-button" data-action="nav" data-screen="orders" ${activeOrderCount() > 0 ? '' : 'disabled'}>工房の注文書</button>
           ${state.store.expanded ? '<button class="secondary-button" data-action="nav" data-screen="employee">店員</button>' : ''}
         </div>
@@ -4818,9 +4928,10 @@ function renderShowcaseUnit(showcase, showcaseIndex, branch = currentStoreBranch
 }
 
 function renderShowcaseSlot(slot, showcaseIndex, slotIndex, branch = currentStoreBranch()) {
-  if (!slot) return `<article class="showcase-slot empty"><span>空き</span></article>`;
+  const emptyMarkup = `<article class="showcase-slot empty"><button type="button" class="showcase-empty-button" data-action="open-showcase-empty" data-branch="${esc(branch?.id || '')}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="空き枠に陳列する商品を選ぶ"><span>空き</span><small>タップして商品を選ぶ</small></button></article>`;
+  if (!slot) return emptyMarkup;
   const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
-  if (!item) return `<article class="showcase-slot empty"><span>空き</span></article>`;
+  if (!item) return emptyMarkup;
   const price = showcaseSellingPrice(slot, item);
   return `<article class="showcase-slot showcase-slot-summary">
     <button type="button" class="showcase-item-button" data-action="open-showcase-detail" data-branch="${esc(branch?.id || '')}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="${esc(item.name)}の詳細を開く">
@@ -4829,6 +4940,32 @@ function renderShowcaseSlot(slot, showcaseIndex, slotIndex, branch = currentStor
       <span class="showcase-summary-price">${yen(price)}</span>
     </button>
   </article>`;
+}
+
+function renderShowcaseSelection() {
+  const branch = state.store.branches?.find((entry) => entry.id === screenData.branchId) || currentStoreBranch();
+  const showcaseIndex = Math.max(0, Number(screenData.showcaseIndex) || 0);
+  const slotIndex = Math.max(0, Number(screenData.slotIndex) || 0);
+  const showcase = branchShowcases(branch)?.[showcaseIndex];
+  const validSlot = Boolean(branch && showcase && Array.isArray(showcase.slots) && slotIndex < showcase.slots.length);
+  const targetSlot = validSlot ? showcase.slots[slotIndex] : null;
+  if (!validSlot || targetSlot) {
+    return shell('陳列する商品を選ぶ', `<section class="center-card glass-panel"><div class="empty-state"><strong>この空き枠は利用できません。</strong><p>店舗のショーケースへ戻って、空いている枠を選び直してください。</p></div><button class="primary-button full-button" data-action="back">店舗へ戻る</button></section>`);
+  }
+  const items = state.inventory.jewelry.filter((item) => item.status === 'stored');
+  const targetLabel = `${storeBranchLabel(branch.number)}・ショーケース ${showcaseIndex + 1}・空き枠 ${slotIndex + 1}`;
+  const content = items.length
+    ? `<div class="jewelry-grid showcase-selection-grid">${items.map((item) => `<article class="jewelry-card showcase-selection-card">
+        <div class="small-jewelry metal-${item.metal} item-${item.item}" style="--gem:${GEMS[item.gem]?.hue || '#ffffff'}">${jewelryItemVisual(item.item, 'jewelry-item-shape small', item.useLoose !== false)}${item.useLoose !== false ? `<i>${jewelryLooseSetVisual(item.item, item.gem, item.looseShape, 'small')}</i>` : ''}</div>
+        <div class="showcase-selection-copy"><h3>${esc(item.name)}</h3><p>原価 ${yen(item.cost)}</p><small>状態：${esc(finishedItemStatus(item))}</small></div>
+        <button type="button" class="primary-button full-button" data-action="place-item-in-slot" data-id="${esc(item.id)}" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">この商品を陳列する</button>
+      </article>`).join('')}</div>`
+    : '<div class="empty-state"><strong>陳列できる完成品はありません。</strong><p>工房で完成品を制作して保管すると、ここに表示されます。</p></div>';
+  return shell('陳列する商品を選ぶ', `
+    <section class="wide-panel glass-panel showcase-selection-panel">
+      <div class="showcase-selection-target"><small>陳列先</small><strong>${esc(targetLabel)}</strong></div>
+      ${content}
+    </section>`, { help: '店舗の空きショーケース枠に陳列する、保管中の完成品を選びます。' });
 }
 
 function renderShowcaseItemDetail() {
@@ -4863,7 +5000,7 @@ function renderShowcaseItemDetail() {
       </dl>
       <label class="showcase-detail-price-field"><span>販売価格</span><input type="number" min="1000" step="1" inputmode="numeric" value="${price}" data-action="selling-price" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}"></label>
       <div class="showcase-detail-actions">
-        <button class="text-button" data-action="remove-showcase" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">商品を下げる</button>
+        <button class="text-button" data-action="remove-showcase" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">この商品の陳列をやめる</button>
         ${contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
       </div>
     </section>`, { help: '商品の詳細を確認し、販売価格を変更できます。' });
@@ -5099,7 +5236,7 @@ function renderMeal() {
     return shell('食事', `
       <section class="meal-eating-panel glass-panel" aria-live="polite">
         ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
-        <strong>食事中…</strong>
+        <strong>もぐもぐもぐ...</strong>
       </section>`, { help: `${meal.name}で食事をしています。` });
   }
   return shell('食事', `
@@ -5159,6 +5296,7 @@ async function eatMeal(mealId) {
     hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
     clearTimeout(hungerFeedbackTimer);
     setScreen('main', {}, false);
+    showToast('ごちそうさまでした', 'meal-complete', false);
     playSfx('levelup');
     hungerFeedbackTimer = setTimeout(() => {
       hungerFeedback = null;
@@ -5796,11 +5934,23 @@ function renderPhoneContent() {
       }
       const cellDate = new Date(year, month, dayOfMonth, 12, 0, 0, 0);
       const key = dateKey(cellDate);
-      const events = eventMap.get(key) || [];
+      const baseScheduledEvents = eventMap.get(key) || [];
+      const birthdayEvent = birthdayMatchesDate(cellDate) ? '誕生日' : '';
+      const scheduledEvents = birthdayEvent ? [birthdayEvent, ...baseScheduledEvents.filter((event) => event !== birthdayEvent)] : baseScheduledEvents;
+      if (birthdayEvent) eventMap.set(key, scheduledEvents);
+      const holidayName = japaneseHolidayName(cellDate);
+      const holidayEvent = holidayName ? `祝日：${holidayName}` : '';
+      if (holidayEvent) eventMap.set(key, [holidayEvent, ...scheduledEvents.filter((event) => event !== holidayEvent)]);
+      const events = eventMap.get(key) || scheduledEvents;
       const isToday = key === dateKey(today);
-      cells.push(`<button type="button" class="calendar-day ${isToday ? 'today' : ''} ${events.length ? 'has-event' : ''}" data-action="calendar-date-open" data-date="${esc(key)}" aria-label="${dayOfMonth}日の予定を入力・編集">
+      const weekday = cellDate.getDay();
+      const weekdayClass = weekday === 0 ? 'sunday' : weekday === 6 ? 'saturday' : '';
+      const holidayClass = holidayName ? 'holiday' : '';
+      const ariaHoliday = holidayName ? `、${holidayName}` : '';
+      cells.push(`<button type="button" class="calendar-day ${weekdayClass} ${holidayClass} ${isToday ? 'today' : ''} ${events.length ? 'has-event' : ''}" data-action="calendar-date-open" data-date="${esc(key)}" aria-label="${dayOfMonth}日${esc(ariaHoliday)}の予定を入力・編集">
         <strong>${dayOfMonth}</strong>
-        ${events.length ? `<span class="calendar-event-dot" aria-label="予定あり"></span><small>${esc(events[0])}</small>` : '<small class="calendar-add-hint">予定を入力</small>'}
+        ${holidayName ? `<small class="calendar-holiday-label">${esc(holidayName)}</small>` : ''}
+        ${scheduledEvents.length ? `<span class="calendar-event-dot" aria-label="予定あり"></span><small class="calendar-event-summary">${esc(scheduledEvents[0])}</small>` : (holidayName ? '' : '<small class="calendar-add-hint">予定を入力</small>')}
       </button>`);
     }
     const todayEvents = eventMap.get(dateKey(today)) || [];
@@ -5862,7 +6012,13 @@ function renderSettingsForm(titleMode, compact) {
       <label><span>店舗名</span><input type="text" maxlength="30" autocomplete="organization" value="${esc(state.store.name || '')}" data-store-name-input></label>
       <small>店舗名は、登録済みのすべての店舗に共通で反映されます。</small>
       <button class="secondary-button full-button" data-action="update-store-name">店舗名を変更</button>
-    </section>` : ''}` : ''}
+    </section>` : ''}
+    <section class="birthday-setting">
+      <label><span>誕生日</span><input type="date" min="1900-01-01" max="${dateKey(new Date())}" value="${esc(configuredBirthday())}" data-birthday-input></label>
+      <small>${configuredBirthday() ? `${esc(birthdayJapaneseLabel())}を毎年カレンダーに表示します。` : '設定すると、毎年カレンダーに「誕生日」と表示されます。'}</small>
+      <button class="secondary-button full-button" data-action="update-birthday">誕生日を保存</button>
+      ${configuredBirthday() ? '<button class="text-button full-button" data-action="clear-birthday">誕生日を削除</button>' : ''}
+    </section>` : ''}
     <label><span>音楽</span><input type="range" min="0" max="1" step="0.05" value="${settings.bgmVolume}" data-setting="bgmVolume" data-title-mode="${titleMode}"></label>
     <label><span>環境音</span><input type="range" min="0" max="1" step="0.05" value="${settings.ambientVolume}" data-setting="ambientVolume" data-title-mode="${titleMode}"></label>
     <label><span>効果音</span><input type="range" min="0" max="1" step="0.05" value="${settings.sfxVolume}" data-setting="sfxVolume" data-title-mode="${titleMode}"></label>
@@ -6081,7 +6237,7 @@ function purchase(kind, id, shapeId = '') {
   if (state.game.money < price) return showToast('所持金が足りません。', 'error');
   state.game.money -= price;
   startMoneyFeedback(-price);
-  state.inventory.loose[id][resolvedShape] += 1;
+  adjustLooseInventory(id, resolvedShape, 1);
   spendHours(1);
   const itemLabel = `${product.name}・${looseShapeLabel(resolvedShape)}ルース`;
   addFinance(`${itemLabel}を購入`, 0, price);
@@ -6125,7 +6281,7 @@ function sellLoose(id, shapeId = '', sellAll = false) {
   const qty = sellAll ? available : 1;
   const unitPrice = looseSalePrice(id, resolvedShape);
   const totalPrice = unitPrice * qty;
-  state.inventory.loose[id][resolvedShape] -= qty;
+  adjustLooseInventory(id, resolvedShape, -qty);
   state.game.money += totalPrice;
   spendHours(1);
   state.daily.looseSold.push({ gem: id, looseShape: resolvedShape, qty, price: totalPrice, unitPrice });
@@ -6193,7 +6349,7 @@ function polishRough() {
   if (!gem || state.inventory.rough[selectedPolishing] < 1) return showToast('選択した原石を持っていません。', 'error');
   if (!canSpendHours(POLISHING_HOURS)) return showToast('今日は研磨する時間がありません。', 'error');
   state.inventory.rough[selectedPolishing] -= 1;
-  state.inventory.loose[selectedPolishing][selectedPolishingShape] += 1;
+  adjustLooseInventory(selectedPolishing, selectedPolishingShape, 1);
   spendHours(POLISHING_HOURS);
   state.daily.polished.push({ gem: selectedPolishing, looseShape: selectedPolishingShape, qty: 1 });
   addArtisanXp(1);
@@ -6251,7 +6407,7 @@ function craft() {
   const requirements = materialRequirementsFor(craftDraft);
   if (!requirements.enoughLoose || !requirements.enoughMetal) return showToast('材料が足りません。', 'error');
   if (state.inventory.jewelry.filter((item) => item.status !== 'sold').length >= state.inventory.capacity) return showToast('完成品の保管場所に空きがありません。', 'error');
-  if (craftDraft.useLoose === true) state.inventory.loose[craftDraft.gem][craftDraft.looseShape] -= requirements.requiredLooseQuantity;
+  if (craftDraft.useLoose === true) adjustLooseInventory(craftDraft.gem, craftDraft.looseShape, -requirements.requiredLooseQuantity);
   state.inventory.metals[craftDraft.metal] = roundedMetalWeight(requirements.ownedMetalWeight - requirements.requiredMetalWeight);
   spendHours(hours);
   const quality = qualityRoll();
@@ -6308,6 +6464,29 @@ function placeItem(itemId) {
   setScreen('store', { branchId: branch.id }, false);
 }
 
+function placeItemInShowcaseSlot(itemId, branchId, showcaseIndex, slotIndex) {
+  const branch = state.store.branches?.find((entry) => entry.id === branchId) || currentStoreBranch();
+  const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
+  const showcaseNumber = Math.max(0, Number(showcaseIndex) || 0);
+  const slotNumber = Math.max(0, Number(slotIndex) || 0);
+  const showcase = branchShowcases(branch)?.[showcaseNumber];
+  if (!branch || !showcase || !Array.isArray(showcase.slots) || slotNumber >= showcase.slots.length) {
+    return showToast('陳列先のショーケースが見つかりません。', 'error');
+  }
+  if (showcase.slots[slotNumber]) {
+    showToast('選択した枠にはすでに商品があります。', 'error');
+    return setScreen('store', { branchId: branch.id }, false);
+  }
+  if (!item || item.status !== 'stored') return showToast('この商品は現在陳列できません。', 'error');
+  showcase.slots[slotNumber] = { jewelryId: item.id, sellingPrice: normalizeSellingPrice(item.recommendedPrice) };
+  item.status = 'displayed';
+  item.displayBranchNumber = branch.number;
+  mirrorCurrentStoreDisplay(branch);
+  saveGame();
+  showToast(`${storeBranchLabel(branch.number)}のショーケースに陳列しました。`);
+  setScreen('store', { branchId: branch.id }, false);
+}
+
 function removeShowcase(showcaseIndex, slotIndex, branchId = '') {
   const branch = branchId
     ? state.store.branches?.find((entry) => entry.id === branchId)
@@ -6323,7 +6502,7 @@ function removeShowcase(showcaseIndex, slotIndex, branchId = '') {
   showcases[showcaseIndex].slots[slotIndex] = null;
   mirrorCurrentStoreDisplay(branch);
   saveGame();
-  showToast('商品をショーケースから下げました。');
+  showToast('商品の陳列をやめました。');
   if (screen === 'showcaseDetail') setScreen('store', { branchId: branch?.id || '' }, false);
   else render();
 }
@@ -6958,7 +7137,23 @@ function payOutstandingBusinessCosts() {
   render();
 }
 
+function looseInventorySnapshot() {
+  return structuredClone(state?.inventory?.loose || {});
+}
+
+function looseInventoryChanged(before) {
+  return JSON.stringify(before || {}) !== JSON.stringify(state?.inventory?.loose || {});
+}
+
+function restoreLooseInventory(before, context = '') {
+  if (!looseInventoryChanged(before)) return false;
+  console.error('ルース在庫の意図しない変更を復元しました', { context });
+  state.inventory.loose = structuredClone(before || {});
+  return true;
+}
+
 function settleDay() {
+  const looseBeforeSettlement = looseInventorySnapshot();
   const moneyBeforeSettlement = state.game.money;
   const sold = [];
   const activeSalesBranch = salesStoreBranch();
@@ -7043,8 +7238,10 @@ function settleDay() {
   });
   scheduleCustomerVisit();
   updateOrderNotifications();
-  saveGame();
+  restoreLooseInventory(looseBeforeSettlement, 'settleDay');
+  const daySave = saveGame();
   setScreen('dayResult', {}, false);
+  return daySave;
 }
 
 function startCustomerVisit(customerId, branchNumber = state?.store?.branchNumber || 1) {
@@ -7137,7 +7334,8 @@ async function beginSleepTransition() {
     // 画面をゆっくり暗くし、完全な暗転の中で翌日の処理を行う。
     sleepCurtainEl?.classList.add('active');
     await wait(850);
-    settleDay();
+    const daySave = settleDay();
+    await Promise.race([daySave, wait(1800)]);
     await wait(420);
     sleepCurtainEl?.classList.remove('active');
     await wait(120);
@@ -7524,6 +7722,31 @@ root.addEventListener('click', async (event) => {
       render();
       break;
     }
+    case 'update-birthday': {
+      const input = document.querySelector('[data-birthday-input]');
+      const birthday = normalizeBirthday(input?.value);
+      if (!birthday) {
+        showToast('誕生日を正しく入力してください。', 'error');
+        input?.focus();
+        break;
+      }
+      if (birthday > dateKey(new Date())) {
+        showToast('未来の日付は誕生日に設定できません。', 'error');
+        input?.focus();
+        break;
+      }
+      state.settings.birthday = birthday;
+      saveGame();
+      showToast('誕生日を保存しました。');
+      render();
+      break;
+    }
+    case 'clear-birthday':
+      state.settings.birthday = '';
+      saveGame();
+      showToast('誕生日を削除しました。');
+      render();
+      break;
     case 'update-store-name': {
       if (!state.store.rented) {
         showToast('店舗を借りてから変更できます。', 'error');
@@ -7687,7 +7910,10 @@ root.addEventListener('click', async (event) => {
     case 'expand-workshop': expandWorkshop(); break;
     case 'pay-outstanding-costs': payOutstandingBusinessCosts(); break;
     case 'repair-workshop-tool': repairWorkshopTool(button.dataset.id); break;
-    case 'purchase': purchase(button.dataset.kind, button.dataset.id, button.dataset.shape); break;
+    case 'purchase':
+      button.disabled = true;
+      purchase(button.dataset.kind, button.dataset.id, button.dataset.shape);
+      break;
     case 'sell-rough': sellRough(button.dataset.id, false); break;
     case 'sell-all-rough': sellRough(button.dataset.id, true); break;
     case 'sell-loose': sellLoose(button.dataset.id, button.dataset.shape, false); break;
@@ -7698,6 +7924,7 @@ root.addEventListener('click', async (event) => {
     case 'select-polishing-shape': selectedPolishingShape = normalizeLooseShape(selectedPolishing, button.dataset.shape); render(); break;
     case 'polish-rough': polishRough(); break;
     case 'open-workshop-inventory': setScreen('inventory', { tab: button.dataset.tab || 'finished' }); break;
+    case 'open-finished-item-detail': setScreen('finishedItemDetail', { itemId: button.dataset.id }); break;
     case 'metal-inventory-detail': setScreen('metalInventoryDetail', { metalId: button.dataset.id }); break;
     case 'metal-professional-open': setScreen('metalProfessionalGuide', { metalId: button.dataset.id }); break;
     case 'open-craft':
@@ -7749,11 +7976,11 @@ root.addEventListener('click', async (event) => {
     case 'craft-shape-choice': craftDraft.looseShape = normalizeLooseShape(craftDraft.gem, button.dataset.shape); render(); break;
     case 'confirm-craft': confirmCraft(); break;
     case 'craft': craft(); break;
-    case 'place-from-completion': placeItem(button.dataset.id); break;
     case 'deliver-order-completion': deliverOrder(button.dataset.id, { immediateFromCompletion: true }); break;
     case 'remake-order-completion': remakeOrderFromCompletion(button.dataset.id, button.dataset.jewelry); break;
     case 'inventory-tab': screenData.tab = button.dataset.tab; render(); break;
-    case 'place-item': placeItem(button.dataset.id); break;
+    case 'open-showcase-empty': setScreen('showcaseSelect', { branchId: button.dataset.branch, showcaseIndex: Number(button.dataset.showcase), slotIndex: Number(button.dataset.slot) }); break;
+    case 'place-item-in-slot': placeItemInShowcaseSlot(button.dataset.id, button.dataset.branch, Number(button.dataset.showcase), Number(button.dataset.slot)); break;
     case 'open-showcase-detail': setScreen('showcaseDetail', { branchId: button.dataset.branch, showcaseIndex: Number(button.dataset.showcase), slotIndex: Number(button.dataset.slot) }); break;
     case 'remove-showcase': removeShowcase(Number(button.dataset.showcase), Number(button.dataset.slot), button.dataset.branch || ''); break;
     case 'move-showcase-item': showMoveShowcaseItemModal(button.dataset.id); break;
@@ -7896,6 +8123,9 @@ root.addEventListener('keydown', (event) => {
   } else if (target?.matches?.('[data-player-name-input]')) {
     event.preventDefault();
     root.querySelector('[data-action="update-player-name"]')?.click();
+  } else if (target?.matches?.('[data-birthday-input]')) {
+    event.preventDefault();
+    root.querySelector('[data-action="update-birthday"]')?.click();
   }
 });
 
@@ -7957,6 +8187,10 @@ function enterGameAfterLogin() {
 }
 
 window.addEventListener('beforeunload', () => saveLocalBackup());
+window.addEventListener('pagehide', () => saveLocalBackup());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveLocalBackup();
+});
 window.addEventListener('pageshow', () => {
   if (phoneGameReturnRequested() && screen === 'phone') clearPhoneGameReturnRequest();
   if (glabAboutReturnRequested() && screen === 'glab') clearGlabAboutReturnRequest();
@@ -8003,8 +8237,22 @@ async function boot() {
       render();
       try {
         cloudSave = await loadState(user.uid);
-        if (cloudSave) localStorage.setItem(localSaveKey(), JSON.stringify(cloudSave));
+        const preferredAtBoot = preferredSavedState();
+        const localWasNewer = preferredAtBoot.source === 'local' && Boolean(preferredAtBoot.state);
+        if (preferredAtBoot.source === 'cloud' && preferredAtBoot.state) {
+          localStorage.setItem(localSaveKey(), JSON.stringify(preferredAtBoot.state));
+        } else if (localWasNewer) {
+          cloudSave = structuredClone(preferredAtBoot.state);
+        }
         await claimSession(user.uid, sessionId);
+        // 端末側が新しい場合は、古いクラウドで上書きせず現在状態をクラウドへ戻す。
+        if (localWasNewer) {
+          const migratedLocal = migrateState(preferredAtBoot.state);
+          migratedLocal.updatedAt = String(preferredAtBoot.state.updatedAt || new Date().toISOString());
+          await saveState(user.uid, migratedLocal).catch((error) => console.error('新しい端末セーブのクラウド同期に失敗しました', error));
+          cloudSave = structuredClone(migratedLocal);
+          localStorage.setItem(localSaveKey(), JSON.stringify(migratedLocal));
+        }
         stopSessionWatch = watchSession(user.uid, sessionId, () => {
           sessionTakenOver = true;
           showModal({
@@ -8098,8 +8346,34 @@ async function boot() {
 }
 
 boot();
-window.addEventListener('resize', applyCurrentBackground);
-window.addEventListener('orientationchange', applyCurrentBackground);
+window.addEventListener('resize', () => {
+  applyCurrentBackground();
+  updateKeyboardViewportLayout();
+});
+window.addEventListener('orientationchange', () => {
+  applyCurrentBackground();
+  updateKeyboardViewportLayout();
+});
+window.visualViewport?.addEventListener('resize', () => updateKeyboardViewportLayout());
+window.visualViewport?.addEventListener('scroll', () => updateKeyboardViewportLayout());
+document.addEventListener('focusin', (event) => {
+  const field = event.target instanceof Element ? event.target.closest(KEYBOARD_AWARE_FIELD_SELECTOR) : null;
+  if (!(field instanceof HTMLElement)) return;
+  focusedKeyboardField = field;
+  document.body.classList.add('keyboard-field-focused');
+  updateKeyboardViewportLayout({ smooth: true });
+  window.setTimeout(() => keepFocusedKeyboardFieldVisible({ smooth: true }), 220);
+});
+document.addEventListener('focusout', (event) => {
+  const field = event.target instanceof Element ? event.target.closest(KEYBOARD_AWARE_FIELD_SELECTOR) : null;
+  if (!field) return;
+  window.setTimeout(() => {
+    if (document.activeElement instanceof Element && document.activeElement.closest(KEYBOARD_AWARE_FIELD_SELECTOR)) return;
+    focusedKeyboardField = null;
+    document.body.classList.remove('keyboard-field-focused', 'keyboard-open');
+    updateKeyboardViewportLayout();
+  }, 120);
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     suspendAudio();

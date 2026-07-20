@@ -82,7 +82,7 @@ export function japaneseHolidaysForYear(year) {
     if (nationalHolidays.has(key)) continue;
     const previous = new Date(timestamp - DAY_MS);
     const next = new Date(timestamp + DAY_MS);
-    if (nationalHolidays.has(keyOf(previous)) && nationalHolidays.has(keyOf(next)) && !holidays.has(key)) holidays.set(key, '休日');
+    if (nationalHolidays.has(keyOf(previous)) && nationalHolidays.has(keyOf(next)) && !holidays.has(key)) holidays.set(key, '国民の休日');
   }
 
   cache.set(normalizedYear, new Map(holidays));

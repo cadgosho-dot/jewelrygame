@@ -1,4 +1,4 @@
-export const VERSION = '0.10.213';
+export const VERSION = '0.10.229';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -19,7 +19,7 @@ export const METAL_WORKSHOP_ORDER = ['platinum', 'gold', 'silver'];
 
 export const METALS = {
   silver: {
-    id: 'silver', name: 'SV925シルバー', shortName: 'SV925', alloy: 'SV925', price: 600, unitWeight: 1, storageLimit: 1000,
+    id: 'silver', name: 'SV925', shortName: 'SV925', alloy: 'SV925', price: 600, unitWeight: 1, storageLimit: 1000,
     composition: '銀92.5％を基準とした合金です。残りの割金は銅を中心とすることが多いものの、製造元や用途によって異なります。',
     summary: '白く明るい色調と加工性を持ち、ジュエリー制作で広く使われる銀合金です。硫化による変色と、熱を加えた際の表面状態を管理する必要があります。',
     guide: {
@@ -41,7 +41,7 @@ export const METALS = {
     },
   },
   gold: {
-    id: 'gold', name: 'K18YGゴールド', shortName: 'K18YG', alloy: 'K18YG', price: 2400, unitWeight: 1, storageLimit: 100,
+    id: 'gold', name: 'K18YG', shortName: 'K18YG', alloy: 'K18YG', price: 2400, unitWeight: 1, storageLimit: 100,
     composition: '金75％を基準としたイエローゴールド合金です。残りの割金は銀・銅などを中心に、製造元や用途によって配合が異なります。',
     summary: '金の色味と耐久性のバランスがよく、リングやペンダントなどに広く使われる地金です。割金比率によって色、硬さ、ろう付け性が変わります。',
     guide: {
@@ -63,7 +63,7 @@ export const METALS = {
     },
   },
   platinum: {
-    id: 'platinum', name: 'Pt900プラチナ', shortName: 'Pt900', alloy: 'Pt900', price: 3600, unitWeight: 1, storageLimit: 100,
+    id: 'platinum', name: 'Pt900', shortName: 'Pt900', alloy: 'Pt900', price: 3600, unitWeight: 1, storageLimit: 100,
     composition: 'プラチナ90％を基準とした合金です。残りの割金はパラジウム、ルテニウム、コバルトなど、製造元や用途によって異なります。',
     summary: '高い比重と白い色調を持ち、ブライダルや高級ジュエリーに広く使われる地金です。割金によって硬さ、粘り、鋳造性、溶接性が大きく変わります。',
     guide: {
@@ -998,6 +998,26 @@ function localDateString(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+export function normalizeBirthday(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return '';
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+  if (Number.isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+export function isBirthdayOnDate(birthday, date) {
+  const normalized = normalizeBirthday(birthday);
+  if (!normalized || !(date instanceof Date) || Number.isNaN(date.getTime())) return false;
+  const month = Number(normalized.slice(5, 7));
+  const day = Number(normalized.slice(8, 10));
+  return date.getMonth() + 1 === month && date.getDate() === day;
+}
+
 export function initialState() {
   return {
     version: VERSION,
@@ -1088,6 +1108,7 @@ export function initialState() {
       sfxMuted: false,
       externalAudioPriority: false,
       phoneHomeImage: '',
+      birthday: '',
       vibration: true,
       showHints: true,
     },
@@ -1146,6 +1167,40 @@ function versionBefore(value, target) {
   return false;
 }
 
+function legacyInventoryRowQuantity(row) {
+  if (!row || typeof row !== 'object') return 0;
+  // 旧版ごとに数量名が異なっていたため、存在する数量項目を優先して読む。
+  // 0・falseは所持なしとして保持し、数量項目が本当に省略された旧配列だけ1個として扱う。
+  for (const key of ['qty', 'quantity', 'count', 'amount']) {
+    if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
+    const quantity = Number(row[key]);
+    return Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+  }
+  if (Object.prototype.hasOwnProperty.call(row, 'owned')) {
+    if (typeof row.owned === 'boolean') return row.owned ? 1 : 0;
+    const quantity = Number(row.owned);
+    return Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+  }
+  return 1;
+}
+
+export function savedStateTimestamp(saved) {
+  const timestamp = Date.parse(String(saved?.updatedAt || saved?.createdAt || ''));
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+export function chooseNewestSavedState(localSaved, cloudSaved) {
+  if (!localSaved && !cloudSaved) return { source: 'none', state: null };
+  if (localSaved && !cloudSaved) return { source: 'local', state: localSaved };
+  if (!localSaved && cloudSaved) return { source: 'cloud', state: cloudSaved };
+  const localTimestamp = savedStateTimestamp(localSaved);
+  const cloudTimestamp = savedStateTimestamp(cloudSaved);
+  // 同時刻または時刻情報がない場合は、直前の端末操作を保持しやすいローカル側を優先する。
+  return localTimestamp >= cloudTimestamp
+    ? { source: 'local', state: localSaved }
+    : { source: 'cloud', state: cloudSaved };
+}
+
 export function migrateState(saved) {
   const legacy = saved && typeof saved === 'object' ? structuredClone(saved) : {};
   const state = merge(initialState(), legacy);
@@ -1159,7 +1214,10 @@ export function migrateState(saved) {
       if (Number.isFinite(Number(legacy.inventory.metals[key]))) state.inventory.metals[key] = Math.max(0, Number(legacy.inventory.metals[key]));
     }
   }
-  const legacyGemRows = [
+  // 現在形式または旧オブジェクト形式のlooseが存在する場合は、それを正として扱う。
+  // staleなgeneral配列を同時に再移行すると、過去のルースが復活するため混在時は読まない。
+  const hasLooseObject = isRecord(legacy.inventory?.loose);
+  const legacyGemRows = hasLooseObject ? [] : [
     ...(Array.isArray(legacy.inventory?.general) ? legacy.inventory.general : []),
     ...(Array.isArray(legacy.inventory?.loose) ? legacy.inventory.loose : []),
   ];
@@ -1167,10 +1225,12 @@ export function migrateState(saved) {
   const migratedGeneralItems = Object.fromEntries(Object.keys(GENERAL_ITEMS).map((key) => [key, 0]));
   for (const row of legacyGemRows) {
     const key = row?.key || row?.gem || row?.id;
+    const quantity = legacyInventoryRowQuantity(row);
+    if (quantity < 1) continue;
     if (key && Object.prototype.hasOwnProperty.call(migratedLooseRows, key)) {
-      migratedLooseRows[key] += Math.max(0, Number(row.qty) || 1);
+      migratedLooseRows[key] += quantity;
     } else if (key && Object.prototype.hasOwnProperty.call(migratedGeneralItems, key)) {
-      migratedGeneralItems[key] += Math.max(0, Number(row.qty) || 1);
+      migratedGeneralItems[key] += quantity;
     }
   }
 
@@ -1656,6 +1716,7 @@ export function migrateState(saved) {
   if (Number(state.settings.ambientVolume) <= 0.35) state.settings.ambientVolume = 0.60;
   if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;
   state.settings.externalAudioPriority = Boolean(state.settings.externalAudioPriority);
+  state.settings.birthday = normalizeBirthday(state.settings.birthday);
   state.settings.phoneHomeImage = typeof state.settings.phoneHomeImage === 'string'
     && state.settings.phoneHomeImage.startsWith('data:image/')
     && state.settings.phoneHomeImage.length <= 900000

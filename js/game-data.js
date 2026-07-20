@@ -1,4 +1,4 @@
-export const VERSION = '0.10.229';
+export const VERSION = '0.10.231';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -1000,28 +1000,31 @@ function localDateString(date = new Date()) {
 
 export function normalizeBirthday(value) {
   const text = String(value || '').trim();
-  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  // v0.10.228〜v0.10.230の年付き保存値も、月日だけへ自動移行する。
+  const match = text.match(/^(?:(\d{4})-)?(\d{1,2})-(\d{1,2})$/);
   if (!match) return '';
-  const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  const date = new Date(year, month - 1, day, 12, 0, 0, 0);
-  if (Number.isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
-  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  // 2月29日を設定できるよう、うるう年の2000年で月日を検証する。
+  const date = new Date(2000, month - 1, day, 12, 0, 0, 0);
+  if (Number.isNaN(date.getTime()) || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
+  return `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 export function isBirthdayOnDate(birthday, date) {
   const normalized = normalizeBirthday(birthday);
   if (!normalized || !(date instanceof Date) || Number.isNaN(date.getTime())) return false;
-  const month = Number(normalized.slice(5, 7));
-  const day = Number(normalized.slice(8, 10));
+  const month = Number(normalized.slice(0, 2));
+  const day = Number(normalized.slice(3, 5));
   return date.getMonth() + 1 === month && date.getDate() === day;
 }
 
 export function initialState() {
   return {
     version: VERSION,
+    saveRevision: 0,
     started: true,
+    migrations: { looseInventoryCanonicalV231: true },
     playerName: '',
     game: {
       day: 1,
@@ -1167,21 +1170,22 @@ function versionBefore(value, target) {
   return false;
 }
 
+function strictLegacyQuantity(value) {
+  // true / falseは発見済み・表示済みなどのフラグであり、所持数として扱わない。
+  if (typeof value === 'boolean' || value === null || value === '') return 0;
+  const quantity = Number(value);
+  return Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+}
+
 function legacyInventoryRowQuantity(row) {
   if (!row || typeof row !== 'object') return 0;
-  // 旧版ごとに数量名が異なっていたため、存在する数量項目を優先して読む。
-  // 0・falseは所持なしとして保持し、数量項目が本当に省略された旧配列だけ1個として扱う。
-  for (const key of ['qty', 'quantity', 'count', 'amount']) {
+  // 数量が明示された旧データだけを移行する。
+  // 数量項目がない行は商品一覧・発見記録の可能性があるため、1個へ変換しない。
+  for (const key of ['qty', 'quantity', 'count', 'amount', 'owned']) {
     if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
-    const quantity = Number(row[key]);
-    return Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+    return strictLegacyQuantity(row[key]);
   }
-  if (Object.prototype.hasOwnProperty.call(row, 'owned')) {
-    if (typeof row.owned === 'boolean') return row.owned ? 1 : 0;
-    const quantity = Number(row.owned);
-    return Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
-  }
-  return 1;
+  return 0;
 }
 
 export function savedStateTimestamp(saved) {
@@ -1193,9 +1197,28 @@ export function chooseNewestSavedState(localSaved, cloudSaved) {
   if (!localSaved && !cloudSaved) return { source: 'none', state: null };
   if (localSaved && !cloudSaved) return { source: 'local', state: localSaved };
   if (!localSaved && cloudSaved) return { source: 'cloud', state: cloudSaved };
+  const localRevision = Math.max(0, Math.floor(Number(localSaved?.saveRevision) || 0));
+  const cloudRevision = Math.max(0, Math.floor(Number(cloudSaved?.saveRevision) || 0));
+  // v0.10.230以前の保存番号がないデータ同士では、同じゲーム日なら端末側を優先する。
+  // クラウド書き込み時刻や端末時計のずれで、古い在庫が戻ることを防ぐ。
+  if (localRevision === 0 && cloudRevision === 0) {
+    const localDay = Math.max(1, Math.floor(Number(localSaved?.game?.day) || 1));
+    const cloudDay = Math.max(1, Math.floor(Number(cloudSaved?.game?.day) || 1));
+    if (localDay !== cloudDay) {
+      return localDay > cloudDay
+        ? { source: 'local', state: localSaved }
+        : { source: 'cloud', state: cloudSaved };
+    }
+    return { source: 'local', state: localSaved };
+  }
+  // 端末時計のずれより確実な単調増加番号を優先し、同番号のときだけ更新日時を使う。
+  if (localRevision !== cloudRevision) {
+    return localRevision > cloudRevision
+      ? { source: 'local', state: localSaved }
+      : { source: 'cloud', state: cloudSaved };
+  }
   const localTimestamp = savedStateTimestamp(localSaved);
   const cloudTimestamp = savedStateTimestamp(cloudSaved);
-  // 同時刻または時刻情報がない場合は、直前の端末操作を保持しやすいローカル側を優先する。
   return localTimestamp >= cloudTimestamp
     ? { source: 'local', state: localSaved }
     : { source: 'cloud', state: cloudSaved };
@@ -1217,7 +1240,8 @@ export function migrateState(saved) {
   // 現在形式または旧オブジェクト形式のlooseが存在する場合は、それを正として扱う。
   // staleなgeneral配列を同時に再移行すると、過去のルースが復活するため混在時は読まない。
   const hasLooseObject = isRecord(legacy.inventory?.loose);
-  const legacyGemRows = hasLooseObject ? [] : [
+  const looseMigrationAlreadyCanonical = legacy.migrations?.looseInventoryCanonicalV231 === true;
+  const legacyGemRows = hasLooseObject || looseMigrationAlreadyCanonical ? [] : [
     ...(Array.isArray(legacy.inventory?.general) ? legacy.inventory.general : []),
     ...(Array.isArray(legacy.inventory?.loose) ? legacy.inventory.loose : []),
   ];
@@ -1235,6 +1259,9 @@ export function migrateState(saved) {
   }
 
   state.version = VERSION;
+  state.saveRevision = Math.max(0, Math.floor(Number(legacy.saveRevision) || 0));
+  state.migrations = isRecord(state.migrations) ? state.migrations : {};
+  state.migrations.looseInventoryCanonicalV231 = true;
   state.started = true;
   const legacyPlayerName = legacy.playerName || legacy.profile?.name || legacy.player?.name || '';
   state.playerName = String(state.playerName || legacyPlayerName).trim().slice(0, 20);
@@ -1287,10 +1314,10 @@ export function migrateState(saved) {
     state.inventory.loose[gemId][defaultShape] += migratedLooseRows[gemId];
   }
   // v0.5.9以前の「宝石」在庫は購入品と採掘品が混在していたため、利用不能にならないよう代表カットのルースへ引き継ぐ。
-  if (legacy.inventory?.gems && !legacy.inventory?.rough && !legacy.inventory?.loose) {
+  if (legacy.inventory?.gems && !legacy.inventory?.rough && !legacy.inventory?.loose && !looseMigrationAlreadyCanonical) {
     for (const gemId of Object.keys(GEMS)) {
       const defaultShape = defaultLooseShapeForGem(gemId);
-      state.inventory.loose[gemId][defaultShape] += Math.max(0, Number(legacy.inventory.gems[gemId]) || 0);
+      state.inventory.loose[gemId][defaultShape] += strictLegacyQuantity(legacy.inventory.gems[gemId]);
     }
   }
   if (Object.prototype.hasOwnProperty.call(state.inventory, 'gems')) delete state.inventory.gems;

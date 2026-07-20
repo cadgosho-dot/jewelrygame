@@ -205,10 +205,20 @@ export async function saveState(uid, state) {
     localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(clean));
     return;
   }
-  await setDoc(doc(db, 'users', uid), {
-    gameState: clean,
-    updatedAt: serverTimestamp(),
-  }, { merge: true });
+  const userRef = doc(db, 'users', uid);
+  try {
+    // gameStateフィールド全体を置き換え、旧版のinventory.general / inventory.gemsなどをクラウドに残さない。
+    await updateDoc(userRef, {
+      gameState: clean,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    if (error?.code !== 'not-found') throw error;
+    await setDoc(userRef, {
+      gameState: clean,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+  }
 }
 
 export async function deleteGameData(uid) {

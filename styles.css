@@ -6348,13 +6348,18 @@ body.keyboard-open .showcase-detail-price-field input{
   margin-bottom:.2rem;
   border-bottom:1px solid rgba(255,226,166,.24);
 }
-.birthday-setting label{
+.birthday-setting-row{
   display:grid;
   grid-template-columns:130px minmax(0,1fr);
   align-items:center;
   gap:.8rem;
 }
-.birthday-setting input[type="date"]{
+.birthday-select-row{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:.55rem;
+}
+.birthday-select-row select{
   width:100%;
   min-height:42px;
   box-sizing:border-box;
@@ -6384,12 +6389,12 @@ body[data-screen="phone"] .settings-form.compact .birthday-setting{
   border-radius:var(--phone-item-frame-radius)!important;
   background:var(--phone-item-frame-bg)!important;
 }
-body[data-screen="phone"] .settings-form.compact .birthday-setting label,
-body[data-screen="phone"] .settings-form.compact .birthday-setting label>span{
+body[data-screen="phone"] .settings-form.compact .birthday-setting-row,
+body[data-screen="phone"] .settings-form.compact .birthday-setting-row>span{
   color:var(--phone-item-text)!important;
   font-weight:800;
 }
-body[data-screen="phone"] .settings-form.compact .birthday-setting input[type="date"]{
+body[data-screen="phone"] .settings-form.compact .birthday-select-row select{
   background:#fff!important;
   color:#24180f!important;
   border-color:#d7bd85!important;
@@ -6400,7 +6405,7 @@ body[data-screen="phone"] .settings-form.compact .birthday-setting>small{
   opacity:1!important;
 }
 @media (max-width:620px){
-  .birthday-setting label{grid-template-columns:1fr}
+  .birthday-setting-row{grid-template-columns:1fr}
 }
 
 
@@ -6473,3 +6478,7 @@ body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="logi
     font-size:.68rem!important;
   }
 }
+
+
+/* v0.10.231 誕生日の月日プルダウンと旧ルース移行修正 */
+.birthday-setting-row>span{font-weight:800}

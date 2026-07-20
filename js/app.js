@@ -1855,8 +1855,14 @@ function loadGame() {
 }
 
 function saveLocalBackup() {
-  if (!state || !currentUser) return;
+  if (!state || !currentUser || sessionTakenOver) return;
+  state.saveRevision = Math.max(0, Math.floor(Number(state.saveRevision) || 0)) + 1;
   state.updatedAt = new Date().toISOString();
+  // 廃止済みの旧在庫を保存データへ戻さない。
+  if (state.inventory && Object.prototype.hasOwnProperty.call(state.inventory, 'general')) delete state.inventory.general;
+  if (state.inventory && Object.prototype.hasOwnProperty.call(state.inventory, 'gems')) delete state.inventory.gems;
+  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+  state.migrations.looseInventoryCanonicalV231 = true;
   localStorage.setItem(localSaveKey(), JSON.stringify(state));
   localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
   cloudSave = structuredClone(state);
@@ -2783,7 +2789,43 @@ function birthdayMatchesDate(date) {
 function birthdayJapaneseLabel(value = configuredBirthday()) {
   const birthday = normalizeBirthday(value);
   if (!birthday) return '';
-  return `${Number(birthday.slice(0, 4))}年${Number(birthday.slice(5, 7))}月${Number(birthday.slice(8, 10))}日`;
+  return `${Number(birthday.slice(0, 2))}月${Number(birthday.slice(3, 5))}日`;
+}
+
+function birthdayParts(value = configuredBirthday()) {
+  const birthday = normalizeBirthday(value);
+  return birthday
+    ? { month: Number(birthday.slice(0, 2)), day: Number(birthday.slice(3, 5)) }
+    : { month: 1, day: 1 };
+}
+
+function birthdayMaximumDay(month) {
+  const normalizedMonth = Math.max(1, Math.min(12, Math.floor(Number(month) || 1)));
+  return new Date(2000, normalizedMonth, 0, 12, 0, 0, 0).getDate();
+}
+
+function birthdayMonthOptions(selected) {
+  return Array.from({ length: 12 }, (_, index) => index + 1)
+    .map((month) => `<option value="${month}" ${month === selected ? 'selected' : ''}>${month}月</option>`)
+    .join('');
+}
+
+function birthdayDayOptions(month, selected) {
+  return Array.from({ length: birthdayMaximumDay(month) }, (_, index) => index + 1)
+    .map((day) => `<option value="${day}" ${day === selected ? 'selected' : ''}>${day}日</option>`)
+    .join('');
+}
+
+function syncBirthdayDaySelect() {
+  const monthSelect = root.querySelector('[data-birthday-month]');
+  const daySelect = root.querySelector('[data-birthday-day]');
+  if (!monthSelect || !daySelect) return;
+  const month = Number(monthSelect.value) || 1;
+  const previousDay = Number(daySelect.value) || 1;
+  const maximum = birthdayMaximumDay(month);
+  const selectedDay = Math.min(previousDay, maximum);
+  daySelect.innerHTML = birthdayDayOptions(month, selectedDay);
+  daySelect.value = String(selectedDay);
 }
 
 function calendarDateFromKey(key) {
@@ -6014,8 +6056,8 @@ function renderSettingsForm(titleMode, compact) {
       <button class="secondary-button full-button" data-action="update-store-name">店舗名を変更</button>
     </section>` : ''}
     <section class="birthday-setting">
-      <label><span>誕生日</span><input type="date" min="1900-01-01" max="${dateKey(new Date())}" value="${esc(configuredBirthday())}" data-birthday-input></label>
-      <small>${configuredBirthday() ? `${esc(birthdayJapaneseLabel())}を毎年カレンダーに表示します。` : '設定すると、毎年カレンダーに「誕生日」と表示されます。'}</small>
+      <div class="birthday-setting-row"><span>誕生日</span><div class="birthday-select-row">${(() => { const birthday = birthdayParts(); return `<select data-birthday-month aria-label="誕生月">${birthdayMonthOptions(birthday.month)}</select><select data-birthday-day aria-label="誕生日">${birthdayDayOptions(birthday.month, birthday.day)}</select>`; })()}</div></div>
+      <small>${configuredBirthday() ? `${esc(birthdayJapaneseLabel())}を毎年カレンダーに表示します。` : '月と日を設定すると、毎年カレンダーに「誕生日」と表示されます。'}</small>
       <button class="secondary-button full-button" data-action="update-birthday">誕生日を保存</button>
       ${configuredBirthday() ? '<button class="text-button full-button" data-action="clear-birthday">誕生日を削除</button>' : ''}
     </section>` : ''}
@@ -7723,16 +7765,14 @@ root.addEventListener('click', async (event) => {
       break;
     }
     case 'update-birthday': {
-      const input = document.querySelector('[data-birthday-input]');
-      const birthday = normalizeBirthday(input?.value);
+      const monthSelect = document.querySelector('[data-birthday-month]');
+      const daySelect = document.querySelector('[data-birthday-day]');
+      const month = String(Number(monthSelect?.value) || 0).padStart(2, '0');
+      const day = String(Number(daySelect?.value) || 0).padStart(2, '0');
+      const birthday = normalizeBirthday(`${month}-${day}`);
       if (!birthday) {
-        showToast('誕生日を正しく入力してください。', 'error');
-        input?.focus();
-        break;
-      }
-      if (birthday > dateKey(new Date())) {
-        showToast('未来の日付は誕生日に設定できません。', 'error');
-        input?.focus();
+        showToast('誕生日の月日を正しく選択してください。', 'error');
+        monthSelect?.focus();
         break;
       }
       state.settings.birthday = birthday;
@@ -8076,6 +8116,10 @@ root.addEventListener('click', async (event) => {
 
 root.addEventListener('change', (event) => {
   const target = event.target;
+  if (target.matches('[data-birthday-month]')) {
+    syncBirthdayDaySelect();
+    return;
+  }
   if (target.matches('[data-phone-home-image-input]')) {
     preparePhoneHomeImage(target.files?.[0]);
     target.value = '';
@@ -8123,9 +8167,6 @@ root.addEventListener('keydown', (event) => {
   } else if (target?.matches?.('[data-player-name-input]')) {
     event.preventDefault();
     root.querySelector('[data-action="update-player-name"]')?.click();
-  } else if (target?.matches?.('[data-birthday-input]')) {
-    event.preventDefault();
-    root.querySelector('[data-action="update-birthday"]')?.click();
   }
 });
 
@@ -8184,6 +8225,8 @@ function enterGameAfterLogin() {
   navigation = [];
   phoneTab = validPhoneTab(state.game?.phoneTab);
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
+  // 読み込み直後に正規化済みデータを保存し、クラウドの旧在庫項目を完全に除去する。
+  saveGame();
 }
 
 window.addEventListener('beforeunload', () => saveLocalBackup());

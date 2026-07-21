@@ -2933,6 +2933,37 @@ function birthdayDayOptions(month, selected) {
     .join('');
 }
 
+function birthdaySetupMonthOptions(selected = 0) {
+  return `<option value="" ${selected ? '' : 'selected'}>月を選択</option>${Array.from({ length: 12 }, (_, index) => index + 1)
+    .map((month) => `<option value="${month}" ${month === selected ? 'selected' : ''}>${month}月</option>`)
+    .join('')}`;
+}
+
+function birthdaySetupDayOptions(month, selected = 0) {
+  const normalizedMonth = Math.floor(Number(month) || 0);
+  if (normalizedMonth < 1 || normalizedMonth > 12) return '<option value="" selected>先に月を選択</option>';
+  return `<option value="" ${selected ? '' : 'selected'}>日を選択</option>${Array.from({ length: birthdayMaximumDay(normalizedMonth) }, (_, index) => index + 1)
+    .map((day) => `<option value="${day}" ${day === selected ? 'selected' : ''}>${day}日</option>`)
+    .join('')}`;
+}
+
+function syncSetupBirthdayDaySelect() {
+  const monthSelect = root.querySelector('[data-setup-birthday-month]');
+  const daySelect = root.querySelector('[data-setup-birthday-day]');
+  if (!monthSelect || !daySelect) return;
+  const month = Math.floor(Number(monthSelect.value) || 0);
+  const previousDay = Math.floor(Number(daySelect.value) || 0);
+  if (month < 1 || month > 12) {
+    daySelect.innerHTML = birthdaySetupDayOptions(0, 0);
+    daySelect.disabled = true;
+    return;
+  }
+  const selectedDay = previousDay > 0 ? Math.min(previousDay, birthdayMaximumDay(month)) : 0;
+  daySelect.innerHTML = birthdaySetupDayOptions(month, selectedDay);
+  daySelect.disabled = false;
+  daySelect.value = selectedDay ? String(selectedDay) : '';
+}
+
 function syncBirthdayDaySelect() {
   const monthSelect = root.querySelector('[data-birthday-month]');
   const daySelect = root.querySelector('[data-birthday-day]');
@@ -3501,16 +3532,26 @@ function renderTitle() {
 }
 
 function renderNameSetup() {
+  const savedBirthday = configuredBirthday();
+  const birthday = savedBirthday ? birthdayParts(savedBirthday) : { month: 0, day: 0 };
   return `
     <main class="title-screen">
       <section class="title-actions glass-panel name-setup-panel">
-        <h1>名前を入力してください</h1>
-        <p>ゲーム内で使用する名前です。設定から後で変更できます。</p>
+        <h1>名前と誕生日を入力してください</h1>
+        <p>ゲーム内で使用する名前と誕生日です。どちらも設定から後で変更できます。</p>
         <label class="name-entry-field">
           <span>名前</span>
-          <input id="player-name-setup" type="text" maxlength="20" autocomplete="nickname" enterkeyhint="done" placeholder="名前を入力">
+          <input id="player-name-setup" type="text" maxlength="20" autocomplete="nickname" placeholder="名前を入力">
         </label>
-        <button class="primary-button large-button full-button" data-action="confirm-player-name">この名前で始める</button>
+        <div class="name-setup-birthday">
+          <span>誕生日</span>
+          <div class="birthday-select-row">
+            <select data-setup-birthday-month aria-label="誕生月">${birthdaySetupMonthOptions(birthday.month)}</select>
+            <select data-setup-birthday-day aria-label="誕生日" ${birthday.month ? '' : 'disabled'}>${birthdaySetupDayOptions(birthday.month, birthday.day)}</select>
+          </div>
+          <small>年は保存せず、月と日を毎年のカレンダーに表示します。</small>
+        </div>
+        <button class="primary-button large-button full-button" data-action="confirm-player-name">この内容で始める</button>
       </section>
     </main>`;
 }
@@ -3866,7 +3907,7 @@ function renderMain() {
     <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
       ${header('', { back: false, main: false })}
       <section class="main-spacer" aria-hidden="true"></section>
-      ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動総受注</strong></div>' : ''}
+      ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
       ${locked && !autopilotEnabled ? `<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
       ${hungerFeedback && !autopilotEnabled ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
       ${visiting.length && !locked && !autopilotEnabled ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
@@ -8749,16 +8790,27 @@ root.addEventListener('click', async (event) => {
       break;
     case 'confirm-player-name': {
       const input = document.querySelector('#player-name-setup');
+      const monthSelect = document.querySelector('[data-setup-birthday-month]');
+      const daySelect = document.querySelector('[data-setup-birthday-day]');
       const name = String(input?.value || '').trim().slice(0, 20);
       if (!name) {
         showToast('名前を入力してください。', 'error');
         input?.focus();
         break;
       }
+      const month = String(Math.floor(Number(monthSelect?.value) || 0)).padStart(2, '0');
+      const day = String(Math.floor(Number(daySelect?.value) || 0)).padStart(2, '0');
+      const birthday = normalizeBirthday(`${month}-${day}`);
+      if (!birthday) {
+        showToast('誕生日の月と日を選択してください。', 'error');
+        (monthSelect?.value ? daySelect : monthSelect)?.focus();
+        break;
+      }
       state.playerName = name;
+      state.settings.birthday = birthday;
       saveGame();
       setScreen('main', {}, false);
-      showToast(`${name}さん、ようこそ。`);
+      showToast(`${name}さん、ようこそ。誕生日を${birthdayJapaneseLabel(birthday)}に設定しました。`);
       break;
     }
     case 'update-player-name': {
@@ -9167,6 +9219,10 @@ root.addEventListener('click', async (event) => {
 
 root.addEventListener('change', (event) => {
   const target = event.target;
+  if (target.matches('[data-setup-birthday-month]')) {
+    syncSetupBirthdayDaySelect();
+    return;
+  }
   if (target.matches('[data-birthday-month]')) {
     syncBirthdayDaySelect();
     return;

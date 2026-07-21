@@ -841,6 +841,39 @@ body:not([data-screen="main"]) .compact-list button{
   box-shadow:none;
 }
 .name-entry-field input::placeholder{color:rgba(255,239,208,.55)}
+.name-setup-birthday{
+  display:grid;
+  gap:.42rem;
+  margin:.15rem 0 1rem;
+  text-align:left;
+}
+.name-setup-birthday>span{
+  color:#ffe4a6;
+  font-weight:700;
+  text-shadow:0 2px 6px rgba(0,0,0,.95);
+}
+.name-setup-birthday .birthday-select-row select{
+  min-height:48px;
+  border:1px solid rgba(255,226,166,.72);
+  border-radius:10px;
+  background:rgba(0,0,0,.38)!important;
+  color:#fff5df!important;
+  color-scheme:dark;
+  outline:none;
+}
+.name-setup-birthday .birthday-select-row select:focus{
+  border-color:#fff0c2;
+  outline:1px solid rgba(255,240,194,.35);
+}
+.name-setup-birthday .birthday-select-row select:disabled{
+  color:rgba(255,239,208,.48)!important;
+  opacity:1;
+}
+.name-setup-birthday>small{
+  color:#eadab8;
+  line-height:1.45;
+  text-shadow:0 2px 8px rgba(0,0,0,.95);
+}
 .name-entry-field input:focus,
 .player-name-setting input:focus,
 .store-name-setting input:focus{border-color:#fff0c2;outline:1px solid rgba(255,240,194,.35)}
@@ -7046,3 +7079,42 @@ body[data-screen="phone"] .autopilot-setting-card{
   .autopilot-main-notice strong{font-size:1.35rem}
 }
 
+
+/* v0.10.253 スマートフォン設定の自動操縦・ホーム画面枠を暗色へ統一 */
+body[data-screen="phone"] .phone-content .autopilot-setting-card,
+body[data-screen="phone"] .phone-content .phone-home-background-setting{
+  box-sizing:border-box;
+  border:1px solid var(--phone-item-frame-border)!important;
+  border-radius:var(--phone-item-frame-radius)!important;
+  background:var(--phone-item-frame-bg)!important;
+  box-shadow:none!important;
+  color:var(--phone-item-text)!important;
+}
+body[data-screen="phone"] .phone-content .autopilot-setting-card :is(strong,span,label,p),
+body[data-screen="phone"] .phone-content .phone-home-background-setting :is(h1,h2,h3,h4,strong,span,label,p){
+  color:var(--phone-item-text)!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .autopilot-setting-card small,
+body[data-screen="phone"] .phone-content .phone-home-background-setting small{
+  color:var(--phone-item-muted)!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .phone-home-picker-button{
+  border-color:var(--phone-item-frame-border-accent)!important;
+  background:rgba(0,0,0,.16)!important;
+  color:var(--phone-item-text)!important;
+}
+body[data-screen="phone"] .phone-content .phone-home-picker-button:hover,
+body[data-screen="phone"] .phone-content .phone-home-picker-button:focus-visible{
+  border-color:rgba(244,207,121,.72)!important;
+  background:rgba(231,192,110,.12)!important;
+  color:var(--phone-item-text)!important;
+}
+body[data-screen="phone"] .phone-content .phone-home-picker-button strong{
+  color:var(--phone-item-text)!important;
+}
+body[data-screen="phone"] .phone-content .phone-home-picker-button small{
+  color:var(--phone-item-muted)!important;
+}

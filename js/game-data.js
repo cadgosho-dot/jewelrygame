@@ -1,12 +1,12 @@
-export const VERSION = '0.10.231';
+export const VERSION = '0.10.247';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
 export const STORE_MONTHLY_RENTS = Object.freeze({ 1: 80000, 2: 150000, 3: 300000 });
 export const WORKSHOP_MONTHLY_COST = 50000;
 export const WORKSHOP_EXPANSION_COSTS = Object.freeze({ 2: 50000, 3: 100000, 4: 200000, 5: 300000, 6: 500000, 7: 750000, 8: 1000000, 9: 1500000, 10: 2000000 });
-export const ARTISAN_LEVEL_XP = Object.freeze([0, 100, 400, 1000, 2500]);
-export const STORE_LEVEL_POINTS = Object.freeze([0, 10, 30, 60, 100, 160, 250, 380, 550, 800]);
+export const ARTISAN_LEVEL_XP = Object.freeze([0, 150, 600, 1500, 3750]);
+export const STORE_LEVEL_POINTS = Object.freeze([0, 15, 40, 80, 130, 200, 300, 430, 600, 850]);
 export const JEWELRY_BENCH_PRICE = 85000;
 export const POLISHING_MACHINE_PRICE = 400000;
 export const POLISHING_HOURS = 2;
@@ -198,6 +198,7 @@ export const EQUIPMENT_ITEMS = {
 export const WORKSHOP_TOOLS = {
   jewelryBench: {
     id: 'jewelryBench', name: '彫金机', type: '設備', symbol: '⚒', price: 85000, qualityPoints: 3,
+    image: './assets/images/tools/jewelry-bench.png',
     initiallyAvailable: true, breakable: false, repairable: false,
     description: '切削・成形・ろう付け・石留め・仕上げを一つの作業位置に集約する、ジュエリー制作の中心設備です。',
     detail: '彫金机は、スリ板を基準に手元を安定させ、工具・照明・集塵・作業くずの回収を一体化するための専用作業台です。',
@@ -421,6 +422,7 @@ export const WORKSHOP_TOOLS = {
   },
   loupe: {
     id: 'loupe', name: 'ルーペ', type: '工具', symbol: '◍', price: 7000, qualityPoints: 1,
+    image: './assets/images/tools/loupe.png',
     initiallyAvailable: true, breakable: true, repairable: false,
     description: '宝石、地金、石留め、刻印などを手軽に拡大し、状態を短時間で確認する携帯型工具です。',
     detail: '焦点距離を一定に保ち、照明と観察角度を変えながら内包物、傷、欠け、爪の状態を確認します。',
@@ -912,6 +914,8 @@ export const CUSTOMERS = {
   misaki: {
     id: 'misaki', name: '山本美咲',
     opening: '普段使いできるジュエリーを探しています。',
+    profile: '普段使いのジュエリーを探して来店した、穏やかな雰囲気のお客様です。',
+    traits: '落ち着いていて実用性を重視し、希望を丁寧に伝えるタイプです。',
     preferenceText: 'アメシストのラウンドカット・シルバー・シンプルなリング',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -922,6 +926,8 @@ export const CUSTOMERS = {
   kenta: {
     id: 'kenta', name: '佐藤健太',
     opening: 'プレゼント用のジュエリーを探しています。',
+    profile: '大切な人へのプレゼントを探して来店した、誠実な雰囲気のお客様です。',
+    traits: '慎重で相手思い。贈る相手に似合うかを考えながら選ぶタイプです。',
     preferenceText: 'アクアマリンのオーバルカット・ゴールド・シンプルなペンダント',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -966,7 +972,8 @@ export function looseSalePrice(gemId, shapeId) {
 }
 
 export function recommendedPrice({ item, gem, looseShape, metal, quality, useLoose = true }) {
-  const qualityMultiplier = quality === 'premium' ? 2.5 : quality === 'good' ? 2.2 : 2.0;
+  // 自店舗で販売する場合は、制作・接客・店舗運営分の利益を確保する。
+  const qualityMultiplier = quality === 'premium' ? 2.8 : quality === 'good' ? 2.5 : 2.2;
   return roundThousand(productionCost({ item, gem, looseShape, metal, useLoose }) * qualityMultiplier);
 }
 
@@ -1065,7 +1072,7 @@ export function initialState() {
       materialShop: true,
       looseShop: true,
       glab: true,
-      jewelryShop: false,
+      jewelryShop: true,
       settingShop: false,
       castingShop: false,
       displayShop: true,
@@ -1099,6 +1106,13 @@ export function initialState() {
     },
     orders: [],
     employee: { hired: false, name: '田中 葵', role: 'sales', working: true },
+    events: {
+      robbery: {
+        lastTriggeredDay: 0,
+        pendingReport: null,
+        history: [],
+      },
+    },
     notifications: [],
     finance: [],
     daily: { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 },
@@ -1391,8 +1405,11 @@ export function migrateState(saved) {
   state.tools.polishingMachineDay = state.tools.items.polishingMachine?.acquiredDay || null;
   state.tools.otherEquipment = [];
 
+  const savedArtisanLevel = Math.max(1, Math.min(ARTISAN_LEVEL_XP.length, Math.floor(Number(state.artisan?.level) || 1)));
   state.artisan = { ...initialState().artisan, ...(state.artisan || {}) };
   state.artisan.xp = Math.max(0, Math.floor(Number(state.artisan.xp) || 0));
+  // 必要経験値の引き上げ後も、既に到達済みの職人レベルは下げない。
+  state.artisan.xp = Math.max(state.artisan.xp, ARTISAN_LEVEL_XP[savedArtisanLevel - 1] || 0);
   state.artisan.level = ARTISAN_LEVEL_XP.reduce((level, threshold, index) => state.artisan.xp >= threshold ? index + 1 : level, 1);
 
   const legacyWorkshopPoints = Object.entries(state.tools.items).reduce((total, [toolId, record]) => {
@@ -1411,10 +1428,11 @@ export function migrateState(saved) {
   state.business.lastProcessedMonth = String(state.business.lastProcessedMonth || '');
 
   state.facilities = { ...initialState().facilities, ...(state.facilities || {}) };
-  // 初期から利用できるのは地金屋、ルース屋、g-Lab.、ディスプレイ屋。
+  // 初期から利用できるのは地金屋、ルース屋、ジュエリーショップ、g-Lab.、ディスプレイ屋。
   state.facilities.materialShop = true;
   state.facilities.looseShop = true;
   state.facilities.glab = true;
+  state.facilities.jewelryShop = true;
   state.facilities.displayShop = true;
   // 既存セーブで利用済みの施設は閉じない。
   if (state.store?.rented) state.facilities.realEstate = true;
@@ -1502,12 +1520,16 @@ export function migrateState(saved) {
         const looseShape = looseShapeIdsForGem(entry.gem).includes(entry.looseShape) ? entry.looseShape : defaultLooseShapeForGem(entry.gem);
         const cost = Math.max(0, Math.round(Number(entry.cost) || productionCost({ ...entry, looseShape })));
         const useLoose = entry.useLoose !== false;
+        const jewelryShopPurchase = entry.acquisition === 'jewelryShop';
+        const shopPurchasePrice = jewelryShopPurchase ? Math.max(1000, Math.round(Number(entry.shopPurchasePrice) || cost)) : null;
+        const shopRecommendedPrice = Math.max(shopPurchasePrice ? shopPurchasePrice + 1000 : 1000, roundThousand(Number(entry.recommendedPrice) || (shopPurchasePrice || cost) * 1.08));
         return {
           ...entry,
           useLoose,
           looseShape,
           cost,
-          recommendedPrice: recommendedPrice({ ...entry, useLoose, looseShape }),
+          ...(jewelryShopPurchase ? { acquisition: 'jewelryShop', shopPurchasePrice } : {}),
+          recommendedPrice: jewelryShopPurchase ? shopRecommendedPrice : recommendedPrice({ ...entry, useLoose, looseShape }),
           name: itemName({ ...entry, useLoose, looseShape }),
         };
       })
@@ -1539,10 +1561,15 @@ export function migrateState(saved) {
     if (!slot || !jewelryIds.has(slot.jewelryId)) return null;
     const jewelry = jewelryById.get(slot.jewelryId);
     const savedSellingPrice = Number(slot.sellingPrice);
-    if (Number.isFinite(savedSellingPrice) && savedSellingPrice >= 1000) {
-      return { jewelryId: slot.jewelryId, sellingPrice: Math.round(savedSellingPrice) };
-    }
     const oldRecommendedPrice = legacyRecommendedPrices.get(slot.jewelryId) || jewelry?.recommendedPrice || 1000;
+    if (Number.isFinite(savedSellingPrice) && savedSellingPrice >= 1000) {
+      // 旧おすすめ価格のまま陳列していた商品だけは、新しい自店舗向け価格へ更新する。
+      // プレイヤーが手入力した価格はそのまま維持する。
+      const migratedDefaultPrice = jewelry?.acquisition !== 'jewelryShop'
+        && Math.round(savedSellingPrice) === Math.round(oldRecommendedPrice)
+        && Number(jewelry?.recommendedPrice) >= 1000;
+      return { jewelryId: slot.jewelryId, sellingPrice: migratedDefaultPrice ? Math.round(jewelry.recommendedPrice) : Math.round(savedSellingPrice) };
+    }
     const oldMode = PRICE_MODES[slot.priceMode] || PRICE_MODES.standard;
     return { jewelryId: slot.jewelryId, sellingPrice: roundThousand(oldRecommendedPrice * oldMode.multiplier) };
   };
@@ -1733,6 +1760,35 @@ export function migrateState(saved) {
     isRecord(state.customers?.[customerId]) ? merge(initialCustomers[customerId], state.customers[customerId]) : structuredClone(initialCustomers[customerId]),
   ]));
 
+  const savedRobberyEvents = isRecord(state.events?.robbery) ? state.events.robbery : {};
+  const normalizeRobberyReport = (report) => {
+    if (!isRecord(report) || !report.id) return null;
+    const itemNames = Array.isArray(report.itemNames)
+      ? report.itemNames.map((name) => String(name || '').trim()).filter(Boolean).slice(0, 30)
+      : [];
+    return {
+      id: String(report.id),
+      incidentDay: Math.max(1, Math.floor(Number(report.incidentDay) || Math.max(1, state.game.day - 1))),
+      reportDay: Math.max(1, Math.floor(Number(report.reportDay) || state.game.day)),
+      branchId: String(report.branchId || ''),
+      branchNumber: Math.max(1, Math.floor(Number(report.branchNumber) || 1)),
+      branchLabel: String(report.branchLabel || `店舗${Math.max(1, Math.floor(Number(report.branchNumber) || 1))}`).slice(0, 40),
+      itemCount: Math.max(0, Math.floor(Number(report.itemCount) || itemNames.length)),
+      lossAmount: Math.max(0, Math.round(Number(report.lossAmount) || 0)),
+      itemNames,
+      stage: report.stage === 'showing' ? 'showing' : 'waitingMorning',
+    };
+  };
+  const normalizedRobberyHistory = Array.isArray(savedRobberyEvents.history)
+    ? savedRobberyEvents.history.map(normalizeRobberyReport).filter(Boolean).slice(-20)
+    : [];
+  state.events = isRecord(state.events) ? state.events : {};
+  state.events.robbery = {
+    lastTriggeredDay: Math.max(0, Math.floor(Number(savedRobberyEvents.lastTriggeredDay) || 0)),
+    pendingReport: normalizeRobberyReport(savedRobberyEvents.pendingReport),
+    history: normalizedRobberyHistory,
+  };
+
   state.settings = { ...initialState().settings, ...(state.settings || {}) };
   delete state.settings.textSize;
   // v0.10.12ではBGMだけを控えめにし、環境音と効果音は従来の設定を維持する。
@@ -1743,6 +1799,7 @@ export function migrateState(saved) {
   if (Number(state.settings.ambientVolume) <= 0.35) state.settings.ambientVolume = 0.60;
   if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;
   state.settings.externalAudioPriority = Boolean(state.settings.externalAudioPriority);
+  state.settings.vibration = state.settings.vibration !== false;
   state.settings.birthday = normalizeBirthday(state.settings.birthday);
   state.settings.phoneHomeImage = typeof state.settings.phoneHomeImage === 'string'
     && state.settings.phoneHomeImage.startsWith('data:image/')

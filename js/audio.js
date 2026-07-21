@@ -6,6 +6,8 @@ let currentKey = null;
 let suspended = document.hidden;
 let initialized = false;
 let externalPriorityActive = false;
+let policeSiren = null;
+let policeSirenRequested = false;
 let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false, externalAudioPriority: false });
 
 let mainEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear' };
@@ -100,10 +102,16 @@ export function applyAudioSettings() {
   if (externalPriorityActive) {
     tracks.forEach((audio) => audio.pause());
     ambients.forEach((audio) => audio.pause());
+    policeSiren?.pause();
     return;
   }
   tracks.forEach((audio, key) => { audio.volume = targetVolume('bgm', key, settings); });
   ambients.forEach((audio, key) => { audio.volume = targetVolume('ambient', key, settings); });
+  if (policeSiren) {
+    policeSiren.volume = Math.max(0, Math.min(1, Number(settings.sfxVolume) * .92));
+    if (settings.sfxMuted || suspended || !policeSirenRequested) policeSiren.pause();
+    else policeSiren.play().catch(() => {});
+  }
   if (wasExternalPriority && initialized && !suspended && currentKey) startCurrentAudio().catch(() => {});
 }
 
@@ -212,6 +220,22 @@ export function playSfx(name, options = {}) {
   audio.play().catch(() => {});
 }
 
+export async function startPoliceSiren() {
+  policeSirenRequested = true;
+  const settings = settingsProvider();
+  if (!policeSiren) policeSiren = createAudio(`${AUDIO_DIR}/sfx-police-siren.ogg`, true);
+  policeSiren.volume = Math.max(0, Math.min(1, Number(settings.sfxVolume) * .92));
+  if (suspended || settings.externalAudioPriority || settings.sfxMuted) return;
+  try { await policeSiren.play(); } catch (_) {}
+}
+
+export function stopPoliceSiren() {
+  policeSirenRequested = false;
+  if (!policeSiren) return;
+  policeSiren.pause();
+  policeSiren.currentTime = 0;
+}
+
 export function vibrate(pattern = 35) {
   const settings = settingsProvider();
   if (document.hidden || !settings.vibration || !navigator.vibrate) return;
@@ -222,17 +246,20 @@ export function suspendAudio() {
   if (suspended) return;
   suspended = true;
   if (currentKey) stopLoopPair(currentKey, false);
+  policeSiren?.pause();
 }
 
 export async function resumeAudio() {
   if (!suspended) return;
   suspended = false;
   await startCurrentAudio();
+  if (policeSirenRequested) await startPoliceSiren();
 }
 
 export function stopAllAudio() {
   tracks.forEach((audio) => { audio.pause(); audio.currentTime = 0; });
   ambients.forEach((audio) => { audio.pause(); audio.currentTime = 0; });
+  stopPoliceSiren();
   mainEnvironment.active = false;
   currentKey = null;
 }

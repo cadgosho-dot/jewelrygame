@@ -6482,3 +6482,477 @@ body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="logi
 
 /* v0.10.231 誕生日の月日プルダウンと旧ルース移行修正 */
 .birthday-setting-row>span{font-weight:800}
+
+
+/* v0.10.233 ジュエリーショップ */
+.jewelry-shop-menu-panel,
+.jewelry-shop-panel{
+  display:grid;
+  gap:.8rem;
+  align-content:start;
+}
+.jewelry-shop-intro{
+  margin:0;
+  line-height:1.65;
+  text-align:center;
+}
+.jewelry-shop-back{
+  justify-self:start;
+  width:auto!important;
+}
+.jewelry-shop-status-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:.58rem .72rem;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;
+  background:rgba(0,0,0,.18);
+}
+.jewelry-shop-product-list{
+  display:grid;
+  gap:.7rem;
+}
+.jewelry-shop-product-card{
+  display:grid;
+  grid-template-columns:76px minmax(0,1fr) auto;
+  align-items:center;
+  gap:.75rem;
+  padding:.75rem;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:12px;
+  background:rgba(0,0,0,.22);
+}
+.jewelry-shop-item-visual{
+  width:72px;
+  height:72px;
+}
+.jewelry-shop-product-copy{
+  display:grid;
+  gap:.2rem;
+  min-width:0;
+}
+.jewelry-shop-product-copy h3{
+  margin:0;
+  color:#fff0bd;
+  font-size:.96rem;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.jewelry-shop-product-copy>small{
+  color:var(--muted);
+}
+.jewelry-shop-price-row,
+.jewelry-shop-profit-row{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:.25rem .55rem;
+}
+.jewelry-shop-price-row span,
+.jewelry-shop-profit-row span{
+  color:var(--muted);
+  font-size:.76rem;
+}
+.jewelry-shop-price-row strong{
+  color:#fff;
+  font-size:1.04rem;
+}
+.jewelry-shop-profit-row b{
+  color:#bde8c7;
+}
+.jewelry-shop-profit-row.loss b{
+  color:#ffb4b4;
+}
+.jewelry-shop-profit-row small{
+  color:var(--muted);
+}
+.jewelry-shop-trade-button{
+  min-width:126px;
+  white-space:nowrap;
+}
+@media (max-width:620px){
+  .jewelry-shop-product-card{
+    grid-template-columns:64px minmax(0,1fr);
+    gap:.6rem;
+    padding:.65rem;
+  }
+  .jewelry-shop-item-visual{
+    width:60px;
+    height:60px;
+  }
+  .jewelry-shop-trade-button{
+    grid-column:1/-1;
+    width:100%;
+  }
+}
+
+
+/* v0.10.235 ジュエリーショップ売買キャラクター */
+body[data-screen="jewelryShop"] #background-layer{background-size:cover}
+.jewelry-shop-panel{position:relative;isolation:isolate}
+.jewelry-shop-panel-with-hero{min-height:min(78dvh,820px)}
+.jewelry-shop-panel-content{position:relative;z-index:1;display:grid;gap:.8rem}
+.jewelry-shop-hero-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:clamp(16px,2vw,28px);overflow:hidden;pointer-events:none;z-index:0}
+.jewelry-shop-hero-layer::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,255,255,.05),rgba(0,0,0,.08) 58%,rgba(0,0,0,.18) 100%)}
+.jewelry-shop-hero-layer img{position:relative;display:block;width:min(100%,480px);max-height:min(76dvh,620px);object-fit:contain;filter:drop-shadow(0 18px 28px rgba(0,0,0,.56));opacity:.96}
+.jewelry-shop-hero-buy img{transform:translateY(1rem)}
+.jewelry-shop-hero-sell img{transform:translateY(.7rem)}
+@media (max-width:620px){
+  .jewelry-shop-panel-with-hero{min-height:min(74dvh,760px)}
+  .jewelry-shop-hero-layer img{width:min(100%,380px);max-height:min(62dvh,480px);opacity:.94}
+}
+
+
+/* v0.10.236 縦画面の下部メニューを二段表示 */
+@media (orientation:portrait){
+  body[data-screen="main"] .main-menu{
+    left:max(6px,env(safe-area-inset-left))!important;
+    right:max(6px,env(safe-area-inset-right))!important;
+    width:auto!important;
+    max-width:none!important;
+    transform:none!important;
+    display:grid!important;
+    grid-template-columns:repeat(8,minmax(0,1fr))!important;
+    grid-auto-flow:row!important;
+    grid-auto-rows:minmax(44px,auto);
+    gap:4px!important;
+    padding:4px!important;
+    overflow:visible!important;
+  }
+  body[data-screen="main"] .main-menu button{
+    grid-column:span 2;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    min-height:44px!important;
+    flex:none!important;
+  }
+  body[data-screen="main"] .main-menu button:nth-child(5){
+    grid-column:2 / span 2;
+    grid-row:2;
+  }
+  body[data-screen="main"] .main-menu button:nth-child(6){
+    grid-column:4 / span 2;
+    grid-row:2;
+  }
+  body[data-screen="main"] .main-menu button:nth-child(7){
+    grid-column:6 / span 2;
+    grid-row:2;
+  }
+  body[data-screen="main"] .active-order-shortcut{
+    bottom:calc(max(10px,var(--safe-bottom)) + 112px);
+  }
+}
+
+
+/* v0.10.237 メッセージ透過・スマートフォン表示・未払い案内 */
+#toast{
+  background:rgba(7,5,4,.72);
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+}
+#toast[data-type="meal-complete"]{
+  background:rgba(8,6,5,.62);
+}
+body[data-screen="phone"] .phone-content .phone-home-picker-button strong,
+body[data-screen="phone"] .phone-content .phone-home-picker-button small{
+  color:#000!important;
+  text-shadow:none!important;
+  opacity:1!important;
+}
+body[data-screen="phone"] .vibration-setting strong{
+  color:var(--phone-item-text)!important;
+}
+body[data-screen="phone"] .vibration-setting small{
+  color:var(--phone-item-muted)!important;
+}
+.main-unpaid-shortcut{
+  position:fixed;
+  left:clamp(14px,4vw,52px);
+  top:50%;
+  z-index:6;
+  transform:translateY(-50%);
+  min-height:42px;
+  padding:.62rem .82rem;
+  border:1px solid rgba(220,89,78,.58);
+  border-radius:10px;
+  background:rgba(40,10,8,.72);
+  color:#ffd0ca;
+  font-size:.86rem;
+  font-weight:900;
+  text-align:left;
+  box-shadow:0 8px 22px rgba(0,0,0,.30);
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+}
+.main-unpaid-shortcut:hover,
+.main-unpaid-shortcut:focus-visible{
+  border-color:#ff8f84;
+  background:rgba(56,12,9,.80);
+  outline:none;
+}
+@media (orientation:portrait){
+  .main-unpaid-shortcut{
+    left:max(10px,env(safe-area-inset-left));
+    top:45%;
+    max-width:min(52vw,220px);
+    font-size:.78rem;
+  }
+}
+
+
+/* v0.10.238 店頭設備・価格入力・商品画像・価格バランスの調整 */
+/* ケース残数が0個の時だけ赤文字 */
+body[data-screen="store"] .store-case-remaining.is-empty{
+  color:#ff6f6f!important;
+  font-weight:900;
+}
+
+/* ショーケースの価格入力をキーボードの上へ維持 */
+body.keyboard-open[data-screen="showcaseDetail"] .showcase-detail-panel{
+  padding-bottom:clamp(120px,24vh,220px)!important;
+}
+body.keyboard-open[data-screen="showcaseDetail"] .showcase-detail-price-field{
+  position:sticky!important;
+  bottom:max(10px,env(safe-area-inset-bottom))!important;
+  z-index:40!important;
+  background:rgba(25,17,10,.94)!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.48)!important;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+body.keyboard-open[data-screen="showcaseDetail"] .showcase-detail-price-field input{
+  font-size:1.1rem!important;
+}
+
+/* ペンダントのルースを少し下へ */
+.jewelry-preview.item-pendant .center-gem{top:66%}
+.small-jewelry.item-pendant .center-gem{top:40px}
+
+/* ルース売却の空表示を中央へ固定 */
+body[data-screen="looseShop"] .sell-empty-state{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+}
+body[data-screen="looseShop"] .sell-empty-state :is(strong,p){
+  text-align:center!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+
+/* ディスプレイ屋のディスプレイ用品・ケース画像を小さくして全体表示 */
+body[data-screen="displayShop"] .display-product-displaySupplies img,
+body[data-screen="displayShop"] .display-product-case img{
+  width:76%!important;
+  height:76%!important;
+  max-width:76%!important;
+  max-height:76%!important;
+  object-fit:contain!important;
+}
+@media (max-width:620px){
+  body[data-screen="displayShop"] .display-product-displaySupplies img,
+  body[data-screen="displayShop"] .display-product-case img{
+    width:70%!important;
+    height:70%!important;
+    max-width:70%!important;
+    max-height:70%!important;
+  }
+}
+
+
+/* v0.10.240 カレンダー月移動・支払い予定・祝日表示 */
+.calendar-month-navigation{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) 44px;
+  align-items:center;
+  gap:.55rem;
+}
+.calendar-month-navigation>div{
+  display:grid;
+  justify-items:center;
+  gap:.18rem;
+}
+.calendar-month-navigation h2{
+  margin:0;
+  text-align:center;
+}
+.calendar-month-arrow{
+  min-width:44px;
+  min-height:42px;
+  padding:.25rem;
+  border-radius:10px;
+  font-size:1.65rem;
+  line-height:1;
+  font-weight:800;
+}
+.calendar-current-month-button{
+  width:auto!important;
+  min-height:28px!important;
+  padding:.24rem .7rem!important;
+  font-size:.68rem!important;
+}
+.calendar-system-events{
+  display:grid;
+  gap:.28rem;
+  margin:0 0 .8rem;
+  padding:.68rem .75rem;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:10px;
+  background:rgba(0,0,0,.22);
+  text-align:left;
+}
+.calendar-system-events>strong{color:#ffe3a7}
+.calendar-system-events>p{margin:0;line-height:1.45}
+body[data-screen="phone"] .calendar-day.saturday:not(.holiday)>strong{color:#9dc8ff!important}
+body[data-screen="phone"] .calendar-day.sunday>strong,
+body[data-screen="phone"] .calendar-day.holiday>strong{color:#ff9a91!important}
+@media (max-width:430px){
+  .calendar-month-navigation{grid-template-columns:38px minmax(0,1fr) 38px;gap:.35rem}
+  .calendar-month-arrow{min-width:38px;min-height:38px;font-size:1.45rem}
+}
+
+
+/* v0.10.242 完成品一覧から工房へ戻る */
+.inventory-footer-actions{margin-top:1rem}
+
+
+/* v0.10.243 来店表示・接客位置・注文書導線 */
+body[data-screen="main"] .floating-notice{
+  left:50%!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  width:min(92vw,440px)!important;
+  justify-content:center!important;
+  text-align:center!important;
+  border-radius:14px!important;
+  flex-wrap:wrap!important;
+}
+body[data-screen="store"] .store-service-section-top{
+  order:-10;
+  margin:0 0 .9rem!important;
+}
+body[data-screen="store"] .store-service-section-top .section-heading{
+  margin-top:0!important;
+}
+.order-material-navigation{
+  display:grid;
+  margin-top:.1rem;
+}
+
+/* v0.10.247 強盗発生イベント */
+body[data-screen="robberyReport"]{
+  overflow:auto;
+  background:#080202;
+}
+body[data-screen="robberyReport"] #background-layer{
+  background-size:cover;
+  filter:saturate(.48) brightness(.38);
+}
+body[data-screen="robberyReport"] #background-shade{
+  background:radial-gradient(circle at center,rgba(60,0,0,.08),rgba(0,0,0,.72));
+}
+.robbery-report-screen{
+  position:relative;
+  z-index:2;
+  min-height:100dvh;
+  display:grid;
+  place-items:center;
+  padding:clamp(14px,2.5vw,32px);
+  overflow:auto;
+}
+.robbery-report-screen::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle at 50% 48%,transparent 28%,rgba(125,0,0,.24) 72%,rgba(0,0,0,.55));
+  animation:robbery-danger-pulse 1.6s ease-in-out infinite alternate;
+}
+.robbery-report-card{
+  position:relative;
+  z-index:1;
+  width:min(1040px,calc(100vw - 24px));
+  display:grid;
+  justify-items:center;
+  gap:clamp(10px,1.6vw,18px);
+  padding:clamp(12px,2vw,22px);
+  border:1px solid rgba(255,90,90,.5);
+  border-radius:16px;
+  background:rgba(9,4,4,.62);
+  box-shadow:0 24px 64px rgba(0,0,0,.76),0 0 36px rgba(160,0,0,.2);
+  backdrop-filter:blur(3px);
+}
+.robbery-warning-label{
+  padding:.35rem 1.1rem;
+  border:1px solid rgba(255,120,120,.65);
+  border-radius:999px;
+  background:rgba(120,0,0,.72);
+  color:#fff;
+  font-size:clamp(.86rem,2vw,1.08rem);
+  font-weight:900;
+  letter-spacing:.14em;
+  text-shadow:0 2px 8px #000;
+}
+.robbery-newspaper-frame{
+  width:min(900px,100%);
+  margin:0;
+  display:grid;
+  place-items:center;
+}
+.robbery-newspaper-frame img{
+  display:block;
+  max-width:100%;
+  max-height:min(59dvh,650px);
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  border:2px solid rgba(255,255,255,.65);
+  box-shadow:0 18px 38px rgba(0,0,0,.72);
+}
+.robbery-report-message{
+  width:min(760px,100%);
+  display:grid;
+  gap:.35rem;
+  padding:.75rem 1rem;
+  border:1px solid rgba(255,110,110,.38);
+  border-radius:12px;
+  background:rgba(0,0,0,.58);
+  text-align:center;
+}
+.robbery-report-message h1{
+  margin:0;
+  color:#fff;
+  font-size:clamp(1.05rem,2.7vw,1.45rem);
+}
+.robbery-report-message p{
+  margin:0;
+  color:#e8dddd;
+  line-height:1.55;
+}
+.robbery-report-message>strong{
+  color:#ff7b7b;
+  font-size:clamp(1.15rem,3.1vw,1.65rem);
+  text-shadow:0 2px 10px rgba(0,0,0,.9);
+}
+.robbery-return-button{
+  width:min(420px,100%);
+  min-height:48px;
+}
+@keyframes robbery-danger-pulse{
+  from{opacity:.52}
+  to{opacity:1}
+}
+@media (orientation:portrait),(max-width:720px){
+  .robbery-report-screen{align-items:start;padding-top:max(12px,env(safe-area-inset-top))}
+  .robbery-report-card{gap:10px;padding:10px}
+  .robbery-newspaper-frame img{max-height:52dvh}
+  .robbery-report-message{padding:.65rem .75rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .robbery-report-screen::before{animation:none}
+}

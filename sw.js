@@ -1,20 +1,20 @@
-const VERSION = '0.10.231';
+const VERSION = '0.10.247';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
   './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './assets/images/main.webp', './assets/images/main-portrait.webp',
-  './assets/images/tools/placeholder.svg', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
+  './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
   './assets/audio/bgm-main.ogg', './assets/audio/amb-main-clear.ogg', './assets/audio/amb-main-cloudy.ogg',
   './assets/audio/amb-main-rain.ogg', './assets/audio/amb-main-snow.ogg',
-  './assets/audio/sfx-jewelry-complete.ogg',
+  './assets/audio/sfx-jewelry-complete.ogg', './assets/audio/sfx-police-siren.ogg',
 ];
 
 const OPTIONAL_MEDIA = [
   './assets/images/mining.webp', './assets/images/workshop.webp', './assets/images/glab.webp',
-  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop.webp', './assets/images/display-shop.webp', './assets/images/display-shop-portrait.webp', './assets/images/real-estate.webp', './assets/images/real-estate-portrait.webp', './assets/images/store.webp',
+  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop.webp', './assets/images/jewelry-shop.webp', './assets/images/jewelry-shop-buy-character.png', './assets/images/jewelry-shop-sell-character.png', './assets/images/display-shop.webp', './assets/images/display-shop-portrait.webp', './assets/images/real-estate.webp', './assets/images/real-estate-portrait.webp', './assets/images/store.webp',
   './assets/images/phone.webp', './assets/images/sleep.webp', './assets/images/meal-menu.webp',
   './assets/images/meal-convenience.webp', './assets/images/meal-convenience-portrait.webp',
   './assets/images/meal-chinese.webp', './assets/images/meal-chinese-portrait.webp',

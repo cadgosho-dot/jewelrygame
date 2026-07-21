@@ -6956,3 +6956,93 @@ body[data-screen="robberyReport"] #background-shade{
 @media (prefers-reduced-motion:reduce){
   .robbery-report-screen::before{animation:none}
 }
+
+
+/* v0.10.249 自動操縦モード */
+.autopilot-setting-card{
+  display:grid;
+  gap:.45rem;
+  padding:.75rem .8rem;
+  border:1px solid rgba(187,157,104,.55);
+  border-radius:12px;
+  background:rgba(255,250,240,.72);
+}
+.autopilot-setting-card .autopilot-setting{
+  margin:0;
+}
+.autopilot-setting-card .autopilot-setting>span{
+  display:grid;
+  gap:.2rem;
+  min-width:0;
+}
+.autopilot-setting-card .autopilot-setting small,
+.autopilot-setting-card>small{
+  color:var(--muted);
+  font-size:.72rem;
+  line-height:1.5;
+}
+body[data-screen="phone"] .autopilot-setting-card{
+  background:rgba(255,255,255,.84);
+}
+
+/* v0.10.250 自動操縦中のメイン画面操作制限 */
+.autopilot-main-notice{
+  position:fixed;
+  left:50%;
+  top:50%;
+  z-index:14;
+  transform:translate(-50%,-50%);
+  display:grid;
+  place-items:center;
+  min-width:min(420px,calc(100vw - 40px));
+  min-height:104px;
+  padding:1rem 1.5rem;
+  border:1px solid rgba(255,221,145,.78);
+  border-radius:16px;
+  background:rgba(8,6,4,.76);
+  box-shadow:0 18px 58px rgba(0,0,0,.58);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  text-align:center;
+  pointer-events:none;
+}
+.autopilot-main-notice strong{
+  color:#ffe6a6;
+  font-size:clamp(1.45rem,4vw,2.35rem);
+  font-weight:900;
+  letter-spacing:.12em;
+  line-height:1.2;
+  text-shadow:0 3px 12px rgba(0,0,0,.95);
+}
+.main-menu.autopilot-menu-locked button:disabled{
+  opacity:.24!important;
+  filter:grayscale(1) brightness(.72);
+  cursor:not-allowed;
+  transform:none!important;
+}
+.main-menu.autopilot-menu-locked .autopilot-phone-button{
+  opacity:1!important;
+  filter:none!important;
+  border-color:rgba(255,225,151,.8)!important;
+  background:linear-gradient(160deg,rgba(93,66,31,.92),rgba(35,24,15,.9))!important;
+  box-shadow:0 0 0 1px rgba(255,230,169,.22),0 7px 22px rgba(0,0,0,.36)!important;
+}
+.main-menu.autopilot-menu-locked .autopilot-phone-button>strong{
+  color:#fff0bf;
+}
+@media (orientation:portrait), (max-width:820px){
+  .autopilot-main-notice{
+    min-width:min(360px,calc(100vw - 28px));
+    min-height:90px;
+    padding:.9rem 1.1rem;
+  }
+}
+@media (orientation:landscape) and (max-height:520px){
+  .autopilot-main-notice{
+    top:47%;
+    min-height:72px;
+    padding:.65rem 1rem;
+  }
+  .autopilot-main-notice strong{font-size:1.35rem}
+}
+

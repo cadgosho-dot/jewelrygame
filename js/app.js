@@ -50,6 +50,8 @@ let heartbeatTimer = null;
 let sessionTakenOver = false;
 let sleepTransitioning = false;
 let morningBriefShowing = false;
+let autopilotRunning = false;
+let autopilotTimer = null;
 let deferredInstallPrompt = null;
 let shellInstallAvailable = false;
 let shellInstalled = false;
@@ -1809,6 +1811,8 @@ function loadTitleSettings() {
     const settings = { ...initialState().settings, ...(saved || {}) };
     delete settings.textSize;
     settings.birthday = normalizeBirthday(settings.birthday);
+    // 自動操縦はゲームごとの進行設定のため、タイトル画面の共通設定から新規ゲームへ引き継がない。
+    settings.autopilotEnabled = false;
     settings.bgmVolume = Number.isFinite(Number(settings.bgmVolume)) ? Math.max(0, Math.min(1, Number(settings.bgmVolume))) : 0.35;
     // 旧初期値75％だけを初回に35％へ移行し、その後の手動設定は尊重する。
     if (localStorage.getItem(bgmMigrationKey) !== '1') {
@@ -3850,26 +3854,32 @@ function renderMain() {
   const visiting = canServeCustomers()
     ? Object.entries(state.customers).filter(([, customer]) => customer.visiting).map(([id]) => CUSTOMERS[id]?.name)
     : [];
+  const autopilotEnabled = Boolean(state?.settings?.autopilotEnabled);
   const locked = hungerLocked();
-  const disabled = locked ? 'disabled aria-disabled="true"' : '';
-  const storeButton = `<button data-action="nav" data-screen="store" ${disabled}><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
+  const autopilotDisabled = 'disabled aria-disabled="true" title="自動操縦中はスマートフォンのみ操作できます"';
+  const hungerDisabled = locked ? 'disabled aria-disabled="true"' : '';
+  const manualActionDisabled = autopilotEnabled ? autopilotDisabled : hungerDisabled;
+  const phoneDisabled = !autopilotEnabled && locked ? hungerDisabled : '';
+  const mealAndSleepDisabled = autopilotEnabled ? autopilotDisabled : '';
+  const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
   return `
-    <main class="main-screen">
+    <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
       ${header('', { back: false, main: false })}
       <section class="main-spacer" aria-hidden="true"></section>
-      ${locked ? `<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
-      ${hungerFeedback ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
-      ${visiting.length && !locked ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
+      ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動総受注</strong></div>' : ''}
+      ${locked && !autopilotEnabled ? `<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
+      ${hungerFeedback && !autopilotEnabled ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
+      ${visiting.length && !locked && !autopilotEnabled ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
       ${outstandingCosts > 0 ? `<button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>` : ''}
-      ${activeOrders > 0 ? `<button class="active-order-shortcut" data-action="open-active-orders" aria-label="現在の受注品を工房の注文書で確認する">現在受注品あり</button>` : ''}
-      <nav class="main-menu" aria-label="行動">
-        <button data-action="nav" data-screen="mining" ${disabled}><span>⛏</span><strong>採掘</strong></button>
-        <button data-action="nav" data-screen="workshop" ${disabled}><span>⚒</span><strong>工房</strong></button>
+      ${activeOrders > 0 && !autopilotEnabled ? `<button class="active-order-shortcut" data-action="open-active-orders" aria-label="現在の受注品を工房の注文書で確認する">現在受注品あり</button>` : ''}
+      <nav class="main-menu${autopilotEnabled ? ' autopilot-menu-locked' : ''}" aria-label="行動">
+        <button data-action="nav" data-screen="mining" ${manualActionDisabled}><span>⛏</span><strong>採掘</strong></button>
+        <button data-action="nav" data-screen="workshop" ${manualActionDisabled}><span>⚒</span><strong>工房</strong></button>
         ${storeButton}
-        <button data-action="nav" data-screen="okachimachi" ${disabled}><span>♢</span><strong>御徒町</strong></button>
-        <button data-action="nav" data-screen="phone" ${disabled}><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
-        <button data-action="nav" data-screen="meal"><span class="meal-cutlery-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 3v5.4a3 3 0 0 0 6 0V3M7 3v18M10 3v5.4"/><path class="meal-knife-blade" d="M18.8 2.8c-2.8 2.8-4.2 6.2-4.2 10.2h3.1v8h2V2.8z"/></svg></span><strong>食事</strong></button>
-        <button data-action="sleep"><span>☾</span><strong>寝る</strong></button>
+        <button data-action="nav" data-screen="okachimachi" ${manualActionDisabled}><span>♢</span><strong>御徒町</strong></button>
+        <button class="${autopilotEnabled ? 'autopilot-phone-button' : ''}" data-action="nav" data-screen="phone" ${phoneDisabled} aria-label="スマートフォン${autopilotEnabled ? '。自動操縦の設定を変更できます' : ''}"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
+        <button data-action="nav" data-screen="meal" ${mealAndSleepDisabled}><span class="meal-cutlery-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 3v5.4a3 3 0 0 0 6 0V3M7 3v18M10 3v5.4"/><path class="meal-knife-blade" d="M18.8 2.8c-2.8 2.8-4.2 6.2-4.2 10.2h3.1v8h2V2.8z"/></svg></span><strong>食事</strong></button>
+        <button data-action="sleep" ${mealAndSleepDisabled}><span>☾</span><strong>寝る</strong></button>
       </nav>
     </main>`;
 }
@@ -6484,7 +6494,11 @@ function renderSettingsForm(titleMode, compact) {
     <label class="toggle-row"><span>音楽を消す</span><input type="checkbox" data-setting="bgmMuted" data-title-mode="${titleMode}" ${settings.bgmMuted ? 'checked' : ''}></label>
     <label class="toggle-row"><span>環境音を消す</span><input type="checkbox" data-setting="ambientMuted" data-title-mode="${titleMode}" ${settings.ambientMuted ? 'checked' : ''}></label>
     <label class="toggle-row"><span>効果音を消す</span><input type="checkbox" data-setting="sfxMuted" data-title-mode="${titleMode}" ${settings.sfxMuted ? 'checked' : ''}></label>
-    ${!titleMode ? `<label class="toggle-row vibration-setting"><span><strong>バイブレーション</strong><small>操作時の振動をオン・オフできます。</small></span><input type="checkbox" data-setting="vibration" data-title-mode="false" ${settings.vibration !== false ? 'checked' : ''}></label>` : ''}
+    ${!titleMode ? `<label class="toggle-row vibration-setting"><span><strong>バイブレーション</strong><small>操作時の振動をオン・オフできます。</small></span><input type="checkbox" data-setting="vibration" data-title-mode="false" ${settings.vibration !== false ? 'checked' : ''}></label>
+    <section class="autopilot-setting-card">
+      <label class="toggle-row autopilot-setting"><span><strong>自動操縦モード</strong><small>チェック中は、現実の1日につきゲーム内の1日をおまかせで進めます。メイン画面ではスマートフォン以外を操作できません。</small></span><input type="checkbox" data-setting="autopilotEnabled" data-title-mode="false" ${settings.autopilotEnabled ? 'checked' : ''}></label>
+      <small>${esc(autopilotSettingStatusText())}</small>
+    </section>` : ''}
     <label class="toggle-row external-audio-priority-setting"><span><strong>YouTubeなど外部音声を優先</strong><small>必要なときだけオンにすると、ゲームの音声をすべて停止します。</small></span><input type="checkbox" data-setting="externalAudioPriority" data-title-mode="${titleMode}" ${settings.externalAudioPriority ? 'checked' : ''}></label>
     ${!titleMode ? `<section class="phone-home-background-setting">
       <button type="button" class="secondary-button full-button phone-home-picker-button" data-action="choose-phone-home-image"><strong>スマートフォンホーム画面</strong><small>携帯の画像フォルダから背景を選択できます</small></button>
@@ -7613,7 +7627,580 @@ function restoreLooseInventory(before, context = '') {
   return true;
 }
 
-function settleDay() {
+
+function tokyoRealDateKey(date = new Date()) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date).filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function autopilotDateValue(key) {
+  const match = String(key || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+function autopilotDateDifference(fromKey, toKey) {
+  const from = autopilotDateValue(fromKey);
+  const to = autopilotDateValue(toKey);
+  if (from == null || to == null) return 0;
+  return Math.max(0, Math.floor((to - from) / 86400000));
+}
+
+function addAutopilotDateDays(key, days = 1) {
+  const value = autopilotDateValue(key);
+  if (value == null) return tokyoRealDateKey();
+  const date = new Date(value + Math.max(0, Math.floor(Number(days) || 0)) * 86400000);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+function ensureAutopilotState() {
+  if (!state) return null;
+  const saved = state.autopilot && typeof state.autopilot === 'object' && !Array.isArray(state.autopilot)
+    ? state.autopilot
+    : {};
+  state.autopilot = {
+    lastRealDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastRealDate || '')) ? String(saved.lastRealDate) : '',
+    lastRunAt: typeof saved.lastRunAt === 'string' ? saved.lastRunAt : '',
+    totalDays: Math.max(0, Math.floor(Number(saved.totalDays) || 0)),
+    lastSummary: saved.lastSummary && typeof saved.lastSummary === 'object' && !Array.isArray(saved.lastSummary)
+      ? saved.lastSummary
+      : null,
+  };
+  return state.autopilot;
+}
+
+function autopilotSettingStatusText() {
+  if (!state?.settings?.autopilotEnabled) return 'オフの間は自動進行しません。オンにした当日は進まず、翌日から1日ずつ進みます。オンの間はメイン画面からスマートフォンだけ操作できます。';
+  const autopilot = ensureAutopilotState();
+  const lastDate = autopilot?.lastRealDate ? autopilot.lastRealDate.replace(/-/g, '/') : '本日から開始';
+  return `稼働中・最終判定 ${lastDate}・累計 ${Math.max(0, Number(autopilot?.totalDays) || 0)}日。ゲームを閉じていた日も、次回起動時に経過日数分を進めます。メイン画面ではスマートフォンだけ操作できます。`;
+}
+
+function createAutopilotDaySummary() {
+  return {
+    gameDay: state.game.day,
+    minedActions: 0,
+    roughFound: 0,
+    roughSold: 0,
+    polished: 0,
+    crafted: 0,
+    displayed: 0,
+    sold: 0,
+    ordersCompleted: 0,
+    toolsPurchased: 0,
+    repairsRequested: 0,
+    meals: 0,
+    income: 0,
+    expense: 0,
+    notes: [],
+  };
+}
+
+function mergeAutopilotSummary(target, source) {
+  for (const key of ['minedActions', 'roughFound', 'roughSold', 'polished', 'crafted', 'displayed', 'sold', 'ordersCompleted', 'toolsPurchased', 'repairsRequested', 'meals', 'income', 'expense']) {
+    target[key] = Math.max(0, Number(target[key]) || 0) + Math.max(0, Number(source[key]) || 0);
+  }
+  target.notes.push(...(source.notes || []));
+  target.notes = [...new Set(target.notes)].slice(-12);
+  return target;
+}
+
+function autopilotEat(summary) {
+  if (hungerLevel() > 0) return true;
+  const meal = MEALS.chinese;
+  if (!meal || state.game.money < meal.price) return false;
+  const before = hungerLevel();
+  state.game.money -= meal.price;
+  state.wellbeing.hunger = Math.min(state.wellbeing.maxHunger || 7, before + meal.recovery);
+  state.wellbeing.lastMeal = meal.name;
+  state.wellbeing.mealsEaten = Math.max(0, Number(state.wellbeing.mealsEaten) || 0) + 1;
+  state.daily.meals.push({ id: meal.id, name: meal.name, price: meal.price, recovery: state.wellbeing.hunger - before, autopilot: true });
+  addFinance(`自動操縦：${meal.name}で食事`, 0, meal.price);
+  summary.meals += 1;
+  summary.expense += meal.price;
+  return true;
+}
+
+function autopilotCanSpendHours(hours, summary) {
+  if (!canSpendHours(hours)) return false;
+  return hungerLevel() > 0 || autopilotEat(summary);
+}
+
+function autopilotPayOutstandingCosts(summary) {
+  let available = Math.max(0, Math.floor(Number(state.game.money) || 0));
+  if (!available) return;
+  const workshopDue = Math.max(0, Number(state.business?.workshopUnpaid) || 0);
+  if (workshopDue) {
+    const paid = Math.min(available, workshopDue);
+    available -= paid;
+    state.business.workshopUnpaid -= paid;
+    if (paid) addFinance('自動操縦：未払い工房維持費を支払い', 0, paid);
+    summary.expense += paid;
+    if (state.business.workshopUnpaid <= 0) {
+      state.business.workshopUnpaid = 0;
+      state.business.workshopSuspended = false;
+    }
+  }
+  for (const branch of [...(state.store?.branches || [])].sort((a, b) => Number(a.number) - Number(b.number))) {
+    if (!available) break;
+    const due = Math.max(0, Number(branch.unpaidRent) || 0);
+    if (!due) continue;
+    const paid = Math.min(available, due);
+    available -= paid;
+    branch.unpaidRent -= paid;
+    if (paid) addFinance(`自動操縦：${storeBranchLabel(branch.number)}の未払い家賃を支払い`, 0, paid);
+    summary.expense += paid;
+    if (branch.unpaidRent <= 0) {
+      branch.unpaidRent = 0;
+      branch.suspended = false;
+    }
+  }
+  state.game.money = available;
+}
+
+function autopilotBuyTool(toolId, summary, reserve = 2000) {
+  const tool = WORKSHOP_TOOLS[toolId];
+  if (!tool || toolOwned(toolId) || !workshopToolUnlocked(tool)) return false;
+  if (!okachimachiFacilityAvailability('glab').open) return false;
+  if (state.game.money < tool.price + reserve || !autopilotCanSpendHours(1, summary)) return false;
+  state.game.money -= tool.price;
+  spendHours(1);
+  state.tools.items[toolId] = createWorkshopToolRecord(toolId);
+  syncLegacyToolFlags();
+  addFinance(`自動操縦：g-Lab.で${tool.name}を購入`, 0, tool.price);
+  addNotification(`${tool.name}を自動購入しました`, '自動操縦モードが、今後の作業に必要な設備として購入しました。');
+  summary.toolsPurchased += 1;
+  summary.expense += tool.price;
+  summary.notes.push(`${tool.name}を購入`);
+  return true;
+}
+
+function autopilotRepairTools(summary) {
+  for (const [toolId, record] of Object.entries(state.tools?.items || {})) {
+    const tool = WORKSHOP_TOOLS[toolId];
+    if (!tool?.repairable || !record || record.status !== 'unusable') continue;
+    const price = workshopToolRepairPrice(toolId);
+    if (!okachimachiFacilityAvailability('glab').open || state.game.money < price || !autopilotCanSpendHours(1, summary)) continue;
+    state.game.money -= price;
+    spendHours(1);
+    record.status = 'repairing';
+    record.repairCompleteDay = state.game.day + 7;
+    record.failureDueDay = null;
+    addFinance(`自動操縦：g-Lab.へ${tool.name}の修理を依頼`, 0, price);
+    addNotification(`${tool.name}を自動で修理へ出しました`, `${gameDateLabel(record.repairCompleteDay)}に修理が完了する予定です。`);
+    summary.repairsRequested += 1;
+    summary.expense += price;
+  }
+}
+
+function autopilotBuyMetal(metalId, targetWeight, summary) {
+  const target = Math.max(0, Math.ceil(Number(targetWeight) || 0));
+  const owned = metalOwnedWeight(metalId);
+  if (owned + 1e-9 >= target) return true;
+  if (!okachimachiFacilityAvailability('materialShop').open || !autopilotCanSpendHours(1, summary)) return false;
+  const quantity = Math.max(1, Math.ceil(target - owned));
+  if (owned + quantity > metalStorageLimit(metalId) + 1e-9) return false;
+  const unitPrice = metalTradePricePerGram('buy', metalId);
+  const price = unitPrice * quantity;
+  if (state.game.money < price) return false;
+  state.game.money -= price;
+  state.inventory.metals[metalId] = roundedMetalWeight(owned + quantity);
+  spendHours(1);
+  addFinance(`自動操縦：${METALS[metalId].name}を${quantity}g購入`, 0, price);
+  summary.expense += price;
+  return true;
+}
+
+function autopilotBuyLoose(gemId, shapeId, targetQuantity, summary) {
+  const shape = normalizeLooseShape(gemId, shapeId);
+  let owned = looseAvailableQuantity(gemId, shape);
+  const target = Math.max(0, Math.floor(Number(targetQuantity) || 0));
+  while (owned < target) {
+    if (!okachimachiFacilityAvailability('looseShop').open || !autopilotCanSpendHours(1, summary)) return false;
+    const price = loosePurchasePrice(gemId, shape);
+    if (state.game.money < price) return false;
+    state.game.money -= price;
+    adjustLooseInventory(gemId, shape, 1);
+    spendHours(1);
+    addFinance(`自動操縦：${GEMS[gemId].name}・${looseShapeLabel(shape)}ルースを購入`, 0, price);
+    summary.expense += price;
+    owned += 1;
+  }
+  return true;
+}
+
+function autopilotCraftJewelry(draft, summary) {
+  if (!workshopOperating() || !toolUsable('jewelryBench')) return null;
+  const hours = productionHours(draft, state.employee);
+  if (!autopilotCanSpendHours(hours, summary)) return null;
+  const requirements = materialRequirementsFor(draft);
+  if (!requirements.enoughLoose || !requirements.enoughMetal) return null;
+  if (state.inventory.jewelry.filter((item) => item.status !== 'sold').length >= state.inventory.capacity) return null;
+  if (draft.useLoose !== false) adjustLooseInventory(draft.gem, draft.looseShape, -requirements.requiredLooseQuantity);
+  state.inventory.metals[draft.metal] = roundedMetalWeight(requirements.ownedMetalWeight - requirements.requiredMetalWeight);
+  spendHours(hours);
+  const quality = qualityRoll();
+  const jewelry = {
+    id: uid(),
+    ...draft,
+    name: itemName(draft),
+    quality,
+    cost: productionCost(draft),
+    recommendedPrice: recommendedPrice({ ...draft, quality }),
+    xp: 5,
+    status: draft.orderId ? 'order' : 'stored',
+    createdDay: state.game.day,
+    autopilot: true,
+  };
+  state.inventory.jewelry.push(jewelry);
+  state.daily.crafted.push(jewelry.id);
+  addArtisanXp(5);
+  if (draft.orderId) {
+    const order = state.orders.find((entry) => entry.id === draft.orderId);
+    if (order) {
+      order.status = '完成';
+      order.jewelryId = jewelry.id;
+      addNotification('注文品が自動制作されました', `${order.customerName}さんの注文品を納品できます。`);
+    }
+  }
+  const brokenToolName = checkWorkshopToolFailure();
+  if (brokenToolName) addNotification(`${brokenToolName}が故障しました`, '自動操縦中の作業後に故障しました。次回以降、修理可能なら自動で修理へ出します。', 'warning');
+  summary.crafted += 1;
+  return jewelry;
+}
+
+function autopilotDeliverCompletedOrders(summary) {
+  const completed = state.orders
+    .filter((order) => order.status === '完成')
+    .sort((a, b) => Number(a.deadlineDay) - Number(b.deadlineDay));
+  for (const order of completed) {
+    const item = state.inventory.jewelry.find((entry) => entry.id === order.jewelryId);
+    const branch = storeBranchByNumber(order.branchNumber);
+    if (!item || !storeBranchOperating(branch) || state.game.day > Number(order.deadlineDay)) continue;
+    order.status = '完了';
+    order.closedDay = state.game.day;
+    order.deliveredDay = state.game.day;
+    item.status = 'sold';
+    state.game.money += order.price;
+    state.store.salesCount += 1;
+    state.store.totalRevenue += order.price;
+    state.store.totalProfit += order.price - item.cost;
+    addArtisanXp(10);
+    addStoreProgress({ branchNumber: order.branchNumber, points: 2, rating: 1, orderDelivery: true });
+    const customerState = state.customers[order.customerId];
+    if (customerState) {
+      customerState.purchases += 1;
+      customerState.relation = customerState.purchases >= 3 ? '常連客' : 'リピーター';
+    }
+    addFinance(`自動操縦：${order.customerName}さんへ注文品を納品`, order.price, 0);
+    consumeStoreCase(branch);
+    summary.ordersCompleted += 1;
+    summary.sold += 1;
+    summary.income += order.price;
+  }
+}
+
+function autopilotFulfillOrders(summary) {
+  autopilotDeliverCompletedOrders(summary);
+  const pending = state.orders
+    .filter((order) => order.status === '受注')
+    .sort((a, b) => Number(a.deadlineDay) - Number(b.deadlineDay));
+  for (const order of pending) {
+    const feasibility = orderFeasibility(order);
+    if (!feasibility.artisanReady || !feasibility.materialsObtainable) continue;
+    for (const toolId of feasibility.requiredTools) autopilotBuyTool(toolId, summary, 2000);
+    if (!feasibility.requiredTools.every((toolId) => toolUsable(toolId))) continue;
+    let requirements = orderRequirements(order);
+    if (!requirements.enoughMetal) {
+      autopilotBuyMetal(order.metal, metalOwnedWeight(order.metal) + requirements.missingMetalWeight, summary);
+    }
+    requirements = orderRequirements(order);
+    if (!requirements.enoughLoose) {
+      autopilotBuyLoose(order.gem, order.looseShape, looseAvailableQuantity(order.gem, order.looseShape) + requirements.missingLooseQuantity, summary);
+    }
+    requirements = orderRequirements(order);
+    if (!requirements.enoughMetal || !requirements.enoughLoose) continue;
+    const draft = {
+      orderId: order.id,
+      item: order.item,
+      useLoose: true,
+      gem: order.gem,
+      looseShape: normalizeLooseShape(order.gem, order.looseShape),
+      metal: order.metal,
+      design: order.design,
+      finish: 'mirror',
+    };
+    if (!autopilotCraftJewelry(draft, summary)) continue;
+    autopilotDeliverCompletedOrders(summary);
+  }
+}
+
+function autopilotPrepareStore(summary) {
+  if (!state.store.rented) return;
+  const branch = salesStoreBranch() || currentStoreBranch();
+  if (!branch || !storeBranchOperating(branch)) return;
+  if (installedShowcaseCount(branch) === 0 && okachimachiFacilityAvailability('displayShop').open) {
+    const product = DISPLAY_SHOP_PRODUCTS.showcase;
+    if (state.game.money >= product.price + 10000 && autopilotCanSpendHours(1, summary)) {
+      state.game.money -= product.price;
+      spendHours(1);
+      branchShowcases(branch).push({ id: `showcase-auto-${Date.now()}-${state.game.day}`, slots: [null, null, null, null, null] });
+      branch.showcaseCount = installedShowcaseCount(branch);
+      mirrorCurrentStoreDisplay(branch);
+      addFinance('自動操縦：ショーケースを購入・設置', 0, product.price);
+      summary.expense += product.price;
+      summary.notes.push('ショーケースを設置');
+    }
+  }
+  if (installedShowcaseCount(branch) > 0 && storeCaseRemaining(branch) === 0 && okachimachiFacilityAvailability('displayShop').open) {
+    const quantity = 10;
+    const price = DISPLAY_SHOP_PRODUCTS.case.price * quantity;
+    if (state.game.money >= price + 2000 && autopilotCanSpendHours(1, summary)) {
+      state.game.money -= price;
+      spendHours(1);
+      branch.casesInstalled = Math.min(storeMaximumCases(), storeCaseRemaining(branch) + quantity);
+      state.store.casesInstalled = storeCaseRemaining(branch);
+      syncStoreLevel(branch);
+      addFinance(`自動操縦：ケースを${quantity}個購入・設置`, 0, price);
+      summary.expense += price;
+    }
+  }
+}
+
+function autopilotDisplayStoredItems(summary) {
+  if (!state.store.rented) return;
+  const branch = salesStoreBranch() || currentStoreBranch();
+  if (!branch || !storeBranchOperating(branch) || installedShowcaseCount(branch) <= 0) return;
+  for (const item of state.inventory.jewelry.filter((entry) => entry.status === 'stored')) {
+    const position = findEmptyShowcasePosition(branch);
+    if (!position) break;
+    branchShowcases(branch)[position.showcaseIndex].slots[position.slotIndex] = {
+      jewelryId: item.id,
+      sellingPrice: normalizeSellingPrice(item.recommendedPrice),
+    };
+    item.status = 'displayed';
+    item.displayBranchNumber = branch.number;
+    summary.displayed += 1;
+  }
+  mirrorCurrentStoreDisplay(branch);
+}
+
+function autopilotWholesaleStoredItems(summary) {
+  if (!okachimachiFacilityAvailability('jewelryShop').open) return false;
+  let soldAny = false;
+  const branch = state.store.rented ? (salesStoreBranch() || currentStoreBranch()) : null;
+  const hasStoreSpace = Boolean(branch && installedShowcaseCount(branch) > 0 && findEmptyShowcasePosition(branch));
+  if (hasStoreSpace) return false;
+  const items = state.inventory.jewelry.filter((entry) => entry.status === 'stored');
+  for (const item of items) {
+    if (!autopilotCanSpendHours(JEWELRY_SHOP_TRANSACTION_HOURS, summary)) break;
+    const offer = jewelryShopSellOffer(item);
+    const profit = offer - Math.max(0, Number(item.cost) || 0);
+    removeJewelry(item.id);
+    state.game.money += offer;
+    spendHours(JEWELRY_SHOP_TRANSACTION_HOURS);
+    state.daily.sold.push({ itemId: item.id, name: item.name, price: offer, profit, channel: 'jewelryShop', autopilot: true });
+    addFinance(`自動操縦：${item.name}をジュエリーショップへ卸販売`, offer, 0);
+    summary.sold += 1;
+    summary.income += offer;
+    soldAny = true;
+  }
+  return soldAny;
+}
+
+function autopilotSellRough(summary) {
+  if (!okachimachiFacilityAvailability('looseShop').open) return false;
+  let soldAny = false;
+  const gemIds = Object.keys(GEMS).sort((a, b) => roughSalePrice(b) - roughSalePrice(a));
+  for (const gemId of gemIds) {
+    const qty = Math.max(0, Math.floor(Number(state.inventory.rough[gemId]) || 0));
+    if (!qty || !autopilotCanSpendHours(1, summary)) continue;
+    const price = roughSalePrice(gemId) * qty;
+    state.inventory.rough[gemId] = 0;
+    state.game.money += price;
+    spendHours(1);
+    state.daily.roughSold.push({ gem: gemId, qty, price, unitPrice: roughSalePrice(gemId), autopilot: true });
+    addFinance(`自動操縦：${GEMS[gemId].name}原石を${qty}個売却`, price, 0);
+    summary.roughSold += qty;
+    summary.income += price;
+    soldAny = true;
+  }
+  return soldAny;
+}
+
+function autopilotMineOnce(summary) {
+  const available = availableMiningLocations().filter((location) => canSpendHours(location.hours));
+  if (!available.length) return false;
+  const location = available.sort((a, b) => {
+    const expectedA = a.gems.reduce((sum, entry) => sum + roughSalePrice(entry.id) * entry.weight, 0) / 100 / a.hours;
+    const expectedB = b.gems.reduce((sum, entry) => sum + roughSalePrice(entry.id) * entry.weight, 0) / 100 / b.hours;
+    return expectedB - expectedA;
+  })[0];
+  if (!autopilotCanSpendHours(location.hours, summary)) return false;
+  spendHours(location.hours);
+  summary.minedActions += 1;
+  if (Math.random() < 0.4) {
+    const gem = weightedPick(location.gems);
+    state.inventory.rough[gem] = Math.max(0, Number(state.inventory.rough[gem]) || 0) + 1;
+    state.daily.mined.push({ gem, qty: 1, autopilot: true });
+    state.miningProgress.successfulFinds += 1;
+    unlockMiningLocationsIfNeeded();
+    summary.roughFound += 1;
+  } else {
+    state.miningMisses = Math.max(0, Number(state.miningMisses) || 0) + 1;
+  }
+  return true;
+}
+
+function autopilotCraftStock(summary) {
+  if (!workshopOperating() || !toolUsable('jewelryBench')) return false;
+  if (state.inventory.jewelry.filter((item) => item.status !== 'sold').length >= state.inventory.capacity) return false;
+  const draft = {
+    orderId: null,
+    item: 'ring',
+    useLoose: false,
+    gem: 'amethyst',
+    looseShape: 'round',
+    metal: 'silver',
+    design: 'simple',
+    finish: 'mirror',
+  };
+  const requirements = materialRequirementsFor(draft);
+  if (!requirements.enoughMetal) {
+    const batchTarget = metalOwnedWeight('silver') + Math.max(12, requirements.missingMetalWeight);
+    autopilotBuyMetal('silver', batchTarget, summary);
+  }
+  return Boolean(autopilotCraftJewelry(draft, summary));
+}
+
+function runAutopilotDay() {
+  const summary = createAutopilotDaySummary();
+  state.game.minutes = Math.max(DAY_START_MINUTES, Math.min(DAY_END_MINUTES, Number(state.game.minutes) || DAY_START_MINUTES));
+  autopilotPayOutstandingCosts(summary);
+  autopilotDeliverCompletedOrders(summary);
+  autopilotRepairTools(summary);
+  if (!toolOwned('jewelryBench')) autopilotBuyTool('jewelryBench', summary, 2000);
+  autopilotFulfillOrders(summary);
+  autopilotPrepareStore(summary);
+  autopilotDisplayStoredItems(summary);
+  autopilotWholesaleStoredItems(summary);
+  autopilotSellRough(summary);
+
+  let safety = 0;
+  while (safety < 12 && canSpendHours(1)) {
+    safety += 1;
+    const beforeMinutes = state.game.minutes;
+    const beforeMoney = state.game.money;
+    const beforeJewelry = state.inventory.jewelry.filter((item) => item.status !== 'sold').length;
+
+    autopilotFulfillOrders(summary);
+    autopilotPrepareStore(summary);
+    autopilotDisplayStoredItems(summary);
+    if (autopilotWholesaleStoredItems(summary)) continue;
+    if (autopilotCraftStock(summary)) {
+      autopilotDisplayStoredItems(summary);
+      continue;
+    }
+    if (autopilotSellRough(summary)) continue;
+    if (autopilotMineOnce(summary)) {
+      if (state.game.minutes < OKACHIMACHI_CLOSE_MINUTES) autopilotSellRough(summary);
+      continue;
+    }
+
+    const afterJewelry = state.inventory.jewelry.filter((item) => item.status !== 'sold').length;
+    if (state.game.minutes === beforeMinutes && state.game.money === beforeMoney && afterJewelry === beforeJewelry) break;
+  }
+
+  autopilotDisplayStoredItems(summary);
+  autopilotWholesaleStoredItems(summary);
+  summary.income = Math.max(summary.income, Math.max(0, Number(state.daily.income) || 0));
+  summary.expense = Math.max(summary.expense, Math.max(0, Number(state.daily.expense) || 0));
+  return summary;
+}
+
+function autopilotSummaryBody(days, aggregate) {
+  const parts = [];
+  if (aggregate.minedActions) parts.push(`採掘${aggregate.minedActions}回`);
+  if (aggregate.roughFound) parts.push(`原石${aggregate.roughFound}個発見`);
+  if (aggregate.crafted) parts.push(`制作${aggregate.crafted}点`);
+  if (aggregate.displayed) parts.push(`陳列${aggregate.displayed}点`);
+  if (aggregate.sold) parts.push(`販売・納品${aggregate.sold}点`);
+  if (aggregate.income) parts.push(`売上${yen(aggregate.income)}`);
+  if (aggregate.expense) parts.push(`支出${yen(aggregate.expense)}`);
+  return `${days}日分を進めました。${parts.length ? parts.join('、') + '。' : '大きな取引はありませんでした。'}現在の所持金は${yen(state.game.money)}です。`;
+}
+
+async function processAutopilotIfDue({ renderAfter = true, showNotice = true } = {}) {
+  if (!state?.settings?.autopilotEnabled || autopilotRunning || sleepTransitioning || sessionTakenOver) return 0;
+  const autopilot = ensureAutopilotState();
+  const today = tokyoRealDateKey();
+  if (!autopilot.lastRealDate) {
+    autopilot.lastRealDate = today;
+    autopilot.lastRunAt = new Date().toISOString();
+    await saveGame();
+    if (renderAfter && state) render();
+    return 0;
+  }
+  const dueDays = autopilotDateDifference(autopilot.lastRealDate, today);
+  if (dueDays <= 0) return 0;
+
+  autopilotRunning = true;
+  const aggregate = createAutopilotDaySummary();
+  try {
+    clearMorningBrief();
+    modalEl.classList.add('hidden');
+    modalEl.innerHTML = '';
+    for (let index = 0; index < dueDays; index += 1) {
+      const daySummary = runAutopilotDay();
+      mergeAutopilotSummary(aggregate, daySummary);
+      settleDay({ showResult: false, save: false });
+      autopilot.lastRealDate = addAutopilotDateDays(autopilot.lastRealDate, 1);
+      autopilot.totalDays += 1;
+      if ((index + 1) % 10 === 0) await wait(0);
+    }
+    autopilot.lastRealDate = today;
+    autopilot.lastRunAt = new Date().toISOString();
+    autopilot.lastSummary = {
+      realDate: today,
+      days: dueDays,
+      gameDay: state.game.day,
+      money: state.game.money,
+      ...aggregate,
+    };
+    const body = autopilotSummaryBody(dueDays, aggregate);
+    addNotification('自動操縦が完了しました', body, 'info');
+    navigation = [];
+    screenData = {};
+    screen = 'main';
+    state.game.screen = 'main';
+    await saveGame();
+    if (renderAfter) {
+      render();
+      if (showNotice) showToast(`自動操縦でゲーム内時間が${dueDays}日進みました。`, 'info', false);
+      queueMicrotask(() => maybeResumeRobberySequence());
+    }
+    return dueDays;
+  } catch (error) {
+    console.error('自動操縦エラー', error);
+    addNotification('自動操縦を中断しました', '処理中にエラーが発生したため、その時点までの状態を保存しました。', 'warning');
+    await saveGame();
+    if (renderAfter) render();
+    return 0;
+  } finally {
+    autopilotRunning = false;
+  }
+}
+
+function scheduleAutopilotChecks() {
+  if (autopilotTimer) return;
+  autopilotTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') processAutopilotIfDue().catch((error) => console.error(error));
+  }, 30 * 60 * 1000);
+}
+
+function settleDay({ showResult = true, save = true } = {}) {
   const looseBeforeSettlement = looseInventorySnapshot();
   const moneyBeforeSettlement = state.game.money;
   const sold = [];
@@ -7701,8 +8288,8 @@ function settleDay() {
   scheduleCustomerVisit();
   updateOrderNotifications();
   restoreLooseInventory(looseBeforeSettlement, 'settleDay');
-  const daySave = saveGame();
-  setScreen('dayResult', {}, false);
+  const daySave = save ? saveGame() : Promise.resolve();
+  if (showResult) setScreen('dayResult', {}, false);
   return daySave;
 }
 
@@ -7999,8 +8586,10 @@ root.addEventListener('click', async (event) => {
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
   const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'next-day', 'acknowledge-robbery']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
+  const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
+    && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
-  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation) {
+  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !autopilotPhoneAccess) {
     showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
     goMain();
     return;
@@ -8151,7 +8740,9 @@ root.addEventListener('click', async (event) => {
         if (!state) return showToast('セーブデータを読み込めませんでした。', 'error');
         navigation = [];
         phoneTab = validPhoneTab(state.game?.phoneTab);
+        const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
         setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
+        if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
       } else {
         startNewGame();
       }
@@ -8234,6 +8825,10 @@ root.addEventListener('click', async (event) => {
       break;
     case 'nav': {
       const target = button.dataset.screen;
+      if (screen === 'main' && state?.settings?.autopilotEnabled && target !== 'phone') {
+        showToast('自動操縦中はスマートフォンのみ操作できます。設定から自動操縦をオフにしてください。', 'error');
+        break;
+      }
       const facilityId = facilityIdForScreen(target);
       if (facilityId) {
         const availability = okachimachiFacilityAvailability(facilityId);
@@ -8609,6 +9204,18 @@ root.addEventListener('change', (event) => {
     if (titleMode) {
       titleSettings = settings;
       localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(settings));
+    } else if (key === 'autopilotEnabled') {
+      const autopilot = ensureAutopilotState();
+      autopilot.lastRealDate = tokyoRealDateKey();
+      autopilot.lastRunAt = new Date().toISOString();
+      addNotification(
+        settings.autopilotEnabled ? '自動操縦モードを開始しました' : '自動操縦モードを停止しました',
+        settings.autopilotEnabled
+          ? '本日はゲーム内日付を進めず、翌日から現実の1日につきゲーム内の1日を自動で進めます。自動操縦中はメイン画面からスマートフォンだけ操作できます。'
+          : '停止中の現実日数はゲーム内へ反映されません。',
+      );
+      saveGame();
+      render();
     } else saveGame();
     applyAudioSettings();
   }
@@ -8666,7 +9273,7 @@ function startNewGame() {
   requestAnimationFrame(() => document.querySelector('#player-name-setup')?.focus());
 }
 
-function enterGameAfterLogin() {
+async function enterGameAfterLogin() {
   if (!hasSave()) {
     startNewGame();
     return;
@@ -8680,7 +9287,9 @@ function enterGameAfterLogin() {
   }
   navigation = [];
   phoneTab = validPhoneTab(state.game?.phoneTab);
+  const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
+  if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
   // 読み込み直後に正規化済みデータを保存し、クラウドの旧在庫項目を完全に除去する。
   saveGame();
 }
@@ -8689,12 +9298,14 @@ window.addEventListener('beforeunload', () => saveLocalBackup());
 window.addEventListener('pagehide', () => saveLocalBackup());
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') saveLocalBackup();
+  else processAutopilotIfDue().catch((error) => console.error(error));
 });
 window.addEventListener('pageshow', () => {
   if (phoneGameReturnRequested() && screen === 'phone') clearPhoneGameReturnRequest();
   if (glabAboutReturnRequested() && screen === 'glab') clearGlabAboutReturnRequest();
   if (glabSnsReturnRequested() && screen === 'glabSns') clearGlabSnsReturnRequest();
   if (okachimachiExternalReturnRequested() && screen === 'okachimachi') clearOkachimachiExternalReturnRequest();
+  processAutopilotIfDue().catch((error) => console.error(error));
 });
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').then((registration) => registration.update()).catch(() => {}));
@@ -8845,6 +9456,7 @@ async function boot() {
 }
 
 boot();
+scheduleAutopilotChecks();
 window.addEventListener('resize', () => {
   applyCurrentBackground();
   updateKeyboardViewportLayout();
@@ -8901,8 +9513,10 @@ modalEl.addEventListener('click', async (event) => {
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
   const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'next-day', 'acknowledge-robbery']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
+  const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
+    && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
-  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation) {
+  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !autopilotPhoneAccess) {
     showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
     goMain();
     return;
@@ -8910,6 +9524,13 @@ modalEl.addEventListener('click', async (event) => {
   playSfx('select');
   switch (action) {
     case 'modal-close': closeModal(); break;
+    case 'jewelry-shop-cancel-trade':
+      jewelryShopPendingTrade = null;
+      closeModal();
+      break;
+    case 'jewelry-shop-confirm-trade':
+      confirmJewelryShopTrade();
+      break;
     case 'open-install-browser': openInstallInAndroidBrowser(); break;
     case 'reload-page': location.reload(); break;
     case 'craft': craft(); break;

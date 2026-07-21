@@ -1,4 +1,4 @@
-export const VERSION = '0.10.247';
+export const VERSION = '0.10.251';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -1127,7 +1127,14 @@ export function initialState() {
       phoneHomeImage: '',
       birthday: '',
       vibration: true,
+      autopilotEnabled: false,
       showHints: true,
+    },
+    autopilot: {
+      lastRealDate: '',
+      lastRunAt: '',
+      totalDays: 0,
+      lastSummary: null,
     },
     miningProgress: {
       successfulFinds: 0,
@@ -1800,7 +1807,18 @@ export function migrateState(saved) {
   if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;
   state.settings.externalAudioPriority = Boolean(state.settings.externalAudioPriority);
   state.settings.vibration = state.settings.vibration !== false;
+  state.settings.autopilotEnabled = Boolean(state.settings.autopilotEnabled);
   state.settings.birthday = normalizeBirthday(state.settings.birthday);
+  const savedAutopilot = isRecord(state.autopilot) ? state.autopilot : {};
+  const normalizedAutopilotDate = String(savedAutopilot.lastRealDate || '').match(/^\d{4}-\d{2}-\d{2}$/)
+    ? String(savedAutopilot.lastRealDate)
+    : '';
+  state.autopilot = {
+    lastRealDate: normalizedAutopilotDate,
+    lastRunAt: typeof savedAutopilot.lastRunAt === 'string' ? savedAutopilot.lastRunAt : '',
+    totalDays: Math.max(0, Math.floor(Number(savedAutopilot.totalDays) || 0)),
+    lastSummary: isRecord(savedAutopilot.lastSummary) ? structuredClone(savedAutopilot.lastSummary) : null,
+  };
   state.settings.phoneHomeImage = typeof state.settings.phoneHomeImage === 'string'
     && state.settings.phoneHomeImage.startsWith('data:image/')
     && state.settings.phoneHomeImage.length <= 900000

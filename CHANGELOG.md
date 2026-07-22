@@ -1,3 +1,23 @@
+## v0.10.262 - Googleログインのブラウザ差対策
+
+- 通常ブラウザでは入れる一方、PWA・アプリ内ブラウザで止まる現象への対策を追加。
+- Google資格情報のsessionStorage引き継ぎとゲーム側の再交換処理を追加。
+- 認証永続化をIndexedDB、`browserLocalPersistence`、`browserSessionPersistence`の順で自動選択。
+- 通常ブラウザで開くボタン、URLコピー、環境表示、45秒タイムアウト診断を追加。
+- Firebase JavaScript SDKを12.16.0へ更新。
+- 認証用iframe権限`identity-credentials-get`を追加。
+
+## v0.10.261 - Googleログイン停止問題の根本修正
+
+- iframe内から`signInWithPopup()`を直接実行するログイン経路を廃止。
+- 最上位の`auth.html`へ認証を委譲する同一オリジン経路を追加。
+- `viewport-shell.js`へGoogleログイン遷移メッセージの処理を追加。
+- ログイン結果のユーザートークン取得完了後にゲームへ復帰するよう変更。
+- モバイル復帰時の`pageshow`・`focus`・`visibilitychange`再確認を追加。
+- Firebase初期化時に`authStateReady()`を待機。
+- 認証エラーコードと公開元ドメインの画面表示を追加。
+- `js/game-data.js`、`sw.js`、`game.html`、`index.html`、`auth.html`を0.10.261へ統一。
+
 ## v0.10.260 - 不動産屋を初期開放
 
 - 新規ゲームの施設初期値で不動産屋を利用可能に変更。

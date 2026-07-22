@@ -70,6 +70,14 @@
     if (event.origin !== window.location.origin || event.source !== frame?.contentWindow) return;
     const data = event.data || {};
 
+    if (data.type === 'jwj-game-google-login') {
+      // Google認証はiframe内ではなく最上位ページで実行する。
+      // Google側で新しいセッションを追加する操作は埋め込みiframeでは制限されるため、
+      // 専用のauth.htmlへ同一タブで移動してからFirebaseのポップアップを開く。
+      window.location.assign('./auth.html?from=game');
+      return;
+    }
+
     if (data.type === 'jwj-game-install-status-request') {
       sendInstallStatus();
       return;

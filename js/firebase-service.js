@@ -1,14 +1,16 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app-check.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check.js';
 import {
-  getAuth,
+  initializeAuth,
   GoogleAuthProvider,
   EmailAuthProvider,
   onAuthStateChanged,
-  setPersistence,
+  indexedDBLocalPersistence,
   browserLocalPersistence,
+  browserSessionPersistence,
+  browserPopupRedirectResolver,
+  signInWithCredential,
   signInWithEmailAndPassword,
-  signInWithPopup,
   createUserWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -17,7 +19,7 @@ import {
   deleteUser,
   reload,
   signOut,
-} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+} from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
 import {
   getFirestore,
   doc,
@@ -27,7 +29,7 @@ import {
   deleteDoc,
   onSnapshot,
   serverTimestamp,
-} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 
@@ -39,6 +41,42 @@ let db = null;
 let unsubscribeSession = null;
 let appCheckConfigured = false;
 let firebaseInitialized = false;
+
+const GOOGLE_CREDENTIAL_HANDOFF_KEY = 'jxj-google-credential-handoff-v1';
+const GOOGLE_CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
+
+function safeSessionStorage() {
+  try { return window.sessionStorage; } catch (_) { return null; }
+}
+
+async function consumeGoogleCredentialHandoff() {
+  const storage = safeSessionStorage();
+  if (!storage || auth?.currentUser) return false;
+  let payload = null;
+  try {
+    payload = JSON.parse(storage.getItem(GOOGLE_CREDENTIAL_HANDOFF_KEY) || 'null');
+  } catch (_) {
+    storage.removeItem(GOOGLE_CREDENTIAL_HANDOFF_KEY);
+    return false;
+  }
+  if (!payload?.idToken && !payload?.accessToken) return false;
+  const createdAt = Number(payload.createdAt) || 0;
+  const expiresAt = Number(payload.expiresAt) || (createdAt + GOOGLE_CREDENTIAL_MAX_AGE_MS);
+  if (!createdAt || Date.now() > expiresAt) {
+    storage.removeItem(GOOGLE_CREDENTIAL_HANDOFF_KEY);
+    return false;
+  }
+  try {
+    const credential = GoogleAuthProvider.credential(payload.idToken || null, payload.accessToken || null);
+    await signInWithCredential(auth, credential);
+    storage.removeItem(GOOGLE_CREDENTIAL_HANDOFF_KEY);
+    return true;
+  } catch (error) {
+    storage.removeItem(GOOGLE_CREDENTIAL_HANDOFF_KEY);
+    logAuthError('google-credential-handoff', error);
+    return false;
+  }
+}
 
 function authErrorDiagnostics(stage, error) {
   const customData = error?.customData || {};
@@ -87,9 +125,15 @@ export async function initializeFirebase() {
     throw new Error('App Checkの設定が不完全です。SECURITY_SETUP.mdを確認してください。');
   }
 
-  auth = getAuth(app);
+  auth = initializeAuth(app, {
+    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+    popupRedirectResolver: browserPopupRedirectResolver,
+  });
   auth.languageCode = 'ja';
-  await setPersistence(auth, browserLocalPersistence);
+  // 初回の認証状態が確定してから、専用ログインページがsessionStorageへ渡した
+  // Google資格情報を必要な場合だけ再交換する。永続化反映が遅いブラウザでもログインを引き継げる。
+  await auth.authStateReady();
+  if (!auth.currentUser) await consumeGoogleCredentialHandoff();
   db = getFirestore(app);
   firebaseInitialized = true;
   return { previewMode: false, configured: true, appCheckConfigured };
@@ -102,16 +146,6 @@ export function observeAuth(callback) {
   }
   if (!auth) throw new Error('Firebaseの初期化が完了していません。');
   return onAuthStateChanged(auth, callback);
-}
-
-export function googleLogin() {
-  if (previewMode) return Promise.resolve(null);
-  if (!auth) return Promise.reject(new Error('Firebaseの初期化が完了していません。'));
-  if (auth.currentUser) return Promise.resolve(auth.currentUser);
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-  // ユーザーのタップ処理中に直接呼び出し、iOSでもポップアップがブロックされにくくする。
-  return signInWithPopup(auth, provider).then((result) => result.user);
 }
 
 export async function emailLogin(email, password) {

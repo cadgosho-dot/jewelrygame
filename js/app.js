@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
 import {
-  initializeFirebase, observeAuth, googleLogin, emailLogin, emailSignup, logout,
+  initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
 } from './firebase-service.js';
@@ -3485,6 +3485,24 @@ function takeGoogleLoginError() {
   }
 }
 
+function openTopLevelGoogleLogin() {
+  const authUrl = new URL('./auth.html?from=game', window.location.href).href;
+  // 通常表示ではゲーム本体がindex.html内のiframeに入っているため、
+  // OAuthポップアップをiframe内から直接開かず、最上位ページへ認証を委譲する。
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'jwj-game-google-login', url: authUrl }, window.location.origin);
+    // 更新直後に古いviewport-shell.jsが一時的に残っていても止まらないよう、
+    // 同一オリジンの最上位画面へ直接移動する予備経路も用意する。
+    window.setTimeout(() => {
+      try {
+        if (document.visibilityState === 'visible') window.top.location.assign(authUrl);
+      } catch (_) {}
+    }, 700);
+    return;
+  }
+  window.location.assign(authUrl);
+}
+
 function renderLogin() {
   return `
     <main class="title-screen login-screen">
@@ -3503,7 +3521,7 @@ function renderLogin() {
           <span class="google-login-mark" aria-hidden="true">G</span>
           <span class="google-login-copy">
             <strong class="google-login-title">Googleアカウントを選ぶ</strong>
-            <small class="google-login-subtitle">Googleのログイン画面を開きます</small>
+            <small class="google-login-subtitle">専用ログイン画面へ移動します</small>
           </span>
           <span class="google-login-arrow" aria-hidden="true">›</span>
         </button>
@@ -8832,26 +8850,15 @@ root.addEventListener('click', async (event) => {
       authEntryRequested = true;
       markGoogleLoginRedirect();
       try {
-        await googleLogin();
+        openTopLevelGoogleLogin();
       } catch (error) {
         clearGoogleLoginRedirect();
         authEntryRequested = false;
         button.disabled = false;
         button.removeAttribute('aria-busy');
         if (title) title.textContent = 'Googleアカウントを選ぶ';
-        if (subtitle) subtitle.textContent = 'Googleのログイン画面を開きます';
-        const popupUnavailable = ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/web-storage-unsupported'].includes(error?.code);
-        if (popupUnavailable) {
-          showModal({
-            title: 'Googleログインを開けませんでした',
-            body: '<p>ゲームをSafariまたはChromeの通常タブで開き、もう一度お試しください。</p><p class="small-note">LINE・Instagram・Xなどのアプリ内ブラウザでは、Googleログインを開けない場合があります。</p>',
-            confirm: '閉じる',
-            action: 'modal-close',
-            hideCancel: true,
-          });
-        } else {
-          showToast(firebaseErrorMessage(error, 'google-login'), 'error');
-        }
+        if (subtitle) subtitle.textContent = '専用ログイン画面へ移動します';
+        showToast(firebaseErrorMessage(error, 'google-login'), 'error');
       }
       break;
     }

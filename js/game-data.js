@@ -1,4 +1,4 @@
-export const VERSION = '0.10.258';
+export const VERSION = '0.10.260';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -1076,7 +1076,7 @@ export function initialState() {
       settingShop: false,
       castingShop: false,
       displayShop: true,
-      realEstate: false,
+      realEstate: true,
       recruitment: false,
     },
     store: {
@@ -1435,14 +1435,14 @@ export function migrateState(saved) {
   state.business.lastProcessedMonth = String(state.business.lastProcessedMonth || '');
 
   state.facilities = { ...initialState().facilities, ...(state.facilities || {}) };
-  // 初期から利用できるのは地金屋、ルース屋、ジュエリーショップ、g-Lab.、ディスプレイ屋。
+  // 初期から利用できるのは地金屋、ルース屋、ジュエリーショップ、g-Lab.、ディスプレイ屋、不動産屋。
   state.facilities.materialShop = true;
   state.facilities.looseShop = true;
   state.facilities.glab = true;
   state.facilities.jewelryShop = true;
   state.facilities.displayShop = true;
+  state.facilities.realEstate = true;
   // 既存セーブで利用済みの施設は閉じない。
-  if (state.store?.rented) state.facilities.realEstate = true;
   if (state.employee?.hired) state.facilities.recruitment = true;
   // v0.5.8より店舗は不動産で契約してから利用する。旧セーブは実際の店舗利用履歴がある場合のみ契約済みとして引き継ぐ。
   if (typeof legacy.store?.rented !== 'boolean') {
@@ -1514,7 +1514,7 @@ export function migrateState(saved) {
       showcases: [], showcaseCount: 0,
     });
   }
-  if (state.store.rented) state.facilities.realEstate = true;
+  state.facilities.realEstate = true;
   const legacyRecommendedPrices = new Map(
     (Array.isArray(state.inventory.jewelry) ? state.inventory.jewelry : [])
       .filter((entry) => entry?.id)

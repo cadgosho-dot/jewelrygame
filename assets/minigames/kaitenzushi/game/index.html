@@ -1448,6 +1448,52 @@
     }
   }
 
+
+  /* v0.10.259：皿の横幅を基準に寿司画像の表示サイズを統一 */
+  .custom-bg-game {
+    --sushi-plate-display-width: 168px;
+    --sushi-screen-lift: 12px;
+  }
+
+  .custom-bg-game .sushi-item.image-sushi {
+    overflow: visible !important;
+  }
+
+  .custom-bg-game .custom-sushi-image {
+    width: var(--sushi-plate-display-width) !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: contain !important;
+  }
+
+  /* 既存位置から少し上へ移動 */
+  .custom-bg-game .sushi-item {
+    top: calc(10% - var(--sushi-screen-lift)) !important;
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game {
+      --sushi-plate-display-width: 164px;
+      --sushi-screen-lift: 12px;
+    }
+
+    .custom-bg-game .sushi-item {
+      top: calc(9% - var(--sushi-screen-lift)) !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game {
+      --sushi-plate-display-width: 145px;
+      --sushi-screen-lift: 10px;
+    }
+
+    .custom-bg-game .sushi-item {
+      top: calc(8% - var(--sushi-screen-lift)) !important;
+    }
+  }
+
 </style>
 </head>
 <body>

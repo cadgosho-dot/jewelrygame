@@ -4256,7 +4256,7 @@ function renderOkachimachi() {
           <button type="button" class="secondary-button full-button" data-action="okachimachi-external" data-url="${JEWELRY_TOWN_OKACHIMACHI_URL}">ジュエリータウンおかちまち</button>
         </div>
       </section>
-    </div>`, { help: '御徒町では施設を選択できます。初期から利用できるのは地金屋、ルース屋、ジュエリーショップ、g-Lab.、ディスプレイ屋です。各施設は18:00まで利用できます。g-Lab.以外は土日祝休業、g-Lab.は12月31日〜1月2日のみ休業です。' });
+    </div>`, { help: '御徒町では施設を選択できます。初期から利用できるのは地金屋、ルース屋、ジュエリーショップ、g-Lab.、ディスプレイ屋、不動産屋です。各施設は18:00まで利用できます。g-Lab.以外は土日祝休業、g-Lab.は12月31日〜1月2日のみ休業です。' });
 }
 
 function renderSupplier() {

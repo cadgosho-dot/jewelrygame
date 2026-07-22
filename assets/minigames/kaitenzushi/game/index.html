@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>回転寿司ミニゲーム</title>
+<style>
+  :root {
+    --wood1: #b77a42;
+    --wood2: #8e552d;
+    --belt: #34383d;
+    --belt-edge: #17191c;
+    --cream: #fff6dd;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #2a1710;
+  }
+
+  body {
+    display: grid;
+    place-items: center;
+  }
+
+  #game {
+    position: relative;
+    width: min(100vw, 720px);
+    height: 100dvh;
+    max-height: 1000px;
+    overflow: hidden;
+    background:
+      linear-gradient(rgba(255,255,255,.04), rgba(0,0,0,.08)),
+      repeating-linear-gradient(
+        90deg,
+        var(--wood1) 0 70px,
+        var(--wood2) 71px 74px
+      );
+  }
+
+  .wall {
+    position: absolute;
+    inset: 0 0 58% 0;
+    background:
+      linear-gradient(rgba(255,255,255,.6), rgba(255,245,220,.4)),
+      repeating-linear-gradient(0deg, #eadfc9 0 42px, #d8cab3 43px 45px);
+    border-bottom: 12px solid #5c311e;
+  }
+
+
+  .hud {
+    position: absolute;
+    z-index: 90;
+    top: auto;
+    left: auto;
+    right: 134px;
+    bottom: 12%;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .hud-box {
+    min-width: 112px;
+    height: 56px;
+    padding: 0 14px;
+    border: 3px solid rgba(255,255,255,.94);
+    border-radius: 15px;
+    background: rgba(26,17,13,.82);
+    color: white;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    text-align: center;
+    text-shadow: 0 2px 0 #000;
+    box-shadow: 0 5px 15px rgba(0,0,0,.24);
+  }
+
+  .hud-box strong {
+    display: block;
+    font-size: 25px;
+    line-height: 1;
+    color: #ffffff;
+    white-space: nowrap;
+  }
+
+  #beltWrap {
+    position: absolute;
+    z-index: 5;
+    left: 0;
+    right: 0;    top: 37%;
+    height: 30%;
+    overflow: hidden;
+    border-top: 12px solid var(--belt-edge);
+    border-bottom: 12px solid var(--belt-edge);
+    background:
+      repeating-linear-gradient(
+        90deg,
+        #3a3f45 0 48px,
+        #555b61 49px 54px
+      );
+    box-shadow:
+      inset 0 16px 25px rgba(255,255,255,.08),
+      inset 0 -16px 25px rgba(0,0,0,.35),
+      0 14px 20px rgba(0,0,0,.24);
+  }
+
+  #beltWrap::before,
+  #beltWrap::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 18px;
+    z-index: 10;
+    background: repeating-linear-gradient(90deg, #aeb3b8 0 30px, #747a80 31px 38px);
+  }
+
+  #beltWrap::before { top: 8px; }
+  #beltWrap::after { bottom: 8px; }
+
+  #belt {
+    position: absolute;
+    inset: 0;
+  }
+
+  .sushi-item {
+    position: absolute;
+    width: 145px;
+    height: 128px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    touch-action: manipulation;
+    filter: drop-shadow(0 10px 8px rgba(0,0,0,.33));
+  }
+
+  .plate {
+    position: absolute;
+    left: 7px;
+    right: 7px;
+    bottom: 8px;
+    height: 52px;
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse at center, #fff 0 45%, #e6e6e6 46% 57%, var(--plateColor) 58% 68%, var(--plateAccent, #fff) 69% 75%, var(--plateColor) 76%);
+    border: 3px solid rgba(0,0,0,.16);
+  }
+
+  .food {
+    position: absolute;
+    left: 50%;
+    bottom: 35px;
+    transform: translateX(-50%);
+    font-size: 72px;
+    line-height: 1;
+    text-shadow: 0 4px 0 rgba(255,255,255,.25);
+  }
+
+
+  .eat {
+    pointer-events: none;
+    animation: eat .28s ease-in forwards;
+  }
+
+  @keyframes eat {
+    0% { transform: translateY(-50%) scale(1); opacity: 1; }
+    45% { transform: translateY(-60%) scale(1.18) rotate(-4deg); opacity: 1; }
+    100% { transform: translateY(-30%) scale(.18) rotate(15deg); opacity: 0; }
+  }
+
+  .miss {
+    position: absolute;
+    z-index: 30;
+    color: #fff;
+    font-weight: 1000;
+    font-size: 24px;
+    text-shadow: 0 3px 0 #a61c1c, 0 0 12px #000;
+    pointer-events: none;
+    animation: floatText .8s ease-out forwards;
+  }
+
+  .points {
+    position: absolute;
+    z-index: 30;
+    color: #ffe95e;
+    font-weight: 1000;
+    font-size: 30px;
+    text-shadow: 0 3px 0 #b74900, 0 0 12px #000;
+    pointer-events: none;
+    animation: floatText .8s ease-out forwards;
+  }
+
+  @keyframes floatText {
+    from { transform: translate(-50%, 0) scale(.8); opacity: 1; }
+    to { transform: translate(-50%, -75px) scale(1.15); opacity: 0; }
+  }
+
+
+  .counter {
+    position: absolute;
+    z-index: 8;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 21%;
+    background:
+      linear-gradient(rgba(255,255,255,.08), rgba(0,0,0,.2)),
+      repeating-linear-gradient(
+        90deg,
+        #8f542f 0 90px,
+        #6d3b24 91px 95px
+      );
+    border-top: 9px solid #492719;
+  }
+
+  .instruction {
+    position: absolute;
+    z-index: 15;
+    left: 50%;
+    bottom: 7%;
+    transform: translateX(-50%);
+    width: min(88%, 500px);
+    padding: 13px 18px;
+    border: 3px solid #fff;
+    border-radius: 18px;
+    background: rgba(28,16,11,.76);
+    color: white;
+    font-size: clamp(15px, 4.2vw, 21px);
+    font-weight: 900;
+    text-align: center;
+    text-shadow: 0 2px #000;
+  }
+
+
+  #checkoutButton {
+    position: absolute;
+    z-index: 95;
+    right: 16px;
+    bottom: 12%;
+    width: 108px;
+    height: 56px;
+    padding: 0 14px;
+    border: 3px solid #fff;
+    border-radius: 15px;
+    background: #e63946;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 1000;
+    line-height: 1;
+    box-shadow: 0 6px 0 #8c1820;
+    display: none;
+  }
+
+  #checkoutButton:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #8c1820;
+  }
+
+
+  #plateStack {
+    position: relative;
+    width: 190px;
+    height: calc(88dvh - 8px);
+    flex: 0 0 190px;
+    align-self: flex-end;
+    overflow: visible;
+    pointer-events: none;
+    filter: drop-shadow(0 9px 8px rgba(0,0,0,.34));
+  }
+
+  .stacked-plate {
+    position: absolute;
+    left: 50%;
+    width: 164px;
+    height: 48px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background:
+      radial-gradient(
+        ellipse at 50% 38%,
+        #ffffff 0 35%,
+        #eeeeee 36% 47%,
+        var(--stackColor) 48% 61%,
+        var(--stackAccent, #ffffff) 62% 70%,
+        var(--stackColor) 71% 80%,
+        #d9d9d9 81% 100%
+      );
+    border: 3px solid rgba(0,0,0,.25);
+    box-shadow:
+      inset 0 7px 8px rgba(255,255,255,.75),
+      inset 0 -8px 10px rgba(0,0,0,.16),
+      0 5px 5px rgba(0,0,0,.24);
+  }
+
+  .stacked-plate::after {
+    content: "";
+    position: absolute;
+    left: 13%;
+    right: 13%;
+    bottom: 2px;
+    height: 13px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.13);
+    filter: blur(2px);
+  }
+
+
+  #startScreen, #resultScreen {
+    position: absolute;
+    z-index: 100;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 18px;
+    padding: 30px;
+    background: rgba(25,12,8,.72);
+    backdrop-filter: blur(4px);
+    color: white;
+    text-align: center;
+  }
+
+  #resultScreen {
+    display: none;
+  }
+
+  .panel {
+    padding: 26px 22px;
+    border: 5px solid #fff4d4;
+    border-radius: 24px;
+    background: #9b251f;
+    box-shadow: 0 13px 0 #5f1714, 0 22px 35px rgba(0,0,0,.36);
+  }
+
+  .panel h1 {
+    margin: 0 0 8px;
+    font-size: clamp(34px, 10vw, 64px);
+  }
+
+  .panel p {
+    margin: 7px 0 20px;
+    line-height: 1.7;
+    font-weight: 800;
+  }
+
+  button {
+    appearance: none;
+    border: 4px solid white;
+    border-radius: 18px;
+    padding: 14px 28px;
+    background: #ffd84e;
+    color: #4c2216;
+    font: inherit;
+    font-size: 22px;
+    font-weight: 1000;
+    box-shadow: 0 7px 0 #b68100;
+    cursor: pointer;
+  }
+
+  button:active {
+    transform: translateY(5px);
+    box-shadow: 0 2px 0 #b68100;
+  }
+
+  #finalScore {
+    display: block;
+    font-size: 52px;
+    color: #fff36a;
+    text-shadow: 0 4px #65120f;
+  }
+
+
+  @media (orientation: landscape) {
+    #game {
+      width: 100vw;
+      height: 100dvh;
+      max-width: none;
+      max-height: none;
+    }
+
+    .wall {
+      inset: 0 0 60% 0;
+    }
+
+
+    .hud {
+      top: auto;
+      left: auto;
+      right: 132px;
+      bottom: 7%;
+    }
+
+    .hud-box {
+      min-width: 100px;
+      padding: 9px 12px;
+    }
+
+    .hud-box strong {
+      font-size: 22px;
+    }
+
+    #beltWrap {
+      top: 34%;
+      height: 34%;
+    }
+
+    .sushi-item {
+      width: 132px;
+      height: 112px;
+    }
+
+    .food {
+      bottom: 31px;
+      font-size: 62px;
+    }
+
+    .plate {
+      height: 45px;
+    }
+
+    .counter {
+      height: 24%;
+    }
+
+
+    #checkoutButton {
+      right: 18px;
+      bottom: 7%;
+      font-size: 17px;
+      padding: 10px 17px;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+
+    .hud {
+      top: auto;
+      left: auto;
+      right: 118px;
+      bottom: 4%;
+    }
+
+    .hud-box {
+      min-width: 86px;
+      padding: 8px 9px;
+    }
+
+    .hud-box strong {
+      font-size: 18px;
+    }
+
+    #beltWrap {
+      top: 31%;
+      height: 38%;
+      border-top-width: 8px;
+      border-bottom-width: 8px;
+    }
+
+    .sushi-item {
+      width: 116px;
+      height: 98px;
+    }
+
+    .food {
+      bottom: 27px;
+      font-size: 52px;
+    }
+
+    .plate {
+      height: 39px;
+    }
+
+
+    .counter {
+      height: 26%;
+    }
+
+
+
+  }
+
+
+
+
+
+
+  @media (orientation: landscape) {
+    .hud {
+      right: 134px;
+      bottom: 6%;
+      gap: 10px;
+    }
+
+    #plateStack {
+      width: 235px;
+      height: calc(94dvh - 6px);
+      flex-basis: 235px;
+    }
+
+    .stacked-plate {
+      width: 205px;
+      height: 57px;
+    }
+
+    .hud-box {
+      min-width: 112px;
+      width: auto;
+      height: 52px;
+      padding: 0 14px;
+    }
+
+    #checkoutButton {
+      right: 16px;
+      bottom: 6%;
+      width: 108px;
+      height: 52px;
+      padding: 0 14px;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .hud {
+      right: 116px;
+      bottom: 2%;
+      gap: 7px;
+    }
+
+    #plateStack {
+      width: 205px;
+      height: calc(98dvh - 4px);
+      flex-basis: 205px;
+    }
+
+    .stacked-plate {
+      width: 178px;
+      height: 49px;
+    }
+
+    .hud-box {
+      min-width: 94px;
+      height: 46px;
+      padding: 0 10px;
+    }
+
+    .hud-box strong {
+      font-size: 20px;
+    }
+
+    #checkoutButton {
+      right: 10px;
+      bottom: 2%;
+      width: 99px;
+      height: 46px;
+      padding: 0 10px;
+      border-width: 2px;
+      font-size: 15px;
+    }
+  }
+
+
+  /* 横画面プレイ用の最終調整 */
+  @media (orientation: landscape) {
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      display: block;
+    }
+
+    #game {
+      position: fixed;
+      inset: 0;
+      width: 100dvw;
+      height: 100dvh;
+      max-width: none;
+      max-height: none;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .wall {
+      top: 0;
+      right: 0;
+      bottom: 68%;
+      left: 0;
+    }
+
+    #beltWrap {
+      top: 50%;
+      right: 0;
+      left: 0;
+      width: 100%;
+      height: clamp(142px, 36dvh, 275px);
+      transform: translateY(-50%);
+      border-top-width: 9px;
+      border-bottom-width: 9px;
+    }
+
+    #beltWrap::before,
+    #beltWrap::after {
+      height: 13px;
+    }
+
+    #beltWrap::before {
+      top: 5px;
+    }
+
+    #beltWrap::after {
+      bottom: 5px;
+    }
+
+    .sushi-item {
+      width: clamp(112px, 15vw, 158px);
+      height: clamp(96px, 27dvh, 132px);
+    }
+
+    .food {
+      bottom: 29px;
+      font-size: clamp(50px, 10dvh, 68px);
+    }
+
+    .plate {
+      left: 6px;
+      right: 6px;
+      bottom: 7px;
+      height: clamp(39px, 11dvh, 52px);
+    }
+
+    .counter {
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 32%;
+    }
+
+    .hud {
+      right: calc(132px + env(safe-area-inset-right));
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      gap: 8px;
+      z-index: 110;
+    }
+
+    #plateStack {
+      width: clamp(185px, 28vw, 290px);
+      height: calc(100dvh - 8px);
+      flex-basis: clamp(185px, 28vw, 290px);
+    }
+
+    .stacked-plate {
+      width: clamp(168px, 25vw, 260px);
+      height: clamp(46px, 12dvh, 66px);
+    }
+
+    .hud-box {
+      min-width: 104px;
+      height: 50px;
+      padding: 0 12px;
+    }
+
+    .hud-box strong {
+      font-size: clamp(19px, 4.5dvh, 24px);
+    }
+
+    #checkoutButton {
+      right: calc(12px + env(safe-area-inset-right));
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      width: 108px;
+      height: 50px;
+      padding: 0 12px;
+      font-size: 16px;
+      z-index: 115;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 390px) {
+    #beltWrap {
+      height: 42dvh;
+    }
+
+    .hud {
+      right: calc(116px + env(safe-area-inset-right));
+      bottom: calc(5px + env(safe-area-inset-bottom));
+    }
+
+    #plateStack {
+      width: clamp(165px, 25vw, 225px);
+      flex-basis: clamp(165px, 25vw, 225px);
+      height: calc(100dvh - 4px);
+    }
+
+    .stacked-plate {
+      width: clamp(150px, 23vw, 205px);
+      height: clamp(42px, 13dvh, 52px);
+    }
+
+    .hud-box {
+      min-width: 88px;
+      height: 43px;
+      padding: 0 8px;
+    }
+
+    .hud-box strong {
+      font-size: 18px;
+    }
+
+    #checkoutButton {
+      right: calc(7px + env(safe-area-inset-right));
+      bottom: calc(5px + env(safe-area-inset-bottom));
+      width: 99px;
+      height: 43px;
+      padding: 0 8px;
+      font-size: 14px;
+    }
+  }
+
+
+  /* 最終調整：皿を左詰め、金額とお会計を大きく、背景を薄く透過 */
+  #plateStack {
+    position: fixed !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    width: 220px !important;
+    height: 100dvh !important;
+    flex: none !important;
+    overflow: visible !important;
+    z-index: 105 !important;
+  }
+
+  .stacked-plate {
+    left: 8px !important;
+    transform: none !important;
+    width: 175px !important;
+    height: 51px !important;
+  }
+
+  .hud {
+    right: 154px !important;
+    bottom: 12% !important;
+    z-index: 108 !important;
+  }
+
+  .hud-box {
+    min-width: 158px !important;
+    height: 70px !important;
+    padding: 0 18px !important;
+    background: rgba(18, 18, 18, 0.30) !important;
+    border-color: rgba(255, 255, 255, 0.62) !important;
+    backdrop-filter: blur(2px);
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.16) !important;
+  }
+
+  .hud-box strong {
+    color: #ffffff !important;
+    font-size: 36px !important;
+    font-weight: 1000 !important;
+    text-shadow: 0 3px 5px rgba(0,0,0,.75) !important;
+  }
+
+  #checkoutButton {
+    right: 16px !important;
+    bottom: 12% !important;
+    width: 128px !important;
+    height: 70px !important;
+    padding: 0 12px !important;
+    background: rgba(230, 57, 70, 0.42) !important;
+    border-color: rgba(255, 255, 255, 0.68) !important;
+    color: #ffffff !important;
+    font-size: 27px !important;
+    font-weight: 1000 !important;
+    text-shadow: 0 3px 5px rgba(0,0,0,.7) !important;
+    box-shadow: 0 5px 0 rgba(112, 20, 27, 0.35) !important;
+    backdrop-filter: blur(2px);
+  }
+
+  @media (orientation: landscape) {
+    #plateStack {
+      width: clamp(245px, 31vw, 340px) !important;
+      height: 100dvh !important;
+    }
+
+    .stacked-plate {
+      left: 8px !important;
+      width: clamp(215px, 28vw, 300px) !important;
+      height: clamp(58px, 13dvh, 74px) !important;
+    }
+
+    .hud {
+      right: calc(166px + env(safe-area-inset-right)) !important;
+      bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .hud-box {
+      min-width: 185px !important;
+      height: 68px !important;
+    }
+
+    .hud-box strong {
+      font-size: clamp(34px, 7dvh, 44px) !important;
+    }
+
+    #checkoutButton {
+      right: calc(12px + env(safe-area-inset-right)) !important;
+      bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+      width: 142px !important;
+      height: 68px !important;
+      font-size: clamp(25px, 6dvh, 32px) !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 390px) {
+    #plateStack {
+      width: clamp(210px, 27vw, 280px) !important;
+    }
+
+    .stacked-plate {
+      width: clamp(185px, 24vw, 245px) !important;
+      height: clamp(48px, 13dvh, 58px) !important;
+    }
+
+    .hud {
+      right: calc(142px + env(safe-area-inset-right)) !important;
+      bottom: calc(7px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .hud-box {
+      min-width: 145px !important;
+      height: 54px !important;
+    }
+
+    .hud-box strong {
+      font-size: 29px !important;
+    }
+
+    #checkoutButton {
+      right: calc(8px + env(safe-area-inset-right)) !important;
+      bottom: calc(7px + env(safe-area-inset-bottom)) !important;
+      width: 120px !important;
+      height: 54px !important;
+      font-size: 23px !important;
+    }
+  }
+
+
+  /* アップロード背景画像の組み込み */
+  .custom-bg-game {
+    background-image: url("../assets/background/kaitenzushi_counter_background.png") !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-color: #4a2d1f !important;
+  }
+
+  .custom-bg-game .wall,
+  .custom-bg-game .counter {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .custom-bg-game #beltWrap {
+    background:
+      linear-gradient(rgba(30, 23, 18, 0.10), rgba(0, 0, 0, 0.12)),
+      repeating-linear-gradient(
+        90deg,
+        rgba(76, 80, 85, 0.35) 0 48px,
+        rgba(108, 114, 120, 0.35) 49px 54px
+      ) !important;
+    border-top-color: rgba(23, 25, 28, 0.55) !important;
+    border-bottom-color: rgba(23, 25, 28, 0.55) !important;
+    box-shadow:
+      inset 0 12px 22px rgba(255,255,255,.05),
+      inset 0 -12px 20px rgba(0,0,0,.18) !important;
+  }
+
+  .custom-bg-game #beltWrap::before,
+  .custom-bg-game #beltWrap::after {
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(174,179,184,.45) 0 30px,
+      rgba(116,122,128,.45) 31px 38px
+    ) !important;
+  }
+
+
+  /* 背景画像に合わせた最終位置調整 */
+  .custom-bg-game #beltWrap {
+    top: 54.6% !important;
+    height: clamp(76px, 11.5dvh, 98px) !important;
+    transform: translateY(-50%) !important;
+    background:
+      linear-gradient(rgba(35, 28, 22, 0.08), rgba(0, 0, 0, 0.10)),
+      repeating-linear-gradient(
+        90deg,
+        rgba(76, 80, 85, 0.28) 0 48px,
+        rgba(108, 114, 120, 0.28) 49px 54px
+      ) !important;
+    border-top-width: 8px !important;
+    border-bottom-width: 8px !important;
+  }
+
+  .custom-bg-game #beltWrap::before,
+  .custom-bg-game #beltWrap::after {
+    height: 11px !important;
+  }
+
+  .custom-bg-game #beltWrap::before {
+    top: 5px !important;
+  }
+
+  .custom-bg-game #beltWrap::after {
+    bottom: 5px !important;
+  }
+
+  .custom-bg-game .sushi-item {
+    top: 50% !important;
+  }
+
+  /* 食べた皿の山は左端に固定し、絵を優先 */
+  .custom-bg-game #plateStack {
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 245px !important;
+    height: 100dvh !important;
+    z-index: 120 !important;
+  }
+
+  .custom-bg-game .stacked-plate {
+    left: 4px !important;
+    width: 190px !important;
+    height: 54px !important;
+  }
+
+  .custom-bg-game .hud {
+    right: 154px !important;
+    bottom: 12% !important;
+  }
+
+  .custom-bg-game #checkoutButton {
+    right: 16px !important;
+    bottom: 12% !important;
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game #beltWrap {
+      top: 55.8% !important;
+      height: clamp(72px, 12dvh, 96px) !important;
+    }
+
+    .custom-bg-game #plateStack {
+      width: clamp(250px, 28vw, 340px) !important;
+      height: 100dvh !important;
+    }
+
+    .custom-bg-game .stacked-plate {
+      left: 4px !important;
+      width: clamp(210px, 24vw, 300px) !important;
+      height: clamp(58px, 12.5dvh, 72px) !important;
+    }
+
+    .custom-bg-game .hud {
+      right: calc(166px + env(safe-area-inset-right)) !important;
+      bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .custom-bg-game #checkoutButton {
+      right: calc(12px + env(safe-area-inset-right)) !important;
+      bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game #beltWrap {
+      top: 56.2% !important;
+      height: 12.8dvh !important;
+    }
+
+    .custom-bg-game #plateStack {
+      width: clamp(220px, 26vw, 280px) !important;
+    }
+
+    .custom-bg-game .stacked-plate {
+      width: clamp(185px, 23vw, 240px) !important;
+      height: clamp(50px, 13dvh, 58px) !important;
+    }
+
+    .custom-bg-game .hud {
+      right: calc(142px + env(safe-area-inset-right)) !important;
+      bottom: calc(7px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .custom-bg-game #checkoutButton {
+      right: calc(8px + env(safe-area-inset-right)) !important;
+      bottom: calc(7px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+
+
+  /* 寿司をレールより前面に表示 */
+  .custom-bg-game #beltWrap {
+    overflow: visible !important;
+    z-index: auto !important;
+    transform: none !important;
+    top: calc(54.6% - 49px) !important;
+  }
+
+  .custom-bg-game #belt {
+    overflow: visible !important;
+    z-index: auto !important;
+  }
+
+  .custom-bg-game .sushi-item {
+    z-index: 300 !important;
+    pointer-events: auto !important;
+  }
+
+  .custom-bg-game #beltWrap::before,
+  .custom-bg-game #beltWrap::after {
+    z-index: 2 !important;
+    pointer-events: none !important;
+  }
+
+  /* 縦画面：皿を左へはみ出させ、円とお会計を隠さない */
+  @media (orientation: portrait) {
+    .custom-bg-game #plateStack {
+      left: -92px !important;
+      right: auto !important;
+      z-index: 100 !important;
+    }
+
+    .custom-bg-game .stacked-plate {
+      left: 0 !important;
+      transform: none !important;
+    }
+
+    .custom-bg-game .hud {
+      right: 150px !important;
+      bottom: 12% !important;
+      z-index: 400 !important;
+    }
+
+    .custom-bg-game .hud-box {
+      position: relative !important;
+      z-index: 401 !important;
+    }
+
+    .custom-bg-game #checkoutButton {
+      right: 14px !important;
+      bottom: 12% !important;
+      z-index: 405 !important;
+    }
+  }
+
+  @media (orientation: portrait) and (max-width: 390px) {
+    .custom-bg-game #plateStack {
+      left: -118px !important;
+    }
+
+    .custom-bg-game .hud {
+      right: 139px !important;
+    }
+
+    .custom-bg-game .hud-box {
+      min-width: 138px !important;
+      padding: 0 11px !important;
+    }
+
+    .custom-bg-game .hud-box strong {
+      font-size: 31px !important;
+    }
+
+    .custom-bg-game #checkoutButton {
+      right: 10px !important;
+      width: 119px !important;
+      font-size: 25px !important;
+    }
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game #beltWrap {
+      top: calc(55.8% - 48px) !important;
+      transform: none !important;
+      overflow: visible !important;
+      z-index: auto !important;
+    }
+
+    .custom-bg-game .sushi-item {
+      z-index: 300 !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game #beltWrap {
+      top: calc(56.2% - 26px) !important;
+    }
+  }
+
+
+  /* 寿司の表示位置を少し上へ */
+  .custom-bg-game .sushi-item {
+    top: 36% !important;
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game .sushi-item {
+      top: 34% !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game .sushi-item {
+      top: 32% !important;
+    }
+  }
+
+
+  /* 元ゲームの背景表現を完全に削除し、提供画像だけを使用 */
+  html,
+  body {
+    background: #000 !important;
+  }
+
+  .custom-bg-game .wall,
+  .custom-bg-game .counter {
+    display: none !important;
+  }
+
+  .custom-bg-game #beltWrap {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    z-index: 100 !important;
+  }
+
+  .custom-bg-game #beltWrap::before,
+  .custom-bg-game #beltWrap::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  .custom-bg-game #belt {
+    background: transparent !important;
+    overflow: visible !important;
+    z-index: 100 !important;
+  }
+
+  /* 寿司は背景より前、積んだ皿より後ろ */
+  .custom-bg-game .sushi-item {
+    z-index: 700 !important;
+  }
+
+  /* 積んだ皿を最前面に近い位置へ */
+  .custom-bg-game #plateStack {
+    z-index: 950 !important;
+  }
+
+  .custom-bg-game .stacked-plate {
+    z-index: auto;
+  }
+
+  /* 金額とお会計は操作性確保のため皿よりさらに前 */
+  .custom-bg-game .hud {
+    z-index: 1100 !important;
+  }
+
+  .custom-bg-game #checkoutButton {
+    z-index: 1110 !important;
+  }
+
+
+  .custom-sushi-image {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 150px;
+    height: auto;
+    display: block;
+    pointer-events: none;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,.18));
+  }
+
+  .sushi-item.image-sushi {
+    width: 165px;
+    height: 120px;
+  }
+
+  @media (orientation: landscape) {
+    .custom-sushi-image {
+      width: 146px;
+    }
+
+    .sushi-item.image-sushi {
+      width: 160px;
+      height: 116px;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-sushi-image {
+      width: 132px;
+    }
+
+    .sushi-item.image-sushi {
+      width: 145px;
+      height: 102px;
+    }
+  }
+
+
+  /* 新背景向け 微調整 */
+  .custom-bg-game #beltWrap {
+    top: calc(57.3% - 43px) !important;
+    height: clamp(78px, 10.8dvh, 96px) !important;
+  }
+
+  .custom-bg-game .sushi-item {
+    top: 28% !important;
+  }
+
+  /* 皿の山は左へ少し逃がして、背景の小物を邪魔しにくくする */
+  .custom-bg-game #plateStack {
+    left: -112px !important;
+    bottom: -4px !important;
+    width: 250px !important;
+  }
+
+  .custom-bg-game .stacked-plate {
+    left: 8px !important;
+    width: 192px !important;
+    height: 55px !important;
+  }
+
+  /* 金額とお会計を右下の見やすい位置へ */
+  .custom-bg-game .hud {
+    right: 154px !important;
+    bottom: 10.5% !important;
+  }
+
+  .custom-bg-game #checkoutButton {
+    right: 16px !important;
+    bottom: 10.5% !important;
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game #beltWrap {
+      top: calc(58.2% - 42px) !important;
+      height: clamp(72px, 11dvh, 94px) !important;
+    }
+
+    .custom-bg-game .sushi-item {
+      top: 27% !important;
+    }
+
+    .custom-bg-game #plateStack {
+      left: -54px !important;
+      width: clamp(255px, 28vw, 340px) !important;
+      bottom: -2px !important;
+    }
+
+    .custom-bg-game .stacked-plate {
+      left: 8px !important;
+      width: clamp(212px, 23vw, 295px) !important;
+      height: clamp(58px, 12dvh, 72px) !important;
+    }
+
+    .custom-bg-game .hud {
+      right: calc(166px + env(safe-area-inset-right)) !important;
+      bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .custom-bg-game #checkoutButton {
+      right: calc(12px + env(safe-area-inset-right)) !important;
+      bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game #beltWrap {
+      top: calc(58.7% - 24px) !important;
+      height: 12.2dvh !important;
+    }
+
+    .custom-bg-game .sushi-item {
+      top: 25% !important;
+    }
+
+    .custom-bg-game #plateStack {
+      left: -42px !important;
+      width: clamp(220px, 25vw, 285px) !important;
+    }
+
+    .custom-bg-game .stacked-plate {
+      width: clamp(186px, 22vw, 240px) !important;
+      height: clamp(50px, 12.4dvh, 58px) !important;
+    }
+
+    .custom-bg-game .hud {
+      right: calc(142px + env(safe-area-inset-right)) !important;
+      bottom: calc(6px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .custom-bg-game #checkoutButton {
+      right: calc(8px + env(safe-area-inset-right)) !important;
+      bottom: calc(6px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+
+
+  /* 提供いただいた皿画像を積み皿に使用 */
+  .stacked-plate-image {
+    position: absolute;
+    left: 50%;
+    width: 164px;
+    height: auto;
+    transform: translateX(-50%);
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0 6px 5px rgba(0,0,0,.24));
+  }
+
+  /* 寿司の表示位置をさらに上へ */
+  .custom-bg-game .sushi-item {
+    top: 22% !important;
+  }
+
+  /* 積み皿画像の配置 */
+  .custom-bg-game .stacked-plate-image {
+    left: 8px !important;
+    transform: none !important;
+    width: 192px !important;
+    height: auto !important;
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game .sushi-item {
+      top: 21% !important;
+    }
+
+    .custom-bg-game .stacked-plate-image {
+      left: 8px !important;
+      width: clamp(212px, 23vw, 295px) !important;
+      height: auto !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game .sushi-item {
+      top: 19% !important;
+    }
+
+    .custom-bg-game .stacked-plate-image {
+      width: clamp(186px, 22vw, 240px) !important;
+      height: auto !important;
+    }
+  }
+
+
+  /* 寿司画像をさらに上へ */
+  .custom-bg-game .sushi-item {
+    top: 16% !important;
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game .sushi-item {
+      top: 15% !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game .sushi-item {
+      top: 13% !important;
+    }
+  }
+
+
+  /* 寿司画像をさらにもう一段上へ */
+  .custom-bg-game .sushi-item {
+    top: 10% !important;
+  }
+
+  @media (orientation: landscape) {
+    .custom-bg-game .sushi-item {
+      top: 9% !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .custom-bg-game .sushi-item {
+      top: 8% !important;
+    }
+  }
+
+
+  /* 追加した寿司画像の表示サイズを統一 */
+  .sushi-item.image-sushi {
+    width: 178px !important;
+    height: 128px !important;
+  }
+
+  .custom-sushi-image {
+    width: 168px !important;
+    max-height: 126px !important;
+    object-fit: contain !important;
+  }
+
+  @media (orientation: landscape) {
+    .sushi-item.image-sushi {
+      width: 174px !important;
+      height: 124px !important;
+    }
+
+    .custom-sushi-image {
+      width: 164px !important;
+      max-height: 122px !important;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 430px) {
+    .sushi-item.image-sushi {
+      width: 154px !important;
+      height: 108px !important;
+    }
+
+    .custom-sushi-image {
+      width: 145px !important;
+      max-height: 106px !important;
+    }
+  }
+
+</style>
+</head>
+<body>
+<div id="game" class="custom-bg-game">
+  <div class="wall"></div>
+
+  <div class="hud">
+    <div id="plateStack" aria-label="食べた皿の枚数"></div>
+    <div class="hud-box"><strong id="score">0円</strong></div>
+  </div>
+
+
+  <div id="beltWrap">
+    <div id="belt"></div>
+  </div>
+
+  <div class="counter"></div>
+  <button id="checkoutButton" type="button">お会計</button>
+
+  <div id="startScreen" style="display:none;">
+    <div class="panel">
+      <h1>🍣 回転寿司</h1>
+      <p>目の前を流れるお寿司をタップして食べよう！<br>高いお皿ほど高得点です。</p>
+      <button id="startButton">ゲーム開始</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const integrationParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const integrationNumber = (name, fallback) => {
+    const raw = integrationParams.get(name);
+    if (raw === null || raw === "") return fallback;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : fallback;
+  };
+  const integrationFlag = (name, fallback = false) => {
+    const raw = integrationParams.get(name);
+    if (raw === null) return fallback;
+    return raw === "1" || raw === "true";
+  };
+  const integrationConfig = {
+    embedded: integrationFlag("embedded"),
+    maxBudget: Math.max(0, Math.floor(integrationNumber("budget", Number.MAX_SAFE_INTEGER))),
+    sfxVolume: Math.max(0, Math.min(1, integrationNumber("sfxVolume", 1))),
+    ambientVolume: Math.max(0, Math.min(1, integrationNumber("ambientVolume", 1))),
+    sfxMuted: integrationFlag("sfxMuted"),
+    ambientMuted: integrationFlag("ambientMuted"),
+    externalAudioPriority: integrationFlag("externalAudioPriority"),
+  };
+
+  function sendIntegrationMessage(type, detail = {}) {
+    if (!integrationConfig.embedded || window.parent === window) return;
+    window.parent.postMessage({
+      source: "jxj-kaitenzushi",
+      type,
+      ...detail,
+    }, "*");
+  }
+
+  function effectiveSfxVolume() {
+    if (integrationConfig.externalAudioPriority || integrationConfig.sfxMuted) return 0;
+    return integrationConfig.sfxVolume;
+  }
+
+  function effectiveAmbientVolume() {
+    if (integrationConfig.externalAudioPriority || integrationConfig.ambientMuted) return 0;
+    return integrationConfig.ambientVolume;
+  }
+
+  window.addEventListener("load", () => {
+    const bg = new Image();
+    bg.onload = () => {
+      try {
+        refreshForOrientation();
+      } catch (_) {}
+    };
+    bg.src = BACKGROUND_IMAGE_DATA;
+  });
+
+
+  const belt = document.getElementById("belt");
+  const scoreEl = document.getElementById("score");
+  const plateStackEl = document.getElementById("plateStack");
+  const startScreen = document.getElementById("startScreen");
+  const startButton = document.getElementById("startButton");
+  const checkoutButton = document.getElementById("checkoutButton");
+
+  const BLUE_SUSHI_IMAGE_DATA = "../assets/sushi/blue_190/ika.png";
+
+  const BLUE_PLATE_IMAGE_DATA = "../assets/plates/plate_blue_190.png";
+  const RED_PLATE_IMAGE_DATA = "../assets/plates/plate_red_250.png";
+  const PURPLE_PLATE_IMAGE_DATA = "../assets/plates/plate_purple_350.png";
+  const BLACK_PLATE_IMAGE_DATA = "../assets/plates/plate_black_850.png";
+
+  const BLUE_SHIMESABA_IMAGE_DATA = "../assets/sushi/blue_190/shimesaba.png";
+  const BLUE_IWASHI_IMAGE_DATA = "../assets/sushi/blue_190/iwashi.png";
+  const BLUE_SALMON_IMAGE_DATA = "../assets/sushi/blue_190/salmon.png";
+  const BLUE_TAKO_IMAGE_DATA = "../assets/sushi/blue_190/tako.png";
+  const BLUE_EBI_IMAGE_DATA = "../assets/sushi/blue_190/ebi.png";
+  const BLACK_OTORO_IMAGE_DATA = "../assets/sushi/black_850/otoro.png";
+
+  const RED_SHIROMI_IMAGE_DATA = "../assets/sushi/red_250/shiromi.png";
+  const RED_MAGURO_IMAGE_DATA = "../assets/sushi/red_250/maguro.png";
+  const RED_ANAGO_IMAGE_DATA = "../assets/sushi/red_250/anago.png";
+  const RED_MELON_IMAGE_DATA = "../assets/sushi/red_250/melon_sign.png";
+  const PURPLE_CHUTORO_IMAGE_DATA = "../assets/sushi/purple_350/chutoro.png";
+  const PURPLE_IKURA_IMAGE_DATA = "../assets/sushi/purple_350/ikura.png";
+  const PURPLE_UNI_IMAGE_DATA = "../assets/sushi/purple_350/uni.png";
+
+  const BLACK_KANI_IMAGE_DATA = "../assets/sushi/black_850/kani.png";
+
+  const sushiTypes = [
+{
+      name: "イカ",
+      point: 190,
+      color: "#1677d2",
+      accent: "#d8efff",
+      image: BLUE_SUSHI_IMAGE_DATA,
+      plateImage: BLUE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "しめ鯖",
+      point: 190,
+      color: "#1677d2",
+      accent: "#d8efff",
+      image: BLUE_SHIMESABA_IMAGE_DATA,
+      plateImage: BLUE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "イワシ",
+      point: 190,
+      color: "#1677d2",
+      accent: "#d8efff",
+      image: BLUE_IWASHI_IMAGE_DATA,
+      plateImage: BLUE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "サーモン",
+      point: 190,
+      color: "#1677d2",
+      accent: "#d8efff",
+      image: BLUE_SALMON_IMAGE_DATA,
+      plateImage: BLUE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "タコ",
+      point: 190,
+      color: "#1677d2",
+      accent: "#d8efff",
+      image: BLUE_TAKO_IMAGE_DATA,
+      plateImage: BLUE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "海老",
+      point: 190,
+      color: "#1677d2",
+      accent: "#d8efff",
+      image: BLUE_EBI_IMAGE_DATA,
+      plateImage: BLUE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "白身",
+      point: 250,
+      color: "#d62828",
+      accent: "#ffd8d8",
+      image: RED_SHIROMI_IMAGE_DATA,
+      plateImage: RED_PLATE_IMAGE_DATA
+    },
+    {
+      name: "マグロ",
+      point: 250,
+      color: "#d62828",
+      accent: "#ffd8d8",
+      image: RED_MAGURO_IMAGE_DATA,
+      plateImage: RED_PLATE_IMAGE_DATA
+    },
+    {
+      name: "穴子",
+      point: 250,
+      color: "#d62828",
+      accent: "#ffd8d8",
+      image: RED_ANAGO_IMAGE_DATA,
+      plateImage: RED_PLATE_IMAGE_DATA
+    },
+    {
+      name: "メロン",
+      point: 250,
+      color: "#d62828",
+      accent: "#ffd8d8",
+      image: RED_MELON_IMAGE_DATA,
+      plateImage: RED_PLATE_IMAGE_DATA
+    },
+    {
+      name: "中トロ",
+      point: 350,
+      color: "#7b2cbf",
+      accent: "#ead7ff",
+      image: PURPLE_CHUTORO_IMAGE_DATA,
+      plateImage: PURPLE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "イクラ",
+      point: 350,
+      color: "#7b2cbf",
+      accent: "#ead7ff",
+      image: PURPLE_IKURA_IMAGE_DATA,
+      plateImage: PURPLE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "ウニ",
+      point: 350,
+      color: "#7b2cbf",
+      accent: "#ead7ff",
+      image: PURPLE_UNI_IMAGE_DATA,
+      plateImage: PURPLE_PLATE_IMAGE_DATA
+    },
+    {
+      name: "大トロ",
+      point: 850,
+      color: "#151515",
+      accent: "#d6aa3a",
+      image: BLACK_OTORO_IMAGE_DATA,
+      plateImage: BLACK_PLATE_IMAGE_DATA
+    },
+    {
+      name: "カニ",
+      point: 850,
+      color: "#151515",
+      accent: "#d6aa3a",
+      image: BLACK_KANI_IMAGE_DATA,
+      plateImage: BLACK_PLATE_IMAGE_DATA
+    }
+  ];
+
+  let score = 0;
+  let plateCount = 0;
+  let eatenPlateColors = [];
+  let running = false;
+  let lastTime = 0;
+  let spawnAccumulator = 0;
+  let animationId = 0;
+  let audioContext = null;
+  let checkoutSent = false;
+  const BACKGROUND_IMAGE_DATA = "../assets/background/kaitenzushi_counter_background.png";
+  const CHEW_SOUND_DATA = "../assets/audio/eat_sfx.ogg";
+  let bgmTimer = null;
+  let bgmStep = 0;
+  let bgmMaster = null;
+  let bgmDelay = null;
+  let bgmFeedback = null;
+  let ambienceNodes = [];
+  let ambienceTimers = [];
+  const items = new Set();
+  const SUSHI_SPEED = 135;
+  const SUSHI_SPACING = 185;
+
+  function initAudio() {
+    if (!audioContext) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) audioContext = new AudioCtx();
+    }
+    if (audioContext?.state === "suspended") audioContext.resume();
+  }
+
+  function chewSound() {
+    const volume = effectiveSfxVolume();
+    if (volume <= 0) return;
+
+    // 提供された食事効果音を、タップごとに最初から再生
+    const sound = new Audio(CHEW_SOUND_DATA);
+    sound.preload = "auto";
+    sound.volume = volume;
+    sound.currentTime = 0;
+
+    // 効果音が聞き取りやすいよう環境音を一時的に下げる
+    if (audioContext && bgmMaster && effectiveAmbientVolume() > 0) {
+      const now = audioContext.currentTime;
+      const ambientTarget = 0.18 * effectiveAmbientVolume();
+      bgmMaster.gain.cancelScheduledValues(now);
+      bgmMaster.gain.setValueAtTime(Math.max(0.0001, bgmMaster.gain.value), now);
+      bgmMaster.gain.linearRampToValueAtTime(Math.max(0.0001, ambientTarget * 0.14), now + 0.02);
+      bgmMaster.gain.linearRampToValueAtTime(ambientTarget, now + 1.0);
+    }
+
+    sound.play().catch(() => {
+      // 端末側の音声制限時は次のタップで再試行
+    });
+  }
+
+  function rememberAmbienceNode(node) {
+    ambienceNodes.push(node);
+    return node;
+  }
+
+  function rememberAmbienceTimer(timer) {
+    ambienceTimers.push(timer);
+    return timer;
+  }
+
+  function makeAmbientNoiseBuffer(seconds = 5) {
+    const length = Math.floor(audioContext.sampleRate * seconds);
+    const buffer = audioContext.createBuffer(
+      1,
+      length,
+      audioContext.sampleRate
+    );
+    const data = buffer.getChannelData(0);
+
+    let smooth = 0;
+    for (let i = 0; i < length; i++) {
+      const raw = Math.random() * 2 - 1;
+      smooth = smooth * 0.93 + raw * 0.07;
+      data[i] = smooth;
+    }
+
+    return buffer;
+  }
+
+  function startCrowdRoomTone() {
+    if (!audioContext || !bgmMaster) return;
+
+    // 店内全体のざわめき
+    const crowd = rememberAmbienceNode(audioContext.createBufferSource());
+    const crowdBand = rememberAmbienceNode(audioContext.createBiquadFilter());
+    const crowdLow = rememberAmbienceNode(audioContext.createBiquadFilter());
+    const crowdGain = rememberAmbienceNode(audioContext.createGain());
+
+    crowd.buffer = makeAmbientNoiseBuffer(6);
+    crowd.loop = true;
+
+    crowdBand.type = "bandpass";
+    crowdBand.frequency.value = 520;
+    crowdBand.Q.value = 0.65;
+
+    crowdLow.type = "lowpass";
+    crowdLow.frequency.value = 1450;
+
+    crowdGain.gain.value = 0.23;
+
+    crowd.connect(crowdBand);
+    crowdBand.connect(crowdLow);
+    crowdLow.connect(crowdGain);
+    crowdGain.connect(bgmMaster);
+    crowd.start();
+
+    // 遠くの人声の厚み
+    const murmur = rememberAmbienceNode(audioContext.createBufferSource());
+    const murmurFilter = rememberAmbienceNode(audioContext.createBiquadFilter());
+    const murmurGain = rememberAmbienceNode(audioContext.createGain());
+
+    murmur.buffer = makeAmbientNoiseBuffer(4.5);
+    murmur.loop = true;
+    murmur.playbackRate.value = 0.78;
+
+    murmurFilter.type = "bandpass";
+    murmurFilter.frequency.value = 760;
+    murmurFilter.Q.value = 1.1;
+    murmurGain.gain.value = 0.09;
+
+    murmur.connect(murmurFilter);
+    murmurFilter.connect(murmurGain);
+    murmurGain.connect(bgmMaster);
+    murmur.start();
+  }
+
+  function playChatterBurst() {
+    if (!running || !audioContext || !bgmMaster) return;
+
+    const now = audioContext.currentTime;
+    const voices = 2 + Math.floor(Math.random() * 3);
+
+    for (let v = 0; v < voices; v++) {
+      const startTime = now + v * 0.07 + Math.random() * 0.12;
+      const syllables = 2 + Math.floor(Math.random() * 4);
+
+      for (let i = 0; i < syllables; i++) {
+        const t = startTime + i * (0.10 + Math.random() * 0.07);
+        const duration = 0.08 + Math.random() * 0.08;
+
+        const osc = rememberAmbienceNode(audioContext.createOscillator());
+        const gain = rememberAmbienceNode(audioContext.createGain());
+        const formant = rememberAmbienceNode(audioContext.createBiquadFilter());
+
+        osc.type = "sawtooth";
+        const base = 115 + Math.random() * 135;
+        osc.frequency.setValueAtTime(base, t);
+        osc.frequency.linearRampToValueAtTime(
+          base * (0.88 + Math.random() * 0.28),
+          t + duration
+        );
+
+        formant.type = "bandpass";
+        formant.frequency.value = 480 + Math.random() * 850;
+        formant.Q.value = 2.2;
+
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(
+          0.008 + Math.random() * 0.014,
+          t + 0.015
+        );
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+        osc.connect(formant);
+        formant.connect(gain);
+        gain.connect(bgmMaster);
+        osc.start(t);
+        osc.stop(t + duration);
+      }
+    }
+  }
+
+  function playGlassClink() {
+    if (!running || !audioContext || !bgmMaster) return;
+
+    const now = audioContext.currentTime;
+    const notes = [1450 + Math.random() * 900, 2050 + Math.random() * 1100];
+
+    notes.forEach((frequency, index) => {
+      const osc = rememberAmbienceNode(audioContext.createOscillator());
+      const gain = rememberAmbienceNode(audioContext.createGain());
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(frequency, now + index * 0.018);
+      gain.gain.setValueAtTime(0.025, now + index * 0.018);
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 0.22 + index * 0.025
+      );
+
+      osc.connect(gain);
+      gain.connect(bgmMaster);
+      osc.start(now + index * 0.018);
+      osc.stop(now + 0.24 + index * 0.025);
+    });
+  }
+
+  function playDishSound() {
+    if (!running || !audioContext || !bgmMaster) return;
+
+    const now = audioContext.currentTime;
+    const duration = 0.075;
+    const buffer = audioContext.createBuffer(
+      1,
+      Math.floor(audioContext.sampleRate * duration),
+      audioContext.sampleRate
+    );
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < data.length; i++) {
+      const p = i / data.length;
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-p * 10);
+    }
+
+    const source = rememberAmbienceNode(audioContext.createBufferSource());
+    const high = rememberAmbienceNode(audioContext.createBiquadFilter());
+    const gain = rememberAmbienceNode(audioContext.createGain());
+
+    source.buffer = buffer;
+    high.type = "highpass";
+    high.frequency.value = 1200;
+    gain.gain.value = 0.018;
+
+    source.connect(high);
+    high.connect(gain);
+    gain.connect(bgmMaster);
+    source.start(now);
+    source.stop(now + duration);
+  }
+
+  function playShortLaugh() {
+    if (!running || !audioContext || !bgmMaster) return;
+
+    const now = audioContext.currentTime;
+    const pulses = 3 + Math.floor(Math.random() * 3);
+
+    for (let i = 0; i < pulses; i++) {
+      const t = now + i * 0.14;
+      const osc = rememberAmbienceNode(audioContext.createOscillator());
+      const gain = rememberAmbienceNode(audioContext.createGain());
+      const filter = rememberAmbienceNode(audioContext.createBiquadFilter());
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(170 + Math.random() * 90, t);
+      osc.frequency.linearRampToValueAtTime(
+        210 + Math.random() * 110,
+        t + 0.09
+      );
+
+      filter.type = "bandpass";
+      filter.frequency.value = 680;
+      filter.Q.value = 1.4;
+
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.012, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(bgmMaster);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    }
+  }
+
+  function scheduleAmbience() {
+    if (!running || !audioContext || !bgmMaster) return;
+
+    playChatterBurst();
+
+    if (Math.random() < 0.55) playGlassClink();
+    if (Math.random() < 0.60) playDishSound();
+    if (Math.random() < 0.22) playShortLaugh();
+
+    const delay = 650 + Math.random() * 1200;
+    rememberAmbienceTimer(setTimeout(scheduleAmbience, delay));
+  }
+
+  function startBgm() {
+    initAudio();
+    if (!audioContext) return;
+
+    stopBgm();
+
+    bgmMaster = audioContext.createGain();
+    bgmMaster.gain.value = 0.18 * effectiveAmbientVolume();
+    bgmMaster.connect(audioContext.destination);
+
+    startCrowdRoomTone();
+    scheduleAmbience();
+  }
+
+  function stopBgm() {
+    if (bgmTimer) {
+      clearTimeout(bgmTimer);
+      bgmTimer = null;
+    }
+
+    ambienceTimers.forEach((timer) => clearTimeout(timer));
+    ambienceTimers = [];
+
+    ambienceNodes.forEach((node) => {
+      try {
+        if (typeof node.stop === "function") node.stop();
+      } catch (_) {}
+      try {
+        node.disconnect();
+      } catch (_) {}
+    });
+    ambienceNodes = [];
+
+    for (const node of [bgmDelay, bgmFeedback, bgmMaster]) {
+      if (!node) continue;
+      try {
+        node.disconnect();
+      } catch (_) {}
+    }
+
+    bgmDelay = null;
+    bgmFeedback = null;
+    bgmMaster = null;
+  }
+
+  function sayMoguMogu() {
+    void chewSound();
+  }
+
+
+
+
+  function refreshForOrientation() {
+    document.documentElement.dataset.orientation =
+      window.innerWidth > window.innerHeight ? "landscape" : "portrait";
+
+    requestAnimationFrame(() => {
+      normalizeItemsAfterResize();
+      updatePlateStack();
+    });
+  }
+
+  function normalizeItemsAfterResize() {
+    const sorted = [...items]
+      .filter(item => !item.eaten)
+      .sort((a, b) => a.x - b.x);
+
+    let previousX = -Infinity;
+    for (const item of sorted) {
+      if (item.x - previousX < SUSHI_SPACING) {
+        item.x = previousX + SUSHI_SPACING;
+        item.el.style.left = item.x + "px";
+      }
+      previousX = item.x;
+    }
+  }
+
+  function canSpawnSushi() {
+    const spawnX = belt.clientWidth + 155;
+
+    for (const item of items) {
+      if (item.eaten) continue;
+      if (item.x > spawnX - SUSHI_SPACING) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function spawnSushi() {
+    const data = sushiTypes[Math.floor(Math.random() * sushiTypes.length)];
+    const el = document.createElement("div");
+    el.className = "sushi-item";
+    el.style.left = (belt.clientWidth + 155) + "px";
+    el.style.setProperty("--plateColor", data.color);
+    el.style.setProperty("--plateAccent", data.accent);
+
+    if (data.image) {
+      el.classList.add("image-sushi");
+      el.innerHTML = `
+      <img class="custom-sushi-image" src="${data.image}" alt="${data.name}" draggable="false" onerror="this.style.display='none'">
+      `;
+    } else {
+      el.innerHTML = `
+      <div class="food" aria-label="${data.name}">${data.emoji}</div>
+      <div class="plate"></div>
+      `;
+    }
+
+    const item = {
+      el,
+      x: belt.clientWidth + 155,
+      speed: SUSHI_SPEED,
+      eaten: false
+    };
+
+    const eat = (event) => {
+      event.preventDefault();
+      if (!running || item.eaten) return;
+      if (integrationConfig.embedded && score + data.point > integrationConfig.maxBudget) {
+        popup("所持金が足りません", event.clientX, event.clientY, "miss");
+        sendIntegrationMessage("budget-blocked", {
+          total: score,
+          plates: plateCount,
+          attemptedPrice: data.point,
+        });
+        return;
+      }
+      item.eaten = true;
+      score += data.point;
+      plateCount += 1;
+      eatenPlateColors.push({ color: data.color, accent: data.accent, plateImage: data.plateImage });
+      scoreEl.textContent = score.toLocaleString("ja-JP") + "円";
+      updatePlateStack();
+      sendIntegrationMessage("progress", { total: score, plates: plateCount });
+      sayMoguMogu();
+      popup("+" + data.point.toLocaleString("ja-JP") + "円", event.clientX, event.clientY, "points");
+      el.classList.add("eat");
+      setTimeout(() => removeItem(item), 300);
+    };
+
+    el.addEventListener("pointerdown", eat, { passive: false });
+    belt.appendChild(el);
+    items.add(item);
+  }
+
+
+  function updatePlateStack() {
+    plateStackEl.innerHTML = "";
+
+    const landscape = window.innerWidth > window.innerHeight;
+    const plateHeight = landscape ? (window.innerHeight <= 430 ? 58 : 68) : 56;
+    const step = landscape ? (window.innerHeight <= 430 ? 12 : 14) : 14;
+    const availableHeight = Math.max(
+      120,
+      plateStackEl.getBoundingClientRect().height || window.innerHeight * 0.88
+    );
+
+    const maxVisible = Math.max(
+      1,
+      Math.floor((availableHeight - plateHeight) / step) + 1
+    );
+    const visibleColors = eatenPlateColors.slice(-maxVisible);
+
+    visibleColors.forEach((plateData, index) => {
+      if (plateData.plateImage) {
+        const plateImg = document.createElement("img");
+        plateImg.className = "stacked-plate-image";
+        plateImg.src = plateData.plateImage;
+        plateImg.alt = "";
+        plateImg.draggable = false;
+        plateImg.style.bottom = (index * step) + "px";
+        plateImg.style.zIndex = String(index + 1);
+        plateStackEl.appendChild(plateImg);
+      } else {
+        const plate = document.createElement("div");
+        plate.className = "stacked-plate";
+        plate.style.bottom = (index * step) + "px";
+        plate.style.setProperty("--stackColor", plateData.color);
+        plate.style.setProperty("--stackAccent", plateData.accent);
+        plate.style.zIndex = String(index + 1);
+        plateStackEl.appendChild(plate);
+      }
+    });
+  }
+
+  function popup(text, clientX, clientY, className) {
+    const gameRect = document.getElementById("game").getBoundingClientRect();
+    const p = document.createElement("div");
+    p.className = className;
+    p.textContent = text;
+    p.style.left = (clientX - gameRect.left) + "px";
+    p.style.top = (clientY - gameRect.top) + "px";
+    document.getElementById("game").appendChild(p);
+    setTimeout(() => p.remove(), 850);
+  }
+
+  function removeItem(item) {
+    if (!items.has(item)) return;
+    items.delete(item);
+    item.el.remove();
+  }
+
+  function loop(timestamp) {
+    if (!running) return;
+
+    if (!lastTime) lastTime = timestamp;
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+    lastTime = timestamp;
+    spawnAccumulator += dt;
+
+    if (spawnAccumulator >= 0.18 && canSpawnSushi()) {
+      spawnAccumulator = 0;
+      spawnSushi();
+    }
+
+
+    for (const item of [...items]) {
+      if (item.eaten) continue;
+      item.x -= item.speed * dt;
+      item.el.style.left = item.x + "px";
+
+      if (item.x < -160) {
+        removeItem(item);
+      }
+    }
+
+    animationId = requestAnimationFrame(loop);
+  }
+
+  function startGame() {
+    initAudio();
+    for (const item of [...items]) removeItem(item);
+
+    score = 0;
+    plateCount = 0;
+    checkoutSent = false;
+    eatenPlateColors = [];
+    updatePlateStack();
+    running = true;
+    startBgm();
+    lastTime = 0;
+    spawnAccumulator = 0.5;
+
+    scoreEl.textContent = "0円";
+    startScreen.style.display = "none";
+    checkoutButton.style.display = "block";
+    checkoutButton.disabled = false;
+    checkoutButton.textContent = "お会計";
+    sendIntegrationMessage("ready", {
+      total: 0,
+      plates: 0,
+      maxBudget: integrationConfig.maxBudget,
+    });
+
+    cancelAnimationFrame(animationId);
+    animationId = requestAnimationFrame(loop);
+  }
+
+  function endGame() {
+    running = false;
+    stopBgm();
+    cancelAnimationFrame(animationId);
+
+
+    checkoutButton.style.display = "none";
+  }
+
+  startButton.addEventListener("click", startGame);
+  window.addEventListener("load", () => {
+    refreshForOrientation();
+    startGame();
+  });
+  document.addEventListener("pointerdown", () => {
+    initAudio();
+
+    if (audioContext?.state === "suspended") {
+      audioContext.resume().catch(() => {});
+    }
+
+    if (running && !bgmMaster) {
+      startBgm();
+    }
+  }, { once: true });
+
+
+  checkoutButton.addEventListener("click", () => {
+    if (checkoutSent) return;
+    checkoutSent = true;
+    checkoutButton.disabled = true;
+    checkoutButton.textContent = "精算中…";
+    if (running) endGame();
+    sendIntegrationMessage("checkout", { total: score, plates: plateCount });
+  });
+
+  window.addEventListener("message", (event) => {
+    const message = event.data;
+    if (!message || message.source !== "jxj-kaitenzushi-parent" || message.type !== "settings") return;
+    integrationConfig.sfxVolume = Math.max(0, Math.min(1, Number(message.sfxVolume) || 0));
+    integrationConfig.ambientVolume = Math.max(0, Math.min(1, Number(message.ambientVolume) || 0));
+    integrationConfig.sfxMuted = Boolean(message.sfxMuted);
+    integrationConfig.ambientMuted = Boolean(message.ambientMuted);
+    integrationConfig.externalAudioPriority = Boolean(message.externalAudioPriority);
+    if (bgmMaster && audioContext) {
+      const now = audioContext.currentTime;
+      bgmMaster.gain.cancelScheduledValues(now);
+      bgmMaster.gain.linearRampToValueAtTime(0.18 * effectiveAmbientVolume(), now + 0.12);
+    }
+  });
+
+  window.addEventListener("resize", refreshForOrientation);
+  window.addEventListener("orientationchange", () => {
+    setTimeout(refreshForOrientation, 180);
+  });
+  screen.orientation?.addEventListener?.("change", () => {
+    setTimeout(refreshForOrientation, 120);
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && running) {
+      lastTime = 0;
+    }
+  });
+})();
+</script>
+</body>
+</html>

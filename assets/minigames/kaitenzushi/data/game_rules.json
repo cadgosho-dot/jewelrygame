@@ -1,0 +1,28 @@
+{
+  "game": {
+    "auto_start": true,
+    "time_limit": null,
+    "stop_action": "お会計ボタン",
+    "portrait_and_landscape": true
+  },
+  "conveyor": {
+    "direction": "right_to_left",
+    "constant_speed_px_per_second": 135,
+    "minimum_spacing_px": 185,
+    "overtaking": false,
+    "overlap": false
+  },
+  "tap_action": {
+    "adds_price": true,
+    "adds_matching_plate_to_stack": true,
+    "plays_eat_sound": true,
+    "eat_sound": "assets/audio/eat_sfx.ogg"
+  },
+  "layers": {
+    "background": 0,
+    "sushi": 700,
+    "plate_stack": 950,
+    "price_and_checkout_ui": 1100
+  },
+  "background": "assets/background/kaitenzushi_counter_background.png"
+}

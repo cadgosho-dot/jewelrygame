@@ -1,0 +1,123 @@
+{
+  "version": "1.0",
+  "currency": "JPY",
+  "plate_prices": {
+    "blue": 190,
+    "red": 250,
+    "purple": 350,
+    "black": 850
+  },
+  "items": [
+    {
+      "id": "ika",
+      "name_ja": "イカ",
+      "plate": "blue",
+      "price": 190,
+      "image": "assets/sushi/blue_190/ika.png"
+    },
+    {
+      "id": "shimesaba",
+      "name_ja": "しめ鯖",
+      "plate": "blue",
+      "price": 190,
+      "image": "assets/sushi/blue_190/shimesaba.png"
+    },
+    {
+      "id": "iwashi",
+      "name_ja": "イワシ",
+      "plate": "blue",
+      "price": 190,
+      "image": "assets/sushi/blue_190/iwashi.png"
+    },
+    {
+      "id": "salmon",
+      "name_ja": "サーモン",
+      "plate": "blue",
+      "price": 190,
+      "image": "assets/sushi/blue_190/salmon.png"
+    },
+    {
+      "id": "tako",
+      "name_ja": "タコ",
+      "plate": "blue",
+      "price": 190,
+      "image": "assets/sushi/blue_190/tako.png"
+    },
+    {
+      "id": "ebi",
+      "name_ja": "海老",
+      "plate": "blue",
+      "price": 190,
+      "image": "assets/sushi/blue_190/ebi.png"
+    },
+    {
+      "id": "shiromi",
+      "name_ja": "白身",
+      "plate": "red",
+      "price": 250,
+      "image": "assets/sushi/red_250/shiromi.png"
+    },
+    {
+      "id": "maguro",
+      "name_ja": "マグロ",
+      "plate": "red",
+      "price": 250,
+      "image": "assets/sushi/red_250/maguro.png"
+    },
+    {
+      "id": "anago",
+      "name_ja": "穴子",
+      "plate": "red",
+      "price": 250,
+      "image": "assets/sushi/red_250/anago.png"
+    },
+    {
+      "id": "melon_sign",
+      "name_ja": "メロン札",
+      "plate": "red",
+      "price": 250,
+      "image": "assets/sushi/red_250/melon_sign.png"
+    },
+    {
+      "id": "chutoro",
+      "name_ja": "中トロ",
+      "plate": "purple",
+      "price": 350,
+      "image": "assets/sushi/purple_350/chutoro.png"
+    },
+    {
+      "id": "ikura",
+      "name_ja": "イクラ",
+      "plate": "purple",
+      "price": 350,
+      "image": "assets/sushi/purple_350/ikura.png"
+    },
+    {
+      "id": "uni",
+      "name_ja": "ウニ",
+      "plate": "purple",
+      "price": 350,
+      "image": "assets/sushi/purple_350/uni.png"
+    },
+    {
+      "id": "otoro",
+      "name_ja": "大トロ",
+      "plate": "black",
+      "price": 850,
+      "image": "assets/sushi/black_850/otoro.png"
+    },
+    {
+      "id": "kani",
+      "name_ja": "カニ",
+      "plate": "black",
+      "price": 850,
+      "image": "assets/sushi/black_850/kani.png"
+    }
+  ],
+  "plate_images": {
+    "blue": "assets/plates/plate_blue_190.png",
+    "red": "assets/plates/plate_red_250.png",
+    "purple": "assets/plates/plate_purple_350.png",
+    "black": "assets/plates/plate_black_850.png"
+  }
+}

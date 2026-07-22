@@ -63,6 +63,7 @@ let moneyFeedbackTimer = null;
 let moneyAnimationFrame = null;
 let pendingDayMoneyDelta = 0;
 let jewelryShopPendingTrade = null;
+let kaitenzushiSession = null;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
 const JEWELRY_SHOP_STOCK_SIZE = 5;
@@ -3170,7 +3171,7 @@ function backgroundFor(target) {
     loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', mining: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
-    phone: 'phone', meal: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
+    phone: 'phone', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
   };
   return map[target] || 'main';
 }
@@ -3214,6 +3215,9 @@ function audioFor(target) {
 }
 
 function setScreen(target, data = {}, push = true) {
+  const enteringKaitenzushi = target === 'kaitenzushi' && screen !== 'kaitenzushi';
+  const leavingKaitenzushi = screen === 'kaitenzushi' && target !== 'kaitenzushi';
+  if (enteringKaitenzushi) suspendAudio();
   if (push && screen !== target) navigation.push({ screen, data: screenData });
   if (target === 'mining' && screen !== 'mining') selectedMining = null;
   if (target === 'phone' && screen !== 'phone') {
@@ -3224,6 +3228,7 @@ function setScreen(target, data = {}, push = true) {
   screenData = data;
   if (state) state.game.screen = target;
   render();
+  if (leavingKaitenzushi) resumeAudio().catch(() => {});
   if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory') {
     loadMetalMarket().then(() => {
       if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory') && state) render();
@@ -3336,7 +3341,35 @@ function renderClosedOkachimachiFacility(facilityId, availability) {
     </section>`, { back: false });
 }
 
+function captureSettingsScrollState() {
+  const settingsForm = root.querySelector('.settings-form');
+  if (!settingsForm) return null;
+  if (screen === 'phone' && phoneTab === 'settings') {
+    const scroller = root.querySelector('.phone-content');
+    if (!scroller || !scroller.contains(settingsForm)) return null;
+    return { screen: 'phone', phoneTab: 'settings', top: scroller.scrollTop, left: scroller.scrollLeft };
+  }
+  if (screen === 'settings' || screen === 'settingsTitle') {
+    const scroller = root.querySelector('.screen-content');
+    if (!scroller || !scroller.contains(settingsForm)) return null;
+    return { screen, phoneTab: '', top: scroller.scrollTop, left: scroller.scrollLeft };
+  }
+  return null;
+}
+
+function restoreSettingsScrollState(snapshot) {
+  if (!snapshot || screen !== snapshot.screen) return;
+  if (snapshot.screen === 'phone' && phoneTab !== snapshot.phoneTab) return;
+  const scroller = snapshot.screen === 'phone'
+    ? root.querySelector('.phone-content')
+    : root.querySelector('.screen-content');
+  if (!scroller || !scroller.querySelector('.settings-form')) return;
+  scroller.scrollLeft = Math.max(0, Number(snapshot.left) || 0);
+  scroller.scrollTop = Math.max(0, Number(snapshot.top) || 0);
+}
+
 function render() {
+  const settingsScrollState = captureSettingsScrollState();
   try {
     if (screen !== 'robberyReport') stopPoliceSiren();
     document.body.dataset.screen = screen;
@@ -3399,6 +3432,7 @@ function render() {
       employee: renderEmployee,
       phone: renderPhone,
       meal: renderMeal,
+      kaitenzushi: renderKaitenzushi,
       settings: () => renderSettings(false),
       robberyReport: renderRobberyReport,
       dayResult: renderDayResult,
@@ -3411,6 +3445,8 @@ function render() {
     if (screen === 'phone' && state?.settings?.phoneHomeImage) {
       root.querySelector('.phone-ui.custom-home-background')?.style.setProperty('--phone-home-image', `url("${state.settings.phoneHomeImage}")`);
     }
+    if (screen === 'kaitenzushi') queueMicrotask(bindKaitenzushiFrame);
+    restoreSettingsScrollState(settingsScrollState);
     applyAudioSettings();
     if (screen === 'robberyReport' && pendingRobberyReport()) queueMicrotask(() => startPoliceSiren());
     if (screen === 'main') queueMicrotask(() => maybeResumeRobberySequence());
@@ -5785,10 +5821,155 @@ function renderMeal() {
             <small>${fullRecovery ? '空腹度を全回復' : `空腹度を${meal.recovery}回復`}</small>
           </button>`;
         }).join('')}
+        <button class="meal-choice-card meal-choice-card-kaitenzushi" type="button" data-action="play-kaitenzushi" ${current >= 7 || state.game.money < 190 ? 'disabled' : ''}>
+          <strong>回転寿司</strong>
+          <small>皿1枚につき空腹度を1回復</small>
+          <small>お会計は食べた分だけ</small>
+        </button>
       </div>
       ${current >= 7 ? '<p class="meal-note">空腹度は満タンです。</p>' : '<p class="meal-note">店を選ぶと店内へ移動し、食事をします。</p>'}
     </section>`, { help: '食事で空腹度を回復できます。空腹度は最大7で、行動に使った時間に応じて減少します。' });
 }
+
+function kaitenzushiAudioParameters() {
+  const settings = state?.settings || {};
+  return new URLSearchParams({
+    embedded: '1',
+    budget: String(Math.max(0, Math.floor(Number(kaitenzushiSession?.budget ?? state?.game?.money) || 0))),
+    sfxVolume: String(Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0))),
+    ambientVolume: String(Math.max(0, Math.min(1, Number(settings.ambientVolume) || 0))),
+    sfxMuted: settings.sfxMuted ? '1' : '0',
+    ambientMuted: settings.ambientMuted ? '1' : '0',
+    externalAudioPriority: settings.externalAudioPriority ? '1' : '0',
+  });
+}
+
+function renderKaitenzushi() {
+  if (!kaitenzushiSession) {
+    kaitenzushiSession = {
+      budget: Math.max(0, Math.floor(Number(state?.game?.money) || 0)),
+      total: 0,
+      plates: 0,
+      settled: false,
+    };
+  }
+  const hash = kaitenzushiAudioParameters().toString();
+  return `<main class="kaitenzushi-game-screen" aria-label="回転寿司ミニゲーム">
+    <iframe
+      class="kaitenzushi-game-frame"
+      data-kaitenzushi-frame
+      src="./assets/minigames/kaitenzushi/game/index.html#${esc(hash)}"
+      title="回転寿司ミニゲーム"
+      allow="autoplay; fullscreen"
+      loading="eager"
+    ></iframe>
+  </main>`;
+}
+
+function bindKaitenzushiFrame() {
+  const frame = root.querySelector('[data-kaitenzushi-frame]');
+  if (!(frame instanceof HTMLIFrameElement)) return;
+  frame.addEventListener('load', () => {
+    const settings = state?.settings || {};
+    frame.contentWindow?.postMessage({
+      source: 'jxj-kaitenzushi-parent',
+      type: 'settings',
+      sfxVolume: Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0)),
+      ambientVolume: Math.max(0, Math.min(1, Number(settings.ambientVolume) || 0)),
+      sfxMuted: Boolean(settings.sfxMuted),
+      ambientMuted: Boolean(settings.ambientMuted),
+      externalAudioPriority: Boolean(settings.externalAudioPriority),
+    }, '*');
+  }, { once: true });
+}
+
+function startKaitenzushi() {
+  const current = hungerLevel();
+  if (current >= (state.wellbeing.maxHunger || 7)) return showToast('空腹度は満タンです。', 'error');
+  if (state.game.money < 190) return showToast('回転寿司を食べるための所持金が足りません。', 'error');
+  kaitenzushiSession = {
+    budget: Math.max(0, Math.floor(Number(state.game.money) || 0)),
+    total: 0,
+    plates: 0,
+    settled: false,
+  };
+  setScreen('kaitenzushi', {}, true);
+}
+
+function completeKaitenzushi(totalValue, plateValue) {
+  const session = kaitenzushiSession;
+  if (!session || session.settled || screen !== 'kaitenzushi') return;
+  session.settled = true;
+
+  const total = Math.max(0, Math.floor(Number(totalValue) || 0));
+  const plates = Math.max(0, Math.floor(Number(plateValue) || 0));
+  const totalsMatchProgress = total === session.total && plates === session.plates;
+  const plateTotalsArePlausible = plates === 0
+    ? total === 0
+    : total >= plates * 190 && total <= plates * 850;
+  if (!totalsMatchProgress || !plateTotalsArePlausible || total > session.budget || total > state.game.money) {
+    session.settled = false;
+    showToast('お会計金額を確認できませんでした。もう一度お試しください。', 'error');
+    return;
+  }
+
+  const before = hungerLevel();
+  if (total > 0) {
+    state.game.money -= total;
+    addFinance('回転寿司で食事', 0, total);
+    startMoneyFeedback(-total, 1200);
+  }
+
+  const maxHunger = Math.max(1, Number(state.wellbeing.maxHunger) || 7);
+  state.wellbeing.hunger = Math.min(maxHunger, before + plates);
+  const recovery = state.wellbeing.hunger - before;
+  if (plates > 0) {
+    state.wellbeing.lastMeal = 'kaitenzushi';
+    state.wellbeing.mealsEaten = Math.max(0, Number(state.wellbeing.mealsEaten) || 0) + 1;
+    state.daily.meals.push({
+      id: 'kaitenzushi',
+      name: '回転寿司',
+      price: total,
+      recovery,
+      plates,
+    });
+  }
+  state.game.screen = 'main';
+  saveGame();
+
+  kaitenzushiSession = null;
+  if (plates > 0) {
+    hungerFeedback = { before, after: state.wellbeing.hunger, mealName: `回転寿司（${plates}皿）` };
+    clearTimeout(hungerFeedbackTimer);
+    goMain();
+    showToast(`ごちそうさまでした　${plates}皿・${yen(total)}`, 'meal-complete', false);
+    playSfx('levelup');
+    hungerFeedbackTimer = setTimeout(() => {
+      hungerFeedback = null;
+      if (screen === 'main') render();
+    }, 1550);
+  } else {
+    goMain();
+    showToast('何も食べずにお店を出ました。', 'info', false);
+  }
+}
+
+function handleKaitenzushiMessage(event) {
+  if (screen !== 'kaitenzushi' || !kaitenzushiSession) return;
+  const frame = root.querySelector('[data-kaitenzushi-frame]');
+  if (!(frame instanceof HTMLIFrameElement) || event.source !== frame.contentWindow) return;
+  const message = event.data;
+  if (!message || message.source !== 'jxj-kaitenzushi') return;
+  const total = Math.max(0, Math.floor(Number(message.total) || 0));
+  const plates = Math.max(0, Math.floor(Number(message.plates) || 0));
+  if (total <= kaitenzushiSession.budget) {
+    kaitenzushiSession.total = total;
+    kaitenzushiSession.plates = plates;
+  }
+  if (message.type === 'checkout') completeKaitenzushi(total, plates);
+}
+
+window.addEventListener('message', handleKaitenzushiMessage);
 
 async function eatMeal(mealId) {
   const meal = MEALS[mealId];
@@ -6155,7 +6336,10 @@ function aiCurrentRules() {
     hunger: {
       maximum: 7,
       rule: '行動時間1時間につき空腹度が1減る。0になると食事か就寝以外の行動はできない。同じ食事は2回連続では選べない。食事一覧は価格が安い順に表示される。',
-      meals: Object.values(MEALS).map((meal) => ({ name: meal.name, price: meal.price, recovery: meal.recovery })),
+      meals: [
+        ...Object.values(MEALS).map((meal) => ({ name: meal.name, price: meal.price, recovery: meal.recovery })),
+        { name: '回転寿司', price: '食べた皿の合計', recovery: '皿1枚につき1' },
+      ],
     },
     mining: {
       rule: '5個の岩から1個を選び、同じ岩を5回タップして壊す。原石入りは5個中2個で、最初に壊した岩の結果で終了する。',
@@ -8560,6 +8744,7 @@ function clearAllClientAccountData() {
   navigation = [];
   phoneTab = 'notifications';
   screenData = {};
+  kaitenzushiSession = null;
 }
 
 async function executeAccountDeletion() {
@@ -8625,7 +8810,7 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'next-day', 'acknowledge-robbery']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
     && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');
@@ -9179,6 +9364,7 @@ root.addEventListener('click', async (event) => {
     case 'use-phone-item': usePhoneItem(button.dataset.id); break;
     case 'toggle-equipment': togglePhoneEquipment(button.dataset.id); break;
     case 'eat-meal': await eatMeal(button.dataset.id); break;
+    case 'play-kaitenzushi': startKaitenzushi(); break;
     case 'sleep': confirmSleep(); break;
     case 'do-sleep': await beginSleepTransition(); break;
     case 'next-day': await beginNextDay(); break;
@@ -9547,7 +9733,7 @@ document.addEventListener('visibilitychange', () => {
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     return;
   }
-  resumeAudio();
+  if (screen !== 'kaitenzushi') resumeAudio();
   if (currentUser && !needsEmailVerification(currentUser)) {
     heartbeat(currentUser.uid, sessionId);
     if (!heartbeatTimer) heartbeatTimer = setInterval(() => heartbeat(currentUser.uid, sessionId), 300000);
@@ -9567,7 +9753,7 @@ modalEl.addEventListener('click', async (event) => {
   const action = button.dataset.action;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'next-day', 'acknowledge-robbery']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
     && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');

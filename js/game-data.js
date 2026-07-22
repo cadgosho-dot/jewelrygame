@@ -1,4 +1,4 @@
-export const VERSION = '0.10.254';
+export const VERSION = '0.10.258';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -1723,7 +1723,7 @@ export function migrateState(saved) {
   state.wellbeing = { ...initialState().wellbeing, ...(state.wellbeing || {}) };
   state.wellbeing.maxHunger = 7;
   state.wellbeing.hunger = Math.max(0, Math.min(7, Math.round(Number(state.wellbeing.hunger) || 0)));
-  state.wellbeing.lastMeal = MEALS[state.wellbeing.lastMeal] ? state.wellbeing.lastMeal : '';
+  state.wellbeing.lastMeal = MEALS[state.wellbeing.lastMeal] || state.wellbeing.lastMeal === 'kaitenzushi' ? state.wellbeing.lastMeal : '';
   state.wellbeing.mealsEaten = Math.max(0, Math.round(Number(state.wellbeing.mealsEaten) || 0));
   state.daily = {
     mined: Array.isArray(state.daily?.mined) ? state.daily.mined : [],

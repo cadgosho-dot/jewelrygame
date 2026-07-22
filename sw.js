@@ -1,4 +1,4 @@
-const VERSION = '0.10.262';
+const VERSION = '0.10.264';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [

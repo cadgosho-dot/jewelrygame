@@ -727,7 +727,7 @@ function isPortraitLayout() {
   return measuredPortraitLayout();
 }
 
-const KEYBOARD_AWARE_FIELD_SELECTOR = '[data-action="selling-price"], [data-calendar-event-input]';
+const KEYBOARD_AWARE_FIELD_SELECTOR = '[data-calendar-event-input]';
 let focusedKeyboardField = null;
 let keyboardVisibilityTimer = 0;
 
@@ -745,9 +745,7 @@ function keepFocusedKeyboardFieldVisible({ smooth = false } = {}) {
   const { viewport, visibleHeight } = keyboardViewportMetrics();
   const visibleTop = Math.max(0, Number(viewport?.offsetTop) || 0) + 10;
   const visibleBottom = visibleTop + visibleHeight - 18;
-  const target = field.matches('[data-action="selling-price"]')
-    ? field.closest('.showcase-detail-price-field') || field
-    : field;
+  const target = field;
   const rect = target.getBoundingClientRect();
   if (rect.top < visibleTop || rect.bottom > visibleBottom) {
     target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: smooth ? 'smooth' : 'auto' });
@@ -3581,6 +3579,7 @@ function renderTitle() {
     <main class="title-screen">
       <section class="title-actions glass-panel start-only-panel">
         <button class="primary-button large-button start-button" data-action="start">${label}</button>
+        <p class="title-orientation-note">このゲームは横画面でのプレイをおすすめしています。</p>
       </section>
     </main>`;
 }
@@ -5580,12 +5579,20 @@ function renderShowcaseItemDetail() {
         <div><dt>予想利益</dt><dd>${yen(expectedProfit)}</dd></div>
         <div><dt>価格判定</dt><dd class="price-status ${priceStatus.id}">${esc(priceStatus.name)}</dd></div>
       </dl>
-      <label class="showcase-detail-price-field"><span>販売価格</span><input type="number" min="1000" step="1" inputmode="numeric" value="${price}" data-action="selling-price" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}"></label>
+      <div class="showcase-detail-price-field" aria-label="販売価格を1,000円単位で変更">
+        <span>販売価格</span>
+        <div class="showcase-price-stepper">
+          <button type="button" class="showcase-price-step-button showcase-price-step-up" data-action="selling-price-step" data-delta="1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円上げる">▲</button>
+          <strong class="showcase-price-value">${yen(price)}</strong>
+          <button type="button" class="showcase-price-step-button showcase-price-step-down" data-action="selling-price-step" data-delta="-1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円下げる" ${price <= 1000 ? 'disabled' : ''}>▼</button>
+        </div>
+        <small class="showcase-price-step-note">▲▼で1,000円ずつ変更</small>
+      </div>
       <div class="showcase-detail-actions">
         <button class="text-button" data-action="remove-showcase" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">この商品の陳列をやめる</button>
         ${contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
       </div>
-    </section>`, { help: '商品の詳細を確認し、販売価格を変更できます。' });
+    </section>`, { help: '商品の詳細を確認し、▲▼で販売価格を1,000円ずつ変更できます。' });
 }
 
 function customerPreferenceLabel(request) {
@@ -6385,7 +6392,7 @@ function aiCurrentRules() {
       materialShop: '地金屋では地金を1g単位で購入・売却できる。地金は直接入力、または入力欄の▲▼で数量を選び、長押しすると連続で増減する。全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
       looseShop: 'ルース屋には「ルースを買う」「ルースを売る」「原石を売る」がある。ルースは最初に石種を選び、次にカットを選ぶ。ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。ルース購入は1回1個、ルース売却と原石売却は1個または売却可能数の全部売るを選べ、各手続きは1時間。',
       jewelryShop: 'ジュエリーショップでは、保管中の完成品を低めの買取価格で売却できる。また、入店ごとにランダムで変わる完成品を購入できる。購入品は工房の完成品へ入り、店舗で再販売できるが、仕入れ価格が高いため利益は小さい。売買手続きは1回1時間。',
-      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。受注金額は材料原価・難易度別工賃・最低利益を下回らない。ショーケース一覧には商品画像・商品名・販売価格だけを表示し、商品を開いた詳細画面で販売価格を設定できる。自店舗のおすすめ価格は標準品質が原価の2.2倍、良品が2.5倍、上質が2.8倍で、1,000円単位に丸める。御徒町のジュエリーショップへの売却は卸販売扱いとし、制作原価に対する利益をごく少額にする。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
+      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。受注金額は材料原価・難易度別工賃・最低利益を下回らない。ショーケース一覧には商品画像・商品名・販売価格だけを表示し、商品を開いた詳細画面で▲▼を押し、販売価格を1,000円ずつ変更できる。自店舗のおすすめ価格は標準品質が原価の2.2倍、良品が2.5倍、上質が2.8倍で、1,000円単位に丸める。御徒町のジュエリーショップへの売却は卸販売扱いとし、制作原価に対する利益をごく少額にする。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
     },
     facilities: Object.entries(facilityNames).map(([id, name]) => { const availability = okachimachiFacilityAvailability(id); return { id, name, status: availability.open ? '利用可能' : availability.status, reason: availability.reason || null }; }),
     smartphoneMenus: ['通知', 'プロフィール', 'カレンダー', '収支', 'アイテム', 'スマホゲーム', 'AI', '設定'],
@@ -9289,6 +9296,29 @@ root.addEventListener('click', async (event) => {
     case 'open-showcase-empty': setScreen('showcaseSelect', { branchId: button.dataset.branch, showcaseIndex: Number(button.dataset.showcase), slotIndex: Number(button.dataset.slot) }); break;
     case 'place-item-in-slot': placeItemInShowcaseSlot(button.dataset.id, button.dataset.branch, Number(button.dataset.showcase), Number(button.dataset.slot)); break;
     case 'open-showcase-detail': setScreen('showcaseDetail', { branchId: button.dataset.branch, showcaseIndex: Number(button.dataset.showcase), slotIndex: Number(button.dataset.slot) }); break;
+    case 'selling-price-step': {
+      const branch = button.dataset.branch
+        ? state.store.branches?.find((entry) => entry.id === button.dataset.branch)
+        : currentStoreBranch();
+      const showcaseIndex = Number(button.dataset.showcase);
+      const slotIndex = Number(button.dataset.slot);
+      const slot = branchShowcases(branch)?.[showcaseIndex]?.slots?.[slotIndex];
+      if (!slot) {
+        showToast('販売価格を変更する商品が見つかりません。', 'error');
+        break;
+      }
+      const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+      const currentPrice = showcaseSellingPrice(slot, item);
+      const delta = Number(button.dataset.delta) < 0 ? -1000 : 1000;
+      const nextPrice = Math.max(1000, currentPrice + delta);
+      if (nextPrice === currentPrice) break;
+      slot.sellingPrice = normalizeSellingPrice(nextPrice, item?.recommendedPrice || 1000);
+      mirrorCurrentStoreDisplay(branch);
+      saveGame();
+      showToast(`販売価格を${yen(slot.sellingPrice)}に変更しました。`);
+      render();
+      break;
+    }
     case 'remove-showcase': removeShowcase(Number(button.dataset.showcase), Number(button.dataset.slot), button.dataset.branch || ''); break;
     case 'move-showcase-item': showMoveShowcaseItemModal(button.dataset.id); break;
     case 'confirm-move-showcase-item': moveShowcaseItem(button.dataset.id, Number(button.dataset.branch)); break;
@@ -9423,20 +9453,6 @@ root.addEventListener('change', (event) => {
   if (target.matches('[data-phone-home-image-input]')) {
     preparePhoneHomeImage(target.files?.[0]);
     target.value = '';
-    return;
-  }
-  if (target.matches('[data-action="selling-price"]')) {
-    const branch = target.dataset.branch
-      ? state.store.branches?.find((entry) => entry.id === target.dataset.branch)
-      : currentStoreBranch();
-    const slot = branchShowcases(branch)?.[Number(target.dataset.showcase)]?.slots?.[Number(target.dataset.slot)];
-    if (!slot) return;
-    const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
-    slot.sellingPrice = normalizeSellingPrice(target.value, item?.recommendedPrice || 1000);
-    mirrorCurrentStoreDisplay(branch);
-    saveGame();
-    showToast(`販売価格を${yen(slot.sellingPrice)}に変更しました。`);
-    render();
     return;
   }
   if (target.matches('[data-action="employee-working"]')) {

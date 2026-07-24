@@ -17,7 +17,7 @@ let weatherEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, ke
 const validKeys = new Set([
   'main', 'mining', 'workshop', 'craft', 'polishing', 'store', 'displayShop', 'materialShop', 'looseShop', 'jewelryShop', 'realEstate', 'glab', 'okachimachi', 'okachimachiQuiz', 'phone', 'sleep',
   'meal', 'meal-convenience', 'meal-soba', 'meal-ramen', 'meal-hamburger',
-  'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab',
+  'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab', 'kaitenzushi',
 ]);
 const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'quiz-correct', 'quiz-incorrect']);
 
@@ -37,7 +37,7 @@ function environmentWeather(weather) {
 }
 
 function isMealAudioKey(key) {
-  return key === 'meal' || String(key || '').startsWith('meal-');
+  return key === 'meal' || key === 'kaitenzushi' || String(key || '').startsWith('meal-');
 }
 
 function usesLayeredOutdoorEnvironment(key) {
@@ -49,6 +49,7 @@ function hasActiveWeatherEnvironment(key) {
 }
 
 function ambientUrl(key) {
+  if (key === 'kaitenzushi') return './assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg';
   const weatherKey = hasActiveWeatherEnvironment(key)
     ? environmentWeather(weatherEnvironment.weather)
     : 'clear';
@@ -103,7 +104,11 @@ function loopAudio(kind, key) {
   const map = kind === 'bgm' ? tracks : ambients;
   const bgmKey = (key === 'craft' || key === 'polishing') ? 'workshop' : ((key === 'displayShop' || key === 'jewelryShop' || key === 'looseShop' || key === 'materialShop' || key === 'realEstate') ? 'okachimachi' : key);
   const url = kind === 'bgm'
-    ? (key === 'okachimachiQuiz' ? `${AUDIO_DIR}/quiz_show_thinking_bgm_60s_loop.mp3` : `${AUDIO_DIR}/bgm-${bgmKey}.ogg`)
+    ? (key === 'okachimachiQuiz'
+      ? `${AUDIO_DIR}/quiz_show_thinking_bgm_60s_loop.mp3`
+      : key === 'kaitenzushi'
+        ? './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg'
+        : `${AUDIO_DIR}/bgm-${bgmKey}.ogg`)
     : ambientUrl(key);
   const existing = map.get(key);
   if (existing && existing.dataset.audioUrl !== url) {
@@ -140,12 +145,12 @@ export async function unlockAudio() {
 const BGM_SCALE = {
   main: 1, mining: .98, workshop: .96, craft: .96, polishing: .96, store: .94, displayShop: .96, materialShop: .98, looseShop: .98, jewelryShop: .96, realEstate: .96, glab: .96, okachimachi: .98, okachimachiQuiz: .94, phone: .92, sleep: .64,
   meal: .66, 'meal-convenience': .64, 'meal-soba': .66, 'meal-ramen': .64, 'meal-hamburger': .62,
-  'meal-indian': .64, 'meal-korean': .62, 'meal-chinese': .64, 'meal-kebab': .64,
+  'meal-indian': .64, 'meal-korean': .62, 'meal-chinese': .64, 'meal-kebab': .64, kaitenzushi: .90,
 };
 const AMBIENT_SCALE = {
   main: .42, mining: 1, workshop: 1, craft: 1, polishing: 1, store: .90, displayShop: .92, materialShop: .96, looseShop: .96, jewelryShop: .92, realEstate: .94, glab: .94, okachimachi: 1, phone: .88, sleep: .56,
   meal: .54, 'meal-convenience': .50, 'meal-soba': .58, 'meal-ramen': .50, 'meal-hamburger': .52,
-  'meal-indian': .50, 'meal-korean': .50, 'meal-chinese': .56, 'meal-kebab': .54,
+  'meal-indian': .50, 'meal-korean': .50, 'meal-chinese': .56, 'meal-kebab': .54, kaitenzushi: .82,
 };
 
 function targetVolume(kind, key, settings) {
@@ -291,6 +296,33 @@ export function updateMainEnvironment({ active = false, weather = '晴れ', minu
   // Leaving a weather-sensitive screen must restore that scene's ordinary
   // clear-weather ambience, even when its audio key itself has not changed.
   if (currentKey === normalized.audioKey) restartWeatherAmbient(normalized.audioKey).catch(() => {});
+}
+
+export function stopMealAudio() {
+  const mealKeys = new Set();
+  tracks.forEach((_, key) => { if (isMealAudioKey(key)) mealKeys.add(key); });
+  ambients.forEach((_, key) => { if (isMealAudioKey(key)) mealKeys.add(key); });
+  for (const key of mealKeys) {
+    const track = tracks.get(key);
+    const ambient = ambients.get(key);
+    if (track) {
+      track.pause();
+      track.currentTime = 0;
+      tracks.delete(key);
+    }
+    if (ambient) {
+      ambient.pause();
+      ambient.currentTime = 0;
+      ambients.delete(key);
+    }
+  }
+  supplementalAmbients.forEach((audio, id) => {
+    if (!isMealAudioKey(audio.dataset.sceneKey)) return;
+    audio.pause();
+    audio.currentTime = 0;
+    supplementalAmbients.delete(id);
+  });
+  if (isMealAudioKey(currentKey)) currentKey = null;
 }
 
 export function playSfx(name, options = {}) {

@@ -4,7 +4,7 @@ import {
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather,
 } from './game-data.js';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, suspendBgm, resumeBgm } from './audio.js';
+import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemForDate } from './daily-gems.js';
 import {
@@ -3218,9 +3218,8 @@ async function showMorningBrief() {
           ? events.map((event) => `<p>${esc(event)}</p>`).join('')
           : ''}
       </div>
-      ${hasEvents ? '<button class="primary-button morning-main-button" data-action="morning-main">メイン画面</button>' : ''}
     </section>`;
-  morningBriefEl.classList.toggle('persistent', hasEvents);
+  morningBriefEl.classList.remove('persistent');
   morningBriefEl.classList.add('active');
 
   if (repairMessages.length) {
@@ -3228,12 +3227,15 @@ async function showMorningBrief() {
     saveGame();
   }
 
-  if (!hasEvents) {
-    await wait(3000);
-    morningBriefEl.classList.remove('active');
-    await wait(300);
-    finishMorningBriefAndContinue();
-  }
+  const displayDuration = events.length > 1
+    ? Math.min(6500, 3500 + (events.length - 1) * 650)
+    : 3000;
+  await wait(displayDuration);
+  if (!morningBriefShowing) return;
+  morningBriefEl.classList.remove('active');
+  await wait(300);
+  if (!morningBriefShowing) return;
+  finishMorningBriefAndContinue();
 }
 
 async function beginNextDay() {
@@ -3766,6 +3768,7 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
+  if (target === 'kaitenzushi') return 'kaitenzushi';
   if (target === 'okachimachiQuiz') return okachimachiQuizSession?.stage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
   if (target === 'polishing') return 'polishing';
   if (target === 'displayShop') return 'displayShop';
@@ -3784,9 +3787,6 @@ function audioFor(target) {
 }
 
 function setScreen(target, data = {}, push = true) {
-  const enteringKaitenzushi = target === 'kaitenzushi' && screen !== 'kaitenzushi';
-  const leavingKaitenzushi = screen === 'kaitenzushi' && target !== 'kaitenzushi';
-  if (enteringKaitenzushi) suspendBgm();
   if (push && screen !== target) navigation.push({ screen, data: screenData });
   if (target === 'mining' && screen !== 'mining') selectedMining = null;
   if (target === 'phone' && screen !== 'phone') {
@@ -3797,7 +3797,6 @@ function setScreen(target, data = {}, push = true) {
   screenData = data;
   if (state) state.game.screen = target;
   render();
-  if (leavingKaitenzushi) resumeBgm().catch(() => {});
   if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory') {
     loadMetalMarket().then(() => {
       if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory') && state) render();
@@ -3950,6 +3949,7 @@ function render() {
       document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
     }
     const currentAudioKey = audioFor(screen);
+    if (backgroundFor(screen) !== 'meal') stopMealAudio();
     const weatherLayerActive = screen === 'main'
       || screen === 'westernUnionEvent'
       || screen === 'mermaidEvent'
@@ -6694,13 +6694,14 @@ function kaitenzushiAudioParameters() {
   return new URLSearchParams({
     embedded: '1',
     budget: String(Math.max(0, Math.floor(Number(kaitenzushiSession?.budget ?? state?.game?.money) || 0))),
-    bgmVolume: String(Math.max(0, Math.min(1, Number(settings.bgmVolume) || 0))),
+    // BGMと環境音は親ゲーム側で管理し、iframe側は効果音だけを担当する。
+    bgmVolume: '0',
     sfxVolume: String(Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0))),
-    ambientVolume: String(Math.max(0, Math.min(1, Number(settings.ambientVolume) || 0))),
-    bgmMuted: settings.bgmMuted ? '1' : '0',
+    ambientVolume: '0',
+    bgmMuted: '1',
     sfxMuted: settings.sfxMuted ? '1' : '0',
-    ambientMuted: settings.ambientMuted ? '1' : '0',
-    externalAudioPriority: settings.externalAudioPriority ? '1' : '0',
+    ambientMuted: '1',
+    externalAudioPriority: '0',
   });
 }
 
@@ -6734,13 +6735,14 @@ function bindKaitenzushiFrame() {
     frame.contentWindow?.postMessage({
       source: 'jxj-kaitenzushi-parent',
       type: 'settings',
-      bgmVolume: Math.max(0, Math.min(1, Number(settings.bgmVolume) || 0)),
+      // 回転寿司のBGM・環境音は親ゲーム側で再生する。iframeでは食事効果音だけを有効にする。
+      bgmVolume: 0,
       sfxVolume: Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0)),
-      ambientVolume: Math.max(0, Math.min(1, Number(settings.ambientVolume) || 0)),
-      bgmMuted: Boolean(settings.bgmMuted),
+      ambientVolume: 0,
+      bgmMuted: true,
       sfxMuted: Boolean(settings.sfxMuted),
-      ambientMuted: Boolean(settings.ambientMuted),
-      externalAudioPriority: Boolean(settings.externalAudioPriority),
+      ambientMuted: true,
+      externalAudioPriority: false,
     }, '*');
   }, { once: true });
 }

@@ -1,4 +1,4 @@
-export const VERSION = '0.10.295';
+export const VERSION = '0.10.297';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });

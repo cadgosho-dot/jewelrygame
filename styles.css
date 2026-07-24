@@ -7646,7 +7646,8 @@ body[data-screen="okachimachiQuiz"] .game-header{
   overflow-wrap:anywhere;
 }
 .quiz-stage-correct .quiz-character-image,
-.quiz-stage-incorrect .quiz-character-image{
+.quiz-stage-incorrect .quiz-character-image,
+.quiz-stage-incorrectAnswer .quiz-character-image{
   animation:quizResultArrival .34s ease-out both;
 }
 @keyframes quizResultArrival{
@@ -8178,4 +8179,73 @@ body[data-screen="todayGem"] .today-gem-sources{
   body[data-screen="todayGem"] .today-gem-page :is(h1,h2,p,dt,dd,strong,small,span){
     border-radius:9px;
   }
+}
+
+/* v0.10.296 イベントキャラクターの視認性・表示安定化 */
+body[data-screen="westernUnionEvent"] .western-union-character-area,
+body[data-screen="okachimachiQuiz"] .quiz-character-area{
+  position:relative;
+  z-index:3;
+}
+body[data-screen="westernUnionEvent"] .western-union-character-area::before,
+body[data-screen="okachimachiQuiz"] .quiz-character-area::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:2%;
+  width:min(76vw,700px);
+  height:min(72vh,720px);
+  transform:translateX(-50%);
+  border-radius:48% 48% 18% 18%;
+  background:radial-gradient(ellipse at 50% 46%,rgba(239,220,180,.24),rgba(124,104,78,.12) 42%,transparent 72%);
+  filter:blur(2px);
+  pointer-events:none;
+  z-index:0;
+}
+body[data-screen="westernUnionEvent"] .western-union-character,
+body[data-screen="okachimachiQuiz"] .quiz-character-image{
+  position:relative;
+  z-index:2;
+  opacity:1!important;
+  visibility:visible!important;
+}
+body[data-screen="westernUnionEvent"] .western-union-character{
+  filter:brightness(1.22) contrast(1.06) drop-shadow(0 22px 34px rgba(0,0,0,.84)) drop-shadow(0 0 18px rgba(219,200,162,.18));
+}
+body[data-screen="westernUnionEvent"] .western-union-stage-gift .western-union-character{
+  opacity:.72!important;
+  filter:brightness(.92) contrast(1.04) drop-shadow(0 22px 34px rgba(0,0,0,.84));
+}
+body[data-screen="okachimachiQuiz"] .quiz-character-image{
+  filter:brightness(1.14) contrast(1.04) drop-shadow(0 18px 28px rgba(0,0,0,.74)) drop-shadow(0 0 16px rgba(232,201,133,.16));
+}
+@media (orientation:portrait),(max-width:760px){
+  body[data-screen="westernUnionEvent"] .western-union-character-area::before,
+  body[data-screen="okachimachiQuiz"] .quiz-character-area::before{
+    width:94vw;
+    height:62vh;
+  }
+}
+
+/* v0.10.297 クイズ不正解後の正解表示・キャラクター前面固定 */
+body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event{
+  isolation:isolate;
+}
+body[data-screen="okachimachiQuiz"] .quiz-character-area{
+  z-index:5!important;
+  opacity:1!important;
+}
+body[data-screen="okachimachiQuiz"] .quiz-character-image{
+  z-index:6!important;
+  opacity:1!important;
+  visibility:visible!important;
+  mix-blend-mode:normal!important;
+}
+body[data-screen="okachimachiQuiz"] .quiz-dialogue-panel,
+body[data-screen="okachimachiQuiz"] .quiz-question-panel{
+  z-index:8;
+}
+body[data-screen="okachimachiQuiz"] .quiz-stage-incorrectAnswer .quiz-dialogue-panel strong{
+  color:#fff4d7;
+  font-size:clamp(1.08rem,2.4vw,1.52rem);
 }

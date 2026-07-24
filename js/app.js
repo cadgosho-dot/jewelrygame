@@ -3676,7 +3676,7 @@ function okachimachiQuizPlayerName() {
 
 function okachimachiQuizCharacterImage(stage = okachimachiQuizSession?.stage) {
   if (stage === 'correct') return './assets/images/quiz/quiz-king-player-correct.png';
-  if (stage === 'incorrect') return './assets/images/quiz/quiz-king-player-incorrect.png';
+  if (stage === 'incorrect' || stage === 'incorrectAnswer') return './assets/images/quiz/quiz-king-player-incorrect.png';
   return './assets/images/quiz/quiz-king-normal.png';
 }
 
@@ -3727,7 +3727,12 @@ function advanceOkachimachiQuizDialogue() {
     grantOkachimachiQuizReward();
     return;
   }
-  if (session.stage === 'incorrect' || session.stage === 'reward') finishOkachimachiQuiz();
+  if (session.stage === 'incorrect') {
+    session.stage = 'incorrectAnswer';
+    render();
+    return;
+  }
+  if (session.stage === 'incorrectAnswer' || session.stage === 'reward') finishOkachimachiQuiz();
 }
 
 function backgroundFor(target) {
@@ -5030,7 +5035,8 @@ function renderOkachimachiQuiz() {
     intro1: `あ、こんにちは${playerName}さん。　どうです？僕より勉強出来てますか？`,
     intro2: `${playerName}さん知ってるかな、、`,
     correct: '正解です、、、これあげますよ、、',
-    incorrect: 'まぁ、そのレベルか、、、自分の価値って考えたことあります？ではまた、',
+    incorrect: '違いますよ、、まぁ、そのレベルか、、、自分の価値って考えたことあります？ではまた、',
+    incorrectAnswer: `正解は「${esc(session.question.choices[session.question.answerIndex] || '')}」でした`,
   };
   const isQuestion = session.stage === 'question';
   const character = okachimachiQuizCharacterImage(session.stage);

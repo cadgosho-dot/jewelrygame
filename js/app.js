@@ -4,7 +4,7 @@ import {
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather,
 } from './game-data.js';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio } from './audio.js';
+import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemForDate } from './daily-gems.js';
 import {
@@ -6825,6 +6825,10 @@ function handleKaitenzushiMessage(event) {
   if (!(frame instanceof HTMLIFrameElement) || event.source !== frame.contentWindow) return;
   const message = event.data;
   if (!message || message.source !== 'jxj-kaitenzushi') return;
+  if (message.type === 'chew') {
+    duckCurrentAmbient({ factor: .2, duration: 1000 });
+    return;
+  }
   const total = Math.max(0, Math.floor(Number(message.total) || 0));
   const plates = Math.max(0, Math.floor(Number(message.plates) || 0));
   if (total <= kaitenzushiSession.budget) {

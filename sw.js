@@ -1,4 +1,4 @@
-const VERSION = '0.10.292';
+const VERSION = '0.10.295';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
@@ -9,12 +9,78 @@ const APP_SHELL = [
   './assets/images/quiz/quiz-king-normal.png', './assets/images/quiz/quiz-king-player-incorrect.png', './assets/images/quiz/quiz-king-player-correct.png',
   './assets/images/events/western-union-messenger.png', './assets/images/events/antique-diamond.png', './assets/images/events/pazupan-miner.png', './assets/images/events/pazupan.png', './assets/images/events/mermaid.png', './assets/images/events/pearl.png',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
-  './assets/audio/bgm-main.ogg', './assets/audio/amb-main-clear.ogg', './assets/audio/amb-main-cloudy.ogg',
-  './assets/audio/amb-main-rain.ogg', './assets/audio/amb-main-snow.ogg',
+];
+
+const AUDIO_MEDIA = [
+  './assets/audio/amb-craft.ogg',
+  './assets/audio/amb-displayShop.ogg',
+  './assets/audio/amb-glab.ogg',
+  './assets/audio/amb-jewelryShop.ogg',
+  './assets/audio/amb-looseShop.ogg',
+  './assets/audio/amb-main-clear.ogg',
+  './assets/audio/amb-main-cloudy.ogg',
+  './assets/audio/amb-main-rain.ogg',
+  './assets/audio/amb-main-snow.ogg',
+  './assets/audio/amb-materialShop.ogg',
+  './assets/audio/amb-meal-chinese.ogg',
+  './assets/audio/amb-meal-convenience.ogg',
+  './assets/audio/amb-meal-hamburger.ogg',
+  './assets/audio/amb-meal-indian.ogg',
+  './assets/audio/amb-meal-kebab.ogg',
+  './assets/audio/amb-meal-korean.ogg',
+  './assets/audio/amb-meal-ramen.ogg',
+  './assets/audio/amb-meal-soba.ogg',
+  './assets/audio/amb-meal.ogg',
+  './assets/audio/amb-mining.ogg',
+  './assets/audio/amb-okachimachi.ogg',
+  './assets/audio/amb-phone.ogg',
+  './assets/audio/amb-polishing.ogg',
+  './assets/audio/amb-realEstate.ogg',
+  './assets/audio/amb-sleep.ogg',
+  './assets/audio/amb-store.ogg',
   './assets/audio/amb-street-crowd.ogg',
-  './assets/audio/amb-craft.ogg', './assets/audio/amb-polishing.ogg', './assets/audio/amb-realEstate.ogg', './assets/audio/amb-materialShop.ogg', './assets/audio/amb-looseShop.ogg', './assets/audio/amb-jewelryShop.ogg',
-  './assets/audio/sfx-jewelry-complete.ogg', './assets/audio/sfx-loose-sparkle.ogg', './assets/audio/sfx-police-siren.ogg',
-  './assets/audio/quiz_show_thinking_bgm_60s_loop.mp3', './assets/audio/quiz_correct_sfx.mp3', './assets/audio/quiz_incorrect_sfx.mp3',
+  './assets/audio/amb-workshop.ogg',
+  './assets/audio/bgm-glab.ogg',
+  './assets/audio/bgm-main.ogg',
+  './assets/audio/bgm-meal-chinese.ogg',
+  './assets/audio/bgm-meal-convenience.ogg',
+  './assets/audio/bgm-meal-hamburger.ogg',
+  './assets/audio/bgm-meal-indian.ogg',
+  './assets/audio/bgm-meal-kebab.ogg',
+  './assets/audio/bgm-meal-korean.ogg',
+  './assets/audio/bgm-meal-ramen.ogg',
+  './assets/audio/bgm-meal-soba.ogg',
+  './assets/audio/bgm-meal.ogg',
+  './assets/audio/bgm-mining.ogg',
+  './assets/audio/bgm-okachimachi.ogg',
+  './assets/audio/bgm-phone.ogg',
+  './assets/audio/bgm-sleep.ogg',
+  './assets/audio/bgm-store.ogg',
+  './assets/audio/bgm-workshop.ogg',
+  './assets/audio/quiz_correct_sfx.mp3',
+  './assets/audio/quiz_incorrect_sfx.mp3',
+  './assets/audio/quiz_show_thinking_bgm_60s_loop.mp3',
+  './assets/audio/sfx-alarm.ogg',
+  './assets/audio/sfx-coin.ogg',
+  './assets/audio/sfx-dig.ogg',
+  './assets/audio/sfx-earth-dig.ogg',
+  './assets/audio/sfx-eat.ogg',
+  './assets/audio/sfx-error.ogg',
+  './assets/audio/sfx-explosion.ogg',
+  './assets/audio/sfx-impact.ogg',
+  './assets/audio/sfx-jewelry-complete.ogg',
+  './assets/audio/sfx-levelup.ogg',
+  './assets/audio/sfx-loose-sparkle.ogg',
+  './assets/audio/sfx-mining-miss.ogg',
+  './assets/audio/sfx-mining-win.ogg',
+  './assets/audio/sfx-police-siren.ogg',
+  './assets/audio/sfx-sale.ogg',
+  './assets/audio/sfx-select.ogg',
+  './assets/audio/sfx-sleep.ogg',
+  './assets/audio/sfx-success.ogg',
+  './assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg',
+  './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg',
+  './assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg',
 ];
 
 const OPTIONAL_MEDIA = [
@@ -37,7 +103,7 @@ const OPTIONAL_MEDIA = [
   './assets/images/mining-rocks/rock-06.png', './assets/images/mining-rocks/rock-07.png', './assets/images/mining-rocks/rock-08.png', './assets/images/mining-rocks/rock-09.png', './assets/images/mining-rocks/rock-10.png',
   './assets/images/mining-rocks-broken/broken-01.png', './assets/images/mining-rocks-broken/broken-02.png', './assets/images/mining-rocks-broken/broken-03.png', './assets/images/mining-rocks-broken/broken-04.png', './assets/images/mining-rocks-broken/broken-05.png',
   './assets/minigames/kaitenzushi/data/game_rules.json', './assets/minigames/kaitenzushi/data/sushi_catalog.json',
-  './assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg', './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg', './assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg', './assets/minigames/kaitenzushi/assets/background/kaitenzushi_counter_background.png',
+  './assets/minigames/kaitenzushi/assets/background/kaitenzushi_counter_background.png',
   './assets/minigames/kaitenzushi/assets/plates/plate_blue_190.png', './assets/minigames/kaitenzushi/assets/plates/plate_red_250.png', './assets/minigames/kaitenzushi/assets/plates/plate_purple_350.png', './assets/minigames/kaitenzushi/assets/plates/plate_black_850.png',
   './assets/minigames/kaitenzushi/assets/sushi/blue_190/ika.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/shimesaba.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/iwashi.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/salmon.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/tako.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/ebi.png',
   './assets/minigames/kaitenzushi/assets/sushi/red_250/shiromi.png', './assets/minigames/kaitenzushi/assets/sushi/red_250/maguro.png', './assets/minigames/kaitenzushi/assets/sushi/red_250/anago.png', './assets/minigames/kaitenzushi/assets/sushi/red_250/melon_sign.png',
@@ -86,6 +152,7 @@ self.addEventListener('install', (event) => {
     caches.open(APP_CACHE)
       .then(async (cache) => {
         await cache.addAll(APP_SHELL);
+        await cache.addAll(AUDIO_MEDIA);
         await Promise.allSettled(OPTIONAL_MEDIA.map((asset) => cache.add(asset)));
       })
       .then(() => self.skipWaiting()),

@@ -1832,6 +1832,9 @@
     const volume = effectiveSfxVolume();
     if (volume <= 0) return;
 
+    // 親ゲーム側で再生している居酒屋環境音・天候音を一時的に下げる
+    sendIntegrationMessage("chew");
+
     // 提供された食事効果音を、タップごとに最初から再生
     const sound = new Audio(CHEW_SOUND_DATA);
     sound.preload = "auto";

@@ -10,6 +10,11 @@ let initialized = false;
 let externalPriorityActive = false;
 let policeSiren = null;
 let policeSirenRequested = false;
+const fadeJobs = new WeakMap();
+const pendingStopTimers = new Map();
+let ambientDuckFactor = 1;
+let ambientDuckTimer = null;
+let transitionSerial = 0;
 let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false, externalAudioPriority: false });
 
 let weatherEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear', audioKey: 'main' };
@@ -159,14 +164,16 @@ function targetVolume(kind, key, settings) {
   if (muted) return 0;
   const base = Number(kind === 'bgm' ? settings.bgmVolume : settings.ambientVolume) || 0;
   const scale = (kind === 'bgm' ? BGM_SCALE : AMBIENT_SCALE)[key] ?? 1;
-  return Math.max(0, Math.min(1, base * scale));
+  const duck = kind === 'ambient' && key === currentKey ? ambientDuckFactor : 1;
+  return Math.max(0, Math.min(1, base * scale * duck));
 }
 
 function targetSupplementalVolume(audio, settings) {
   if (settings.externalAudioPriority || settings.ambientMuted) return 0;
   const base = Number(settings.ambientVolume) || 0;
   const scale = Number(audio?.dataset?.layerScale) || 1;
-  return Math.max(0, Math.min(1, base * scale));
+  const duck = audio?.dataset?.sceneKey === currentKey ? ambientDuckFactor : 1;
+  return Math.max(0, Math.min(1, base * scale * duck));
 }
 
 export function applyAudioSettings() {
@@ -174,6 +181,7 @@ export function applyAudioSettings() {
   const wasExternalPriority = externalPriorityActive;
   externalPriorityActive = Boolean(settings.externalAudioPriority);
   if (externalPriorityActive) {
+    transitionSerial += 1;
     tracks.forEach((audio) => audio.pause());
     ambients.forEach((audio) => audio.pause());
     supplementalAmbients.forEach((audio) => audio.pause());
@@ -191,16 +199,46 @@ export function applyAudioSettings() {
   if (wasExternalPriority && initialized && !suspended && currentKey) startCurrentAudio().catch(() => {});
 }
 
+function cancelFade(audio) {
+  if (!audio) return;
+  fadeJobs.set(audio, (fadeJobs.get(audio) || 0) + 1);
+}
+
 function fade(audio, target, duration = 450) {
   if (!audio) return;
+  const boundedTarget = Math.max(0, Math.min(1, Number(target) || 0));
+  const job = (fadeJobs.get(audio) || 0) + 1;
+  fadeJobs.set(audio, job);
+  if (duration <= 0) {
+    audio.volume = boundedTarget;
+    return;
+  }
   const start = audio.volume;
   const started = performance.now();
   const tick = (now) => {
+    if (fadeJobs.get(audio) !== job) return;
     const progress = Math.min(1, (now - started) / duration);
-    audio.volume = Math.max(0, Math.min(1, start + (target - start) * progress));
+    audio.volume = Math.max(0, Math.min(1, start + (boundedTarget - start) * progress));
     if (progress < 1) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
+}
+
+function cancelPendingStop(key) {
+  const timer = pendingStopTimers.get(key);
+  if (!timer) return;
+  clearTimeout(timer);
+  pendingStopTimers.delete(key);
+}
+
+function scheduleStop(key, delay = 290) {
+  cancelPendingStop(key);
+  const timer = setTimeout(() => {
+    pendingStopTimers.delete(key);
+    if (currentKey === key) return;
+    stopLoopPair(key, true);
+  }, delay);
+  pendingStopTimers.set(key, timer);
 }
 
 function stopLoopPair(key, reset = true) {
@@ -209,39 +247,102 @@ function stopLoopPair(key, reset = true) {
   const supplemental = [...supplementalAmbients.values()].filter((audio) => audio.dataset.sceneKey === key);
   for (const audio of [track, ambient, ...supplemental]) {
     if (!audio) continue;
+    cancelFade(audio);
     audio.pause();
     if (reset) audio.currentTime = 0;
   }
 }
 
+async function startLoop(audio, target, duration = 550, isCurrent = () => true) {
+  if (!audio || !isCurrent()) return;
+  if (audio.paused) {
+    audio.volume = 0;
+    try {
+      await audio.play();
+      if (!isCurrent()) {
+        audio.pause();
+        audio.currentTime = 0;
+        return;
+      }
+      fade(audio, target, duration);
+    } catch (_) {}
+    return;
+  }
+  if (isCurrent()) fade(audio, target, Math.min(duration, 220));
+}
+
 async function startCurrentAudio() {
   if (!currentKey || suspended) return;
+  const sceneKey = currentKey;
+  const serial = transitionSerial;
+  const isCurrent = () => currentKey === sceneKey
+    && transitionSerial === serial
+    && !suspended
+    && !settingsProvider().externalAudioPriority;
+  cancelPendingStop(sceneKey);
   const settings = settingsProvider();
   if (settings.externalAudioPriority) return;
-  const track = loopAudio('bgm', currentKey);
-  const ambient = loopAudio('ambient', currentKey);
-  const supplemental = loopSupplementalAmbients(currentKey);
-  if (track && !bgmSuspended) {
-    track.volume = 0;
-    try { await track.play(); fade(track, targetVolume('bgm', currentKey, settings), 550); } catch (_) {}
+  const track = loopAudio('bgm', sceneKey);
+  const ambient = loopAudio('ambient', sceneKey);
+  const supplemental = loopSupplementalAmbients(sceneKey);
+  if (track) {
+    if (bgmSuspended) track.pause();
+    else await startLoop(track, targetVolume('bgm', sceneKey, settings), 550, isCurrent);
   }
-  if (ambient) {
-    ambient.volume = 0;
-    try { await ambient.play(); fade(ambient, targetVolume('ambient', currentKey, settings), 550); } catch (_) {}
-  }
+  if (!isCurrent()) return;
+  await startLoop(ambient, targetVolume('ambient', sceneKey, settings), 550, isCurrent);
+  if (!isCurrent()) return;
   for (const layer of supplemental) {
-    layer.volume = 0;
-    try { await layer.play(); fade(layer, targetSupplementalVolume(layer, settings), 550); } catch (_) {}
+    await startLoop(layer, targetSupplementalVolume(layer, settings), 550, isCurrent);
+    if (!isCurrent()) return;
   }
+}
+
+function resetAmbientDuck(restore = false) {
+  if (ambientDuckTimer) clearTimeout(ambientDuckTimer);
+  ambientDuckTimer = null;
+  ambientDuckFactor = 1;
+  if (!restore || !currentKey || suspended) return;
+  const settings = settingsProvider();
+  const ambient = ambients.get(currentKey);
+  if (ambient) fade(ambient, targetVolume('ambient', currentKey, settings), 260);
+  [...supplementalAmbients.values()]
+    .filter((audio) => audio.dataset.sceneKey === currentKey)
+    .forEach((audio) => fade(audio, targetSupplementalVolume(audio, settings), 260));
+}
+
+export function duckCurrentAmbient({ factor = .2, duration = 1000 } = {}) {
+  if (!currentKey || suspended) return;
+  if (ambientDuckTimer) clearTimeout(ambientDuckTimer);
+  ambientDuckFactor = Math.max(0, Math.min(1, Number(factor) || 0));
+  const settings = settingsProvider();
+  const ambient = ambients.get(currentKey);
+  if (ambient) fade(ambient, targetVolume('ambient', currentKey, settings), 100);
+  [...supplementalAmbients.values()]
+    .filter((audio) => audio.dataset.sceneKey === currentKey)
+    .forEach((audio) => fade(audio, targetSupplementalVolume(audio, settings), 100));
+  ambientDuckTimer = setTimeout(() => {
+    ambientDuckTimer = null;
+    ambientDuckFactor = 1;
+    const latestSettings = settingsProvider();
+    const currentAmbient = ambients.get(currentKey);
+    if (currentAmbient) fade(currentAmbient, targetVolume('ambient', currentKey, latestSettings), 320);
+    [...supplementalAmbients.values()]
+      .filter((audio) => audio.dataset.sceneKey === currentKey)
+      .forEach((audio) => fade(audio, targetSupplementalVolume(audio, latestSettings), 320));
+  }, Math.max(100, Number(duration) || 1000));
 }
 
 export async function switchAudio(key) {
   if (!key || key === 'inherit' || !validKeys.has(key)) return;
+  cancelPendingStop(key);
   if (key === currentKey) {
-    if (!suspended) applyAudioSettings();
+    if (!suspended) await startCurrentAudio();
     return;
   }
   const oldKey = currentKey;
+  transitionSerial += 1;
+  resetAmbientDuck(false);
   if (oldKey) {
     const oldTrack = tracks.get(oldKey);
     const oldAmbient = ambients.get(oldKey);
@@ -249,7 +350,7 @@ export async function switchAudio(key) {
     if (oldTrack) fade(oldTrack, 0, 250);
     if (oldAmbient) fade(oldAmbient, 0, 250);
     oldSupplemental.forEach((audio) => fade(audio, 0, 250));
-    setTimeout(() => stopLoopPair(oldKey, true), 290);
+    scheduleStop(oldKey, 290);
   }
   currentKey = key;
   await startCurrentAudio();
@@ -278,7 +379,7 @@ async function restartWeatherAmbient(key) {
 }
 
 export function updateMainEnvironment({ active = false, weather = '晴れ', minutes = 9 * 60, audioKey = 'main' } = {}) {
-  const normalizedAudioKey = audioKey === 'okachimachi' || audioKey === 'phone' || isMealAudioKey(audioKey) ? audioKey : 'main';
+  const normalizedAudioKey = validKeys.has(audioKey) ? audioKey : 'main';
   const normalized = {
     active: Boolean(active),
     weather: String(weather || '晴れ'),
@@ -293,24 +394,29 @@ export function updateMainEnvironment({ active = false, weather = '晴れ', minu
   weatherEnvironment = { ...normalized, key: nextKey };
   if (!changed) return;
 
-  // Leaving a weather-sensitive screen must restore that scene's ordinary
-  // clear-weather ambience, even when its audio key itself has not changed.
+  // Only replace the weather layer when the destination uses the same audio scene.
+  // When leaving for a different scene, switchAudio() performs the fade-out so a
+  // clear-weather clip cannot briefly leak into the transition.
   if (currentKey === normalized.audioKey) restartWeatherAmbient(normalized.audioKey).catch(() => {});
 }
 
 export function stopMealAudio() {
+  resetAmbientDuck(false);
   const mealKeys = new Set();
   tracks.forEach((_, key) => { if (isMealAudioKey(key)) mealKeys.add(key); });
   ambients.forEach((_, key) => { if (isMealAudioKey(key)) mealKeys.add(key); });
   for (const key of mealKeys) {
+    cancelPendingStop(key);
     const track = tracks.get(key);
     const ambient = ambients.get(key);
     if (track) {
+      cancelFade(track);
       track.pause();
       track.currentTime = 0;
       tracks.delete(key);
     }
     if (ambient) {
+      cancelFade(ambient);
       ambient.pause();
       ambient.currentTime = 0;
       ambients.delete(key);
@@ -318,11 +424,15 @@ export function stopMealAudio() {
   }
   supplementalAmbients.forEach((audio, id) => {
     if (!isMealAudioKey(audio.dataset.sceneKey)) return;
+    cancelFade(audio);
     audio.pause();
     audio.currentTime = 0;
     supplementalAmbients.delete(id);
   });
-  if (isMealAudioKey(currentKey)) currentKey = null;
+  if (isMealAudioKey(currentKey)) {
+    transitionSerial += 1;
+    currentKey = null;
+  }
 }
 
 export function playSfx(name, options = {}) {
@@ -381,6 +491,7 @@ export async function resumeBgm() {
 
 export function suspendAudio() {
   if (suspended) return;
+  transitionSerial += 1;
   suspended = true;
   if (currentKey) stopLoopPair(currentKey, false);
   policeSiren?.pause();
@@ -394,6 +505,10 @@ export async function resumeAudio() {
 }
 
 export function stopAllAudio() {
+  transitionSerial += 1;
+  pendingStopTimers.forEach((timer) => clearTimeout(timer));
+  pendingStopTimers.clear();
+  resetAmbientDuck(false);
   tracks.forEach((audio) => { audio.pause(); audio.currentTime = 0; });
   ambients.forEach((audio) => { audio.pause(); audio.currentTime = 0; });
   supplementalAmbients.forEach((audio) => { audio.pause(); audio.currentTime = 0; });

@@ -1,15 +1,20 @@
-const VERSION = '0.10.264';
+const VERSION = '0.10.290';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
-  './js/security-config.js', './js/firebase-service.js', './data/metals.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/daily-gems.js', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
+  './js/security-config.js', './js/firebase-service.js', './data/metals.json', './data/jewelry_okachimachi_quiz_200_game_format.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp',
   './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
+  './assets/images/quiz/quiz-king-normal.png', './assets/images/quiz/quiz-king-player-incorrect.png', './assets/images/quiz/quiz-king-player-correct.png',
+  './assets/images/events/western-union-messenger.png', './assets/images/events/antique-diamond.png', './assets/images/events/pazupan-miner.png', './assets/images/events/pazupan.png', './assets/images/events/mermaid.png', './assets/images/events/pearl.png',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
   './assets/audio/bgm-main.ogg', './assets/audio/amb-main-clear.ogg', './assets/audio/amb-main-cloudy.ogg',
   './assets/audio/amb-main-rain.ogg', './assets/audio/amb-main-snow.ogg',
-  './assets/audio/sfx-jewelry-complete.ogg', './assets/audio/sfx-police-siren.ogg',
+  './assets/audio/amb-street-crowd.ogg',
+  './assets/audio/amb-craft.ogg', './assets/audio/amb-polishing.ogg', './assets/audio/amb-realEstate.ogg', './assets/audio/amb-materialShop.ogg', './assets/audio/amb-looseShop.ogg', './assets/audio/amb-jewelryShop.ogg',
+  './assets/audio/sfx-jewelry-complete.ogg', './assets/audio/sfx-loose-sparkle.ogg', './assets/audio/sfx-police-siren.ogg',
+  './assets/audio/quiz_show_thinking_bgm_60s_loop.mp3', './assets/audio/quiz_correct_sfx.mp3', './assets/audio/quiz_incorrect_sfx.mp3',
 ];
 
 const OPTIONAL_MEDIA = [
@@ -32,7 +37,7 @@ const OPTIONAL_MEDIA = [
   './assets/images/mining-rocks/rock-06.png', './assets/images/mining-rocks/rock-07.png', './assets/images/mining-rocks/rock-08.png', './assets/images/mining-rocks/rock-09.png', './assets/images/mining-rocks/rock-10.png',
   './assets/images/mining-rocks-broken/broken-01.png', './assets/images/mining-rocks-broken/broken-02.png', './assets/images/mining-rocks-broken/broken-03.png', './assets/images/mining-rocks-broken/broken-04.png', './assets/images/mining-rocks-broken/broken-05.png',
   './assets/minigames/kaitenzushi/data/game_rules.json', './assets/minigames/kaitenzushi/data/sushi_catalog.json',
-  './assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg', './assets/minigames/kaitenzushi/assets/background/kaitenzushi_counter_background.png',
+  './assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg', './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg', './assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg', './assets/minigames/kaitenzushi/assets/background/kaitenzushi_counter_background.png',
   './assets/minigames/kaitenzushi/assets/plates/plate_blue_190.png', './assets/minigames/kaitenzushi/assets/plates/plate_red_250.png', './assets/minigames/kaitenzushi/assets/plates/plate_purple_350.png', './assets/minigames/kaitenzushi/assets/plates/plate_black_850.png',
   './assets/minigames/kaitenzushi/assets/sushi/blue_190/ika.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/shimesaba.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/iwashi.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/salmon.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/tako.png', './assets/minigames/kaitenzushi/assets/sushi/blue_190/ebi.png',
   './assets/minigames/kaitenzushi/assets/sushi/red_250/shiromi.png', './assets/minigames/kaitenzushi/assets/sushi/red_250/maguro.png', './assets/minigames/kaitenzushi/assets/sushi/red_250/anago.png', './assets/minigames/kaitenzushi/assets/sushi/red_250/melon_sign.png',

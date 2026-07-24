@@ -1542,8 +1542,10 @@
   const integrationConfig = {
     embedded: integrationFlag("embedded"),
     maxBudget: Math.max(0, Math.floor(integrationNumber("budget", Number.MAX_SAFE_INTEGER))),
+    bgmVolume: Math.max(0, Math.min(1, integrationNumber("bgmVolume", 1))),
     sfxVolume: Math.max(0, Math.min(1, integrationNumber("sfxVolume", 1))),
     ambientVolume: Math.max(0, Math.min(1, integrationNumber("ambientVolume", 1))),
+    bgmMuted: integrationFlag("bgmMuted"),
     sfxMuted: integrationFlag("sfxMuted"),
     ambientMuted: integrationFlag("ambientMuted"),
     externalAudioPriority: integrationFlag("externalAudioPriority"),
@@ -1556,6 +1558,11 @@
       type,
       ...detail,
     }, "*");
+  }
+
+  function effectiveBgmVolume() {
+    if (integrationConfig.externalAudioPriority || integrationConfig.bgmMuted) return 0;
+    return integrationConfig.bgmVolume;
   }
 
   function effectiveSfxVolume() {
@@ -1744,6 +1751,10 @@
   let checkoutSent = false;
   const BACKGROUND_IMAGE_DATA = "../assets/background/kaitenzushi_counter_background.png";
   const CHEW_SOUND_DATA = "../assets/audio/eat_sfx.ogg";
+  const ENKA_BGM_DATA = "../assets/audio/enka_bgm.ogg";
+  const IZAKAYA_AMBIENT_DATA = "../assets/audio/izakaya_ambient.ogg";
+  let enkaBgm = null;
+  let ambienceLoop = null;
   let bgmTimer = null;
   let bgmStep = 0;
   let bgmMaster = null;
@@ -1763,6 +1774,60 @@
     if (audioContext?.state === "suspended") audioContext.resume();
   }
 
+  function ensureEnkaBgm() {
+    if (!enkaBgm) {
+      enkaBgm = new Audio(ENKA_BGM_DATA);
+      enkaBgm.loop = true;
+      enkaBgm.preload = "auto";
+    }
+    enkaBgm.volume = Math.max(0, Math.min(1, effectiveBgmVolume() * 0.72));
+    return enkaBgm;
+  }
+
+  function startEnkaBgm() {
+    const music = ensureEnkaBgm();
+    if (!running || document.hidden || music.volume <= 0) {
+      music.pause();
+      return;
+    }
+    music.play().catch(() => {
+      // 自動再生が制限された端末では、次のタップで再試行する
+    });
+  }
+
+  function stopEnkaBgm(reset = true) {
+    if (!enkaBgm) return;
+    enkaBgm.pause();
+    if (reset) enkaBgm.currentTime = 0;
+  }
+
+  function ensureAmbienceLoop() {
+    if (!ambienceLoop) {
+      ambienceLoop = new Audio(IZAKAYA_AMBIENT_DATA);
+      ambienceLoop.loop = true;
+      ambienceLoop.preload = "auto";
+    }
+    ambienceLoop.volume = Math.max(0, Math.min(1, effectiveAmbientVolume() * 0.82));
+    return ambienceLoop;
+  }
+
+  function startAmbienceLoop() {
+    const ambience = ensureAmbienceLoop();
+    if (!running || document.hidden || ambience.volume <= 0) {
+      ambience.pause();
+      return;
+    }
+    ambience.play().catch(() => {
+      // 自動再生が制限された端末では、次のタップで再試行する
+    });
+  }
+
+  function stopAmbienceLoop(reset = true) {
+    if (!ambienceLoop) return;
+    ambienceLoop.pause();
+    if (reset) ambienceLoop.currentTime = 0;
+  }
+
   function chewSound() {
     const volume = effectiveSfxVolume();
     if (volume <= 0) return;
@@ -1774,13 +1839,12 @@
     sound.currentTime = 0;
 
     // 効果音が聞き取りやすいよう環境音を一時的に下げる
-    if (audioContext && bgmMaster && effectiveAmbientVolume() > 0) {
-      const now = audioContext.currentTime;
-      const ambientTarget = 0.18 * effectiveAmbientVolume();
-      bgmMaster.gain.cancelScheduledValues(now);
-      bgmMaster.gain.setValueAtTime(Math.max(0.0001, bgmMaster.gain.value), now);
-      bgmMaster.gain.linearRampToValueAtTime(Math.max(0.0001, ambientTarget * 0.14), now + 0.02);
-      bgmMaster.gain.linearRampToValueAtTime(ambientTarget, now + 1.0);
+    if (ambienceLoop && effectiveAmbientVolume() > 0) {
+      const originalVolume = Math.max(0, Math.min(1, effectiveAmbientVolume() * 0.82));
+      ambienceLoop.volume = Math.max(0, originalVolume * 0.2);
+      setTimeout(() => {
+        if (ambienceLoop) ambienceLoop.volume = Math.max(0, Math.min(1, effectiveAmbientVolume() * 0.82));
+      }, 1000);
     }
 
     sound.play().catch(() => {
@@ -2018,19 +2082,14 @@
 
   function startBgm() {
     initAudio();
-    if (!audioContext) return;
-
     stopBgm();
-
-    bgmMaster = audioContext.createGain();
-    bgmMaster.gain.value = 0.18 * effectiveAmbientVolume();
-    bgmMaster.connect(audioContext.destination);
-
-    startCrowdRoomTone();
-    scheduleAmbience();
+    startAmbienceLoop();
+    startEnkaBgm();
   }
 
   function stopBgm() {
+    stopEnkaBgm();
+    stopAmbienceLoop();
     if (bgmTimer) {
       clearTimeout(bgmTimer);
       bgmTimer = null;
@@ -2297,8 +2356,9 @@
       audioContext.resume().catch(() => {});
     }
 
-    if (running && !bgmMaster) {
-      startBgm();
+    if (running) {
+      startEnkaBgm();
+      startAmbienceLoop();
     }
   }, { once: true });
 
@@ -2315,15 +2375,22 @@
   window.addEventListener("message", (event) => {
     const message = event.data;
     if (!message || message.source !== "jxj-kaitenzushi-parent" || message.type !== "settings") return;
+    integrationConfig.bgmVolume = Math.max(0, Math.min(1, Number(message.bgmVolume) || 0));
     integrationConfig.sfxVolume = Math.max(0, Math.min(1, Number(message.sfxVolume) || 0));
     integrationConfig.ambientVolume = Math.max(0, Math.min(1, Number(message.ambientVolume) || 0));
+    integrationConfig.bgmMuted = Boolean(message.bgmMuted);
     integrationConfig.sfxMuted = Boolean(message.sfxMuted);
     integrationConfig.ambientMuted = Boolean(message.ambientMuted);
     integrationConfig.externalAudioPriority = Boolean(message.externalAudioPriority);
-    if (bgmMaster && audioContext) {
-      const now = audioContext.currentTime;
-      bgmMaster.gain.cancelScheduledValues(now);
-      bgmMaster.gain.linearRampToValueAtTime(0.18 * effectiveAmbientVolume(), now + 0.12);
+    if (enkaBgm) {
+      enkaBgm.volume = Math.max(0, Math.min(1, effectiveBgmVolume() * 0.72));
+      if (running && !document.hidden && enkaBgm.volume > 0) enkaBgm.play().catch(() => {});
+      else enkaBgm.pause();
+    }
+    if (ambienceLoop) {
+      ambienceLoop.volume = Math.max(0, Math.min(1, effectiveAmbientVolume() * 0.82));
+      if (running && !document.hidden && ambienceLoop.volume > 0) ambienceLoop.play().catch(() => {});
+      else ambienceLoop.pause();
     }
   });
 
@@ -2338,6 +2405,11 @@
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && running) {
       lastTime = 0;
+      stopEnkaBgm(false);
+      stopAmbienceLoop(false);
+    } else if (!document.hidden && running) {
+      startEnkaBgm();
+      startAmbienceLoop();
     }
   });
 })();

@@ -1,11 +1,12 @@
 import {
   VERSION, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, WORKSHOP_EXPANSION_COSTS, ARTISAN_LEVEL_XP, STORE_LEVEL_POINTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
-  PRICE_MODES, DISPLAY_SHOP_PRODUCTS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate,
+  PRICE_MODES, DISPLAY_SHOP_PRODUCTS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather,
 } from './game-data.js';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio } from './audio.js';
+import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, suspendBgm, resumeBgm } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
+import { dailyGemForDate } from './daily-gems.js';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -64,12 +65,36 @@ let moneyAnimationFrame = null;
 let pendingDayMoneyDelta = 0;
 let jewelryShopPendingTrade = null;
 let kaitenzushiSession = null;
+let okachimachiQuizSession = null;
+let okachimachiQuizQuestionsPromise = null;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
 const JEWELRY_SHOP_STOCK_SIZE = 5;
 const JEWELRY_SHOP_TRANSACTION_HOURS = 1;
 const ROBBERY_DAILY_CHANCE = 1 / 100;
 const ROBBERY_HISTORY_LIMIT = 20;
+const OKACHIMACHI_QUIZ_DATA_URL = './data/jewelry_okachimachi_quiz_200_game_format.json';
+const OKACHIMACHI_QUIZ_TRIGGER_MIN = 26;
+const OKACHIMACHI_QUIZ_TRIGGER_MAX = 34;
+const WESTERN_UNION_EVENT_GEM_ID = 'antiqueDiamond';
+const WESTERN_UNION_EVENT_SHAPE_ID = 'antiqueCut';
+const WESTERN_UNION_EVENT_STAGES = new Set(['idle', 'choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3', 'completed']);
+const PAZUPAN_EVENT_TRIGGER_MIN = 52;
+const PAZUPAN_EVENT_TRIGGER_MAX = 68;
+const MERMAID_EVENT_TRIGGER_MIN = 58;
+const MERMAID_EVENT_TRIGGER_MAX = 82;
+const MERMAID_EVENT_GEM_ID = 'pearl';
+const MERMAID_EVENT_SHAPE_ID = 'pearl';
+const OKACHIMACHI_AREA_SCREENS = new Set([
+  'okachimachi', 'okachimachiQuiz', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'supplierRough',
+  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
+]);
+
+function syncFinishedJewelryCapacity() {
+  if (!state?.inventory) return 10;
+  state.inventory.capacity = finishedJewelryCapacity(state);
+  return state.inventory.capacity;
+}
 
 const MINING_ROCK_IMAGE_POOL = Object.freeze([
   "./assets/images/mining-rocks/rock-01.png",
@@ -143,6 +168,18 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
       trilliant: './assets/images/loose/diamond/trilliant.png',
       roundCabochon: './assets/images/loose/diamond/round-cabochon.png',
       ovalCabochon: './assets/images/loose/diamond/oval-cabochon.png',
+    },
+  },
+  antiqueDiamond: {
+    defaultShape: 'antiqueCut',
+    shapes: {
+      antiqueCut: './assets/images/events/antique-diamond.png',
+    },
+  },
+  pearl: {
+    defaultShape: 'pearl',
+    shapes: {
+      pearl: './assets/images/events/pearl.png',
     },
   },
   emerald: {
@@ -324,6 +361,8 @@ const LOOSE_SHAPE_DESCRIPTIONS = Object.freeze({
   trilliant: '三角形の輪郭を持ち、直線的で現代的な印象を作りやすいカットです。',
   roundCabochon: '円形のドーム状に磨き、色、模様、光学効果を面で見せるカボションです。',
   ovalCabochon: '縦長のドーム状に磨き、色や模様を広い面で見せるカボションです。',
+  antiqueCut: '古い時代のカットを思わせる大きめのファセットで、現代のブリリアントとは異なる穏やかな光を見せるカットです。',
+  pearl: '球状のパールです。人魚イベントでのみ入手できる特別なルースとして扱います。',
 });
 
 const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
@@ -331,6 +370,8 @@ const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
   amethyst: '紫色のクォーツで、淡い紫から濃い紫まで幅のある色調が特徴です。',
   aquamarine: 'ベリルの一種で、澄んだ水色から青色の色調が特徴です。',
   diamond: '強い輝きと高い硬度を持つ宝石で、ファセットの状態が見た目へ大きく影響します。',
+  antiqueDiamond: '雨の日の特別イベントでのみ入手できる、アンティークカットの特別なダイヤモンドです。ゲーム内では通常のダイヤモンド・ラウンドルースの1.5倍の価値として扱います。',
+  pearl: '寝るときにまれに現れる人魚から受け取る、イベント限定のパールです。ルース在庫へ追加され、制作や売却に使用できます。',
   emerald: '緑色のベリルで、鮮やかな色と天然由来の内包物が個性になります。',
   moonstone: '乳白色の地色に青白い光が浮かぶ、シラー効果が特徴の宝石です。',
   ruby: '赤色のコランダムで、色の濃さと透明感が印象を左右します。',
@@ -390,6 +431,26 @@ const GEM_LOOSE_GUIDES = Object.freeze({
       { title: '耐久性とモース硬度', body: 'モース硬度は10で、傷への抵抗は非常に高い宝石です。ただし硬度と靭性は別で、劈開方向への衝撃、極端に薄いガードル、尖ったコーナーは欠けの原因になります。ダイヤモンド同士は互いを傷付けるため個別保管します。' },
       { title: '処理・合成・類似石', body: '高温高圧処理、照射、レーザードリル、亀裂充填などの処理石があり、HPHT法やCVD法による合成ダイヤモンドも流通します。外観だけで判別できないため、専門機器と検査手順が必要です。' },
       { title: '加工・石留め・手入れ', body: '石留め前に欠け、フェザー、ガードル厚、劈開方向を確認します。油膜で輝きが鈍りやすいため洗浄は有効ですが、充填処理石は熱・超音波・薬品に注意します。修理時は処理情報を確認してから加熱します。' },
+    ],
+  },
+  antiqueDiamond: {
+    hardness: '10', mineral: '炭素の結晶',
+    overview: 'アンティークダイヤは、雨の日の特別イベントでのみ入手できるゲーム内の特別ルースです。大きめのファセットを持つ古風な外観として扱い、通常のダイヤモンド・ラウンドルースより価値を1.5倍に設定しています。',
+    sections: [
+      { title: 'ゲーム内での位置付け', body: '通常の採掘、ルース屋の購入、ジュエリーショップの在庫、クイズ報酬からは出現しません。年に一度程度の雨の朝に起こる人物イベントで、正しい選択をした場合だけ入手できます。' },
+      { title: '価値の扱い', body: 'ゲーム内の購入相当価格と売却価格は、通常のダイヤモンドのラウンドカットを基準に1.5倍です。ジュエリー制作に使った場合も、素材原価と推奨販売価格へこの価値が反映されます。' },
+      { title: 'カットの特徴', body: '現代の標準ラウンド・ブリリアントよりも面数が少なく、大きなファセットから穏やかな明滅を見せる古風なカットとして表現しています。実際のアンティークカットにはオールドマイン、オールドヨーロピアンなど複数の様式があります。' },
+      { title: '耐久性', body: 'ダイヤモンドのモース硬度は10ですが、劈開方向への衝撃で欠けることがあります。大きなファセットや薄いガードル、既存の欠けを確認し、石留め時に局所的な圧力を掛けないよう注意します。' },
+      { title: '手入れ', body: '油膜で輝きが鈍りやすいため、温かい石けん水と柔らかいブラシでの洗浄が基本です。処理の有無が不明な場合は、超音波、スチーム、強い加熱を避けます。' },
+    ],
+  },
+  pearl: {
+    hardness: '2.5〜4.5', mineral: '有機質宝石材料',
+    overview: 'パールは貝などの軟体動物が形成する有機質宝石材料です。ゲーム内では人魚イベントで入手する特別な一粒として扱います。真珠層の光沢は表面状態の影響を受けやすく、硬い宝石とは分けて保管します。',
+    sections: [
+      { title: '光沢と表面', body: '真珠層の厚み、構造、表面の滑らかさによって光沢と干渉色の見え方が変わります。乾燥、汗、化粧品、摩擦を避けて扱います。' },
+      { title: '耐久性', body: 'モース硬度は種類や測定条件で幅がありますが、一般に傷付きやすい素材です。超音波、スチーム、高熱、酸や強い薬品を避けます。' },
+      { title: '手入れ', body: '使用後は柔らかい布で汗や皮脂を拭き、他のジュエリーと接触しないよう保管します。洗浄が必要な場合は短時間の穏やかな方法を選びます。' },
     ],
   },
   emerald: {
@@ -2229,7 +2290,7 @@ function sellingPriceStatus(item, sellingPrice = sellingPriceForJewelry(item)) {
 }
 
 function storeMaximumShowcases() {
-  return state?.store?.expanded ? 5 : 3;
+  return state?.store?.expanded ? 5 : 2;
 }
 
 function installedShowcaseCount(branch = currentStoreBranch()) {
@@ -2246,6 +2307,10 @@ function storeShowcaseUsedSlots(branch = currentStoreBranch()) {
 
 function storeMaximumCases() {
   return 50;
+}
+
+function storeMaximumDisplaySupplies(branch = currentStoreBranch()) {
+  return installedShowcaseCount(branch);
 }
 
 function storeDisplaySuppliesInstalled(branch = currentStoreBranch()) {
@@ -2419,14 +2484,15 @@ function okachimachiFacilityAvailability(id, date = gameDate(), minutes = state?
 
 function facilityButton({ id, label, screen, primary = false }) {
   const buttonClass = primary ? 'primary-button' : 'secondary-button';
+  const facilityAttribute = `data-facility="${esc(id)}"`;
   if (!facilityUnlocked(id)) {
-    return `<button type="button" class="${buttonClass} full-button facility-locked" disabled aria-disabled="true"><span>${esc(label)}</span><small>未解放</small></button>`;
+    return `<button type="button" class="${buttonClass} full-button facility-locked" ${facilityAttribute} disabled aria-disabled="true"><span>${esc(label)}</span><small>未解放</small></button>`;
   }
   const availability = okachimachiFacilityAvailability(id);
   if (!availability.open) {
-    return `<button type="button" class="${buttonClass} full-button facility-closed" disabled aria-disabled="true" title="${esc(availability.reason)}"><span>${esc(label)}</span><small>${esc(availability.status)}</small></button>`;
+    return `<button type="button" class="${buttonClass} full-button facility-closed" ${facilityAttribute} disabled aria-disabled="true" title="${esc(availability.reason)}"><span>${esc(label)}</span><small>${esc(availability.status)}</small></button>`;
   }
-  return `<button class="${buttonClass} full-button" data-action="nav" data-screen="${screen}">${esc(label)}</button>`;
+  return `<button class="${buttonClass} full-button" ${facilityAttribute} data-action="nav" data-screen="${screen}">${esc(label)}</button>`;
 }
 
 function storeNameEntry(buttonAction, buttonLabel) {
@@ -3081,8 +3147,7 @@ function clearMorningBrief() {
   morningBriefShowing = false;
 }
 
-function finishMorningBriefAndContinue() {
-  clearMorningBrief();
+function continueMorningAfterSpecialEvents() {
   const report = pendingRobberyReport();
   if (report) {
     report.stage = 'showing';
@@ -3093,8 +3158,32 @@ function finishMorningBriefAndContinue() {
   goMain();
 }
 
-async function maybeResumeRobberySequence() {
+function specialMorningEventTriggeredToday() {
+  const day = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  const todayKey = dateKey(gameDate());
+  const mermaid = state?.events?.mermaidEvent;
+  const western = state?.events?.westernUnionEvent;
+  return Number(mermaid?.lastTriggeredDay) === day
+    || String(western?.eventDate || '') === todayKey;
+}
+
+function finishMorningBriefAndContinue() {
+  clearMorningBrief();
+  if (!specialMorningEventTriggeredToday()) {
+    if (maybeStartMermaidEvent()) return;
+    if (maybeStartWesternUnionEvent()) return;
+  }
+  continueMorningAfterSpecialEvents();
+}
+
+async function maybeResumeMorningSequence() {
   if (!state || screen !== 'main' || morningBriefShowing || sleepTransitioning) return;
+  if (resumeMermaidEvent()) return;
+  if (resumeWesternUnionEvent()) return;
+  if (!specialMorningEventTriggeredToday()) {
+    if (maybeStartMermaidEvent()) return;
+    if (maybeStartWesternUnionEvent()) return;
+  }
   const report = pendingRobberyReport();
   if (!report) return;
   if (report.stage === 'showing') {
@@ -3108,10 +3197,11 @@ async function showMorningBrief() {
   if (!morningBriefEl || !state || morningBriefShowing) return;
   morningBriefShowing = true;
   const repairMessages = Array.isArray(state.tools?.morningMessages) ? [...state.tools.morningMessages] : [];
-  const events = [...repairMessages, ...currentCalendarEvents()];
+  const date = gameDate();
+  const todayGem = dailyGemForDate(date);
+  const events = [...repairMessages, `今日の宝石：${todayGem.name}`, ...currentCalendarEvents()];
   const hasEvents = events.length > 0;
   const playerName = state.playerName || 'プレイヤー';
-  const date = gameDate();
   const morningWeekdays = ['日', '月', '火', '水', '木', '金', '土'];
   const morningDateLabel = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${morningWeekdays[date.getDay()]}）`;
   morningBriefEl.innerHTML = `
@@ -3164,12 +3254,486 @@ async function beginNextDay() {
   }
 }
 
+function gameDayOfYear(date) {
+  const start = new Date(date.getFullYear(), 0, 1, 12, 0, 0, 0);
+  return Math.floor((date.getTime() - start.getTime()) / 86400000) + 1;
+}
+
+function daysInGameYear(year) {
+  return new Date(year, 1, 29, 12, 0, 0, 0).getMonth() === 1 ? 366 : 365;
+}
+
+function westernUnionEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.westernUnionEvent && typeof state.events.westernUnionEvent === 'object' && !Array.isArray(state.events.westernUnionEvent)
+    ? state.events.westernUnionEvent
+    : {};
+  state.events.westernUnionEvent = {
+    scheduleYear: Math.max(0, Math.floor(Number(saved.scheduleYear) || 0)),
+    eligibleDayOfYear: Math.max(0, Math.min(366, Math.floor(Number(saved.eligibleDayOfYear) || 0))),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    lastTriggeredYear: Math.max(0, Math.floor(Number(saved.lastTriggeredYear) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: WESTERN_UNION_EVENT_STAGES.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+    eventDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.eventDate || '')) ? String(saved.eventDate) : '',
+  };
+  return state.events.westernUnionEvent;
+}
+
+function ensureWesternUnionAnnualSchedule(eventState, date = gameDate()) {
+  const year = date.getFullYear();
+  if (eventState.scheduleYear === year && eventState.eligibleDayOfYear >= 1) return false;
+  eventState.scheduleYear = year;
+  eventState.eligibleDayOfYear = 1 + Math.floor(Math.random() * daysInGameYear(year));
+  eventState.lastCheckedDate = '';
+  if (!eventState.active) {
+    eventState.stage = eventState.lastTriggeredYear === year ? 'completed' : 'idle';
+    eventState.rewardGranted = false;
+    eventState.eventDate = '';
+  }
+  return true;
+}
+
+function resumeWesternUnionEvent() {
+  const eventState = westernUnionEventState();
+  if (!eventState.active) return false;
+  setScreen('westernUnionEvent', {}, false);
+  return true;
+}
+
+function maybeStartWesternUnionEvent() {
+  if (!state || state.game.weather !== '雨' || Number(state.game.minutes) !== DAY_START_MINUTES) return false;
+  const date = gameDate();
+  const year = date.getFullYear();
+  const todayKey = dateKey(date);
+  const eventState = westernUnionEventState();
+  let changed = ensureWesternUnionAnnualSchedule(eventState, date);
+  if (eventState.active) {
+    if (changed) saveGame();
+    return resumeWesternUnionEvent();
+  }
+  if (eventState.lastCheckedDate === todayKey) {
+    if (changed) saveGame();
+    return false;
+  }
+  eventState.lastCheckedDate = todayKey;
+  changed = true;
+  const eligible = eventState.lastTriggeredYear !== year
+    && gameDayOfYear(date) >= eventState.eligibleDayOfYear;
+  if (!eligible) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredYear = year;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'choice';
+  eventState.rewardGranted = false;
+  eventState.eventDate = todayKey;
+  saveGame();
+  setScreen('westernUnionEvent', {}, false);
+  return true;
+}
+
+function westernUnionPlayerName() {
+  return String(state?.playerName || '君').trim() || '君';
+}
+
+function westernUnionEventDateText(eventState = westernUnionEventState()) {
+  const match = String(eventState.eventDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    const date = gameDate();
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  }
+  return `${Number(match[1])}年${Number(match[2])}月${Number(match[3])}日`;
+}
+
+function grantWesternUnionAntiqueDiamond(eventState = westernUnionEventState()) {
+  if (eventState.rewardGranted) return;
+  adjustLooseInventory(WESTERN_UNION_EVENT_GEM_ID, WESTERN_UNION_EVENT_SHAPE_ID, 1);
+  eventState.rewardGranted = true;
+  addNotification('アンティークダイヤを手に入れました', '雨の日に現れた人物から、特別なアンティークダイヤを受け取りました。', 'special');
+  saveGame();
+  playSfx('loose-sparkle', { gain: 1.1 });
+  vibrate([35, 35, 70]);
+}
+
+function chooseWesternUnionEvent(answer) {
+  const eventState = westernUnionEventState();
+  if (!eventState.active || eventState.stage !== 'choice') return;
+  if (answer === 'yes') {
+    eventState.stage = 'gift';
+    grantWesternUnionAntiqueDiamond(eventState);
+  } else if (answer === 'no') {
+    eventState.stage = 'declined';
+    saveGame();
+  } else {
+    return;
+  }
+  render();
+}
+
+function finishWesternUnionEvent() {
+  const eventState = westernUnionEventState();
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  continueMorningAfterSpecialEvents();
+}
+
+function advanceWesternUnionEvent() {
+  const eventState = westernUnionEventState();
+  if (!eventState.active) return finishWesternUnionEvent();
+  const nextStage = {
+    gift: 'explain1',
+    explain1: 'explain2',
+    explain2: 'explain3',
+  }[eventState.stage];
+  if (nextStage) {
+    eventState.stage = nextStage;
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'declined' || eventState.stage === 'explain3') finishWesternUnionEvent();
+}
+
+function randomEventTriggerDay(minimumDays, maximumDays, fromDay = state?.game?.day || 1) {
+  const minimum = Math.max(1, Math.floor(Number(minimumDays) || 1));
+  const maximum = Math.max(minimum, Math.floor(Number(maximumDays) || minimum));
+  const offset = minimum + Math.floor(Math.random() * (maximum - minimum + 1));
+  return Math.max(1, Math.floor(Number(fromDay) || 1)) + offset;
+}
+
+function simpleEventState(key, validStages, defaults = {}) {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events[key] && typeof state.events[key] === 'object' && !Array.isArray(state.events[key]) ? state.events[key] : {};
+  state.events[key] = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.includes(saved.stage) ? saved.stage : 'idle',
+    ...defaults,
+    ...Object.fromEntries(Object.keys(defaults).map((keyName) => [keyName, Boolean(saved[keyName])])),
+  };
+  if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
+  return state.events[key];
+}
+
+function miningPazupanEventState() {
+  return simpleEventState('miningPazupanEvent', ['idle', 'intro', 'reward', 'completed'], { rewardGranted: false });
+}
+
+function ensureMiningPazupanSchedule(eventState = miningPazupanEventState()) {
+  if (eventState.nextTriggerDay > 0) return false;
+  eventState.nextTriggerDay = randomEventTriggerDay(PAZUPAN_EVENT_TRIGGER_MIN, PAZUPAN_EVENT_TRIGGER_MAX);
+  return true;
+}
+
+function resumeMiningPazupanEvent() {
+  const eventState = miningPazupanEventState();
+  if (!eventState.active) return false;
+  setScreen('miningPazupanEvent', {}, false);
+  return true;
+}
+
+function maybeStartMiningPazupanEvent() {
+  const eventState = miningPazupanEventState();
+  const scheduleChanged = ensureMiningPazupanSchedule(eventState);
+  if (eventState.active) {
+    if (scheduleChanged) saveGame();
+    return resumeMiningPazupanEvent();
+  }
+  if (state.game.day < eventState.nextTriggerDay || !canSpendHours(1)) {
+    if (scheduleChanged) saveGame();
+    return false;
+  }
+  spendHours(1);
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.nextTriggerDay = randomEventTriggerDay(PAZUPAN_EVENT_TRIGGER_MIN, PAZUPAN_EVENT_TRIGGER_MAX);
+  eventState.active = true;
+  eventState.stage = 'intro';
+  eventState.rewardGranted = false;
+  saveGame();
+  setScreen('miningPazupanEvent', {}, false);
+  return true;
+}
+
+function enterMiningFromOutside() {
+  if (resumeMiningPazupanEvent()) return;
+  if (maybeStartMiningPazupanEvent()) return;
+  setScreen('mining', {});
+}
+
+function grantPazupan(eventState = miningPazupanEventState()) {
+  if (eventState.rewardGranted) return;
+  const current = Math.max(0, Math.floor(Number(state.inventory.items?.pazupan) || 0));
+  state.inventory.items.pazupan = current + 1;
+  eventState.rewardGranted = true;
+  addNotification('パズーパンを手に入れました', '採掘へ向かう途中で出会った人物から、不思議なパズーパンを受け取りました。', 'special');
+  saveGame();
+  playSfx('success', { gain: 1.05 });
+  vibrate([35, 30, 65]);
+}
+
+function advanceMiningPazupanEvent() {
+  const eventState = miningPazupanEventState();
+  if (!eventState.active) {
+    setScreen('mining', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro') {
+    eventState.stage = 'reward';
+    grantPazupan(eventState);
+    saveGame();
+    render();
+    return;
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  setScreen('mining', {}, false);
+}
+
+function mermaidEventState() {
+  return simpleEventState('mermaidEvent', ['idle', 'intro', 'reward', 'completed'], { rewardGranted: false });
+}
+
+function ensureMermaidSchedule(eventState = mermaidEventState()) {
+  if (eventState.nextTriggerDay > 0) return false;
+  eventState.nextTriggerDay = randomEventTriggerDay(MERMAID_EVENT_TRIGGER_MIN, MERMAID_EVENT_TRIGGER_MAX);
+  return true;
+}
+
+function resumeMermaidEvent() {
+  const eventState = mermaidEventState();
+  if (!eventState.active) return false;
+  setScreen('mermaidEvent', {}, false);
+  return true;
+}
+
+function maybeStartMermaidEvent() {
+  if (!state || Number(state.game.minutes) !== DAY_START_MINUTES) return false;
+  const eventState = mermaidEventState();
+  const scheduleChanged = ensureMermaidSchedule(eventState);
+  if (eventState.active) {
+    if (scheduleChanged) saveGame();
+    return resumeMermaidEvent();
+  }
+  if (state.game.day < eventState.nextTriggerDay) {
+    if (scheduleChanged) saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.nextTriggerDay = randomEventTriggerDay(MERMAID_EVENT_TRIGGER_MIN, MERMAID_EVENT_TRIGGER_MAX);
+  eventState.active = true;
+  eventState.stage = 'intro';
+  eventState.rewardGranted = false;
+  saveGame();
+  setScreen('mermaidEvent', {}, false);
+  return true;
+}
+
+function grantMermaidPearl(eventState = mermaidEventState()) {
+  if (eventState.rewardGranted) return;
+  adjustLooseInventory(MERMAID_EVENT_GEM_ID, MERMAID_EVENT_SHAPE_ID, 1);
+  eventState.rewardGranted = true;
+  addNotification('パールを手に入れました', '風呂場に現れた人魚からパールを受け取りました。', 'special');
+  saveGame();
+  playSfx('loose-sparkle', { gain: 1.08 });
+  vibrate([35, 35, 70]);
+}
+
+function finishMermaidEvent() {
+  const eventState = mermaidEventState();
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  continueMorningAfterSpecialEvents();
+}
+
+function advanceMermaidEvent() {
+  const eventState = mermaidEventState();
+  if (!eventState.active) return finishMermaidEvent();
+  if (eventState.stage === 'intro') {
+    eventState.stage = 'reward';
+    grantMermaidPearl(eventState);
+    saveGame();
+    render();
+    return;
+  }
+  finishMermaidEvent();
+}
+
+
+function nextOkachimachiQuizTriggerAt() {
+  return OKACHIMACHI_QUIZ_TRIGGER_MIN
+    + Math.floor(Math.random() * (OKACHIMACHI_QUIZ_TRIGGER_MAX - OKACHIMACHI_QUIZ_TRIGGER_MIN + 1));
+}
+
+function okachimachiQuizEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.okachimachiQuiz && typeof state.events.okachimachiQuiz === 'object' && !Array.isArray(state.events.okachimachiQuiz)
+    ? state.events.okachimachiQuiz
+    : {};
+  state.events.okachimachiQuiz = {
+    totalVisits: Math.max(0, Math.floor(Number(saved.totalVisits) || 0)),
+    visitsSinceLast: Math.max(0, Math.floor(Number(saved.visitsSinceLast) || 0)),
+    nextTriggerAt: Math.max(OKACHIMACHI_QUIZ_TRIGGER_MIN, Math.min(OKACHIMACHI_QUIZ_TRIGGER_MAX, Math.floor(Number(saved.nextTriggerAt) || 30))),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastQuestionIndex: Number.isFinite(Number(saved.lastQuestionIndex))
+      ? Math.max(-1, Math.floor(Number(saved.lastQuestionIndex)))
+      : -1,
+  };
+  return state.events.okachimachiQuiz;
+}
+
+function validOkachimachiQuizQuestion(row) {
+  return Boolean(row
+    && typeof row.question === 'string'
+    && row.question.trim()
+    && Array.isArray(row.choices)
+    && row.choices.length === 4
+    && row.choices.every((choice) => typeof choice === 'string' && choice.trim())
+    && Number.isInteger(row.answerIndex)
+    && row.answerIndex >= 0
+    && row.answerIndex < 4);
+}
+
+async function loadOkachimachiQuizQuestions() {
+  if (!okachimachiQuizQuestionsPromise) {
+    okachimachiQuizQuestionsPromise = fetch(OKACHIMACHI_QUIZ_DATA_URL, { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) throw new Error(`クイズデータを読み込めませんでした（${response.status}）`);
+        return response.json();
+      })
+      .then((rows) => {
+        const questions = Array.isArray(rows) ? rows.filter(validOkachimachiQuizQuestion) : [];
+        if (!questions.length) throw new Error('使用できるクイズ問題がありません。');
+        return questions;
+      })
+      .catch((error) => {
+        okachimachiQuizQuestionsPromise = null;
+        throw error;
+      });
+  }
+  return okachimachiQuizQuestionsPromise;
+}
+
+function chooseOkachimachiQuizQuestion(questions, previousIndex = -1) {
+  let index = Math.floor(Math.random() * questions.length);
+  if (questions.length > 1 && index === previousIndex) {
+    index = (index + 1 + Math.floor(Math.random() * (questions.length - 1))) % questions.length;
+  }
+  return { index, question: questions[index] };
+}
+
+async function enterOkachimachiFromOutside() {
+  const eventState = okachimachiQuizEventState();
+  eventState.totalVisits += 1;
+  eventState.visitsSinceLast += 1;
+  const shouldTrigger = eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1);
+  saveGame();
+  if (!shouldTrigger) {
+    setScreen('okachimachi', {});
+    return;
+  }
+
+  try {
+    const questions = await loadOkachimachiQuizQuestions();
+    const selected = chooseOkachimachiQuizQuestion(questions, eventState.lastQuestionIndex);
+    eventState.visitsSinceLast = 0;
+    eventState.nextTriggerAt = nextOkachimachiQuizTriggerAt();
+    eventState.totalTriggered += 1;
+    eventState.lastQuestionIndex = selected.index;
+    spendHours(1);
+    okachimachiQuizSession = {
+      stage: 'intro1',
+      questionIndex: selected.index,
+      question: selected.question,
+      selectedIndex: null,
+      rewardGemId: '',
+    };
+    saveGame();
+    setScreen('okachimachiQuiz', {});
+  } catch (error) {
+    console.error(error);
+    showToast('クイズデータを読み込めなかったため、通常の御徒町へ移動しました。', 'error');
+    setScreen('okachimachi', {});
+  }
+}
+
+function okachimachiQuizPlayerName() {
+  return String(state?.playerName || 'あなた').trim() || 'あなた';
+}
+
+function okachimachiQuizCharacterImage(stage = okachimachiQuizSession?.stage) {
+  if (stage === 'correct') return './assets/images/quiz/quiz-king-player-correct.png';
+  if (stage === 'incorrect') return './assets/images/quiz/quiz-king-player-incorrect.png';
+  return './assets/images/quiz/quiz-king-normal.png';
+}
+
+function answerOkachimachiQuiz(index) {
+  const session = okachimachiQuizSession;
+  if (!session || session.stage !== 'question') return;
+  const selectedIndex = Number(index);
+  if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex > 3) return;
+  session.selectedIndex = selectedIndex;
+  const correct = selectedIndex === session.question.answerIndex;
+  session.stage = correct ? 'correct' : 'incorrect';
+  render();
+  playSfx(correct ? 'quiz-correct' : 'quiz-incorrect', { gain: 1 });
+  vibrate(correct ? [35, 45, 80] : 110);
+}
+
+function grantOkachimachiQuizReward() {
+  const session = okachimachiQuizSession;
+  if (!session || session.stage !== 'correct') return;
+  const gemIds = Object.values(GEMS).filter((gem) => !gem.eventOnly).map((gem) => gem.id);
+  const gemId = gemIds[Math.floor(Math.random() * gemIds.length)];
+  state.inventory.rough[gemId] = Math.max(0, Math.floor(Number(state.inventory.rough[gemId]) || 0)) + 1;
+  session.rewardGemId = gemId;
+  session.stage = 'reward';
+  saveGame();
+  render();
+}
+
+function finishOkachimachiQuiz() {
+  okachimachiQuizSession = null;
+  setScreen('okachimachi', {}, false);
+}
+
+function advanceOkachimachiQuizDialogue() {
+  const session = okachimachiQuizSession;
+  if (!session) return finishOkachimachiQuiz();
+  if (session.stage === 'intro1') {
+    session.stage = 'intro2';
+    render();
+    return;
+  }
+  if (session.stage === 'intro2') {
+    session.stage = 'question';
+    render();
+    return;
+  }
+  if (session.stage === 'correct') {
+    grantOkachimachiQuizReward();
+    return;
+  }
+  if (session.stage === 'incorrect' || session.stage === 'reward') finishOkachimachiQuiz();
+}
+
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', mining: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', mining: 'mining', miningPazupanEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
-    phone: 'phone', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
+    phone: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
   };
   return map[target] || 'main';
 }
@@ -3202,6 +3766,13 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
+  if (target === 'okachimachiQuiz') return okachimachiQuizSession?.stage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
+  if (target === 'polishing') return 'polishing';
+  if (target === 'displayShop') return 'displayShop';
+  if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory') return 'materialShop';
+  if (target === 'realEstate') return 'realEstate';
+  if (target === 'looseShop' || target === 'supplierRough') return 'looseShop';
+  if (target === 'jewelryShop') return 'jewelryShop';
   const bg = backgroundFor(target);
   if (bg === 'phone') return 'phone';
   if (bg === 'okachimachi') return 'okachimachi';
@@ -3215,7 +3786,7 @@ function audioFor(target) {
 function setScreen(target, data = {}, push = true) {
   const enteringKaitenzushi = target === 'kaitenzushi' && screen !== 'kaitenzushi';
   const leavingKaitenzushi = screen === 'kaitenzushi' && target !== 'kaitenzushi';
-  if (enteringKaitenzushi) suspendAudio();
+  if (enteringKaitenzushi) suspendBgm();
   if (push && screen !== target) navigation.push({ screen, data: screenData });
   if (target === 'mining' && screen !== 'mining') selectedMining = null;
   if (target === 'phone' && screen !== 'phone') {
@@ -3226,7 +3797,7 @@ function setScreen(target, data = {}, push = true) {
   screenData = data;
   if (state) state.game.screen = target;
   render();
-  if (leavingKaitenzushi) resumeAudio().catch(() => {});
+  if (leavingKaitenzushi) resumeBgm().catch(() => {});
   if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory') {
     loadMetalMarket().then(() => {
       if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory') && state) render();
@@ -3374,15 +3945,25 @@ function render() {
     delete document.body.dataset.textSize;
     applyCurrentBackground();
     if (state) {
+      syncFinishedJewelryCapacity();
       const hour = Math.floor(state.game.minutes / 60);
       document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
     }
+    const currentAudioKey = audioFor(screen);
+    const weatherLayerActive = screen === 'main'
+      || screen === 'westernUnionEvent'
+      || screen === 'mermaidEvent'
+      || screen === 'robberyReport'
+      || screen === 'okachimachi'
+      || screen === 'phone'
+      || backgroundFor(screen) === 'meal';
     updateMainEnvironment({
-      active: (screen === 'main' || screen === 'robberyReport') && Boolean(state),
+      active: weatherLayerActive && Boolean(state),
       weather: state?.game?.weather || '晴れ',
       minutes: state?.game?.minutes ?? 9 * 60,
+      audioKey: currentAudioKey,
     });
-    switchAudio(audioFor(screen));
+    switchAudio(currentAudioKey);
 
     const renderers = {
       loading: renderLoading,
@@ -3392,10 +3973,14 @@ function render() {
       nameSetup: renderNameSetup,
       settingsTitle: () => renderSettings(true),
       main: renderMain,
+      westernUnionEvent: renderWesternUnionEvent,
+      mermaidEvent: renderMermaidEvent,
       mining: renderMining,
+      miningPazupanEvent: renderMiningPazupanEvent,
       miningGame: renderMiningGame,
       miningResult: renderMiningResult,
       okachimachi: renderOkachimachi,
+      okachimachiQuiz: renderOkachimachiQuiz,
       supplier: renderSupplier,
       supplierMetals: renderSupplierMetals,
       supplierMetalHistory: renderSupplierMetalHistory,
@@ -3429,6 +4014,7 @@ function render() {
       orders: renderOrders,
       employee: renderEmployee,
       phone: renderPhone,
+      todayGem: renderTodayGem,
       meal: renderMeal,
       kaitenzushi: renderKaitenzushi,
       settings: () => renderSettings(false),
@@ -3447,7 +4033,7 @@ function render() {
     restoreSettingsScrollState(settingsScrollState);
     applyAudioSettings();
     if (screen === 'robberyReport' && pendingRobberyReport()) queueMicrotask(() => startPoliceSiren());
-    if (screen === 'main') queueMicrotask(() => maybeResumeRobberySequence());
+    if (screen === 'main') queueMicrotask(() => maybeResumeMorningSequence());
     queueMicrotask(() => maybeShowGameClearModal());
   } catch (error) {
     console.error('画面描画エラー', error);
@@ -3697,41 +4283,74 @@ function normalizeOrderRequestBudget(request = {}) {
   return normalized;
 }
 
-function customerVisitRequest(customerId, branchNumber) {
+function customerRequestSignature(request = {}) {
+  return [
+    request.item || '',
+    request.gem || '',
+    normalizeLooseShape(request.gem, request.looseShape),
+    request.metal || '',
+    request.design || '',
+  ].join('|');
+}
+
+function randomCustomerPreference(request = {}) {
+  const preferences = [
+    { type: 'gem', value: request.gem, label: GEMS[request.gem]?.name || '石指定' },
+    { type: 'metal', value: request.metal, label: METALS[request.metal]?.name || '地金指定' },
+    { type: 'design', value: request.design, label: DESIGNS[request.design]?.name || 'デザイン指定' },
+  ];
+  return structuredClone(randomFrom(preferences, preferences[0]));
+}
+
+function buildRandomCustomerVisitRequest(customerId, branchNumber) {
   const customer = CUSTOMERS[customerId];
   const baseRequest = structuredClone(customer?.request || {});
   const branch = Math.max(1, Math.min(3, Math.floor(Number(branchNumber) || 1)));
-  if (branch === 1) return normalizeOrderRequestBudget(baseRequest);
-
-  const request = { ...baseRequest };
-  request.preference = structuredClone(baseRequest.preference || { type: 'gem', value: baseRequest.gem, label: GEMS[baseRequest.gem]?.name || '石指定' });
+  const allGemIds = Object.values(GEMS).filter((gem) => !gem.eventOnly).map((gem) => gem.id);
+  const commonGemIds = allGemIds.filter((gemId) => !HIGH_VALUE_GEMS.includes(gemId));
+  const gemPool = branch === 3 ? HIGH_VALUE_GEMS.filter((gemId) => GEMS[gemId]) : (commonGemIds.length ? commonGemIds : allGemIds);
+  const metalPool = branch === 3 ? HIGH_VALUE_METALS.filter((metalId) => METALS[metalId]) : Object.keys(METALS);
+  const request = {
+    ...baseRequest,
+    item: randomFrom(Object.keys(ITEMS), baseRequest.item || 'ring'),
+    gem: randomFrom(gemPool, baseRequest.gem || 'amethyst'),
+    metal: randomFrom(metalPool, baseRequest.metal || 'silver'),
+    design: randomFrom(Object.keys(DESIGNS), baseRequest.design || 'simple'),
+  };
+  request.looseShape = randomFrom(looseShapeIdsForGem(request.gem), defaultLooseShapeForGem(request.gem));
   request.difficulty = customerVisitDifficulty(branch, baseRequest.difficulty || 'basic');
   request.requiredArtisanLevel = ORDER_DIFFICULTIES[request.difficulty]?.artisanLevel || 1;
   request.deadlineDays = ORDER_DIFFICULTIES[request.difficulty]?.days || 7;
-
-  if (branch === 2) {
-    if (request.difficulty !== 'basic') {
-      request.design = randomFrom(['classic', 'modern'], request.design || 'simple');
-      request.preference = { type: 'design', value: request.design, label: DESIGNS[request.design]?.name || 'デザイン指定' };
-    }
-    const qualityBudget = recommendedPrice({ ...request, looseShape: normalizeLooseShape(request.gem, request.looseShape), quality: 'good' });
-    request.budget = roundThousand(Math.max(Number(baseRequest.budget) * 1.20, qualityBudget));
-    request.storeProfile = 'quality';
-    return normalizeOrderRequestBudget(request);
-  }
-
-  request.item = randomFrom(Object.keys(ITEMS), request.item || 'ring');
-  request.gem = randomFrom(HIGH_VALUE_GEMS.filter((gemId) => GEMS[gemId]), request.gem);
-  request.looseShape = normalizeLooseShape(request.gem, request.looseShape);
-  request.metal = randomFrom(HIGH_VALUE_METALS.filter((metalId) => METALS[metalId]), request.metal);
-  request.design = randomFrom(['classic', 'modern'], request.design || 'modern');
-  request.preference = Math.random() < 0.65
-    ? { type: 'gem', value: request.gem, label: GEMS[request.gem]?.name || '石指定' }
-    : { type: 'metal', value: request.metal, label: METALS[request.metal]?.name || '地金指定' };
-  const premiumBudget = recommendedPrice({ ...request, quality: 'premium' });
-  request.budget = roundThousand(Math.max(Number(baseRequest.budget) * 1.75, premiumBudget * 1.10));
-  request.storeProfile = 'premium';
+  request.requiredTools = Array.isArray(baseRequest.requiredTools) && baseRequest.requiredTools.length
+    ? [...new Set(baseRequest.requiredTools.map(String))]
+    : ['jewelryBench'];
+  request.preference = randomCustomerPreference(request);
+  const quality = branch === 3 ? 'premium' : branch === 2 ? 'good' : 'standard';
+  const recommended = recommendedPrice({ ...request, quality, useLoose: true });
+  const budgetRate = branch === 3
+    ? 1.15 + Math.random() * 0.35
+    : branch === 2
+      ? 1.05 + Math.random() * 0.25
+      : 0.95 + Math.random() * 0.25;
+  request.budget = roundThousand(recommended * budgetRate);
+  request.storeProfile = branch === 3 ? 'premium' : branch === 2 ? 'quality' : 'general';
   return normalizeOrderRequestBudget(request);
+}
+
+function customerVisitRequest(customerId, branchNumber) {
+  const customerState = state?.customers?.[customerId];
+  const previousSignature = String(customerState?.lastRequestSignature || customerRequestSignature(customerState?.activeRequest || {}));
+  let candidate = null;
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    candidate = buildRandomCustomerVisitRequest(customerId, branchNumber);
+    if (!previousSignature || customerRequestSignature(candidate) !== previousSignature) return candidate;
+  }
+  // 極端に同じ抽選が続いた場合も、デザインを必ず次へ送って前回と同じ要望にならないようにする。
+  const designIds = Object.keys(DESIGNS);
+  const currentIndex = Math.max(0, designIds.indexOf(candidate?.design));
+  candidate.design = designIds[(currentIndex + 1) % designIds.length] || 'simple';
+  candidate.preference = { type: 'design', value: candidate.design, label: DESIGNS[candidate.design]?.name || 'デザイン指定' };
+  return normalizeOrderRequestBudget(candidate);
 }
 
 function activeCustomerRequest(customerId) {
@@ -3941,6 +4560,140 @@ function renderRobberyReport() {
     </main>`;
 }
 
+function renderTodayGem() {
+  const date = gameDate();
+  const gem = dailyGemForDate(date);
+  const dateLabel = `${date.getMonth() + 1}月${date.getDate()}日`;
+  const propertyRows = [
+    ['鉱物・素材', gem.mineral],
+    ['化学組成', gem.chemistry],
+    ['結晶系', gem.crystalSystem],
+    ['光学性', gem.optic],
+    ['屈折率', gem.ri],
+    ['複屈折', gem.birefringence],
+    ['比重', gem.sg],
+    ['モース硬度', gem.hardness],
+    ['劈開・構造上の弱点', gem.cleavage],
+    ['光沢', gem.luster],
+    ['多色性', gem.pleochroism],
+    ['石言葉', gem.stoneWords],
+  ];
+  return shell('今日の宝石', `
+    <article class="today-gem-page">
+      <header class="today-gem-hero glass-panel">
+        <div class="today-gem-date"><small>JEWELRY × JEWELRY　今日の宝石</small><strong>${esc(dateLabel)}</strong></div>
+        <div class="today-gem-name-block">
+          <h1>${esc(gem.name)}</h1>
+          <p>${esc(gem.classification)}</p>
+        </div>
+        <p class="today-gem-overview">${esc(gem.overview)}</p>
+      </header>
+
+      <section class="today-gem-section glass-panel">
+        <div class="today-gem-section-heading">
+          <span>GEMOLOGICAL DATA</span>
+          <h2>宝石学的基礎データ</h2>
+        </div>
+        <dl class="today-gem-properties">
+          ${propertyRows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value || '不明')}</dd></div>`).join('')}
+        </dl>
+        <p class="today-gem-data-note">数値は天然宝石に一般的に用いられる代表値・代表範囲です。固溶組成、産地、構造状態、集合組織、処理、測定条件によって変動します。モース硬度は引っかき傷への相対的抵抗であり、靭性・劈開・熱安定性とは別の性質です。</p>
+      </section>
+
+      <section class="today-gem-knowledge">
+        ${gem.sections.map((section, index) => `<article class="today-gem-note glass-panel"><div class="today-gem-note-number">${String(index + 1).padStart(2, '0')}</div><div><h2>${esc(section.title)}</h2><p>${esc(section.body)}</p></div></article>`).join('')}
+      </section>
+
+      <section class="today-gem-reference glass-panel">
+        <h2>専門家向けの読み方</h2>
+        <p>宝石名は鉱物種、変種名、現象名、流通名を区別して記載しています。処理・天然合成・産地は、外観や単一の内包物だけで断定せず、標準宝石学検査と必要に応じた分光・化学分析、信頼できる鑑別報告書を前提に判断してください。</p>
+        <p>石言葉は宝石学的・鉱物学的性質ではなく、地域・時代・文献・販売者によって異なる文化的表現です。「今日の宝石」の日付対応は、統一された公的な365日誕生日石が存在しないため、本ゲーム独自の学習用日替わり選定です。</p>
+        <div class="today-gem-sources"><strong>参照体系</strong><span>GIA Gem Encyclopedia／GIA Care & Cleaning Guides／CIBJO Blue Booksの命名・開示原則／標準的な宝石学検査値</span></div>
+      </section>
+    </article>
+  `, { help: 'ゲーム内の日付に応じて、宝石学的データ、鑑別、処理、加工、石留め、手入れの専門情報を表示します。画像は使用しません。' });
+}
+
+function renderWesternUnionEvent() {
+  const eventState = westernUnionEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => finishWesternUnionEvent());
+    return renderMain();
+  }
+  const playerName = westernUnionPlayerName();
+  const escapedName = esc(playerName);
+  const dialogueByStage = {
+    declined: 'そうか、賭けに勝ったようだよ、、',
+    gift: '君に渡すものがある、これだ',
+    explain1: 'ウエスタン・ユニオンの者だ、我々はこのダイヤを預かって70年間保管してきたんだ',
+    explain2: `${esc(westernUnionEventDateText(eventState))}。この場所でキッカリこの時間にだ`,
+    explain3: `${escapedName}が現れるかみんなで賭けをしたんだが負けてしまった。ハハハッ`,
+  };
+  const isChoice = eventState.stage === 'choice';
+  const isGift = eventState.stage === 'gift';
+  return `
+    <main class="main-screen western-union-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="western-union-event western-union-stage-${esc(eventState.stage)}" aria-live="polite">
+        <div class="western-union-character-area" aria-hidden="true">
+          <img class="western-union-character" src="./assets/images/events/western-union-messenger.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${isGift ? `<div class="western-union-diamond-reveal" role="status"><span class="western-union-diamond-glow" aria-hidden="true"></span><img src="./assets/images/events/antique-diamond.png?v=${VERSION}" alt="アンティークダイヤ" draggable="false"><strong>アンティークダイヤを手に入れました</strong></div>` : ''}
+        <section class="western-union-dialogue glass-panel">
+          <strong>${isChoice ? `${escapedName}君？君の名前は${escapedName}かね？` : (dialogueByStage[eventState.stage] || '')}</strong>
+          ${isChoice ? `<div class="western-union-choices"><button type="button" class="primary-button" data-action="western-union-choice" data-answer="yes">そうだけど</button><button type="button" class="secondary-button" data-action="western-union-choice" data-answer="no">いいえ</button></div>` : `<button type="button" class="western-union-next" data-action="western-union-next"><span>タップして進む</span></button>`}
+        </section>
+      </section>
+    </main>`;
+}
+
+function renderMiningPazupanEvent() {
+  const eventState = miningPazupanEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('mining', {}, false));
+    return renderMining();
+  }
+  const reward = eventState.stage === 'reward';
+  return `
+    <main class="main-screen pazupan-event-screen">
+      ${header('採掘', { back: false, main: false })}
+      <section class="pazupan-event" aria-live="polite">
+        <div class="pazupan-character-area" aria-hidden="true">
+          <img class="pazupan-character" src="./assets/images/events/pazupan-miner.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward ? `<div class="special-item-reveal pazupan-reveal" role="status"><span class="special-item-glow" aria-hidden="true"></span><img src="./assets/images/events/pazupan.png?v=${VERSION}" alt="パズーパン" draggable="false"><strong>パズーパンを手に入れました</strong></div>` : ''}
+        <button type="button" class="event-dialogue-card glass-panel" data-action="pazupan-event-next">
+          <strong>${reward ? 'パズーパンを手に入れました' : '小鬼だ。小鬼がおる'}</strong>
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+function renderMermaidEvent() {
+  const eventState = mermaidEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => continueMorningAfterSpecialEvents());
+    return renderMain();
+  }
+  const reward = eventState.stage === 'reward';
+  return `
+    <main class="main-screen mermaid-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="mermaid-event" aria-live="polite">
+        <div class="mermaid-character-area" aria-hidden="true">
+          <img class="mermaid-character" src="./assets/images/events/mermaid.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward ? `<div class="special-item-reveal pearl-reveal" role="status"><span class="special-item-glow pearl-glow" aria-hidden="true"></span><img src="./assets/images/events/pearl.png?v=${VERSION}" alt="パール" draggable="false"><strong>パールをくれた</strong></div>` : ''}
+        <button type="button" class="event-dialogue-card mermaid-dialogue glass-panel" data-action="mermaid-event-next">
+          <strong>${reward ? 'パールをくれた' : '生臭いと思ったら風呂場に人魚がいた'}</strong>
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+
 function renderMain() {
   const unread = visibleNotifications().filter((note) => note.unread).length;
   const activeOrders = activeOrderCount();
@@ -3950,7 +4703,7 @@ function renderMain() {
     : [];
   const autopilotEnabled = Boolean(state?.settings?.autopilotEnabled);
   const locked = hungerLocked();
-  const autopilotDisabled = 'disabled aria-disabled="true" title="自動操縦中はスマートフォンのみ操作できます"';
+  const autopilotDisabled = 'disabled aria-disabled="true" title="自動操縦中はスマートフォンと今日の宝石のみ操作できます"';
   const hungerDisabled = locked ? 'disabled aria-disabled="true"' : '';
   const manualActionDisabled = autopilotEnabled ? autopilotDisabled : hungerDisabled;
   const phoneDisabled = !autopilotEnabled && locked ? hungerDisabled : '';
@@ -3972,6 +4725,7 @@ function renderMain() {
         ${storeButton}
         <button data-action="nav" data-screen="okachimachi" ${manualActionDisabled}><span>♢</span><strong>御徒町</strong></button>
         <button class="${autopilotEnabled ? 'autopilot-phone-button' : ''}" data-action="nav" data-screen="phone" ${phoneDisabled} aria-label="スマートフォン${autopilotEnabled ? '。自動操縦の設定を変更できます' : ''}"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
+        <button data-action="nav" data-screen="todayGem"><span>✦</span><strong>今日の宝石</strong></button>
         <button data-action="nav" data-screen="meal" ${mealAndSleepDisabled}><span class="meal-cutlery-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 3v5.4a3 3 0 0 0 6 0V3M7 3v18M10 3v5.4"/><path class="meal-knife-blade" d="M18.8 2.8c-2.8 2.8-4.2 6.2-4.2 10.2h3.1v8h2V2.8z"/></svg></span><strong>食事</strong></button>
         <button data-action="sleep" ${mealAndSleepDisabled}><span>☾</span><strong>寝る</strong></button>
       </nav>
@@ -4252,6 +5006,54 @@ function renderGlabToolGuide() {
     </section>`, { main: false });
 }
 
+function renderOkachimachiQuiz() {
+  const session = okachimachiQuizSession;
+  if (!session) {
+    queueMicrotask(() => finishOkachimachiQuiz());
+    return shell('通りすがりのクイズ王', '<section class="center-card glass-panel"><p>御徒町へ戻ります…</p></section>', { back: false, main: false });
+  }
+  const playerName = esc(okachimachiQuizPlayerName());
+  if (session.stage === 'reward') {
+    const gem = GEMS[session.rewardGemId];
+    return shell('通りすがりのクイズ王', `
+      <section class="okachimachi-quiz-event quiz-stage-reward" aria-live="polite">
+        <button type="button" class="quiz-reward-button" data-action="okachimachi-quiz-next" aria-label="御徒町へ進む">
+          <span class="quiz-reward-glow" aria-hidden="true"></span>
+          ${roughVisual(gem?.id, 'quiz-reward-gem')}
+          <strong>${esc(gem?.name || '')}原石をもらいました</strong>
+          <small>タップして御徒町へ進む</small>
+        </button>
+      </section>`, { back: false, main: false });
+  }
+
+  const dialogueByStage = {
+    intro1: `あ、こんにちは${playerName}さん。　どうです？僕より勉強出来てますか？`,
+    intro2: `${playerName}さん知ってるかな、、`,
+    correct: '正解です、、、これあげますよ、、',
+    incorrect: 'まぁ、そのレベルか、、、自分の価値って考えたことあります？ではまた、',
+  };
+  const isQuestion = session.stage === 'question';
+  const character = okachimachiQuizCharacterImage(session.stage);
+  return shell('通りすがりのクイズ王', `
+    <section class="okachimachi-quiz-event ${isQuestion ? 'quiz-stage-question' : `quiz-stage-${esc(session.stage)}`}" aria-live="polite">
+      <div class="quiz-character-area" aria-hidden="true">
+        <img class="quiz-character-image" src="${character}?v=${VERSION}" alt="" draggable="false">
+      </div>
+      ${isQuestion ? `
+        <section class="quiz-question-panel glass-panel">
+          <span class="quiz-question-kicker">4択クイズ</span>
+          <h2>${esc(session.question.question)}</h2>
+          <div class="quiz-answer-grid">
+            ${session.question.choices.map((choice, index) => `<button type="button" class="quiz-answer-button" data-action="okachimachi-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('')}
+          </div>
+        </section>` : `
+        <button type="button" class="quiz-dialogue-panel glass-panel" data-action="okachimachi-quiz-next">
+          <strong>${dialogueByStage[session.stage] || ''}</strong>
+          <small>タップして進む</small>
+        </button>`}
+    </section>`, { back: false, main: false });
+}
+
 function renderOkachimachi() {
   return shell('御徒町', `
     <div class="split-layout">
@@ -4401,7 +5203,7 @@ function renderLooseShop(forcedTab = '') {
   if (isRoughSelling) {
     shopContent = roughSaleContentMarkup();
   } else if (!selectedGem) {
-    const gems = Object.values(GEMS).filter((gem) => !isSelling || looseTotalForGem(gem.id) > 0);
+    const gems = Object.values(GEMS).filter((gem) => gem.eventOnly ? (isSelling && looseTotalForGem(gem.id) > 0) : (!isSelling || looseTotalForGem(gem.id) > 0));
     const gemChoices = gems.map((gem) => {
       const owned = looseTotalForGem(gem.id);
       const available = looseAvailableTotalForGem(gem.id);
@@ -4485,7 +5287,7 @@ function jewelryShopPurchaseRecommendedPrice(purchasePrice) {
 function createJewelryShopStockItem() {
   const item = randomFrom(Object.keys(ITEMS), 'ring');
   const metal = randomFrom(Object.keys(METALS), 'silver');
-  const gem = randomFrom(Object.keys(GEMS), 'amethyst');
+  const gem = randomFrom(Object.values(GEMS).filter((entry) => !entry.eventOnly).map((entry) => entry.id), 'amethyst');
   const useLoose = Math.random() >= 0.12;
   const looseShape = randomFrom(looseShapeIdsForGem(gem), defaultLooseShapeForGem(gem));
   const design = randomFrom(Object.keys(DESIGNS), 'simple');
@@ -4575,7 +5377,7 @@ function renderJewelryShop() {
             <button type="button" class="secondary-button jewelry-shop-back" data-action="jewelry-shop-menu">← メニューへ戻る</button>
             <div class="jewelry-shop-status-row"><span>完成品保管</span><strong>${usedCapacity}／${state.inventory.capacity}</strong></div>
             ${capacityFull ? '<p class="error-text">完成品の保管場所に空きがありません。</p>' : ''}
-            <p class="small-note">商品は「ジュエリーを買う」を開くたびにランダムで入れ替わります。仕入れ価格が高いため、再販売しても大きな利益は出ません。</p>
+            <p class="small-note jewelry-shop-trade-note jewelry-shop-random-note">商品は「ジュエリーを買う」を開くたびにランダムで入れ替わります。仕入れ価格が高いため、再販売しても大きな利益は出ません。</p>
             <div class="jewelry-shop-product-list">${rows || '<div class="empty-state"><strong>商品は売り切れました。</strong><p>メニューへ戻り、もう一度「ジュエリーを買う」を開くと商品が入れ替わります。</p></div>'}</div>
           </div>
         </section>
@@ -4605,7 +5407,7 @@ function renderJewelryShop() {
         ${jewelryShopHeroMarkup('sell')}
         <div class="jewelry-shop-panel-content">
           <button type="button" class="secondary-button jewelry-shop-back" data-action="jewelry-shop-menu">← メニューへ戻る</button>
-          <p class="small-note">工房で保管中の完成品だけを卸販売できます。ショーケースに陳列中の商品と注文品は表示されません。利益はごく少額です。</p>
+          <p class="small-note jewelry-shop-trade-note jewelry-shop-wholesale-note">工房で保管中の完成品だけを卸販売できます。ショーケースに陳列中の商品と注文品は表示されません。利益はごく少額です。</p>
           <div class="jewelry-shop-product-list">${rows || '<div class="empty-state"><strong>売却できる完成品はありません。</strong><p>工房で完成品を制作し、保管中にするとここへ表示されます。</p></div>'}</div>
         </div>
       </section>
@@ -4843,6 +5645,16 @@ function renderWorkshop() {
     </div>`, { help: '工房ではジュエリー作成、受注中の商品を確認する注文書、原石研磨を利用できます。工房レベルと工房拡張は画面の一番下に表示します。注文書は現在の注文がある場合だけ開けます。' });
 }
 
+function rerenderPolishingPreservingPosition() {
+  const content = root.querySelector('.screen-content');
+  const contentScrollTop = content?.scrollTop || 0;
+  render();
+  requestAnimationFrame(() => {
+    const nextContent = root.querySelector('.screen-content');
+    if (nextContent) nextContent.scrollTop = contentScrollTop;
+  });
+}
+
 function renderPolishing() {
   if (!workshopOperating()) return shell('原石研磨', '<div class="empty-state"><strong>工房は作業停止中です。</strong><p>未払いの工房維持費を支払うと再開できます。</p></div>');
   if (!toolUsable('polishingMachine')) {
@@ -4853,17 +5665,27 @@ function renderPolishing() {
         <button class="primary-button full-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>
       </section>`, { help: '宝石研磨用平面研磨盤は御徒町のg-Lab.で購入できます。' });
   }
-  if (!GEMS[selectedPolishing]) selectedPolishing = Object.keys(GEMS)[0];
+  const ownedRoughGems = Object.values(GEMS).filter((gem) => Number(state.inventory.rough?.[gem.id] || 0) > 0);
+  if (!ownedRoughGems.length) {
+    return shell('原石研磨', `
+      <section class="center-card glass-panel">
+        <h1>研磨できる原石がありません。</h1>
+        <p>石種の一覧には、現在持っている原石だけが表示されます。</p>
+        <button class="primary-button full-button" data-action="nav" data-screen="mining">採掘へ行く</button>
+        <button class="secondary-button full-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>
+      </section>`, { help: '原石を入手すると、その石種だけが研磨画面に表示されます。' });
+  }
+  if (!ownedRoughGems.some((gem) => gem.id === selectedPolishing)) selectedPolishing = ownedRoughGems[0].id;
   selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape);
   const shapeIds = looseShapeIdsForGem(selectedPolishing);
-  const roughOwned = state.inventory.rough[selectedPolishing] || 0;
+  const roughOwned = Number(state.inventory.rough[selectedPolishing] || 0);
   const shapedLooseOwned = looseOwned(selectedPolishing, selectedPolishingShape);
-  const canPolish = roughOwned > 0 && canSpendHours(POLISHING_HOURS);
+  const canPolish = canSpendHours(POLISHING_HOURS);
   return shell('原石研磨', `
     <section class="wide-panel glass-panel">
       <h2>石種を選ぶ</h2>
       <div class="choice-grid many polishing-grid">
-        ${Object.values(GEMS).map((gem) => `<button class="choice-card ${selectedPolishing === gem.id ? 'selected' : ''}" data-action="select-polishing" data-id="${gem.id}">
+        ${ownedRoughGems.map((gem) => `<button class="choice-card ${selectedPolishing === gem.id ? 'selected' : ''}" data-action="select-polishing" data-id="${gem.id}">
           <span class="choice-visual">${roughVisual(gem.id, 'choice-gem')}</span>
           <strong>${esc(gem.name)}</strong><small>原石 ${state.inventory.rough[gem.id]}個</small>
         </button>`).join('')}
@@ -4886,7 +5708,6 @@ function renderPolishing() {
         </div>
       </article>
       <button class="primary-button full-button" data-action="polish-rough" ${canPolish ? '' : 'disabled'}>このカットで原石を1個研磨する</button>
-      ${roughOwned > 0 ? '' : '<p class="error-text">選択した原石を持っていません。</p>'}
       ${canSpendHours(POLISHING_HOURS) ? '' : '<p class="error-text">今日は研磨する時間がありません。</p>'}
     </section>`, { help: '石種とカットを選び、原石1個を対応するルース1個へ研磨します。' });
 }
@@ -4916,6 +5737,7 @@ function craftChoice(label, group, entries, current, locked = false) {
   return `<fieldset class="craft-field"><legend>${esc(label)}</legend><div class="choice-grid ${Object.keys(entries).length > 3 ? 'many' : 'three'}">
     ${Object.values(entries).map((entry) => `<button type="button" class="choice-card ${current === entry.id ? 'selected' : ''}" data-action="craft-choice" data-group="${group}" data-id="${entry.id}" ${locked && current !== entry.id ? 'disabled' : ''}>
       <strong>${esc(entry.name)}</strong>
+      ${group === 'design' ? `<small>${entry.hours > 0 ? `制作時間 ＋${entry.hours}時間` : '追加時間なし'}</small>` : ''}
     </button>`).join('')}
   </div></fieldset>`;
 }
@@ -5420,7 +6242,8 @@ function renderStore() {
   const caseInstallMaximum = displayCaseInstallMaximum(branch);
   const caseInstallQuantity = displayCaseInstallQuantity(branch);
   const canInstallShowcase = showcasesOwned > 0 && installedShowcaseCount(branch) < storeMaximumShowcases();
-  const canInstallDisplaySupplies = displaySuppliesOwned > 0;
+  const displaySuppliesMaximum = storeMaximumDisplaySupplies(branch);
+  const canInstallDisplaySupplies = displaySuppliesOwned > 0 && storeDisplaySuppliesInstalled(branch) < displaySuppliesMaximum;
   const canInstallCase = casesOwned > 0 && casesRemaining < storeMaximumCases();
   const storeTypeName = state.store.expanded ? '拡大済みの店舗' : '小さな店舗';
   const expansionConditions = storeExpansionConditions(branch);
@@ -5453,7 +6276,7 @@ function renderStore() {
           <article class="store-install-row">
             <div class="store-install-info">
               ${renderDisplayProductVisual(DISPLAY_SHOP_PRODUCTS.displaySupplies, 'display-product-visual-store')}
-              <div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}</small></div>
+              <div><strong>ディスプレイ用品</strong><small>設置済み ${storeDisplaySuppliesInstalled(branch)}/${displaySuppliesMaximum}個</small></div>
             </div>
             <button class="primary-button" data-action="install-display-product" data-id="displaySupplies" ${canInstallDisplaySupplies ? '' : 'disabled'}>店頭に設置</button>
           </article>
@@ -5472,7 +6295,7 @@ function renderStore() {
               <button class="primary-button" data-action="install-display-product" data-id="case" ${canInstallCase && caseInstallQuantity > 0 ? '' : 'disabled'}>店頭に設置</button>
             </div>
           </article>
-          <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1されます。ケースは販売ごとに1個減ります。</p>
+          <p class="small-note">店舗レベルは実績ポイントで上がります。ディスプレイ用品はショーケース1台につき1点まで設置でき、設置1点につき＋1されます。ケースは1個以上ある間＋1され、販売ごとに1個減ります。</p>
         </section>
         <section class="store-evaluation-section">
           <div class="section-heading"><h2>評価</h2></div>
@@ -5483,10 +6306,10 @@ function renderStore() {
             <div><small>設備補正</small><strong>＋${storeDisplayLevelBonus(branch)}</strong></div>
           </div>
         </section>
-        <div class="button-grid">
+        <div class="store-order-sheet-link">
           <button class="secondary-button" data-action="nav" data-screen="orders" ${activeOrderCount() > 0 ? '' : 'disabled'}>工房の注文書</button>
-          ${state.store.expanded ? '<button class="secondary-button" data-action="nav" data-screen="employee">店員</button>' : ''}
         </div>
+        ${state.store.expanded ? '<div class="button-grid store-employee-link"><button class="secondary-button" data-action="nav" data-screen="employee">店員</button></div>' : ''}
         <section class="store-expansion-section">
           <div class="section-heading"><h2>拡大条件</h2></div>
           ${state.store.expanded ? '<p class="success-text">店舗の拡大は完了しています。</p><p>ショーケースを最大5台まで設置でき、店員を1人雇えます。</p>' : `
@@ -5558,7 +6381,12 @@ function renderShowcaseItemDetail() {
   if (!branch || !slot || !item) {
     return shell('商品詳細', `<section class="center-card glass-panel"><div class="empty-state"><strong>商品が見つかりません。</strong><p>ショーケースへ戻って確認してください。</p></div><button class="primary-button full-button" data-action="back">店舗へ戻る</button></section>`);
   }
-  const price = showcaseSellingPrice(slot, item);
+  const savedPrice = showcaseSellingPrice(slot, item);
+  const price = normalizeSellingPrice(
+    Number.isFinite(Number(screenData.pendingSellingPrice)) ? screenData.pendingSellingPrice : savedPrice,
+    item.recommendedPrice || savedPrice
+  );
+  const priceChanged = price !== savedPrice;
   const priceStatus = sellingPriceStatus(item, price);
   const expectedProfit = price - Math.max(0, Number(item.cost) || 0);
   const looseLabel = item.useLoose === false ? 'ルースなし' : `${GEMS[item.gem]?.name || '石'}・${looseShapeLabel(item.looseShape)}`;
@@ -5583,16 +6411,19 @@ function renderShowcaseItemDetail() {
         <span>販売価格</span>
         <div class="showcase-price-stepper">
           <button type="button" class="showcase-price-step-button showcase-price-step-up" data-action="selling-price-step" data-delta="1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円上げる">▲</button>
-          <strong class="showcase-price-value">${yen(price)}</strong>
+          <div class="showcase-price-value-row">
+            <strong class="showcase-price-value">${yen(price)}</strong>
+            <button type="button" class="primary-button showcase-price-confirm-button" data-action="selling-price-confirm" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" ${priceChanged ? '' : 'disabled'}>決定</button>
+          </div>
           <button type="button" class="showcase-price-step-button showcase-price-step-down" data-action="selling-price-step" data-delta="-1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円下げる" ${price <= 1000 ? 'disabled' : ''}>▼</button>
         </div>
-        <small class="showcase-price-step-note">▲▼で1,000円ずつ変更</small>
+        <small class="showcase-price-step-note">▲▼で価格を調整し、決定ボタンで反映</small>
       </div>
       <div class="showcase-detail-actions">
         <button class="text-button" data-action="remove-showcase" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">この商品の陳列をやめる</button>
         ${contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
       </div>
-    </section>`, { help: '商品の詳細を確認し、▲▼で販売価格を1,000円ずつ変更できます。' });
+    </section>`, { help: '商品の詳細を確認し、▲▼で販売価格を1,000円ずつ調整してから、決定ボタンで反映します。' });
 }
 
 function customerPreferenceLabel(request) {
@@ -5650,7 +6481,9 @@ function renderCustomer() {
     .filter((item) => item.status === 'displayed' && showcaseSlotForJewelry(item.id, storeBranchByNumber(customerState.visitingBranchNumber)))
     .map((item) => ({ item, result: customerMatchResult(item, request, customerState.visitingBranchNumber) }))
     .sort((a, b) => b.result.matches - a.result.matches || Math.abs(a.result.price - request.budget) - Math.abs(b.result.price - request.budget));
-  const candidates = displayedCandidates.filter(({ result }) => result.matches >= 2 && !result.farOverBudget);
+  const candidates = displayedCandidates
+    .filter(({ result }) => result.matches >= 2 && !result.farOverBudget)
+    .sort((a, b) => Number(proposedIds.includes(a.item.id)) - Number(proposedIds.includes(b.item.id)));
   const activeOrders = activeOrderCount();
   const activeOrderLimit = orderLimit();
   const canAcceptThisOrder = customerState.wishesHeard && activeOrders < activeOrderLimit && canSpendStoreMinutes(30);
@@ -5861,8 +6694,10 @@ function kaitenzushiAudioParameters() {
   return new URLSearchParams({
     embedded: '1',
     budget: String(Math.max(0, Math.floor(Number(kaitenzushiSession?.budget ?? state?.game?.money) || 0))),
+    bgmVolume: String(Math.max(0, Math.min(1, Number(settings.bgmVolume) || 0))),
     sfxVolume: String(Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0))),
     ambientVolume: String(Math.max(0, Math.min(1, Number(settings.ambientVolume) || 0))),
+    bgmMuted: settings.bgmMuted ? '1' : '0',
     sfxMuted: settings.sfxMuted ? '1' : '0',
     ambientMuted: settings.ambientMuted ? '1' : '0',
     externalAudioPriority: settings.externalAudioPriority ? '1' : '0',
@@ -5899,8 +6734,10 @@ function bindKaitenzushiFrame() {
     frame.contentWindow?.postMessage({
       source: 'jxj-kaitenzushi-parent',
       type: 'settings',
+      bgmVolume: Math.max(0, Math.min(1, Number(settings.bgmVolume) || 0)),
       sfxVolume: Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0)),
       ambientVolume: Math.max(0, Math.min(1, Number(settings.ambientVolume) || 0)),
+      bgmMuted: Boolean(settings.bgmMuted),
       sfxMuted: Boolean(settings.sfxMuted),
       ambientMuted: Boolean(settings.ambientMuted),
       externalAudioPriority: Boolean(settings.externalAudioPriority),
@@ -5911,6 +6748,7 @@ function bindKaitenzushiFrame() {
 function startKaitenzushi() {
   const current = hungerLevel();
   if (current >= (state.wellbeing.maxHunger || 7)) return showToast('空腹度は満タンです。', 'error');
+  if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === 'kaitenzushi') return showToast('栄養が片寄るので違うものを食べましょう', 'error');
   if (state.game.money < 190) return showToast('回転寿司を食べるための所持金が足りません。', 'error');
   kaitenzushiSession = {
     budget: Math.max(0, Math.floor(Number(state.game.money) || 0)),
@@ -6106,9 +6944,9 @@ function renderPhoneItems() {
         const hungerEffect = Number(item.effect?.hunger || 0);
         const effectAvailable = !hungerEffect || hungerLevel() < 7;
         return `<article class="phone-item-row">
-          <span class="phone-item-icon" aria-hidden="true">${esc(item.symbol || '◆')}</span>
+          <span class="phone-item-icon${item.image ? ' has-image' : ''}" aria-hidden="true">${item.image ? `<img src="${esc(item.image)}?v=${VERSION}" alt="" draggable="false">` : esc(item.symbol || '◆')}</span>
           <div><strong>${esc(item.name)}</strong><small>${esc(item.category)}・${esc(item.description)}</small><span>所持 ${quantity}個</span></div>
-          ${item.usable ? `<button class="secondary-button" data-action="use-phone-item" data-id="${esc(item.id)}" ${effectAvailable ? '' : 'disabled'}>${effectAvailable ? '使う' : '満腹'}</button>` : '<span class="item-status-label">使用不可</span>'}
+          ${item.usable ? `<button class="secondary-button" data-action="use-phone-item" data-id="${esc(item.id)}" ${effectAvailable ? '' : 'disabled'}>${effectAvailable ? esc(item.useLabel || '使う') : '満腹'}</button>` : '<span class="item-status-label">使用不可</span>'}
         </article>`;
       }).join('')}</div>` : ''}
     </section>
@@ -6374,7 +7212,7 @@ function aiCurrentRules() {
     workshop: {
       menuOrder: ['ジュエリー作成', '注文書', '原石研磨', '工房レベル', '工房拡張'],
       jewelryCreation: '彫金机が使用可能な時だけ選択できる。石種とカット形状を選び、対応するルースと地金を使用する。石種が同じでもカットが違うルースは代用できない。',
-      roughPolishing: `宝石研磨用平面研磨盤が使用可能な時だけ選択でき、石種とカットを選んで原石1個を対応するルース1個へ加工する。所要時間は${POLISHING_HOURS}時間。`,
+      roughPolishing: `宝石研磨用平面研磨盤が使用可能な時だけ選択でき、所持している原石だけが石種一覧に表示される。石種とカットを選び、原石1個を対応するルース1個へ加工する。所要時間は${POLISHING_HOURS}時間。`,
       orderSheet: '現在の注文がある場合だけ選択できる。受注金額、予想原価・利益、納期、必要職人レベル、必要設備、材料を確認する。納期を過ぎた注文は翌朝に期限切れとなる。',
       quality: '職人レベルと、使用可能な工具・設備による工房レベルが完成品の品質に影響する。内部確率や計算式は回答しない。',
       storageCapacity: state.inventory.capacity,
@@ -6392,7 +7230,7 @@ function aiCurrentRules() {
       materialShop: '地金屋では地金を1g単位で購入・売却できる。地金は直接入力、または入力欄の▲▼で数量を選び、長押しすると連続で増減する。全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
       looseShop: 'ルース屋には「ルースを買う」「ルースを売る」「原石を売る」がある。ルースは最初に石種を選び、次にカットを選ぶ。ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。ルース購入は1回1個、ルース売却と原石売却は1個または売却可能数の全部売るを選べ、各手続きは1時間。',
       jewelryShop: 'ジュエリーショップでは、保管中の完成品を低めの買取価格で売却できる。また、入店ごとにランダムで変わる完成品を購入できる。購入品は工房の完成品へ入り、店舗で再販売できるが、仕入れ価格が高いため利益は小さい。売買手続きは1回1時間。',
-      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース3台まで、1台につき完成品5個を陳列できる。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。受注金額は材料原価・難易度別工賃・最低利益を下回らない。ショーケース一覧には商品画像・商品名・販売価格だけを表示し、商品を開いた詳細画面で▲▼を押し、販売価格を1,000円ずつ変更できる。自店舗のおすすめ価格は標準品質が原価の2.2倍、良品が2.5倍、上質が2.8倍で、1,000円単位に丸める。御徒町のジュエリーショップへの売却は卸販売扱いとし、制作原価に対する利益をごく少額にする。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
+      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。小さな店舗はショーケース2台まで、店舗拡大後は5台まで設置できる。1台につき完成品5個を陳列でき、完成品の保管上限も5個増える。ディスプレイ用品とケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは販売と注文納品で得る店舗実績ポイントを基本とし、ディスプレイ用品は設置1点につき＋1、ケースは1個以上ある間＋1される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文は職人レベルと同じ件数まで同時受注できる。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。受注金額は材料原価・難易度別工賃・最低利益を下回らない。ショーケース一覧には商品画像・商品名・販売価格だけを表示し、商品を開いた詳細画面で▲▼を押して販売価格を1,000円ずつ調整し、価格の右にある決定ボタンで反映する。自店舗のおすすめ価格は、プラチナ・ゴールドが標準品質2.2倍、良品2.5倍、上質2.8倍、シルバーが標準品質2.5倍、良品2.8倍、上質3.1倍を基本とし、ルース付きは各倍率へ0.1を加え、1,000円単位に丸める。御徒町のジュエリーショップへの売却は卸販売扱いとし、制作原価に対する利益をごく少額にする。来店客の要望は来店ごとに商品種類・石・カット・地金・デザイン・予算を新しく抽選し、直前と同じ組み合わせを避ける。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
     },
     facilities: Object.entries(facilityNames).map(([id, name]) => { const availability = okachimachiFacilityAvailability(id); return { id, name, status: availability.open ? '利用可能' : availability.status, reason: availability.reason || null }; }),
     smartphoneMenus: ['通知', 'プロフィール', 'カレンダー', '収支', 'アイテム', 'スマホゲーム', 'AI', '設定'],
@@ -7078,7 +7916,7 @@ function polishRough() {
   state.daily.polished.push({ gem: selectedPolishing, looseShape: selectedPolishingShape, qty: 1 });
   addArtisanXp(1);
   saveGame();
-  playSfx('success');
+  playSfx('loose-sparkle', { gain: 1.12 });
   vibrate([35, 25, 55]);
   showToast(`${gem.name}原石を${looseShapeLabel(selectedPolishingShape)}へ研磨しました。`);
   render();
@@ -7460,6 +8298,15 @@ function openCustomerProducts(customerId) {
   if ((customerState.proposedItemIds || []).length >= 2) return showToast('店頭商品を提案できるのは2点までです。', 'error');
   screenData.view = 'products';
   render();
+  requestAnimationFrame(() => {
+    const content = root.querySelector('.screen-content');
+    const proposal = root.querySelector('.customer-product-proposal');
+    if (!content || !proposal) return;
+    const contentRect = content.getBoundingClientRect();
+    const proposalRect = proposal.getBoundingClientRect();
+    const targetTop = Math.max(0, content.scrollTop + proposalRect.top - contentRect.top - 8);
+    content.scrollTo({ top: targetTop, behavior: 'smooth' });
+  });
 }
 
 function ignoreCustomer(customerId) {
@@ -7507,14 +8354,20 @@ function remakeOrderFromCompletion(orderId, jewelryId) {
   if (!order || !item || order.status !== '完成' || order.jewelryId !== item.id || item.status !== 'order') {
     return showToast('作り直せる注文品が見つかりません。', 'error');
   }
+  const nextDraft = defaultDraft(order.id);
+  const hours = productionHours(nextDraft, state.employee);
+  const requirements = materialRequirementsFor(nextDraft);
+  if (!workshopOperating()) return showToast('工房は作業停止中です。', 'error');
+  if (!toolUsable('jewelryBench')) return showToast('注文品の制作には使用可能な彫金机が必要です。', 'error');
+  if (!canSpendHours(hours)) return showToast('今日は注文品を作り直す時間がありません。', 'error');
+  if (!requirements.enoughLoose || !requirements.enoughMetal) return showToast('作り直しに必要な材料が足りません。', 'error');
+  if (state.inventory.jewelry.filter((entry) => entry.status !== 'sold').length >= state.inventory.capacity) return showToast('完成品の保管場所に空きがありません。', 'error');
   item.status = 'stored';
   order.status = '受注';
   order.jewelryId = null;
   completionId = null;
-  craftDraft = defaultDraft(order.id);
-  saveGame();
-  setScreen('craft', { orderId: order.id }, false);
-  showToast('完成した商品を保管し、同じ注文を作り直します。', 'info', false);
+  craftDraft = nextDraft;
+  craft();
 }
 
 function deliverOrder(orderId, { immediateFromCompletion = false } = {}) {
@@ -7697,7 +8550,11 @@ function installDisplayProduct(productId) {
     branchShowcases(branch).push({ id: `showcase-${Date.now()}-${installedShowcaseCount(branch) + 1}`, slots: [null, null, null, null, null] });
     branch.showcaseCount = installedShowcaseCount(branch);
     mirrorCurrentStoreDisplay(branch);
+    syncFinishedJewelryCapacity();
   } else if (productId === 'displaySupplies') {
+    const maximum = storeMaximumDisplaySupplies(branch);
+    if (maximum < 1) return showToast('先にショーケースを設置してください。', 'error');
+    if (storeDisplaySuppliesInstalled(branch) >= maximum) return showToast(`ディスプレイ用品はショーケースの台数と同じ${maximum}点まで設置できます。`, 'error');
     if (branch) branch.displaySuppliesInstalled = storeDisplaySuppliesInstalled(branch) + 1;
     state.store.displaySuppliesInstalled = storeDisplaySuppliesInstalled(branch);
   } else if (productId === 'case') {
@@ -7716,7 +8573,11 @@ function installDisplayProduct(productId) {
   }
   saveGame();
   if (productId === 'case') displayCaseInstallDraft = 1;
-  showToast(productId === 'case' ? `${product.name}を${installQuantity}個、店舗へ設置しました。` : `${product.name}を店舗へ設置しました。`);
+  showToast(productId === 'case'
+    ? `${product.name}を${installQuantity}個、店舗へ設置しました。`
+    : productId === 'showcase'
+      ? `${product.name}を店舗へ設置しました。完成品の保管上限は${state.inventory.capacity}個です。`
+      : `${product.name}を店舗へ設置しました。`);
   render();
 }
 
@@ -7748,7 +8609,7 @@ function expandStore() {
   startMoneyFeedback(-cost);
   state.store.expanded = true;
   state.store.showcaseCount = installedShowcaseCount();
-  state.inventory.capacity = 20;
+  syncFinishedJewelryCapacity();
   addFinance('店舗を拡大', 0, cost);
   addNotification('店舗を拡大しました', 'ショーケースを最大5台まで設置でき、店員を1人雇えるようになりました。');
   saveGame();
@@ -8199,6 +9060,7 @@ function autopilotPrepareStore(summary) {
       branchShowcases(branch).push({ id: `showcase-auto-${Date.now()}-${state.game.day}`, slots: [null, null, null, null, null] });
       branch.showcaseCount = installedShowcaseCount(branch);
       mirrorCurrentStoreDisplay(branch);
+      syncFinishedJewelryCapacity();
       addFinance('自動操縦：ショーケースを購入・設置', 0, product.price);
       summary.expense += product.price;
       summary.notes.push('ショーケースを設置');
@@ -8429,7 +9291,7 @@ async function processAutopilotIfDue({ renderAfter = true, showNotice = true } =
     if (renderAfter) {
       render();
       if (showNotice) showToast(`自動操縦でゲーム内時間が${dueDays}日進みました。`, 'info', false);
-      queueMicrotask(() => maybeResumeRobberySequence());
+      queueMicrotask(() => maybeResumeMorningSequence());
     }
     return dueDays;
   } catch (error) {
@@ -8550,6 +9412,7 @@ function startCustomerVisit(customerId, branchNumber = state?.store?.branchNumbe
   customer.visiting = true;
   customer.visitingBranchNumber = Math.max(1, Math.min(3, Math.floor(Number(branch.number) || 1)));
   customer.activeRequest = customerVisitRequest(customerId, customer.visitingBranchNumber);
+  customer.lastRequestSignature = customerRequestSignature(customer.activeRequest);
   customer.wishesHeard = false;
   customer.proposedItemIds = [];
   return true;
@@ -8835,17 +9698,19 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
+  const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
     && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
-  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !autopilotPhoneAccess) {
+  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !informationalNavigation && !autopilotPhoneAccess) {
     showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
     goMain();
     return;
   }
-  if (!['mine', 'hit-rock'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next'].includes(action)) playSfx('select');
+  if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
       const title = button.querySelector('.google-login-title');
@@ -9071,13 +9936,43 @@ root.addEventListener('click', async (event) => {
     case 'glab-sns-link':
       openGlabSns(button.dataset.platform || '');
       break;
+    case 'western-union-choice':
+      chooseWesternUnionEvent(button.dataset.answer);
+      break;
+    case 'western-union-next':
+      advanceWesternUnionEvent();
+      break;
+    case 'pazupan-event-next':
+      advanceMiningPazupanEvent();
+      break;
+    case 'mermaid-event-next':
+      advanceMermaidEvent();
+      break;
+    case 'okachimachi-quiz-next':
+      advanceOkachimachiQuizDialogue();
+      break;
+    case 'okachimachi-quiz-answer':
+      answerOkachimachiQuiz(button.dataset.index);
+      break;
     case 'return-okachimachi':
       setScreen('okachimachi', {}, false);
       break;
     case 'nav': {
       const target = button.dataset.screen;
-      if (screen === 'main' && state?.settings?.autopilotEnabled && target !== 'phone') {
-        showToast('自動操縦中はスマートフォンのみ操作できます。設定から自動操縦をオフにしてください。', 'error');
+      if (screen === 'main' && state?.settings?.autopilotEnabled && !['phone', 'todayGem'].includes(target)) {
+        showToast('自動操縦中はスマートフォンと今日の宝石のみ操作できます。設定から自動操縦をオフにしてください。', 'error');
+        break;
+      }
+      if (target === 'mining' && !['mining', 'miningGame', 'miningResult', 'miningPazupanEvent'].includes(screen)) {
+        button.disabled = true;
+        enterMiningFromOutside();
+        if (button.isConnected) button.disabled = false;
+        break;
+      }
+      if (target === 'okachimachi' && !OKACHIMACHI_AREA_SCREENS.has(screen)) {
+        button.disabled = true;
+        await enterOkachimachiFromOutside();
+        if (button.isConnected) button.disabled = false;
         break;
       }
       const facilityId = facilityIdForScreen(target);
@@ -9234,8 +10129,8 @@ root.addEventListener('click', async (event) => {
     case 'sell-all-loose': sellLoose(button.dataset.id, button.dataset.shape, true); break;
     case 'buy-jewelry-bench': buyJewelryBench(); break;
     case 'buy-polishing-machine': buyPolishingMachine(); break;
-    case 'select-polishing': selectedPolishing = button.dataset.id; selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape); render(); break;
-    case 'select-polishing-shape': selectedPolishingShape = normalizeLooseShape(selectedPolishing, button.dataset.shape); render(); break;
+    case 'select-polishing': selectedPolishing = button.dataset.id; selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape); rerenderPolishingPreservingPosition(); break;
+    case 'select-polishing-shape': selectedPolishingShape = normalizeLooseShape(selectedPolishing, button.dataset.shape); rerenderPolishingPreservingPosition(); break;
     case 'polish-rough': polishRough(); break;
     case 'open-workshop-inventory': setScreen('inventory', { tab: button.dataset.tab || 'finished' }); break;
     case 'open-finished-item-detail': setScreen('finishedItemDetail', { itemId: button.dataset.id }); break;
@@ -9308,14 +10203,41 @@ root.addEventListener('click', async (event) => {
         break;
       }
       const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
-      const currentPrice = showcaseSellingPrice(slot, item);
+      const savedPrice = showcaseSellingPrice(slot, item);
+      const currentPrice = normalizeSellingPrice(
+        Number.isFinite(Number(screenData.pendingSellingPrice)) ? screenData.pendingSellingPrice : savedPrice,
+        item?.recommendedPrice || savedPrice
+      );
       const delta = Number(button.dataset.delta) < 0 ? -1000 : 1000;
       const nextPrice = Math.max(1000, currentPrice + delta);
       if (nextPrice === currentPrice) break;
-      slot.sellingPrice = normalizeSellingPrice(nextPrice, item?.recommendedPrice || 1000);
+      screenData.pendingSellingPrice = normalizeSellingPrice(nextPrice, item?.recommendedPrice || 1000);
+      render();
+      break;
+    }
+    case 'selling-price-confirm': {
+      const branch = button.dataset.branch
+        ? state.store.branches?.find((entry) => entry.id === button.dataset.branch)
+        : currentStoreBranch();
+      const showcaseIndex = Number(button.dataset.showcase);
+      const slotIndex = Number(button.dataset.slot);
+      const slot = branchShowcases(branch)?.[showcaseIndex]?.slots?.[slotIndex];
+      if (!slot) {
+        showToast('販売価格を決定する商品が見つかりません。', 'error');
+        break;
+      }
+      const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+      const currentPrice = showcaseSellingPrice(slot, item);
+      const decidedPrice = normalizeSellingPrice(
+        Number.isFinite(Number(screenData.pendingSellingPrice)) ? screenData.pendingSellingPrice : currentPrice,
+        item?.recommendedPrice || currentPrice
+      );
+      if (decidedPrice === currentPrice) break;
+      slot.sellingPrice = decidedPrice;
+      screenData.pendingSellingPrice = decidedPrice;
       mirrorCurrentStoreDisplay(branch);
       saveGame();
-      showToast(`販売価格を${yen(slot.sellingPrice)}に変更しました。`);
+      showToast(`販売価格を${yen(decidedPrice)}で決定しました。`);
       render();
       break;
     }
@@ -9343,7 +10265,10 @@ root.addEventListener('click', async (event) => {
         if (!feasibility.artisanReady) showToast(`この注文には職人Lv.${feasibility.requiredArtisanLevel}が必要です。`, 'error');
         else if (!feasibility.equipmentReady) showToast('注文品の制作に必要な設備が使用できません。', 'error');
         else if (!requirements.enoughMetal || !requirements.enoughLoose) showToast('必要な材料が揃っていません。', 'error');
-        else { craftDraft = defaultDraft(order.id); setScreen('craft', { orderId: order.id }); }
+        else {
+          craftDraft = defaultDraft(order.id);
+          craft();
+        }
       }
       break;
     }
@@ -9463,6 +10388,10 @@ root.addEventListener('change', (event) => {
   }
   if (target.matches('[data-setting]')) {
     const titleMode = target.dataset.titleMode === 'true';
+    if (!titleMode && screen === 'phone' && phoneTab === 'settings') {
+      playSfx('select');
+      vibrate(28);
+    }
     const settings = titleMode ? titleSettings : state.settings;
     const key = target.dataset.setting;
     settings[key] = target.type === 'checkbox' ? target.checked : target.type === 'range' ? Number(target.value) : target.value;
@@ -9476,7 +10405,7 @@ root.addEventListener('change', (event) => {
       addNotification(
         settings.autopilotEnabled ? '自動操縦モードを開始しました' : '自動操縦モードを停止しました',
         settings.autopilotEnabled
-          ? '本日はゲーム内日付を進めず、翌日から現実の1日につきゲーム内の1日を自動で進めます。自動操縦中はメイン画面からスマートフォンだけ操作できます。'
+          ? '本日はゲーム内日付を進めず、翌日から現実の1日につきゲーム内の1日を自動で進めます。自動操縦中はメイン画面からスマートフォンと今日の宝石だけ操作できます。'
           : '停止中の現実日数はゲーム内へ反映されません。',
       );
       saveGame();
@@ -9756,7 +10685,7 @@ document.addEventListener('visibilitychange', () => {
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     return;
   }
-  if (screen !== 'kaitenzushi') resumeAudio();
+  resumeAudio();
   if (currentUser && !needsEmailVerification(currentUser)) {
     heartbeat(currentUser.uid, sessionId);
     if (!heartbeatTimer) heartbeatTimer = setInterval(() => heartbeat(currentUser.uid, sessionId), 300000);
@@ -9776,12 +10705,13 @@ modalEl.addEventListener('click', async (event) => {
   const action = button.dataset.action;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
+  const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
     && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
-  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !autopilotPhoneAccess) {
+  if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !informationalNavigation && !autopilotPhoneAccess) {
     showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
     goMain();
     return;

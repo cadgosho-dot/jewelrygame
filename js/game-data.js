@@ -1,4 +1,4 @@
-export const VERSION = '0.10.264';
+export const VERSION = '0.10.290';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -14,8 +14,22 @@ export const DAY_START_MINUTES = 9 * 60;
 export const DAY_END_MINUTES = 21 * 60;
 export const STORE_OPEN_MINUTES = 9 * 60;
 export const STORE_CLOSE_MINUTES = 19 * 60;
+export const BASE_FINISHED_JEWELRY_CAPACITY = 10;
+export const FINISHED_JEWELRY_CAPACITY_PER_SHOWCASE = 5;
 
 export const METAL_WORKSHOP_ORDER = ['platinum', 'gold', 'silver'];
+
+export function installedShowcaseTotal(gameState) {
+  const branches = Array.isArray(gameState?.store?.branches) ? gameState.store.branches : [];
+  if (branches.length > 0) {
+    return branches.reduce((total, branch) => total + (Array.isArray(branch?.showcases) ? branch.showcases.length : 0), 0);
+  }
+  return Array.isArray(gameState?.store?.showcases) ? gameState.store.showcases.length : 0;
+}
+
+export function finishedJewelryCapacity(gameState) {
+  return BASE_FINISHED_JEWELRY_CAPACITY + installedShowcaseTotal(gameState) * FINISHED_JEWELRY_CAPACITY_PER_SHOWCASE;
+}
 
 export const METALS = {
   silver: {
@@ -91,6 +105,8 @@ export const GEMS = {
   amethyst: { id: 'amethyst', name: 'アメシスト', roughPrice: 3000, price: 4000, looseRank: 'D', hue: '#8e62c7' },
   aquamarine: { id: 'aquamarine', name: 'アクアマリン', roughPrice: 5000, price: 7000, looseRank: 'C', hue: '#78cddd' },
   diamond: { id: 'diamond', name: 'ダイヤモンド', roughPrice: 20000, price: 35000, looseRank: 'S', hue: '#dcecf2' },
+  antiqueDiamond: { id: 'antiqueDiamond', name: 'アンティークダイヤ', roughPrice: 30000, price: 52500, looseRank: 'S', hue: '#e8eef2', eventOnly: true },
+  pearl: { id: 'pearl', name: 'パール', roughPrice: 0, price: 9000, looseRank: 'B', hue: '#f2ede7', eventOnly: true },
   emerald: { id: 'emerald', name: 'エメラルド', roughPrice: 12000, price: 18000, looseRank: 'A', hue: '#11a67a' },
   moonstone: { id: 'moonstone', name: 'ムーンストーン', roughPrice: 4500, price: 5500, looseRank: 'C', hue: '#c9e4ef' },
   ruby: { id: 'ruby', name: 'ルビー', roughPrice: 13000, price: 15000, looseRank: 'A', hue: '#c51f55' },
@@ -124,10 +140,13 @@ export const LOOSE_SHAPES = {
   trilliant: { id: 'trilliant', name: 'トリリアント', fileName: 'trilliant.png' },
   roundCabochon: { id: 'roundCabochon', name: 'ラウンドカボション', fileName: 'round-cabochon.png' },
   ovalCabochon: { id: 'ovalCabochon', name: 'オーバルカボション', fileName: 'oval-cabochon.png' },
+  antiqueCut: { id: 'antiqueCut', name: 'アンティークカット', fileName: 'antique-diamond.png' },
+  pearl: { id: 'pearl', name: 'パール', fileName: 'pearl.png' },
 };
 
 const STANDARD_LOOSE_SHAPE_IDS = ['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon'];
 const CABOCHON_ONLY_GEMS = new Set(['opal', 'turquoise', 'lapislazuli']);
+const SPECIAL_LOOSE_SHAPES = Object.freeze({ antiqueDiamond: ['antiqueCut'], pearl: ['pearl'] });
 
 export const LOOSE_CUT_PRICE_MULTIPLIERS = Object.freeze({
   round: 1.00,
@@ -146,10 +165,12 @@ const CABOCHON_GEM_PRICE_MULTIPLIERS = Object.freeze({
 });
 
 export function looseShapeIdsForGem(gemId) {
+  if (SPECIAL_LOOSE_SHAPES[gemId]) return [...SPECIAL_LOOSE_SHAPES[gemId]];
   return CABOCHON_ONLY_GEMS.has(gemId) ? ['roundCabochon', 'ovalCabochon'] : [...STANDARD_LOOSE_SHAPE_IDS];
 }
 
 export function defaultLooseShapeForGem(gemId) {
+  if (SPECIAL_LOOSE_SHAPES[gemId]) return SPECIAL_LOOSE_SHAPES[gemId][0];
   return CABOCHON_ONLY_GEMS.has(gemId) ? 'roundCabochon' : 'round';
 }
 
@@ -184,6 +205,10 @@ export const GENERAL_ITEMS = {
   energyJelly: {
     id: 'energyJelly', name: '栄養ゼリー', category: '回復アイテム', symbol: '🥤', usable: true,
     description: '使うと空腹度が1回復します。', effect: { hunger: 1 }, sfx: 'eat',
+  },
+  pazupan: {
+    id: 'pazupan', name: 'パズーパン', category: '回復アイテム', symbol: '🍳', usable: true, useLabel: '使用する',
+    image: './assets/images/events/pazupan.png', description: '使うと空腹度が2回復します。', effect: { hunger: 2 }, sfx: 'eat',
   },
 };
 
@@ -826,8 +851,8 @@ export const ITEMS = {
 
 export const DESIGNS = {
   simple: { id: 'simple', name: 'シンプル', price: 0, hours: 0 },
-  classic: { id: 'classic', name: 'ノーマル', price: 3000, hours: 1 },
-  modern: { id: 'modern', name: 'ゴージャス', price: 4000, hours: 1 },
+  classic: { id: 'classic', name: 'ナチュラル', price: 3000, hours: 1 },
+  modern: { id: 'modern', name: 'ゴージャス', price: 4000, hours: 2 },
 };
 
 export const FINISHES = {
@@ -853,11 +878,11 @@ export const PRICE_MODES = {
 export const DISPLAY_SHOP_PRODUCTS = {
   showcase: {
     id: 'showcase', name: 'ショーケース', price: 150000, symbol: '▤', levelGain: 0, image: './assets/images/display-products/showcase.png',
-    description: '1台150,000円。店舗へ設置すると、完成品を5個まで陳列できます。小さな店舗には3台まで設置できます。',
+    description: '1台150,000円。店舗へ設置すると、完成品を5個まで陳列でき、完成品の保管上限も5個増えます。小さな店舗には2台まで設置できます。',
   },
   displaySupplies: {
     id: 'displaySupplies', name: 'ディスプレイ用品', price: 50000, symbol: '◇', levelGain: 1, image: './assets/images/display-products/display-supplies.png',
-    description: '50,000円。店舗へ設置すると、設置1点につき店舗レベルが1上がります。',
+    description: '50,000円。ショーケース1台につき1点まで設置でき、設置1点につき店舗レベルが1上がります。',
   },
   case: {
     id: 'case', name: 'ケース', price: 500, symbol: '□', levelGain: 1, purchaseLimit: 50, image: './assets/images/display-products/case.png',
@@ -973,8 +998,16 @@ export function looseSalePrice(gemId, shapeId) {
 
 export function recommendedPrice({ item, gem, looseShape, metal, quality, useLoose = true }) {
   // 自店舗で販売する場合は、制作・接客・店舗運営分の利益を確保する。
-  const qualityMultiplier = quality === 'premium' ? 2.8 : quality === 'good' ? 2.5 : 2.2;
-  return roundThousand(productionCost({ item, gem, looseShape, metal, useLoose }) * qualityMultiplier);
+  // シルバーは地金単価が低いため、プラチナ・ゴールドより少し高い倍率を適用する。
+  // さらにルース付きの商品は、石選び・石合わせ・石留めの価値を反映して倍率を0.1だけ上げる。
+  const standardMultiplier = quality === 'premium' ? 2.8 : quality === 'good' ? 2.5 : 2.2;
+  const silverMultiplier = quality === 'premium' ? 3.1 : quality === 'good' ? 2.8 : 2.5;
+  const baseMultiplier = metal === 'silver' ? silverMultiplier : standardMultiplier;
+  const cost = productionCost({ item, gem, looseShape, metal, useLoose });
+  const basePrice = roundThousand(cost * baseMultiplier);
+  if (useLoose === false) return basePrice;
+  // 1,000円単位の丸めで+0.1の差が消える低価格品も、ルース付きの利益差を最低1,000円は残す。
+  return Math.max(basePrice + 1000, roundThousand(cost * (baseMultiplier + 0.1)));
 }
 
 export function productionCost({ item, gem, looseShape, metal, useLoose = true }) {
@@ -1101,8 +1134,8 @@ export function initialState() {
       lastResult: null,
     },
     customers: {
-      misaki: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
-      kenta: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
+      misaki: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, lastRequestSignature: '', ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
+      kenta: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, lastRequestSignature: '', ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
     },
     orders: [],
     employee: { hired: false, name: '田中 葵', role: 'sales', working: true },
@@ -1111,6 +1144,40 @@ export function initialState() {
         lastTriggeredDay: 0,
         pendingReport: null,
         history: [],
+      },
+      okachimachiQuiz: {
+        totalVisits: 0,
+        visitsSinceLast: 0,
+        nextTriggerAt: 30,
+        totalTriggered: 0,
+        lastQuestionIndex: -1,
+      },
+      westernUnionEvent: {
+        scheduleYear: 0,
+        eligibleDayOfYear: 0,
+        lastCheckedDate: '',
+        lastTriggeredYear: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+        eventDate: '',
+      },
+      miningPazupanEvent: {
+        nextTriggerDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+      },
+      mermaidEvent: {
+        nextTriggerDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
       },
     },
     notifications: [],
@@ -1541,7 +1608,8 @@ export function migrateState(saved) {
         };
       })
     : [];
-  state.inventory.capacity = state.store.expanded ? 20 : 10;
+  // ショーケース正規化後に、設置台数から完成品保管上限を再計算する。
+  state.inventory.capacity = BASE_FINISHED_JEWELRY_CAPACITY;
   state.store.displayInventory = { ...initialState().store.displayInventory, ...(state.store.displayInventory || {}) };
   for (const productId of Object.keys(DISPLAY_SHOP_PRODUCTS)) {
     state.store.displayInventory[productId] = Math.max(0, Math.floor(Number(state.store.displayInventory[productId]) || 0));
@@ -1599,15 +1667,17 @@ export function migrateState(saved) {
     }
     return normalized;
   };
-  const maximumShowcases = state.store.expanded ? 5 : 3;
-  const legacyGlobalShowcases = normalizeShowcases(Array.isArray(state.store.showcases) ? state.store.showcases : []).slice(0, maximumShowcases);
+  const maximumShowcases = state.store.expanded ? 5 : 2;
+  const legacyGlobalShowcases = normalizeShowcases(Array.isArray(state.store.showcases) ? state.store.showcases : []);
   const hasBranchShowcaseData = !versionBefore(legacy.version, '0.10.98')
     && state.store.branches.some((branch) => Array.isArray(branch.showcases));
   const usedJewelryIds = new Set();
+  let refundedShowcases = 0;
   for (const branch of state.store.branches.sort((left, right) => Number(left.number) - Number(right.number))) {
     const sourceShowcases = hasBranchShowcaseData
       ? normalizeShowcases(branch.showcases)
       : (Number(branch.number) === 1 ? legacyGlobalShowcases : []);
+    refundedShowcases += Math.max(0, sourceShowcases.length - maximumShowcases);
     branch.showcases = sourceShowcases.slice(0, maximumShowcases).map((showcase) => ({
       ...showcase,
       slots: showcase.slots.map((slot) => {
@@ -1618,9 +1688,27 @@ export function migrateState(saved) {
     }));
     branch.showcaseCount = branch.showcases.length;
   }
+  if (refundedShowcases > 0) {
+    state.store.displayInventory.showcase = Math.max(0, Math.floor(Number(state.store.displayInventory.showcase) || 0)) + refundedShowcases;
+  }
+  let refundedDisplaySupplies = 0;
+  for (const branch of state.store.branches) {
+    const maximumDisplaySupplies = branch.showcases.length;
+    const installedDisplaySupplies = Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0));
+    if (installedDisplaySupplies > maximumDisplaySupplies) refundedDisplaySupplies += installedDisplaySupplies - maximumDisplaySupplies;
+    branch.displaySuppliesInstalled = Math.min(installedDisplaySupplies, maximumDisplaySupplies);
+    const baseLevel = STORE_LEVEL_POINTS.reduce((level, threshold, index) => branch.points >= threshold ? index + 1 : level, 1);
+    branch.level = Math.min(10, baseLevel + branch.displaySuppliesInstalled + (branch.casesInstalled > 0 ? 1 : 0));
+  }
+  if (refundedDisplaySupplies > 0) {
+    state.store.displayInventory.displaySupplies = Math.max(0, Math.floor(Number(state.store.displayInventory.displaySupplies) || 0)) + refundedDisplaySupplies;
+  }
   const refreshedActiveBranch = state.store.branches.find((branch) => branch.number === Math.max(1, Number(state.store.branchNumber) || 1)) || state.store.branches[0];
   state.store.showcases = refreshedActiveBranch?.showcases || [];
   state.store.showcaseCount = state.store.showcases.length;
+  state.inventory.capacity = finishedJewelryCapacity(state);
+  state.store.displaySuppliesInstalled = refreshedActiveBranch?.displaySuppliesInstalled || 0;
+  state.store.casesInstalled = refreshedActiveBranch?.casesInstalled || 0;
   state.store.points = Math.max(0, Math.floor(Number(state.store.points) || 0));
   state.store.level = refreshedActiveBranch ? refreshedActiveBranch.level : Math.min(10, STORE_LEVEL_POINTS.reduce((level, threshold, index) => state.store.points >= threshold ? index + 1 : level, 1) + state.store.displaySuppliesInstalled + (state.store.casesInstalled > 0 ? 1 : 0));
   state.store.rating = Math.max(0, Math.min(100, Number.isFinite(Number(state.store.rating)) ? Math.round(Number(state.store.rating)) : 50));
@@ -1795,6 +1883,48 @@ export function migrateState(saved) {
     pendingReport: normalizeRobberyReport(savedRobberyEvents.pendingReport),
     history: normalizedRobberyHistory,
   };
+  const savedOkachimachiQuiz = isRecord(state.events.okachimachiQuiz) ? state.events.okachimachiQuiz : {};
+  state.events.okachimachiQuiz = {
+    totalVisits: Math.max(0, Math.floor(Number(savedOkachimachiQuiz.totalVisits) || 0)),
+    visitsSinceLast: Math.max(0, Math.floor(Number(savedOkachimachiQuiz.visitsSinceLast) || 0)),
+    nextTriggerAt: Math.max(26, Math.min(34, Math.floor(Number(savedOkachimachiQuiz.nextTriggerAt) || 30))),
+    totalTriggered: Math.max(0, Math.floor(Number(savedOkachimachiQuiz.totalTriggered) || 0)),
+    lastQuestionIndex: Number.isFinite(Number(savedOkachimachiQuiz.lastQuestionIndex))
+      ? Math.max(-1, Math.floor(Number(savedOkachimachiQuiz.lastQuestionIndex)))
+      : -1,
+  };
+  const savedWesternUnionEvent = isRecord(state.events.westernUnionEvent) ? state.events.westernUnionEvent : {};
+  const validWesternUnionStage = ['idle', 'choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3', 'completed'];
+  state.events.westernUnionEvent = {
+    scheduleYear: Math.max(0, Math.floor(Number(savedWesternUnionEvent.scheduleYear) || 0)),
+    eligibleDayOfYear: Math.max(0, Math.min(366, Math.floor(Number(savedWesternUnionEvent.eligibleDayOfYear) || 0))),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(savedWesternUnionEvent.lastCheckedDate || '')) ? String(savedWesternUnionEvent.lastCheckedDate) : '',
+    lastTriggeredYear: Math.max(0, Math.floor(Number(savedWesternUnionEvent.lastTriggeredYear) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(savedWesternUnionEvent.totalTriggered) || 0)),
+    active: Boolean(savedWesternUnionEvent.active),
+    stage: validWesternUnionStage.includes(savedWesternUnionEvent.stage) ? savedWesternUnionEvent.stage : 'idle',
+    rewardGranted: Boolean(savedWesternUnionEvent.rewardGranted),
+    eventDate: /^\d{4}-\d{2}-\d{2}$/.test(String(savedWesternUnionEvent.eventDate || '')) ? String(savedWesternUnionEvent.eventDate) : '',
+  };
+  if (!state.events.westernUnionEvent.active && !['idle', 'completed'].includes(state.events.westernUnionEvent.stage)) {
+    state.events.westernUnionEvent.stage = 'completed';
+  }
+
+  const normalizeSimpleEvent = (key, validStages, extra = {}) => {
+    const saved = isRecord(state.events[key]) ? state.events[key] : {};
+    state.events[key] = {
+      nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+      lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+      totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+      active: Boolean(saved.active),
+      stage: validStages.includes(saved.stage) ? saved.stage : 'idle',
+      ...extra(saved),
+    };
+    if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
+  };
+  normalizeSimpleEvent('miningPazupanEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+  normalizeSimpleEvent('mermaidEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+  delete state.events.nothingMattersEvent;
 
   state.settings = { ...initialState().settings, ...(state.settings || {}) };
   delete state.settings.textSize;
@@ -1835,6 +1965,9 @@ export function migrateState(saved) {
     customer.activeRequest = customer.activeRequest && typeof customer.activeRequest === 'object'
       ? structuredClone(customer.activeRequest)
       : null;
+    customer.lastRequestSignature = typeof customer.lastRequestSignature === 'string'
+      ? customer.lastRequestSignature.slice(0, 240)
+      : '';
     if (state.game.minutes >= STORE_CLOSE_MINUTES) {
       customer.visiting = false;
       customer.visitingBranchNumber = null;

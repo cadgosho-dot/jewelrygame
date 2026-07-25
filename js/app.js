@@ -3935,6 +3935,7 @@ function backgroundFor(target) {
 
 
 function backgroundAssetFor(target) {
+  if (target === 'main') return 'main-menu';
   if (target === 'todayGem') return 'today-gem';
   if (target === 'looseShop' || target === 'supplierRough') return 'loose-shop';
   if (target === 'jewelryShop') return 'jewelry-shop';
@@ -4946,6 +4947,21 @@ function renderMermaidEvent() {
 }
 
 
+function mainMenuIcon(type) {
+  const icons = {
+    mining: '<svg viewBox="0 0 24 24" focusable="false"><path d="M4 20 14.2 9.8M9.7 5.2c3.7-2.3 7.4-1.8 10.3.6l-3.4 3.4c-2.2-1.6-4.6-2.1-7.4-.8z"/><path d="m3.2 18.8 2 2"/></svg>',
+    workshop: '<svg viewBox="0 0 24 24" focusable="false"><path d="m4 20 8.2-8.2M9.8 5.2l3-3 2 2-3 3M13.8 10.2l6.2 6.2-3.6 3.6-6.2-6.2"/><path d="m16.2 3.2 4.6 4.6-2.6 2.6-4.6-4.6z"/></svg>',
+    store: '<svg viewBox="0 0 24 24" focusable="false"><path d="M4 10v10h16V10M3 10l2-6h14l2 6"/><path d="M3 10c0 1.4 1.1 2.5 2.5 2.5S8 11.4 8 10c0 1.4 1.1 2.5 2.5 2.5S13 11.4 13 10c0 1.4 1.1 2.5 2.5 2.5S18 11.4 18 10c0 1.4 1.1 2.5 2.5 2.5S23 11.4 23 10"/><path d="M9 20v-5h6v5"/></svg>',
+    okachimachi: '<svg viewBox="0 0 24 24" focusable="false"><path d="M4 20h16M6 20V7h12v13M9 10h2m2 0h2m-6 3h2m2 0h2m-6 3h2m2 0h2"/><path d="M8 7V4h8v3"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" focusable="false"><rect x="6.5" y="2.5" width="11" height="19" rx="2"/><path d="M10 5h4M11 18.5h2"/></svg>',
+    gem: '<svg viewBox="0 0 24 24" focusable="false"><path d="m4 9 4-5h8l4 5-8 11z"/><path d="M4 9h16M8 4l4 5 4-5M12 9v11"/></svg>',
+    meal: '<svg viewBox="0 0 24 24" focusable="false"><path d="M4 3v5.4a3 3 0 0 0 6 0V3M7 3v18M10 3v5.4"/><path class="main-menu-icon-fill" d="M18.8 2.8c-2.8 2.8-4.2 6.2-4.2 10.2h3.1v8h2V2.8z"/></svg>',
+    sleep: '<svg viewBox="0 0 24 24" focusable="false"><path class="main-menu-icon-fill" d="M19.6 15.2A8.5 8.5 0 0 1 8.8 4.4 8.7 8.7 0 1 0 19.6 15.2z"/></svg>',
+  };
+  return `<span class="main-menu-icon main-menu-icon-${type}" aria-hidden="true">${icons[type] || ''}</span>`;
+}
+
+
 function renderMain() {
   const unread = visibleNotifications().filter((note) => note.unread).length;
   const activeOrders = activeOrderCount();
@@ -4960,7 +4976,7 @@ function renderMain() {
   const manualActionDisabled = autopilotEnabled ? autopilotDisabled : hungerDisabled;
   const phoneDisabled = !autopilotEnabled && locked ? hungerDisabled : '';
   const mealAndSleepDisabled = autopilotEnabled ? autopilotDisabled : '';
-  const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}><span>▣</span><strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
+  const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}>${mainMenuIcon('store')}<strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
   return `
     <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
       ${header('', { back: false, main: false })}
@@ -4972,14 +4988,14 @@ function renderMain() {
       ${outstandingCosts > 0 ? `<button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>` : ''}
       ${activeOrders > 0 && !autopilotEnabled ? `<button class="active-order-shortcut" data-action="open-active-orders" aria-label="現在の受注品を工房の注文書で確認する">現在受注品あり</button>` : ''}
       <nav class="main-menu${autopilotEnabled ? ' autopilot-menu-locked' : ''}" aria-label="行動">
-        <button data-action="nav" data-screen="mining" ${manualActionDisabled}><span>⛏</span><strong>採掘</strong></button>
-        <button data-action="nav" data-screen="workshop" ${manualActionDisabled}><span>⚒</span><strong>工房</strong></button>
+        <button data-action="nav" data-screen="mining" ${manualActionDisabled}>${mainMenuIcon('mining')}<strong>採掘</strong></button>
+        <button data-action="nav" data-screen="workshop" ${manualActionDisabled}>${mainMenuIcon('workshop')}<strong>工房</strong></button>
         ${storeButton}
-        <button data-action="nav" data-screen="okachimachi" ${manualActionDisabled}><span>♢</span><strong>御徒町</strong></button>
-        <button class="${autopilotEnabled ? 'autopilot-phone-button' : ''}" data-action="nav" data-screen="phone" ${phoneDisabled} aria-label="スマートフォン${autopilotEnabled ? '。自動操縦の設定を変更できます' : ''}"><span>▯</span><strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
-        <button data-action="nav" data-screen="todayGem"><span>✦</span><strong>今日の宝石</strong></button>
-        <button data-action="nav" data-screen="meal" ${mealAndSleepDisabled}><span class="meal-cutlery-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 3v5.4a3 3 0 0 0 6 0V3M7 3v18M10 3v5.4"/><path class="meal-knife-blade" d="M18.8 2.8c-2.8 2.8-4.2 6.2-4.2 10.2h3.1v8h2V2.8z"/></svg></span><strong>食事</strong></button>
-        <button data-action="sleep" ${mealAndSleepDisabled}><span>☾</span><strong>寝る</strong></button>
+        <button data-action="nav" data-screen="okachimachi" ${manualActionDisabled}>${mainMenuIcon('okachimachi')}<strong>御徒町</strong></button>
+        <button class="${autopilotEnabled ? 'autopilot-phone-button' : ''}" data-action="nav" data-screen="phone" ${phoneDisabled} aria-label="スマートフォン${autopilotEnabled ? '。自動操縦の設定を変更できます' : ''}">${mainMenuIcon('phone')}<strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
+        <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
+        <button data-action="nav" data-screen="meal" ${mealAndSleepDisabled}>${mainMenuIcon('meal')}<strong>食事</strong></button>
+        <button data-action="sleep" ${mealAndSleepDisabled}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
       </nav>
     </main>`;
 }
@@ -5314,7 +5330,7 @@ function renderOkachimachi() {
       <section class="scene-space"></section>
       <section class="action-panel glass-panel">
         <div class="button-stack okachimachi-facilities">
-          ${facilityButton({ id: 'looseShop', label: 'ルース屋', screen: 'looseShop', primary: true })}
+          ${facilityButton({ id: 'looseShop', label: 'ルース屋', screen: 'looseShop' })}
           ${facilityButton({ id: 'glab', label: 'g-Lab.', screen: 'glab' })}
           ${facilityButton({ id: 'materialShop', label: '地金屋', screen: 'supplierMetals' })}
           ${facilityButton({ id: 'jewelryShop', label: 'ジュエリーショップ', screen: 'jewelryShop' })}

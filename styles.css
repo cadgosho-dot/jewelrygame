@@ -9329,3 +9329,46 @@ body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question 
     display:none!important;
   }
 }
+
+
+/* v0.10.343 御徒町メニューのg-Lab.文字を少し太く調整 */
+body[data-screen="okachimachi"] .okachimachi-facilities [data-facility="glab"]{
+  font-weight:600!important;
+}
+body[data-screen="okachimachi"] .okachimachi-facilities [data-facility="glab"] :is(span,strong,small){
+  font-weight:600!important;
+}
+
+/* v0.10.344 メインメニューの全アイコンを単色シルエットへ統一 */
+body[data-screen="main"] .main-menu .main-menu-icon{
+  width:1.58rem;
+  height:1.58rem;
+  display:grid;
+  place-items:center;
+  color:#f2ca70;
+  line-height:1;
+}
+body[data-screen="main"] .main-menu .main-menu-icon svg{
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:visible;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.75;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+body[data-screen="main"] .main-menu .main-menu-icon .main-menu-icon-fill{
+  fill:currentColor;
+  stroke:none;
+}
+body[data-screen="main"] .main-menu button:disabled .main-menu-icon{
+  color:inherit;
+}
+@media (max-width:480px), (orientation:portrait){
+  body[data-screen="main"] .main-menu .main-menu-icon{
+    width:1.3rem;
+    height:1.3rem;
+  }
+}

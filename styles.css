@@ -9109,3 +9109,219 @@ body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question 
     overscroll-behavior:contain!important;
   }
 }
+
+/* v0.10.336 御徒町施設：枠内の黒ベタをやめ、透明枠＋文字の薄い影へ統一 */
+:is(
+  body[data-screen="okachimachi"],
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .action-panel{
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+:is(
+  body[data-screen="okachimachi"],
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .screen-content :is(
+  .summary-card,
+  .product-row,
+  .choice-card,
+  .candidate-card,
+  .display-product-card,
+  .display-shop-row,
+  .jewelry-shop-product-card,
+  .jewelry-shop-status-row,
+  .metal-trade-card,
+  .metal-spot-row,
+  .metal-market-summary,
+  .metal-composition-card,
+  .metal-summary-card,
+  .metal-inventory-metrics,
+  .glab-service-card,
+  .glab-sns-card,
+  .glab-simple-row,
+  .tool-card,
+  .tool-guide-section,
+  .tool-brief-card,
+  .empty-state,
+  .small-note,
+  .tab-row,
+  .button-stack,
+  .loose-shop-tabs,
+  .loose-shop-gem-choice,
+  .loose-shop-product-row,
+  .loose-shop-rough-sale .product-row,
+  .showcase-unit,
+  .store-install-section,
+  .store-install-row,
+  .expansion-card
+){
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border-color:rgba(232,191,104,.30)!important;
+}
+
+:is(
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .screen-content :is(
+  .product-main>div,
+  .choice-card,
+  .candidate-card,
+  .jewelry-shop-product-copy,
+  .metal-trade-heading,
+  .metal-owned-limit,
+  .metal-limit-price-row,
+  .metal-reservation-summary,
+  .tool-brief,
+  .glab-intro,
+  .display-shop-intro,
+  .loose-shop-gem-choice>span,
+  .loose-shop-product-row>strong,
+  .loose-shop-rough-sale .product-row>strong,
+  .loose-shop-actions,
+  .sell-action-row
+){
+  background:transparent!important;
+  box-shadow:none!important;
+  border-color:rgba(232,191,104,.16)!important;
+}
+
+:is(
+  body[data-screen="okachimachi"],
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .screen-content :is(
+  .primary-button,
+  .secondary-button,
+  .tab-row button,
+  .loose-shop-tabs button,
+  .loose-shop-gem-back,
+  .loose-shop-gem-back-bottom,
+  .glab-simple-row,
+  .loose-shop-gem-choice
+){
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  color:#fff4d8!important;
+  border-color:rgba(232,191,104,.42)!important;
+}
+
+:is(
+  body[data-screen="okachimachi"],
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .screen-content :is(
+  .primary-button:hover,
+  .secondary-button:hover,
+  .tab-row button:hover,
+  .loose-shop-tabs button:hover,
+  .glab-simple-row:hover,
+  .loose-shop-gem-choice:hover,
+  .primary-button:focus-visible,
+  .secondary-button:focus-visible,
+  .tab-row button:focus-visible,
+  .loose-shop-tabs button:focus-visible,
+  .glab-simple-row:focus-visible,
+  .loose-shop-gem-choice:focus-visible
+){
+  background:rgba(231,192,110,.08)!important;
+  border-color:rgba(255,226,158,.82)!important;
+}
+
+:is(
+  body[data-screen="okachimachi"],
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .screen-content :is(
+  .tab-row button.active,
+  .loose-shop-tabs button.active
+){
+  background:transparent!important;
+  color:#ffe5aa!important;
+  border-color:rgba(255,226,158,.88)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,226,158,.34)!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.34)!important;
+}
+
+:is(
+  body[data-screen="okachimachi"],
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .screen-content :is(h1,h2,h3,p,strong,small,span,label,button,input,b,dt,dd,li){
+  text-shadow:0 1px 2px rgba(0,0,0,.34)!important;
+}
+
+:is(
+  body[data-screen="okachimachi"],
+  body[data-screen="displayShop"],
+  body[data-screen="jewelryShop"],
+  body[data-screen="realEstate"],
+  body[data-screen="glab"],
+  body[data-screen="glabSns"],
+  body[data-screen="glabTool"],
+  body[data-screen="supplierMetals"],
+  body[data-screen="supplier"],
+  body[data-screen="looseShop"]
+) .screen-content :is(input,.primary-button:disabled,.secondary-button:disabled){
+  background:transparent!important;
+  text-shadow:none!important;
+}

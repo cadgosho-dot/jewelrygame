@@ -75,7 +75,7 @@ function isStandaloneMode() {
 
 function isLikelyInAppBrowser() {
   const ua = navigator.userAgent || '';
-  return /\bwv\b|;\s*wv\)|FBAN|FBAV|Instagram|Line\/|LIFF|Twitter|TikTok|MicroMessenger|Snapchat|Pinterest|YahooApp|GSA\//i.test(ua);
+  return /\bwv\b|;\s*wv\)|Version\/4\.0.*Chrome\/|FBAN|FBAV|Instagram|Line\/|LIFF|Twitter|TikTok|MicroMessenger|Snapchat|Pinterest|YahooApp|GSA\/|DuckDuckGo\/|SamsungBrowser\/.*CrossApp/i.test(ua);
 }
 
 function isAndroid() {

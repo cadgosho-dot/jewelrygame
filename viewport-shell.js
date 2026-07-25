@@ -11,6 +11,20 @@
       || window.navigator.standalone === true;
   }
 
+
+  function openGoogleLoginInBrowser() {
+    const authUrl = new URL('./auth.html?from=game&source=shell&browser=1', window.location.href);
+    const ua = navigator.userAgent || '';
+    if (/Android/i.test(ua)) {
+      const scheme = authUrl.protocol.replace(':', '');
+      const intentPath = `${authUrl.host}${authUrl.pathname}${authUrl.search}${authUrl.hash}`;
+      const intentUrl = `intent://${intentPath}#Intent;scheme=${scheme};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(authUrl.href)};end`;
+      window.location.href = intentUrl;
+      return;
+    }
+    window.location.assign(authUrl.href);
+  }
+
   function postToGame(message) {
     if (!frame?.contentWindow) return;
     frame.contentWindow.postMessage(message, window.location.origin);
@@ -74,7 +88,7 @@
       // Google認証はiframe内ではなく最上位ページで実行する。
       // Google側で新しいセッションを追加する操作は埋め込みiframeでは制限されるため、
       // 専用のauth.htmlへ同一タブで移動してからFirebaseのポップアップを開く。
-      window.location.assign('./auth.html?from=game&source=shell');
+      openGoogleLoginInBrowser();
       return;
     }
 

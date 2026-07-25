@@ -3956,9 +3956,8 @@ const PORTRAIT_COVER_SCREENS = new Set(['jewelryShop', 'todayGem']);
 
 function backgroundLayoutFor(target, asset) {
   if (!isPortraitLayout()) return 'landscape';
-  if (backgroundFor(target) === 'phone') return 'cover';
-  if (String(asset || '').endsWith('-portrait') || PORTRAIT_COVER_SCREENS.has(target)) return 'cover';
-  return 'panorama';
+  // v0.10.341 縦画面は全画面で背景を埋める。左右が切れても余白を出さない。
+  return 'cover';
 }
 
 function applyCurrentBackground() {
@@ -4308,8 +4307,21 @@ function takeGoogleLoginError() {
 function openTopLevelGoogleLogin() {
   const authUrlObject = new URL('./auth.html', window.location.href);
   authUrlObject.searchParams.set('from', 'game');
+  authUrlObject.searchParams.set('browser', '1');
   if (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true) authUrlObject.searchParams.set('source', 'pwa');
   const authUrl = authUrlObject.href;
+  const openAndroidChrome = () => {
+    if (!/Android/i.test(navigator.userAgent || '')) return false;
+    const scheme = authUrlObject.protocol.replace(':', '');
+    const intentPath = `${authUrlObject.host}${authUrlObject.pathname}${authUrlObject.search}${authUrlObject.hash}`;
+    const intentUrl = `intent://${intentPath}#Intent;scheme=${scheme};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(authUrl)};end`;
+    try {
+      window.top.location.href = intentUrl;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
   // 通常表示ではゲーム本体がindex.html内のiframeに入っているため、
   // OAuthポップアップをiframe内から直接開かず、最上位ページへ認証を委譲する。
   if (window.parent && window.parent !== window) {
@@ -4323,6 +4335,7 @@ function openTopLevelGoogleLogin() {
     }, 700);
     return;
   }
+  if (openAndroidChrome()) return;
   window.location.assign(authUrl);
 }
 

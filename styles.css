@@ -7204,21 +7204,10 @@ body[data-screen="kaitenzushi"] #root{
   }
 }
 
-/* v0.10.270 御徒町メニューの「ルース屋」文字を確実に読みやすくする */
-/* 過去の指定はルース屋の店内画面だけが対象だったため、御徒町の施設ボタンを専用属性で直接指定する。 */
+/* v0.10.339 御徒町メニューのルース屋だけに付いていた専用影を削除 */
 body[data-screen="okachimachi"] .okachimachi-facilities [data-facility="looseShop"],
 body[data-screen="okachimachi"] .okachimachi-facilities [data-facility="looseShop"] :is(span,strong,small){
-  text-shadow:
-    0 2px 2px rgba(0,0,0,1),
-    0 0 5px rgba(0,0,0,1),
-    0 0 11px rgba(0,0,0,.98)!important;
-}
-/* disabledの親要素に掛かるopacityで文字影ごと薄くなるため、ルース屋だけ視認性を維持する。 */
-body[data-screen="okachimachi"] .okachimachi-facilities [data-facility="looseShop"].facility-closed,
-body[data-screen="okachimachi"] .okachimachi-facilities [data-facility="looseShop"].facility-locked,
-body[data-screen="okachimachi"] .okachimachi-facilities [data-facility="looseShop"]:disabled{
-  opacity:.94!important;
-  filter:saturate(.72) brightness(.86)!important;
+  text-shadow:none!important;
 }
 
 
@@ -9324,4 +9313,19 @@ body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question 
 ) .screen-content :is(input,.primary-button:disabled,.secondary-button:disabled){
   background:transparent!important;
   text-shadow:none!important;
+}
+
+
+/* v0.10.341 縦画面：全背景を左右トリミングの全面表示へ統一 */
+@media (orientation:portrait){
+  body:not([data-screen="phone"]) #background-layer{
+    background-size:cover!important;
+    background-position:center center!important;
+    background-repeat:no-repeat!important;
+  }
+  body[data-background-layout="panorama"] #background-layer::before,
+  body[data-background-layout="panorama"] #background-layer::after{
+    content:none!important;
+    display:none!important;
+  }
 }

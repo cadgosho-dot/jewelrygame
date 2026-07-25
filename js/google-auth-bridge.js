@@ -4,6 +4,8 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   indexedDBLocalPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
@@ -16,6 +18,7 @@ const ERROR_KEY = 'jxj-google-login-error';
 const COMPLETE_KEY = 'jxj-google-login-completed-at';
 const CREDENTIAL_HANDOFF_KEY = 'jxj-google-credential-handoff-v1';
 const DIAGNOSTIC_KEY = 'jxj-google-login-diagnostic-v1';
+const REDIRECT_PENDING_KEY = 'jxj-google-redirect-pending-v2';
 const LOGIN_TIMEOUT_MS = 45000;
 const CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
 
@@ -28,19 +31,18 @@ const retryButton = document.querySelector('#auth-retry-popup');
 const status = document.querySelector('#auth-status');
 const detail = document.querySelector('#auth-detail');
 const environment = document.querySelector('#auth-environment');
+const externalTitle = document.querySelector('#auth-external-title');
+const externalDescription = document.querySelector('#auth-external-description');
 
 let auth = null;
 let returning = false;
 let loginInProgress = false;
 let loginTimeout = 0;
 let persistenceKind = '';
+let preferRedirect = false;
 
 function safeStorage(type = 'local') {
-  try {
-    return type === 'session' ? window.sessionStorage : window.localStorage;
-  } catch (_) {
-    return null;
-  }
+  try { return type === 'session' ? window.sessionStorage : window.localStorage; } catch (_) { return null; }
 }
 
 function storageAvailable(type = 'local') {
@@ -51,9 +53,7 @@ function storageAvailable(type = 'local') {
     storage.setItem(key, '1');
     storage.removeItem(key);
     return true;
-  } catch (_) {
-    return false;
-  }
+  } catch (_) { return false; }
 }
 
 function storageSet(type, key, value) {
@@ -62,15 +62,11 @@ function storageSet(type, key, value) {
     if (!storage) return false;
     storage.setItem(key, value);
     return true;
-  } catch (_) {
-    return false;
-  }
+  } catch (_) { return false; }
 }
 
 function storageRemove(type, key) {
-  try {
-    safeStorage(type)?.removeItem(key);
-  } catch (_) {}
+  try { safeStorage(type)?.removeItem(key); } catch (_) {}
 }
 
 function isStandaloneMode() {
@@ -82,16 +78,45 @@ function isLikelyInAppBrowser() {
   return /\bwv\b|;\s*wv\)|FBAN|FBAV|Instagram|Line\/|LIFF|Twitter|TikTok|MicroMessenger|Snapchat|Pinterest|YahooApp|GSA\//i.test(ua);
 }
 
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent || '');
+}
+
+function isFirebaseHostingHost() {
+  return location.hostname === firebaseConfig.authDomain
+    || location.hostname === `${firebaseConfig.projectId}.web.app`
+    || location.hostname === `${firebaseConfig.projectId}.firebaseapp.com`;
+}
+
+function effectiveFirebaseConfig() {
+  // Firebase Hosting上では、現在の公開元をauthDomainにして認証ヘルパーを同一サイト化する。
+  return isFirebaseHostingHost() ? { ...firebaseConfig, authDomain: location.hostname } : firebaseConfig;
+}
+
+function browserAuthUrl() {
+  const url = new URL('./auth.html', location.href);
+  url.searchParams.set('browser', '1');
+  url.searchParams.set('from', new URLSearchParams(location.search).get('from') || 'game');
+  return url;
+}
+
+function chromeIntentUrl(url) {
+  const path = `${url.host}${url.pathname}${url.search}${url.hash}`;
+  return `intent://${path}#Intent;scheme=${url.protocol.replace(':', '')};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url.href)};end`;
+}
+
 function environmentInfo() {
   return {
     hostname: location.hostname,
     standalone: isStandaloneMode(),
     inAppBrowser: isLikelyInAppBrowser(),
+    firebaseHostingHost: isFirebaseHostingHost(),
     localStorage: storageAvailable('local'),
     sessionStorage: storageAvailable('session'),
     online: navigator.onLine !== false,
     userAgent: navigator.userAgent || '',
     persistenceKind,
+    preferRedirect,
     time: new Date().toISOString(),
   };
 }
@@ -110,11 +135,7 @@ function setStatus(message, diagnostic = '') {
 function updateEnvironmentText() {
   if (!environment) return;
   const info = environmentInfo();
-  const context = info.inAppBrowser
-    ? 'アプリ内ブラウザ'
-    : info.standalone
-      ? 'ホーム画面アプリ'
-      : '通常ブラウザ';
+  const context = info.inAppBrowser ? 'アプリ内ブラウザ' : info.standalone ? 'ホーム画面アプリ' : '通常ブラウザ';
   const storage = info.localStorage ? 'ローカル保存可' : info.sessionStorage ? 'タブ内保存可' : '保存制限あり';
   environment.textContent = `${context}・${storage}`;
 }
@@ -126,21 +147,25 @@ function diagnosticText(error, stage = '') {
 }
 
 function errorMessage(error) {
+  const raw = String(error?.message || '');
   const messages = {
     'auth/unauthorized-domain': 'この公開URLがFirebaseの承認済みドメインに登録されていません。管理者へお知らせください。',
     'auth/app-not-authorized': 'この公開URLではFirebase認証を利用できません。管理者へお知らせください。',
     'auth/popup-closed-by-user': 'Googleログインがキャンセルされました。',
     'auth/cancelled-popup-request': '別のGoogleログイン画面が開いています。',
-    'auth/popup-blocked': 'この画面ではGoogleログインを開けませんでした。通常ブラウザで開いてください。',
+    'auth/popup-blocked': 'Googleログイン画面を開けませんでした。Chromeなどの通常ブラウザでお試しください。',
     'auth/network-request-failed': '通信できません。インターネット接続を確認してください。',
-    'auth/web-storage-unsupported': 'このブラウザではログイン情報を保存できません。通常ブラウザで開いてください。',
-    'auth/operation-not-supported-in-this-environment': 'このアプリ内ブラウザまたはホーム画面モードではGoogleログインを完了できません。通常ブラウザで開いてください。',
+    'auth/web-storage-unsupported': 'このブラウザではログイン情報を保存できません。Chromeなどの通常ブラウザで開いてください。',
+    'auth/operation-not-supported-in-this-environment': 'この表示方法ではGoogleログインを完了できません。Chromeなどの通常ブラウザで開いてください。',
     'auth/internal-error': 'Googleログインの受け取り処理を完了できませんでした。通常ブラウザで再度お試しください。',
     'auth/too-many-requests': '短時間に操作が集中しました。少し時間をおいてからお試しください。',
     'auth/credential-already-in-use': 'このGoogleアカウントは別のゲームアカウントで使用されています。',
     'auth/account-exists-with-different-credential': '同じメールアドレスの別ログイン方法が登録されています。メールアドレスでログインしてください。',
   };
-  return messages[error?.code] || error?.message || 'Googleログインを完了できませんでした。';
+  if (/missing initial state|initial state/i.test(raw)) {
+    return 'Googleログインの開始情報をブラウザが保持できませんでした。ゲームへ戻り、Chromeなどの通常ブラウザからもう一度お試しください。';
+  }
+  return messages[error?.code] || raw || 'Googleログインを完了できませんでした。';
 }
 
 function rememberError(message) {
@@ -153,9 +178,15 @@ function clearLoginTimeout() {
 }
 
 function showExternalBrowserHelp(message = '') {
-  const url = new URL(location.href);
-  url.searchParams.set('browser', '1');
-  if (externalLink) externalLink.href = url.href;
+  const url = browserAuthUrl();
+  if (externalLink) {
+    externalLink.href = isAndroid() ? chromeIntentUrl(url) : url.href;
+    externalLink.removeAttribute('target');
+  }
+  if (externalTitle) externalTitle.textContent = isAndroid() ? 'Chromeで開く' : '通常ブラウザで開く';
+  if (externalDescription) externalDescription.textContent = isAndroid()
+    ? 'ホーム画面アプリ内では認証を開始しません。Chromeへ移動して、同じ画面でログインを続けます。'
+    : 'ホーム画面アプリやアプリ内ブラウザでは認証結果が戻らない場合があります。通常ブラウザで開いてください。';
   if (externalPanel) externalPanel.hidden = false;
   if (message) setStatus(message);
   writeDiagnostic({ stage: 'external-browser-help-shown' });
@@ -166,7 +197,7 @@ function restoreButtons() {
   clearLoginTimeout();
   if (button) {
     button.disabled = false;
-    button.textContent = 'Googleアカウントを選ぶ';
+    button.textContent = preferRedirect ? '同じタブでGoogleログイン' : 'Googleアカウントを選ぶ';
   }
   if (recheckButton) recheckButton.hidden = false;
   if (retryButton) retryButton.hidden = false;
@@ -186,9 +217,7 @@ function storeCredentialHandoff(result) {
       uid: result?.user?.uid || '',
     }));
     return true;
-  } catch (_) {
-    return false;
-  }
+  } catch (_) { return false; }
 }
 
 async function returnToGame(user, result = null) {
@@ -196,13 +225,12 @@ async function returnToGame(user, result = null) {
   returning = true;
   clearLoginTimeout();
   try {
-    // ポップアップ結果からGoogle資格情報を同一タブのsessionStorageへ一時保存する。
-    // Firebaseの永続化反映が遅いブラウザでも、game.html側が資格情報を再交換できる。
     if (result) storeCredentialHandoff(result);
     await user.getIdToken();
     storageSet('local', RETURN_KEY, '1');
     storageSet('local', COMPLETE_KEY, new Date().toISOString());
     storageRemove('local', ERROR_KEY);
+    storageRemove('session', REDIRECT_PENDING_KEY);
     writeDiagnostic({ stage: 'login-complete', uid: user.uid });
   } catch (error) {
     returning = false;
@@ -242,9 +270,29 @@ async function beginGoogleLogin() {
   }
   if (recheckButton) recheckButton.hidden = true;
   if (retryButton) retryButton.hidden = true;
+
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+
+  if (preferRedirect) {
+    setStatus('同じタブでGoogleの画面へ移動します。ログイン後、自動的にゲームへ戻ります。');
+    storageSet('session', REDIRECT_PENDING_KEY, JSON.stringify({ createdAt: Date.now(), returnTo: './index.html' }));
+    writeDiagnostic({ stage: 'redirect-start' });
+    try {
+      await signInWithRedirect(auth, provider);
+      return;
+    } catch (error) {
+      const message = errorMessage(error);
+      rememberError(message);
+      setStatus(message, diagnosticText(error, 'redirect-start'));
+      writeDiagnostic({ stage: 'redirect-start-error', code: error?.code || '', message: error?.message || '' });
+      restoreButtons();
+      return;
+    }
+  }
+
   setStatus('開いたGoogle画面でアカウントを選択してください。');
   writeDiagnostic({ stage: 'popup-start' });
-
   clearLoginTimeout();
   loginTimeout = window.setTimeout(async () => {
     if (await recheckAuthState()) return;
@@ -254,8 +302,6 @@ async function beginGoogleLogin() {
     writeDiagnostic({ stage: 'popup-timeout' });
   }, LOGIN_TIMEOUT_MS);
 
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
   try {
     const result = await signInWithPopup(auth, provider);
     if (!result?.user) throw Object.assign(new Error('ログインユーザーを確認できませんでした。'), { code: 'auth/internal-error' });
@@ -273,8 +319,7 @@ async function beginGoogleLogin() {
 }
 
 async function copyLoginUrl() {
-  const url = new URL(location.href);
-  url.searchParams.set('browser', '1');
+  const url = browserAuthUrl();
   try {
     await navigator.clipboard.writeText(url.href);
     setStatus('URLをコピーしました。Chrome、Safari、Edgeなどの通常ブラウザへ貼り付けてください。');
@@ -283,29 +328,59 @@ async function copyLoginUrl() {
   }
 }
 
+function prepareBrowserTransferOnly() {
+  updateEnvironmentText();
+  showExternalBrowserHelp('ホーム画面アプリ内ではGoogle認証を開始しません。Chromeなどの通常ブラウザへ移動してください。');
+  if (button) button.hidden = true;
+  if (recheckButton) recheckButton.hidden = true;
+  if (retryButton) retryButton.hidden = true;
+  copyButton?.addEventListener('click', copyLoginUrl);
+  writeDiagnostic({ stage: 'pwa-browser-transfer-only' });
+}
+
 async function start() {
   updateEnvironmentText();
   const env = writeDiagnostic({ stage: 'initialize-start' });
-  if (env.inAppBrowser || env.standalone) {
-    showExternalBrowserHelp('ホーム画面アプリやアプリ内ブラウザではGoogle認証が止まる場合があります。止まった場合は通常ブラウザで開いてください。');
+  const browserMode = new URLSearchParams(location.search).get('browser') === '1';
+
+  // PWA・アプリ内ブラウザではFirebase認証自体を開始しない。
+  if ((env.standalone || env.inAppBrowser) && !browserMode) {
+    prepareBrowserTransferOnly();
+    return;
   }
 
   try {
-    const app = initializeApp(firebaseConfig);
+    const app = initializeApp(effectiveFirebaseConfig());
     auth = initializeAuth(app, {
       persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
       popupRedirectResolver: browserPopupRedirectResolver,
     });
     persistenceKind = 'auto';
     auth.languageCode = 'ja';
+    preferRedirect = isFirebaseHostingHost();
     updateEnvironmentText();
-    await auth.authStateReady();
 
+    // 同一タブリダイレクトから戻った結果を最初に受け取る。
+    try {
+      const redirectResult = await getRedirectResult(auth);
+      if (redirectResult?.user) {
+        writeDiagnostic({ stage: 'redirect-resolved', uid: redirectResult.user.uid });
+        await returnToGame(redirectResult.user, redirectResult);
+        return;
+      }
+    } catch (error) {
+      const message = errorMessage(error);
+      rememberError(message);
+      storageRemove('session', REDIRECT_PENDING_KEY);
+      setStatus(message, diagnosticText(error, 'redirect-result'));
+      writeDiagnostic({ stage: 'redirect-result-error', code: error?.code || '', message: error?.message || '' });
+      // Firebaseの英語エラー画面へ放置せず、この日本語画面で再試行できるようにする。
+    }
+
+    await auth.authStateReady();
     onAuthStateChanged(auth, (user) => {
-      if (!user) return;
-      // signInWithPopup()の結果にはGoogle資格情報が含まれるため、まずPromiseの完了を短時間待つ。
-      // Promiseだけ戻らないブラウザでは、認証状態の変化を予備経路として使用する。
-      if (loginInProgress) {
+      if (!user || returning) return;
+      if (loginInProgress && !preferRedirect) {
         window.setTimeout(() => {
           if (!returning && auth?.currentUser) returnToGame(auth.currentUser);
         }, 1200);
@@ -323,15 +398,19 @@ async function start() {
       throw Object.assign(new Error('このブラウザではログイン情報を保存できません。'), { code: 'auth/web-storage-unsupported' });
     }
 
-    setStatus('下のボタンを押してGoogleアカウントを選択してください。');
-    if (button) button.disabled = false;
+    setStatus(preferRedirect
+      ? '下のボタンを押すと、同じタブでGoogleログインへ移動します。'
+      : '下のボタンを押してGoogleアカウントを選択してください。');
+    if (button) {
+      button.disabled = false;
+      button.textContent = preferRedirect ? '同じタブでGoogleログイン' : 'Googleアカウントを選ぶ';
+    }
     button?.addEventListener('click', beginGoogleLogin);
     retryButton?.addEventListener('click', beginGoogleLogin);
     recheckButton?.addEventListener('click', async () => {
       setStatus('ログイン状態を確認しています…');
       if (!(await recheckAuthState())) {
-        setStatus('ログイン状態を確認できませんでした。通常ブラウザで開くか、もう一度Googleアカウントを選択してください。');
-        showExternalBrowserHelp();
+        setStatus('ログイン状態を確認できませんでした。もう一度Googleログインをお試しください。');
       }
     });
     copyButton?.addEventListener('click', copyLoginUrl);

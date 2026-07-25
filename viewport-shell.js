@@ -74,7 +74,7 @@
       // Google認証はiframe内ではなく最上位ページで実行する。
       // Google側で新しいセッションを追加する操作は埋め込みiframeでは制限されるため、
       // 専用のauth.htmlへ同一タブで移動してからFirebaseのポップアップを開く。
-      window.location.assign('./auth.html?from=game');
+      window.location.assign('./auth.html?from=game&source=shell');
       return;
     }
 

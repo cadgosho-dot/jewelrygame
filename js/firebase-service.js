@@ -45,6 +45,13 @@ let firebaseInitialized = false;
 const GOOGLE_CREDENTIAL_HANDOFF_KEY = 'jxj-google-credential-handoff-v1';
 const GOOGLE_CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
 
+function effectiveFirebaseConfig() {
+  const sameFirebaseHosting = location.hostname === firebaseConfig.authDomain
+    || location.hostname === `${firebaseConfig.projectId}.web.app`
+    || location.hostname === `${firebaseConfig.projectId}.firebaseapp.com`;
+  return sameFirebaseHosting ? { ...firebaseConfig, authDomain: location.hostname } : firebaseConfig;
+}
+
 function safeSessionStorage() {
   try { return window.sessionStorage; } catch (_) { return null; }
 }
@@ -112,7 +119,7 @@ function validAppCheckConfig() {
 
 export async function initializeFirebase() {
   if (previewMode) return { previewMode: true, configured: true, appCheckConfigured: false };
-  const app = initializeApp(firebaseConfig);
+  const app = initializeApp(effectiveFirebaseConfig());
 
   // App Check はFirebaseサービスへ接続する前に初期化する。
   if (validAppCheckConfig()) {

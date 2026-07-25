@@ -41,10 +41,10 @@
       <p id="auth-status" role="status" aria-live="polite">認証機能を準備しています…</p>
       <p id="auth-detail" aria-live="polite"></p>
       <section id="auth-external-panel" class="external-panel" hidden>
-        <strong>通常ブラウザで開く</strong>
-        <p>ホーム画面アプリやLINEなどのアプリ内ブラウザでは、Google画面から認証結果が戻らない場合があります。Chrome、Safari、Edgeなどで開くと、そのブラウザ上でゲームを続けられます。</p>
+        <strong id="auth-external-title">通常ブラウザで開く</strong>
+        <p id="auth-external-description">ホーム画面アプリやLINEなどのアプリ内ブラウザでは、Google画面から認証結果が戻らない場合があります。Chrome、Safari、Edgeなどで開くと、そのブラウザ上でゲームを続けられます。</p>
         <div class="external-actions">
-          <a id="auth-external-link" class="secondary" href="./auth.html?browser=1" target="_blank" rel="noopener external">通常ブラウザで開く</a>
+          <a id="auth-external-link" class="secondary" href="./auth.html?browser=1" rel="external">通常ブラウザで開く</a>
           <button id="auth-copy-url" class="secondary" type="button">URLをコピー</button>
         </div>
         <button id="auth-retry-popup" class="secondary" type="button" hidden>この画面でもう一度試す</button>
@@ -53,6 +53,6 @@
     </section>
     <a href="./index.html">ログインせずゲームへ戻る</a>
   </main>
-  <script type="module" src="./js/google-auth-bridge.js?v=0.10.297"></script>
+  <script type="module" src="./js/google-auth-bridge.js?v=0.10.306"></script>
 </body>
 </html>

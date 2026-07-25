@@ -103,18 +103,22 @@ function loopSupplementalAmbients(key) {
   });
 }
 
+// 御徒町とg-Lab.以外の各店舗は同じBGM URLを共有し、画面遷移でも再生位置を維持する。
+// 環境音はscene keyごとに別管理するため、店舗ごとの設定がそのまま切り替わる。
+function bgmUrlFor(key) {
+  const bgmKey = (key === 'craft' || key === 'polishing')
+    ? 'workshop'
+    : ((key === 'displayShop' || key === 'jewelryShop' || key === 'looseShop' || key === 'materialShop' || key === 'realEstate') ? 'okachimachi' : key);
+  if (key === 'okachimachiQuiz') return `${AUDIO_DIR}/quiz_show_thinking_bgm_60s_loop.mp3`;
+  if (key === 'kaitenzushi') return './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg';
+  return `${AUDIO_DIR}/bgm-${bgmKey}.ogg`;
+}
+
 function loopAudio(kind, key) {
   if (!validKeys.has(key)) return null;
   if (kind === 'ambient' && key === 'okachimachiQuiz') return null;
   const map = kind === 'bgm' ? tracks : ambients;
-  const bgmKey = (key === 'craft' || key === 'polishing') ? 'workshop' : ((key === 'displayShop' || key === 'jewelryShop' || key === 'looseShop' || key === 'materialShop' || key === 'realEstate') ? 'okachimachi' : key);
-  const url = kind === 'bgm'
-    ? (key === 'okachimachiQuiz'
-      ? `${AUDIO_DIR}/quiz_show_thinking_bgm_60s_loop.mp3`
-      : key === 'kaitenzushi'
-        ? './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg'
-        : `${AUDIO_DIR}/bgm-${bgmKey}.ogg`)
-    : ambientUrl(key);
+  const url = kind === 'bgm' ? bgmUrlFor(key) : ambientUrl(key);
   const existing = map.get(key);
   if (existing && existing.dataset.audioUrl !== url) {
     existing.pause();
@@ -152,6 +156,8 @@ const BGM_SCALE = {
   meal: .66, 'meal-convenience': .64, 'meal-soba': .66, 'meal-ramen': .64, 'meal-hamburger': .62,
   'meal-indian': .64, 'meal-korean': .62, 'meal-chinese': .64, 'meal-kebab': .64, kaitenzushi: .90,
 };
+// v0.10.298: 環境音全体を従来の約50％へ抑える。設定スライダーの値は保持する。
+const AMBIENT_MASTER_SCALE = .50;
 const AMBIENT_SCALE = {
   main: .42, mining: 1, workshop: 1, craft: 1, polishing: 1, store: .90, displayShop: .92, materialShop: .96, looseShop: .96, jewelryShop: .92, realEstate: .94, glab: .94, okachimachi: 1, phone: .88, sleep: .56,
   meal: .54, 'meal-convenience': .50, 'meal-soba': .58, 'meal-ramen': .50, 'meal-hamburger': .52,
@@ -165,7 +171,8 @@ function targetVolume(kind, key, settings) {
   const base = Number(kind === 'bgm' ? settings.bgmVolume : settings.ambientVolume) || 0;
   const scale = (kind === 'bgm' ? BGM_SCALE : AMBIENT_SCALE)[key] ?? 1;
   const duck = kind === 'ambient' && key === currentKey ? ambientDuckFactor : 1;
-  return Math.max(0, Math.min(1, base * scale * duck));
+  const master = kind === 'ambient' ? AMBIENT_MASTER_SCALE : 1;
+  return Math.max(0, Math.min(1, base * scale * duck * master));
 }
 
 function targetSupplementalVolume(audio, settings) {
@@ -173,7 +180,7 @@ function targetSupplementalVolume(audio, settings) {
   const base = Number(settings.ambientVolume) || 0;
   const scale = Number(audio?.dataset?.layerScale) || 1;
   const duck = audio?.dataset?.sceneKey === currentKey ? ambientDuckFactor : 1;
-  return Math.max(0, Math.min(1, base * scale * duck));
+  return Math.max(0, Math.min(1, base * scale * duck * AMBIENT_MASTER_SCALE));
 }
 
 export function applyAudioSettings() {
@@ -236,13 +243,14 @@ function scheduleStop(key, delay = 290) {
   const timer = setTimeout(() => {
     pendingStopTimers.delete(key);
     if (currentKey === key) return;
-    stopLoopPair(key, true);
+    const keepSharedBgm = Boolean(currentKey && bgmUrlFor(currentKey) === bgmUrlFor(key));
+    stopLoopPair(key, true, { keepBgm: keepSharedBgm });
   }, delay);
   pendingStopTimers.set(key, timer);
 }
 
-function stopLoopPair(key, reset = true) {
-  const track = tracks.get(key);
+function stopLoopPair(key, reset = true, { keepBgm = false } = {}) {
+  const track = keepBgm ? null : tracks.get(key);
   const ambient = ambients.get(key);
   const supplemental = [...supplementalAmbients.values()].filter((audio) => audio.dataset.sceneKey === key);
   for (const audio of [track, ambient, ...supplemental]) {
@@ -341,15 +349,22 @@ export async function switchAudio(key) {
     return;
   }
   const oldKey = currentKey;
+  const sharedBgm = Boolean(oldKey && bgmUrlFor(oldKey) === bgmUrlFor(key));
+  const inheritedTrack = sharedBgm ? tracks.get(oldKey) : null;
   transitionSerial += 1;
   resetAmbientDuck(false);
   if (oldKey) {
     const oldTrack = tracks.get(oldKey);
     const oldAmbient = ambients.get(oldKey);
     const oldSupplemental = [...supplementalAmbients.values()].filter((audio) => audio.dataset.sceneKey === oldKey);
-    if (oldTrack) fade(oldTrack, 0, 250);
+    if (oldTrack && !sharedBgm) fade(oldTrack, 0, 250);
     if (oldAmbient) fade(oldAmbient, 0, 250);
     oldSupplemental.forEach((audio) => fade(audio, 0, 250));
+    if (sharedBgm && inheritedTrack) {
+      cancelFade(inheritedTrack);
+      tracks.delete(oldKey);
+      tracks.set(key, inheritedTrack);
+    }
     scheduleStop(oldKey, 290);
   }
   currentKey = key;

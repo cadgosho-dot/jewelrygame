@@ -9372,3 +9372,15 @@ body[data-screen="main"] .main-menu button:disabled .main-menu-icon{
     height:1.3rem;
   }
 }
+
+
+/* v0.10.350 ルース屋「石種を選択」見出しの黒背景を削除 */
+body[data-screen="looseShop"] .loose-shop-step-heading h2{
+  display:block;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  backdrop-filter:none;
+}

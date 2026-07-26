@@ -1,4 +1,4 @@
-export const VERSION = '0.10.350';
+export const VERSION = '0.10.362';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -364,6 +364,18 @@ export const GENERAL_ITEMS = {
   pazupan: {
     id: 'pazupan', name: 'パズーパン', category: '回復アイテム', symbol: '🍳', usable: true, useLabel: '使用する',
     image: './assets/images/events/pazupan.png', description: '使うと空腹度が2回復します。', effect: { hunger: 2 }, sfx: 'eat',
+  },
+  energyDrink: {
+    id: 'energyDrink', name: '栄養ドリンク', category: '回復アイテム', symbol: '⚡', usable: true, useLabel: '飲む',
+    image: './assets/images/items/energy-drink.png', description: '使うと空腹度が3回復します。', effect: { hunger: 3 }, sfx: 'eat',
+  },
+  bokuto: {
+    id: 'bokuto', name: '木刀', category: '護身アイテム', symbol: '木', usable: false,
+    image: './assets/images/items/bokuto.png', description: '観光客からもらった木刀です。持っていると強盗の発生率が半分になります。',
+  },
+  bodyChip: {
+    id: 'bodyChip', name: '身体の中のチップ', category: '謎のアイテム', symbol: '▣', usable: false,
+    image: './assets/images/items/body-chip.png', description: '身体の中に埋め込まれている謎のチップ。効果はわからない。',
   },
 };
 
@@ -1968,6 +1980,37 @@ export function initialState() {
         stage: 'idle',
         rewardGranted: false,
       },
+      sushiChefEvent: {
+        lastCheckedDate: '',
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        lastPlates: 0,
+        lastHungerBefore: 0,
+        lastHungerAfter: 0,
+      },
+      cyclopsEvent: {
+        lastCheckedDate: '',
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+      },
+      touristWoodSwordEvent: {
+        eligible: false,
+        triggered: false,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+      },
+      alienAbductionEvent: {
+        active: false,
+        stage: 'idle',
+        daysSlept: 0,
+        lastCheckedDay: 0,
+        totalTrips: 0,
+        chipGrantedThisTrip: false,
+      },
     },
     notifications: [],
     finance: [],
@@ -2719,6 +2762,47 @@ export function migrateState(saved) {
   };
   normalizeSimpleEvent('miningPazupanEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
   normalizeSimpleEvent('mermaidEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+
+  const normalizeVisitEvent = (key, validStages, extra = {}) => {
+    const saved = isRecord(state.events[key]) ? state.events[key] : {};
+    state.events[key] = {
+      lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+      totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+      active: Boolean(saved.active),
+      stage: validStages.includes(saved.stage) ? saved.stage : 'idle',
+      ...extra(saved),
+    };
+    if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
+  };
+  normalizeVisitEvent('sushiChefEvent', ['idle', 'intro1', 'intro2', 'playing', 'farewell', 'completed'], (saved) => ({
+    lastPlates: Math.max(0, Math.floor(Number(saved.lastPlates) || 0)),
+    lastHungerBefore: Math.max(0, Math.min(7, Math.floor(Number(saved.lastHungerBefore) || 0))),
+    lastHungerAfter: Math.max(0, Math.min(7, Math.floor(Number(saved.lastHungerAfter) || 0))),
+  }));
+  normalizeVisitEvent('cyclopsEvent', ['idle', 'intro1', 'intro2', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+  {
+    const saved = isRecord(state.events.touristWoodSwordEvent) ? state.events.touristWoodSwordEvent : {};
+    state.events.touristWoodSwordEvent = {
+      eligible: Boolean(saved.eligible),
+      triggered: Boolean(saved.triggered),
+      active: Boolean(saved.active),
+      stage: ['idle', 'intro1', 'route', 'reward', 'farewell', 'completed'].includes(saved.stage) ? saved.stage : 'idle',
+      rewardGranted: Boolean(saved.rewardGranted),
+    };
+    if (!state.events.touristWoodSwordEvent.active && !['idle', 'completed'].includes(state.events.touristWoodSwordEvent.stage)) state.events.touristWoodSwordEvent.stage = 'completed';
+  }
+  {
+    const saved = isRecord(state.events.alienAbductionEvent) ? state.events.alienAbductionEvent : {};
+    state.events.alienAbductionEvent = {
+      active: Boolean(saved.active),
+      stage: ['idle', 'intro1', 'intro2', 'abducted', 'returnPending', 'completed'].includes(saved.stage) ? saved.stage : 'idle',
+      daysSlept: Math.max(0, Math.min(3, Math.floor(Number(saved.daysSlept) || 0))),
+      lastCheckedDay: Math.max(0, Math.floor(Number(saved.lastCheckedDay) || 0)),
+      totalTrips: Math.max(0, Math.floor(Number(saved.totalTrips) || 0)),
+      chipGrantedThisTrip: Boolean(saved.chipGrantedThisTrip),
+    };
+    if (!state.events.alienAbductionEvent.active && ['intro1', 'intro2', 'abducted', 'returnPending'].includes(state.events.alienAbductionEvent.stage)) state.events.alienAbductionEvent.stage = 'completed';
+  }
   delete state.events.nothingMattersEvent;
 
   state.settings = { ...initialState().settings, ...(state.settings || {}) };

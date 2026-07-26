@@ -85,6 +85,27 @@ const MERMAID_EVENT_TRIGGER_MIN = 58;
 const MERMAID_EVENT_TRIGGER_MAX = 82;
 const MERMAID_EVENT_GEM_ID = 'pearl';
 const MERMAID_EVENT_SHAPE_ID = 'pearl';
+const SUSHI_CHEF_EVENT_CHANCE = 1 / 90;
+const CYCLOPS_EVENT_CHANCE = 1 / 90;
+const SLEEP_UNLOCK_MINUTES = 19 * 60;
+const ALIEN_ABDUCTION_DAILY_CHANCE = 1 / 365;
+const ALIEN_ABDUCTION_DAYS = 3;
+const SPACE_MINING_LOCATION = (() => {
+  const weights = new Map();
+  Object.values(MINING_LOCATIONS).forEach((location) => {
+    (location.gems || []).forEach((entry) => weights.set(entry.id, (weights.get(entry.id) || 0) + Number(entry.weight || 0)));
+  });
+  return {
+    id: 'outerSpace',
+    name: '宇宙の何処か',
+    hours: 3,
+    unlockAtFinds: 0,
+    description: '宇宙のどこかにある荒れた大地で採掘します。',
+    gems: [...weights.entries()].map(([id, weight]) => ({ id, weight })),
+  };
+})();
+const WOOD_SWORD_EVENT_REQUIRED_DAYS = 365;
+const WOOD_SWORD_ROBBERY_MULTIPLIER = 0.5;
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
@@ -2821,13 +2842,18 @@ function robberyItemsInBranch(branch) {
   return found;
 }
 
+function hasBokuto() {
+  return Math.max(0, Math.floor(Number(state.inventory.items?.bokuto) || 0)) > 0;
+}
+
 function maybeTriggerRobberyEvent(randomValue = Math.random()) {
   const robbery = robberyEventState();
   if (robbery.pendingReport) return null;
   const candidates = contractedStoreBranches()
     .map((branch) => ({ branch, products: robberyItemsInBranch(branch) }))
     .filter((entry) => entry.products.length > 0);
-  if (!candidates.length || Number(randomValue) >= ROBBERY_DAILY_CHANCE) return null;
+  const robberyChance = hasBokuto() ? ROBBERY_DAILY_CHANCE * WOOD_SWORD_ROBBERY_MULTIPLIER : ROBBERY_DAILY_CHANCE;
+  if (!candidates.length || Number(randomValue) >= robberyChance) return null;
 
   const target = randomFrom(candidates, candidates[0]);
   if (!target?.branch || !target.products.length) return null;
@@ -3081,6 +3107,24 @@ function hungerLocked() {
   return Boolean(state && hungerLevel() <= 0);
 }
 
+function hasSelectableRegularMeal() {
+  if (!state) return false;
+  return Object.values(MEALS).some((meal) => {
+    if (Number(state.game.money) < Number(meal.price)) return false;
+    return !(Number(state.wellbeing.mealsEaten) > 0 && state.wellbeing.lastMeal === meal.id);
+  });
+}
+
+function canSleepNow() {
+  if (!state) return false;
+  if (Number(state.game.minutes) >= SLEEP_UNLOCK_MINUTES) return true;
+  return hungerLocked() && !hasSelectableRegularMeal();
+}
+
+function sleepRestrictionMessage() {
+  return '19時になるまで寝られません。空腹で選べる食事がない場合は、19時前でも寝られます。';
+}
+
 function hungerPips(level = hungerLevel()) {
   const safe = Math.max(0, Math.min(7, Number(level) || 0));
   return `<span class="hunger-pips" aria-label="空腹度 ${safe}／7">${Array.from({ length: 7 }, (_, index) => `<i class="${index < safe ? 'filled' : ''}"></i>`).join('')}</span>`;
@@ -3331,6 +3375,10 @@ function clearMorningBrief() {
 }
 
 function continueMorningAfterSpecialEvents() {
+  if (isAlienAbducted()) {
+    goMain();
+    return;
+  }
   const report = pendingRobberyReport();
   if (report) {
     report.stage = 'showing';
@@ -3352,6 +3400,11 @@ function specialMorningEventTriggeredToday() {
 
 function finishMorningBriefAndContinue() {
   clearMorningBrief();
+  if (isAlienAbducted()) {
+    goMain();
+    return;
+  }
+  if (maybeStartAlienAbductionEvent()) return;
   if (!specialMorningEventTriggeredToday()) {
     if (maybeStartMermaidEvent()) return;
     if (maybeStartWesternUnionEvent()) return;
@@ -3361,6 +3414,7 @@ function finishMorningBriefAndContinue() {
 
 async function maybeResumeMorningSequence() {
   if (!state || screen !== 'main' || morningBriefShowing || sleepTransitioning) return;
+  if (resumeAlienAbductionEvent()) return;
   if (resumeMermaidEvent()) return;
   if (resumeWesternUnionEvent()) return;
   if (!specialMorningEventTriggeredToday()) {
@@ -3428,11 +3482,17 @@ async function beginNextDay() {
     sleepCurtainEl?.classList.add('next-day-blackout', 'active');
     playSfx('sleep', { gain: .9 });
     await wait(2000);
-    goMain();
+    const returningFromSpace = alienAbductionEventState().active && alienAbductionEventState().stage === 'returnPending';
+    if (returningFromSpace) {
+      grantAlienBodyChip();
+      setScreen('alienReturnEvent', {}, false);
+    } else {
+      goMain();
+    }
     await wait(40);
     sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
-    playSfx('alarm', { gain: .92 });
-    await showMorningBrief();
+    playSfx(returningFromSpace ? 'success' : 'alarm', { gain: .92 });
+    if (!returningFromSpace) await showMorningBrief();
   } finally {
     sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
     sleepTransitioning = false;
@@ -3519,6 +3579,8 @@ function maybeStartWesternUnionEvent() {
   eventState.eventDate = todayKey;
   saveGame();
   setScreen('westernUnionEvent', {}, false);
+  requestAnimationFrame(() => playSfx('western-union-arrival', { gain: .96 }));
+  vibrate([18, 34, 18]);
   return true;
 }
 
@@ -3541,7 +3603,7 @@ function grantWesternUnionAntiqueDiamond(eventState = westernUnionEventState()) 
   eventState.rewardGranted = true;
   addNotification('アンティークダイヤを手に入れました', '雨の日に現れた人物から、特別なアンティークダイヤを受け取りました。', 'special');
   saveGame();
-  playSfx('loose-sparkle', { gain: 1.1 });
+  window.setTimeout(() => playSfx('loose-sparkle', { gain: 1.1 }), 230);
   vibrate([35, 35, 70]);
 }
 
@@ -3550,6 +3612,7 @@ function chooseWesternUnionEvent(answer) {
   if (!eventState.active || eventState.stage !== 'choice') return;
   if (answer === 'yes') {
     eventState.stage = 'gift';
+    playSfx('western-union-handover', { gain: .92 });
     grantWesternUnionAntiqueDiamond(eventState);
   } else if (answer === 'no') {
     eventState.stage = 'declined';
@@ -3645,6 +3708,8 @@ function maybeStartMiningPazupanEvent() {
   eventState.rewardGranted = false;
   saveGame();
   setScreen('miningPazupanEvent', {}, false);
+  playSfx('bomb-jii-appear', { gain: .94 });
+  vibrate([22, 35, 55]);
   return true;
 }
 
@@ -3659,7 +3724,7 @@ function grantPazupan(eventState = miningPazupanEventState()) {
   const current = Math.max(0, Math.floor(Number(state.inventory.items?.pazupan) || 0));
   state.inventory.items.pazupan = current + 1;
   eventState.rewardGranted = true;
-  addNotification('パズーパンを手に入れました', '採掘へ向かう途中で出会った人物から、不思議なパズーパンを受け取りました。', 'special');
+  addNotification('パズーパンを手に入れました', '採掘へ向かう途中で出会ったボムじいさんから、不思議なパズーパンを受け取りました。', 'special');
   saveGame();
   playSfx('success', { gain: 1.05 });
   vibrate([35, 30, 65]);
@@ -3681,6 +3746,7 @@ function advanceMiningPazupanEvent() {
   eventState.active = false;
   eventState.stage = 'completed';
   saveGame();
+  playSfx('select', { gain: .82 });
   setScreen('mining', {}, false);
 }
 
@@ -3721,6 +3787,8 @@ function maybeStartMermaidEvent() {
   eventState.rewardGranted = false;
   saveGame();
   setScreen('mermaidEvent', {}, false);
+  playSfx('mermaid-splash', { gain: .92 });
+  vibrate([18, 24, 34]);
   return true;
 }
 
@@ -3739,6 +3807,7 @@ function finishMermaidEvent() {
   eventState.active = false;
   eventState.stage = 'completed';
   saveGame();
+  playSfx('select', { gain: .82 });
   continueMorningAfterSpecialEvents();
 }
 
@@ -3753,6 +3822,374 @@ function advanceMermaidEvent() {
     return;
   }
   finishMermaidEvent();
+}
+
+function visitEventDateKey() {
+  return dateKey(gameDate());
+}
+
+function sushiChefEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.sushiChefEvent && typeof state.events.sushiChefEvent === 'object' && !Array.isArray(state.events.sushiChefEvent)
+    ? state.events.sushiChefEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'playing', 'farewell', 'completed']);
+  state.events.sushiChefEvent = {
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    lastPlates: Math.max(0, Math.floor(Number(saved.lastPlates) || 0)),
+    lastHungerBefore: Math.max(0, Math.min(7, Math.floor(Number(saved.lastHungerBefore) || 0))),
+    lastHungerAfter: Math.max(0, Math.min(7, Math.floor(Number(saved.lastHungerAfter) || 0))),
+  };
+  if (!state.events.sushiChefEvent.active && !['idle', 'completed'].includes(state.events.sushiChefEvent.stage)) state.events.sushiChefEvent.stage = 'completed';
+  return state.events.sushiChefEvent;
+}
+
+function maybeStartSushiChefEvent() {
+  const eventState = sushiChefEventState();
+  if (eventState.active) {
+    setScreen(eventState.stage === 'playing' ? 'kaitenzushi' : 'sushiChefEvent', {}, false);
+    return true;
+  }
+  const todayKey = visitEventDateKey();
+  if (eventState.lastCheckedDate === todayKey) return false;
+  eventState.lastCheckedDate = todayKey;
+  if (Math.random() >= SUSHI_CHEF_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.lastPlates = 0;
+  eventState.lastHungerBefore = hungerLevel();
+  eventState.lastHungerAfter = hungerLevel();
+  state.game.screen = 'sushiChefEvent';
+  saveGame();
+  playSfx('impact', { gain: .82 });
+  vibrate([30, 25, 45]);
+  setScreen('sushiChefEvent', {}, false);
+  return true;
+}
+
+function advanceSushiChefEvent() {
+  const eventState = sushiChefEventState();
+  if (!eventState.active) {
+    goMain();
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'playing';
+    saveGame();
+    playSfx('success', { gain: .86 });
+    vibrate([35, 30, 60]);
+    startKaitenzushi({ skipEventCheck: true, free: true });
+    return;
+  }
+  if (eventState.stage === 'farewell') {
+    const plates = eventState.lastPlates;
+    const before = eventState.lastHungerBefore;
+    const after = eventState.lastHungerAfter;
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    hungerFeedback = plates > 0 ? { before, after, mealName: `回転寿司（${plates}皿・大将のおごり）` } : null;
+    clearTimeout(hungerFeedbackTimer);
+    goMain();
+    showToast(plates > 0 ? `ごちそうさまでした　${plates}皿・0円` : '大将にごちそうしてもらいました。', 'meal-complete', false);
+    playSfx('levelup');
+    if (hungerFeedback) {
+      hungerFeedbackTimer = setTimeout(() => {
+        hungerFeedback = null;
+        if (screen === 'main') render();
+      }, 1550);
+    }
+  }
+}
+
+function cyclopsEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.cyclopsEvent && typeof state.events.cyclopsEvent === 'object' && !Array.isArray(state.events.cyclopsEvent)
+    ? state.events.cyclopsEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'reward', 'completed']);
+  state.events.cyclopsEvent = {
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (!state.events.cyclopsEvent.active && !['idle', 'completed'].includes(state.events.cyclopsEvent.stage)) state.events.cyclopsEvent.stage = 'completed';
+  return state.events.cyclopsEvent;
+}
+
+function maybeStartCyclopsEvent() {
+  const eventState = cyclopsEventState();
+  if (eventState.active) {
+    setScreen('cyclopsEvent', { mealId: 'convenience' }, false);
+    return true;
+  }
+  const todayKey = visitEventDateKey();
+  if (eventState.lastCheckedDate === todayKey) return false;
+  eventState.lastCheckedDate = todayKey;
+  if (Math.random() >= CYCLOPS_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  state.game.screen = 'cyclopsEvent';
+  saveGame();
+  vibrate([28, 24, 52]);
+  setScreen('cyclopsEvent', { mealId: 'convenience' }, false);
+  requestAnimationFrame(() => playSfx('barcode-beeps', { gain: 1.04 }));
+  return true;
+}
+
+function advanceCyclopsEvent() {
+  const eventState = cyclopsEventState();
+  if (!eventState.active) return;
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'reward';
+    saveGame();
+    render();
+  }
+}
+
+async function receiveCyclopsEnergyDrink() {
+  const eventState = cyclopsEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    const current = Math.max(0, Math.floor(Number(state.inventory.items?.energyDrink) || 0));
+    state.inventory.items.energyDrink = current + 1;
+    eventState.rewardGranted = true;
+    addNotification('栄養ドリンクを手に入れました', 'コンビニのサイクロプスから、キャンペーン中の栄養ドリンクを1本受け取りました。', 'special');
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  playSfx('success', { gain: 1.08 });
+  vibrate([38, 35, 75]);
+  await wait(430);
+  await eatMeal('convenience', { skipEventCheck: true });
+}
+
+function touristWoodSwordEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.touristWoodSwordEvent && typeof state.events.touristWoodSwordEvent === 'object' && !Array.isArray(state.events.touristWoodSwordEvent)
+    ? state.events.touristWoodSwordEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'route', 'reward', 'farewell', 'completed']);
+  state.events.touristWoodSwordEvent = {
+    eligible: Boolean(saved.eligible),
+    triggered: Boolean(saved.triggered),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (!state.events.touristWoodSwordEvent.active && !['idle', 'completed'].includes(state.events.touristWoodSwordEvent.stage)) state.events.touristWoodSwordEvent.stage = 'completed';
+  return state.events.touristWoodSwordEvent;
+}
+
+function isTouristWoodSwordEventEligible() {
+  return Number(state?.game?.day || 0) >= WOOD_SWORD_EVENT_REQUIRED_DAYS
+    && Boolean(state?.store?.rented)
+    && !hasBokuto();
+}
+
+function maybeStartTouristWoodSwordEvent() {
+  const eventState = touristWoodSwordEventState();
+  if (eventState.active) {
+    setScreen('touristWoodSwordEvent', { mealId: 'hamburger' }, false);
+    return true;
+  }
+  eventState.eligible = isTouristWoodSwordEventEligible();
+  if (!eventState.eligible || eventState.triggered) {
+    saveGame();
+    return false;
+  }
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  state.game.screen = 'touristWoodSwordEvent';
+  saveGame();
+  playSfx('impact', { gain: .8 });
+  vibrate([24, 22, 42]);
+  setScreen('touristWoodSwordEvent', { mealId: 'hamburger' }, false);
+  return true;
+}
+
+function advanceTouristWoodSwordEvent() {
+  const eventState = touristWoodSwordEventState();
+  if (!eventState.active) {
+    setScreen('meal', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'route';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.triggered = true;
+    eventState.stage = 'completed';
+    saveGame();
+    setScreen('meal', {}, false);
+  }
+}
+
+function confirmTouristWoodSwordRoute() {
+  const eventState = touristWoodSwordEventState();
+  if (!eventState.active || eventState.stage !== 'route') return;
+  eventState.stage = 'reward';
+  saveGame();
+  playSfx('success', { gain: .96 });
+  vibrate([18, 18, 32]);
+  render();
+}
+
+function receiveTouristWoodSword() {
+  const eventState = touristWoodSwordEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    const current = Math.max(0, Math.floor(Number(state.inventory.items?.bokuto) || 0));
+    state.inventory.items.bokuto = current + 1;
+    eventState.rewardGranted = true;
+    addNotification('木刀を手に入れました', '観光客から木刀を受け取りました。持っている間は強盗の発生率が半分になります。', 'special');
+  }
+  eventState.stage = 'farewell';
+  eventState.triggered = true;
+  saveGame();
+  playSfx('success', { gain: 1.08 });
+  vibrate([36, 28, 62]);
+  render();
+}
+
+
+function alienAbductionEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.alienAbductionEvent && typeof state.events.alienAbductionEvent === 'object' && !Array.isArray(state.events.alienAbductionEvent)
+    ? state.events.alienAbductionEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'abducted', 'returnPending', 'completed']);
+  state.events.alienAbductionEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    daysSlept: Math.max(0, Math.min(ALIEN_ABDUCTION_DAYS, Math.floor(Number(saved.daysSlept) || 0))),
+    lastCheckedDay: Math.max(0, Math.floor(Number(saved.lastCheckedDay) || 0)),
+    totalTrips: Math.max(0, Math.floor(Number(saved.totalTrips) || 0)),
+    chipGrantedThisTrip: Boolean(saved.chipGrantedThisTrip),
+  };
+  return state.events.alienAbductionEvent;
+}
+
+function isAlienAbducted() {
+  const eventState = state?.events?.alienAbductionEvent;
+  return Boolean(eventState?.active && ['abducted', 'returnPending'].includes(eventState.stage));
+}
+
+function resumeAlienAbductionEvent() {
+  const eventState = alienAbductionEventState();
+  if (!eventState.active || !['intro1', 'intro2'].includes(eventState.stage)) return false;
+  setScreen('alienAbductionEvent', {}, false);
+  return true;
+}
+
+function maybeStartAlienAbductionEvent(randomValue = Math.random()) {
+  const eventState = alienAbductionEventState();
+  if (eventState.active) return resumeAlienAbductionEvent();
+  const day = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (eventState.lastCheckedDay === day) return false;
+  eventState.lastCheckedDay = day;
+  if (Number(randomValue) >= ALIEN_ABDUCTION_DAILY_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.daysSlept = 0;
+  eventState.chipGrantedThisTrip = false;
+  state.game.screen = 'alienAbductionEvent';
+  saveGame();
+  playSfx('impact', { gain: .76, rate: .72 });
+  vibrate([40, 30, 65]);
+  setScreen('alienAbductionEvent', {}, false);
+  return true;
+}
+
+function advanceAlienAbductionEvent() {
+  const eventState = alienAbductionEventState();
+  if (!eventState.active) return;
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('select', { gain: .7, rate: .74 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'abducted';
+    eventState.daysSlept = 0;
+    selectedMining = SPACE_MINING_LOCATION.id;
+    saveGame();
+    playSfx('explosion', { gain: .78, rate: .68 });
+    vibrate([90, 50, 120]);
+    setScreen('main', {}, false);
+    showToast('誘拐されました', 'warning', false);
+  }
+}
+
+function progressAlienAbductionSleep() {
+  const eventState = alienAbductionEventState();
+  if (!eventState.active || eventState.stage !== 'abducted') return;
+  eventState.daysSlept = Math.min(ALIEN_ABDUCTION_DAYS, eventState.daysSlept + 1);
+  if (eventState.daysSlept >= ALIEN_ABDUCTION_DAYS) eventState.stage = 'returnPending';
+}
+
+function grantAlienBodyChip() {
+  const eventState = alienAbductionEventState();
+  if (!eventState.active || eventState.stage !== 'returnPending' || eventState.chipGrantedThisTrip) return;
+  const current = Math.max(0, Math.floor(Number(state.inventory.items?.bodyChip) || 0));
+  state.inventory.items.bodyChip = current + 1;
+  eventState.chipGrantedThisTrip = true;
+  eventState.totalTrips += 1;
+  addNotification('身体の中のチップが増えました', '地球へ帰還した後、身体の中に謎のチップが1個増えていました。効果はわかりません。', 'special');
+  saveGame();
+}
+
+async function completeAlienReturnEvent() {
+  const eventState = alienAbductionEventState();
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.daysSlept = 0;
+  eventState.chipGrantedThisTrip = false;
+  selectedMining = null;
+  saveGame();
+  playSfx('success', { gain: 1.04 });
+  vibrate([45, 30, 70]);
+  goMain();
+  showToast('地球へ帰還した', 'success', false);
+  await wait(250);
+  await showMorningBrief();
 }
 
 
@@ -3851,6 +4288,8 @@ async function enterOkachimachiFromOutside() {
     };
     saveGame();
     setScreen('okachimachiQuiz', {});
+    playSfx('quiz-intro', { gain: .96 });
+    vibrate([20, 28, 46]);
   } catch (error) {
     console.error(error);
     showToast('クイズデータを読み込めなかったため、通常の御徒町へ移動しました。', 'error');
@@ -3891,6 +4330,8 @@ function grantOkachimachiQuizReward() {
   session.stage = 'reward';
   saveGame();
   render();
+  playSfx('loose-sparkle', { gain: 1.06 });
+  vibrate([28, 35, 58]);
 }
 
 function finishOkachimachiQuiz() {
@@ -3904,11 +4345,14 @@ function advanceOkachimachiQuizDialogue() {
   if (session.stage === 'intro1') {
     session.stage = 'intro2';
     render();
+    playSfx('select', { gain: .82 });
     return;
   }
   if (session.stage === 'intro2') {
     session.stage = 'question';
     render();
+    playSfx('quiz-question', { gain: .96 });
+    vibrate(38);
     return;
   }
   if (session.stage === 'correct') {
@@ -3918,14 +4362,18 @@ function advanceOkachimachiQuizDialogue() {
   if (session.stage === 'incorrect') {
     session.stage = 'incorrectAnswer';
     render();
+    playSfx('select', { gain: .82 });
     return;
   }
-  if (session.stage === 'incorrectAnswer' || session.stage === 'reward') finishOkachimachiQuiz();
+  if (session.stage === 'incorrectAnswer' || session.stage === 'reward') {
+    playSfx('select', { gain: .82 });
+    finishOkachimachiQuiz();
+  }
 }
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', mining: 'mining', miningPazupanEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', touristWoodSwordEvent: 'meal', mining: 'mining', miningPazupanEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -3935,7 +4383,11 @@ function backgroundFor(target) {
 
 
 function backgroundAssetFor(target) {
-  if (target === 'main') return 'main-menu';
+  if (isAlienAbducted() && target !== 'alienReturnEvent') return 'space';
+  if (target === 'main') return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
+  if (target === 'sushiChefEvent') return 'meal-kaitenzushi-event';
+  if (target === 'cyclopsEvent') return `meal-convenience${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'todayGem') return 'today-gem';
   if (target === 'looseShop' || target === 'supplierRough') return 'loose-shop';
   if (target === 'jewelryShop') return 'jewelry-shop';
@@ -3974,9 +4426,12 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
+  if (isAlienAbducted() && target !== 'alienReturnEvent') return 'space';
   // メイン・スマートフォン・今日の宝石は同じBGM／環境音を共有し、画面移動で切り替えない。
   if (target === 'phone' || target === 'todayGem') return 'main';
-  if (target === 'kaitenzushi') return 'kaitenzushi';
+  if (target === 'sushiChefEvent' || target === 'kaitenzushi') return 'kaitenzushi';
+  if (target === 'cyclopsEvent') return 'meal-convenience';
+  if (target === 'touristWoodSwordEvent') return 'meal-hamburger';
   if (target === 'okachimachiQuiz') return okachimachiQuizSession?.stage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
   // 工房・ジュエリー制作・ルース選択・完成は同一音声キーを使い、画面遷移時もBGMを止めない。
   if (target === 'workshop' || target === 'craft' || target === 'craftLoose' || target === 'completion') return 'workshop';
@@ -4203,6 +4658,11 @@ function render() {
       main: renderMain,
       westernUnionEvent: renderWesternUnionEvent,
       mermaidEvent: renderMermaidEvent,
+      sushiChefEvent: renderSushiChefEvent,
+      cyclopsEvent: renderCyclopsEvent,
+      touristWoodSwordEvent: renderTouristWoodSwordEvent,
+      alienAbductionEvent: renderAlienAbductionEvent,
+      alienReturnEvent: renderAlienReturnEvent,
       mining: renderMining,
       miningPazupanEvent: renderMiningPazupanEvent,
       miningGame: renderMiningGame,
@@ -4860,8 +5320,8 @@ function renderTodayGem() {
       <section class="today-gem-reference glass-panel">
         <h2>宝石情報の見方と注意点</h2>
         <p>宝石名は鉱物種、変種名、現象名、流通名を区別して記載しています。処理・天然合成・産地は、外観や単一の内包物だけで断定せず、標準宝石学検査と必要に応じた分光・化学分析、信頼できる鑑別報告書を前提に判断してください。</p>
-        <p>石言葉は宝石学的・鉱物学的性質ではなく、地域・時代・文献・販売者によって異なる文化的表現です。「今日の宝石」の日付対応は、統一された公的な365日誕生日石が存在しないため、本ゲーム独自の学習用日替わり選定です。</p>
-        <div class="today-gem-sources"><strong>主な参考資料</strong><span>GIA Gem Encyclopedia／GIA Care & Cleaning Guides／CIBJO Blue Booksの命名・開示原則／標準的な宝石学検査値</span></div>
+        <p>石言葉は宝石学的・鉱物学的性質ではなく、地域・時代・文献・販売者によって異なる文化的表現です。「今日の宝石」は、1月1日から12月31日まで365種類を重複なしで割り当てた、本ゲーム独自の学習用日替わり選定です。統一された公的な365日誕生日石ではありません。うるう年の2月29日は2月28日と同じ宝石を表示します。</p>
+        <div class="today-gem-sources"><strong>主な参考資料・体系</strong><span>${esc((gem.sourceBasis || []).join('／') || '標準的な宝石学・鉱物学資料')}</span></div>
       </section>
     </article>
   `, { help: 'ゲーム内の日付に応じて、宝石学的データ、鑑別、処理、加工、石留め、手入れの専門情報を表示します。画像は使用しません。' });
@@ -4909,7 +5369,7 @@ function renderMiningPazupanEvent() {
   const reward = eventState.stage === 'reward';
   return `
     <main class="main-screen pazupan-event-screen">
-      ${header('採掘', { back: false, main: false })}
+      ${header('ボムじいさん', { back: false, main: false })}
       <section class="pazupan-event" aria-live="polite">
         <div class="pazupan-character-area" aria-hidden="true">
           <img class="pazupan-character" src="./assets/images/events/pazupan-miner.png?v=${VERSION}" alt="" draggable="false">
@@ -4946,6 +5406,152 @@ function renderMermaidEvent() {
     </main>`;
 }
 
+function renderSushiChefEvent() {
+  const eventState = sushiChefEventState();
+  if (!eventState.active) {
+    queueMicrotask(goMain);
+    return renderMain();
+  }
+  if (eventState.stage === 'playing') {
+    queueMicrotask(() => startKaitenzushi({ skipEventCheck: true, free: true }));
+    return renderKaitenzushi();
+  }
+  const playerName = esc(String(state?.playerName || 'お前').trim() || 'お前');
+  const dialogue = eventState.stage === 'intro1'
+    ? `ギョッ、${playerName}じゃねえか、最近頑張ってるみたいだな！`
+    : eventState.stage === 'intro2'
+      ? 'いい面構えになってきたじゃねえか、今日は好きなだけ食ってけよ！オレからのプレゼントだ！握ってやる！'
+      : 'またこいよ！';
+  return `
+    <main class="main-screen sushi-chef-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="visit-character-event sushi-chef-event" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character sushi-chef-character" src="./assets/images/events/sushi-chef.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="sushi-chef-event-next">
+          <small>寿司屋の大将</small>
+          <strong>${dialogue}</strong>
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+function renderCyclopsEvent() {
+  const eventState = cyclopsEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => eatMeal('convenience', { skipEventCheck: true }));
+    return renderMeal();
+  }
+  const reward = eventState.stage === 'reward';
+  const dialogue = eventState.stage === 'intro1'
+    ? 'イラッシャイマセーっー'
+    : '愛にっ！気付いてクダーサーイ！　キャンペーン中です、コレどうぞ！';
+  return `
+    <main class="main-screen cyclops-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="visit-character-event cyclops-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character cyclops-character" src="./assets/images/events/cyclops.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward ? `<button type="button" class="cyclops-reward-button" data-action="cyclops-event-receive" aria-label="栄養ドリンクを受け取る"><span class="special-item-glow cyclops-drink-glow" aria-hidden="true"></span><img src="./assets/images/items/energy-drink.png?v=${VERSION}" alt="栄養ドリンク" draggable="false"><strong>栄養ドリンクを受け取る</strong><small>タップしてください</small></button>` : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="cyclops-event-next"><small>サイクロプス</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+      </section>
+    </main>`;
+}
+
+function renderTouristWoodSwordEvent() {
+  const eventState = touristWoodSwordEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('meal', {}, false));
+    return renderMeal();
+  }
+  const stage = eventState.stage;
+  const routeChoice = stage === 'route';
+  const reward = stage === 'reward';
+  const dialogue = stage === 'intro1'
+    ? 'コンニチハ！ゲンキデスカ！'
+    : stage === 'route'
+      ? '浅草はどうやって行けば良いですか？'
+      : stage === 'reward'
+        ? 'サンキュ、ありがとうございます！これあげますよジャパニーズ！'
+        : '神のご加護を！';
+  return `
+    <main class="main-screen tourist-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="visit-character-event tourist-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character tourist-character" src="./assets/images/events/tourist.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${routeChoice
+          ? `<div class="event-dialogue-card visit-event-dialogue glass-panel"><small>観光客</small><strong>${dialogue}</strong><button type="button" class="primary-button full-button" data-action="wood-sword-event-route">東京メトロ上野広小路駅から銀座線に乗る</button></div>`
+          : reward
+            ? `<div class="visit-event-reward-stack"><div class="event-dialogue-card visit-event-dialogue glass-panel"><small>観光客</small><strong>${dialogue}</strong><span>木刀を渡してくれた</span></div><button type="button" class="cyclops-reward-button" data-action="wood-sword-event-receive" aria-label="木刀を受け取る"><span class="special-item-glow cyclops-drink-glow" aria-hidden="true"></span><img src="./assets/images/items/bokuto.png?v=${VERSION}" alt="木刀" draggable="false"><strong>木刀を受け取る</strong><small>タップしてください</small></button></div>`
+            : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="wood-sword-event-next"><small>観光客</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+      </section>
+    </main>`;
+}
+
+
+function renderAlienAbductionEvent() {
+  const eventState = alienAbductionEventState();
+  if (!eventState.active || !['intro1', 'intro2'].includes(eventState.stage)) {
+    queueMicrotask(goMain);
+    return renderMain();
+  }
+  const dialogue = eventState.stage === 'intro1' ? '、、、、、、' : '、、、、、、、、、、';
+  return `
+    <main class="main-screen alien-abduction-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="visit-character-event alien-abduction-event" aria-live="polite">
+        <div class="visit-character-area alien-character-area" aria-hidden="true">
+          <img class="visit-character alien-character" src="./assets/images/events/alien.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="alien-event-next">
+          <small>宇宙人</small>
+          <strong>${dialogue}</strong>
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+function renderAlienSpaceMain() {
+  const eventState = alienAbductionEventState();
+  const locked = hungerLocked();
+  const remaining = Math.max(0, ALIEN_ABDUCTION_DAYS - eventState.daysSlept);
+  return `
+    <main class="main-screen alien-space-main-screen">
+      ${header('', { back: false, main: false })}
+      <div class="alien-space-status glass-panel" role="status">
+        <strong>誘拐されました</strong>
+        <span>地球帰還まで あと${remaining}回寝る</span>
+      </div>
+      ${locked ? '<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>採掘はできません。今日は休んでください。</span></div>' : ''}
+      <nav class="main-menu alien-space-menu" aria-label="宇宙での行動">
+        <button data-action="nav" data-screen="mining" ${locked ? 'disabled aria-disabled="true"' : ''}>${mainMenuIcon('mining')}<strong>採掘</strong></button>
+        <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
+        <button data-action="sleep" ${canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
+      </nav>
+    </main>`;
+}
+
+function renderAlienReturnEvent() {
+  const count = Math.max(0, Math.floor(Number(state.inventory.items?.bodyChip) || 0));
+  return `
+    <main class="main-screen alien-return-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="alien-return-card glass-panel" aria-live="polite">
+        <strong>地球へ帰還した</strong>
+        <p>身体の中に見覚えのないチップが入っている。</p>
+        <img src="./assets/images/items/body-chip.png?v=${VERSION}" alt="身体の中のチップ" draggable="false">
+        <h2>身体の中のチップ</h2>
+        <small>所持 ${count}個・効果はわからない</small>
+        <button type="button" class="primary-button full-button" data-action="alien-return-next">メイン画面へ戻る</button>
+      </section>
+    </main>`;
+}
+
 
 function mainMenuIcon(type) {
   const icons = {
@@ -4963,6 +5569,7 @@ function mainMenuIcon(type) {
 
 
 function renderMain() {
+  if (isAlienAbducted()) return renderAlienSpaceMain();
   const unread = visibleNotifications().filter((note) => note.unread).length;
   const activeOrders = activeOrderCount();
   const outstandingCosts = totalOutstandingBusinessCost();
@@ -4975,7 +5582,8 @@ function renderMain() {
   const hungerDisabled = locked ? 'disabled aria-disabled="true"' : '';
   const manualActionDisabled = autopilotEnabled ? autopilotDisabled : hungerDisabled;
   const phoneDisabled = !autopilotEnabled && locked ? hungerDisabled : '';
-  const mealAndSleepDisabled = autopilotEnabled ? autopilotDisabled : '';
+  const mealDisabled = autopilotEnabled ? autopilotDisabled : '';
+  const sleepDisabled = autopilotEnabled ? autopilotDisabled : (canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"');
   const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}>${mainMenuIcon('store')}<strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
   return `
     <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
@@ -4994,13 +5602,18 @@ function renderMain() {
         <button data-action="nav" data-screen="okachimachi" ${manualActionDisabled}>${mainMenuIcon('okachimachi')}<strong>御徒町</strong></button>
         <button class="${autopilotEnabled ? 'autopilot-phone-button' : ''}" data-action="nav" data-screen="phone" ${phoneDisabled} aria-label="スマートフォン${autopilotEnabled ? '。自動操縦の設定を変更できます' : ''}">${mainMenuIcon('phone')}<strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
         <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
-        <button data-action="nav" data-screen="meal" ${mealAndSleepDisabled}>${mainMenuIcon('meal')}<strong>食事</strong></button>
-        <button data-action="sleep" ${mealAndSleepDisabled}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
+        <button data-action="nav" data-screen="meal" ${mealDisabled}>${mainMenuIcon('meal')}<strong>食事</strong></button>
+        <button data-action="sleep" ${sleepDisabled}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
       </nav>
     </main>`;
 }
 
+function miningLocationById(id) {
+  return id === SPACE_MINING_LOCATION.id ? SPACE_MINING_LOCATION : MINING_LOCATIONS[id];
+}
+
 function availableMiningLocations() {
+  if (isAlienAbducted()) return [SPACE_MINING_LOCATION];
   const unlocked = new Set(state.miningProgress?.unlockedLocations || ['river', 'mountain', 'cave']);
   return Object.values(MINING_LOCATIONS).filter((location) => unlocked.has(location.id));
 }
@@ -5021,8 +5634,9 @@ function unlockMiningLocationsIfNeeded() {
 
 function renderMining() {
   const locations = availableMiningLocations();
+  if (isAlienAbducted()) selectedMining = SPACE_MINING_LOCATION.id;
   if (selectedMining && !locations.some((place) => place.id === selectedMining)) selectedMining = null;
-  const location = selectedMining ? MINING_LOCATIONS[selectedMining] : null;
+  const location = selectedMining ? miningLocationById(selectedMining) : null;
   const hasSelection = Boolean(location);
   const hasTime = hasSelection && canSpendHours(location.hours);
   return shell('採掘', `
@@ -7046,6 +7660,7 @@ function kaitenzushiAudioParameters() {
   return new URLSearchParams({
     embedded: '1',
     budget: String(Math.max(0, Math.floor(Number(kaitenzushiSession?.budget ?? state?.game?.money) || 0))),
+    free: kaitenzushiSession?.free ? '1' : '0',
     // BGMと環境音は親ゲーム側で管理し、iframe側は効果音だけを担当する。
     bgmVolume: '0',
     sfxVolume: String(Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0))),
@@ -7059,11 +7674,14 @@ function kaitenzushiAudioParameters() {
 
 function renderKaitenzushi() {
   if (!kaitenzushiSession) {
+    const sushiEvent = sushiChefEventState();
+    const free = Boolean(sushiEvent.active && sushiEvent.stage === 'playing');
     kaitenzushiSession = {
-      budget: Math.max(0, Math.floor(Number(state?.game?.money) || 0)),
+      budget: free ? Number.MAX_SAFE_INTEGER : Math.max(0, Math.floor(Number(state?.game?.money) || 0)),
       total: 0,
       plates: 0,
       settled: false,
+      free,
     };
   }
   const hash = kaitenzushiAudioParameters().toString();
@@ -7099,16 +7717,20 @@ function bindKaitenzushiFrame() {
   }, { once: true });
 }
 
-function startKaitenzushi() {
+function startKaitenzushi({ skipEventCheck = false, free = false } = {}) {
   const current = hungerLevel();
   if (current >= (state.wellbeing.maxHunger || 7)) return showToast('空腹度は満タンです。', 'error');
   if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === 'kaitenzushi') return showToast('栄養が片寄るので違うものを食べましょう', 'error');
-  if (state.game.money < 190) return showToast('回転寿司を食べるための所持金が足りません。', 'error');
+  if (!free && state.game.money < 190) return showToast('回転寿司を食べるための所持金が足りません。', 'error');
+  if (!skipEventCheck && maybeStartSushiChefEvent()) return;
+  const sushiEvent = sushiChefEventState();
+  const eventFree = free || Boolean(sushiEvent.active && sushiEvent.stage === 'playing');
   kaitenzushiSession = {
-    budget: Math.max(0, Math.floor(Number(state.game.money) || 0)),
+    budget: eventFree ? Number.MAX_SAFE_INTEGER : Math.max(0, Math.floor(Number(state.game.money) || 0)),
     total: 0,
     plates: 0,
     settled: false,
+    free: eventFree,
   };
   setScreen('kaitenzushi', {}, true);
 }
@@ -7121,10 +7743,10 @@ function completeKaitenzushi(totalValue, plateValue) {
   const total = Math.max(0, Math.floor(Number(totalValue) || 0));
   const plates = Math.max(0, Math.floor(Number(plateValue) || 0));
   const totalsMatchProgress = total === session.total && plates === session.plates;
-  const plateTotalsArePlausible = plates === 0
+  const plateTotalsArePlausible = session.free
     ? total === 0
-    : total >= plates * 190 && total <= plates * 850;
-  if (!totalsMatchProgress || !plateTotalsArePlausible || total > session.budget || total > state.game.money) {
+    : (plates === 0 ? total === 0 : total >= plates * 190 && total <= plates * 850);
+  if (!totalsMatchProgress || !plateTotalsArePlausible || (!session.free && (total > session.budget || total > state.game.money))) {
     session.settled = false;
     showToast('お会計金額を確認できませんでした。もう一度お試しください。', 'error');
     return;
@@ -7151,6 +7773,22 @@ function completeKaitenzushi(totalValue, plateValue) {
       plates,
     });
   }
+  if (session.free) {
+    const eventState = sushiChefEventState();
+    eventState.active = true;
+    eventState.stage = 'farewell';
+    eventState.lastPlates = plates;
+    eventState.lastHungerBefore = before;
+    eventState.lastHungerAfter = state.wellbeing.hunger;
+    state.game.screen = 'sushiChefEvent';
+    saveGame();
+    kaitenzushiSession = null;
+    // 会計ボタン側で無料会計の成功音を鳴らすため、ここでは振動だけにして二重再生を防ぐ。
+    vibrate([32, 28, 55]);
+    setScreen('sushiChefEvent', {}, false);
+    return;
+  }
+
   state.game.screen = 'main';
   saveGame();
 
@@ -7187,18 +7825,23 @@ function handleKaitenzushiMessage(event) {
     kaitenzushiSession.total = total;
     kaitenzushiSession.plates = plates;
   }
-  if (message.type === 'checkout') completeKaitenzushi(total, plates);
+  if (message.type === 'checkout') {
+    playSfx(kaitenzushiSession.free ? 'success' : 'coin', { gain: kaitenzushiSession.free ? .82 : .72 });
+    completeKaitenzushi(total, plates);
+  }
 }
 
 window.addEventListener('message', handleKaitenzushiMessage);
 
-async function eatMeal(mealId) {
+async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   const meal = MEALS[mealId];
   if (!meal || mealTransitioning) return;
   const before = hungerLevel();
   if (before >= 7) return showToast('空腹度は満タンです。', 'error');
   if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === mealId) return showToast('栄養が片寄るので違うものを食べましょう', 'error');
   if (state.game.money < meal.price) return showToast('所持金が足りません。', 'error');
+  if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
+  if (mealId === 'hamburger' && !skipEventCheck && maybeStartTouristWoodSwordEvent()) return;
 
   mealTransitioning = true;
   const stateBeforeMeal = structuredClone(state);
@@ -7347,6 +7990,10 @@ function usePhoneItem(itemId) {
   state.inventory.items[itemId] = owned - 1;
   saveGame();
   playSfx(item.sfx || 'success');
+  if (item.id === 'energyDrink') {
+    window.setTimeout(() => playSfx('success', { gain: .72 }), 260);
+    vibrate([25, 22, 48]);
+  }
   setPhoneItemFeedback(`${item.name}を使いました`, phoneItemEffectText(item, beforeHunger, hungerLevel()), item.symbol || '◆');
   render();
 }
@@ -7392,7 +8039,7 @@ function renderPhoneAI() {
   return `<section class="phone-ai-screen">
     <article class="phone-ai-panel">
       <button class="primary-button phone-ai-copy-button" data-action="copy-ai-game-data">AI相談データをコピー</button>
-      <p>基本ゲームルールと現在の状況だけを、AIが読みやすい短い形式でコピーします。</p>
+      <p>基本ゲームルールと現在の状況だけを、AIが読みやすい短い形式でコピーします。実際のAIへペーストして使用してください。</p>
     </article>
   </section>`;
 }
@@ -7901,7 +8548,7 @@ function pickRandomMiningBrokenRockImage() {
 }
 
 function mine() {
-  const location = selectedMining ? MINING_LOCATIONS[selectedMining] : null;
+  const location = selectedMining ? miningLocationById(selectedMining) : null;
   if (!location) return showToast('採掘場所を選んでください。', 'error');
   if (!canSpendHours(location.hours)) return showToast('今日は採掘する時間がありません。', 'error');
   const shuffled = shuffleRockIndices();
@@ -7929,7 +8576,7 @@ function finishMiningRock(index, button) {
   miningGame.resolved = true;
   button.classList.add('breaking');
   root.querySelectorAll('.mining-rock').forEach((rock) => { rock.disabled = true; });
-  const location = MINING_LOCATIONS[miningGame.locationId];
+  const location = miningLocationById(miningGame.locationId);
   const success = miningGame.winningRocks.includes(index);
   spendHours(location.hours);
   let result = { missRockImage: pickRandomMiningBrokenRockImage() };
@@ -9676,6 +10323,7 @@ function settleDay({ showResult = true, save = true } = {}) {
   state.store.lastResult = result;
 
   state.game.day += 1;
+  progressAlienAbductionSleep();
   state.game.minutes = DAY_START_MINUTES;
   state.game.weather = nextWeather(gameDate());
   state.wellbeing.hunger = 7;
@@ -9683,7 +10331,7 @@ function settleDay({ showResult = true, save = true } = {}) {
   processMonthlyFixedCosts();
   processHomeRent();
   processExpiredOrders();
-  maybeTriggerRobberyEvent();
+  if (!isAlienAbducted()) maybeTriggerRobberyEvent();
   state.daily = { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 };
   Object.values(state.customers).forEach((customer) => {
     customer.visiting = false;
@@ -9772,6 +10420,10 @@ function updateOrderNotifications() {
 }
 
 function confirmSleep() {
+  if (!canSleepNow()) {
+    showToast(sleepRestrictionMessage(), 'error');
+    return;
+  }
   showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
 }
 
@@ -9781,13 +10433,18 @@ function wait(ms) {
 
 async function beginSleepTransition() {
   if (sleepTransitioning) return;
+  if (!canSleepNow()) {
+    closeModal();
+    showToast(sleepRestrictionMessage(), 'error');
+    return;
+  }
   sleepTransitioning = true;
   closeModal();
   const stateBeforeSleep = structuredClone(state);
 
   try {
     // 「寝る」を押した直後から就寝専用BGMと夜の環境音へ切り替える。
-    await switchAudio('sleep');
+    await switchAudio(isAlienAbducted() ? 'space' : 'sleep');
 
     // 画面をゆっくり暗くし、完全な暗転の中で翌日の処理を行う。
     sleepCurtainEl?.classList.add('active');
@@ -9994,7 +10651,7 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
@@ -10005,7 +10662,7 @@ root.addEventListener('click', async (event) => {
     goMain();
     return;
   }
-  if (!['mine', 'hit-rock', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
@@ -10243,6 +10900,30 @@ root.addEventListener('click', async (event) => {
       break;
     case 'mermaid-event-next':
       advanceMermaidEvent();
+      break;
+    case 'wood-sword-event-next':
+      advanceTouristWoodSwordEvent();
+      break;
+    case 'wood-sword-event-route':
+      confirmTouristWoodSwordRoute();
+      break;
+    case 'wood-sword-event-receive':
+      receiveTouristWoodSword();
+      break;
+    case 'alien-event-next':
+      advanceAlienAbductionEvent();
+      break;
+    case 'alien-return-next':
+      completeAlienReturnEvent();
+      break;
+    case 'sushi-chef-event-next':
+      advanceSushiChefEvent();
+      break;
+    case 'cyclops-event-next':
+      advanceCyclopsEvent();
+      break;
+    case 'cyclops-event-receive':
+      await receiveCyclopsEnergyDrink();
       break;
     case 'okachimachi-quiz-next':
       advanceOkachimachiQuizDialogue();
@@ -11004,7 +11685,7 @@ modalEl.addEventListener('click', async (event) => {
   const action = button.dataset.action;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)

@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.374 GitHub反映手順
+
+1. 「JEWELRYxJEWELRY_v0_10_374_GitHub差し替えデータ.zip」を展開します。
+2. 展開した中身を、GitHub Desktopで管理しているプロジェクトへ上書きします。
+3. Changesで js/app.js、styles.css、js/game-data.js、sw.js、index.html、game.html、CHANGELOG.md、v0.10.374_実装確認資料.md、v0_10_374_GitHub反映手順.txt を確認します。
+4. 「v0.10.374 縦画面の背景表示を復旧」などの内容でコミットします。
+5. Push originを実行します。
+6. GitHub Pages公開後、PWAを完全終了して再起動します。
+7. 縦画面でメイン、御徒町、採掘、工房、店舗、g-Lab.、地金屋、ルース屋の背景を確認します。
+8. ルース屋は3つのタブで、背景の見え方と文字の可読性を確認します。

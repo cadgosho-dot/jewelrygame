@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.376 GitHub反映手順
+
+1. 「JEWELRYxJEWELRY_v0_10_376_GitHub差し替えデータ.zip」を展開します。
+2. 展開した中身を、GitHub Desktopで管理しているプロジェクトへ上書きします。
+3. Changesで js/game-data.js、sw.js、index.html、game.html、CHANGELOG.md、v0.10.376_実装確認資料.md、v0_10_376_GitHub反映手順.txt を確認します。
+4. 「v0.10.376 店舗家賃を変更」などの内容でコミットします。
+5. Push originを実行します。
+6. GitHub Pages公開後、PWAを完全終了して再起動します。
+7. 不動産屋の契約画面で、1店舗目150,000円、2店舗目400,000円、3店舗目700,000円と表示されることを確認します。
+8. 契約月無料と、翌月以降の毎月1日の請求が維持されていることを確認します。

@@ -1,0 +1,28 @@
+JEWELRY×JEWELRY v0.10.356 GitHub反映手順
+
+1. GitHub DesktopでJEWELRY×JEWELRYのリポジトリを開きます。
+2. 「JEWELRYxJEWELRY_v0_10_356_GitHub差し替えデータ.zip」を展開します。
+3. 展開した中身を、リポジトリの最上位フォルダへ上書きコピーします。
+4. 次の新規音源が入っていることを確認します。
+   assets/audio/sfx-western-union-arrival.ogg
+   assets/audio/sfx-western-union-handover.ogg
+5. GitHub DesktopのChangesで、主に次の変更を確認します。
+   js/app.js
+   js/audio.js
+   js/game-data.js
+   sw.js
+   index.html
+   game.html
+   README.md
+   CHANGELOG.md
+   JEWELRYxJEWELRY_引き継ぎ資料.md
+6. Commit summaryへ「v0.10.356 アンティークダイヤイベント効果音追加」などを入力してコミットします。
+7. Push originを押します。
+8. GitHub Pages更新後、ブラウザを再読み込みします。PWAでは古いService Workerが残る場合があるため、必要に応じてアプリを閉じて再起動するか、ブラウザのサイトデータを更新します。
+
+確認ポイント
+- 雨の日のイベント発生時、使者表示直後に電信機＋ベル音が鳴る
+- 「そうだけど」を押すと手渡し音が鳴り、その直後にダイヤのきらめき音が鳴る
+- 「いいえ」では不正解音が鳴らない
+- イベントを途中保存から再開した場合、登場音が繰り返されない
+- 効果音ミュート時は追加音源も鳴らない

@@ -1542,6 +1542,7 @@
   const integrationConfig = {
     embedded: integrationFlag("embedded"),
     maxBudget: Math.max(0, Math.floor(integrationNumber("budget", Number.MAX_SAFE_INTEGER))),
+    freeMeal: integrationFlag("free"),
     bgmVolume: Math.max(0, Math.min(1, integrationNumber("bgmVolume", 1))),
     sfxVolume: Math.max(0, Math.min(1, integrationNumber("sfxVolume", 1))),
     ambientVolume: Math.max(0, Math.min(1, integrationNumber("ambientVolume", 1))),
@@ -2198,7 +2199,7 @@
     const eat = (event) => {
       event.preventDefault();
       if (!running || item.eaten) return;
-      if (integrationConfig.embedded && score + data.point > integrationConfig.maxBudget) {
+      if (integrationConfig.embedded && !integrationConfig.freeMeal && score + data.point > integrationConfig.maxBudget) {
         popup("所持金が足りません", event.clientX, event.clientY, "miss");
         sendIntegrationMessage("budget-blocked", {
           total: score,
@@ -2208,14 +2209,14 @@
         return;
       }
       item.eaten = true;
-      score += data.point;
+      if (!integrationConfig.freeMeal) score += data.point;
       plateCount += 1;
       eatenPlateColors.push({ color: data.color, accent: data.accent, plateImage: data.plateImage });
       scoreEl.textContent = score.toLocaleString("ja-JP") + "円";
       updatePlateStack();
       sendIntegrationMessage("progress", { total: score, plates: plateCount });
       sayMoguMogu();
-      popup("+" + data.point.toLocaleString("ja-JP") + "円", event.clientX, event.clientY, "points");
+      popup(integrationConfig.freeMeal ? "大将のおごり！ 0円" : "+" + data.point.toLocaleString("ja-JP") + "円", event.clientX, event.clientY, "points");
       el.classList.add("eat");
       setTimeout(() => removeItem(item), 300);
     };
@@ -2332,6 +2333,7 @@
       total: 0,
       plates: 0,
       maxBudget: integrationConfig.maxBudget,
+      freeMeal: integrationConfig.freeMeal,
     });
 
     cancelAnimationFrame(animationId);

@@ -6,7 +6,7 @@ import {
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.366';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -4488,8 +4488,10 @@ const PORTRAIT_COVER_SCREENS = new Set(['jewelryShop', 'todayGem']);
 
 function backgroundLayoutFor(target, asset) {
   if (!isPortraitLayout()) return 'landscape';
-  // v0.10.341 縦画面は全画面で背景を埋める。左右が切れても余白を出さない。
-  return 'cover';
+  // v0.10.374 専用縦画像は全面表示し、横長画像だけは補助パノラマ表示で背景を残す。
+  if (String(asset || '').endsWith('-portrait')) return 'cover';
+  if (PORTRAIT_COVER_SCREENS.has(target) || asset === 'space') return 'cover';
+  return 'panorama';
 }
 
 function applyCurrentBackground() {
@@ -4655,7 +4657,9 @@ function header(title, { back = true, main = true, help = '' } = {}) {
 }
 
 function shell(title, body, options = {}) {
-  return `<main class="screen-shell">${header(title, options)}<section class="screen-content">${body}</section></main>`;
+  const hideHeader = Boolean(options.hideHeader);
+  const shellClass = hideHeader ? 'screen-shell event-shell-no-header' : 'screen-shell';
+  return `<main class="${shellClass}">${hideHeader ? '' : header(title, options)}<section class="screen-content">${body}</section></main>`;
 }
 
 function renderClosedOkachimachiFacility(facilityId, availability) {
@@ -5427,7 +5431,6 @@ function renderWesternUnionEvent() {
   const isGift = eventState.stage === 'gift';
   return `
     <main class="main-screen western-union-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="western-union-event western-union-stage-${esc(eventState.stage)}" aria-live="polite">
         <div class="western-union-character-area" aria-hidden="true">
           <img class="western-union-character" src="./assets/images/events/western-union-messenger.png?v=${VERSION}" alt="" draggable="false">
@@ -5450,7 +5453,6 @@ function renderMiningPazupanEvent() {
   const reward = eventState.stage === 'reward';
   return `
     <main class="main-screen pazupan-event-screen">
-      ${header('ボムじいさん', { back: false, main: false })}
       <section class="pazupan-event" aria-live="polite">
         <div class="pazupan-character-area" aria-hidden="true">
           <img class="pazupan-character" src="./assets/images/events/pazupan-miner.png?v=${VERSION}" alt="" draggable="false">
@@ -5473,7 +5475,6 @@ function renderMermaidEvent() {
   const reward = eventState.stage === 'reward';
   return `
     <main class="main-screen mermaid-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="mermaid-event" aria-live="polite">
         <div class="mermaid-character-area" aria-hidden="true">
           <img class="mermaid-character" src="./assets/images/events/mermaid.png?v=${VERSION}" alt="" draggable="false">
@@ -5505,7 +5506,6 @@ function renderSushiChefEvent() {
       : 'またこいよ！';
   return `
     <main class="main-screen sushi-chef-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="visit-character-event sushi-chef-event" aria-live="polite">
         <div class="visit-character-area" aria-hidden="true">
           <img class="visit-character sushi-chef-character" src="./assets/images/events/sushi-chef.png?v=${VERSION}" alt="" draggable="false">
@@ -5531,7 +5531,6 @@ function renderCyclopsEvent() {
     : '愛にっ！気付いてクダーサーイ！　キャンペーン中です、コレどうぞ！';
   return `
     <main class="main-screen cyclops-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="visit-character-event cyclops-event ${reward ? 'is-reward' : ''}" aria-live="polite">
         <div class="visit-character-area" aria-hidden="true">
           <img class="visit-character cyclops-character" src="./assets/images/events/cyclops.png?v=${VERSION}" alt="" draggable="false">
@@ -5559,7 +5558,6 @@ function renderTouristWoodSwordEvent() {
         : '神のご加護を！';
   return `
     <main class="main-screen tourist-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="visit-character-event tourist-event ${reward ? 'is-reward' : ''}" aria-live="polite">
         <div class="visit-character-area" aria-hidden="true">
           <img class="visit-character tourist-character" src="./assets/images/events/tourist.png?v=${VERSION}" alt="" draggable="false">
@@ -5583,7 +5581,6 @@ function renderAlienAbductionEvent() {
   const dialogue = eventState.stage === 'intro1' ? '、、、、、、' : '、、、、、、、、、、';
   return `
     <main class="main-screen alien-abduction-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="visit-character-event alien-abduction-event" aria-live="polite">
         <div class="visit-character-area alien-character-area" aria-hidden="true">
           <img class="visit-character alien-character" src="./assets/images/events/alien.png?v=${VERSION}" alt="" draggable="false">
@@ -5603,7 +5600,6 @@ function renderAlienSpaceMain() {
   const remaining = Math.max(0, ALIEN_ABDUCTION_DAYS - eventState.daysSlept);
   return `
     <main class="main-screen alien-space-main-screen">
-      ${header('', { back: false, main: false })}
       <div class="alien-space-status glass-panel" role="status">
         <strong>誘拐されました</strong>
         <span>地球帰還まで あと${remaining}回寝る</span>
@@ -5621,7 +5617,6 @@ function renderAlienReturnEvent() {
   const count = Math.max(0, Math.floor(Number(state.inventory.items?.bodyChip) || 0));
   return `
     <main class="main-screen alien-return-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="alien-return-card glass-panel" aria-live="polite">
         <strong>地球へ帰還した</strong>
         <p>身体の中に見覚えのないチップが入っている。</p>
@@ -5649,7 +5644,6 @@ function renderDiamondPolishingLapEvent() {
       : 'また何か必要だったら相談してくださいね。';
   return `
     <main class="main-screen diamond-polishing-lap-event-screen">
-      ${header('', { back: false, main: false })}
       <section class="visit-character-event diamond-polishing-lap-event ${reward ? 'is-reward' : ''}" aria-live="polite">
         <div class="visit-character-area" aria-hidden="true">
           <img class="visit-character indian-restaurant-manager-character" src="./assets/images/events/indian-restaurant-manager.png?v=${VERSION}" alt="" draggable="false">
@@ -5696,7 +5690,6 @@ function renderMain() {
   const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}>${mainMenuIcon('store')}<strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
   return `
     <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
-      ${header('', { back: false, main: false })}
       <section class="main-spacer" aria-hidden="true"></section>
       ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
       ${locked && !autopilotEnabled ? `<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
@@ -5819,7 +5812,11 @@ function renderGlab() {
   });
   const catalogRow = (tool) => {
     const locked = !workshopToolUnlocked(tool);
-    return `<button type="button" class="glab-simple-row ${locked ? 'locked' : ''}" data-action="glab-tool-detail" data-id="${esc(tool.id)}">
+    const visual = tool.image
+      ? `<span class="glab-row-tool-image" aria-hidden="true"><img src="${workshopToolImageSrc(tool)}" alt="" loading="lazy" decoding="async"></span>`
+      : '';
+    return `<button type="button" class="glab-simple-row glab-tool-row ${locked ? 'locked' : ''}" data-action="glab-tool-detail" data-id="${esc(tool.id)}">
+      ${visual}
       <span class="glab-row-name">${esc(tool.name)}</span>
       <span class="glab-row-status"><strong>${yen(tool.price)}</strong></span>
     </button>`;
@@ -6002,7 +5999,7 @@ function renderOkachimachiQuiz() {
   const session = okachimachiQuizSession;
   if (!session) {
     queueMicrotask(() => finishOkachimachiQuiz());
-    return shell('通りすがりのクイズ王', '<section class="center-card glass-panel"><p>御徒町へ戻ります…</p></section>', { back: false, main: false });
+    return shell('通りすがりのクイズ王', '<section class="center-card glass-panel"><p>御徒町へ戻ります…</p></section>', { back: false, main: false, hideHeader: true });
   }
   const playerName = esc(okachimachiQuizPlayerName());
   if (session.stage === 'reward') {
@@ -6015,7 +6012,7 @@ function renderOkachimachiQuiz() {
           <strong>${esc(gem?.name || '')}原石をもらいました</strong>
           <small>タップして御徒町へ進む</small>
         </button>
-      </section>`, { back: false, main: false });
+      </section>`, { back: false, main: false, hideHeader: true });
   }
 
   const dialogueByStage = {
@@ -6044,7 +6041,7 @@ function renderOkachimachiQuiz() {
           <strong>${dialogueByStage[session.stage] || ''}</strong>
           <small>タップして進む</small>
         </button>`}
-    </section>`, { back: false, main: false });
+    </section>`, { back: false, main: false, hideHeader: true });
 }
 
 function renderOkachimachi() {
@@ -10399,7 +10396,7 @@ function settleDay({ showResult = true, save = true } = {}) {
       if (!item) { showcase.slots[slotIndex] = null; continue; }
       const price = showcaseSellingPrice(slot, item);
       const priceStatus = sellingPriceStatus(item, price);
-      let chance = 0.24 + visitors * 0.055 + priceStatus.saleBonus + QUALITIES[item.quality].saleBonus + storeProductSaleBonus(item, activeSalesBranch.number) + (storeRating(activeSalesBranch) / 100) * 0.036;
+      let chance = 0.19 + visitors * 0.055 + priceStatus.saleBonus + QUALITIES[item.quality].saleBonus + storeProductSaleBonus(item, activeSalesBranch.number) + (storeRating(activeSalesBranch) / 100) * 0.036;
       if (state.employee.hired && state.employee.working && state.employee.role === 'sales') chance += 0.1;
       chance = clamp(chance, 0.08, 0.9);
       if (Math.random() < chance) {

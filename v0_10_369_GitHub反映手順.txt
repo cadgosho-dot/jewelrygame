@@ -1,0 +1,9 @@
+JEWELRY×JEWELRY v0.10.369 GitHub反映手順
+
+1. GitHub Desktopでリポジトリを開きます。
+2. GitHub差し替えデータZIPを展開します。
+3. 展開したファイルをリポジトリへ上書きします。
+4. styles.css、game.html、index.html、js/game-data.js、sw.jsの変更を確認します。
+5. 「v0.10.369 縦画面クイズの余白と文字サイズ修正」などでコミットします。
+6. Push originを押します。
+7. GitHub Pages反映後、アプリを完全終了して再起動してください。

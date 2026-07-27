@@ -1,0 +1,9 @@
+JEWELRY×JEWELRY v0.10.363 GitHub反映手順
+
+1. GitHub DesktopでJEWELRY×JEWELRYのリポジトリを開きます。
+2. 「JEWELRYxJEWELRY_v0_10_363_GitHub差し替えデータ.zip」を展開します。
+3. 展開した中身をリポジトリ直下へ上書きコピーします。
+4. Changesで変更内容を確認します。
+5. Commit summaryへ「v0.10.363 ダイヤモンド研磨盤イベント実装」と入力してコミットします。
+6. Push originを押します。
+7. GitHub Pages公開後、ブラウザをハードリロードして確認します。

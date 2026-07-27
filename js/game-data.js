@@ -1,8 +1,8 @@
-export const VERSION = '0.10.373';
+export const VERSION = '0.10.379';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
-export const STORE_MONTHLY_RENTS = Object.freeze({ 1: 80000, 2: 150000, 3: 300000 });
+export const STORE_MONTHLY_RENTS = Object.freeze({ 1: 150000, 2: 400000, 3: 700000 });
 export const WORKSHOP_MONTHLY_COST = 50000;
 export const HOME_MONTHLY_RENT = 70000;
 export const WORKSHOP_EXPANSION_COSTS = Object.freeze({ 2: 50000, 3: 100000, 4: 200000, 5: 300000, 6: 500000, 7: 750000, 8: 1000000, 9: 1500000, 10: 2000000 });

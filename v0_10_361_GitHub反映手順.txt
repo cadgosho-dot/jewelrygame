@@ -1,0 +1,9 @@
+JEWELRY×JEWELRY v0.10.361 GitHub反映手順
+
+1. GitHub Desktopで現在のリポジトリを開きます。
+2. 「JEWELRYxJEWELRY_v0_10_361_GitHub差し替えデータ.zip」を展開します。
+3. 展開した中身をリポジトリへ上書きコピーします。
+4. Changesで音声ファイル、js/audio.js、js/game-data.js、sw.js、game.html、index.htmlの変更を確認します。
+5. Commit summaryに「v0.10.361 宇宙BGMと環境音を更新」などを入力してコミットします。
+6. Push originを押します。
+7. GitHub Pagesでハードリロードし、宇宙滞在中にBGMと環境音が同時再生されることを確認します。

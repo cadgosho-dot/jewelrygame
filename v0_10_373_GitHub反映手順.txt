@@ -1,0 +1,8 @@
+JEWELRY×JEWELRY v0.10.373 GitHub反映手順
+
+1. 「JEWELRYxJEWELRY_v0_10_373_GitHub差し替えデータ.zip」を展開します。
+2. 展開した中身を、GitHub Desktopで管理しているプロジェクトへ上書きします。
+3. Changesで styles.css、js/game-data.js、sw.js、index.html、game.html、CHANGELOG.md を確認します。
+4. 「v0.10.373 ルース屋の可読性調整」などの内容でコミットします。
+5. Push originを実行します。
+6. GitHub Pages公開後、アプリを完全終了して再起動し、ルース屋の表示を確認します。

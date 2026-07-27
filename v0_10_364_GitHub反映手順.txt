@@ -1,0 +1,8 @@
+JEWELRY×JEWELRY v0.10.364 GitHub反映手順
+
+1. 差し替えZIPを展開します。
+2. 展開した内容をGitHub Desktopのリポジトリへ上書きコピーします。
+3. `assets/images/main-menu-portrait.webp` などの変更を確認します。
+4. 「v0.10.364 縦画面メイン背景差し替え」などの内容でコミットします。
+5. Push originを押します。
+6. GitHub Pages反映後、縦画面で確認します。

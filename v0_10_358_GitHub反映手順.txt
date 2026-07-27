@@ -1,0 +1,17 @@
+JEWELRY×JEWELRY v0.10.358 GitHub反映手順
+
+1. GitHub Desktopで現在のリポジトリを開きます。
+2. 「JEWELRYxJEWELRY_v0_10_358_GitHub差し替えデータ.zip」を展開します。
+3. 展開した中身を、そのままリポジトリへ上書きコピーします。
+4. Changes タブで以下の変更を確認します。
+   - js/app.js
+   - js/game-data.js
+   - sw.js
+   - game.html
+   - index.html
+   - assets/images/events/tourist.png
+   - assets/images/items/bokuto.png
+5. 右下の Preview で差分を軽く確認します。
+6. Commit summary に「v0.10.358 ハンバーガー屋の観光客木刀イベント追加」などを入力してコミットします。
+7. Push origin を押して反映します。
+8. GitHub Pages 側でハードリロードして動作確認してください。

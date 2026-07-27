@@ -9851,3 +9851,107 @@ body[data-screen="looseShop"] .sell-empty-state{
   border:1px solid rgba(255,213,127,.42)!important;
   box-shadow:0 14px 34px rgba(0,0,0,.44)!important;
 }
+
+/* v0.10.374 縦画面の背景復旧 */
+@media (orientation:portrait){
+  /* 専用縦画像は従来どおり全面表示する。 */
+  body[data-background-layout="cover"] #background-layer{
+    background-size:cover!important;
+    background-position:center center!important;
+    background-repeat:no-repeat!important;
+  }
+
+  /* 横長画像しかない画面では、全面背景の上へ横構図を重ねて背景消失を防ぐ。 */
+  body[data-background-layout="panorama"] #background-layer{
+    background-size:cover!important;
+    background-position:var(--portrait-backdrop-position,center center)!important;
+    background-repeat:no-repeat!important;
+  }
+  body[data-background-layout="panorama"] #background-layer::before,
+  body[data-background-layout="panorama"] #background-layer::after{
+    display:block!important;
+  }
+  body[data-background-layout="panorama"] #background-layer::before{
+    content:""!important;
+  }
+  body[data-background-layout="panorama"] #background-layer::after{
+    content:""!important;
+  }
+
+  /* ルース屋は縦画面で操作枠が背景を覆い切らない濃度へ調整する。 */
+  body[data-screen="looseShop"] #background-shade{
+    background:
+      linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.04) 38%,rgba(0,0,0,.30)),
+      linear-gradient(90deg,rgba(0,0,0,.10),rgba(0,0,0,.03) 42%,rgba(0,0,0,.10))!important;
+  }
+  body[data-screen="looseShop"] .action-panel{
+    background:linear-gradient(145deg,rgba(18,13,9,.78),rgba(8,6,4,.70))!important;
+    backdrop-filter:blur(6px)!important;
+    -webkit-backdrop-filter:blur(6px)!important;
+  }
+  body[data-screen="looseShop"] .loose-shop-tabs{
+    background:rgba(5,4,3,.62)!important;
+  }
+  body[data-screen="looseShop"] :is(.loose-shop-gem-choice,.loose-shop-product-row,.loose-shop-rough-sale .product-row){
+    background:rgba(6,5,4,.68)!important;
+  }
+  body[data-screen="looseShop"] :is(.loose-shop-gem-choice>span,.loose-shop-product-row .product-main>div,.loose-shop-rough-sale .product-main>div,.loose-shop-product-row>strong,.loose-shop-rough-sale .product-row>strong,.loose-shop-actions,.sell-action-row){
+    background:rgba(0,0,0,.34)!important;
+  }
+}
+
+
+/* v0.10.375 ルース屋：文字枠の黒背景を削除 */
+body[data-screen="looseShop"] .action-panel,
+body[data-screen="looseShop"] .loose-shop-tabs,
+body[data-screen="looseShop"] :is(.loose-shop-gem-choice,.loose-shop-product-row,.loose-shop-rough-sale .product-row),
+body[data-screen="looseShop"] :is(.loose-shop-gem-choice>span,.loose-shop-product-row .product-main>div,.loose-shop-rough-sale .product-main>div,.loose-shop-product-row>strong,.loose-shop-rough-sale .product-row>strong,.loose-shop-actions,.sell-action-row),
+body[data-screen="looseShop"] .loose-shop-step-heading h2,
+body[data-screen="looseShop"] .sell-empty-state{
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+body[data-screen="looseShop"] .action-panel{
+  border-color:rgba(255,213,127,.46)!important;
+}
+body[data-screen="looseShop"] .loose-shop-tabs{
+  border-color:rgba(255,213,127,.32)!important;
+}
+body[data-screen="looseShop"] .loose-shop-tabs button{
+  background:transparent!important;
+  background-image:none!important;
+  color:#fff4da!important;
+  border-color:rgba(255,213,127,.44)!important;
+  box-shadow:none!important;
+}
+body[data-screen="looseShop"] .loose-shop-tabs button.active{
+  background:rgba(236,196,105,.15)!important;
+  background-image:none!important;
+  color:#ffe7ae!important;
+  border-color:rgba(255,226,158,.92)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,226,158,.30)!important;
+}
+body[data-screen="looseShop"] .loose-shop-tabs button:hover,
+body[data-screen="looseShop"] .loose-shop-tabs button:focus-visible,
+body[data-screen="looseShop"] .loose-shop-gem-choice:hover,
+body[data-screen="looseShop"] .loose-shop-gem-choice:focus-visible{
+  background:rgba(236,196,105,.08)!important;
+}
+body[data-screen="looseShop"] :is(.loose-shop-gem-choice,.loose-shop-product-row,.loose-shop-rough-sale .product-row,.sell-empty-state){
+  border-color:rgba(255,213,127,.42)!important;
+}
+body[data-screen="looseShop"] :is(.loose-shop-gem-choice>span,.loose-shop-product-row .product-main>div,.loose-shop-rough-sale .product-main>div,.loose-shop-product-row>strong,.loose-shop-rough-sale .product-row>strong,.loose-shop-actions,.sell-action-row){
+  border-color:rgba(255,213,127,.18)!important;
+}
+body[data-screen="looseShop"] .loose-shop-step-heading h2{
+  border-color:rgba(255,213,127,.34)!important;
+}
+body[data-screen="looseShop"] .screen-content :is(h1,h2,h3,p,strong,small,span,label,button,b,dt,dd){
+  text-shadow:0 2px 4px rgba(0,0,0,.96),0 0 10px rgba(0,0,0,.74)!important;
+}
+body[data-screen="looseShop"] .loose-shop-tabs button.active{
+  text-shadow:0 1px 3px rgba(0,0,0,.82)!important;
+}

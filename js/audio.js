@@ -20,11 +20,11 @@ let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .
 let weatherEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear', audioKey: 'main' };
 
 const validKeys = new Set([
-  'main', 'mining', 'workshop', 'craft', 'polishing', 'store', 'displayShop', 'materialShop', 'looseShop', 'jewelryShop', 'realEstate', 'glab', 'okachimachi', 'okachimachiQuiz', 'phone', 'sleep',
+  'main', 'space', 'mining', 'workshop', 'craft', 'polishing', 'store', 'displayShop', 'materialShop', 'looseShop', 'jewelryShop', 'realEstate', 'glab', 'okachimachi', 'okachimachiQuiz', 'phone', 'sleep',
   'meal', 'meal-convenience', 'meal-soba', 'meal-ramen', 'meal-hamburger',
   'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab', 'kaitenzushi',
 ]);
-const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'quiz-correct', 'quiz-incorrect']);
+const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'quiz-correct', 'quiz-incorrect']);
 
 function createAudio(url, loop = false) {
   const audio = new Audio(url);
@@ -58,6 +58,7 @@ function ambientUrl(key) {
   const weatherKey = hasActiveWeatherEnvironment(key)
     ? environmentWeather(weatherEnvironment.weather)
     : 'clear';
+  if (key === 'space') return `${AUDIO_DIR}/space-ambient.mp3`;
   if (key === 'main' || (key === 'phone' && hasActiveWeatherEnvironment(key))) return `${AUDIO_DIR}/amb-main-${weatherKey}.ogg`;
   if (usesLayeredOutdoorEnvironment(key) && hasActiveWeatherEnvironment(key)) {
     return `${AUDIO_DIR}/amb-street-crowd.ogg`;
@@ -110,6 +111,7 @@ function bgmUrlFor(key) {
     ? 'workshop'
     : ((key === 'displayShop' || key === 'jewelryShop' || key === 'looseShop' || key === 'materialShop' || key === 'realEstate') ? 'okachimachi' : key);
   if (key === 'okachimachiQuiz') return `${AUDIO_DIR}/quiz_show_thinking_bgm_60s_loop.mp3`;
+  if (key === 'space') return `${AUDIO_DIR}/space-main-bgm.mp3`;
   if (key === 'kaitenzushi') return './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg';
   return `${AUDIO_DIR}/bgm-${bgmKey}.ogg`;
 }
@@ -152,14 +154,14 @@ export async function unlockAudio() {
 }
 
 const BGM_SCALE = {
-  main: 1, mining: .98, workshop: .96, craft: .96, polishing: .96, store: .94, displayShop: .96, materialShop: .98, looseShop: .98, jewelryShop: .96, realEstate: .96, glab: .96, okachimachi: .98, okachimachiQuiz: .94, phone: .92, sleep: .64,
+  main: 1, space: .84, mining: .98, workshop: .96, craft: .96, polishing: .96, store: .94, displayShop: .96, materialShop: .98, looseShop: .98, jewelryShop: .96, realEstate: .96, glab: .96, okachimachi: .98, okachimachiQuiz: .94, phone: .92, sleep: .64,
   meal: .66, 'meal-convenience': .64, 'meal-soba': .66, 'meal-ramen': .64, 'meal-hamburger': .62,
   'meal-indian': .64, 'meal-korean': .62, 'meal-chinese': .64, 'meal-kebab': .64, kaitenzushi: .90,
 };
 // v0.10.298: 環境音全体を従来の約50％へ抑える。設定スライダーの値は保持する。
 const AMBIENT_MASTER_SCALE = .50;
 const AMBIENT_SCALE = {
-  main: .42, mining: 1, workshop: 1, craft: 1, polishing: 1, store: .90, displayShop: .92, materialShop: .96, looseShop: .96, jewelryShop: .92, realEstate: .94, glab: .94, okachimachi: 1, phone: .88, sleep: .56,
+  main: .42, space: .46, mining: 1, workshop: 1, craft: 1, polishing: 1, store: .90, displayShop: .92, materialShop: .96, looseShop: .96, jewelryShop: .92, realEstate: .94, glab: .94, okachimachi: 1, phone: .88, sleep: .56,
   meal: .54, 'meal-convenience': .50, 'meal-soba': .58, 'meal-ramen': .50, 'meal-hamburger': .52,
   'meal-indian': .50, 'meal-korean': .50, 'meal-chinese': .56, 'meal-kebab': .54, kaitenzushi: .82,
 };

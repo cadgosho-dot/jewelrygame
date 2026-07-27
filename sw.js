@@ -1,9 +1,9 @@
-const VERSION = '0.10.363';
+const VERSION = '0.10.373';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/daily-gems.js', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/daily-gems.js?v=0.10.373', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './data/jewelry_okachimachi_quiz_200_game_format.json',
   './data/daily-gems-365.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp', './assets/images/main-menu.webp', './assets/images/main-menu-portrait.webp', './assets/images/today-gem.webp',
   './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/tools/gem-polishing-machine.png', './assets/images/tools/diamond-polishing-lap.png', './assets/images/events/indian-restaurant-manager.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
@@ -184,6 +184,11 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   const destination = event.request.destination;
+  if (url.pathname.endsWith('/js/daily-gems.js')) {
+    const freshRequest = new Request(event.request, { cache: 'no-store' });
+    event.respondWith(networkFirst(freshRequest));
+    return;
+  }
   if (event.request.mode === 'navigate' || ['document', 'script', 'style'].includes(destination)) {
     event.respondWith(networkFirst(event.request));
     return;

@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-07-27T08:17:14.601Z",
-  "updatedAt": "2026-07-27T08:17:26Z",
+  "marketTimestamp": "2026-07-27T08:46:08.157Z",
+  "updatedAt": "2026-07-27T08:46:47Z",
   "marketDateJst": "2026-07-27",
   "previousMarketDateJst": "2026-07-26",
   "spotPerGram": {
-    "gold": 21510.9657,
-    "silver": 311.7055,
-    "platinum": 8618.4244
+    "gold": 21513.4578,
+    "silver": 312.0839,
+    "platinum": 8596.8822
   },
   "previousSpotPerGram": {
     "gold": 21350.1604,
@@ -22,9 +22,9 @@
     "platinum": 8376.1652
   },
   "changeFromPreviousDayPerGram": {
-    "gold": 160.8053,
-    "silver": 5.1194,
-    "platinum": 242.2592
+    "gold": 163.2974,
+    "silver": 5.4978,
+    "platinum": 220.717
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -111,37 +111,37 @@
     {
       "date": "2026-07-27",
       "spotPerGram": {
-        "gold": 21510.9657,
-        "silver": 311.7055,
-        "platinum": 8618.4244
+        "gold": 21513.4578,
+        "silver": 312.0839,
+        "platinum": 8596.8822
       }
     }
   ],
   "gamePricesPerGram": {
-    "K18": 18550,
-    "Pt900": 8920,
+    "K18": 18560,
+    "Pt900": 8900,
     "SV925": 375
   },
   "gamePurchasePricesPerGram": {
-    "K18": 18550,
-    "Pt900": 8920,
+    "K18": 18560,
+    "Pt900": 8900,
     "SV925": 375
   },
   "gameSellPricesPerGram": {
     "K18": 15810,
-    "Pt900": 7290,
-    "SV925": 259
+    "Pt900": 7270,
+    "SV925": 260
   },
   "gamePurchasePrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 18550
+      "price": 18560
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 8920
+      "price": 8900
     },
     "silver": {
       "alloy": "SV925",
@@ -158,12 +158,12 @@
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 7290
+      "price": 7270
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 259
+      "price": 260
     }
   },
   "calculation": {

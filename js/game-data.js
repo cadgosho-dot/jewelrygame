@@ -1,4 +1,4 @@
-export const VERSION = '0.10.362';
+export const VERSION = '0.10.363';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -421,7 +421,8 @@ export const WORKSHOP_TOOLS = {
     },
   },
   polishingMachine: {
-    id: 'polishingMachine', name: '宝石研磨用平面研磨盤', type: '設備', symbol: '◉', price: 400000, qualityPoints: 6,
+    id: 'polishingMachine', name: '宝石研磨用平面研磨機', type: '設備', symbol: '◉', price: 400000, qualityPoints: 6,
+    image: './assets/images/tools/gem-polishing-machine.png',
     initiallyAvailable: true, breakable: true, repairable: true,
     description: '原石の整形からファセット面の研磨までを行い、原石をルースへ仕上げるための精密設備です。',
     detail: '回転盤、角度調整機構、インデックス、ドップ軸を使い、石の面角度と対称性を管理しながら段階的に研削・研磨します。',
@@ -455,6 +456,13 @@ export const WORKSHOP_TOOLS = {
         },
       ],
     },
+  },
+  diamondPolishingLap: {
+    id: 'diamondPolishingLap', name: 'ダイヤモンド研磨用平面研磨盤', type: '設備', symbol: '◇', price: 0, repairPrice: 50000, repairDays: 7, qualityPoints: 0,
+    image: './assets/images/tools/diamond-polishing-lap.png',
+    initiallyAvailable: false, eventOnly: true, breakable: true, repairable: true, failureMode: 'perUse',
+    description: 'ダイヤモンド原石の研磨に使用する専用平面盤です。',
+    detail: 'ダイヤモンド原石をルースへ研磨するための専用設備です。',
   },
   file: {
     id: 'file', name: 'ヤスリ', type: '工具', symbol: '▰', price: 5000, qualityPoints: 1,
@@ -2003,6 +2011,13 @@ export function initialState() {
         stage: 'idle',
         rewardGranted: false,
       },
+      diamondPolishingLapEvent: {
+        totalPolished: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+      },
       alienAbductionEvent: {
         active: false,
         stage: 'idle',
@@ -2790,6 +2805,23 @@ export function migrateState(saved) {
       rewardGranted: Boolean(saved.rewardGranted),
     };
     if (!state.events.touristWoodSwordEvent.active && !['idle', 'completed'].includes(state.events.touristWoodSwordEvent.stage)) state.events.touristWoodSwordEvent.stage = 'completed';
+  }
+  {
+    const saved = isRecord(state.events.diamondPolishingLapEvent) ? state.events.diamondPolishingLapEvent : {};
+    state.events.diamondPolishingLapEvent = {
+      totalPolished: Math.max(0, Math.floor(Number(saved.totalPolished) || 0)),
+      totalTriggered: Math.max(0, Math.min(1, Math.floor(Number(saved.totalTriggered) || 0))),
+      active: Boolean(saved.active),
+      stage: ['idle', 'intro1', 'intro2', 'reward', 'outro', 'completed'].includes(saved.stage) ? saved.stage : 'idle',
+      rewardGranted: Boolean(saved.rewardGranted),
+    };
+    if (state.tools.items.diamondPolishingLap) {
+      state.events.diamondPolishingLapEvent.rewardGranted = true;
+      state.events.diamondPolishingLapEvent.totalTriggered = 1;
+      if (!state.events.diamondPolishingLapEvent.active) state.events.diamondPolishingLapEvent.stage = 'completed';
+    } else if (!state.events.diamondPolishingLapEvent.active && ['intro1', 'intro2', 'reward', 'outro'].includes(state.events.diamondPolishingLapEvent.stage)) {
+      state.events.diamondPolishingLapEvent.stage = 'idle';
+    }
   }
   {
     const saved = isRecord(state.events.alienAbductionEvent) ? state.events.alienAbductionEvent : {};

@@ -9384,3 +9384,68 @@ body[data-screen="looseShop"] .loose-shop-step-heading h2{
   box-shadow:none;
   backdrop-filter:none;
 }
+
+
+/* v0.10.353 回転寿司「寿司屋の大将」・コンビニ「サイクロプス」イベント */
+body[data-screen="sushiChefEvent"],
+body[data-screen="cyclopsEvent"]{overflow:hidden}
+body[data-screen="sushiChefEvent"] .main-screen,
+body[data-screen="cyclopsEvent"] .main-screen{position:relative;overflow:hidden;isolation:isolate}
+body[data-screen="sushiChefEvent"] .game-header,
+body[data-screen="cyclopsEvent"] .game-header{position:relative;z-index:20}
+.visit-character-event{position:relative;display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:calc(100dvh - var(--header-height,86px));isolation:isolate;overflow:hidden}
+.visit-character-event::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 39%,transparent 10%,rgba(0,0,0,.16) 58%,rgba(0,0,0,.58))}
+.sushi-chef-event::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(5,10,10,.08),rgba(0,0,0,.44))}
+.cyclops-event::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(5,10,10,.15),rgba(0,0,0,.52))}
+.visit-character-area{position:absolute;left:50%;top:0;bottom:clamp(132px,23vh,202px);z-index:5;width:100%;min-width:0;padding:8px 12px 0;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;overflow:visible;pointer-events:none}
+.visit-character{display:block;width:auto;height:auto;max-width:min(79vw,780px);max-height:100%;margin:0 auto;object-fit:contain;object-position:center center;filter:drop-shadow(0 24px 34px rgba(0,0,0,.82));user-select:none}
+.sushi-chef-character{max-width:min(76vw,720px)}
+.cyclops-character{max-width:min(76vw,730px)}
+.visit-event-dialogue{position:relative!important;z-index:9!important;grid-row:2!important;align-self:end!important}
+.visit-event-dialogue>small{display:block;color:#d9b963;font-size:.78rem;font-weight:900;letter-spacing:.08em}
+.cyclops-event .visit-event-dialogue>small{color:#ff7676}
+.cyclops-event.is-reward .visit-character{opacity:.32;filter:brightness(.52) drop-shadow(0 24px 34px rgba(0,0,0,.82))}
+.cyclops-reward-button{position:absolute;left:50%;top:48%;z-index:10;display:grid;place-items:center;gap:8px;width:min(420px,70vw);padding:0;border:0;background:transparent;color:#fff;transform:translate(-50%,-50%);cursor:pointer;filter:drop-shadow(0 20px 28px rgba(0,0,0,.72))}
+.cyclops-reward-button img{position:relative;z-index:2;display:block;width:min(270px,46vw);max-height:47vh;object-fit:contain;animation:westernUnionDiamondFloat 2.1s ease-in-out infinite}
+.cyclops-reward-button strong,.cyclops-reward-button small{position:relative;z-index:3;border-radius:999px;background:rgba(4,7,9,.9);box-shadow:0 10px 28px rgba(0,0,0,.58)}
+.cyclops-reward-button strong{padding:.55rem 1rem;border:1px solid rgba(255,188,91,.58);color:#fff0bb;font-size:clamp(.88rem,1.8vw,1.08rem)}
+.cyclops-reward-button small{padding:.25rem .7rem;color:#d8dde0;font-weight:800;animation:westernUnionTap 1.35s ease-in-out infinite}
+.cyclops-drink-glow{width:min(390px,64vw);background:radial-gradient(circle,rgba(255,172,48,.38),rgba(178,71,170,.16) 48%,transparent 72%)}
+.cyclops-reward-button:active{transform:translate(-50%,-50%) scale(.97)}
+@media (orientation:portrait),(max-width:760px){.visit-character-area{bottom:clamp(122px,26vh,186px);padding-inline:5px}.visit-character{max-width:96vw}.sushi-chef-character{max-width:92vw}.cyclops-character{max-width:94vw}.cyclops-reward-button{top:45%;width:88vw}.cyclops-reward-button img{width:min(250px,58vw);max-height:39vh}.cyclops-drink-glow{width:min(340px,82vw)}}
+@media (orientation:landscape) and (max-height:560px){.visit-character-area{bottom:112px;padding-top:3px}.visit-character{max-width:68vw}.cyclops-reward-button{top:43%;width:62vw}.cyclops-reward-button img{width:min(210px,30vw);max-height:43vh}}
+
+/* v0.10.359 宇宙人誘拐イベント */
+.alien-character-area{bottom:clamp(122px,20vh,180px)}
+.alien-character{width:min(720px,82vw);max-height:72vh;object-fit:contain;filter:drop-shadow(0 22px 30px rgba(0,0,0,.75))}
+.alien-space-main-screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(9,2,24,.08),rgba(0,0,0,.22));z-index:0}
+.alien-space-main-screen>*{position:relative;z-index:1}
+.alien-space-status{position:absolute;top:calc(var(--header-height,86px) + 14px);left:50%;z-index:8;display:grid;gap:3px;min-width:min(360px,84vw);padding:.72rem 1rem;text-align:center;transform:translateX(-50%);background:rgba(14,5,30,.72);border:1px solid rgba(214,155,255,.36)}
+.alien-space-status strong{font-size:clamp(1.05rem,2.4vw,1.4rem);color:#f0d6ff}
+.alien-space-status span{font-size:.82rem;color:#d5c5e8}
+.alien-space-menu{grid-template-columns:repeat(3,minmax(0,1fr))}
+.alien-return-event-screen{display:grid;place-items:center;padding:calc(var(--header-height,86px) + 18px) 18px 26px}
+.alien-return-card{display:grid;justify-items:center;gap:.65rem;width:min(520px,92vw);padding:clamp(1.2rem,4vw,2rem);text-align:center;background:rgba(5,8,13,.84)}
+.alien-return-card>strong{font-size:clamp(1.6rem,5vw,2.45rem);color:#fff}
+.alien-return-card p{margin:0;color:#d9dde5}
+.alien-return-card img{width:min(360px,76vw);max-height:32vh;object-fit:contain;filter:drop-shadow(0 18px 24px rgba(0,0,0,.62))}
+.alien-return-card h2{margin:0;color:#eef2f7}
+.alien-return-card small{color:#bfc7d1}
+@media (orientation:portrait),(max-width:760px){
+  .alien-character{width:96vw;max-height:69vh}
+  .alien-space-menu{grid-template-columns:1fr;max-width:min(420px,90vw);margin-inline:auto}
+  .alien-space-status{top:calc(var(--header-height,74px) + 10px)}
+}
+
+/* v0.10.363 ダイヤモンド研磨用平面研磨盤イベント */
+body[data-screen="diamondPolishingLapEvent"]{overflow:hidden}
+body[data-screen="diamondPolishingLapEvent"] .main-screen{position:relative;overflow:hidden;isolation:isolate}
+body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-index:20}
+.diamond-polishing-lap-event{position:relative;display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:calc(100dvh - var(--header-height,86px));isolation:isolate;overflow:hidden}
+.diamond-polishing-lap-event::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 40%,rgba(255,235,149,.13),rgba(0,0,0,.18) 48%,rgba(0,0,0,.62))}
+.diamond-polishing-lap-event .indian-restaurant-manager-character{max-height:min(64vh,760px);object-fit:contain}
+.diamond-polishing-lap-reward-button{position:relative;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;width:min(72vw,430px);margin:auto;padding:1rem;border:1px solid rgba(255,255,255,.35);border-radius:22px;background:rgba(12,12,16,.74);color:#fff;box-shadow:0 18px 55px rgba(0,0,0,.55);cursor:pointer}
+.diamond-polishing-lap-reward-button img{position:relative;z-index:2;width:min(54vw,330px);max-height:38vh;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(0,0,0,.58))}
+.diamond-polishing-lap-reward-button strong,.diamond-polishing-lap-reward-button small{position:relative;z-index:2;text-align:center}
+.diamond-polishing-lap-glow{position:absolute;inset:12% 14% 24%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,215,.82),rgba(255,205,80,.24) 48%,transparent 72%);filter:blur(8px);animation:specialItemGlow 1.5s ease-in-out infinite alternate}
+@media (orientation:portrait),(max-width:760px){.diamond-polishing-lap-event .indian-restaurant-manager-character{max-width:94vw}.diamond-polishing-lap-reward-button{width:min(88vw,430px)}.diamond-polishing-lap-reward-button img{width:min(72vw,330px);max-height:34vh}}

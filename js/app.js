@@ -4193,6 +4193,84 @@ async function completeAlienReturnEvent() {
 }
 
 
+function diamondPolishingLapEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.diamondPolishingLapEvent && typeof state.events.diamondPolishingLapEvent === 'object' && !Array.isArray(state.events.diamondPolishingLapEvent)
+    ? state.events.diamondPolishingLapEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'reward', 'outro', 'completed']);
+  state.events.diamondPolishingLapEvent = {
+    totalPolished: Math.max(0, Math.floor(Number(saved.totalPolished) || 0)),
+    totalTriggered: Math.max(0, Math.min(1, Math.floor(Number(saved.totalTriggered) || 0))),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (toolOwned('diamondPolishingLap')) {
+    state.events.diamondPolishingLapEvent.rewardGranted = true;
+    state.events.diamondPolishingLapEvent.totalTriggered = 1;
+    if (!state.events.diamondPolishingLapEvent.active) state.events.diamondPolishingLapEvent.stage = 'completed';
+  }
+  return state.events.diamondPolishingLapEvent;
+}
+
+function grantDiamondPolishingLap(eventState = diamondPolishingLapEventState()) {
+  if (!toolOwned('diamondPolishingLap')) {
+    state.tools.items.diamondPolishingLap = createWorkshopToolRecord('diamondPolishingLap');
+    syncLegacyToolFlags();
+  }
+  eventState.rewardGranted = true;
+  eventState.totalTriggered = 1;
+  addNotification('ダイヤモンド研磨用平面研磨盤を手に入れました', '工房の工具・設備へ追加されました。', 'special');
+}
+
+function maybeStartDiamondPolishingLapEvent() {
+  const eventState = diamondPolishingLapEventState();
+  if (eventState.active) {
+    setScreen('diamondPolishingLapEvent', { mealId: 'indian' }, false);
+    return true;
+  }
+  if (eventState.totalTriggered > 0 || eventState.stage === 'completed' || eventState.totalPolished < 50 || toolOwned('diamondPolishingLap')) return false;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.totalTriggered = 1;
+  state.game.screen = 'diamondPolishingLapEvent';
+  saveGame();
+  setScreen('diamondPolishingLapEvent', { mealId: 'indian' }, false);
+  requestAnimationFrame(() => playSfx('select', { gain: .92 }));
+  return true;
+}
+
+async function advanceDiamondPolishingLapEvent() {
+  const eventState = diamondPolishingLapEventState();
+  if (!eventState.active) return;
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    playSfx('select', { gain: .9 });
+  } else if (eventState.stage === 'intro2') {
+    eventState.stage = 'reward';
+    playSfx('loose-sparkle', { gain: 1.08 });
+    vibrate([30, 25, 65]);
+  } else if (eventState.stage === 'reward') {
+    grantDiamondPolishingLap(eventState);
+    eventState.stage = 'outro';
+    playSfx('western-union-handover', { gain: 1.02 });
+    setTimeout(() => playSfx('success', { gain: 1.0 }), 150);
+    vibrate([35, 25, 80]);
+  } else if (eventState.stage === 'outro') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    eventState.rewardGranted = true;
+    playSfx('select', { gain: .86 });
+    saveGame();
+    setScreen('meal', {}, false);
+    return;
+  }
+  saveGame();
+  render();
+}
+
+
 function nextOkachimachiQuizTriggerAt() {
   return OKACHIMACHI_QUIZ_TRIGGER_MIN
     + Math.floor(Math.random() * (OKACHIMACHI_QUIZ_TRIGGER_MAX - OKACHIMACHI_QUIZ_TRIGGER_MIN + 1));
@@ -4323,7 +4401,7 @@ function answerOkachimachiQuiz(index) {
 function grantOkachimachiQuizReward() {
   const session = okachimachiQuizSession;
   if (!session || session.stage !== 'correct') return;
-  const gemIds = Object.values(GEMS).filter((gem) => !gem.eventOnly).map((gem) => gem.id);
+  const gemIds = Object.values(GEMS).filter((gem) => !gem.eventOnly && (gem.id !== 'diamond' || toolOwned('diamondPolishingLap'))).map((gem) => gem.id);
   const gemId = gemIds[Math.floor(Math.random() * gemIds.length)];
   state.inventory.rough[gemId] = Math.max(0, Math.floor(Number(state.inventory.rough[gemId]) || 0)) + 1;
   session.rewardGemId = gemId;
@@ -4373,7 +4451,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', touristWoodSwordEvent: 'meal', mining: 'mining', miningPazupanEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', mining: 'mining', miningPazupanEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -4388,6 +4466,7 @@ function backgroundAssetFor(target) {
   if (target === 'sushiChefEvent') return 'meal-kaitenzushi-event';
   if (target === 'cyclopsEvent') return `meal-convenience${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'diamondPolishingLapEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'todayGem') return 'today-gem';
   if (target === 'looseShop' || target === 'supplierRough') return 'loose-shop';
   if (target === 'jewelryShop') return 'jewelry-shop';
@@ -4432,6 +4511,7 @@ function audioFor(target) {
   if (target === 'sushiChefEvent' || target === 'kaitenzushi') return 'kaitenzushi';
   if (target === 'cyclopsEvent') return 'meal-convenience';
   if (target === 'touristWoodSwordEvent') return 'meal-hamburger';
+  if (target === 'diamondPolishingLapEvent') return 'meal-indian';
   if (target === 'okachimachiQuiz') return okachimachiQuizSession?.stage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
   // 工房・ジュエリー制作・ルース選択・完成は同一音声キーを使い、画面遷移時もBGMを止めない。
   if (target === 'workshop' || target === 'craft' || target === 'craftLoose' || target === 'completion') return 'workshop';
@@ -4661,6 +4741,7 @@ function render() {
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
       touristWoodSwordEvent: renderTouristWoodSwordEvent,
+      diamondPolishingLapEvent: renderDiamondPolishingLapEvent,
       alienAbductionEvent: renderAlienAbductionEvent,
       alienReturnEvent: renderAlienReturnEvent,
       mining: renderMining,
@@ -5548,6 +5629,34 @@ function renderAlienReturnEvent() {
         <h2>身体の中のチップ</h2>
         <small>所持 ${count}個・効果はわからない</small>
         <button type="button" class="primary-button full-button" data-action="alien-return-next">メイン画面へ戻る</button>
+      </section>
+    </main>`;
+}
+
+
+function renderDiamondPolishingLapEvent() {
+  const eventState = diamondPolishingLapEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('meal', {}, false));
+    return renderMeal();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const reward = eventState.stage === 'reward';
+  const dialogue = eventState.stage === 'intro1'
+    ? `あ、${playerName}こんにちは、頼まれてたもの用意できましたよ。`
+    : eventState.stage === 'intro2'
+      ? 'これでダイヤモンドも研磨できますね。'
+      : 'また何か必要だったら相談してくださいね。';
+  return `
+    <main class="main-screen diamond-polishing-lap-event-screen">
+      ${header('', { back: false, main: false })}
+      <section class="visit-character-event diamond-polishing-lap-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character indian-restaurant-manager-character" src="./assets/images/events/indian-restaurant-manager.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward
+          ? `<button type="button" class="diamond-polishing-lap-reward-button" data-action="diamond-polishing-lap-event-next" aria-label="ダイヤモンド研磨用平面研磨盤を受け取る"><span class="diamond-polishing-lap-glow" aria-hidden="true"></span><img src="./assets/images/tools/diamond-polishing-lap.png?v=${VERSION}" alt="ダイヤモンド研磨用平面研磨盤" draggable="false"><strong>ダイヤモンド研磨用平面研磨盤</strong><small>タップして受け取る</small></button>`
+          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="diamond-polishing-lap-event-next"><small>インド料理屋店長</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
       </section>
     </main>`;
 }
@@ -6517,7 +6626,7 @@ function renderWorkshop() {
           </div>
           <div class="workshop-menu-item">
             <button class="primary-button large-button" data-action="nav" data-screen="polishing" ${workshopOperating() && toolUsable('polishingMachine') ? '' : 'disabled'}>原石研磨</button>
-            ${toolUsable('polishingMachine') ? '' : `<p class="small-note workshop-requirement-note">${toolOwned('polishingMachine') ? `宝石研磨用平面研磨盤は${workshopToolStatusText('polishingMachine')}です。修理完了まで原石研磨はできません。` : '原石研磨には、御徒町のg-Lab.で購入できる宝石研磨用平面研磨盤が必要です。'}</p>`}
+            ${toolUsable('polishingMachine') ? '' : `<p class="small-note workshop-requirement-note">${toolOwned('polishingMachine') ? `宝石研磨用平面研磨機は${workshopToolStatusText('polishingMachine')}です。修理完了まで原石研磨はできません。` : '原石研磨には、御徒町のg-Lab.で購入できる宝石研磨用平面研磨機が必要です。'}</p>`}
           </div>
         </div>
         <article class="summary-card workshop-level-card workshop-level-bottom-card">
@@ -6544,12 +6653,12 @@ function renderPolishing() {
   if (!toolUsable('polishingMachine')) {
     return shell('原石研磨', `
       <section class="center-card glass-panel">
-        <h1>${toolOwned('polishingMachine') ? workshopToolStatusText('polishingMachine') : '宝石研磨用平面研磨盤がありません。'}</h1>
-        <p>${toolOwned('polishingMachine') ? '宝石研磨用平面研磨盤が使用できる状態へ戻るまで、原石研磨はできません。' : '原石をルースへ加工するには、g-Lab.で宝石研磨用平面研磨盤を購入してください。'}</p>
+        <h1>${toolOwned('polishingMachine') ? workshopToolStatusText('polishingMachine') : '宝石研磨用平面研磨機がありません。'}</h1>
+        <p>${toolOwned('polishingMachine') ? '宝石研磨用平面研磨機が使用できる状態へ戻るまで、原石研磨はできません。' : '原石をルースへ加工するには、g-Lab.で宝石研磨用平面研磨機を購入してください。'}</p>
         <button class="primary-button full-button" data-action="nav" data-screen="okachimachi">御徒町へ</button>
-      </section>`, { help: '宝石研磨用平面研磨盤は御徒町のg-Lab.で購入できます。' });
+      </section>`, { help: '宝石研磨用平面研磨機は御徒町のg-Lab.で購入できます。' });
   }
-  const ownedRoughGems = Object.values(GEMS).filter((gem) => Number(state.inventory.rough?.[gem.id] || 0) > 0);
+  const ownedRoughGems = Object.values(GEMS).filter((gem) => Number(state.inventory.rough?.[gem.id] || 0) > 0 && (gem.id !== 'diamond' || toolUsable('diamondPolishingLap')));
   if (!ownedRoughGems.length) {
     return shell('原石研磨', `
       <section class="center-card glass-panel">
@@ -7842,6 +7951,7 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   if (state.game.money < meal.price) return showToast('所持金が足りません。', 'error');
   if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
   if (mealId === 'hamburger' && !skipEventCheck && maybeStartTouristWoodSwordEvent()) return;
+  if (mealId === 'indian' && !skipEventCheck && maybeStartDiamondPolishingLapEvent()) return;
 
   mealTransitioning = true;
   const stateBeforeMeal = structuredClone(state);
@@ -8581,7 +8691,8 @@ function finishMiningRock(index, button) {
   spendHours(location.hours);
   let result = { missRockImage: pickRandomMiningBrokenRockImage() };
   if (success) {
-    const gem = weightedPick(location.gems);
+    const availableGemPool = location.gems.filter((entry) => entry.id !== 'diamond' || toolOwned('diamondPolishingLap'));
+    const gem = weightedPick(availableGemPool);
     state.inventory.rough[gem] += 1;
     state.daily.mined.push({ gem, qty: 1 });
     state.miningProgress.successfulFinds += 1;
@@ -8750,7 +8861,7 @@ function buyWorkshopTool(toolId) {
   syncLegacyToolFlags();
   addFinance(`g-Lab.で${tool.name}を購入`, 0, tool.price);
   if (toolId === 'jewelryBench') addNotification('彫金机を購入しました', '工房でジュエリーを制作できるようになりました。');
-  if (toolId === 'polishingMachine') addNotification('宝石研磨用平面研磨盤を購入しました', '工房で原石をルースへ研磨できるようになりました。');
+  if (toolId === 'polishingMachine') addNotification('宝石研磨用平面研磨機を購入しました', '工房で原石をルースへ研磨できるようになりました。');
   saveGame();
   showToast(`${tool.name}を購入しました。`, 'info', false);
   render();
@@ -8783,13 +8894,25 @@ function polishRough() {
   if (!workshopOperating()) return showToast('工房は作業停止中です。', 'error');
   const gem = GEMS[selectedPolishing];
   selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape);
-  if (!toolUsable('polishingMachine')) return showToast(toolOwned('polishingMachine') ? `宝石研磨用平面研磨盤は${workshopToolStatusText('polishingMachine')}です。` : '宝石研磨用平面研磨盤が必要です。', 'error');
+  if (!toolUsable('polishingMachine')) return showToast(toolOwned('polishingMachine') ? `宝石研磨用平面研磨機は${workshopToolStatusText('polishingMachine')}です。` : '宝石研磨用平面研磨機が必要です。', 'error');
+  if (selectedPolishing === 'diamond' && !toolUsable('diamondPolishingLap')) return showToast('選択した原石は研磨できません。', 'error');
   if (!gem || state.inventory.rough[selectedPolishing] < 1) return showToast('選択した原石を持っていません。', 'error');
   if (!canSpendHours(POLISHING_HOURS)) return showToast('今日は研磨する時間がありません。', 'error');
   state.inventory.rough[selectedPolishing] -= 1;
   adjustLooseInventory(selectedPolishing, selectedPolishingShape, 1);
   spendHours(POLISHING_HOURS);
   state.daily.polished.push({ gem: selectedPolishing, looseShape: selectedPolishingShape, qty: 1 });
+  const diamondLapEvent = diamondPolishingLapEventState();
+  diamondLapEvent.totalPolished = Math.max(0, Number(diamondLapEvent.totalPolished) || 0) + 1;
+  if (selectedPolishing === 'diamond' && toolUsable('diamondPolishingLap') && Math.random() < (1 / 50)) {
+    const diamondLap = workshopToolRecord('diamondPolishingLap');
+    if (diamondLap) {
+      diamondLap.status = 'unusable';
+      diamondLap.failureDueDay = null;
+      diamondLap.repairCompleteDay = null;
+      addNotification('ダイヤモンド研磨用平面研磨盤が故障しました', 'g-Lab.で50,000円、1週間の修理を依頼できます。', 'warning');
+    }
+  }
   addArtisanXp(1);
   saveGame();
   playSfx('loose-sparkle', { gain: 1.12 });
@@ -10096,7 +10219,8 @@ function autopilotMineOnce(summary) {
   spendHours(location.hours);
   summary.minedActions += 1;
   if (Math.random() < 0.4) {
-    const gem = weightedPick(location.gems);
+    const availableGemPool = location.gems.filter((entry) => entry.id !== 'diamond' || toolOwned('diamondPolishingLap'));
+    const gem = weightedPick(availableGemPool);
     state.inventory.rough[gem] = Math.max(0, Number(state.inventory.rough[gem]) || 0) + 1;
     state.daily.mined.push({ gem, qty: 1, autopilot: true });
     state.miningProgress.successfulFinds += 1;
@@ -10651,7 +10775,7 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
@@ -10924,6 +11048,9 @@ root.addEventListener('click', async (event) => {
       break;
     case 'cyclops-event-receive':
       await receiveCyclopsEnergyDrink();
+      break;
+    case 'diamond-polishing-lap-event-next':
+      await advanceDiamondPolishingLapEvent();
       break;
     case 'okachimachi-quiz-next':
       advanceOkachimachiQuizDialogue();
@@ -11685,7 +11812,7 @@ modalEl.addEventListener('click', async (event) => {
   const action = button.dataset.action;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)

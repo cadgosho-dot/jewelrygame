@@ -1,15 +1,15 @@
-const VERSION = '0.10.379';
+const VERSION = '0.10.398';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/daily-gems.js?v=0.10.379', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/daily-gems.js?v=0.10.398', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './data/jewelry_okachimachi_quiz_200_game_format.json',
   './data/daily-gems-365.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp', './assets/images/main-menu.webp', './assets/images/main-menu-portrait.webp', './assets/images/today-gem.webp',
   './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/tools/gem-polishing-machine.png', './assets/images/tools/diamond-polishing-lap.png', './assets/images/events/indian-restaurant-manager.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
   './assets/images/quiz/quiz-king-normal.png', './assets/images/quiz/quiz-king-player-incorrect.png', './assets/images/quiz/quiz-king-player-correct.png',
   './assets/images/events/western-union-messenger.png', './assets/images/events/antique-diamond.png', './assets/images/events/pazupan-miner.png', './assets/images/events/pazupan.png', './assets/images/events/mermaid.png', './assets/images/events/pearl.png',
-  './assets/images/events/sushi-chef.png', './assets/images/events/cyclops.png', './assets/images/events/tourist.png', './assets/images/events/alien.png', './assets/images/items/energy-drink.png', './assets/images/items/bokuto.png', './assets/images/items/body-chip.png', './assets/images/space.webp', './assets/images/meal-kaitenzushi-event.webp',
+  './assets/images/events/sushi-chef.png', './assets/images/events/cyclops.png', './assets/images/events/ganesha.png', './assets/images/events/ganesha-tusk.png', './assets/images/events/ivory-loose.png', './assets/images/events/kappa.png', './assets/images/events/tourist.png', './assets/images/events/alien.png', './assets/images/events/haunting-ghost.png', './assets/images/events/store-thief-old-woman.png', './assets/audio/sfx-haunting-appear.wav', './assets/audio/sfx-haunting-whisper.wav', './assets/images/gems/ivory.png', './assets/images/gems/jade.png', './assets/images/loose/ivory/round-cabochon.png', './assets/images/loose/ivory/oval-cabochon.png', './assets/images/loose/jade/round-cabochon.png', './assets/images/loose/jade/oval-cabochon.png', './assets/images/items/energy-drink.png', './assets/images/items/bokuto.png', './assets/images/items/body-chip.png', './assets/images/space.webp', './assets/images/meal-kaitenzushi-event.webp',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
 ];
 
@@ -68,6 +68,12 @@ const AUDIO_MEDIA = [
   './assets/audio/sfx-barcode-beeps.ogg',
   './assets/audio/sfx-bomb-jii-appear.ogg',
   './assets/audio/sfx-mermaid-splash.ogg',
+  './assets/audio/sfx-ganesha-appear.ogg',
+  './assets/audio/sfx-ganesha-gift.ogg',
+  './assets/audio/sfx-kappa-appear.wav',
+  './assets/audio/sfx-jade-gift.wav',
+  './assets/audio/sfx-old-lady-appear.wav',
+  './assets/audio/sfx-shoplift-steal.wav',
   './assets/audio/sfx-quiz-intro.ogg',
   './assets/audio/sfx-quiz-question.ogg',
   './assets/audio/sfx-western-union-arrival.ogg',
@@ -96,14 +102,14 @@ const AUDIO_MEDIA = [
 
 const OPTIONAL_MEDIA = [
   './assets/images/mining.webp', './assets/images/workshop.webp', './assets/images/glab.webp',
-  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop.webp', './assets/images/jewelry-shop.webp', './assets/images/jewelry-shop-buy-character.png', './assets/images/jewelry-shop-sell-character.png', './assets/images/display-shop.webp', './assets/images/display-shop-portrait.webp', './assets/images/real-estate.webp', './assets/images/real-estate-portrait.webp', './assets/images/store.webp',
+  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop-v385.webp', './assets/images/loose-shop-portrait-v385.webp', './assets/images/jewelry-shop.webp', './assets/images/jewelry-shop-buy-character.png', './assets/images/jewelry-shop-sell-character.png', './assets/images/display-shop-v380.webp', './assets/images/display-shop-portrait-v380.webp', './assets/images/real-estate.webp', './assets/images/real-estate-portrait.webp', './assets/images/store.webp',
   './assets/images/phone.webp', './assets/images/sleep.webp', './assets/images/today-gem.webp', './assets/images/meal-menu.webp',
   './assets/images/meal-convenience.webp', './assets/images/meal-convenience-portrait.webp',
   './assets/images/meal-chinese.webp', './assets/images/meal-chinese-portrait.webp',
   './assets/images/meal-korean.webp', './assets/images/meal-korean-portrait.webp',
   './assets/images/meal-indian.webp', './assets/images/meal-indian-portrait.webp',
   './assets/images/meal-kebab.webp', './assets/images/meal-kebab-portrait.webp',
-  './assets/images/meal-ramen.webp', './assets/images/meal-ramen-portrait.webp',
+  './assets/images/meal-ramen-v386.webp', './assets/images/meal-ramen-portrait-v386.webp', './assets/images/meal-ramen-reunion-v387.webp', './assets/images/meal-ramen-reunion-portrait-v387.webp',
   './assets/images/meal-soba.webp', './assets/images/meal-soba-portrait.webp',
   './assets/images/meal-hamburger.webp', './assets/images/meal-hamburger-portrait.webp',
   './assets/images/foods/convenience.png', './assets/images/foods/chinese.png', './assets/images/foods/korean.png', './assets/images/foods/indian.png',

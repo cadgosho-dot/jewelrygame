@@ -38,6 +38,23 @@
     });
   }
 
+  function viewportProfile(viewportWidth, viewportHeight) {
+    const landscape = viewportWidth > viewportHeight;
+    const shortSide = Math.min(viewportWidth, viewportHeight);
+    const longSide = Math.max(viewportWidth, viewportHeight);
+    const touchDevice = Number(navigator.maxTouchPoints || 0) > 0 || 'ontouchstart' in window;
+    const deviceClass = touchDevice && shortSide <= 620 && longSide <= 1100
+      ? 'phone'
+      : touchDevice && shortSide <= 900
+        ? 'tablet'
+        : 'desktop';
+    const scaleAxis = landscape ? viewportHeight : viewportWidth;
+    const uiScale = deviceClass === 'phone'
+      ? Math.min(1.08, Math.max(.84, scaleAxis / 390))
+      : 1;
+    return { landscape, deviceClass, uiScale };
+  }
+
   function updateStage() {
     if (!safeArea) return;
     const visual = window.visualViewport;
@@ -45,20 +62,24 @@
     const viewportHeight = Math.max(1, Math.round(visual?.height || window.innerHeight || document.documentElement.clientHeight));
     const viewportLeft = Math.max(0, Math.round(visual?.offsetLeft || 0));
     const viewportTop = Math.max(0, Math.round(visual?.offsetTop || 0));
-    const landscape = viewportWidth > viewportHeight;
+    const { landscape, deviceClass, uiScale } = viewportProfile(viewportWidth, viewportHeight);
 
     const rootStyle = document.documentElement.style;
     rootStyle.setProperty('--jwj-viewport-width', `${viewportWidth}px`);
     rootStyle.setProperty('--jwj-viewport-height', `${viewportHeight}px`);
     rootStyle.setProperty('--jwj-viewport-left', `${viewportLeft}px`);
     rootStyle.setProperty('--jwj-viewport-top', `${viewportTop}px`);
+    rootStyle.setProperty('--jwj-ui-scale', uiScale.toFixed(4));
     document.documentElement.dataset.orientation = landscape ? 'landscape' : 'portrait';
+    document.documentElement.dataset.deviceClass = deviceClass;
 
     postToGame({
       type: 'jwj-shell-viewport',
       orientation: landscape ? 'landscape' : 'portrait',
       referenceWidth: viewportWidth,
       referenceHeight: viewportHeight,
+      deviceClass,
+      uiScale,
       scale: 1,
     });
   }

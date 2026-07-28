@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="./styles.css"></head>
+<body data-screen="okachimachiQuiz"><div id="background-layer"></div><div id="background-shade"></div><div id="root">
+<main class="main-screen event-shell-no-header"><section class="screen-content"><section class="okachimachi-quiz-event quiz-stage-question">
+<div class="quiz-character-area"><img class="quiz-character-image" src="./assets/images/quiz/quiz-king-normal.png" alt=""></div>
+<section class="quiz-question-panel glass-panel"><span class="quiz-question-kicker">4択クイズ</span><h2>ダイヤモンドのモース硬度として正しいものはどれですか？</h2><div class="quiz-answer-grid">
+<button class="quiz-answer-button"><span>A</span><strong>7</strong></button><button class="quiz-answer-button"><span>B</span><strong>8</strong></button><button class="quiz-answer-button"><span>C</span><strong>9</strong></button><button class="quiz-answer-button"><span>D</span><strong>10</strong></button>
+</div></section></section></section></main></div><pre id="metrics"></pre>
+<script>
+addEventListener('load',()=>setTimeout(()=>{
+ const q=s=>document.querySelector(s); const r=e=>{const b=e.getBoundingClientRect(),c=getComputedStyle(e);return {x:b.x,y:b.y,w:b.width,h:b.height,display:c.display,visibility:c.visibility,opacity:c.opacity}};
+ metrics.textContent=JSON.stringify({viewport:[innerWidth,innerHeight],area:r(q('.quiz-character-area')),img:r(q('.quiz-character-image')),panel:r(q('.quiz-question-panel')),natural:[q('.quiz-character-image').naturalWidth,q('.quiz-character-image').naturalHeight]});
+},100));
+</script></body></html>

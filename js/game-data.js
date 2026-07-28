@@ -1,4 +1,4 @@
-export const VERSION = '0.10.379';
+export const VERSION = '0.10.398';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -262,6 +262,8 @@ export const GEMS = {
   diamond: { id: 'diamond', name: 'ダイヤモンド', roughPrice: 20000, price: 35000, looseRank: 'S', hue: '#dcecf2' },
   antiqueDiamond: { id: 'antiqueDiamond', name: 'アンティークダイヤ', roughPrice: 30000, price: 52500, looseRank: 'S', hue: '#e8eef2', eventOnly: true },
   pearl: { id: 'pearl', name: 'パール', roughPrice: 0, price: 9000, looseRank: 'B', hue: '#f2ede7', eventOnly: true },
+  ivory: { id: 'ivory', name: '象牙', roughName: 'ガネーシャの牙', roughPrice: 9000, price: 18000, looseRank: 'A', hue: '#f4e4bd', eventOnly: true },
+  jade: { id: 'jade', name: '翡翠', roughName: '翡翠原石', roughPrice: 10000, price: 22000, looseRank: 'A', hue: '#4bb08a', eventOnly: true },
   emerald: { id: 'emerald', name: 'エメラルド', roughPrice: 12000, price: 18000, looseRank: 'A', hue: '#11a67a' },
   moonstone: { id: 'moonstone', name: 'ムーンストーン', roughPrice: 4500, price: 5500, looseRank: 'C', hue: '#c9e4ef' },
   ruby: { id: 'ruby', name: 'ルビー', roughPrice: 13000, price: 15000, looseRank: 'A', hue: '#c51f55' },
@@ -301,7 +303,7 @@ export const LOOSE_SHAPES = {
 
 const STANDARD_LOOSE_SHAPE_IDS = ['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon'];
 const CABOCHON_ONLY_GEMS = new Set(['opal', 'turquoise', 'lapislazuli']);
-const SPECIAL_LOOSE_SHAPES = Object.freeze({ antiqueDiamond: ['antiqueCut'], pearl: ['pearl'] });
+const SPECIAL_LOOSE_SHAPES = Object.freeze({ antiqueDiamond: ['antiqueCut'], pearl: ['pearl'], ivory: ['roundCabochon', 'ovalCabochon'], jade: ['roundCabochon', 'ovalCabochon'] });
 
 export const LOOSE_CUT_PRICE_MULTIPLIERS = Object.freeze({
   round: 1.00,
@@ -1768,6 +1770,102 @@ export const CUSTOMERS = {
       preference: { type: 'gem', value: 'aquamarine', label: 'アクアマリン' },
     },
   },
+  ayaka: {
+    id: 'ayaka', name: '高橋彩香',
+    opening: '自分へのご褒美になるジュエリーを探しています。',
+    profile: '仕事を頑張った記念に、自分用のジュエリーを探しているお客様です。',
+    traits: '明るく直感的で、身につけたときの華やかさを重視します。',
+    preferenceText: 'ガーネットのオーバルカット・ゴールド・ナチュラルなリング',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'ring', gem: 'garnet', looseShape: 'oval', metal: 'gold', design: 'classic', budget: 55000, deadlineDays: 7, difficulty: 'basic', requiredTools: ['jewelryBench'],
+      preference: { type: 'design', value: 'classic', label: 'ナチュラル' },
+    },
+  },
+  ryo: {
+    id: 'ryo', name: '松本亮',
+    opening: '記念日に贈るペンダントを探しています。',
+    profile: 'パートナーとの記念日に贈る品を探して来店したお客様です。',
+    traits: '予算と納期をきちんと確認し、長く使えるデザインを好みます。',
+    preferenceText: 'サファイアのラウンドカット・ゴールド・シンプルなペンダント',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'pendant', gem: 'sapphire', looseShape: 'round', metal: 'gold', design: 'simple', budget: 90000, deadlineDays: 7, difficulty: 'basic', requiredTools: ['jewelryBench'],
+      preference: { type: 'metal', value: 'gold', label: 'K18ゴールド' },
+    },
+  },
+  naoko: {
+    id: 'naoko', name: '小林直子',
+    opening: '落ち着いた雰囲気のピアスを見せてください。',
+    profile: '日常にも仕事にも使える上品なピアスを探しているお客様です。',
+    traits: '品質を丁寧に見比べ、派手すぎない品の良さを好みます。',
+    preferenceText: 'ムーンストーンのラウンドカット・シルバー・ナチュラルなピアス',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'earrings', gem: 'moonstone', looseShape: 'round', metal: 'silver', design: 'classic', budget: 65000, deadlineDays: 7, difficulty: 'basic', requiredTools: ['jewelryBench'],
+      preference: { type: 'gem', value: 'moonstone', label: 'ムーンストーン' },
+    },
+  },
+  haruto: {
+    id: 'haruto', name: '伊藤陽斗',
+    opening: '少し個性的なリングを探しています。',
+    profile: '人と重ならないデザインのリングを求めて来店したお客様です。',
+    traits: '新しいデザインに興味があり、特徴のある石や形を楽しみます。',
+    preferenceText: 'ペリドットのトリリアントカット・ゴールド・ゴージャスなリング',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'ring', gem: 'peridot', looseShape: 'trilliant', metal: 'gold', design: 'modern', budget: 85000, deadlineDays: 7, difficulty: 'general', requiredTools: ['jewelryBench'],
+      preference: { type: 'design', value: 'modern', label: 'ゴージャス' },
+    },
+  },
+  megumi: {
+    id: 'megumi', name: '渡辺恵',
+    opening: '家族に受け継げるジュエリーを相談したいです。',
+    profile: '長く大切にできるジュエリーを探している、穏やかなお客様です。',
+    traits: '素材や耐久性を重視し、説明を聞いて納得してから決めます。',
+    preferenceText: 'ルビーのオーバルカット・プラチナ・ナチュラルなペンダント',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'pendant', gem: 'ruby', looseShape: 'oval', metal: 'platinum', design: 'classic', budget: 120000, deadlineDays: 7, difficulty: 'general', requiredTools: ['jewelryBench'],
+      preference: { type: 'metal', value: 'platinum', label: 'Pt900' },
+    },
+  },
+  shun: {
+    id: 'shun', name: '佐々木駿',
+    opening: 'シンプルで格好いいジュエリーはありますか？',
+    profile: '服装に合わせやすい、すっきりしたジュエリーを探しているお客様です。',
+    traits: '決断が早く、見た目と価格のバランスを重視します。',
+    preferenceText: 'ラピスラズリのラウンドカボション・シルバー・シンプルなペンダント',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'pendant', gem: 'lapislazuli', looseShape: 'roundCabochon', metal: 'silver', design: 'simple', budget: 45000, deadlineDays: 7, difficulty: 'basic', requiredTools: ['jewelryBench'],
+      preference: { type: 'design', value: 'simple', label: 'シンプル' },
+    },
+  },
+  reina: {
+    id: 'reina', name: '中村玲奈',
+    opening: '色のきれいなピアスを探しています。',
+    profile: '季節に合わせた色石のピアスを探して来店したお客様です。',
+    traits: '色合いを重視し、左右の石の雰囲気まで細かく確認します。',
+    preferenceText: 'タンザナイトのペアカット・ゴールド・ゴージャスなピアス',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'earrings', gem: 'tanzanite', looseShape: 'pear', metal: 'gold', design: 'modern', budget: 140000, deadlineDays: 7, difficulty: 'general', requiredTools: ['jewelryBench'],
+      preference: { type: 'gem', value: 'tanzanite', label: 'タンザナイト' },
+    },
+  },
+  koji: {
+    id: 'koji', name: '吉田浩二',
+    opening: '妻への誕生日プレゼントを探しています。',
+    profile: '妻の誕生日に贈るジュエリーを探している、慎重なお客様です。',
+    traits: '贈る相手の好みを思い出しながら、候補をじっくり比較します。',
+    preferenceText: 'エメラルドのエメラルドカット・ゴールド・ナチュラルなリング',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'ring', gem: 'emerald', looseShape: 'emerald', metal: 'gold', design: 'classic', budget: 130000, deadlineDays: 7, difficulty: 'general', requiredTools: ['jewelryBench'],
+      preference: { type: 'gem', value: 'emerald', label: 'エメラルド' },
+    },
+  },
 };
 
 export const WEATHER = ['晴れ', '曇り', '雨', '雪'];
@@ -1941,10 +2039,19 @@ export function initialState() {
       totalVisitors: 0,
       lastResult: null,
     },
-    customers: {
-      misaki: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, lastRequestSignature: '', ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
-      kenta: { met: false, relation: '初来店', purchases: 0, visiting: false, visitingBranchNumber: null, activeRequest: null, lastVisitDay: null, lastRequestSignature: '', ignoredToday: false, wishesHeard: false, proposedItemIds: [] },
-    },
+    customers: Object.fromEntries(Object.keys(CUSTOMERS).map((customerId) => [customerId, {
+      met: false,
+      relation: '初来店',
+      purchases: 0,
+      visiting: false,
+      visitingBranchNumber: null,
+      activeRequest: null,
+      lastVisitDay: null,
+      lastRequestSignature: '',
+      ignoredToday: false,
+      wishesHeard: false,
+      proposedItemIds: [],
+    }])),
     orders: [],
     employee: { hired: false, name: '田中 葵', role: 'sales', working: true },
     events: {
@@ -1980,6 +2087,14 @@ export function initialState() {
         stage: 'idle',
         rewardGranted: false,
       },
+      kappaJadeEvent: {
+        nextTriggerDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+      },
       mermaidEvent: {
         nextTriggerDay: 0,
         lastTriggeredDay: 0,
@@ -2003,6 +2118,42 @@ export function initialState() {
         active: false,
         stage: 'idle',
         rewardGranted: false,
+      },
+      ganeshaTuskEvent: {
+        lastCheckedDate: '',
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+      },
+      childhoodFriendEvent: {
+        nextTriggerDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        mealPaid: false,
+        mealCompleted: false,
+        hungerBefore: 0,
+        hungerAfter: 0,
+      },
+      hauntingEvent: {
+        lastCheckedDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        paymentApplied: false,
+      },
+      storeTheftEvent: {
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        branchId: '',
+        branchNumber: 1,
+        targetItemId: '',
+        targetItemName: '',
+        theftApplied: false,
       },
       touristWoodSwordEvent: {
         eligible: false,
@@ -2795,6 +2946,54 @@ export function migrateState(saved) {
     lastHungerAfter: Math.max(0, Math.min(7, Math.floor(Number(saved.lastHungerAfter) || 0))),
   }));
   normalizeVisitEvent('cyclopsEvent', ['idle', 'intro1', 'intro2', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+  normalizeVisitEvent('ganeshaTuskEvent', ['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+  {
+    const saved = isRecord(state.events.childhoodFriendEvent) ? state.events.childhoodFriendEvent : {};
+    state.events.childhoodFriendEvent = {
+      nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+      lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+      totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+      active: Boolean(saved.active),
+      stage: ['idle', 'intro1', 'intro2', 'intro3', 'eating', 'postMeal', 'completed'].includes(saved.stage) ? saved.stage : 'idle',
+      mealPaid: Boolean(saved.mealPaid),
+      mealCompleted: Boolean(saved.mealCompleted),
+      hungerBefore: Math.max(0, Math.min(7, Math.floor(Number(saved.hungerBefore) || 0))),
+      hungerAfter: Math.max(0, Math.min(7, Math.floor(Number(saved.hungerAfter) || 0))),
+    };
+    if (!state.events.childhoodFriendEvent.active && !['idle', 'completed'].includes(state.events.childhoodFriendEvent.stage)) {
+      state.events.childhoodFriendEvent.stage = 'completed';
+    }
+  }
+  {
+    const saved = isRecord(state.events.hauntingEvent) ? state.events.hauntingEvent : {};
+    state.events.hauntingEvent = {
+      lastCheckedDay: Math.max(0, Math.floor(Number(saved.lastCheckedDay) || 0)),
+      lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+      totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+      active: Boolean(saved.active),
+      stage: ['idle', 'intro1', 'intro2', 'processing', 'completed'].includes(saved.stage) ? saved.stage : 'idle',
+      paymentApplied: Boolean(saved.paymentApplied),
+    };
+    if (!state.events.hauntingEvent.active && !['idle', 'completed'].includes(state.events.hauntingEvent.stage)) {
+      state.events.hauntingEvent.stage = 'completed';
+    }
+  }
+  {
+    const saved = isRecord(state.events.storeTheftEvent) ? state.events.storeTheftEvent : {};
+    state.events.storeTheftEvent = {
+      totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+      active: Boolean(saved.active),
+      stage: ['idle', 'intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice', 'completed'].includes(saved.stage) ? saved.stage : 'idle',
+      branchId: String(saved.branchId || ''),
+      branchNumber: Math.max(1, Math.floor(Number(saved.branchNumber) || 1)),
+      targetItemId: String(saved.targetItemId || ''),
+      targetItemName: String(saved.targetItemName || ''),
+      theftApplied: Boolean(saved.theftApplied),
+    };
+    if (!state.events.storeTheftEvent.active && !['idle', 'completed'].includes(state.events.storeTheftEvent.stage)) {
+      state.events.storeTheftEvent.stage = 'completed';
+    }
+  }
   {
     const saved = isRecord(state.events.touristWoodSwordEvent) ? state.events.touristWoodSwordEvent : {};
     state.events.touristWoodSwordEvent = {

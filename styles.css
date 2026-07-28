@@ -8295,7 +8295,7 @@ body[data-screen="okachimachiQuiz"] .quiz-stage-incorrectAnswer .quiz-dialogue-p
   }
 
   /* 背景ごとの中心位置。横画面の主役を縦画面でも残す。 */
-  body:is([data-screen="mining"],[data-screen="miningGame"],[data-screen="miningResult"],[data-screen="miningPazupanEvent"]){
+  body:is([data-screen="mining"],[data-screen="miningGame"],[data-screen="miningResult"],[data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"]){
     --portrait-backdrop-position:64% center;
     --portrait-panorama-position:center center;
   }
@@ -9508,7 +9508,7 @@ body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-in
 @media (orientation:portrait), (max-width:760px){
   body:is(
     [data-screen="westernUnionEvent"],
-    [data-screen="miningPazupanEvent"],
+    [data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"],
     [data-screen="mermaidEvent"],
     [data-screen="sushiChefEvent"],
     [data-screen="cyclopsEvent"],
@@ -9519,7 +9519,7 @@ body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-in
 
   body:is(
     [data-screen="westernUnionEvent"],
-    [data-screen="miningPazupanEvent"],
+    [data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"],
     [data-screen="mermaidEvent"],
     [data-screen="sushiChefEvent"],
     [data-screen="cyclopsEvent"],
@@ -9530,7 +9530,7 @@ body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-in
 
   body:is(
     [data-screen="westernUnionEvent"],
-    [data-screen="miningPazupanEvent"],
+    [data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"],
     [data-screen="mermaidEvent"],
     [data-screen="sushiChefEvent"],
     [data-screen="cyclopsEvent"],
@@ -9715,9 +9715,14 @@ body[data-screen="miningPazupanEvent"] .pazupan-event,
 body[data-screen="mermaidEvent"] .mermaid-event,
 body[data-screen="sushiChefEvent"] .visit-character-event,
 body[data-screen="cyclopsEvent"] .visit-character-event,
+body[data-screen="ganeshaTuskEvent"] .visit-character-event,
+body[data-screen="kappaJadeEvent"] .visit-character-event,
+body[data-screen="childhoodFriendEvent"] .childhood-friend-event,
 body[data-screen="touristWoodSwordEvent"] .visit-character-event,
 body[data-screen="diamondPolishingLapEvent"] .visit-character-event,
-body[data-screen="alienAbductionEvent"] .visit-character-event{
+body[data-screen="alienAbductionEvent"] .visit-character-event,
+body[data-screen="hauntingEvent"] .visit-character-event,
+body[data-screen="storeTheftEvent"] .visit-character-event{
   min-height:100dvh;
 }
 body[data-screen="alienReturnEvent"] .alien-return-event-screen{
@@ -9954,4 +9959,1007 @@ body[data-screen="looseShop"] .screen-content :is(h1,h2,h3,p,strong,small,span,l
 }
 body[data-screen="looseShop"] .loose-shop-tabs button.active{
   text-shadow:0 1px 3px rgba(0,0,0,.82)!important;
+}
+
+/* v0.10.381 メイン上部バー復旧・特別イベント中は必ず非表示 */
+body[data-screen="main"] .game-header{
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="childhoodFriendEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="alienReturnEvent"],
+  [data-screen="okachimachiQuiz"],
+  [data-screen="robberyReport"],
+  [data-screen="storeTheftEvent"]
+) .game-header{
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+
+
+/* v0.10.382 横画面クイズ王の表示を全幅で固定 */
+@media (orientation:landscape){
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question{
+    display:grid!important;
+    grid-template-columns:minmax(150px,40%) minmax(0,60%)!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    align-items:stretch!important;
+    gap:clamp(6px,1.4vw,18px)!important;
+    padding:clamp(6px,1.2vw,16px)!important;
+    overflow:hidden!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-area{
+    grid-column:1!important;
+    grid-row:1!important;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:150px!important;
+    min-height:0!important;
+    padding:0!important;
+    transform:none!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:5!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-image{
+    display:block!important;
+    width:auto!important;
+    height:min(88dvh,620px)!important;
+    min-height:min(48dvh,210px)!important;
+    max-width:96%!important;
+    max-height:calc(100dvh - 16px)!important;
+    margin:auto!important;
+    object-fit:contain!important;
+    object-position:center center!important;
+    transform:none!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:6!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-panel{
+    grid-column:2!important;
+    grid-row:1!important;
+    justify-self:stretch!important;
+    align-self:center!important;
+    width:100%!important;
+    max-width:none!important;
+    max-height:calc(100dvh - 16px)!important;
+    margin:0!important;
+    position:relative!important;
+    z-index:9!important;
+    overflow-y:auto!important;
+  }
+
+  /* 会話中も幅の狭い横画面で人物を縮小し過ぎない。 */
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event:not(.quiz-stage-question):not(.quiz-stage-reward) .quiz-character-area{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    overflow:visible!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event:not(.quiz-stage-question):not(.quiz-stage-reward) .quiz-character-image{
+    display:block!important;
+    width:auto!important;
+    height:min(70dvh,560px)!important;
+    min-height:min(44dvh,180px)!important;
+    max-width:min(72vw,700px)!important;
+    max-height:100%!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+}
+
+@media (orientation:landscape) and (max-height:430px){
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question{
+    grid-template-columns:minmax(145px,36%) minmax(0,64%)!important;
+    gap:6px!important;
+    padding:5px 8px!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-area{
+    min-width:145px!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-image{
+    height:min(91dvh,370px)!important;
+    min-height:170px!important;
+    max-width:94%!important;
+    max-height:calc(100dvh - 10px)!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-panel{
+    max-height:calc(100dvh - 10px)!important;
+    padding:8px 10px!important;
+    gap:6px!important;
+    border-radius:12px!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-kicker{
+    padding:.22rem .58rem!important;
+    font-size:.68rem!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-panel h2{
+    font-size:clamp(.82rem,2.8vh,1.02rem)!important;
+    line-height:1.28!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-grid{
+    gap:5px!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-button{
+    grid-template-columns:1.65rem minmax(0,1fr)!important;
+    min-height:46px!important;
+    padding:.38rem .48rem!important;
+    gap:.4rem!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-button>span{
+    width:1.65rem!important;
+    height:1.65rem!important;
+    font-size:.74rem!important;
+  }
+  body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-button strong{
+    font-size:clamp(.64rem,2.15vh,.82rem)!important;
+    line-height:1.22!important;
+  }
+}
+
+
+/* v0.10.383 携帯端末の表示基準を統一 */
+html[data-device-class="phone"]{
+  --jwj-edge-gap:clamp(5px,calc(7px * var(--jwj-ui-scale,1)),9px);
+}
+html[data-device-class="phone"][data-orientation="portrait"]{
+  --jwj-main-header-height:clamp(68px,calc(78px * var(--jwj-ui-scale,1)),86px);
+  --jwj-page-header-height:clamp(122px,calc(138px * var(--jwj-ui-scale,1)),148px);
+  --jwj-main-menu-height:clamp(104px,calc(116px * var(--jwj-ui-scale,1)),126px);
+  --jwj-event-dialogue-space:clamp(146px,calc(170px * var(--jwj-ui-scale,1)),184px);
+  --jwj-character-max-width:92vw;
+}
+html[data-device-class="phone"][data-orientation="landscape"]{
+  --jwj-main-header-height:clamp(50px,calc(58px * var(--jwj-ui-scale,1)),64px);
+  --jwj-page-header-height:clamp(62px,calc(70px * var(--jwj-ui-scale,1)),76px);
+  --jwj-main-menu-height:clamp(50px,calc(58px * var(--jwj-ui-scale,1)),64px);
+  --jwj-event-dialogue-space:clamp(94px,calc(108px * var(--jwj-ui-scale,1)),118px);
+  --jwj-character-max-width:72vw;
+}
+html[data-device-class="phone"],
+html[data-device-class="phone"] body,
+html[data-device-class="phone"] #root{
+  width:var(--jwj-layout-width,100%)!important;
+  height:var(--jwj-layout-height,100dvh)!important;
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  max-height:var(--jwj-layout-height,100dvh)!important;
+}
+
+/* 上部バーは端末幅の細かな違いではなく、縦・横の2種類だけに固定する。 */
+html[data-device-class="phone"] body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header{
+  top:calc(var(--safe-top) + var(--jwj-edge-gap))!important;
+  left:var(--jwj-edge-gap)!important;
+  right:var(--jwj-edge-gap)!important;
+  overflow:hidden!important;
+  contain:layout paint;
+}
+html[data-device-class="phone"] body[data-screen="main"] .game-header{
+  height:var(--jwj-main-header-height)!important;
+  min-height:var(--jwj-main-header-height)!important;
+  max-height:var(--jwj-main-header-height)!important;
+}
+html[data-device-class="phone"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header{
+  height:var(--jwj-page-header-height)!important;
+  min-height:var(--jwj-page-header-height)!important;
+  max-height:var(--jwj-page-header-height)!important;
+}
+html[data-device-class="phone"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .screen-shell:not(.event-shell-no-header)>.screen-content{
+  padding-top:calc(var(--safe-top) + var(--jwj-edge-gap) * 2 + var(--jwj-page-header-height))!important;
+}
+html[data-device-class="phone"] body[data-screen] .event-shell-no-header>.screen-content{
+  padding:0!important;
+}
+
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .game-header{
+  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-areas:"status money"!important;
+  padding:calc(5px * var(--jwj-ui-scale,1)) calc(7px * var(--jwj-ui-scale,1))!important;
+  column-gap:calc(5px * var(--jwj-ui-scale,1))!important;
+  row-gap:0!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .game-header .status-top-line{
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  align-content:center!important;
+  gap:calc(2px * var(--jwj-ui-scale,1))!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .game-header :is(.status-primary-line,.status-secondary-line){
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:calc(5px * var(--jwj-ui-scale,1))!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .game-header .header-status-item{
+  font-size:clamp(9px,calc(10.5px * var(--jwj-ui-scale,1)),11.5px)!important;
+  line-height:1.12!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .game-header .header-money{
+  font-size:clamp(12px,calc(14px * var(--jwj-ui-scale,1)),15px)!important;
+}
+
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header{
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-areas:"status" "money" "center"!important;
+  align-items:stretch!important;
+  padding:calc(6px * var(--jwj-ui-scale,1)) calc(8px * var(--jwj-ui-scale,1))!important;
+  row-gap:calc(4px * var(--jwj-ui-scale,1))!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .status-top-line{
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  gap:calc(2px * var(--jwj-ui-scale,1))!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header :is(.status-primary-line,.status-secondary-line){
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:calc(6px * var(--jwj-ui-scale,1))!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-status-item{
+  font-size:clamp(9px,calc(10.5px * var(--jwj-ui-scale,1)),11.5px)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-money-area{
+  min-height:calc(28px * var(--jwj-ui-scale,1))!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-center{
+  min-height:calc(32px * var(--jwj-ui-scale,1))!important;
+}
+
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header{
+  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-areas:"status money" "center center"!important;
+  padding:calc(4px * var(--jwj-ui-scale,1)) calc(7px * var(--jwj-ui-scale,1))!important;
+  column-gap:calc(6px * var(--jwj-ui-scale,1))!important;
+  row-gap:calc(2px * var(--jwj-ui-scale,1))!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="main"] .game-header{
+  grid-template-areas:"status money"!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header .status-top-line{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:calc(5px * var(--jwj-ui-scale,1))!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header :is(.status-primary-line,.status-secondary-line){
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:calc(5px * var(--jwj-ui-scale,1))!important;
+  min-width:0!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header .header-status-item{
+  font-size:clamp(8.5px,calc(10px * var(--jwj-ui-scale,1)),11px)!important;
+  line-height:1.05!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header .header-money{
+  font-size:clamp(11px,calc(13px * var(--jwj-ui-scale,1)),14px)!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header .header-center{
+  min-height:calc(22px * var(--jwj-ui-scale,1))!important;
+}
+
+/* 下部メニューは縦画面4列×2段、横画面8列×1段に固定する。 */
+html[data-device-class="phone"] body[data-screen="main"] .main-menu:not(.alien-space-menu){
+  left:var(--jwj-edge-gap)!important;
+  right:var(--jwj-edge-gap)!important;
+  bottom:calc(var(--safe-bottom) + var(--jwj-edge-gap))!important;
+  width:auto!important;
+  height:var(--jwj-main-menu-height)!important;
+  transform:none!important;
+  display:grid!important;
+  overflow:hidden!important;
+  padding:calc(4px * var(--jwj-ui-scale,1))!important;
+  gap:calc(4px * var(--jwj-ui-scale,1))!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .main-menu:not(.alien-space-menu){
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  grid-template-rows:repeat(2,minmax(0,1fr))!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="main"] .main-menu:not(.alien-space-menu){
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:minmax(0,1fr)!important;
+}
+html[data-device-class="phone"] body[data-screen="main"] .main-menu:not(.alien-space-menu)>button{
+  grid-column:auto!important;
+  grid-row:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  width:100%!important;
+  height:100%!important;
+  padding:calc(3px * var(--jwj-ui-scale,1))!important;
+  gap:calc(1px * var(--jwj-ui-scale,1))!important;
+  flex:none!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"] body[data-screen="main"] .main-menu:not(.alien-space-menu)>button>strong{
+  font-size:clamp(9px,calc(10.5px * var(--jwj-ui-scale,1)),11.5px)!important;
+  line-height:1.05!important;
+  white-space:nowrap!important;
+}
+html[data-device-class="phone"] body[data-screen="main"] .main-menu:not(.alien-space-menu)>button :is(.main-menu-icon,.meal-cutlery-icon){
+  width:clamp(17px,calc(21px * var(--jwj-ui-scale,1)),23px)!important;
+  height:clamp(17px,calc(21px * var(--jwj-ui-scale,1)),23px)!important;
+}
+html[data-device-class="phone"] body[data-screen="main"] .alien-space-menu{
+  left:var(--jwj-edge-gap)!important;
+  right:var(--jwj-edge-gap)!important;
+  bottom:calc(var(--safe-bottom) + var(--jwj-edge-gap))!important;
+  width:auto!important;
+  height:clamp(52px,calc(62px * var(--jwj-ui-scale,1)),68px)!important;
+  transform:none!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-rows:1fr!important;
+  overflow:hidden!important;
+}
+
+/* キャラクターは端末幅ではなく、上部・下部の予約領域から算出した共通ステージへ配置する。 */
+html[data-device-class="phone"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"]
+) :is(.western-union-character-area,.pazupan-character-area,.mermaid-character-area,.visit-character-area){
+  position:absolute!important;
+  inset-inline:0!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  bottom:var(--jwj-event-dialogue-space)!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:var(--jwj-edge-gap) var(--jwj-edge-gap) 0!important;
+  transform:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:visible!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+html[data-device-class="phone"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"]
+) :is(.western-union-character,.pazupan-character,.mermaid-character,.visit-character){
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:var(--jwj-character-max-width)!important;
+  max-height:100%!important;
+  margin:auto!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+html[data-device-class="phone"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],[data-screen="kappaJadeEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"]
+) :is(.western-union-dialogue,.event-dialogue-card,.visit-event-dialogue){
+  width:calc(100% - var(--jwj-edge-gap) * 2)!important;
+  max-height:calc(var(--jwj-event-dialogue-space) - var(--safe-bottom) - var(--jwj-edge-gap))!important;
+  margin-inline:auto!important;
+  margin-bottom:calc(var(--safe-bottom) + var(--jwj-edge-gap))!important;
+  padding:calc(10px * var(--jwj-ui-scale,1)) calc(13px * var(--jwj-ui-scale,1))!important;
+  overflow-y:auto!important;
+}
+
+/* クイズ王も同じ端末基準で固定する。 */
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event{
+  width:100%!important;
+  height:var(--jwj-layout-height,100dvh)!important;
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  max-height:var(--jwj-layout-height,100dvh)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question{
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:minmax(146px,32%) minmax(0,68%)!important;
+  gap:calc(4px * var(--jwj-ui-scale,1))!important;
+  padding:var(--jwj-edge-gap)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-area{
+  grid-column:1!important;
+  grid-row:1!important;
+  min-width:0!important;
+  min-height:0!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-image{
+  width:auto!important;
+  height:auto!important;
+  max-width:min(70vw,330px)!important;
+  max-height:100%!important;
+  min-height:0!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question{
+  grid-template-columns:minmax(145px,40%) minmax(0,60%)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  gap:calc(6px * var(--jwj-ui-scale,1))!important;
+  padding:var(--jwj-edge-gap)!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-area{
+  min-width:145px!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-character-image{
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  max-width:96%!important;
+  max-height:100%!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-panel{
+  max-width:none!important;
+  max-height:100%!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event:not(.quiz-stage-question):not(.quiz-stage-reward){
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr) auto!important;
+  gap:0!important;
+  padding:var(--jwj-edge-gap)!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event:not(.quiz-stage-question):not(.quiz-stage-reward) .quiz-character-area{
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:0!important;
+  transform:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event:not(.quiz-stage-question):not(.quiz-stage-reward) .quiz-character-image{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:var(--jwj-character-max-width)!important;
+  max-height:100%!important;
+  min-height:0!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .quiz-dialogue-panel{
+  width:100%!important;
+  max-height:calc(var(--jwj-event-dialogue-space) - var(--safe-bottom))!important;
+  margin-bottom:var(--safe-bottom)!important;
+  overflow-y:auto!important;
+}
+
+
+
+
+
+
+@keyframes hauntingFlash {
+  0% { opacity: .92; }
+  8% { opacity: 0; }
+  14% { opacity: .46; }
+  24% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes hauntingChromatic {
+  0%,100% { filter: drop-shadow(0 24px 36px rgba(0,0,0,.90)) drop-shadow(-6px 0 10px rgba(140, 180, 255, .08)) drop-shadow(6px 0 10px rgba(255, 80, 80, .06)); }
+  50% { filter: drop-shadow(0 26px 38px rgba(0,0,0,.92)) drop-shadow(-10px 0 14px rgba(140, 180, 255, .16)) drop-shadow(10px 0 14px rgba(255, 80, 80, .12)); }
+}
+@keyframes hauntingDialogueShake {
+  0%, 100% { transform: translate3d(0,0,0); }
+  15% { transform: translate3d(-1px,0,0); }
+  30% { transform: translate3d(1.2px,0,0); }
+  45% { transform: translate3d(-1.8px,.4px,0); }
+  60% { transform: translate3d(1px,-.4px,0); }
+  75% { transform: translate3d(-.8px,0,0); }
+}
+@keyframes hauntingCostGlow {
+  0%,100% { box-shadow: 0 0 0 rgba(154, 94, 255, 0), 0 18px 42px rgba(0,0,0,.54); }
+  50% { box-shadow: 0 0 32px rgba(154, 94, 255, .18), 0 24px 48px rgba(0,0,0,.64); }
+}
+
+@keyframes hauntingFadeIn {
+  0% { opacity: 0; transform: translate3d(0, 56px, 0) scale(.88); filter: blur(14px) brightness(.42) drop-shadow(0 0 0 rgba(0,0,0,0)); }
+  28% { opacity: .35; transform: translate3d(0, 22px, 0) scale(.94); filter: blur(7px) brightness(.74) drop-shadow(0 12px 18px rgba(0,0,0,.55)); }
+  46% { opacity: .18; transform: translate3d(0, 14px, 0) scale(.91); filter: blur(10px) brightness(.52) drop-shadow(0 14px 26px rgba(0,0,0,.66)); }
+  70% { opacity: .92; transform: translate3d(0, 0, 0) scale(1.03); filter: blur(1.8px) brightness(1.05) drop-shadow(0 24px 34px rgba(0,0,0,.82)); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0) brightness(1) drop-shadow(0 24px 36px rgba(0,0,0,.88)); }
+}
+@keyframes hauntingFloat {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  25% { transform: translate3d(-10px, -8px, 0) scale(1.016); }
+  55% { transform: translate3d(6px, 6px, 0) scale(.994); }
+  80% { transform: translate3d(-4px, -10px, 0) scale(1.01); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes hauntingFlicker {
+  0%, 100% { opacity: 1; }
+  7% { opacity: .88; }
+  10% { opacity: .98; }
+  13% { opacity: .84; }
+  24% { opacity: .97; }
+  28% { opacity: .9; }
+  46% { opacity: .78; }
+  50% { opacity: .98; }
+  73% { opacity: .89; }
+  76% { opacity: .99; }
+}
+@keyframes hauntingPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(185, 189, 255, 0), 0 22px 40px rgba(0,0,0,.44); }
+  50% { box-shadow: 0 0 28px rgba(185, 189, 255, .18), 0 28px 46px rgba(0,0,0,.58); }
+}
+@keyframes hauntingStatic {
+  0% { transform: translate3d(0,0,0); opacity: .05; }
+  20% { transform: translate3d(-1%, 1%, 0); opacity: .09; }
+  40% { transform: translate3d(1%, -1%, 0); opacity: .06; }
+  60% { transform: translate3d(-.7%, .5%, 0); opacity: .1; }
+  80% { transform: translate3d(.5%, -.8%, 0); opacity: .07; }
+  100% { transform: translate3d(0,0,0); opacity: .05; }
+}
+@keyframes hauntingTextJitter {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-1px); }
+  40% { transform: translateX(1.5px); }
+  60% { transform: translateX(-1.2px); }
+  80% { transform: translateX(.8px); }
+}
+
+/* v0.10.389 取り憑かれたイベント */
+body[data-screen="hauntingEvent"]{
+  overflow:hidden;
+  background:#020205;
+}
+body[data-screen="hauntingEvent"] .game-header{
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+body[data-screen="hauntingEvent"] .haunting-event-screen{
+  min-height:100dvh;
+  overflow:hidden;
+}
+body[data-screen="hauntingEvent"] .haunting-event{
+  min-height:100dvh;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(206,210,255,.10), rgba(27,27,34,.28) 28%, rgba(2,2,6,.86) 68%),
+    linear-gradient(180deg, rgba(6,8,13,.18), rgba(0,0,0,.78));
+  isolation:isolate;
+}
+body[data-screen="hauntingEvent"] .haunting-event::before,
+body[data-screen="hauntingEvent"] .haunting-event::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+body[data-screen="hauntingEvent"] .haunting-event::before{
+  z-index:1;
+  background:radial-gradient(circle at 50% 38%, rgba(255,255,255,.08), rgba(255,255,255,0) 36%);
+  mix-blend-mode:screen;
+  opacity:.66;
+}
+body[data-screen="hauntingEvent"] .haunting-event::after{
+  z-index:2;
+  background:linear-gradient(180deg, rgba(4,6,9,.18), rgba(0,0,0,.70));
+}
+body[data-screen="hauntingEvent"] .haunting-flash-layer,
+body[data-screen="hauntingEvent"] .haunting-static-layer,
+body[data-screen="hauntingEvent"] .haunting-vignette-layer{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+body[data-screen="hauntingEvent"] .haunting-flash-layer{
+  z-index:2;
+  background:radial-gradient(circle at 50% 38%, rgba(255,255,255,.82), rgba(196,208,255,.28) 18%, rgba(255,255,255,0) 42%);
+  mix-blend-mode:screen;
+  animation:hauntingFlash 1.1s ease-out both;
+}
+body[data-screen="hauntingEvent"] .haunting-static-layer{
+  z-index:2;
+  opacity:.08;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.24) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 1px, transparent 1px 4px);
+  mix-blend-mode:screen;
+  animation:hauntingStatic 260ms steps(2) infinite;
+}
+body[data-screen="hauntingEvent"] .haunting-vignette-layer{
+  z-index:2;
+  background:radial-gradient(circle at 50% 36%, rgba(255,255,255,0) 24%, rgba(0,0,0,.10) 50%, rgba(0,0,0,.72) 100%);
+}
+body[data-screen="hauntingEvent"] .haunting-character-area{
+  bottom:clamp(124px,21vh,192px);
+  z-index:3;
+}
+body[data-screen="hauntingEvent"] .haunting-character{
+  max-width:min(84vw,800px);
+  max-height:min(80dvh,900px);
+  transform-origin:50% 78%;
+  filter:drop-shadow(0 24px 36px rgba(0,0,0,.88));
+  animation:hauntingFadeIn 1200ms ease-out both, hauntingFloat 4.4s ease-in-out 1s infinite, hauntingFlicker 2.8s linear 1s infinite, hauntingChromatic 3.2s ease-in-out 1s infinite;
+}
+body[data-screen="hauntingEvent"] .haunting-dialogue{
+  z-index:4;
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(195, 201, 255, .18);
+  background:linear-gradient(180deg, rgba(12,12,20,.84), rgba(4,4,8,.90));
+  animation:hauntingPulse 2.2s ease-in-out infinite;
+}
+body[data-screen="hauntingEvent"] .haunting-dialogue-intro{
+  animation:hauntingPulse 2.2s ease-in-out infinite, hauntingDialogueShake 1.0s steps(2) infinite;
+}
+body[data-screen="hauntingEvent"] .haunting-dialogue-intro strong{
+  color:#f8f8ff;
+  text-shadow:0 0 16px rgba(220,225,255,.24), 0 0 3px rgba(255,255,255,.18);
+  animation:hauntingTextJitter .72s steps(2) infinite;
+}
+body[data-screen="hauntingEvent"] .haunting-dialogue-cost{
+  border-color:rgba(175, 126, 255, .36);
+  animation:hauntingPulse 2.2s ease-in-out infinite, hauntingCostGlow 1.8s ease-in-out infinite;
+}
+body[data-screen="hauntingEvent"] .haunting-dialogue-cost strong{
+  color:#f0dcff;
+  text-shadow:0 0 18px rgba(183,122,255,.22);
+}
+body[data-screen="hauntingEvent"] .haunting-dialogue small,
+body[data-screen="hauntingEvent"] .haunting-event .visit-event-dialogue>small{
+  color:#d9d4ff;
+}
+body[data-screen="hauntingEvent"] .haunting-dialogue span{
+  color:rgba(245,245,255,.84);
+}
+@media (orientation:portrait),(max-width:760px){
+  body[data-screen="hauntingEvent"] .haunting-character{max-width:96vw;max-height:74dvh}
+}
+@media (orientation:landscape) and (max-height:560px){
+  body[data-screen="hauntingEvent"] .haunting-character-area{bottom:112px}
+  body[data-screen="hauntingEvent"] .haunting-character{max-width:64vw;max-height:76dvh}
+}
+
+/* v0.10.384 ガネーシャの牙イベント */
+body[data-screen="ganeshaTuskEvent"] .ganesha-tusk-event-screen{
+  min-height:100dvh;
+  overflow:hidden;
+}
+body[data-screen="ganeshaTuskEvent"] .ganesha-tusk-event{
+  min-height:100dvh;
+  background:radial-gradient(circle at 50% 36%,rgba(142,74,35,.15),rgba(0,0,0,.30) 60%,rgba(0,0,0,.72));
+}
+body[data-screen="ganeshaTuskEvent"] .ganesha-character{
+  max-height:min(74dvh,760px);
+  max-width:min(88vw,760px);
+  filter:drop-shadow(0 24px 38px rgba(0,0,0,.88));
+}
+body[data-screen="ganeshaTuskEvent"] .ganesha-tusk-event .visit-event-dialogue>small{
+  color:#f0c27a;
+}
+body[data-screen="ganeshaTuskEvent"] .ganesha-tusk-event.is-reward .ganesha-character{
+  opacity:.30!important;
+  filter:brightness(.48) drop-shadow(0 24px 38px rgba(0,0,0,.9));
+}
+.ganesha-tusk-reward-button{
+  position:absolute;
+  z-index:10;
+  left:50%;
+  top:48%;
+  transform:translate(-50%,-50%);
+  width:min(86vw,620px);
+  min-height:220px;
+  border:1px solid rgba(232,190,111,.72);
+  border-radius:20px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:#fff4d7;
+  background:linear-gradient(180deg,rgba(26,18,12,.90),rgba(8,6,5,.95));
+  box-shadow:0 24px 60px rgba(0,0,0,.76),inset 0 0 36px rgba(226,177,91,.12);
+}
+.ganesha-tusk-reward-button img{
+  width:min(72vw,500px);
+  max-height:33dvh;
+  object-fit:contain;
+  filter:drop-shadow(0 0 18px rgba(255,218,132,.58));
+}
+.ganesha-tusk-reward-button strong{font-size:clamp(1.15rem,3vw,1.75rem)}
+.ganesha-tusk-reward-button small{color:#dbc8a1}
+.ganesha-tusk-glow{
+  width:min(78vw,560px)!important;
+  height:min(42vw,300px)!important;
+  background:radial-gradient(circle,rgba(255,226,143,.34),rgba(245,184,70,.08) 52%,transparent 72%)!important;
+}
+@media (orientation:landscape){
+  body[data-screen="ganeshaTuskEvent"] .ganesha-character{max-height:96dvh;max-width:54vw}
+  .ganesha-tusk-reward-button{width:min(52vw,620px);min-height:170px}
+  .ganesha-tusk-reward-button img{width:min(44vw,500px);max-height:36dvh}
+}
+
+
+/* v0.10.387 幼なじみとの再会イベント */
+body[data-screen="childhoodFriendEvent"]{
+  overflow:hidden;
+}
+body[data-screen="childhoodFriendEvent"] .game-header{
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-event-screen{
+  position:relative;
+  min-height:100dvh;
+  height:100dvh;
+  overflow:hidden;
+  isolation:isolate;
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-event{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-rows:minmax(0,1fr) auto;
+  width:100%;
+  min-height:100dvh;
+  height:100dvh;
+  overflow:hidden;
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-event::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.12) 52%,rgba(0,0,0,.62));
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-dialogue{
+  position:relative!important;
+  z-index:3!important;
+  grid-row:2!important;
+  align-self:end!important;
+  width:min(920px,calc(100% - 24px))!important;
+  margin:0 auto max(14px,var(--safe-bottom))!important;
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-eating-screen .childhood-friend-event{
+  place-items:center;
+  grid-template-rows:minmax(0,1fr);
+  padding:max(12px,var(--safe-top)) 12px max(12px,var(--safe-bottom));
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-eating-screen .meal-eating-panel{
+  position:relative;
+  z-index:3;
+  width:min(640px,92vw);
+  background:linear-gradient(155deg,rgba(16,13,10,.76),rgba(5,4,3,.84))!important;
+  border-color:rgba(222,178,96,.42)!important;
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-eating-screen .meal-food-display img{
+  filter:drop-shadow(0 18px 28px rgba(0,0,0,.72));
+}
+html[data-device-class="phone"] body[data-screen="childhoodFriendEvent"] .childhood-friend-dialogue{
+  width:calc(100% - var(--jwj-edge-gap) * 2)!important;
+  max-height:calc(var(--jwj-event-dialogue-space) - var(--safe-bottom) - var(--jwj-edge-gap))!important;
+  margin-inline:auto!important;
+  margin-bottom:calc(var(--safe-bottom) + var(--jwj-edge-gap))!important;
+  padding:calc(10px * var(--jwj-ui-scale,1)) calc(13px * var(--jwj-ui-scale,1))!important;
+  overflow-y:auto!important;
+}
+@media (orientation:landscape) and (max-height:430px){
+  body[data-screen="childhoodFriendEvent"] .childhood-friend-dialogue{
+    padding:9px 13px!important;
+    gap:5px!important;
+  }
+  body[data-screen="childhoodFriendEvent"] .childhood-friend-dialogue>strong{
+    font-size:.82rem!important;
+    line-height:1.42!important;
+  }
+  body[data-screen="childhoodFriendEvent"] .childhood-friend-eating-screen .meal-food-display{
+    min-height:120px;
+  }
+  body[data-screen="childhoodFriendEvent"] .childhood-friend-eating-screen .meal-food-display img{
+    max-height:42dvh;
+  }
+}
+
+
+/* v0.10.392 河童の翡翠原石イベント */
+body[data-screen="kappaJadeEvent"]{
+  overflow:hidden;
+}
+body[data-screen="kappaJadeEvent"] .game-header{
+  display:none!important;
+}
+body[data-screen="kappaJadeEvent"] .screen-content{
+  min-height:100dvh;
+  padding-top:0!important;
+}
+body[data-screen="kappaJadeEvent"] .kappa-jade-event-screen{
+  overflow:hidden;
+}
+body[data-screen="kappaJadeEvent"] .kappa-jade-event{
+  background:radial-gradient(circle at 50% 28%,rgba(52,106,86,.26),rgba(10,19,19,.05) 48%,rgba(4,7,10,.16) 76%);
+}
+body[data-screen="kappaJadeEvent"] .kappa-character{
+  max-width:min(92vw,720px);
+  max-height:min(70dvh,980px);
+  object-fit:contain;
+  filter:drop-shadow(0 24px 38px rgba(0,0,0,.88));
+}
+body[data-screen="kappaJadeEvent"] .kappa-jade-event .visit-event-dialogue>small{
+  color:#9ee3c1;
+}
+body[data-screen="kappaJadeEvent"] .kappa-jade-event.is-reward .kappa-character{
+  opacity:.34!important;
+  filter:brightness(.52) drop-shadow(0 24px 38px rgba(0,0,0,.9));
+}
+.kappa-jade-reward-button{
+  position:absolute;
+  z-index:10;
+  left:50%;
+  top:48%;
+  transform:translate(-50%,-50%);
+  width:min(86vw,620px);
+  min-height:220px;
+  border:1px solid rgba(123,220,175,.72);
+  border-radius:20px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:#effff7;
+  background:linear-gradient(180deg,rgba(11,26,21,.92),rgba(5,11,9,.96));
+  box-shadow:0 24px 60px rgba(0,0,0,.76),inset 0 0 36px rgba(123,220,175,.12);
+}
+.kappa-jade-reward-button img{
+  width:min(72vw,430px);
+  max-height:31dvh;
+  object-fit:contain;
+  filter:drop-shadow(0 0 18px rgba(146,245,198,.52));
+}
+.kappa-jade-reward-button strong{font-size:clamp(1.15rem,3vw,1.75rem)}
+.kappa-jade-reward-button small{color:#bcefd8}
+.kappa-jade-glow{
+  width:min(78vw,560px)!important;
+  height:min(42vw,300px)!important;
+  background:radial-gradient(circle,rgba(126,255,207,.28),rgba(83,209,164,.10) 52%,transparent 72%)!important;
+}
+@media (orientation:landscape){
+  body[data-screen="kappaJadeEvent"] .kappa-character{max-height:96dvh;max-width:54vw}
+  .kappa-jade-reward-button{width:min(52vw,620px);min-height:170px}
+  .kappa-jade-reward-button img{width:min(40vw,430px);max-height:34dvh}
+}
+
+
+/* v0.10.395 店舗の盗難老婆イベント */
+body[data-screen="storeTheftEvent"]{overflow:hidden}
+body[data-screen="storeTheftEvent"] .main-screen{position:relative;overflow:hidden;isolation:isolate}
+body[data-screen="storeTheftEvent"] .store-theft-event-screen{min-height:100dvh}
+body[data-screen="storeTheftEvent"] .store-theft-event{position:relative;background:radial-gradient(circle at 50% 30%,rgba(255,232,198,.10),rgba(16,10,7,.08) 52%,rgba(4,4,5,.20) 76%)}
+body[data-screen="storeTheftEvent"] .store-theft-event::before{background:radial-gradient(circle at 50% 35%,rgba(255,255,255,.06),rgba(0,0,0,.18) 54%,rgba(0,0,0,.64))}
+body[data-screen="storeTheftEvent"] .store-theft-event::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(9,8,6,.08),rgba(0,0,0,.40))}
+body[data-screen="storeTheftEvent"] .store-theft-overlay{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 18% 18%,rgba(255,255,255,.08),transparent 28%),radial-gradient(circle at 82% 20%,rgba(255,220,180,.06),transparent 24%)}
+body[data-screen="storeTheftEvent"] .store-theft-character-area{bottom:clamp(132px,24vh,198px)}
+body[data-screen="storeTheftEvent"] .store-theft-character{max-width:min(88vw,760px);max-height:min(74dvh,980px);object-fit:contain;filter:drop-shadow(0 26px 38px rgba(0,0,0,.88))}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue{width:min(92vw,720px);justify-self:center}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue>small{color:#ffd1b6}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue strong{line-height:1.55}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue span{color:#d8d6d2}
+body[data-screen="storeTheftEvent"] .store-theft-choice-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:.9rem}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-auto,
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-pause{cursor:default}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-pause strong{font-size:clamp(1.4rem,4.4vw,2rem);letter-spacing:.16em}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-alert{border-color:rgba(255,127,127,.44);box-shadow:0 18px 48px rgba(0,0,0,.62), inset 0 0 0 1px rgba(255,100,100,.10)}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-alert>small{color:#ff9d9d}
+body[data-screen="storeTheftEvent"] .store-theft-event.is-after .store-theft-dialogue{margin-bottom:clamp(10vh,15vh,18vh)}
+@media (orientation:portrait),(max-width:760px){body[data-screen="storeTheftEvent"] .store-theft-character{max-width:96vw;max-height:70dvh}body[data-screen="storeTheftEvent"] .store-theft-choice-buttons{grid-template-columns:1fr}}
+@media (orientation:landscape) and (max-height:560px){body[data-screen="storeTheftEvent"] .store-theft-character-area{bottom:112px}body[data-screen="storeTheftEvent"] .store-theft-character{max-width:60vw;max-height:78dvh}}
+
+
+/* v0.10.396 盗難老婆イベントの不気味な退場演出 */
+@keyframes storeThiefVanish{
+  0%{opacity:1;transform:translateX(-50%) scale(1);filter:blur(0)}
+  42%{opacity:.72;transform:translateX(-50%) scale(1.012);filter:blur(1px)}
+  70%{opacity:.26;transform:translateX(-50%) scale(.992);filter:blur(5px)}
+  100%{opacity:0;transform:translateX(-50%) scale(.965);filter:blur(12px)}
+}
+@keyframes storeThiefDialogueVanish{
+  0%,38%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(10px)}
+}
+@keyframes storeThiefAfterimageFade{
+  0%{opacity:.19;filter:brightness(0) blur(8px);transform:translate(-50%,-50%) scale(.99)}
+  100%{opacity:0;filter:brightness(0) blur(18px);transform:translate(-50%,-50%) scale(.95)}
+}
+@keyframes storeTheftNoticeIn{
+  0%{opacity:0;transform:translateY(8px);filter:blur(4px)}
+  100%{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+body[data-screen="storeTheftEvent"] .store-theft-event.is-vanishing .store-theft-character-area{
+  animation:storeThiefVanish 1.9s cubic-bezier(.36,0,.2,1) forwards;
+}
+body[data-screen="storeTheftEvent"] .store-theft-event.is-vanishing .store-theft-dialogue-auto{
+  animation:storeThiefDialogueVanish 1.9s ease forwards;
+}
+body[data-screen="storeTheftEvent"] .store-theft-afterimage{
+  position:absolute;
+  z-index:3;
+  left:50%;
+  top:43%;
+  width:min(66vw,560px);
+  max-height:58dvh;
+  object-fit:contain;
+  pointer-events:none;
+  animation:storeThiefAfterimageFade 1.65s ease-out forwards;
+}
+body[data-screen="storeTheftEvent"] .store-theft-silent-pause{
+  position:relative;
+  z-index:8;
+  grid-row:2;
+  align-self:end;
+  justify-self:center;
+  margin-bottom:clamp(13vh,18vh,22vh);
+  color:rgba(245,245,245,.66);
+  font-size:clamp(1.4rem,4vw,2rem);
+  letter-spacing:.35em;
+  text-shadow:0 0 12px rgba(255,255,255,.10);
+}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-alert{
+  border-color:rgba(236,239,244,.24);
+  background:linear-gradient(180deg,rgba(8,9,11,.88),rgba(2,3,4,.94));
+  box-shadow:0 20px 52px rgba(0,0,0,.70),inset 0 0 0 1px rgba(255,255,255,.035);
+  animation:storeTheftNoticeIn .7s ease-out both;
+}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-alert>small{
+  color:#d8dce3;
+}
+body[data-screen="storeTheftEvent"] .store-theft-dialogue-alert strong{
+  color:#f5f6f7;
+  text-shadow:0 0 16px rgba(255,255,255,.08);
 }

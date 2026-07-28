@@ -24,7 +24,7 @@ const validKeys = new Set([
   'meal', 'meal-convenience', 'meal-soba', 'meal-ramen', 'meal-hamburger',
   'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab', 'kaitenzushi',
 ]);
-const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'quiz-correct', 'quiz-incorrect']);
+const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'ganesha-appear', 'ganesha-gift', 'kappa-appear', 'jade-gift', 'haunting-appear', 'haunting-whisper', 'old-lady-appear', 'shoplift-steal', 'quiz-correct', 'quiz-incorrect']);
 
 function createAudio(url, loop = false) {
   const audio = new Audio(url);
@@ -458,6 +458,12 @@ export function playSfx(name, options = {}) {
   const customUrls = {
     'quiz-correct': `${AUDIO_DIR}/quiz_correct_sfx.mp3`,
     'quiz-incorrect': `${AUDIO_DIR}/quiz_incorrect_sfx.mp3`,
+    'haunting-appear': `${AUDIO_DIR}/sfx-haunting-appear.wav`,
+    'haunting-whisper': `${AUDIO_DIR}/sfx-haunting-whisper.wav`,
+    'old-lady-appear': `${AUDIO_DIR}/sfx-old-lady-appear.wav`,
+    'shoplift-steal': `${AUDIO_DIR}/sfx-shoplift-steal.wav`,
+    'kappa-appear': `${AUDIO_DIR}/sfx-kappa-appear.wav`,
+    'jade-gift': `${AUDIO_DIR}/sfx-jade-gift.wav`,
   };
   const audio = createAudio(customUrls[name] || `${AUDIO_DIR}/sfx-${name}.ogg`);
   audio.volume = Math.max(0, Math.min(1, Number(settings.sfxVolume) * (options.gain || 1)));

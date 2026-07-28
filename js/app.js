@@ -6,7 +6,7 @@ import {
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.366';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.398';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -58,6 +58,8 @@ let shellInstallAvailable = false;
 let shellInstalled = false;
 let shellInstallRequestId = 0;
 let shellViewportOrientation = '';
+let shellViewportWidth = 0;
+let shellViewportHeight = 0;
 const shellInstallResolvers = new Map();
 let moneyFeedback = null;
 let moneyFeedbackTimer = null;
@@ -67,6 +69,7 @@ let jewelryShopPendingTrade = null;
 let kaitenzushiSession = null;
 let okachimachiQuizSession = null;
 let okachimachiQuizQuestionsPromise = null;
+let storeTheftSequenceRunning = false;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
 const JEWELRY_SHOP_STOCK_SIZE = 5;
@@ -87,6 +90,20 @@ const MERMAID_EVENT_GEM_ID = 'pearl';
 const MERMAID_EVENT_SHAPE_ID = 'pearl';
 const SUSHI_CHEF_EVENT_CHANCE = 1 / 90;
 const CYCLOPS_EVENT_CHANCE = 1 / 90;
+const GANESHA_TUSK_EVENT_CHANCE = 1 / 90;
+const GANESHA_TUSK_GEM_ID = 'ivory';
+const CHILDHOOD_FRIEND_FIRST_TRIGGER_MIN = 330;
+const HAUNTING_EVENT_DAILY_CHANCE = 1 / 200;
+const HAUNTING_EVENT_COST = 1000000;
+const HAUNTING_EVENT_FLASH_DURATION_MS = 1200;
+const STORE_THEFT_EVENT_CHANCE = 1 / 90;
+const CUSTOMER_FIRST_VISIT_CHANCE = 0.38;
+const CUSTOMER_REGULAR_VISIT_CHANCE = 0.18;
+const CUSTOMER_REPEAT_COOLDOWN_DAYS = 3;
+const EMPLOYEE_DAILY_WAGE = 18000;
+const CHILDHOOD_FRIEND_FIRST_TRIGGER_MAX = 420;
+const CHILDHOOD_FRIEND_REPEAT_TRIGGER_MIN = 620;
+const CHILDHOOD_FRIEND_REPEAT_TRIGGER_MAX = 840;
 const SLEEP_UNLOCK_MINUTES = 19 * 60;
 const ALIEN_ABDUCTION_DAILY_CHANCE = 1 / 365;
 const ALIEN_ABDUCTION_DAYS = 3;
@@ -201,6 +218,13 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
     defaultShape: 'pearl',
     shapes: {
       pearl: './assets/images/events/pearl.png',
+    },
+  },
+  ivory: {
+    defaultShape: 'roundCabochon',
+    shapes: {
+      roundCabochon: './assets/images/loose/ivory/round-cabochon.png',
+      ovalCabochon: './assets/images/loose/ivory/oval-cabochon.png',
     },
   },
   emerald: {
@@ -341,6 +365,13 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
       ovalCabochon: './assets/images/loose/imperialtopaz/oval-cabochon.png',
     },
   },
+  jade: {
+    defaultShape: 'roundCabochon',
+    shapes: {
+      roundCabochon: './assets/images/loose/jade/round-cabochon.png',
+      ovalCabochon: './assets/images/loose/jade/oval-cabochon.png',
+    },
+  },
   citrine: {
     defaultShape: 'round',
     shapes: {
@@ -393,6 +424,8 @@ const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
   diamond: '強い輝きと高い硬度を持つ宝石で、ファセットの状態が見た目へ大きく影響します。',
   antiqueDiamond: '雨の日の特別イベントでのみ入手できる、アンティークカットの特別なダイヤモンドです。ゲーム内では通常のダイヤモンド・ラウンドルースの1.5倍の価値として扱います。',
   pearl: '寝るときにまれに現れる人魚から受け取る、イベント限定のパールです。ルース在庫へ追加され、制作や売却に使用できます。',
+  ivory: 'インド料理屋で出会うガネーシャから受け取った牙を研磨して作る、イベント限定の象牙ルースです。',
+  jade: '河原で出会う河童からもらえる翡翠原石を研磨して作る、イベント限定の翡翠ルースです。',
   emerald: '緑色のベリルで、鮮やかな色と天然由来の内包物が個性になります。',
   moonstone: '乳白色の地色に青白い光が浮かぶ、シラー効果が特徴の宝石です。',
   ruby: '赤色のコランダムで、色の濃さと透明感が印象を左右します。',
@@ -417,6 +450,7 @@ const LOOSE_GEM_PROFILE_IDS = Object.freeze({
   diamond: 'diamond',
   antiqueDiamond: 'diamond',
   pearl: 'pearl',
+  jade: 'jadeite',
   emerald: 'emerald',
   moonstone: 'moonstone',
   ruby: 'ruby',
@@ -581,6 +615,8 @@ function looseGemProfessionalSections(gemId, guide) {
     extras.push({ title: 'ゲーム内でのアンティークダイヤ', body: 'この項目の鉱物学的スペックはダイヤモンドに基づきます。「アンティークカット」は鉱物種ではなくカット様式の説明です。ゲーム内では雨の日の特別イベントでのみ入手できる特別ルースとして扱います。' });
   } else if (gemId === 'pearl') {
     extras.push({ title: 'ゲーム内でのパール', body: 'ゲーム内では人魚イベントで入手する特別な一粒として扱います。実際の真珠は母貝、養殖方式、真珠層、形、光沢、表面、色などにより性質と評価が異なります。' });
+  } else if (gemId === 'jade') {
+    extras.push({ title: 'ゲーム内での翡翠', body: 'ゲーム内では河原で出会う河童から翡翠原石を受け取り、工房でラウンドまたはオーバルのカボションへ研磨する特別なルースとして扱います。' });
   }
   return [...profileSections, ...guideSections, ...extras];
 }
@@ -648,6 +684,17 @@ const GEM_LOOSE_GUIDES = Object.freeze({
       { title: '光沢と表面', body: '真珠層の厚み、構造、表面の滑らかさによって光沢と干渉色の見え方が変わります。乾燥、汗、化粧品、摩擦を避けて扱います。' },
       { title: '耐久性', body: 'モース硬度は種類や測定条件で幅がありますが、一般に傷付きやすい素材です。超音波、スチーム、高熱、酸や強い薬品を避けます。' },
       { title: '手入れ', body: '使用後は柔らかい布で汗や皮脂を拭き、他のジュエリーと接触しないよう保管します。洗浄が必要な場合は短時間の穏やかな方法を選びます。' },
+    ],
+  },
+  jade: {
+    hardness: '6〜7', mineral: 'ひすい輝石を主成分とする翡翠（ジェダイト）として扱う',
+    overview: '翡翠は日本でも古くから親しまれてきた緑色系の宝石材料です。実際の「ひすい」にはジェダイトとネフライトがありますが、ゲーム内では河童イベントで受け取る翡翠原石を、滑らかなカボションへ研磨する石として扱います。色の濃淡、半透明感、模様の出方が個性になります。',
+    sections: [
+      { title: '色と質感', body: '鮮やかな緑だけでなく、白、灰、青緑、まだら模様を含む個体もあります。カボションでは色のむらや雲状の模様、わずかな透明感を正面から見せるように配置します。' },
+      { title: '加工の考え方', body: '翡翠はファセットで強い輝きを狙うより、丸みのあるカボションで色と艶を見せる加工が一般的です。ドームの高さが低すぎると平坦に見え、高すぎると石座とのバランスが難しくなります。' },
+      { title: '耐久性', body: 'モース硬度はおおむね6〜7です。傷に対して一定の強さがありますが、内部の割れや端部への衝撃には注意します。原石由来のヒビや弱い層がある場合は、研磨方向と石留め位置を慎重に選びます。' },
+      { title: '鑑別と処理', body: '実際の市場では樹脂含浸、染色、漂白などが問題になることがあります。外観だけで天然無処理を断定せず、必要に応じて鑑別・分析を行います。' },
+      { title: '手入れ', body: '通常は柔らかい布と穏やかな洗浄で十分です。強い酸、強いアルカリ、急激な温度変化、激しい衝撃を避けて扱います。' },
     ],
   },
   emerald: {
@@ -985,6 +1032,47 @@ function isPortraitLayout() {
   return measuredPortraitLayout();
 }
 
+function clampViewportValue(value, min, max) {
+  return Math.min(max, Math.max(min, Number(value) || min));
+}
+
+function applyDeviceViewportProfile({ orientation = '', width = 0, height = 0, deviceClass = '', uiScale = 0 } = {}) {
+  const viewport = window.visualViewport;
+  const measuredWidth = Math.max(1, Math.round(Number(width) || Number(viewport?.width) || window.innerWidth || document.documentElement.clientWidth || 1));
+  const measuredHeight = Math.max(1, Math.round(Number(height) || Number(viewport?.height) || window.innerHeight || document.documentElement.clientHeight || 1));
+  const resolvedOrientation = orientation === 'portrait' || orientation === 'landscape'
+    ? orientation
+    : measuredHeight >= measuredWidth ? 'portrait' : 'landscape';
+  const shortSide = Math.min(measuredWidth, measuredHeight);
+  const longSide = Math.max(measuredWidth, measuredHeight);
+  const touchDevice = Number(navigator.maxTouchPoints || 0) > 0 || 'ontouchstart' in window;
+  const resolvedDeviceClass = ['phone', 'tablet', 'desktop'].includes(deviceClass)
+    ? deviceClass
+    : touchDevice && shortSide <= 620 && longSide <= 1100
+      ? 'phone'
+      : touchDevice && shortSide <= 900
+        ? 'tablet'
+        : 'desktop';
+  const scaleAxis = resolvedOrientation === 'landscape' ? measuredHeight : measuredWidth;
+  const resolvedScale = resolvedDeviceClass === 'phone'
+    ? clampViewportValue(uiScale || (scaleAxis / 390), .84, 1.08)
+    : 1;
+
+  shellViewportWidth = measuredWidth;
+  shellViewportHeight = measuredHeight;
+  const rootStyle = document.documentElement.style;
+  rootStyle.setProperty('--jwj-layout-width', `${measuredWidth}px`);
+  rootStyle.setProperty('--jwj-layout-height', `${measuredHeight}px`);
+  rootStyle.setProperty('--jwj-ui-scale', resolvedScale.toFixed(4));
+  document.documentElement.dataset.orientation = resolvedOrientation;
+  document.documentElement.dataset.deviceClass = resolvedDeviceClass;
+  document.documentElement.dataset.layoutProfile = `${resolvedDeviceClass}-${resolvedOrientation}`;
+}
+
+function syncDeviceViewportProfile() {
+  applyDeviceViewportProfile({ orientation: shellViewportOrientation });
+}
+
 const KEYBOARD_AWARE_FIELD_SELECTOR = '[data-calendar-event-input]';
 let focusedKeyboardField = null;
 let keyboardVisibilityTimer = 0;
@@ -1038,9 +1126,22 @@ function mealFoodImage(mealId) {
   return versionedAsset(MEAL_FOOD_IMAGES[mealId] || '');
 }
 
+function mealBackgroundAssetName(mealId, portrait = isPortraitLayout()) {
+  if (mealId === 'ramen') return portrait ? 'meal-ramen-portrait-v386' : 'meal-ramen-v386';
+  return `meal-${mealId}${portrait ? '-portrait' : ''}`;
+}
+
+function childhoodFriendBackgroundAssetName(portrait = isPortraitLayout()) {
+  return portrait ? 'meal-ramen-reunion-portrait-v387' : 'meal-ramen-reunion-v387';
+}
+
+function childhoodFriendBackgroundImage(portrait = isPortraitLayout()) {
+  return versionedAsset(`./assets/images/${childhoodFriendBackgroundAssetName(portrait)}.webp`);
+}
+
 function mealBackgroundImage(mealId) {
   if (!MEALS[mealId]) return '';
-  return versionedAsset(`./assets/images/meal-${mealId}${isPortraitLayout() ? '-portrait' : ''}.webp`);
+  return versionedAsset(`./assets/images/${mealBackgroundAssetName(mealId)}.webp`);
 }
 
 function preloadImage(src) {
@@ -1847,7 +1948,13 @@ window.addEventListener('message', (event) => {
     if (!nextOrientation) return;
     const orientationChanged = shellViewportOrientation !== nextOrientation;
     shellViewportOrientation = nextOrientation;
-    document.documentElement.dataset.orientation = nextOrientation;
+    applyDeviceViewportProfile({
+      orientation: nextOrientation,
+      width: data.referenceWidth,
+      height: data.referenceHeight,
+      deviceClass: data.deviceClass,
+      uiScale: data.uiScale,
+    });
     if (orientationChanged) {
       applyCurrentBackground();
       if (screen === 'meal' && screenData?.mealId && MEALS[screenData.mealId]) {
@@ -2715,10 +2822,15 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value) || 0));
 }
 
+function roughDisplayName(id) {
+  const gem = GEMS[id];
+  return gem?.roughName || (gem ? `${gem.name}原石` : '原石');
+}
+
 function roughVisual(id, className = 'gem-thumb', alt = '') {
   const gem = GEMS[id];
   if (!gem) return '';
-  return `<img class="${className}" src="./assets/images/gems/${gem.id}.png" alt="${esc(alt || `${gem.name}原石`)}">`;
+  return `<img class="${className}" src="./assets/images/gems/${gem.id}.png" alt="${esc(alt || roughDisplayName(id))}">`;
 }
 
 function looseVisual(id, className = 'loose-inline', alt = '', shapeId = 'default') {
@@ -3714,6 +3826,7 @@ function maybeStartMiningPazupanEvent() {
 }
 
 function enterMiningFromOutside() {
+  if (resumeKappaJadeEvent()) return;
   if (resumeMiningPazupanEvent()) return;
   if (maybeStartMiningPazupanEvent()) return;
   setScreen('mining', {});
@@ -3748,6 +3861,70 @@ function advanceMiningPazupanEvent() {
   saveGame();
   playSfx('select', { gain: .82 });
   setScreen('mining', {}, false);
+}
+
+function kappaJadeEventState() {
+  return simpleEventState('kappaJadeEvent', ['idle', 'intro1', 'intro2', 'reward', 'farewell', 'completed'], { rewardGranted: false });
+}
+
+function resumeKappaJadeEvent() {
+  const eventState = kappaJadeEventState();
+  if (!eventState.active) return false;
+  setScreen('kappaJadeEvent', {}, false);
+  return true;
+}
+
+function maybeStartKappaJadeEvent() {
+  const eventState = kappaJadeEventState();
+  if (eventState.active) return resumeKappaJadeEvent();
+  if (selectedMining !== 'river') return false;
+  if (Math.random() >= (1 / 30)) return false;
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  saveGame();
+  setScreen('kappaJadeEvent', {}, false);
+  playSfx('kappa-appear', { gain: 0.98 });
+  vibrate([24, 30, 48]);
+  return true;
+}
+
+function receiveKappaJade() {
+  const eventState = kappaJadeEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.rough.jade = Math.max(0, Math.floor(Number(state.inventory.rough?.jade) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。', 'special');
+  }
+  eventState.stage = 'farewell';
+  saveGame();
+  playSfx('jade-gift', { gain: 1.02 });
+  vibrate([34, 26, 64]);
+  render();
+}
+
+function advanceKappaJadeEvent() {
+  const eventState = kappaJadeEventState();
+  if (!eventState.active) {
+    setScreen('mining', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') eventState.stage = 'intro2';
+  else if (eventState.stage === 'intro2') eventState.stage = 'reward';
+  else if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.82 });
+    setScreen('mining', {}, false);
+    return;
+  }
+  saveGame();
+  playSfx('select', { gain: 0.82 });
+  render();
 }
 
 function mermaidEventState() {
@@ -3989,6 +4166,342 @@ async function receiveCyclopsEnergyDrink() {
   vibrate([38, 35, 75]);
   await wait(430);
   await eatMeal('convenience', { skipEventCheck: true });
+}
+
+
+function ganeshaTuskEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.ganeshaTuskEvent && typeof state.events.ganeshaTuskEvent === 'object' && !Array.isArray(state.events.ganeshaTuskEvent)
+    ? state.events.ganeshaTuskEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  state.events.ganeshaTuskEvent = {
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (!state.events.ganeshaTuskEvent.active && !['idle', 'completed'].includes(state.events.ganeshaTuskEvent.stage)) state.events.ganeshaTuskEvent.stage = 'completed';
+  return state.events.ganeshaTuskEvent;
+}
+
+function hasUnpolishedGaneshaTusk() {
+  return Math.max(0, Math.floor(Number(state.inventory?.rough?.[GANESHA_TUSK_GEM_ID]) || 0)) > 0;
+}
+
+function maybeStartGaneshaTuskEvent() {
+  const eventState = ganeshaTuskEventState();
+  if (eventState.active) {
+    setScreen('ganeshaTuskEvent', { mealId: 'indian' }, false);
+    return true;
+  }
+  // v0.10.388 未研磨の牙を所持中は、同じ牙を重ねて受け取るイベントを発生させない。
+  if (hasUnpolishedGaneshaTusk()) return false;
+  const todayKey = visitEventDateKey();
+  if (eventState.lastCheckedDate === todayKey) return false;
+  eventState.lastCheckedDate = todayKey;
+  if (Math.random() >= GANESHA_TUSK_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  state.game.screen = 'ganeshaTuskEvent';
+  saveGame();
+  setScreen('ganeshaTuskEvent', { mealId: 'indian' }, false);
+  requestAnimationFrame(() => playSfx('ganesha-appear', { gain: 1.02 }));
+  vibrate([45, 35, 75]);
+  return true;
+}
+
+function advanceGaneshaTuskEvent() {
+  const eventState = ganeshaTuskEventState();
+  if (!eventState.active) return;
+  if (eventState.stage === 'intro1') eventState.stage = 'intro2';
+  else if (eventState.stage === 'intro2') eventState.stage = 'intro3';
+  else if (eventState.stage === 'intro3') eventState.stage = 'reward';
+  else if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: .84 });
+    eatMeal('indian', { skipEventCheck: true });
+    return;
+  }
+  saveGame();
+  playSfx('select', { gain: .82 });
+  render();
+}
+
+function receiveGaneshaTusk() {
+  const eventState = ganeshaTuskEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.rough[GANESHA_TUSK_GEM_ID] = Math.max(0, Math.floor(Number(state.inventory.rough?.[GANESHA_TUSK_GEM_ID]) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('ガネーシャの牙を手に入れました', '工房の原石へ追加されました。研磨すると象牙のルースになります。', 'special');
+  }
+  eventState.stage = 'farewell';
+  saveGame();
+  playSfx('ganesha-gift', { gain: 1.08 });
+  vibrate([35, 28, 70]);
+  render();
+}
+
+
+
+function hauntingEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.hauntingEvent && typeof state.events.hauntingEvent === 'object' && !Array.isArray(state.events.hauntingEvent)
+    ? state.events.hauntingEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'processing', 'completed']);
+  state.events.hauntingEvent = {
+    lastCheckedDay: Math.max(0, Math.floor(Number(saved.lastCheckedDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    paymentApplied: Boolean(saved.paymentApplied),
+  };
+  if (!state.events.hauntingEvent.active && !['idle', 'completed'].includes(state.events.hauntingEvent.stage)) {
+    state.events.hauntingEvent.stage = 'completed';
+  }
+  return state.events.hauntingEvent;
+}
+
+function maybeStartHauntingEvent() {
+  if (isAlienAbducted()) return false;
+  const eventState = hauntingEventState();
+  if (eventState.active) {
+    setScreen('hauntingEvent', {}, false);
+    return true;
+  }
+  if (Number(state?.game?.money || 0) < HAUNTING_EVENT_COST) return false;
+  if (eventState.lastCheckedDay === Number(state?.game?.day || 0)) return false;
+  eventState.lastCheckedDay = Number(state?.game?.day || 0);
+  if (Math.random() >= HAUNTING_EVENT_DAILY_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = Number(state?.game?.day || 0);
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.paymentApplied = false;
+  state.game.screen = 'hauntingEvent';
+  saveGame();
+  setScreen('hauntingEvent', {}, false);
+  playSfx('haunting-appear', { gain: .96 });
+  setTimeout(() => playSfx('impact', { gain: .68, rate: .78 }), 80);
+  setTimeout(() => playSfx('alarm', { gain: .28, rate: .62 }), 210);
+  vibrate([60, 26, 96, 34, 84, 40, 26]);
+  return true;
+}
+
+async function finalizeHauntingEventSleepTransition() {
+  const eventState = hauntingEventState();
+  if (eventState.stage !== 'processing') return;
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  await beginSleepTransition();
+}
+
+async function advanceHauntingEvent() {
+  const eventState = hauntingEventState();
+  if (!eventState.active) {
+    await beginSleepTransition();
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('haunting-whisper', { gain: .88 });
+    setTimeout(() => playSfx('impact', { gain: .34, rate: 1.28 }), 120);
+    vibrate([26, 20, 36]);
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    if (!eventState.paymentApplied) {
+      state.game.money = Math.max(0, Number(state.game.money || 0) - HAUNTING_EVENT_COST);
+      addFinance('お祓い', 0, HAUNTING_EVENT_COST);
+      startMoneyFeedback(-HAUNTING_EVENT_COST, 1400);
+      eventState.paymentApplied = true;
+    }
+    eventState.stage = 'processing';
+    saveGame();
+    playSfx('haunting-whisper', { gain: .94, rate: .82 });
+    setTimeout(() => playSfx('alarm', { gain: .62, rate: .72 }), 90);
+    setTimeout(() => playSfx('impact', { gain: .70, rate: .70 }), 150);
+    vibrate([24, 22, 62, 30, 92]);
+    render();
+    await wait(180);
+    await finalizeHauntingEventSleepTransition();
+    return;
+  }
+  if (eventState.stage === 'processing') {
+    await finalizeHauntingEventSleepTransition();
+  }
+}
+
+function childhoodFriendEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.childhoodFriendEvent && typeof state.events.childhoodFriendEvent === 'object' && !Array.isArray(state.events.childhoodFriendEvent)
+    ? state.events.childhoodFriendEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'eating', 'postMeal', 'completed']);
+  state.events.childhoodFriendEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    mealPaid: Boolean(saved.mealPaid),
+    mealCompleted: Boolean(saved.mealCompleted),
+    hungerBefore: Math.max(0, Math.min(7, Math.floor(Number(saved.hungerBefore) || 0))),
+    hungerAfter: Math.max(0, Math.min(7, Math.floor(Number(saved.hungerAfter) || 0))),
+  };
+  if (!state.events.childhoodFriendEvent.active && !['idle', 'completed'].includes(state.events.childhoodFriendEvent.stage)) {
+    state.events.childhoodFriendEvent.stage = 'completed';
+  }
+  return state.events.childhoodFriendEvent;
+}
+
+function randomEventDayOffset(minimum, maximum) {
+  const min = Math.max(0, Math.floor(Number(minimum) || 0));
+  const max = Math.max(min, Math.floor(Number(maximum) || min));
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function ensureChildhoodFriendSchedule(eventState = childhoodFriendEventState()) {
+  if (eventState.nextTriggerDay > 0 || eventState.totalTriggered > 0) return eventState.nextTriggerDay;
+  eventState.nextTriggerDay = randomEventDayOffset(CHILDHOOD_FRIEND_FIRST_TRIGGER_MIN, CHILDHOOD_FRIEND_FIRST_TRIGGER_MAX);
+  saveGame();
+  return eventState.nextTriggerDay;
+}
+
+function maybeStartChildhoodFriendEvent() {
+  const eventState = childhoodFriendEventState();
+  if (eventState.active) {
+    setScreen('childhoodFriendEvent', { mealId: 'ramen' }, false);
+    return true;
+  }
+  ensureChildhoodFriendSchedule(eventState);
+  if (state.game.day < eventState.nextTriggerDay) return false;
+  eventState.totalTriggered += 1;
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.mealPaid = false;
+  eventState.mealCompleted = false;
+  eventState.hungerBefore = hungerLevel();
+  eventState.hungerAfter = hungerLevel();
+  state.game.screen = 'childhoodFriendEvent';
+  saveGame();
+  preloadImage(childhoodFriendBackgroundImage(false));
+  preloadImage(childhoodFriendBackgroundImage(true));
+  preloadImage(mealFoodImage('ramen'));
+  setScreen('childhoodFriendEvent', { mealId: 'ramen' }, false);
+  playSfx('impact', { gain: .38 });
+  vibrate([24, 18, 38]);
+  return true;
+}
+
+async function startChildhoodFriendMeal() {
+  const eventState = childhoodFriendEventState();
+  if (!eventState.active || !['intro3', 'eating'].includes(eventState.stage) || mealTransitioning) return;
+  const meal = MEALS.ramen;
+  mealTransitioning = true;
+  const stateBeforeMeal = structuredClone(state);
+  try {
+    await Promise.all([
+      preloadImage(childhoodFriendBackgroundImage(false)),
+      preloadImage(childhoodFriendBackgroundImage(true)),
+      preloadImage(mealFoodImage('ramen')),
+    ]);
+    if (!eventState.mealPaid) {
+      const before = hungerLevel();
+      if (before >= 7) throw new Error('空腹度は満タンです。');
+      if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === 'ramen') throw new Error('同じ食事は連続で選べません。');
+      if (state.game.money < meal.price) throw new Error('所持金が足りません。');
+      eventState.hungerBefore = before;
+      state.game.money -= meal.price;
+      addFinance(`${meal.name}で食事`, 0, meal.price);
+      startMoneyFeedback(-meal.price, 1200);
+      eventState.mealPaid = true;
+    }
+    eventState.stage = 'eating';
+    state.game.screen = 'childhoodFriendEvent';
+    saveGame();
+    render();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await wait(420);
+    playSfx('eat');
+    await wait(2080);
+    if (!eventState.mealCompleted) {
+      const before = Math.max(0, Math.min(7, Number(eventState.hungerBefore) || hungerLevel()));
+      state.wellbeing.hunger = Math.min(7, before + meal.recovery);
+      state.wellbeing.lastMeal = 'ramen';
+      state.wellbeing.mealsEaten = Math.max(0, Number(state.wellbeing.mealsEaten) || 0) + 1;
+      eventState.hungerAfter = state.wellbeing.hunger;
+      state.daily.meals.push({ id: 'ramen', name: meal.name, price: meal.price, recovery: state.wellbeing.hunger - before });
+      eventState.mealCompleted = true;
+    }
+    eventState.stage = 'postMeal';
+    saveGame();
+    playSfx('success', { gain: .54 });
+    render();
+  } catch (error) {
+    console.error('幼なじみとの再会イベント食事処理エラー', error);
+    state = stateBeforeMeal;
+    const restored = childhoodFriendEventState();
+    restored.active = false;
+    restored.stage = 'idle';
+    restored.nextTriggerDay = Math.max(state.game.day + 1, Number(restored.nextTriggerDay) || state.game.day + 1);
+    state.game.screen = 'main';
+    saveGame();
+    goMain();
+    showToast(error?.message || '食事処理を中断しました。', 'error');
+  } finally {
+    mealTransitioning = false;
+  }
+}
+
+async function advanceChildhoodFriendEvent() {
+  const eventState = childhoodFriendEventState();
+  if (!eventState.active) return goMain();
+  if (eventState.stage === 'intro1') eventState.stage = 'intro2';
+  else if (eventState.stage === 'intro2') eventState.stage = 'intro3';
+  else if (eventState.stage === 'intro3') {
+    saveGame();
+    await startChildhoodFriendMeal();
+    return;
+  } else if (eventState.stage === 'postMeal') {
+    const before = eventState.hungerBefore;
+    const after = eventState.hungerAfter;
+    eventState.active = false;
+    eventState.stage = 'completed';
+    eventState.nextTriggerDay = state.game.day + randomEventDayOffset(CHILDHOOD_FRIEND_REPEAT_TRIGGER_MIN, CHILDHOOD_FRIEND_REPEAT_TRIGGER_MAX);
+    saveGame();
+    hungerFeedback = { before, after, mealName: 'ラーメン' };
+    clearTimeout(hungerFeedbackTimer);
+    goMain();
+    hungerFeedbackTimer = setTimeout(() => {
+      hungerFeedback = null;
+      if (screen === 'main') render();
+    }, 1550);
+    return;
+  } else if (eventState.stage === 'eating') {
+    await startChildhoodFriendMeal();
+    return;
+  }
+  saveGame();
+  render();
 }
 
 function touristWoodSwordEventState() {
@@ -4451,7 +4964,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', mining: 'mining', miningPazupanEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -4465,18 +4978,20 @@ function backgroundAssetFor(target) {
   if (target === 'main') return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
   if (target === 'sushiChefEvent') return 'meal-kaitenzushi-event';
   if (target === 'cyclopsEvent') return `meal-convenience${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'ganeshaTuskEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'childhoodFriendEvent') return childhoodFriendBackgroundAssetName();
   if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'diamondPolishingLapEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'todayGem') return 'today-gem';
-  if (target === 'looseShop' || target === 'supplierRough') return 'loose-shop';
+  if (target === 'looseShop' || target === 'supplierRough') return isPortraitLayout() ? 'loose-shop-portrait-v385' : 'loose-shop-v385';
   if (target === 'jewelryShop') return 'jewelry-shop';
-  if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait' : 'display-shop';
+  if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
   const base = backgroundFor(target);
   const portrait = isPortraitLayout();
   if (base === 'meal') {
     const mealId = screenData?.mealId;
-    if (mealId && MEALS[mealId]) return `meal-${mealId}${portrait ? '-portrait' : ''}`;
+    if (mealId && MEALS[mealId]) return mealBackgroundAssetName(mealId, portrait);
     return 'meal-menu';
   }
   if (portrait && base === 'main') return 'main-portrait';
@@ -4489,7 +5004,7 @@ const PORTRAIT_COVER_SCREENS = new Set(['jewelryShop', 'todayGem']);
 function backgroundLayoutFor(target, asset) {
   if (!isPortraitLayout()) return 'landscape';
   // v0.10.374 専用縦画像は全面表示し、横長画像だけは補助パノラマ表示で背景を残す。
-  if (String(asset || '').endsWith('-portrait')) return 'cover';
+  if (/-portrait(?:-v\d+)?$/.test(String(asset || ''))) return 'cover';
   if (PORTRAIT_COVER_SCREENS.has(target) || asset === 'space') return 'cover';
   return 'panorama';
 }
@@ -4512,8 +5027,11 @@ function audioFor(target) {
   if (target === 'phone' || target === 'todayGem') return 'main';
   if (target === 'sushiChefEvent' || target === 'kaitenzushi') return 'kaitenzushi';
   if (target === 'cyclopsEvent') return 'meal-convenience';
+  if (target === 'ganeshaTuskEvent') return 'meal-indian';
+  if (target === 'childhoodFriendEvent') return 'meal-ramen';
   if (target === 'touristWoodSwordEvent') return 'meal-hamburger';
   if (target === 'diamondPolishingLapEvent') return 'meal-indian';
+  if (target === 'hauntingEvent') return 'sleep';
   if (target === 'okachimachiQuiz') return okachimachiQuizSession?.stage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
   // 工房・ジュエリー制作・ルース選択・完成は同一音声キーを使い、画面遷移時もBGMを止めない。
   if (target === 'workshop' || target === 'craft' || target === 'craftLoose' || target === 'completion') return 'workshop';
@@ -4662,6 +5180,10 @@ function shell(title, body, options = {}) {
   return `<main class="${shellClass}">${hideHeader ? '' : header(title, options)}<section class="screen-content">${body}</section></main>`;
 }
 
+function mainStatusHeader() {
+  return header('', { back: false, main: false });
+}
+
 function renderClosedOkachimachiFacility(facilityId, availability) {
   const names = {
     materialShop: '地金屋', looseShop: 'ルース屋', glab: 'g-Lab.', jewelryShop: 'ジュエリーショップ',
@@ -4742,10 +5264,15 @@ function render() {
       main: renderMain,
       westernUnionEvent: renderWesternUnionEvent,
       mermaidEvent: renderMermaidEvent,
+      kappaJadeEvent: renderKappaJadeEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
+      ganeshaTuskEvent: renderGaneshaTuskEvent,
+      childhoodFriendEvent: renderChildhoodFriendEvent,
       touristWoodSwordEvent: renderTouristWoodSwordEvent,
       diamondPolishingLapEvent: renderDiamondPolishingLapEvent,
+      hauntingEvent: renderHauntingEvent,
+      storeTheftEvent: renderStoreTheftEvent,
       alienAbductionEvent: renderAlienAbductionEvent,
       alienReturnEvent: renderAlienReturnEvent,
       mining: renderMining,
@@ -5540,6 +6067,131 @@ function renderCyclopsEvent() {
     </main>`;
 }
 
+
+function renderGaneshaTuskEvent() {
+  const eventState = ganeshaTuskEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => eatMeal('indian', { skipEventCheck: true }));
+    return renderMeal();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const reward = eventState.stage === 'reward';
+  const dialogue = eventState.stage === 'intro1'
+    ? `あ、${playerName}、待ってたよ`
+    : eventState.stage === 'intro2'
+      ? '牙が折れたんだ、もし、そんなときがあれば欲しいって前に言ってたよね'
+      : eventState.stage === 'intro3'
+        ? `${playerName}の役に立つなら、これは君へあげるよ`
+        : '好きに使っていいからね！';
+  return `
+    <main class="main-screen ganesha-tusk-event-screen">
+      <section class="visit-character-event ganesha-tusk-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character ganesha-character" src="./assets/images/events/ganesha.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward
+          ? `<button type="button" class="ganesha-tusk-reward-button" data-action="ganesha-tusk-event-receive" aria-label="ガネーシャの牙を受け取る"><span class="special-item-glow ganesha-tusk-glow" aria-hidden="true"></span><img src="./assets/images/events/ganesha-tusk.png?v=${VERSION}" alt="ガネーシャの牙" draggable="false"><strong>ガネーシャの牙</strong><small>タップして受け取る</small></button>`
+          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="ganesha-tusk-event-next"><small>ガネーシャ</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+      </section>
+    </main>`;
+}
+
+
+function renderKappaJadeEvent() {
+  const eventState = kappaJadeEventState();
+  if (!eventState.active) return renderMining();
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const reward = eventState.stage === 'reward';
+  const dialogue = eventState.stage === 'intro1'
+    ? `あ、${playerName}、綺麗な石を拾ったよ！`
+    : eventState.stage === 'intro2'
+      ? 'これ良い宝石になるんじゃないかな、あげるよ！'
+      : 'また来てよ、探しとくよ！';
+  return `
+    <main class="main-screen kappa-jade-event-screen">
+      <section class="visit-character-event kappa-jade-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character kappa-character" src="./assets/images/events/kappa.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward
+          ? `<button type="button" class="kappa-jade-reward-button" data-action="kappa-jade-event-receive" aria-label="翡翠原石を受け取る"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/gems/jade.png?v=${VERSION}" alt="翡翠原石" draggable="false"><strong>翡翠原石</strong><small>タップして受け取る</small></button>`
+          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="kappa-jade-event-next"><small>河童</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+      </section>
+    </main>`;
+}
+
+function renderChildhoodFriendEvent() {
+  const eventState = childhoodFriendEventState();
+  if (!eventState.active) {
+    queueMicrotask(goMain);
+    return renderMain();
+  }
+  if (eventState.stage === 'eating') {
+    queueMicrotask(() => startChildhoodFriendMeal());
+    const foodImage = mealFoodImage('ramen');
+    return `
+      <main class="main-screen childhood-friend-event-screen childhood-friend-eating-screen">
+        <section class="childhood-friend-event is-eating" aria-live="polite">
+          <div class="meal-eating-panel glass-panel">
+            <figure class="meal-food-display"><img src="${foodImage}" alt="ラーメン" loading="eager" decoding="sync" fetchpriority="high"></figure>
+            <strong>もぐもぐもぐ...</strong>
+          </div>
+        </section>
+      </main>`;
+  }
+  const postMeal = eventState.stage === 'postMeal';
+  const dialogue = eventState.stage === 'intro1'
+    ? '（カウンターの男、知ってるかもしれない、）'
+    : eventState.stage === 'intro2'
+      ? '（子供の頃よく遊んでた、思い出した、、野球中継に夢中でこちらに気づいてないようだ）'
+      : eventState.stage === 'intro3'
+        ? '「おっちゃん、ラーメンひとつ、、」'
+        : 'すぐに食べ終えて、店を後にした、、';
+  return `
+    <main class="main-screen childhood-friend-event-screen ${postMeal ? 'is-post-meal' : ''}">
+      <section class="childhood-friend-event" aria-live="polite">
+        <button type="button" class="event-dialogue-card childhood-friend-dialogue glass-panel" data-action="childhood-friend-event-next">
+          <strong>${dialogue}</strong>
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+
+function renderHauntingEvent() {
+  const eventState = hauntingEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => beginSleepTransition());
+  }
+  if (eventState.stage === 'processing') {
+    queueMicrotask(() => finalizeHauntingEventSleepTransition());
+  }
+  const introStage = eventState.stage === 'intro1';
+  const dialogue = introStage
+    ? '取り憑かれたみたい'
+    : 'お祓いに1,000,000円かかった';
+  const caption = introStage ? '背筋が冷たくなる… タップして進む' : 'タップするとお祓い代を支払って眠ります';
+  const eventClass = introStage ? 'haunting-event haunting-event-intro' : 'haunting-event haunting-event-cost';
+  const dialogueClass = introStage ? 'event-dialogue-card visit-event-dialogue glass-panel haunting-dialogue haunting-dialogue-intro' : 'event-dialogue-card visit-event-dialogue glass-panel haunting-dialogue haunting-dialogue-cost';
+  return `
+    <main class="main-screen haunting-event-screen haunting-flash-shell">
+      <section class="${eventClass}" aria-live="polite">
+        <div class="haunting-flash-layer" aria-hidden="true"></div>
+        <div class="haunting-static-layer" aria-hidden="true"></div>
+        <div class="haunting-vignette-layer" aria-hidden="true"></div>
+        <div class="visit-character-area haunting-character-area" aria-hidden="true">
+          <img class="visit-character haunting-character" src="./assets/images/events/haunting-ghost.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="${dialogueClass}" data-action="haunting-event-next">
+          <small>幽霊</small>
+          <strong>${dialogue}</strong>
+          <span>${caption}</span>
+        </button>
+      </section>
+    </main>`;
+}
+
 function renderTouristWoodSwordEvent() {
   const eventState = touristWoodSwordEventState();
   if (!eventState.active) {
@@ -5598,7 +6250,7 @@ function renderAlienSpaceMain() {
   const eventState = alienAbductionEventState();
   const locked = hungerLocked();
   const remaining = Math.max(0, ALIEN_ABDUCTION_DAYS - eventState.daysSlept);
-  return `
+  return `${mainStatusHeader()}
     <main class="main-screen alien-space-main-screen">
       <div class="alien-space-status glass-panel" role="status">
         <strong>誘拐されました</strong>
@@ -5673,6 +6325,11 @@ function mainMenuIcon(type) {
 
 function renderMain() {
   if (isAlienAbducted()) return renderAlienSpaceMain();
+  const childhoodEvent = childhoodFriendEventState();
+  if (childhoodEvent.active) {
+    queueMicrotask(() => setScreen('childhoodFriendEvent', { mealId: 'ramen' }, false));
+    return renderChildhoodFriendEvent();
+  }
   const unread = visibleNotifications().filter((note) => note.unread).length;
   const activeOrders = activeOrderCount();
   const outstandingCosts = totalOutstandingBusinessCost();
@@ -5688,7 +6345,7 @@ function renderMain() {
   const mealDisabled = autopilotEnabled ? autopilotDisabled : '';
   const sleepDisabled = autopilotEnabled ? autopilotDisabled : (canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"');
   const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}>${mainMenuIcon('store')}<strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
-  return `
+  return `${mainStatusHeader()}
     <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
       <section class="main-spacer" aria-hidden="true"></section>
       ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
@@ -6161,7 +6818,7 @@ function roughSaleContentMarkup() {
     return `<article class="product-row">
       <div class="product-main">
         ${roughVisual(product.id, 'gem-inline')}
-        <div><strong>${esc(product.name)}原石</strong><small>所持：${owned}個</small></div>
+        <div><strong>${esc(roughDisplayName(product.id))}</strong><small>所持：${owned}個</small></div>
       </div>
       <strong>${yen(price)}</strong>
       <div class="sell-action-row">
@@ -6677,7 +7334,7 @@ function renderPolishing() {
       <div class="choice-grid many polishing-grid">
         ${ownedRoughGems.map((gem) => `<button class="choice-card ${selectedPolishing === gem.id ? 'selected' : ''}" data-action="select-polishing" data-id="${gem.id}">
           <span class="choice-visual">${roughVisual(gem.id, 'choice-gem')}</span>
-          <strong>${esc(gem.name)}</strong><small>原石 ${state.inventory.rough[gem.id]}個</small>
+          <strong>${esc(roughDisplayName(gem.id))}</strong><small>所持 ${state.inventory.rough[gem.id]}個</small>
         </button>`).join('')}
       </div>
       <h2>カットを選ぶ</h2>
@@ -6692,7 +7349,7 @@ function renderPolishing() {
         <div class="polishing-arrow">→</div>
         <div>${looseVisual(selectedPolishing, 'polishing-loose', '', selectedPolishingShape)}</div>
         <div class="polishing-copy">
-          <h2>${esc(GEMS[selectedPolishing].name)}原石を${esc(looseShapeLabel(selectedPolishingShape))}へ研磨</h2>
+          <h2>${esc(roughDisplayName(selectedPolishing))}を${esc(looseShapeLabel(selectedPolishingShape))}へ研磨</h2>
           <p>原石1個から、選択したカットのルース1個を作ります。</p>
           <div class="result-stats"><span>加工時間：${POLISHING_HOURS}時間</span><span>このルースの所持：${shapedLooseOwned}個</span></div>
         </div>
@@ -7014,7 +7671,7 @@ function renderMaterialInventory(kind) {
   if (kind === 'rough') {
     const items = Object.values(GEMS).filter((gem) => Number(state.inventory.rough[gem.id] || 0) > 0);
     if (!items.length) return '<div class="empty-state"><strong>原石はありません。</strong><p>採掘で原石を入手すると、ここに表示されます。</p></div>';
-    return `<div class="inventory-single-list">${items.map((gem) => `<div class="material-row"><span class="material-name">${roughVisual(gem.id, 'gem-inline')}<span>${esc(gem.name)}原石</span></span><strong>${state.inventory.rough[gem.id]}個</strong></div>`).join('')}</div>`;
+    return `<div class="inventory-single-list">${items.map((gem) => `<div class="material-row"><span class="material-name">${roughVisual(gem.id, 'gem-inline')}<span>${esc(roughDisplayName(gem.id))}</span></span><strong>${state.inventory.rough[gem.id]}個</strong></div>`).join('')}</div>`;
   }
 
   if (kind === 'loose') {
@@ -7277,6 +7934,208 @@ function renderFinishedItemDetail() {
         <div><dt>状態</dt><dd>${esc(status)}</dd></div>
       </dl>
     </section>`, { help: '完成品の種類、素材、品質、原価、状態を確認できます。' });
+}
+
+
+function storeTheftEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.storeTheftEvent && typeof state.events.storeTheftEvent === 'object' && !Array.isArray(state.events.storeTheftEvent)
+    ? state.events.storeTheftEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice', 'completed']);
+  state.events.storeTheftEvent = {
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    branchId: String(saved.branchId || ''),
+    branchNumber: Math.max(1, Math.floor(Number(saved.branchNumber) || 1)),
+    targetItemId: String(saved.targetItemId || ''),
+    targetItemName: String(saved.targetItemName || ''),
+    theftApplied: Boolean(saved.theftApplied),
+  };
+  if (!state.events.storeTheftEvent.active && !['idle', 'completed'].includes(state.events.storeTheftEvent.stage)) {
+    state.events.storeTheftEvent.stage = 'completed';
+  }
+  return state.events.storeTheftEvent;
+}
+
+function maybeStartStoreTheftEvent(branch = currentStoreBranch()) {
+  const eventState = storeTheftEventState();
+  if (eventState.active) {
+    const activeBranchId = eventState.branchId || branch?.id || '';
+    setScreen('storeTheftEvent', activeBranchId ? { branchId: activeBranchId } : {}, false);
+    return true;
+  }
+  if (!branch) return false;
+  const candidates = robberyItemsInBranch(branch);
+  if (!candidates.length) return false;
+  if (Math.random() >= STORE_THEFT_EVENT_CHANCE) return false;
+  const target = randomFrom(candidates, candidates[0]);
+  if (!target?.item) return false;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.branchId = String(branch.id || `branch-${Math.max(1, Number(branch.number) || 1)}`);
+  eventState.branchNumber = Math.max(1, Number(branch.number) || 1);
+  eventState.targetItemId = String(target.item.id || '');
+  eventState.targetItemName = String(target.item.name || '完成品');
+  eventState.theftApplied = false;
+  state.game.screen = 'storeTheftEvent';
+  saveGame();
+  setScreen('storeTheftEvent', { branchId: eventState.branchId }, false);
+  requestAnimationFrame(() => playSfx('old-lady-appear', { gain: .92 }));
+  vibrate([24, 28, 64]);
+  return true;
+}
+
+function applyStoreTheftEventLoss() {
+  const eventState = storeTheftEventState();
+  if (eventState.theftApplied) return;
+  const itemId = String(eventState.targetItemId || '');
+  const itemName = String(eventState.targetItemName || '完成品');
+  const item = state.inventory?.jewelry?.find((entry) => entry.id === itemId && entry.status === 'displayed');
+  if (item) removeJewelry(item.id);
+  eventState.theftApplied = true;
+  addNotification('店舗で盗難が発生しました', `${itemName}が盗まれていました。`, 'warning');
+}
+
+function chooseStoreTheftEvent(answer) {
+  const eventState = storeTheftEventState();
+  if (!eventState.active || eventState.stage !== 'choice') return;
+  if (answer === 'yes') {
+    eventState.stage = 'intro2';
+  } else {
+    eventState.stage = 'declined';
+  }
+  saveGame();
+  playSfx('select', { gain: .82 });
+  render();
+}
+
+function finishStoreTheftEvent() {
+  const eventState = storeTheftEventState();
+  const branchId = eventState.branchId;
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  playSfx('select', { gain: .82 });
+  setScreen('store', branchId ? { branchId } : {}, false);
+}
+
+async function continueStoreTheftDisappearanceSequence() {
+  if (storeTheftSequenceRunning) return;
+  let eventState = storeTheftEventState();
+  if (!eventState.active || !['farewell', 'pause'].includes(eventState.stage)) return;
+  storeTheftSequenceRunning = true;
+  try {
+    if (eventState.stage === 'farewell') {
+      duckCurrentAmbient({ factor: 0.03, duration: 4600 });
+      playSfx('old-lady-appear', { gain: .24, rate: .66 });
+      await wait(1900);
+      eventState = storeTheftEventState();
+      if (!eventState.active || eventState.stage !== 'farewell') return;
+      eventState.stage = 'pause';
+      saveGame();
+      render();
+    }
+    eventState = storeTheftEventState();
+    if (eventState.stage === 'pause') {
+      duckCurrentAmbient({ factor: 0, duration: 2500 });
+      await wait(1650);
+      eventState = storeTheftEventState();
+      if (!eventState.active || eventState.stage !== 'pause') return;
+      applyStoreTheftEventLoss();
+      eventState = storeTheftEventState();
+      eventState.stage = 'theftNotice';
+      saveGame();
+      playSfx('shoplift-steal', { gain: .76, rate: .88 });
+      setTimeout(() => playSfx('impact', { gain: .20, rate: .72 }), 130);
+      vibrate([18, 32, 54]);
+      render();
+    }
+  } finally {
+    storeTheftSequenceRunning = false;
+  }
+}
+
+async function advanceStoreTheftEvent() {
+  const eventState = storeTheftEventState();
+  if (!eventState.active) return;
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'choice';
+    saveGame();
+    playSfx('select', { gain: .82 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'declined') {
+    finishStoreTheftEvent();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    playSfx('select', { gain: .82 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro3') {
+    eventState.stage = 'farewell';
+    saveGame();
+    playSfx('select', { gain: .72 });
+    duckCurrentAmbient({ factor: 0.03, duration: 4600 });
+    render();
+    queueMicrotask(continueStoreTheftDisappearanceSequence);
+    return;
+  }
+  if (eventState.stage === 'theftNotice') {
+    finishStoreTheftEvent();
+  }
+}
+
+function renderStoreTheftEvent() {
+  const eventState = storeTheftEventState();
+  if (!eventState.active) {
+    const branchId = eventState.branchId;
+    queueMicrotask(() => setScreen('store', branchId ? { branchId } : {}, false));
+    return renderStore();
+  }
+  const stage = eventState.stage;
+  if (stage === 'farewell' || stage === 'pause') queueMicrotask(continueStoreTheftDisappearanceSequence);
+  const stolenLabel = esc(String(eventState.targetItemName || '完成品'));
+  const characterHidden = stage === 'pause' || stage === 'theftNotice';
+  const vanishing = stage === 'farewell';
+  const choiceMarkup = `<div class="event-dialogue-card visit-event-dialogue glass-panel store-theft-dialogue"><small>老婆</small><strong>これを見せて、試着していい？</strong><div class="store-theft-choice-buttons"><button type="button" class="primary-button" data-action="store-theft-event-choice" data-answer="yes">はい</button><button type="button" class="secondary-button" data-action="store-theft-event-choice" data-answer="no">いいえ</button></div></div>`;
+  let bodyMarkup = '';
+  if (stage === 'choice') {
+    bodyMarkup = choiceMarkup;
+  } else if (stage === 'farewell') {
+    bodyMarkup = `<div class="event-dialogue-card visit-event-dialogue glass-panel store-theft-dialogue store-theft-dialogue-auto"><small>老婆</small><strong>素敵ねぇ、今度買いに来るわね、ありがとう</strong><span>そう言って老婆は去っていった……</span></div>`;
+  } else if (stage === 'pause') {
+    bodyMarkup = `<div class="store-theft-silent-pause" aria-hidden="true"><span>……</span></div>`;
+  } else {
+    const dialogue = stage === 'intro1'
+      ? 'あら、素敵なお店、素敵なジュエリーねぇ'
+      : stage === 'declined'
+        ? 'あら残念、でもまた来るわね'
+        : stage === 'intro2'
+          ? 'いいわねぇこれ、あ、それとそれも見せて、、、'
+          : stage === 'intro3'
+            ? 'これも見せて、、'
+            : `${stolenLabel}が盗まれていました`;
+    const speaker = stage === 'theftNotice' ? '店舗' : '老婆';
+    const subline = stage === 'theftNotice' ? 'タップすると通常の店舗画面へ戻ります' : 'タップして進む';
+    bodyMarkup = `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel store-theft-dialogue ${stage === 'theftNotice' ? 'store-theft-dialogue-alert' : ''}" data-action="store-theft-event-next"><small>${speaker}</small><strong>${dialogue}</strong><span>${subline}</span></button>`;
+  }
+  return `
+    <main class="main-screen store-theft-event-screen">
+      <section class="visit-character-event store-theft-event ${characterHidden ? 'is-after' : ''} ${vanishing ? 'is-vanishing' : ''}" aria-live="polite">
+        <div class="store-theft-overlay" aria-hidden="true"></div>
+        ${stage === 'pause' ? `<img class="store-theft-afterimage" src="./assets/images/events/store-thief-old-woman.png?v=${VERSION}" alt="" aria-hidden="true" draggable="false">` : ''}
+        ${characterHidden ? '' : `<div class="visit-character-area store-theft-character-area" aria-hidden="true"><img class="visit-character store-theft-character" src="./assets/images/events/store-thief-old-woman.png?v=${VERSION}" alt="" draggable="false"></div>`}
+        ${bodyMarkup}
+      </section>
+    </main>`;
 }
 
 function renderStore() {
@@ -7709,7 +8568,7 @@ function renderEmployee() {
     <section class="center-card glass-panel employee-card">
       ${state.employee.hired ? `
         <h1>${esc(state.employee.name)}</h1>
-        <p>勤務した日は、1日の終わりに給与2,000円を支払います。</p>
+        <p>勤務した日は、1日の終わりに給与${yen(EMPLOYEE_DAILY_WAGE)}を支払います。</p>
         <fieldset class="craft-field"><legend>担当</legend><div class="choice-grid three">
           <button class="choice-card ${state.employee.role === 'service' ? 'selected' : ''}" data-action="employee-role" data-role="service"><strong>接客</strong><small>固定客が来店しやすい</small></button>
           <button class="choice-card ${state.employee.role === 'sales' ? 'selected' : ''}" data-action="employee-role" data-role="sales"><strong>販売</strong><small>商品が少し売れやすい</small></button>
@@ -7717,7 +8576,7 @@ function renderEmployee() {
         </div></fieldset>
         <label class="toggle-row"><span>本日勤務する</span><input type="checkbox" data-action="employee-working" ${state.employee.working ? 'checked' : ''}></label>` : `
         <h1>店員を1人雇えます。</h1>
-        <article class="candidate-card"><h2>田中 葵</h2><p>接客・販売・制作補助のいずれかを担当できます。</p><small>給与：勤務日ごとに2,000円</small></article>
+        <article class="candidate-card"><h2>田中 葵</h2><p>接客・販売・制作補助のいずれかを担当できます。</p><small>給与：勤務日ごとに${yen(EMPLOYEE_DAILY_WAGE)}</small></article>
         <button class="primary-button full-button" data-action="hire-employee">雇う</button>`}
     </section>`, { help: '店員は1人だけ雇えます。担当を1つ選ぶ簡単な仕組みです。' });
 }
@@ -7949,6 +8808,8 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
   if (mealId === 'hamburger' && !skipEventCheck && maybeStartTouristWoodSwordEvent()) return;
   if (mealId === 'indian' && !skipEventCheck && maybeStartDiamondPolishingLapEvent()) return;
+  if (mealId === 'indian' && !skipEventCheck && maybeStartGaneshaTuskEvent()) return;
+  if (mealId === 'ramen' && !skipEventCheck && maybeStartChildhoodFriendEvent()) return;
 
   mealTransitioning = true;
   const stateBeforeMeal = structuredClone(state);
@@ -8658,6 +9519,7 @@ function mine() {
   const location = selectedMining ? miningLocationById(selectedMining) : null;
   if (!location) return showToast('採掘場所を選んでください。', 'error');
   if (!canSpendHours(location.hours)) return showToast('今日は採掘する時間がありません。', 'error');
+  if (maybeStartKappaJadeEvent()) return;
   const shuffled = shuffleRockIndices();
   miningGame = {
     locationId: selectedMining,
@@ -8914,7 +9776,7 @@ function polishRough() {
   saveGame();
   playSfx('loose-sparkle', { gain: 1.12 });
   vibrate([35, 25, 55]);
-  showToast(`${gem.name}原石を${looseShapeLabel(selectedPolishingShape)}へ研磨しました。`);
+  showToast(`${roughDisplayName(selectedPolishing)}を${looseShapeLabel(selectedPolishingShape)}へ研磨しました。`);
   render();
 }
 
@@ -10419,7 +11281,7 @@ function settleDay({ showResult = true, save = true } = {}) {
   state.daily.sold.push(...sold);
 
   if (storeOperating && state.employee.hired && state.employee.working) {
-    const salary = 2000;
+    const salary = EMPLOYEE_DAILY_WAGE;
     state.game.money = Math.max(0, state.game.money - salary);
     addFinance(`${state.employee.name}さんの給与`, 0, salary);
   }
@@ -10496,22 +11358,27 @@ function scheduleCustomerVisit() {
     return;
   }
   if (Object.values(state.customers).some((customer) => customer.visiting)) return;
+
+  const customerIds = Object.keys(CUSTOMERS);
+  const hasMetCustomer = customerIds.some((id) => Boolean(state.customers[id]?.met));
+  const eligibleCustomers = customerIds.filter((id) => {
+    const customer = state.customers[id];
+    if (!customer) return false;
+    if (!customer.met) return state.game.day >= 2;
+    return state.game.day - (customer.lastVisitDay || 0) >= CUSTOMER_REPEAT_COOLDOWN_DAYS;
+  });
+  if (!eligibleCustomers.length) return;
+
+  // お客様を10人へ増やしても、来店抽選は1日1回・同時来店は最大1人のままにする。
+  // 最初の1人だけ従来の導入頻度を維持し、その後は従来の通常来店頻度で10人からランダム抽選する。
   const employeeBonus = state.employee.hired && state.employee.working && state.employee.role === 'service' ? 0.12 : 0;
   const profileBonus = Number(visitBranch.number) === 2 ? 0.03 : Number(visitBranch.number) === 3 ? 0.05 : 0;
-  const notifyVisit = (id) => addNotification('お客様が来店しています', `${CUSTOMERS[id].name}さんが${storeBranchLabel(visitBranch.number)}に来ています。`);
-  if (!state.customers.misaki.met && state.game.day >= 2 && Math.random() < 0.38 + employeeBonus + profileBonus) {
-    if (startCustomerVisit('misaki', visitBranch.number)) notifyVisit('misaki');
-    return;
-  }
-  if (state.customers.misaki.met && !state.customers.kenta.met && state.game.day >= 3 && Math.random() < 0.32 + employeeBonus + profileBonus) {
-    if (startCustomerVisit('kenta', visitBranch.number)) notifyVisit('kenta');
-    return;
-  }
-  const known = Object.keys(CUSTOMERS).filter((id) => state.customers[id].met && state.game.day - (state.customers[id].lastVisitDay || 0) >= 3);
-  if (known.length && Math.random() < 0.18 + employeeBonus + profileBonus) {
-    const id = randomFrom(known);
-    if (id && startCustomerVisit(id, visitBranch.number)) notifyVisit(id);
-  }
+  const baseChance = hasMetCustomer ? CUSTOMER_REGULAR_VISIT_CHANCE : CUSTOMER_FIRST_VISIT_CHANCE;
+  if (Math.random() >= baseChance + employeeBonus + profileBonus) return;
+
+  const customerId = randomFrom(eligibleCustomers);
+  if (!customerId || !startCustomerVisit(customerId, visitBranch.number)) return;
+  addNotification('お客様が来店しています', `${CUSTOMERS[customerId].name}さんが${storeBranchLabel(visitBranch.number)}に来ています。`);
 }
 
 function expireOrder(order) {
@@ -10545,6 +11412,7 @@ function confirmSleep() {
     showToast(sleepRestrictionMessage(), 'error');
     return;
   }
+  if (maybeStartHauntingEvent()) return;
   showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
 }
 
@@ -10772,7 +11640,7 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
@@ -11046,8 +11914,32 @@ root.addEventListener('click', async (event) => {
     case 'cyclops-event-receive':
       await receiveCyclopsEnergyDrink();
       break;
+    case 'kappa-jade-event-next':
+      advanceKappaJadeEvent();
+      break;
+    case 'kappa-jade-event-receive':
+      receiveKappaJade();
+      break;
     case 'diamond-polishing-lap-event-next':
       await advanceDiamondPolishingLapEvent();
+      break;
+    case 'ganesha-tusk-event-next':
+      advanceGaneshaTuskEvent();
+      break;
+    case 'ganesha-tusk-event-receive':
+      receiveGaneshaTusk();
+      break;
+    case 'childhood-friend-event-next':
+      await advanceChildhoodFriendEvent();
+      break;
+    case 'haunting-event-next':
+      await advanceHauntingEvent();
+      break;
+    case 'store-theft-event-next':
+      await advanceStoreTheftEvent();
+      break;
+    case 'store-theft-event-choice':
+      chooseStoreTheftEvent(button.dataset.answer);
       break;
     case 'okachimachi-quiz-next':
       advanceOkachimachiQuizDialogue();
@@ -11064,7 +11956,7 @@ root.addEventListener('click', async (event) => {
         showToast('自動操縦中はスマートフォンと今日の宝石のみ操作できます。設定から自動操縦をオフにしてください。', 'error');
         break;
       }
-      if (target === 'mining' && !['mining', 'miningGame', 'miningResult', 'miningPazupanEvent'].includes(screen)) {
+      if (target === 'mining' && !['mining', 'miningGame', 'miningResult', 'miningPazupanEvent', 'kappaJadeEvent'].includes(screen)) {
         button.disabled = true;
         enterMiningFromOutside();
         if (button.isConnected) button.disabled = false;
@@ -11093,6 +11985,7 @@ root.addEventListener('click', async (event) => {
       state.store.branchNumber = Math.max(1, Number(branch.number) || 1);
       mirrorCurrentStoreDisplay(branch);
       saveGame();
+      if (maybeStartStoreTheftEvent(branch)) break;
       setScreen('store', { branchId: branch.id });
       break;
     }
@@ -11751,19 +12644,22 @@ async function boot() {
   }
 }
 
+syncDeviceViewportProfile();
 boot();
 scheduleAutopilotChecks();
 window.addEventListener('resize', () => {
+  syncDeviceViewportProfile();
   applyCurrentBackground();
   updateKeyboardViewportLayout();
   syncTodayGemHeaderLayout();
 });
 window.addEventListener('orientationchange', () => {
+  syncDeviceViewportProfile();
   applyCurrentBackground();
   updateKeyboardViewportLayout();
   window.setTimeout(() => syncTodayGemHeaderLayout(), 120);
 });
-window.visualViewport?.addEventListener('resize', () => { updateKeyboardViewportLayout(); syncTodayGemHeaderLayout(); });
+window.visualViewport?.addEventListener('resize', () => { syncDeviceViewportProfile(); updateKeyboardViewportLayout(); syncTodayGemHeaderLayout(); });
 window.visualViewport?.addEventListener('scroll', () => updateKeyboardViewportLayout());
 document.addEventListener('focusin', (event) => {
   const field = event.target instanceof Element ? event.target.closest(KEYBOARD_AWARE_FIELD_SELECTOR) : null;
@@ -11809,7 +12705,7 @@ modalEl.addEventListener('click', async (event) => {
   const action = button.dataset.action;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)

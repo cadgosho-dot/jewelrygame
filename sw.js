@@ -1,9 +1,9 @@
-const VERSION = '0.10.398';
+const VERSION = '0.10.400';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/daily-gems.js?v=0.10.398', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/game-data.js', './js/daily-gems.js?v=0.10.400', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './data/jewelry_okachimachi_quiz_200_game_format.json',
   './data/daily-gems-365.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp', './assets/images/main-menu.webp', './assets/images/main-menu-portrait.webp', './assets/images/today-gem.webp',
   './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/tools/gem-polishing-machine.png', './assets/images/tools/diamond-polishing-lap.png', './assets/images/events/indian-restaurant-manager.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
@@ -101,9 +101,9 @@ const AUDIO_MEDIA = [
 ];
 
 const OPTIONAL_MEDIA = [
-  './assets/images/mining.webp', './assets/images/workshop.webp', './assets/images/glab.webp',
-  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop-v385.webp', './assets/images/loose-shop-portrait-v385.webp', './assets/images/jewelry-shop.webp', './assets/images/jewelry-shop-buy-character.png', './assets/images/jewelry-shop-sell-character.png', './assets/images/display-shop-v380.webp', './assets/images/display-shop-portrait-v380.webp', './assets/images/real-estate.webp', './assets/images/real-estate-portrait.webp', './assets/images/store.webp',
-  './assets/images/phone.webp', './assets/images/sleep.webp', './assets/images/today-gem.webp', './assets/images/meal-menu.webp',
+  './assets/images/mining.webp', './assets/images/mining-portrait.webp', './assets/images/workshop.webp', './assets/images/workshop-portrait.webp', './assets/images/craft.webp', './assets/images/craft-portrait.webp', './assets/images/glab.webp', './assets/images/glab-portrait.webp',
+  './assets/images/okachimachi.webp', './assets/images/okachimachi-portrait.webp', './assets/images/loose-shop-v385.webp', './assets/images/loose-shop-portrait-v385.webp', './assets/images/jewelry-shop.webp', './assets/images/jewelry-shop-portrait.webp', './assets/images/jewelry-shop-buy-character.png', './assets/images/jewelry-shop-sell-character.png', './assets/images/display-shop-v380.webp', './assets/images/display-shop-portrait-v380.webp', './assets/images/real-estate.webp', './assets/images/real-estate-portrait.webp', './assets/images/store.webp', './assets/images/store-portrait.webp',
+  './assets/images/phone.webp', './assets/images/sleep.webp', './assets/images/sleep-portrait.webp', './assets/images/today-gem.webp', './assets/images/today-gem-portrait.webp', './assets/images/meal-menu.webp', './assets/images/meal-menu-portrait.webp', './assets/images/metalshop.webp', './assets/images/metalshop-portrait.webp', './assets/images/space-portrait.webp',
   './assets/images/meal-convenience.webp', './assets/images/meal-convenience-portrait.webp',
   './assets/images/meal-chinese.webp', './assets/images/meal-chinese-portrait.webp',
   './assets/images/meal-korean.webp', './assets/images/meal-korean-portrait.webp',

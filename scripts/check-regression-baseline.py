@@ -89,6 +89,21 @@ require_marker(app, "display-shop-portrait-v380", "ディスプレイ屋縦画�
 require_marker(app, "/-portrait(?:-v\\d+)?$/", "バージョン付き縦画面背景の全面表示判定")
 require_marker(app, "meal-ramen-v386", "ラーメン屋の新ファイル名背景")
 require_marker(app, "meal-ramen-portrait-v386", "ラーメン屋縦画面の新ファイル名背景")
+require_marker(app, "STANDARD_PORTRAIT_BACKGROUND_BASES", "主要画面の縦背景切替一覧")
+require_marker(app, "today-gem-portrait", "今日の宝石の縦画面背景切替")
+require_marker(app, "craft-portrait", "ジュエリー作成の縦画面背景切替")
+for portrait_marker, label in [
+    ("'mining'", "採掘"),
+    ("'workshop'", "工房"),
+    ("'glab'", "g-Lab."),
+    ("'store'", "店舗"),
+    ("'sleep'", "寝る"),
+    ("'metalshop'", "地金屋"),
+    ("meal-menu-portrait", "食事メニュー"),
+    ("jewelry-shop-portrait", "ジュエリーショップ"),
+    ("space-portrait", "宇宙"),
+]:
+    require_marker(app, portrait_marker, f"{label}の縦画面背景切替")
 require_marker(css, 'body[data-background-layout="panorama"] #background-layer::after', "縦画面パノラマ表示")
 # 横画面クイズ王の表示（幅760px以下を含む）
 require_marker(css, '/* v0.10.382 横画面クイズ王の表示を全幅で固定 */', "横画面クイズ王の全幅対応")
@@ -269,6 +284,24 @@ for asset in [
     "assets/images/loose-shop-portrait-v385.webp",
     "assets/images/meal-ramen-v386.webp",
     "assets/images/meal-ramen-portrait-v386.webp",
+    "assets/images/mining-portrait.webp",
+    "assets/images/workshop-portrait.webp",
+    "assets/images/craft-portrait.webp",
+    "assets/images/today-gem-portrait.webp",
+    "assets/images/glab-portrait.webp",
+    "assets/images/store-portrait.webp",
+    "assets/images/sleep-portrait.webp",
+    "assets/images/meal-menu-portrait.webp",
+    "assets/images/meal-convenience-portrait.webp",
+    "assets/images/meal-chinese-portrait.webp",
+    "assets/images/meal-korean-portrait.webp",
+    "assets/images/meal-indian-portrait.webp",
+    "assets/images/meal-kebab-portrait.webp",
+    "assets/images/meal-soba-portrait.webp",
+    "assets/images/meal-hamburger-portrait.webp",
+    "assets/images/metalshop-portrait.webp",
+    "assets/images/jewelry-shop-portrait.webp",
+    "assets/images/space-portrait.webp",
     "assets/images/quiz/quiz-king-normal.png",
     "assets/images/quiz/quiz-king-player-correct.png",
     "assets/images/quiz/quiz-king-player-incorrect.png",
@@ -309,4 +342,4 @@ if errors:
 
 version = next(iter(versions.values()), "不明")
 print(f"回帰防止チェック: OK（v{version}）")
-print("365日の宝石、200問クイズ、携帯共通表示、縦画面背景、イベント人物位置、横画面クイズ王、メイン上部バー、イベント中の上部バー非表示、ルース屋、家賃、販売確率、ガネーシャの牙イベント、ラーメン屋背景、幼なじみとの再会イベント、盗難老婆イベント、お客様10人と来店頻度を確認しました。")
+print("365日の宝石、200問クイズ、携帯共通表示、主要22画面の縦背景、イベント人物位置、横画面クイズ王、メイン上部バー、イベント中の上部バー非表示、ルース屋、家賃、販売確率、ガネーシャの牙イベント、ラーメン屋背景、幼なじみとの再会イベント、盗難老婆イベント、お客様10人と来店頻度を確認しました。")

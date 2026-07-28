@@ -6,7 +6,7 @@ import {
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.398';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.400';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -4973,8 +4973,17 @@ function backgroundFor(target) {
 }
 
 
+const STANDARD_PORTRAIT_BACKGROUND_BASES = new Set([
+  'mining',
+  'workshop',
+  'glab',
+  'store',
+  'sleep',
+  'metalshop',
+]);
+
 function backgroundAssetFor(target) {
-  if (isAlienAbducted() && target !== 'alienReturnEvent') return 'space';
+  if (isAlienAbducted() && target !== 'alienReturnEvent') return isPortraitLayout() ? 'space-portrait' : 'space';
   if (target === 'main') return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
   if (target === 'sushiChefEvent') return 'meal-kaitenzushi-event';
   if (target === 'cyclopsEvent') return `meal-convenience${isPortraitLayout() ? '-portrait' : ''}`;
@@ -4982,9 +4991,10 @@ function backgroundAssetFor(target) {
   if (target === 'childhoodFriendEvent') return childhoodFriendBackgroundAssetName();
   if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'diamondPolishingLapEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
-  if (target === 'todayGem') return 'today-gem';
+  if (target === 'todayGem') return isPortraitLayout() ? 'today-gem-portrait' : 'today-gem';
+  if (target === 'craft' || target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';
   if (target === 'looseShop' || target === 'supplierRough') return isPortraitLayout() ? 'loose-shop-portrait-v385' : 'loose-shop-v385';
-  if (target === 'jewelryShop') return 'jewelry-shop';
+  if (target === 'jewelryShop') return isPortraitLayout() ? 'jewelry-shop-portrait' : 'jewelry-shop';
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
   const base = backgroundFor(target);
@@ -4992,10 +5002,11 @@ function backgroundAssetFor(target) {
   if (base === 'meal') {
     const mealId = screenData?.mealId;
     if (mealId && MEALS[mealId]) return mealBackgroundAssetName(mealId, portrait);
-    return 'meal-menu';
+    return portrait ? 'meal-menu-portrait' : 'meal-menu';
   }
   if (portrait && base === 'main') return 'main-portrait';
   if (portrait && base === 'okachimachi') return 'okachimachi-portrait';
+  if (portrait && STANDARD_PORTRAIT_BACKGROUND_BASES.has(base)) return `${base}-portrait`;
   return base;
 }
 

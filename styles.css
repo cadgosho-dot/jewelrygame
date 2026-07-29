@@ -8,12 +8,13 @@
   --text:#f7ead4;
   --muted:#c8b89a;
   --screen-bg:url('./assets/images/main.webp');
+  --ui-font:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo","Noto Sans JP",sans-serif;
   --safe-top:max(8px,env(safe-area-inset-top));
   --safe-bottom:max(8px,env(safe-area-inset-bottom));
 }
 *{box-sizing:border-box}
-html,body{width:100%;height:100%;margin:0;overflow:hidden;color:var(--text);font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif}html{background:#090603}body{position:relative;isolation:isolate;background:#090603}
-button,input,select{font:inherit}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;color:var(--text);font-family:var(--ui-font)}html{background:#090603}body{position:relative;isolation:isolate;background:#090603}
+button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 button:disabled{cursor:not-allowed;opacity:.38;filter:grayscale(.7)}
 #background-layer{position:fixed;inset:0;z-index:0;background-color:#090603;background-image:var(--screen-bg);background-size:contain;background-position:center;background-repeat:no-repeat;transition:background-image .35s ease;pointer-events:none}
@@ -4608,7 +4609,7 @@ body[data-screen="main"] .floating-notice{
 
 /* v0.10.158 地金屋の売買ボタン文字を統一 */
 .metal-market-trade-buttons .large-button{
-  font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;
+  font-family:var(--ui-font);
   font-size:1.05rem;
   font-weight:800;
   line-height:1.25;
@@ -4778,7 +4779,7 @@ body[data-screen="phone"] .finance-period-tabs button{
   border-radius:9px!important;
   background:#fff!important;
   color:#2b2119!important;
-  font:800 .82rem/1.1 "Yu Mincho","Hiragino Mincho ProN",serif!important;
+  font:800 .82rem/1.1 var(--ui-font)!important;
 }
 body[data-screen="phone"] .finance-period-tabs button.active{
   color:#4e3215!important;
@@ -5133,7 +5134,7 @@ body[data-screen="login"],
 body[data-screen="login"] button,
 body[data-screen="login"] input,
 body[data-screen="login"] summary{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo","Noto Sans JP",sans-serif!important;
+  font-family:var(--ui-font)!important;
 }
 body[data-screen="login"] .login-panel{
   gap:.9rem;
@@ -11228,8 +11229,14 @@ body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(9,minmax(0,1f
 .gift-field>span:first-child{font-weight:800;font-size:.82rem;color:#59422d}
 .gift-field select,.gift-field input{width:100%;min-height:43px;border:1px solid rgba(88,61,34,.28);border-radius:9px;background:#fffaf0;color:#2b2119;padding:.55rem .65rem;font:inherit}
 .gift-field small{font-size:.72rem;color:#7b6753}
+.gift-quantity-stepper{display:grid;grid-template-rows:34px auto 34px;gap:.28rem;width:100%;min-width:0}
+.gift-stepper-button{display:grid;place-items:center;width:100%;min-height:34px!important;height:34px;padding:0!important;border:1px solid rgba(112,75,37,.34)!important;border-radius:9px!important;background:linear-gradient(180deg,#fff8e9,#ead5ae)!important;color:#5b3f22!important;font-size:.95rem;font-weight:900;line-height:1;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.gift-stepper-button:hover,.gift-stepper-button:focus-visible{background:linear-gradient(180deg,#fffdf7,#e4c691)!important;border-color:rgba(105,68,31,.62)!important}
+.gift-stepper-button:disabled{opacity:.38!important;cursor:not-allowed!important}
 .gift-quantity-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.45rem}
 .gift-quantity-row em{font-style:normal;font-weight:800;color:#5b432d}
+.gift-quantity-row input{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.gift-quantity-row input::-webkit-inner-spin-button,.gift-quantity-row input::-webkit-outer-spin-button{appearance:none;margin:0}
 .gift-preview-card{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:.75rem;padding:.75rem;border-radius:15px;border:1px solid rgba(115,78,40,.22);background:linear-gradient(145deg,#fffaf0,#ead8b9);box-shadow:0 7px 20px rgba(80,50,23,.1)}
 .gift-preview-card>.gift-item-visual,.gift-preview-card>img.gift-item-visual{width:68px;height:68px;max-width:68px;max-height:68px;object-fit:contain;display:grid;place-items:center;font-size:2.3rem;filter:drop-shadow(0 6px 8px rgba(57,35,18,.22))}
 .gift-preview-card>div:not(.gift-jewelry-visual){display:grid;gap:.12rem;min-width:0}
@@ -11268,6 +11275,117 @@ body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(9,minmax(0,1f
 @media (orientation:portrait),(max-width:820px){body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
 @media (max-width:430px){body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(5,minmax(0,1fr))!important}.phone-tabs button{font-size:.6rem!important}.gift-preview-card{grid-template-columns:62px minmax(0,1fr)}.gift-preview-card>.gift-item-visual,.gift-preview-card>img.gift-item-visual,.gift-jewelry-visual{width:58px!important;height:58px!important;max-width:58px;max-height:58px}.gift-code-card strong{font-size:1.16rem}}
 
+
+
+/* v0.10.414 プレゼント画面の文字視認性改善 */
+body[data-screen="phone"] .phone-content .phone-gift-menu,
+body[data-screen="phone"] .phone-content .phone-gift-panel{
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:auto;
+}
+body[data-screen="phone"] .phone-content .gift-menu-hero{
+  background:linear-gradient(145deg,#fffdf8,#efe1c7)!important;
+  border-color:rgba(126,88,42,.28)!important;
+}
+body[data-screen="phone"] .phone-content .gift-menu-hero h2{
+  color:#2b2119!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-menu-hero p{
+  color:#5b4937!important;
+  opacity:1!important;
+  text-shadow:none!important;
+  font-weight:650;
+}
+body[data-screen="phone"] .phone-content .gift-menu-buttons button :is(strong,small){
+  color:#2b2119!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-menu-buttons button small{
+  color:#665746!important;
+  font-weight:700;
+}
+body[data-screen="phone"] .phone-content .gift-field{
+  background:#fffaf0!important;
+  border-color:rgba(102,73,42,.28)!important;
+}
+body[data-screen="phone"] .phone-content .gift-field>span:first-child{
+  color:#4e3925!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-field small{
+  color:#665441!important;
+  opacity:1!important;
+  text-shadow:none!important;
+  font-weight:650;
+}
+body[data-screen="phone"] .phone-content .gift-field :is(select,input),
+body[data-screen="phone"] .phone-content .gift-quantity-row em{
+  color:#2b2119!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-preview-card{
+  background:linear-gradient(145deg,#fffdf7,#ead8b9)!important;
+  border-color:rgba(115,78,40,.3)!important;
+}
+body[data-screen="phone"] .phone-content .gift-preview-card :is(small,strong,span){
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-preview-card small{color:#6e563e!important;font-weight:700}
+body[data-screen="phone"] .phone-content .gift-preview-card strong{color:#2b2119!important}
+body[data-screen="phone"] .phone-content .gift-preview-card span{color:#55412f!important}
+body[data-screen="phone"] .phone-content .gift-warning{
+  background:#f3e4c9!important;
+  border-color:rgba(165,105,38,.3)!important;
+  color:#5b3e20!important;
+  opacity:1!important;
+  text-shadow:none!important;
+  font-weight:650;
+}
+body[data-screen="phone"] .phone-content .gift-code-card :is(small,strong,span){
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-code-card small{color:#66503a!important;font-weight:700}
+body[data-screen="phone"] .phone-content .gift-code-card strong{color:#2c2117!important}
+body[data-screen="phone"] .phone-content .gift-code-card span{color:#745a3e!important}
+body[data-screen="phone"] .phone-content .gift-history-row{
+  background:#fffaf0!important;
+  border-color:rgba(91,63,35,.24)!important;
+}
+body[data-screen="phone"] .phone-content .gift-history-row strong{
+  color:#2b2119!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-history-row>div:first-child>span{
+  color:#665441!important;
+  opacity:1!important;
+  text-shadow:none!important;
+  font-weight:650;
+}
+body[data-screen="phone"] .phone-content .gift-history-row .gift-status{
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-history-row .gift-status-claimed{color:#2f704a!important}
+body[data-screen="phone"] .phone-content .gift-history-row .gift-status-cancelled{color:#85534d!important}
+body[data-screen="phone"] .phone-content .gift-receive-confirm>small{
+  color:#fff3d4!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+body[data-screen="phone"] .phone-content .gift-receive-confirm>code{
+  background:#fffaf0!important;
+  color:#4f3822!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
 
 /* v0.10.410 冬の風邪・文字化けイベント */
 .winter-cold-event-screen{
@@ -11350,3 +11468,69 @@ body[data-screen="mysteryChineseMealEvent"] .mystery-chinese-meal-reward-button 
     max-height:47dvh;
   }
 }
+
+
+/* v0.10.416 風邪イベント3日化・回復表示・操作文言の可読化 */
+.morning-cold-recovery{
+  width:min(92%,680px);
+  margin:clamp(10px,2vh,20px) auto;
+  padding:clamp(12px,2.4vw,20px);
+  border:1px solid rgba(191,236,210,.58);
+  border-radius:16px;
+  background:rgba(27,92,57,.82);
+  color:#f4fff8;
+  font-size:clamp(1.1rem,3.5vw,1.65rem);
+  font-weight:800;
+  letter-spacing:.08em;
+  text-align:center;
+  text-shadow:0 2px 8px rgba(0,0,0,.55);
+}
+
+
+/* v0.10.417 風邪中のメイン画面中央へ体調状態を常時表示 */
+.winter-cold-main-status{
+  position:fixed;
+  left:50%;
+  top:50%;
+  z-index:16;
+  transform:translate(-50%,-50%);
+  display:grid;
+  place-items:center;
+  min-width:min(360px,calc(100vw - 36px));
+  min-height:96px;
+  padding:.9rem 1.4rem;
+  border:1px solid rgba(255,151,143,.78);
+  border-radius:16px;
+  background:rgba(48,10,12,.78);
+  box-shadow:0 18px 58px rgba(0,0,0,.62),inset 0 0 0 1px rgba(255,255,255,.05);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  text-align:center;
+  pointer-events:none;
+}
+.winter-cold-main-status strong{
+  color:#ffd8d4;
+  font-size:clamp(1.55rem,4.5vw,2.5rem);
+  font-weight:900;
+  letter-spacing:.16em;
+  line-height:1.2;
+  text-shadow:0 3px 12px rgba(0,0,0,.95);
+}
+@media (orientation:portrait),(max-width:820px){
+  .winter-cold-main-status{
+    min-width:min(320px,calc(100vw - 28px));
+    min-height:84px;
+    padding:.78rem 1rem;
+  }
+}
+@media (orientation:landscape) and (max-height:520px){
+  .winter-cold-main-status{
+    min-height:68px;
+    padding:.55rem 1rem;
+  }
+  .winter-cold-main-status strong{font-size:1.45rem}
+}
+
+
+/* v0.10.418 ゲーム内の書体をゴシック系へ統一 */
+html,body,button,input,select,textarea{font-family:var(--ui-font)}

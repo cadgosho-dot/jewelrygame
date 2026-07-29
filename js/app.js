@@ -6,7 +6,7 @@ import {
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.412';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.418';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -150,7 +150,7 @@ const SPACE_MINING_LOCATION = (() => {
 const WOOD_SWORD_EVENT_REQUIRED_DAYS = 365;
 const WOOD_SWORD_ROBBERY_MULTIPLIER = 0.5;
 const CLOCK_TOWER_DONATION_EVENT_CHANCE = 1 / 90;
-const WINTER_COLD_EVENT_DAYS = 4;
+const WINTER_COLD_EVENT_DAYS = 3;
 const CINEMA_VISIT_EVENT_CHANCE = 1 / 40;
 const CINEMA_VISIT_EVENT_COST = 1800;
 const CINEMA_VISIT_EVENT_HOURS = 3;
@@ -3595,6 +3595,7 @@ function winterColdEventState() {
     startDay: Math.max(0, Math.floor(Number(saved.startDay) || 0)),
     daysCompleted: Math.max(0, Math.min(WINTER_COLD_EVENT_DAYS, Math.floor(Number(saved.daysCompleted) || 0))),
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    recoveryNoticePending: Boolean(saved.recoveryNoticePending),
   };
   if (!state.events.winterColdEvent.active && !['idle', 'completed'].includes(state.events.winterColdEvent.stage)) {
     state.events.winterColdEvent.stage = 'completed';
@@ -3637,6 +3638,7 @@ function maybeStartWinterColdEvent(randomValue = Math.random()) {
   eventState.seasonKey = seasonKey;
   eventState.startDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
   eventState.daysCompleted = 0;
+  eventState.recoveryNoticePending = false;
   eventState.totalTriggered += 1;
   saveGame();
   setScreen('winterColdEvent', {}, false);
@@ -3672,6 +3674,7 @@ function progressWinterColdSleep({ showResult = true } = {}) {
     eventState.active = false;
     eventState.stage = 'completed';
     eventState.lastCompletedSeason = eventState.seasonKey;
+    eventState.recoveryNoticePending = true;
   }
   return true;
 }
@@ -3683,6 +3686,7 @@ function finishWinterColdRecoveryAfterNight() {
   eventState.active = false;
   eventState.stage = 'completed';
   eventState.lastCompletedSeason = eventState.seasonKey;
+  eventState.recoveryNoticePending = true;
   return true;
 }
 
@@ -3699,7 +3703,8 @@ function winterColdGarbleText(value) {
 }
 
 function winterColdReadableElement(element) {
-  return Boolean(element?.closest?.('[data-illness-readable="true"],script,style,noscript'));
+  const readableControl = element?.closest?.('[data-action="sleep"],[data-action="do-sleep"],[data-action="main"],[data-action="back"],[data-action="next-day"]');
+  return Boolean(readableControl || element?.closest?.('[data-illness-readable="true"],script,style,noscript'));
 }
 
 function applyWinterColdTextEffect() {
@@ -3839,6 +3844,7 @@ async function showMorningBrief() {
   const repairMessages = Array.isArray(state.tools?.morningMessages) ? [...state.tools.morningMessages] : [];
   const date = gameDate();
   const todayGem = dailyGemForDate(date);
+  const coldRecoveryPending = Boolean(winterColdEventState().recoveryNoticePending);
   const events = [...repairMessages, `今日の宝石：${todayGem.name}`, ...currentCalendarEvents()];
   const hasEvents = events.length > 0;
   const playerName = state.playerName || 'プレイヤー';
@@ -3852,6 +3858,7 @@ async function showMorningBrief() {
         <span>${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
       </div>
       <p class="morning-greeting">おはようございます、${esc(playerName)}</p>
+      ${coldRecoveryPending ? '<p class="morning-cold-recovery" data-illness-readable="true">体調が戻った</p>' : ''}
       <div class="morning-events ${hasEvents ? 'has-events' : 'is-empty'}">
         <small>本日の予定・お知らせ</small>
         ${hasEvents
@@ -3862,10 +3869,9 @@ async function showMorningBrief() {
   morningBriefEl.classList.remove('persistent');
   morningBriefEl.classList.add('active');
 
-  if (repairMessages.length) {
-    state.tools.morningMessages = [];
-    saveGame();
-  }
+  if (repairMessages.length) state.tools.morningMessages = [];
+  if (coldRecoveryPending) winterColdEventState().recoveryNoticePending = false;
+  if (repairMessages.length || coldRecoveryPending) saveGame();
 
   const displayDuration = events.length > 1
     ? Math.min(6500, 3500 + (events.length - 1) * 650)
@@ -5592,14 +5598,14 @@ function header(title, { back = true, main = true, help = '' } = {}) {
       </div>
       <div class="header-money-area">
         ${help ? `<button class="icon-button header-help-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}
-        ${main ? '<button class="small-button header-main-button" data-action="main">メイン画面</button>' : ''}
+        ${main ? '<button class="small-button header-main-button" data-action="main" data-illness-readable="true">メイン画面</button>' : ''}
         <span class="header-money ${moneyFeedback ? `money-change-active money-${moneyFeedback.direction}` : ''}" aria-label="所持金">
           <span class="header-money-value">${yen(moneyFeedback?.displayAmount ?? state.game.money)}</span>
           ${moneyFeedback ? `<span class="header-money-change ${moneyFeedback.direction}">${moneyFeedback.delta > 0 ? '+' : '−'}${moneyFeedback.amount.toLocaleString('ja-JP')}円</span>` : ''}
         </span>
       </div>
       <div class="header-center">
-        ${back ? '<button class="icon-button" data-action="back" aria-label="戻る">←</button>' : ''}
+        ${back ? '<button class="icon-button" data-action="back" data-illness-readable="true" aria-label="戻る">←</button>' : ''}
         ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
         <div class="header-actions"></div>
       </div>
@@ -7292,11 +7298,13 @@ function renderMain() {
   const manualActionDisabled = autopilotEnabled ? autopilotDisabled : hungerDisabled;
   const phoneDisabled = !autopilotEnabled && locked ? hungerDisabled : '';
   const mealDisabled = autopilotEnabled ? autopilotDisabled : '';
-  const sleepDisabled = winterColdTextActive() ? '' : (autopilotEnabled ? autopilotDisabled : (canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'));
+  const coldActive = winterColdTextActive();
+  const sleepDisabled = coldActive ? '' : (autopilotEnabled ? autopilotDisabled : (canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'));
   const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}>${mainMenuIcon('store')}<strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
   return `${mainStatusHeader()}
-    <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
+    <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}${coldActive ? ' winter-cold-main-screen' : ''}">
       <section class="main-spacer" aria-hidden="true"></section>
+      ${coldActive ? '<div class="winter-cold-main-status" role="status" aria-live="polite" data-illness-readable="true"><strong>体調不良</strong></div>' : ''}
       ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
       ${locked && !autopilotEnabled ? `<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
       ${hungerFeedback && !autopilotEnabled ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
@@ -9288,18 +9296,18 @@ function renderShowcaseItemDetail() {
         <div><dt>品質</dt><dd>${esc(QUALITIES[item.quality]?.name || '')}</dd></div>
         <div><dt>原価</dt><dd>${yen(item.cost)}</dd></div>
         <div><dt>おすすめ価格</dt><dd>${yen(item.recommendedPrice)}</dd></div>
-        <div><dt>予想利益</dt><dd>${yen(expectedProfit)}</dd></div>
-        <div><dt>価格判定</dt><dd class="price-status ${priceStatus.id}">${esc(priceStatus.name)}</dd></div>
+        <div><dt>予想利益</dt><dd data-showcase-expected-profit>${yen(expectedProfit)}</dd></div>
+        <div><dt>価格判定</dt><dd class="price-status ${priceStatus.id}" data-showcase-price-status>${esc(priceStatus.name)}</dd></div>
       </dl>
       <div class="showcase-detail-price-field" aria-label="販売価格を1,000円単位で変更">
         <span>販売価格</span>
         <div class="showcase-price-stepper">
           <button type="button" class="showcase-price-step-button showcase-price-step-up" data-action="selling-price-step" data-delta="1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円上げる">▲</button>
           <div class="showcase-price-value-row">
-            <strong class="showcase-price-value">${yen(price)}</strong>
-            <button type="button" class="primary-button showcase-price-confirm-button" data-action="selling-price-confirm" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" ${priceChanged ? '' : 'disabled'}>決定</button>
+            <strong class="showcase-price-value" data-showcase-price-value>${yen(price)}</strong>
+            <button type="button" class="primary-button showcase-price-confirm-button" data-action="selling-price-confirm" data-showcase-price-confirm data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" ${priceChanged ? '' : 'disabled'}>決定</button>
           </div>
-          <button type="button" class="showcase-price-step-button showcase-price-step-down" data-action="selling-price-step" data-delta="-1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円下げる" ${price <= 1000 ? 'disabled' : ''}>▼</button>
+          <button type="button" class="showcase-price-step-button showcase-price-step-down" data-action="selling-price-step" data-showcase-price-down data-delta="-1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円下げる" ${price <= 1000 ? 'disabled' : ''}>▼</button>
         </div>
         <small class="showcase-price-step-note">▲▼で価格を調整し、決定ボタンで反映</small>
       </div>
@@ -9308,6 +9316,30 @@ function renderShowcaseItemDetail() {
         ${contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
       </div>
     </section>`, { help: '商品の詳細を確認し、▲▼で販売価格を1,000円ずつ調整してから、決定ボタンで反映します。' });
+}
+
+function updateShowcaseDetailPricePreview(price, savedPrice, item) {
+  if (screen !== 'showcaseDetail' || !item) return false;
+  const panel = root.querySelector('.showcase-detail-panel');
+  if (!panel) return false;
+  const normalizedPrice = normalizeSellingPrice(price, item.recommendedPrice || savedPrice || 1000);
+  const normalizedSavedPrice = normalizeSellingPrice(savedPrice, item.recommendedPrice || normalizedPrice);
+  const priceStatus = sellingPriceStatus(item, normalizedPrice);
+  const expectedProfit = normalizedPrice - Math.max(0, Number(item.cost) || 0);
+  const priceValue = panel.querySelector('[data-showcase-price-value]');
+  const expectedProfitValue = panel.querySelector('[data-showcase-expected-profit]');
+  const priceStatusValue = panel.querySelector('[data-showcase-price-status]');
+  const confirmButton = panel.querySelector('[data-showcase-price-confirm]');
+  const downButton = panel.querySelector('[data-showcase-price-down]');
+  if (priceValue) priceValue.textContent = yen(normalizedPrice);
+  if (expectedProfitValue) expectedProfitValue.textContent = yen(expectedProfit);
+  if (priceStatusValue) {
+    priceStatusValue.textContent = priceStatus.name;
+    priceStatusValue.className = `price-status ${priceStatus.id}`;
+  }
+  if (confirmButton instanceof HTMLButtonElement) confirmButton.disabled = normalizedPrice === normalizedSavedPrice;
+  if (downButton instanceof HTMLButtonElement) downButton.disabled = normalizedPrice <= 1000;
+  return Boolean(priceValue && expectedProfitValue && priceStatusValue && confirmButton && downButton);
 }
 
 function customerPreferenceLabel(request) {
@@ -9876,9 +9908,9 @@ function giftSendableRows(category) {
   }
   if (category === 'metal') {
     return Object.values(METALS).map((metal) => {
-      const max = metalAvailableWeight(metal.id);
+      const max = Math.max(0, Math.floor(metalAvailableWeight(metal.id)));
       return { key: metal.id, name: metal.shortName || metal.name, max, payload: { type: 'metal', id: metal.id, name: `${metal.shortName || metal.name}地金` } };
-    }).filter((row) => row.max >= 0.1);
+    }).filter((row) => row.max >= 1);
   }
   if (category === 'jewelry') {
     return (state.inventory.jewelry || []).filter((item) => item.status === 'stored').map((item) => ({
@@ -9898,9 +9930,18 @@ function normalizeGiftDraft() {
   if (!rows.some((row) => row.key === giftDraft.itemKey)) giftDraft.itemKey = rows[0]?.key || '';
   const row = rows.find((entry) => entry.key === giftDraft.itemKey) || rows[0] || null;
   if (!row) giftDraft.quantity = 1;
-  else if (giftDraft.category === 'metal') giftDraft.quantity = Math.max(0.1, Math.min(row.max, giftRoundedWeight(giftDraft.quantity || 0.1)));
   else giftDraft.quantity = Math.max(1, Math.min(Math.floor(row.max), Math.floor(Number(giftDraft.quantity) || 1)));
   return { rows, row };
+}
+
+function adjustGiftQuantity(delta) {
+  const { row } = normalizeGiftDraft();
+  if (!row || giftDraft.category === 'jewelry') return;
+  const maximum = Math.max(1, Math.floor(row.max));
+  const current = Math.max(1, Math.floor(Number(giftDraft.quantity) || 1));
+  giftDraft.quantity = Math.max(1, Math.min(maximum, current + (Number(delta) < 0 ? -1 : 1)));
+  playSfx('select', { gain: 0.66 });
+  render();
 }
 
 function giftVisualMarkup(payload, className = 'gift-item-visual') {
@@ -10105,7 +10146,7 @@ function renderGiftSend() {
     <div class="gift-form-grid">
       <label class="gift-field"><span>種類</span><select data-gift-category>${categoryOptions}</select></label>
       <label class="gift-field"><span>渡すもの</span><select data-gift-item>${itemOptions}</select></label>
-      ${isJewelry ? '' : `<label class="gift-field"><span>${isMetal ? '重量' : '数量'}</span><span class="gift-quantity-row"><input type="number" data-gift-quantity min="${isMetal ? '0.1' : '1'}" max="${row.max}" step="${isMetal ? '0.1' : '1'}" value="${quantity}"><em>${isMetal ? 'g' : '個'}</em></span><small>渡せる上限：${isMetal ? `${metalWeightLabel(row.max)}g` : `${row.max}個`}</small></label>`}
+      ${isJewelry ? '' : `<label class="gift-field"><span>${isMetal ? '重量' : '数量'}</span><span class="gift-quantity-stepper" aria-label="${isMetal ? '地金の重量' : 'プレゼントの数量'}を増減"><button type="button" class="gift-stepper-button gift-stepper-up" data-action="gift-qty-step" data-delta="1" aria-label="${isMetal ? '地金を1g増やす' : '数量を1個増やす'}" ${quantity >= Math.floor(row.max) ? 'disabled' : ''}>▲</button><span class="gift-quantity-row"><input type="number" data-gift-quantity min="1" max="${Math.floor(row.max)}" step="1" inputmode="numeric" pattern="[0-9]*" value="${quantity}"><em>${isMetal ? 'g' : '個'}</em></span><button type="button" class="gift-stepper-button gift-stepper-down" data-action="gift-qty-step" data-delta="-1" aria-label="${isMetal ? '地金を1g減らす' : '数量を1個減らす'}" ${quantity <= 1 ? 'disabled' : ''}>▼</button></span><small>渡せる上限：${isMetal ? `${Math.floor(row.max)}g（1g単位）` : `${row.max}個`}</small></label>`}
     </div>
     <article class="gift-preview-card">${giftVisualMarkup(payload)}<div><small>${esc(summary.category)}</small><strong>${esc(summary.name)}</strong><span>${esc(summary.quantity)}</span></div></article>
     <p class="gift-warning">コードを発行した時点で、選んだプレゼントは在庫から減ります。受け取られる前なら取り消せます。</p>
@@ -10881,9 +10922,9 @@ function renderDayResult() {
             <div><span>支出</span><strong>${yen(result.expense)}</strong></div>
             <div><span>食事</span><strong>${result.meals?.length ? result.meals.map((entry) => entry.name).join('、') : 'なし'}</strong></div>
           </div>
-          <p class="goodnight">お疲れ様でした。<br>おやすみなさい...${esc(state.playerName || 'プレイヤー')}...</p>
+          <p class="goodnight" data-illness-readable="true">ゆっくり休んでください、、、<br>おやすみなさい...${esc(state.playerName || 'プレイヤー')}...</p>
           <div class="day-result-actions">
-            <button class="primary-button full-button" data-action="next-day">次の日へ</button>
+            <button class="primary-button full-button" data-action="next-day" data-illness-readable="true">次の日へ</button>
           </div>
         </div>
       </section>
@@ -13717,7 +13758,7 @@ root.addEventListener('click', async (event) => {
       const nextPrice = Math.max(1000, currentPrice + delta);
       if (nextPrice === currentPrice) break;
       screenData.pendingSellingPrice = normalizeSellingPrice(nextPrice, item?.recommendedPrice || 1000);
-      render();
+      if (!updateShowcaseDetailPricePreview(screenData.pendingSellingPrice, savedPrice, item)) render();
       break;
     }
     case 'selling-price-confirm': {
@@ -13743,7 +13784,7 @@ root.addEventListener('click', async (event) => {
       mirrorCurrentStoreDisplay(branch);
       saveGame();
       showToast(`販売価格を${yen(decidedPrice)}で決定しました。`);
-      render();
+      if (!updateShowcaseDetailPricePreview(decidedPrice, decidedPrice, item)) render();
       break;
     }
     case 'remove-showcase': removeShowcase(Number(button.dataset.showcase), Number(button.dataset.slot), button.dataset.branch || ''); break;
@@ -13795,6 +13836,9 @@ root.addEventListener('click', async (event) => {
       render();
       break;
     }
+    case 'gift-qty-step':
+      adjustGiftQuantity(button.dataset.delta);
+      break;
     case 'gift-create':
       await createGiftFromDraft();
       break;
@@ -13929,6 +13973,12 @@ root.addEventListener('change', (event) => {
     giftDraft.itemKey = target.value;
     giftDraft.quantity = 1;
     playSfx('select', { gain: 0.72 });
+    render();
+    return;
+  }
+  if (target.matches('[data-gift-quantity]')) {
+    giftDraft.quantity = target.value;
+    normalizeGiftDraft();
     render();
     return;
   }

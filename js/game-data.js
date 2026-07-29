@@ -1,4 +1,4 @@
-export const VERSION = '0.10.400';
+export const VERSION = '0.10.412';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -264,6 +264,7 @@ export const GEMS = {
   pearl: { id: 'pearl', name: 'パール', roughPrice: 0, price: 9000, looseRank: 'B', hue: '#f2ede7', eventOnly: true },
   ivory: { id: 'ivory', name: '象牙', roughName: 'ガネーシャの牙', roughPrice: 9000, price: 18000, looseRank: 'A', hue: '#f4e4bd', eventOnly: true },
   jade: { id: 'jade', name: '翡翠', roughName: '翡翠原石', roughPrice: 10000, price: 22000, looseRank: 'A', hue: '#4bb08a', eventOnly: true },
+  amber: { id: 'amber', name: '琥珀', roughPrice: 0, price: 14000, looseRank: 'B', hue: '#d98a2b', eventOnly: true },
   emerald: { id: 'emerald', name: 'エメラルド', roughPrice: 12000, price: 18000, looseRank: 'A', hue: '#11a67a' },
   moonstone: { id: 'moonstone', name: 'ムーンストーン', roughPrice: 4500, price: 5500, looseRank: 'C', hue: '#c9e4ef' },
   ruby: { id: 'ruby', name: 'ルビー', roughPrice: 13000, price: 15000, looseRank: 'A', hue: '#c51f55' },
@@ -299,11 +300,12 @@ export const LOOSE_SHAPES = {
   ovalCabochon: { id: 'ovalCabochon', name: 'オーバルカボション', fileName: 'oval-cabochon.png' },
   antiqueCut: { id: 'antiqueCut', name: 'アンティークカット', fileName: 'antique-diamond.png' },
   pearl: { id: 'pearl', name: 'パール', fileName: 'pearl.png' },
+  amber: { id: 'amber', name: '琥珀', fileName: 'amber.png' },
 };
 
 const STANDARD_LOOSE_SHAPE_IDS = ['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon'];
 const CABOCHON_ONLY_GEMS = new Set(['opal', 'turquoise', 'lapislazuli']);
-const SPECIAL_LOOSE_SHAPES = Object.freeze({ antiqueDiamond: ['antiqueCut'], pearl: ['pearl'], ivory: ['roundCabochon', 'ovalCabochon'], jade: ['roundCabochon', 'ovalCabochon'] });
+const SPECIAL_LOOSE_SHAPES = Object.freeze({ antiqueDiamond: ['antiqueCut'], pearl: ['pearl'], ivory: ['roundCabochon', 'ovalCabochon'], jade: ['roundCabochon', 'ovalCabochon'], amber: ['amber'] });
 
 export const LOOSE_CUT_PRICE_MULTIPLIERS = Object.freeze({
   round: 1.00,
@@ -1998,6 +2000,7 @@ export function initialState() {
       equipped: { miningTool: 'basicPickaxe' },
       capacity: 10,
     },
+    gifts: { outbox: [], inbox: [] },
     tools: {
       items: Object.fromEntries(Object.keys(WORKSHOP_TOOLS).map((key) => [key, null])),
       morningMessages: [],
@@ -2928,6 +2931,14 @@ export function migrateState(saved) {
   };
   normalizeSimpleEvent('miningPazupanEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
   normalizeSimpleEvent('mermaidEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+  normalizeSimpleEvent('kappaJadeEvent', ['idle', 'intro1', 'intro2', 'reward', 'farewell', 'completed'], (saved) => ({
+    rewardGranted: Boolean(saved.rewardGranted),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+  }));
+  normalizeSimpleEvent('tattooWomanAmberEvent', ['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed'], (saved) => ({
+    rewardGranted: Boolean(saved.rewardGranted),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+  }));
 
   const normalizeVisitEvent = (key, validStages, extra = {}) => {
     const saved = isRecord(state.events[key]) ? state.events[key] : {};
@@ -2981,6 +2992,7 @@ export function migrateState(saved) {
   {
     const saved = isRecord(state.events.storeTheftEvent) ? state.events.storeTheftEvent : {};
     state.events.storeTheftEvent = {
+      lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
       totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
       active: Boolean(saved.active),
       stage: ['idle', 'intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice', 'completed'].includes(saved.stage) ? saved.stage : 'idle',

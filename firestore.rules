@@ -1,10 +1,13 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isVerifiedOwner(userId) {
+    function isVerifiedUser() {
       return request.auth != null
-        && request.auth.uid == userId
         && request.auth.token.email_verified == true;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
     }
 
     match /users/{userId} {
@@ -13,6 +16,46 @@ service cloud.firestore {
       match /{document=**} {
         allow read, write: if isVerifiedOwner(userId);
       }
+    }
+
+    // 1回限りのプレゼントコード。コードを知っている認証済みユーザーだけが1件取得できる。
+    // 一覧取得は禁止し、総当たりでプレゼントを探せないようにする。
+    match /gifts/{giftCode} {
+      allow get: if isVerifiedUser();
+      allow list: if false;
+
+      allow create: if isVerifiedUser()
+        && request.resource.data.code == giftCode
+        && request.resource.data.senderUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.claimedBy == null
+        && request.resource.data.payload is map
+        && request.resource.data.payload.type in ['rough', 'loose', 'item', 'metal', 'jewelry'];
+
+      allow update: if isVerifiedUser() && (
+        // 発行者による未受取プレゼントの取り消し。
+        (
+          resource.data.senderUid == request.auth.uid
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'cancelledAt', 'cancelledAtIso'
+          ])
+        )
+        ||
+        // 発行者以外による1回限りの受け取り。
+        (
+          resource.data.senderUid != request.auth.uid
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'claimed'
+          && request.resource.data.claimedBy == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'claimedBy', 'recipientName', 'claimedAt', 'claimedAtIso'
+          ])
+        )
+      );
+
+      allow delete: if false;
     }
   }
 }

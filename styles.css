@@ -9400,6 +9400,7 @@ body[data-screen="cyclopsEvent"] .game-header{position:relative;z-index:20}
 .visit-character-area{position:absolute;left:50%;top:0;bottom:clamp(132px,23vh,202px);z-index:5;width:100%;min-width:0;padding:8px 12px 0;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;overflow:visible;pointer-events:none}
 .visit-character{display:block;width:auto;height:auto;max-width:min(79vw,780px);max-height:100%;margin:0 auto;object-fit:contain;object-position:center center;filter:drop-shadow(0 24px 34px rgba(0,0,0,.82));user-select:none}
 .sushi-chef-character{max-width:min(76vw,720px)}
+.mystery-chinese-chef-character{max-width:min(80vw,760px)}
 .cyclops-character{max-width:min(76vw,730px)}
 .visit-event-dialogue{position:relative!important;z-index:9!important;grid-row:2!important;align-self:end!important}
 .visit-event-dialogue>small{display:block;color:#d9b963;font-size:.78rem;font-weight:900;letter-spacing:.08em}
@@ -9536,7 +9537,8 @@ body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-in
     [data-screen="cyclopsEvent"],
     [data-screen="touristWoodSwordEvent"],
     [data-screen="diamondPolishingLapEvent"],
-    [data-screen="alienAbductionEvent"]
+    [data-screen="alienAbductionEvent"],
+    [data-screen="mysteryChineseMealEvent"]
   ) .game-header{position:relative!important;z-index:30!important}
 
   body[data-screen="westernUnionEvent"] .western-union-character-area,
@@ -9546,7 +9548,8 @@ body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-in
   body[data-screen="cyclopsEvent"] .visit-character-area,
   body[data-screen="touristWoodSwordEvent"] .visit-character-area,
   body[data-screen="diamondPolishingLapEvent"] .visit-character-area,
-  body[data-screen="alienAbductionEvent"] .visit-character-area{
+  body[data-screen="alienAbductionEvent"] .visit-character-area,
+  body[data-screen="mysteryChineseMealEvent"] .visit-character-area{
     position:absolute!important;
     left:50%!important;
     top:0!important;
@@ -9573,7 +9576,8 @@ body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-in
   body[data-screen="cyclopsEvent"] .visit-character,
   body[data-screen="touristWoodSwordEvent"] .visit-character,
   body[data-screen="diamondPolishingLapEvent"] .visit-character,
-  body[data-screen="alienAbductionEvent"] .visit-character{
+  body[data-screen="alienAbductionEvent"] .visit-character,
+  body[data-screen="mysteryChineseMealEvent"] .visit-character{
     display:block!important;
     width:auto!important;
     height:auto!important;
@@ -9596,7 +9600,8 @@ body[data-screen="diamondPolishingLapEvent"] .game-header{position:relative;z-in
   body[data-screen="cyclopsEvent"] .visit-event-dialogue,
   body[data-screen="touristWoodSwordEvent"] .visit-event-dialogue,
   body[data-screen="diamondPolishingLapEvent"] .visit-event-dialogue,
-  body[data-screen="alienAbductionEvent"] .visit-event-dialogue{
+  body[data-screen="alienAbductionEvent"] .visit-event-dialogue,
+  body[data-screen="mysteryChineseMealEvent"] .visit-event-dialogue{
     position:relative!important;
     z-index:18!important;
   }
@@ -9721,6 +9726,7 @@ body[data-screen="childhoodFriendEvent"] .childhood-friend-event,
 body[data-screen="touristWoodSwordEvent"] .visit-character-event,
 body[data-screen="diamondPolishingLapEvent"] .visit-character-event,
 body[data-screen="alienAbductionEvent"] .visit-character-event,
+body[data-screen="mysteryChineseMealEvent"] .visit-character-event,
 body[data-screen="hauntingEvent"] .visit-character-event,
 body[data-screen="storeTheftEvent"] .visit-character-event{
   min-height:100dvh;
@@ -10962,4 +10968,385 @@ body[data-screen="storeTheftEvent"] .store-theft-dialogue-alert>small{
 body[data-screen="storeTheftEvent"] .store-theft-dialogue-alert strong{
   color:#f5f6f7;
   text-shadow:0 0 16px rgba(255,255,255,.08);
+}
+
+
+/* v0.10.402 誕生日の就寝前電話イベント */
+body[data-screen="birthdaySleepEvent"]::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:rgba(0,0,0,.91);
+}
+body[data-screen="birthdaySleepEvent"] .app-shell,
+body[data-screen="birthdaySleepEvent"] #root{
+  position:relative;
+  z-index:1;
+}
+.birthday-sleep-event-screen{
+  position:fixed;
+  inset:0;
+  z-index:30;
+  display:grid;
+  place-items:center;
+  min-height:100dvh;
+  padding:max(24px,var(--safe-top)) max(22px,var(--safe-right)) max(24px,var(--safe-bottom)) max(22px,var(--safe-left));
+  background:rgba(0,0,0,.72);
+  isolation:isolate;
+}
+.birthday-sleep-event-screen::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:radial-gradient(circle at 50% 48%,rgba(15,18,22,.17) 0%,rgba(0,0,0,.83) 58%,rgba(0,0,0,.97) 100%);
+  backdrop-filter:brightness(.22) saturate(.35);
+}
+.birthday-sleep-event-message{
+  width:min(88vw,760px);
+  min-height:180px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:28px;
+  padding:34px 28px;
+  border:0;
+  background:transparent;
+  color:#f4f1ea;
+  text-align:center;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.birthday-sleep-event-message strong{
+  font-size:clamp(1.18rem,4.8vw,2.15rem);
+  line-height:1.75;
+  letter-spacing:.055em;
+  font-weight:650;
+  text-shadow:0 2px 16px rgba(0,0,0,.95),0 0 34px rgba(255,255,255,.08);
+}
+.birthday-sleep-event-message span{
+  color:rgba(230,230,230,.58);
+  font-size:.78rem;
+  letter-spacing:.12em;
+  animation:westernUnionTap 1.35s ease-in-out infinite;
+}
+
+
+/* v0.10.405 映画館イベント */
+body[data-screen="cinemaVisitEvent"] .screen-content{
+  width:100%;
+  max-width:none;
+  padding:0;
+}
+.cinema-visit-event-screen{
+  position:relative;
+  min-height:calc(100dvh - var(--header-height,86px));
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+}
+.cinema-invitation-screen::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.36);
+  pointer-events:none;
+}
+.cinema-invitation-message{
+  position:relative;
+  z-index:2;
+  width:min(92vw,760px);
+  min-height:150px;
+  padding:28px 26px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:24px;
+  background:rgba(8,8,10,.76);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  text-align:center;
+  box-shadow:0 22px 60px rgba(0,0,0,.62);
+  backdrop-filter:blur(9px);
+}
+.cinema-invitation-message strong{
+  font-size:clamp(1.55rem,4.5vw,3rem);
+  letter-spacing:.08em;
+  line-height:1.5;
+}
+.cinema-invitation-message span{
+  font-size:.88rem;
+  color:rgba(255,255,255,.72);
+}
+.cinema-playing-screen{
+  background:rgba(0,0,0,.18);
+}
+.cinema-video-stage{
+  position:relative;
+  z-index:3;
+  width:min(82vw,1180px);
+  aspect-ratio:16/9;
+  max-height:68vh;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border-radius:8px;
+  background:#000;
+  box-shadow:0 0 0 2px rgba(255,255,255,.08),0 30px 70px rgba(0,0,0,.78);
+}
+.cinema-video-stage video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000;
+  pointer-events:none;
+}
+.cinema-video-loading,
+.cinema-video-start-button,
+.cinema-video-error-message{
+  position:absolute;
+  z-index:4;
+  left:50%;
+  transform:translateX(-50%);
+  color:#fff;
+  text-align:center;
+}
+.cinema-video-loading{
+  top:50%;
+  transform:translate(-50%,-50%);
+  padding:10px 18px;
+  border-radius:999px;
+  background:rgba(0,0,0,.58);
+  letter-spacing:.14em;
+}
+.cinema-video-stage.is-playing .cinema-video-loading{display:none}
+.cinema-video-start-button{
+  display:none;
+  top:50%;
+  transform:translate(-50%,-50%);
+  min-width:180px;
+  padding:14px 20px;
+  border-radius:999px;
+  background:rgba(20,20,24,.9);
+  border:1px solid rgba(255,255,255,.28);
+  font-weight:800;
+}
+.cinema-video-stage.needs-start .cinema-video-start-button{display:block}
+.cinema-video-error-message{
+  display:none;
+  bottom:18px;
+  width:min(90%,560px);
+  padding:10px 14px;
+  border-radius:12px;
+  background:rgba(80,0,0,.82);
+  font-size:.86rem;
+}
+.cinema-video-stage.has-error .cinema-video-error-message{display:block}
+@media (orientation:portrait){
+  .cinema-video-stage{
+    width:min(94vw,760px);
+    max-height:48vh;
+  }
+  .cinema-invitation-message{
+    width:min(88vw,640px);
+    min-height:170px;
+  }
+}
+@media (orientation:landscape) and (max-height:560px){
+  .cinema-video-stage{
+    width:min(78vw,980px);
+    max-height:72vh;
+  }
+}
+
+
+/* v0.10.408 原石研磨完了ルース表示 */
+#modal-layer .polishing-result-modal{
+  width:min(560px,94vw);
+  text-align:center;
+}
+#modal-layer .polishing-result-modal h2{
+  text-align:center;
+  line-height:1.5;
+}
+.polishing-result-modal-content{
+  display:grid;
+  justify-items:center;
+  gap:.65rem;
+  padding:.35rem 0 .2rem;
+}
+.polishing-result-loose-visual{
+  display:grid;
+  place-items:center;
+  width:min(290px,62vw);
+  height:min(290px,38vh);
+  min-height:180px;
+}
+.polishing-result-loose-image{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  font-size:min(12rem,34vw);
+  color:var(--gem);
+  filter:drop-shadow(0 20px 30px rgba(0,0,0,.58));
+}
+.polishing-result-modal-content>strong{
+  color:var(--gold-light);
+  font-size:1.05rem;
+}
+.polishing-result-modal-content>p{
+  margin:0;
+  color:var(--muted);
+}
+@media (max-width:480px){
+  .polishing-result-loose-visual{
+    width:min(240px,70vw);
+    height:min(240px,35vh);
+    min-height:150px;
+  }
+}
+
+/* v0.10.409 プレゼントコード機能 */
+body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(9,minmax(0,1fr))!important}
+.phone-gift-menu,.phone-gift-panel{display:grid;gap:.85rem;color:#2b2119}
+.gift-menu-hero{text-align:center;padding:.9rem .75rem;border:1px solid rgba(126,88,42,.18);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.84),rgba(238,224,197,.78));box-shadow:0 8px 24px rgba(74,48,23,.1)}
+.gift-menu-hero>span{display:block;font-size:2.7rem;line-height:1;margin-bottom:.25rem;filter:drop-shadow(0 5px 8px rgba(85,51,22,.18))}
+.gift-menu-hero h2{margin:.15rem 0 .35rem!important;font-size:1.35rem}
+.gift-menu-hero p{margin:0;line-height:1.55;font-size:.9rem;color:#675441}
+.gift-menu-buttons{display:grid;gap:.6rem}
+.gift-menu-buttons button{display:grid!important;gap:.18rem;text-align:left;padding:.8rem .9rem!important}
+.gift-menu-buttons button strong{font-size:1rem}
+.gift-menu-buttons button small{font-size:.74rem;opacity:.78}
+.gift-back-button{justify-self:start;padding:.3rem .1rem!important;color:#6a4b2c!important}
+.gift-form-grid{display:grid;gap:.65rem}
+.gift-field{display:grid;gap:.34rem;padding:.7rem;border:1px solid rgba(102,73,42,.2);border-radius:13px;background:rgba(255,255,255,.68)}
+.gift-field>span:first-child{font-weight:800;font-size:.82rem;color:#59422d}
+.gift-field select,.gift-field input{width:100%;min-height:43px;border:1px solid rgba(88,61,34,.28);border-radius:9px;background:#fffaf0;color:#2b2119;padding:.55rem .65rem;font:inherit}
+.gift-field small{font-size:.72rem;color:#7b6753}
+.gift-quantity-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.45rem}
+.gift-quantity-row em{font-style:normal;font-weight:800;color:#5b432d}
+.gift-preview-card{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:.75rem;padding:.75rem;border-radius:15px;border:1px solid rgba(115,78,40,.22);background:linear-gradient(145deg,#fffaf0,#ead8b9);box-shadow:0 7px 20px rgba(80,50,23,.1)}
+.gift-preview-card>.gift-item-visual,.gift-preview-card>img.gift-item-visual{width:68px;height:68px;max-width:68px;max-height:68px;object-fit:contain;display:grid;place-items:center;font-size:2.3rem;filter:drop-shadow(0 6px 8px rgba(57,35,18,.22))}
+.gift-preview-card>div:not(.gift-jewelry-visual){display:grid;gap:.12rem;min-width:0}
+.gift-preview-card small{font-size:.7rem;color:#80664b}
+.gift-preview-card strong{font-size:1rem;line-height:1.35;overflow-wrap:anywhere}
+.gift-preview-card span{font-size:.82rem;color:#614a34}
+.gift-jewelry-visual{position:relative;display:grid!important;place-items:center;width:68px!important;height:68px!important}
+.gift-jewelry-visual .jewelry-item-shape{transform:scale(.68)}
+.gift-jewelry-visual .jewelry-loose-set{position:absolute;inset:0;display:grid;place-items:center;transform:scale(.62)}
+.gift-warning{margin:0;padding:.65rem .7rem;border-radius:11px;background:rgba(165,105,38,.1);border:1px solid rgba(165,105,38,.18);font-size:.76rem;line-height:1.55;color:#6d4a25}
+.gift-create-button{min-height:50px!important}
+.gift-created-panel{text-align:center}
+.gift-success-mark{font-size:3.25rem;line-height:1;animation:gift-pop .45s ease both}
+@keyframes gift-pop{0%{transform:scale(.4) rotate(-12deg);opacity:0}70%{transform:scale(1.12) rotate(4deg)}100%{transform:scale(1);opacity:1}}
+.gift-code-card{display:grid!important;gap:.3rem;width:100%;padding:1rem!important;border:2px dashed rgba(117,76,33,.45)!important;border-radius:16px!important;background:#fff8e8!important;color:#2c2117!important;box-shadow:0 9px 24px rgba(75,47,22,.12)!important}
+.gift-code-card small{font-size:.72rem;color:#775d43}
+.gift-code-card strong{font-size:1.38rem;letter-spacing:.1em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+.gift-code-card span{font-size:.7rem;color:#8c6b48}
+.gift-complete-actions{display:grid;gap:.55rem}
+.gift-code-input input{text-transform:uppercase;letter-spacing:.08em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center;font-weight:800}
+.gift-receive-confirm{display:grid;gap:.75rem}
+.gift-receive-confirm>small{font-weight:800;color:#6b5137}
+.gift-receive-confirm>code{display:block;padding:.48rem;border-radius:8px;background:rgba(74,51,28,.08);color:#5c4126;font-weight:800;letter-spacing:.06em}
+.gift-history-section{display:grid;gap:.45rem;padding-top:.25rem}
+.gift-history-section h3{margin:.2rem 0;font-size:.92rem}
+.gift-history-list{display:grid;gap:.42rem}
+.gift-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.55rem;padding:.58rem .65rem;border:1px solid rgba(91,63,35,.16);border-radius:11px;background:rgba(255,255,255,.58)}
+.gift-history-row>div:first-child{display:grid;gap:.12rem;min-width:0}
+.gift-history-row strong{font-size:.82rem;overflow-wrap:anywhere}
+.gift-history-row span{font-size:.67rem;color:#76614c;overflow-wrap:anywhere}
+.gift-history-actions{display:grid;justify-items:end;gap:.12rem}
+.gift-history-actions .text-button{padding:.12rem!important;min-height:0!important;font-size:.68rem!important;color:#8a3e35!important}
+.gift-status{font-size:.65rem;font-weight:800;padding:.15rem .35rem;border-radius:99px;background:rgba(120,90,55,.12)}
+.gift-status-claimed{color:#2f704a;background:rgba(54,139,88,.13)}
+.gift-status-cancelled{color:#85534d;background:rgba(140,74,65,.12)}
+@media (orientation:portrait),(max-width:820px){body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
+@media (max-width:430px){body[data-screen="phone"] .phone-tabs{grid-template-columns:repeat(5,minmax(0,1fr))!important}.phone-tabs button{font-size:.6rem!important}.gift-preview-card{grid-template-columns:62px minmax(0,1fr)}.gift-preview-card>.gift-item-visual,.gift-preview-card>img.gift-item-visual,.gift-jewelry-visual{width:58px!important;height:58px!important;max-width:58px;max-height:58px}.gift-code-card strong{font-size:1.16rem}}
+
+
+/* v0.10.410 冬の風邪・文字化けイベント */
+.winter-cold-event-screen{
+  position:relative;
+  min-height:100dvh;
+  display:grid;
+  place-items:center;
+  padding:clamp(20px,5vw,64px);
+  overflow:hidden;
+}
+.winter-cold-event-screen::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(5,8,12,.58);
+  backdrop-filter:blur(2px) saturate(.72);
+  pointer-events:none;
+}
+.winter-cold-event-message{
+  position:relative;
+  z-index:2;
+  width:min(760px,92vw);
+  min-height:clamp(150px,28vh,280px);
+  display:grid;
+  place-items:center;
+  border:0;
+  border-radius:24px;
+  padding:clamp(28px,7vw,68px);
+  background:rgba(6,10,15,.76);
+  box-shadow:0 22px 70px rgba(0,0,0,.72),inset 0 0 0 1px rgba(255,255,255,.08);
+  color:#f1f4f6;
+  cursor:pointer;
+}
+.winter-cold-event-message strong{
+  font-size:clamp(1.35rem,4.5vw,2.65rem);
+  line-height:1.55;
+  letter-spacing:.08em;
+  text-align:center;
+  text-shadow:0 4px 18px rgba(0,0,0,.9);
+}
+body[data-winter-cold-active] #root,
+body[data-winter-cold-active] #modal-layer,
+body[data-winter-cold-active] #toast,
+body[data-winter-cold-active] #morning-brief{
+  text-rendering:geometricPrecision;
+}
+
+
+/* v0.10.411 謎の中華料理イベント */
+body[data-screen="mysteryChineseMealEvent"]{
+  overflow:hidden;
+}
+body[data-screen="mysteryChineseMealEvent"] .game-header{
+  position:relative;
+  z-index:20;
+}
+body[data-screen="mysteryChineseMealEvent"] .mystery-chinese-meal-event.is-reward .visit-character-area{
+  opacity:0;
+  visibility:hidden;
+}
+body[data-screen="mysteryChineseMealEvent"] .mystery-chinese-meal-reward-button{
+  width:min(92vw,820px);
+  min-height:min(68dvh,620px);
+  background:linear-gradient(180deg,rgba(25,12,8,.91),rgba(7,4,3,.96));
+}
+body[data-screen="mysteryChineseMealEvent"] .mystery-chinese-meal-reward-button img{
+  width:auto;
+  max-width:min(82vw,700px);
+  max-height:49dvh;
+  object-fit:contain;
+  filter:drop-shadow(0 20px 30px rgba(0,0,0,.72));
+}
+@media (orientation:landscape){
+  body[data-screen="mysteryChineseMealEvent"] .mystery-chinese-meal-reward-button{
+    width:min(68vw,900px);
+    min-height:min(70dvh,520px);
+  }
+  body[data-screen="mysteryChineseMealEvent"] .mystery-chinese-meal-reward-button img{
+    max-width:min(60vw,760px);
+    max-height:47dvh;
+  }
 }

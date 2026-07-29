@@ -28,6 +28,7 @@ import {
   updateDoc,
   deleteDoc,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
@@ -344,6 +345,267 @@ export async function heartbeat(uid, sessionId) {
   } catch (error) {
     console.warn('Heartbeat failed:', error);
   }
+}
+
+
+const PREVIEW_GIFT_STORAGE_KEY = 'jewelrygame-preview-gifts-v1';
+const GIFT_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function giftServiceError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function normalizeGiftCodeValue(value) {
+  const compact = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (compact.startsWith('JXJ') && compact.length === 11) {
+    return `JXJ-${compact.slice(3, 7)}-${compact.slice(7, 11)}`;
+  }
+  return String(value || '').trim().toUpperCase();
+}
+
+function randomGiftCode() {
+  const bytes = new Uint8Array(8);
+  globalThis.crypto?.getRandomValues?.(bytes);
+  const chars = Array.from(bytes, (byte, index) => {
+    const fallback = Math.floor(Math.random() * GIFT_CODE_ALPHABET.length);
+    return GIFT_CODE_ALPHABET[(Number(byte) || fallback + index) % GIFT_CODE_ALPHABET.length];
+  }).join('');
+  return `JXJ-${chars.slice(0, 4)}-${chars.slice(4, 8)}`;
+}
+
+function cleanGiftPayload(payload) {
+  try { return JSON.parse(JSON.stringify(payload)); }
+  catch (_) { throw giftServiceError('gift/invalid', 'プレゼント内容を確認できません。'); }
+}
+
+function prepareGiftGameState(gameState) {
+  const clean = structuredClone(gameState || {});
+  clean.saveRevision = Math.max(0, Math.floor(Number(clean.saveRevision) || 0)) + 1;
+  clean.updatedAt = new Date().toISOString();
+  return clean;
+}
+
+function readPreviewGiftStore() {
+  try { return JSON.parse(localStorage.getItem(PREVIEW_GIFT_STORAGE_KEY) || '{}'); }
+  catch (_) { return {}; }
+}
+
+function writePreviewGiftStore(store) {
+  localStorage.setItem(PREVIEW_GIFT_STORAGE_KEY, JSON.stringify(store));
+}
+
+function requireGiftUser(uid) {
+  if (!uid) throw giftServiceError('gift/not-authenticated', 'ログイン情報を確認できません。');
+  if (!previewMode && auth?.currentUser?.uid !== uid) throw giftServiceError('gift/not-authenticated', 'ログイン情報が一致しません。');
+}
+
+function applyGiftMutation(gameState, mutator, payload, code) {
+  if (typeof mutator !== 'function') throw giftServiceError('gift/invalid-mutation', 'プレゼント在庫処理を確認できません。');
+  const draft = structuredClone(gameState || {});
+  const result = mutator(draft, structuredClone(payload || {}), code);
+  return prepareGiftGameState(result && typeof result === 'object' ? result : draft);
+}
+
+export function normalizeGiftCode(value) {
+  return normalizeGiftCodeValue(value);
+}
+
+export async function createGiftCode(uid, senderName, payload, removeFromGameState) {
+  requireGiftUser(uid);
+  if (!payload || typeof payload !== 'object') throw giftServiceError('gift/invalid', 'プレゼント内容を確認できません。');
+  const cleanPayload = cleanGiftPayload(payload);
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const code = randomGiftCode();
+    const createdAtIso = new Date().toISOString();
+    if (previewMode) {
+      const store = readPreviewGiftStore();
+      if (store[code]) continue;
+      const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
+      const gameState = saved ? JSON.parse(saved) : null;
+      if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント作成前にゲームを保存してください。');
+      const nextState = applyGiftMutation(gameState, removeFromGameState, cleanPayload, code);
+      const gift = {
+        code,
+        senderUid: uid,
+        senderName: String(senderName || 'プレイヤー').slice(0, 40),
+        payload: structuredClone(cleanPayload),
+        status: 'pending',
+        createdAtIso,
+        claimedBy: null,
+        claimedAtIso: '',
+        cancelledAtIso: '',
+      };
+      store[code] = gift;
+      writePreviewGiftStore(store);
+      localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(nextState));
+      return { code, gift, gameState: nextState };
+    }
+
+    try {
+      const giftRef = doc(db, 'gifts', code);
+      const userRef = doc(db, 'users', uid);
+      return await runTransaction(db, async (transaction) => {
+        const giftSnapshot = await transaction.get(giftRef);
+        const userSnapshot = await transaction.get(userRef);
+        if (giftSnapshot.exists()) throw giftServiceError('gift/code-collision', 'プレゼントコードが重複しました。');
+        const gameState = userSnapshot.data()?.gameState;
+        if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント作成前にゲームを保存してください。');
+        const nextState = applyGiftMutation(gameState, removeFromGameState, cleanPayload, code);
+        const gift = {
+          code,
+          senderUid: uid,
+          senderName: String(senderName || 'プレイヤー').slice(0, 40),
+          payload: structuredClone(cleanPayload),
+          status: 'pending',
+          createdAt: serverTimestamp(),
+          createdAtIso,
+          claimedBy: null,
+          claimedAtIso: '',
+          cancelledAtIso: '',
+        };
+        transaction.set(userRef, { gameState: nextState, updatedAt: serverTimestamp() }, { merge: true });
+        transaction.set(giftRef, gift);
+        return { code, gift: { ...gift, createdAt: null }, gameState: nextState };
+      });
+    } catch (error) {
+      if (error?.code === 'gift/code-collision') continue;
+      throw error;
+    }
+  }
+  throw giftServiceError('gift/code-generation-failed', 'プレゼントコードを発行できませんでした。もう一度お試しください。');
+}
+
+export async function inspectGiftCode(codeValue) {
+  const code = normalizeGiftCodeValue(codeValue);
+  if (!/^JXJ-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) throw giftServiceError('gift/invalid-code', 'プレゼントコードの形式を確認してください。');
+  if (previewMode) {
+    const gift = readPreviewGiftStore()[code];
+    if (!gift) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    return structuredClone(gift);
+  }
+  if (!auth?.currentUser) throw giftServiceError('gift/not-authenticated', 'ログインしてください。');
+  const snapshot = await getDoc(doc(db, 'gifts', code));
+  if (!snapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+  return { code: snapshot.id, ...snapshot.data() };
+}
+
+export async function claimGiftCode(uid, recipientName, codeValue, addToGameState) {
+  requireGiftUser(uid);
+  const code = normalizeGiftCodeValue(codeValue);
+  if (previewMode) {
+    const store = readPreviewGiftStore();
+    const gift = store[code];
+    if (!gift) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    if (gift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントは受け取り済みです。');
+    if (gift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントは取り消されています。');
+    if (gift.senderUid === uid) throw giftServiceError('gift/self-claim', '自分で発行したプレゼントは受け取れません。');
+    const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
+    const gameState = saved ? JSON.parse(saved) : null;
+    if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント受取前にゲームを保存してください。');
+    const nextState = applyGiftMutation(gameState, addToGameState, gift.payload, code);
+    gift.status = 'claimed';
+    gift.claimedBy = uid;
+    gift.recipientName = String(recipientName || 'プレイヤー').slice(0, 40);
+    gift.claimedAtIso = new Date().toISOString();
+    store[code] = gift;
+    writePreviewGiftStore(store);
+    localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(nextState));
+    return { gift: structuredClone(gift), gameState: nextState };
+  }
+
+  const giftRef = doc(db, 'gifts', code);
+  const userRef = doc(db, 'users', uid);
+  return runTransaction(db, async (transaction) => {
+    const giftSnapshot = await transaction.get(giftRef);
+    const userSnapshot = await transaction.get(userRef);
+    if (!giftSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    const gift = { code: giftSnapshot.id, ...giftSnapshot.data() };
+    if (gift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントは受け取り済みです。');
+    if (gift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントは取り消されています。');
+    if (gift.status !== 'pending') throw giftServiceError('gift/unavailable', 'このプレゼントは現在受け取れません。');
+    if (gift.senderUid === uid) throw giftServiceError('gift/self-claim', '自分で発行したプレゼントは受け取れません。');
+    const gameState = userSnapshot.data()?.gameState;
+    if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント受取前にゲームを保存してください。');
+    const nextState = applyGiftMutation(gameState, addToGameState, gift.payload, code);
+    const claimedAtIso = new Date().toISOString();
+    transaction.set(userRef, { gameState: nextState, updatedAt: serverTimestamp() }, { merge: true });
+    transaction.update(giftRef, {
+      status: 'claimed',
+      claimedBy: uid,
+      recipientName: String(recipientName || 'プレイヤー').slice(0, 40),
+      claimedAt: serverTimestamp(),
+      claimedAtIso,
+    });
+    return { gift: { ...gift, status: 'claimed', claimedBy: uid, claimedAtIso }, gameState: nextState };
+  });
+}
+
+export async function cancelGiftCode(uid, codeValue, restoreToGameState) {
+  requireGiftUser(uid);
+  const code = normalizeGiftCodeValue(codeValue);
+  if (previewMode) {
+    const store = readPreviewGiftStore();
+    const gift = store[code];
+    if (!gift) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    if (gift.senderUid !== uid) throw giftServiceError('gift/not-owner', 'このプレゼントは取り消せません。');
+    if (gift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントはすでに受け取られています。');
+    if (gift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントはすでに取り消されています。');
+    const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
+    const gameState = saved ? JSON.parse(saved) : null;
+    if (!gameState) throw giftServiceError('gift/no-save', 'ゲームデータを確認できません。');
+    const nextState = applyGiftMutation(gameState, restoreToGameState, gift.payload, code);
+    gift.status = 'cancelled';
+    gift.cancelledAtIso = new Date().toISOString();
+    store[code] = gift;
+    writePreviewGiftStore(store);
+    localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(nextState));
+    return { gift: structuredClone(gift), gameState: nextState };
+  }
+
+  const giftRef = doc(db, 'gifts', code);
+  const userRef = doc(db, 'users', uid);
+  return runTransaction(db, async (transaction) => {
+    const giftSnapshot = await transaction.get(giftRef);
+    const userSnapshot = await transaction.get(userRef);
+    if (!giftSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    const gift = { code: giftSnapshot.id, ...giftSnapshot.data() };
+    if (gift.senderUid !== uid) throw giftServiceError('gift/not-owner', 'このプレゼントは取り消せません。');
+    if (gift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントはすでに受け取られています。');
+    if (gift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントはすでに取り消されています。');
+    if (gift.status !== 'pending') throw giftServiceError('gift/unavailable', 'このプレゼントは現在取り消せません。');
+    const gameState = userSnapshot.data()?.gameState;
+    if (!gameState) throw giftServiceError('gift/no-save', 'ゲームデータを確認できません。');
+    const nextState = applyGiftMutation(gameState, restoreToGameState, gift.payload, code);
+    const cancelledAtIso = new Date().toISOString();
+    transaction.set(userRef, { gameState: nextState, updatedAt: serverTimestamp() }, { merge: true });
+    transaction.update(giftRef, {
+      status: 'cancelled',
+      cancelledAt: serverTimestamp(),
+      cancelledAtIso,
+    });
+    return { gift: { ...gift, status: 'cancelled', cancelledAtIso }, gameState: nextState };
+  });
+}
+
+export function giftErrorMessage(error) {
+  const messages = {
+    'gift/not-authenticated': 'ログイン状態を確認してください。',
+    'gift/invalid-code': 'プレゼントコードの形式を確認してください。',
+    'gift/not-found': 'プレゼントコードが見つかりません。',
+    'gift/already-claimed': 'このプレゼントはすでに受け取られています。',
+    'gift/cancelled': 'このプレゼントは取り消されています。',
+    'gift/self-claim': '自分で発行したプレゼントは受け取れません。',
+    'gift/not-owner': 'このプレゼントは取り消せません。',
+    'gift/unavailable': 'このプレゼントは現在利用できません。',
+    'gift/no-save': 'ゲームデータを保存してから、もう一度お試しください。',
+    'gift/code-generation-failed': 'プレゼントコードを発行できませんでした。もう一度お試しください。',
+    'permission-denied': 'プレゼント機能のFirebaseルールが未反映の可能性があります。管理者へお知らせください。',
+    'firestore/permission-denied': 'プレゼント機能のFirebaseルールが未反映の可能性があります。管理者へお知らせください。',
+  };
+  return messages[error?.code] || error?.message || 'プレゼント処理を完了できませんでした。';
 }
 
 export function firebaseErrorMessage(error, context = '') {

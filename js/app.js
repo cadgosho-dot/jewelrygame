@@ -6,11 +6,12 @@ import {
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.400';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.412';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
+  createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
 } from './firebase-service.js';
 
 const root = document.querySelector('#root');
@@ -18,6 +19,18 @@ const toastEl = document.querySelector('#toast');
 const modalEl = document.querySelector('#modal-layer');
 const sleepCurtainEl = document.querySelector('#sleep-curtain');
 const morningBriefEl = document.querySelector('#morning-brief');
+
+const winterColdOriginalText = new WeakMap();
+const winterColdOriginalAttributes = new WeakMap();
+let winterColdGarbleScheduled = false;
+const winterColdTextObserver = new MutationObserver(() => scheduleWinterColdTextEffect());
+winterColdTextObserver.observe(document.body, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+  attributes: true,
+  attributeFilter: ['placeholder', 'title', 'aria-label', 'alt', 'value'],
+});
 
 let state = null;
 let screen = 'loading';
@@ -30,6 +43,13 @@ let miningGame = null;
 let selectedPolishing = 'garnet';
 let selectedPolishingShape = 'round';
 let phoneTab = 'notifications';
+let giftView = 'menu';
+let giftDraft = { category: 'rough', itemKey: '', quantity: 1 };
+let giftCodeInput = '';
+let giftPreview = null;
+let giftLastCreated = null;
+let giftLastReceived = null;
+let giftBusy = false;
 let calendarMonthOffset = 0;
 let itemUseFeedback = null;
 let itemUseFeedbackTimer = null;
@@ -51,6 +71,7 @@ let heartbeatTimer = null;
 let sessionTakenOver = false;
 let sleepTransitioning = false;
 let morningBriefShowing = false;
+let winterColdMorningBriefPending = false;
 let autopilotRunning = false;
 let autopilotTimer = null;
 let deferredInstallPrompt = null;
@@ -69,6 +90,7 @@ let jewelryShopPendingTrade = null;
 let kaitenzushiSession = null;
 let okachimachiQuizSession = null;
 let okachimachiQuizQuestionsPromise = null;
+let cinemaEventVideosPromise = null;
 let storeTheftSequenceRunning = false;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
@@ -77,6 +99,7 @@ const JEWELRY_SHOP_TRANSACTION_HOURS = 1;
 const ROBBERY_DAILY_CHANCE = 1 / 100;
 const ROBBERY_HISTORY_LIMIT = 20;
 const OKACHIMACHI_QUIZ_DATA_URL = './data/jewelry_okachimachi_quiz_200_game_format.json';
+const CINEMA_EVENT_VIDEO_MANIFEST_URL = './data/cinema-event-videos.json';
 const OKACHIMACHI_QUIZ_TRIGGER_MIN = 26;
 const OKACHIMACHI_QUIZ_TRIGGER_MAX = 34;
 const WESTERN_UNION_EVENT_GEM_ID = 'antiqueDiamond';
@@ -91,7 +114,10 @@ const MERMAID_EVENT_SHAPE_ID = 'pearl';
 const SUSHI_CHEF_EVENT_CHANCE = 1 / 90;
 const CYCLOPS_EVENT_CHANCE = 1 / 90;
 const GANESHA_TUSK_EVENT_CHANCE = 1 / 90;
+const TATTOO_WOMAN_AMBER_EVENT_CHANCE = 1 / 30;
 const GANESHA_TUSK_GEM_ID = 'ivory';
+const TATTOO_WOMAN_AMBER_EVENT_GEM_ID = 'amber';
+const TATTOO_WOMAN_AMBER_EVENT_SHAPE_ID = 'amber';
 const CHILDHOOD_FRIEND_FIRST_TRIGGER_MIN = 330;
 const HAUNTING_EVENT_DAILY_CHANCE = 1 / 200;
 const HAUNTING_EVENT_COST = 1000000;
@@ -123,9 +149,17 @@ const SPACE_MINING_LOCATION = (() => {
 })();
 const WOOD_SWORD_EVENT_REQUIRED_DAYS = 365;
 const WOOD_SWORD_ROBBERY_MULTIPLIER = 0.5;
+const CLOCK_TOWER_DONATION_EVENT_CHANCE = 1 / 90;
+const WINTER_COLD_EVENT_DAYS = 4;
+const CINEMA_VISIT_EVENT_CHANCE = 1 / 40;
+const CINEMA_VISIT_EVENT_COST = 1800;
+const CINEMA_VISIT_EVENT_HOURS = 3;
+const MYSTERY_CHINESE_MEAL_EVENT_CHANCE = 1 / 30;
+const MYSTERY_CHINESE_MEAL_EVENT_COST = 15000;
+const MYSTERY_CHINESE_MEAL_EVENT_IMAGES = Object.freeze(['mystery-chinese-food-01.png', 'mystery-chinese-food-02.png']);
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
-  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
+  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
 ]);
 
 function syncFinishedJewelryCapacity() {
@@ -372,6 +406,12 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
       ovalCabochon: './assets/images/loose/jade/oval-cabochon.png',
     },
   },
+  amber: {
+    defaultShape: 'amber',
+    shapes: {
+      amber: './assets/images/loose/amber/amber.png',
+    },
+  },
   citrine: {
     defaultShape: 'round',
     shapes: {
@@ -415,6 +455,7 @@ const LOOSE_SHAPE_DESCRIPTIONS = Object.freeze({
   ovalCabochon: '縦長のドーム状に磨き、色や模様を広い面で見せるカボションです。',
   antiqueCut: '古い時代のカットを思わせる大きめのファセットで、現代のブリリアントとは異なる穏やかな光を見せるカットです。',
   pearl: '球状のパールです。人魚イベントでのみ入手できる特別なルースとして扱います。',
+  amber: '虫入りの琥珀です。不動産屋で出会うタトゥーの女性イベントでのみ入手できる特別なルースとして扱います。',
 });
 
 const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
@@ -426,6 +467,7 @@ const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
   pearl: '寝るときにまれに現れる人魚から受け取る、イベント限定のパールです。ルース在庫へ追加され、制作や売却に使用できます。',
   ivory: 'インド料理屋で出会うガネーシャから受け取った牙を研磨して作る、イベント限定の象牙ルースです。',
   jade: '河原で出会う河童からもらえる翡翠原石を研磨して作る、イベント限定の翡翠ルースです。',
+  amber: '不動産屋で出会うタトゥーの女性から受け取る、虫入りのイベント限定琥珀ルースです。',
   emerald: '緑色のベリルで、鮮やかな色と天然由来の内包物が個性になります。',
   moonstone: '乳白色の地色に青白い光が浮かぶ、シラー効果が特徴の宝石です。',
   ruby: '赤色のコランダムで、色の濃さと透明感が印象を左右します。',
@@ -451,6 +493,7 @@ const LOOSE_GEM_PROFILE_IDS = Object.freeze({
   antiqueDiamond: 'diamond',
   pearl: 'pearl',
   jade: 'jadeite',
+  amber: 'amber',
   emerald: 'emerald',
   moonstone: 'moonstone',
   ruby: 'ruby',
@@ -547,6 +590,14 @@ const LOOSE_CUT_SPECIFICATIONS = Object.freeze({
     ['弱点になりやすい箇所', '表面全体、孔口、剥離や亀裂のある部分'],
     ['石留め', '接着芯、穴あけ、糸組み等。強い爪圧、熱、酸、研磨剤を避ける'],
   ],
+  amber: [
+    ['分類', '有機質宝石材料である琥珀のゲーム内特別形状'],
+    ['外形', '自然な塊感を残した滑らかな不定形'],
+    ['内部特徴', '虫や植物片などの包有物を含むことがある'],
+    ['評価上の要点', '色、透明感、包有物の見え方、表面状態'],
+    ['弱点になりやすい箇所', '表面全体、薄い縁、熱の当たりやすい部分'],
+    ['石留め', '強い圧力を避け、保護性の高い石座で支える'],
+  ],
 });
 
 const LOOSE_SPECIAL_CUT_GUIDES = Object.freeze({
@@ -568,6 +619,16 @@ const LOOSE_SPECIAL_CUT_GUIDES = Object.freeze({
       { title: '光沢と表面', body: '光沢は反射像の明瞭さとコントラストを観察します。表面の凹凸、しわ、ピット、擦り傷、剥離、亀裂は、外観と耐久性の両方に関係します。' },
       { title: '穴あけと接着', body: '穴あけ位置は形状、重心、正面の美観を考えて決めます。接着芯を使う場合は孔径、孔深さ、芯径、接着面の清浄、接着剤の適合性を確認し、真珠へ過度な熱を加えません。' },
       { title: '取扱い', body: '真珠表面は硬い宝石や工具で傷付きます。超音波、スチーム、高熱、酸、強いアルカリ、研磨剤を避け、使用後は柔らかい布で汗や化粧品を拭き取ります。' },
+    ],
+  },
+  amber: {
+    category: '虫入り琥珀を表現したゲーム内特別ルース',
+    overview: 'このゲーム内の琥珀は、自然な塊感を残した一粒として扱います。均一なファセットカットではなく、色、透明感、内部の包有物が主役になる素材です。',
+    sections: [
+      { title: '包有物の見せ方', body: '虫や植物片などの包有物は琥珀の個性です。正面からその存在が見え、かつ外形の美しさも損なわない向きを優先して観察・配置します。' },
+      { title: '熱と摩擦への注意', body: '琥珀は熱や摩擦に弱く、表面が曇ったり傷付いたりしやすい素材です。高回転研磨や熱を持つ加工、スチーム洗浄は避けます。' },
+      { title: '石留め', body: '包有物が主役でも、実際に壊れやすいのは外周や薄い部分です。強い爪圧を掛けず、石全体を優しく支える設計が安全です。' },
+      { title: '保管と手入れ', body: '硬い宝石と一緒に保管せず、柔らかい布や個別ケースで保護します。汚れは柔らかい布で軽く拭き取り、有機溶剤やアルコールを避けます。' },
     ],
   },
 });
@@ -617,6 +678,8 @@ function looseGemProfessionalSections(gemId, guide) {
     extras.push({ title: 'ゲーム内でのパール', body: 'ゲーム内では人魚イベントで入手する特別な一粒として扱います。実際の真珠は母貝、養殖方式、真珠層、形、光沢、表面、色などにより性質と評価が異なります。' });
   } else if (gemId === 'jade') {
     extras.push({ title: 'ゲーム内での翡翠', body: 'ゲーム内では河原で出会う河童から翡翠原石を受け取り、工房でラウンドまたはオーバルのカボションへ研磨する特別なルースとして扱います。' });
+  } else if (gemId === 'amber') {
+    extras.push({ title: 'ゲーム内での琥珀', body: 'ゲーム内では不動産屋で出会うタトゥーの女性から受け取る特別な虫入り琥珀として扱います。ルース在庫へ直接追加され、制作や売却に使用できます。' });
   }
   return [...profileSections, ...guideSections, ...extras];
 }
@@ -695,6 +758,17 @@ const GEM_LOOSE_GUIDES = Object.freeze({
       { title: '耐久性', body: 'モース硬度はおおむね6〜7です。傷に対して一定の強さがありますが、内部の割れや端部への衝撃には注意します。原石由来のヒビや弱い層がある場合は、研磨方向と石留め位置を慎重に選びます。' },
       { title: '鑑別と処理', body: '実際の市場では樹脂含浸、染色、漂白などが問題になることがあります。外観だけで天然無処理を断定せず、必要に応じて鑑別・分析を行います。' },
       { title: '手入れ', body: '通常は柔らかい布と穏やかな洗浄で十分です。強い酸、強いアルカリ、急激な温度変化、激しい衝撃を避けて扱います。' },
+    ],
+  },
+  amber: {
+    hardness: '2〜2.5', mineral: '有機質宝石材料（樹脂の化石）',
+    overview: '琥珀は太古の樹脂が化石化した有機質宝石材料です。ゲーム内では不動産屋で出会うタトゥーの女性から受け取る、虫入りの特別な琥珀として扱います。軽さ、温かみのある色、内部の包有物が大きな特徴です。',
+    sections: [
+      { title: '色と包有物', body: '黄色、橙色、赤褐色などの暖色系が多く、透明感や内部の包有物によって印象が大きく変わります。虫、植物片、気泡、流れ模様などは個性として扱われます。' },
+      { title: '耐久性', body: 'モース硬度は2〜2.5程度で比較的柔らかく、傷、熱、溶剤、急激な乾燥に弱い素材です。高温や摩擦熱で曇ったり変形したりするおそれがあるため、取り扱いは慎重に行います。' },
+      { title: '加工と石留め', body: '鋭いファセットより、自然な外形や滑らかな面を生かす加工が向いています。石留めでは強い圧力を避け、覆輪や保護性の高い爪で支えると安全です。' },
+      { title: '鑑別と類似品', body: 'コーパル、プラスチック、ガラスなどの類似品と混同されることがあります。比重、蛍光、静電気、内部構造、赤外分光などを組み合わせて確認します。' },
+      { title: '手入れ', body: '柔らかい布で優しく拭き、アルコールやシンナーなどの有機溶剤、超音波洗浄、高熱を避けます。他の硬い宝石と擦れないよう個別保管が向いています。' },
     ],
   },
   emerald: {
@@ -2887,6 +2961,7 @@ function showToast(message, type = 'info', withSound = true) {
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => toastEl.classList.remove('show'), 2100);
   if (withSound) playSfx(type === 'error' ? 'error' : type === 'sale' ? 'sale' : 'select');
+  scheduleWinterColdTextEffect();
 }
 
 function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャンセル', cancelAction = 'modal-close', confirmDisabled = false, danger = false, hideCancel = false, action = '', className = '' }) {
@@ -2897,11 +2972,12 @@ function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャ
         <div class="modal-body">${body}</div>
         <div class="modal-actions">
           ${hideCancel ? '' : `<button class="secondary-button" data-action="${esc(cancelAction)}">${esc(cancel)}</button>`}
-          <button class="${danger ? 'danger-button' : 'primary-button'}" data-action="${esc(action)}" ${confirmDisabled ? 'disabled' : ''}>${esc(confirm)}</button>
+          <button class="${danger ? 'danger-button' : 'primary-button'}" data-action="${esc(action)}" ${action === 'do-sleep' ? 'data-illness-readable="true"' : ''} ${confirmDisabled ? 'disabled' : ''}>${esc(confirm)}</button>
         </div>
       </section>
     </div>`;
   modalEl.classList.remove('hidden');
+  scheduleWinterColdTextEffect();
 }
 
 function closeModal() {
@@ -3229,6 +3305,7 @@ function hasSelectableRegularMeal() {
 
 function canSleepNow() {
   if (!state) return false;
+  if (winterColdTextActive()) return true;
   if (Number(state.game.minutes) >= SLEEP_UNLOCK_MINUTES) return true;
   return hungerLocked() && !hasSelectableRegularMeal();
 }
@@ -3479,6 +3556,218 @@ function currentCalendarEvents() {
   return [...new Set(events)];
 }
 
+
+function winterColdSeasonKey(date = gameDate()) {
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  if (month === 10 || month === 11) return `${year}-${year + 1}`;
+  if (month === 0 || month === 1) return `${year - 1}-${year}`;
+  return '';
+}
+
+function winterColdSeasonEnd(date = gameDate()) {
+  const season = winterColdSeasonKey(date);
+  if (!season) return null;
+  const startYear = Number(season.slice(0, 4));
+  return new Date(startYear + 1, 2, 0, 12, 0, 0, 0);
+}
+
+function winterColdRemainingDays(date = gameDate()) {
+  const end = winterColdSeasonEnd(date);
+  if (!end) return 0;
+  const startUtc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.max(1, Math.floor((endUtc - startUtc) / 86400000) + 1);
+}
+
+function winterColdEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.winterColdEvent && typeof state.events.winterColdEvent === 'object' && !Array.isArray(state.events.winterColdEvent)
+    ? state.events.winterColdEvent
+    : {};
+  const validStages = new Set(['idle', 'intro', 'sick', 'completed']);
+  state.events.winterColdEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    seasonKey: /^\d{4}-\d{4}$/.test(String(saved.seasonKey || '')) ? String(saved.seasonKey) : '',
+    lastCompletedSeason: /^\d{4}-\d{4}$/.test(String(saved.lastCompletedSeason || '')) ? String(saved.lastCompletedSeason) : '',
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    startDay: Math.max(0, Math.floor(Number(saved.startDay) || 0)),
+    daysCompleted: Math.max(0, Math.min(WINTER_COLD_EVENT_DAYS, Math.floor(Number(saved.daysCompleted) || 0))),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+  };
+  if (!state.events.winterColdEvent.active && !['idle', 'completed'].includes(state.events.winterColdEvent.stage)) {
+    state.events.winterColdEvent.stage = 'completed';
+  }
+  return state.events.winterColdEvent;
+}
+
+function winterColdTextActive() {
+  if (!state) return false;
+  const eventState = winterColdEventState();
+  return eventState.active && eventState.stage === 'sick';
+}
+
+function resumeWinterColdEvent() {
+  if (!state) return false;
+  const eventState = winterColdEventState();
+  if (!eventState.active || eventState.stage !== 'intro') return false;
+  setScreen('winterColdEvent', {}, false);
+  return true;
+}
+
+function maybeStartWinterColdEvent(randomValue = Math.random()) {
+  if (!state || isAlienAbducted()) return false;
+  const eventState = winterColdEventState();
+  if (eventState.active) return resumeWinterColdEvent();
+  if (Number(state.game.minutes) !== DAY_START_MINUTES) return false;
+  const today = gameDate();
+  const seasonKey = winterColdSeasonKey(today);
+  if (!seasonKey || eventState.lastCompletedSeason === seasonKey) return false;
+  const todayKey = dateKey(today);
+  if (eventState.lastCheckedDate === todayKey) return false;
+  eventState.lastCheckedDate = todayKey;
+  const triggerChance = 1 / winterColdRemainingDays(today);
+  if (Math.max(0, Math.min(0.999999999, Number(randomValue) || 0)) >= triggerChance) {
+    saveGame();
+    return false;
+  }
+  eventState.active = true;
+  eventState.stage = 'intro';
+  eventState.seasonKey = seasonKey;
+  eventState.startDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  eventState.daysCompleted = 0;
+  eventState.totalTriggered += 1;
+  saveGame();
+  setScreen('winterColdEvent', {}, false);
+  playSfx('alarm', { gain: 0.42, rate: 0.72 });
+  setTimeout(() => playSfx('impact', { gain: 0.24, rate: 0.62 }), 110);
+  vibrate([18, 46, 28]);
+  return true;
+}
+
+function advanceWinterColdEvent() {
+  const eventState = winterColdEventState();
+  if (!eventState.active || eventState.stage !== 'intro') {
+    goMain();
+    return;
+  }
+  eventState.stage = 'sick';
+  winterColdMorningBriefPending = true;
+  saveGame();
+  playSfx('impact', { gain: 0.22, rate: 0.58 });
+  setScreen('main', {}, false);
+  queueMicrotask(() => {
+    winterColdMorningBriefPending = false;
+    showMorningBrief();
+  });
+}
+
+function progressWinterColdSleep({ showResult = true } = {}) {
+  if (!state) return false;
+  const eventState = winterColdEventState();
+  if (!eventState.active || eventState.stage !== 'sick') return false;
+  eventState.daysCompleted = Math.min(WINTER_COLD_EVENT_DAYS, eventState.daysCompleted + 1);
+  if (!showResult && eventState.daysCompleted >= WINTER_COLD_EVENT_DAYS) {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    eventState.lastCompletedSeason = eventState.seasonKey;
+  }
+  return true;
+}
+
+function finishWinterColdRecoveryAfterNight() {
+  if (!state) return false;
+  const eventState = winterColdEventState();
+  if (!eventState.active || eventState.stage !== 'sick' || eventState.daysCompleted < WINTER_COLD_EVENT_DAYS) return false;
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.lastCompletedSeason = eventState.seasonKey;
+  return true;
+}
+
+function winterColdGarbleText(value) {
+  const symbols = ['譁', '縺', '繧', '莠', '蜿', '荳', '螟', '驥', '莉', '咲', '髫', '�'];
+  let index = 0;
+  return Array.from(String(value || '')).map((character) => {
+    if (/\s/u.test(character)) return character;
+    const code = character.codePointAt(0) || 0;
+    const symbol = symbols[(code + index) % symbols.length];
+    index += 1;
+    return symbol;
+  }).join('');
+}
+
+function winterColdReadableElement(element) {
+  return Boolean(element?.closest?.('[data-illness-readable="true"],script,style,noscript'));
+}
+
+function applyWinterColdTextEffect() {
+  const active = winterColdTextActive();
+  document.body.toggleAttribute('data-winter-cold-active', active);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    const parent = node.parentElement;
+    const readable = winterColdReadableElement(parent);
+    const previousOriginal = winterColdOriginalText.get(node);
+    if (!active || readable) {
+      if (previousOriginal !== undefined) {
+        node.nodeValue = previousOriginal;
+        winterColdOriginalText.delete(node);
+      }
+      return;
+    }
+    const expected = previousOriginal === undefined ? '' : winterColdGarbleText(previousOriginal);
+    const original = previousOriginal !== undefined && node.nodeValue === expected
+      ? previousOriginal
+      : String(node.nodeValue || '');
+    winterColdOriginalText.set(node, original);
+    const garbled = winterColdGarbleText(original);
+    if (node.nodeValue !== garbled) node.nodeValue = garbled;
+  });
+
+  const elements = [document.body, ...document.body.querySelectorAll('[placeholder],[title],[aria-label],[alt],input[type="button"][value],input[type="submit"][value],input[type="reset"][value]')];
+  const attributes = ['placeholder', 'title', 'aria-label', 'alt', 'value'];
+  elements.forEach((element) => {
+    if (!(element instanceof Element)) return;
+    const readable = winterColdReadableElement(element);
+    let originalMap = winterColdOriginalAttributes.get(element);
+    attributes.forEach((attribute) => {
+      if (!element.hasAttribute(attribute)) return;
+      const previousOriginal = originalMap?.get(attribute);
+      if (!active || readable) {
+        if (previousOriginal !== undefined) {
+          element.setAttribute(attribute, previousOriginal);
+          originalMap.delete(attribute);
+        }
+        return;
+      }
+      if (!originalMap) {
+        originalMap = new Map();
+        winterColdOriginalAttributes.set(element, originalMap);
+      }
+      const expected = previousOriginal === undefined ? '' : winterColdGarbleText(previousOriginal);
+      const current = element.getAttribute(attribute) || '';
+      const original = previousOriginal !== undefined && current === expected ? previousOriginal : current;
+      originalMap.set(attribute, original);
+      const garbled = winterColdGarbleText(original);
+      if (current !== garbled) element.setAttribute(attribute, garbled);
+    });
+    if (originalMap && originalMap.size === 0) winterColdOriginalAttributes.delete(element);
+  });
+}
+
+function scheduleWinterColdTextEffect() {
+  if (winterColdGarbleScheduled) return;
+  winterColdGarbleScheduled = true;
+  queueMicrotask(() => {
+    winterColdGarbleScheduled = false;
+    applyWinterColdTextEffect();
+  });
+}
+
 function clearMorningBrief() {
   if (!morningBriefEl) return;
   morningBriefEl.classList.remove('active', 'persistent');
@@ -3525,7 +3814,9 @@ function finishMorningBriefAndContinue() {
 }
 
 async function maybeResumeMorningSequence() {
-  if (!state || screen !== 'main' || morningBriefShowing || sleepTransitioning) return;
+  if (!state || screen !== 'main' || morningBriefShowing || winterColdMorningBriefPending || sleepTransitioning) return;
+  if (resumeWinterColdEvent()) return;
+  if (maybeStartWinterColdEvent()) return;
   if (resumeAlienAbductionEvent()) return;
   if (resumeMermaidEvent()) return;
   if (resumeWesternUnionEvent()) return;
@@ -3594,17 +3885,21 @@ async function beginNextDay() {
     sleepCurtainEl?.classList.add('next-day-blackout', 'active');
     playSfx('sleep', { gain: .9 });
     await wait(2000);
+    const recoveredFromCold = finishWinterColdRecoveryAfterNight();
+    if (recoveredFromCold) await saveGame();
     const returningFromSpace = alienAbductionEventState().active && alienAbductionEventState().stage === 'returnPending';
+    let coldStarted = false;
     if (returningFromSpace) {
       grantAlienBodyChip();
       setScreen('alienReturnEvent', {}, false);
     } else {
-      goMain();
+      coldStarted = maybeStartWinterColdEvent();
+      if (!coldStarted) goMain();
     }
     await wait(40);
     sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
-    playSfx(returningFromSpace ? 'success' : 'alarm', { gain: .92 });
-    if (!returningFromSpace) await showMorningBrief();
+    playSfx(returningFromSpace ? 'success' : coldStarted ? 'impact' : 'alarm', { gain: .92 });
+    if (!returningFromSpace && !coldStarted) await showMorningBrief();
   } finally {
     sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
     sleepTransitioning = false;
@@ -3864,7 +4159,22 @@ function advanceMiningPazupanEvent() {
 }
 
 function kappaJadeEventState() {
-  return simpleEventState('kappaJadeEvent', ['idle', 'intro1', 'intro2', 'reward', 'farewell', 'completed'], { rewardGranted: false });
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.kappaJadeEvent && typeof state.events.kappaJadeEvent === 'object' && !Array.isArray(state.events.kappaJadeEvent)
+    ? state.events.kappaJadeEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'reward', 'farewell', 'completed']);
+  state.events.kappaJadeEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (!state.events.kappaJadeEvent.active && !['idle', 'completed'].includes(state.events.kappaJadeEvent.stage)) state.events.kappaJadeEvent.stage = 'completed';
+  return state.events.kappaJadeEvent;
 }
 
 function resumeKappaJadeEvent() {
@@ -3878,7 +4188,11 @@ function maybeStartKappaJadeEvent() {
   const eventState = kappaJadeEventState();
   if (eventState.active) return resumeKappaJadeEvent();
   if (selectedMining !== 'river') return false;
-  if (Math.random() >= (1 / 30)) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= (1 / 30)) {
+    saveGame();
+    return false;
+  }
   eventState.lastTriggeredDay = state.game.day;
   eventState.totalTriggered += 1;
   eventState.active = true;
@@ -3920,6 +4234,89 @@ function advanceKappaJadeEvent() {
     saveGame();
     playSfx('select', { gain: 0.82 });
     setScreen('mining', {}, false);
+    return;
+  }
+  saveGame();
+  playSfx('select', { gain: 0.82 });
+  render();
+}
+
+function tattooWomanAmberEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.tattooWomanAmberEvent && typeof state.events.tattooWomanAmberEvent === 'object' && !Array.isArray(state.events.tattooWomanAmberEvent)
+    ? state.events.tattooWomanAmberEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  state.events.tattooWomanAmberEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (!state.events.tattooWomanAmberEvent.active && !['idle', 'completed'].includes(state.events.tattooWomanAmberEvent.stage)) state.events.tattooWomanAmberEvent.stage = 'completed';
+  return state.events.tattooWomanAmberEvent;
+}
+
+function resumeTattooWomanAmberEvent() {
+  const eventState = tattooWomanAmberEventState();
+  if (!eventState.active) return false;
+  setScreen('tattooWomanAmberEvent', {}, false);
+  return true;
+}
+
+function maybeStartTattooWomanAmberEvent() {
+  const eventState = tattooWomanAmberEventState();
+  if (eventState.active) return resumeTattooWomanAmberEvent();
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= TATTOO_WOMAN_AMBER_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  saveGame();
+  setScreen('tattooWomanAmberEvent', {}, false);
+  playSfx('impact', { gain: 0.86 });
+  vibrate([24, 28, 48]);
+  return true;
+}
+
+function receiveTattooWomanAmber() {
+  const eventState = tattooWomanAmberEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    adjustLooseInventory(TATTOO_WOMAN_AMBER_EVENT_GEM_ID, TATTOO_WOMAN_AMBER_EVENT_SHAPE_ID, 1);
+    eventState.rewardGranted = true;
+    addNotification('琥珀を手に入れました', '工房のルースへ追加されました。', 'special');
+  }
+  eventState.stage = 'farewell';
+  saveGame();
+  playSfx('loose-sparkle', { gain: 1.04 });
+  vibrate([34, 26, 64]);
+  render();
+}
+
+function advanceTattooWomanAmberEvent() {
+  const eventState = tattooWomanAmberEventState();
+  if (!eventState.active) {
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') eventState.stage = 'intro2';
+  else if (eventState.stage === 'intro2') eventState.stage = 'intro3';
+  else if (eventState.stage === 'intro3') eventState.stage = 'reward';
+  else if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.82 });
+    setScreen('okachimachi', {}, false);
     return;
   }
   saveGame();
@@ -4003,6 +4400,16 @@ function advanceMermaidEvent() {
 
 function visitEventDateKey() {
   return dateKey(gameDate());
+}
+
+// 共通ルール：場所へ行く・施設へ入る・同じ行動を繰り返すことで判定するイベントは、
+// 同じゲーム内日付では何度試しても1回分だけ数える／抽選する。
+function markVisitEventCheckOncePerDay(eventState, field = 'lastCheckedDate') {
+  if (!eventState || typeof eventState !== 'object') return false;
+  const todayKey = visitEventDateKey();
+  if (eventState[field] === todayKey) return false;
+  eventState[field] = todayKey;
+  return true;
 }
 
 function sushiChefEventState() {
@@ -4848,6 +5255,8 @@ function chooseOkachimachiQuizQuestion(questions, previousIndex = -1) {
 }
 
 async function enterOkachimachiFromOutside() {
+  if (resumeCinemaVisitEvent()) return;
+  if (resumeClockTowerDonationEvent()) return;
   const eventState = okachimachiQuizEventState();
   const todayKey = dateKey(gameDate());
   if (eventState.lastCountedDate !== todayKey) {
@@ -4857,6 +5266,8 @@ async function enterOkachimachiFromOutside() {
   }
   const shouldTrigger = eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1);
   saveGame();
+  if (await maybeStartCinemaVisitEvent()) return;
+  if (maybeStartClockTowerDonationEvent()) return;
   if (!shouldTrigger) {
     setScreen('okachimachi', {});
     return;
@@ -4964,7 +5375,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -4991,12 +5402,18 @@ function backgroundAssetFor(target) {
   if (target === 'childhoodFriendEvent') return childhoodFriendBackgroundAssetName();
   if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'diamondPolishingLapEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'mysteryChineseMealEvent') return `meal-chinese${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'todayGem') return isPortraitLayout() ? 'today-gem-portrait' : 'today-gem';
   if (target === 'craft' || target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';
   if (target === 'looseShop' || target === 'supplierRough') return isPortraitLayout() ? 'loose-shop-portrait-v385' : 'loose-shop-v385';
   if (target === 'jewelryShop') return isPortraitLayout() ? 'jewelry-shop-portrait' : 'jewelry-shop';
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
-  if (target === 'realEstate') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
+  if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
+  if (target === 'clockTowerDonationEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
+  if (target === 'cinemaVisitEvent') {
+    const stage = cinemaVisitEventState().stage;
+    return stage === 'playing' ? (isPortraitLayout() ? 'cinema-event-portrait' : 'cinema-event') : (isPortraitLayout() ? 'okachimachi-portrait' : 'okachimachi');
+  }
   const base = backgroundFor(target);
   const portrait = isPortraitLayout();
   if (base === 'meal') {
@@ -5036,20 +5453,24 @@ function audioFor(target) {
   if (isAlienAbducted() && target !== 'alienReturnEvent') return 'space';
   // メイン・スマートフォン・今日の宝石は同じBGM／環境音を共有し、画面移動で切り替えない。
   if (target === 'phone' || target === 'todayGem') return 'main';
+  if (target === 'winterColdEvent') return 'main';
   if (target === 'sushiChefEvent' || target === 'kaitenzushi') return 'kaitenzushi';
   if (target === 'cyclopsEvent') return 'meal-convenience';
   if (target === 'ganeshaTuskEvent') return 'meal-indian';
   if (target === 'childhoodFriendEvent') return 'meal-ramen';
   if (target === 'touristWoodSwordEvent') return 'meal-hamburger';
   if (target === 'diamondPolishingLapEvent') return 'meal-indian';
-  if (target === 'hauntingEvent') return 'sleep';
+  if (target === 'mysteryChineseMealEvent') return 'meal-chinese';
+  if (target === 'birthdaySleepEvent' || target === 'hauntingEvent') return 'sleep';
   if (target === 'okachimachiQuiz') return okachimachiQuizSession?.stage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
   // 工房・ジュエリー制作・ルース選択・完成は同一音声キーを使い、画面遷移時もBGMを止めない。
   if (target === 'workshop' || target === 'craft' || target === 'craftLoose' || target === 'completion') return 'workshop';
   if (target === 'polishing') return 'polishing';
   if (target === 'displayShop') return 'displayShop';
   if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory' || target === 'pureMetalProfessionalGuide') return 'materialShop';
-  if (target === 'realEstate') return 'realEstate';
+  if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return 'realEstate';
+  if (target === 'clockTowerDonationEvent') return 'okachimachi';
+  if (target === 'cinemaVisitEvent') return cinemaVisitEventState().stage === 'playing' ? 'cinemaVisitEvent' : 'okachimachi';
   if (target === 'looseShop' || target === 'supplierRough') return 'looseShop';
   if (target === 'jewelryShop') return 'jewelryShop';
   const bg = backgroundFor(target);
@@ -5252,8 +5673,11 @@ function render() {
     const weatherLayerActive = screen === 'main'
       || screen === 'westernUnionEvent'
       || screen === 'mermaidEvent'
+      || screen === 'winterColdEvent'
       || screen === 'robberyReport'
       || screen === 'okachimachi'
+      || screen === 'tattooWomanAmberEvent'
+      || (screen === 'cinemaVisitEvent' && cinemaVisitEventState().stage === 'invitation')
       || screen === 'phone'
       || screen === 'todayGem'
       || backgroundFor(screen) === 'meal';
@@ -5273,8 +5697,14 @@ function render() {
       nameSetup: renderNameSetup,
       settingsTitle: () => renderSettings(true),
       main: renderMain,
+      winterColdEvent: renderWinterColdEvent,
+      birthdaySleepEvent: renderBirthdaySleepEvent,
       westernUnionEvent: renderWesternUnionEvent,
       mermaidEvent: renderMermaidEvent,
+      tattooWomanAmberEvent: renderTattooWomanAmberEvent,
+      clockTowerDonationEvent: renderClockTowerDonationEvent,
+      cinemaVisitEvent: renderCinemaVisitEvent,
+      mysteryChineseMealEvent: renderMysteryChineseMealEvent,
       kappaJadeEvent: renderKappaJadeEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
@@ -5354,6 +5784,7 @@ function render() {
     if (screen === 'robberyReport' && pendingRobberyReport()) queueMicrotask(() => startPoliceSiren());
     if (screen === 'main') queueMicrotask(() => maybeResumeMorningSequence());
     queueMicrotask(() => maybeShowGameClearModal());
+    scheduleWinterColdTextEffect();
   } catch (error) {
     console.error('画面描画エラー', error);
     sleepCurtainEl?.classList.remove('active');
@@ -5802,7 +6233,7 @@ function orderClosedSortValue(order, index = 0) {
 }
 
 function validPhoneTab(value) {
-  return ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(value) ? value : 'notifications';
+  return ['profile', 'calendar', 'notifications', 'finance', 'items', 'gift', 'ai', 'settings'].includes(value) ? value : 'notifications';
 }
 
 function validFinancePeriod(value) {
@@ -5950,6 +6381,43 @@ function renderTodayGem() {
   `, { help: 'ゲーム内の日付に応じて、宝石学的データ、鑑別、処理、加工、石留め、手入れの専門情報を表示します。画像は使用しません。' });
 }
 
+function renderWinterColdEvent() {
+  const eventState = winterColdEventState();
+  if (!eventState.active || eventState.stage !== 'intro') {
+    queueMicrotask(goMain);
+    return renderMain();
+  }
+  return `
+    <main class="main-screen winter-cold-event-screen" data-illness-readable="true">
+      <button type="button" class="winter-cold-event-message" data-action="winter-cold-event-next" data-illness-readable="true">
+        <strong>体調が悪い、風邪かな</strong>
+      </button>
+    </main>`;
+}
+
+function renderBirthdaySleepEvent() {
+  const eventState = birthdaySleepEventState();
+  if (!eventState.active) {
+    queueMicrotask(goMain);
+    return renderMain();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const message = eventState.stage === 'phone'
+    ? '電話がかかってきた'
+    : eventState.stage === 'greeting'
+      ? `もしもし${playerName}？久しぶり、遅くにごめんね`
+      : eventState.stage === 'congratulations'
+        ? 'お誕生日おめでとう'
+        : 'ありがとう';
+  return `
+    <main class="main-screen birthday-sleep-event-screen" aria-live="polite">
+      <button type="button" class="birthday-sleep-event-message" data-action="birthday-sleep-event-next">
+        <strong>${message}</strong>
+        <span>タップして進む</span>
+      </button>
+    </main>`;
+}
+
 function renderWesternUnionEvent() {
   const eventState = westernUnionEventState();
   if (!eventState.active) {
@@ -6003,6 +6471,476 @@ function renderMiningPazupanEvent() {
       </section>
     </main>`;
 }
+
+function renderTattooWomanAmberEvent() {
+  const eventState = tattooWomanAmberEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const reward = eventState.stage === 'reward';
+  const dialogue = eventState.stage === 'intro1'
+    ? `あ、${playerName}、タバコ持ってる？`
+    : eventState.stage === 'intro2'
+      ? 'これ知ってる？こいつの中にいる虫から恐竜が作れるんだって、つまり間接的に恐竜って殺虫剤が効くってことなんだよ'
+      : eventState.stage === 'intro3'
+        ? 'この虫、何を考えながら固まったんだろうね、、、あげるよ、、'
+        : '吸い終わる前に帰って、、、でもまた来てね';
+  return `
+    <main class="main-screen tattoo-woman-amber-event-screen">
+      <section class="visit-character-event tattoo-woman-amber-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character tattoo-woman-character" src="./assets/images/events/tattoo-woman.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward
+          ? `<button type="button" class="ganesha-tusk-reward-button" data-action="tattoo-woman-amber-event-receive" aria-label="琥珀を受け取る"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/events/amber.png?v=${VERSION}" alt="琥珀" draggable="false"><strong>琥珀</strong><small>タップして受け取る</small></button>`
+          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="tattoo-woman-amber-event-next"><small>タトゥーの女</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+      </section>
+    </main>`;
+}
+
+
+
+function cinemaEventDateEligible(date = gameDate()) {
+  const day = date.getDay();
+  return day === 0 || day === 6 || Boolean(japaneseHolidayName(date));
+}
+
+function normalizeCinemaEventVideoName(value) {
+  const name = String(value || '').trim().replace(/\\/g, '/').split('/').pop() || '';
+  if (!name || name === '.' || name === '..' || !/\.(mp4|webm|ogg|mov)$/i.test(name)) return '';
+  return name;
+}
+
+async function loadCinemaEventVideos() {
+  if (!cinemaEventVideosPromise) {
+    cinemaEventVideosPromise = fetch(CINEMA_EVENT_VIDEO_MANIFEST_URL, { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) throw new Error(`cinema video manifest ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        const raw = Array.isArray(data) ? data : Array.isArray(data?.videos) ? data.videos : [];
+        return [...new Set(raw.map(normalizeCinemaEventVideoName).filter(Boolean))];
+      })
+      .catch((error) => {
+        console.warn('映画館イベントの動画一覧を読み込めませんでした。', error);
+        cinemaEventVideosPromise = null;
+        return [];
+      });
+  }
+  return cinemaEventVideosPromise;
+}
+
+function cinemaVisitEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.cinemaVisitEvent && typeof state.events.cinemaVisitEvent === 'object' && !Array.isArray(state.events.cinemaVisitEvent)
+    ? state.events.cinemaVisitEvent
+    : {};
+  const validStages = new Set(['idle', 'invitation', 'playing', 'completed']);
+  state.events.cinemaVisitEvent = {
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    selectedVideo: normalizeCinemaEventVideoName(saved.selectedVideo),
+    lastVideo: normalizeCinemaEventVideoName(saved.lastVideo),
+    settled: Boolean(saved.settled),
+  };
+  if (!state.events.cinemaVisitEvent.active && !['idle', 'completed'].includes(state.events.cinemaVisitEvent.stage)) {
+    state.events.cinemaVisitEvent.stage = 'completed';
+  }
+  return state.events.cinemaVisitEvent;
+}
+
+function resumeCinemaVisitEvent() {
+  const eventState = cinemaVisitEventState();
+  if (!eventState.active) return false;
+  setScreen('cinemaVisitEvent', {}, false);
+  return true;
+}
+
+function chooseCinemaEventVideo(videos, previous = '') {
+  if (!videos.length) return '';
+  if (videos.length === 1) return videos[0];
+  const filtered = videos.filter((name) => name !== previous);
+  return filtered[Math.floor(Math.random() * filtered.length)] || videos[Math.floor(Math.random() * videos.length)];
+}
+
+async function maybeStartCinemaVisitEvent() {
+  const eventState = cinemaVisitEventState();
+  if (eventState.active) return resumeCinemaVisitEvent();
+  if (!cinemaEventDateEligible()) return false;
+  if (Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < CINEMA_VISIT_EVENT_COST) return false;
+  if (!canSpendHours(CINEMA_VISIT_EVENT_HOURS)) return false;
+  const videos = await loadCinemaEventVideos();
+  if (!videos.length) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= CINEMA_VISIT_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'invitation';
+  eventState.selectedVideo = chooseCinemaEventVideo(videos, eventState.lastVideo);
+  eventState.settled = false;
+  saveGame();
+  setScreen('cinemaVisitEvent', {}, false);
+  playSfx('impact', { gain: 0.56, rate: 0.88 });
+  vibrate([18, 26, 40]);
+  return true;
+}
+
+function beginCinemaVisitEvent() {
+  const eventState = cinemaVisitEventState();
+  if (!eventState.active || eventState.stage !== 'invitation' || !eventState.selectedVideo) return;
+  eventState.stage = 'playing';
+  saveGame();
+  playSfx('success', { gain: 0.62, rate: 0.9 });
+  render();
+}
+
+function cinemaEventVideoUrl(name) {
+  const safeName = normalizeCinemaEventVideoName(name);
+  return safeName ? `./assets/videos/cinema/${encodeURIComponent(safeName)}?v=${VERSION}` : '';
+}
+
+function startCinemaVisitPlayback() {
+  const video = root.querySelector('video[data-cinema-event-video]');
+  if (!(video instanceof HTMLVideoElement)) return;
+  video.volume = 1;
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise
+      .then(() => video.closest('.cinema-video-stage')?.classList.add('is-playing'))
+      .catch(() => video.closest('.cinema-video-stage')?.classList.add('needs-start'));
+  }
+}
+
+function retryCinemaVisitPlayback() {
+  const stage = root.querySelector('.cinema-video-stage');
+  stage?.classList.remove('needs-start', 'has-error');
+  startCinemaVisitPlayback();
+}
+
+async function completeCinemaVisitEvent() {
+  const eventState = cinemaVisitEventState();
+  if (!eventState.active || eventState.stage !== 'playing') return;
+  if (!eventState.settled) {
+    eventState.settled = true;
+    eventState.lastVideo = eventState.selectedVideo;
+    state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - CINEMA_VISIT_EVENT_COST);
+    spendHours(CINEMA_VISIT_EVENT_HOURS);
+    addFinance('映画館で映画鑑賞', 0, CINEMA_VISIT_EVENT_COST);
+    addNotification('映画を観ました', `${CINEMA_VISIT_EVENT_HOURS}時間が経過し、${yen(CINEMA_VISIT_EVENT_COST)}を支払いました。`, 'special');
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.selectedVideo = '';
+  saveGame();
+  await resumeAudio();
+  playSfx('success', { gain: 0.72 });
+  vibrate([18, 24, 42]);
+  setScreen('okachimachi', {}, false);
+}
+
+function renderCinemaVisitEvent() {
+  const eventState = cinemaVisitEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  if (eventState.stage === 'playing') {
+    const videoUrl = cinemaEventVideoUrl(eventState.selectedVideo);
+    queueMicrotask(startCinemaVisitPlayback);
+    return `
+      <main class="main-screen cinema-visit-event-screen cinema-playing-screen">
+        <section class="cinema-video-stage" aria-live="polite">
+          <video data-cinema-event-video src="${esc(videoUrl)}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1"></video>
+          <div class="cinema-video-loading">上映中</div>
+          <button type="button" class="cinema-video-start-button" data-action="cinema-video-start">動画を再生する</button>
+          <div class="cinema-video-error-message">動画を読み込めませんでした。再生をやり直してください。</div>
+        </section>
+      </main>`;
+  }
+  return `
+    <main class="main-screen cinema-visit-event-screen cinema-invitation-screen">
+      <button type="button" class="cinema-invitation-message" data-action="cinema-visit-event-start">
+        <strong>そうだ　映画館、行こう</strong>
+        <span>タップして進む</span>
+      </button>
+    </main>`;
+}
+
+function clockTowerDonationEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.clockTowerDonationEvent && typeof state.events.clockTowerDonationEvent === 'object' && !Array.isArray(state.events.clockTowerDonationEvent)
+    ? state.events.clockTowerDonationEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'completed']);
+  state.events.clockTowerDonationEvent = {
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    donationApplied: Boolean(saved.donationApplied),
+  };
+  if (!state.events.clockTowerDonationEvent.active && !['idle', 'completed'].includes(state.events.clockTowerDonationEvent.stage)) {
+    state.events.clockTowerDonationEvent.stage = 'completed';
+  }
+  return state.events.clockTowerDonationEvent;
+}
+
+function resumeClockTowerDonationEvent() {
+  const eventState = clockTowerDonationEventState();
+  if (!eventState.active) return false;
+  setScreen('clockTowerDonationEvent', {}, false);
+  return true;
+}
+
+function maybeStartClockTowerDonationEvent() {
+  const eventState = clockTowerDonationEventState();
+  if (eventState.active) return resumeClockTowerDonationEvent();
+  if (Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < 100000) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= CLOCK_TOWER_DONATION_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.donationApplied = false;
+  saveGame();
+  setScreen('clockTowerDonationEvent', {}, false);
+  playSfx('old-lady-appear', { gain: 0.92 });
+  setTimeout(() => playSfx('impact', { gain: 0.28, rate: 0.84 }), 120);
+  vibrate([22, 32, 54]);
+  return true;
+}
+
+function advanceClockTowerDonationEvent() {
+  const eventState = clockTowerDonationEventState();
+  if (!eventState.active) {
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') eventState.stage = 'intro2';
+  else if (eventState.stage === 'intro2') eventState.stage = 'intro3';
+  else if (eventState.stage === 'intro3') {
+    if (!eventState.donationApplied) {
+      state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - 100000);
+      eventState.donationApplied = true;
+      addNotification('時計台募金で100,000円を支払いました', '御徒町パンダ広場の時計台建設へ寄付しました。', 'special');
+    }
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('western-union-handover', { gain: 0.88, rate: 0.84 });
+    setTimeout(() => playSfx('success', { gain: 0.78 }), 110);
+    vibrate([26, 34, 68]);
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  saveGame();
+  playSfx('select', { gain: 0.82 });
+  render();
+}
+
+function renderClockTowerDonationEvent() {
+  const eventState = clockTowerDonationEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  const dialogue = eventState.stage === 'intro1'
+    ? '時計台を建てる運動にぜひご協力ください！御徒町パンダ広場に時計台を建てましょう'
+    : eventState.stage === 'intro2'
+      ? '歴史の貴重な遺産をこれから作りましょう'
+      : '時計台を建てる、、';
+  return `
+    <main class="main-screen clock-tower-donation-event-screen">
+      <section class="visit-character-event clock-tower-donation-event" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character clock-tower-donation-character" src="./assets/images/events/clock-tower-donation-old-woman.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="clock-tower-donation-event-next">
+          <small>時計台募金の老婆</small>
+          <strong>${dialogue}</strong>
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+
+function normalizeMysteryChineseMealImageName(value) {
+  const name = String(value || '').trim().replace(/\\/g, '/').split('/').pop() || '';
+  return MYSTERY_CHINESE_MEAL_EVENT_IMAGES.includes(name) ? name : '';
+}
+
+function chooseMysteryChineseMealImage(previous = '') {
+  const images = [...MYSTERY_CHINESE_MEAL_EVENT_IMAGES];
+  if (!images.length) return '';
+  if (images.length === 1) return images[0];
+  const filtered = images.filter((name) => name !== previous);
+  return filtered[Math.floor(Math.random() * filtered.length)] || images[Math.floor(Math.random() * images.length)] || images[0];
+}
+
+function mysteryChineseMealEventImageUrl(name) {
+  const safeName = normalizeMysteryChineseMealImageName(name);
+  return safeName ? `./assets/images/events/${encodeURIComponent(safeName)}?v=${VERSION}` : '';
+}
+
+function mysteryChineseMealEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.mysteryChineseMealEvent && typeof state.events.mysteryChineseMealEvent === 'object' && !Array.isArray(state.events.mysteryChineseMealEvent)
+    ? state.events.mysteryChineseMealEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'completed']);
+  state.events.mysteryChineseMealEvent = {
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    selectedDish: normalizeMysteryChineseMealImageName(saved.selectedDish),
+    lastDish: normalizeMysteryChineseMealImageName(saved.lastDish),
+    mealApplied: Boolean(saved.mealApplied),
+  };
+  if (!state.events.mysteryChineseMealEvent.active && !['idle', 'completed'].includes(state.events.mysteryChineseMealEvent.stage)) {
+    state.events.mysteryChineseMealEvent.stage = 'completed';
+  }
+  return state.events.mysteryChineseMealEvent;
+}
+
+function resumeMysteryChineseMealEvent() {
+  const eventState = mysteryChineseMealEventState();
+  if (!eventState.active) return false;
+  setScreen('mysteryChineseMealEvent', { mealId: 'chinese' }, false);
+  return true;
+}
+
+function maybeStartMysteryChineseMealEvent() {
+  const eventState = mysteryChineseMealEventState();
+  if (eventState.active) return resumeMysteryChineseMealEvent();
+  if (Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < MYSTERY_CHINESE_MEAL_EVENT_COST) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= MYSTERY_CHINESE_MEAL_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.selectedDish = chooseMysteryChineseMealImage(eventState.lastDish);
+  eventState.mealApplied = false;
+  saveGame();
+  setScreen('mysteryChineseMealEvent', { mealId: 'chinese' }, false);
+  playSfx('impact', { gain: 0.84, rate: 0.86 });
+  setTimeout(() => playSfx('alarm', { gain: 0.18, rate: 0.76 }), 100);
+  vibrate([22, 28, 48]);
+  return true;
+}
+
+function finishMysteryChineseMealEvent() {
+  const eventState = mysteryChineseMealEventState();
+  const meal = MEALS.chinese;
+  const before = hungerLevel();
+  if (!eventState.mealApplied && meal) {
+    eventState.mealApplied = true;
+    eventState.lastDish = eventState.selectedDish;
+    state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - MYSTERY_CHINESE_MEAL_EVENT_COST);
+    addFinance('謎の中華料理', 0, MYSTERY_CHINESE_MEAL_EVENT_COST);
+    startMoneyFeedback(-MYSTERY_CHINESE_MEAL_EVENT_COST, 1200);
+    state.wellbeing.hunger = Math.min(7, before + meal.recovery);
+    state.wellbeing.lastMeal = meal.id;
+    state.wellbeing.mealsEaten += 1;
+    state.daily.meals.push({ id: meal.id, name: '謎の中華料理', price: MYSTERY_CHINESE_MEAL_EVENT_COST, recovery: state.wellbeing.hunger - before });
+    hungerFeedback = { before, after: state.wellbeing.hunger, mealName: '謎の中華料理' };
+    clearTimeout(hungerFeedbackTimer);
+    hungerFeedbackTimer = setTimeout(() => {
+      hungerFeedback = null;
+      if (screen === 'main') render();
+    }, 1550);
+    addNotification('謎の中華料理を食べた', `${yen(MYSTERY_CHINESE_MEAL_EVENT_COST)}を支払い、空腹度が回復しました。`, 'special');
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.selectedDish = '';
+  saveGame();
+  playSfx('eat');
+  setTimeout(() => playSfx('levelup', { gain: 0.96 }), 180);
+  vibrate([18, 24, 42]);
+  setScreen('main', {}, false);
+  showToast('ごちそうさまでした', 'meal-complete', false);
+}
+
+function advanceMysteryChineseMealEvent() {
+  const eventState = mysteryChineseMealEventState();
+  if (!eventState.active) {
+    goMain();
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('select', { gain: 0.82 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    playSfx('select', { gain: 0.82 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro3') {
+    eventState.stage = 'reward';
+    saveGame();
+    playSfx('success', { gain: 0.92 });
+    vibrate([26, 30, 56]);
+    render();
+    return;
+  }
+  finishMysteryChineseMealEvent();
+}
+
+function renderMysteryChineseMealEvent() {
+  const eventState = mysteryChineseMealEventState();
+  if (!eventState.active) {
+    queueMicrotask(goMain);
+    return renderMain();
+  }
+  const playerName = esc(String(state?.playerName || 'お前').trim() || 'お前');
+  const reward = eventState.stage === 'reward';
+  const dialogue = eventState.stage === 'intro1'
+    ? `おう、${playerName}！新しいメニュー出来たから食ってってくれよ！`
+    : eventState.stage === 'intro2'
+      ? '食えるだろ？食えねえ豚はただのデブだぜ？！'
+      : 'ほっぺた落ちたらくれよ、食えるか試す';
+  const foodUrl = mysteryChineseMealEventImageUrl(eventState.selectedDish || MYSTERY_CHINESE_MEAL_EVENT_IMAGES[0] || '');
+  return `
+    <main class="main-screen mystery-chinese-meal-event-screen">
+      <section class="visit-character-event mystery-chinese-meal-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character mystery-chinese-chef-character" src="./assets/images/events/mystery-chinese-chef.png?v=${VERSION}" alt="" draggable="false">
+        </div>
+        ${reward
+          ? `<button type="button" class="ganesha-tusk-reward-button mystery-chinese-meal-reward-button" data-action="mystery-chinese-meal-event-next" aria-label="謎の中華料理を食べる"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="${esc(foodUrl)}" alt="謎の中華料理" draggable="false"><strong>謎の中華料理</strong><small>${yen(MYSTERY_CHINESE_MEAL_EVENT_COST)}　タップして食べる</small></button>`
+          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="mystery-chinese-meal-event-next"><small>料理人</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+      </section>
+    </main>`;
+}
+
 
 function renderMermaidEvent() {
   const eventState = mermaidEventState();
@@ -6271,7 +7209,7 @@ function renderAlienSpaceMain() {
       <nav class="main-menu alien-space-menu" aria-label="宇宙での行動">
         <button data-action="nav" data-screen="mining" ${locked ? 'disabled aria-disabled="true"' : ''}>${mainMenuIcon('mining')}<strong>採掘</strong></button>
         <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
-        <button data-action="sleep" ${canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
+        <button data-action="sleep" data-illness-readable="true" ${canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
       </nav>
     </main>`;
 }
@@ -6354,7 +7292,7 @@ function renderMain() {
   const manualActionDisabled = autopilotEnabled ? autopilotDisabled : hungerDisabled;
   const phoneDisabled = !autopilotEnabled && locked ? hungerDisabled : '';
   const mealDisabled = autopilotEnabled ? autopilotDisabled : '';
-  const sleepDisabled = autopilotEnabled ? autopilotDisabled : (canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"');
+  const sleepDisabled = winterColdTextActive() ? '' : (autopilotEnabled ? autopilotDisabled : (canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'));
   const storeButton = `<button data-action="nav" data-screen="store" ${manualActionDisabled}>${mainMenuIcon('store')}<strong>店舗</strong>${visiting.length ? '<i></i>' : ''}</button>`;
   return `${mainStatusHeader()}
     <main class="main-screen${autopilotEnabled ? ' autopilot-main-screen' : ''}">
@@ -6373,7 +7311,7 @@ function renderMain() {
         <button class="${autopilotEnabled ? 'autopilot-phone-button' : ''}" data-action="nav" data-screen="phone" ${phoneDisabled} aria-label="スマートフォン${autopilotEnabled ? '。自動操縦の設定を変更できます' : ''}">${mainMenuIcon('phone')}<strong>スマートフォン</strong>${unread ? `<em>${unread}</em>` : ''}</button>
         <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
         <button data-action="nav" data-screen="meal" ${mealDisabled}>${mainMenuIcon('meal')}<strong>食事</strong></button>
-        <button data-action="sleep" ${sleepDisabled}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
+        <button data-action="sleep" data-illness-readable="true" ${sleepDisabled}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
       </nav>
     </main>`;
 }
@@ -7616,9 +8554,8 @@ function renderCompletion() {
   const completionActions = isPendingOrderDelivery
     ? `<button class="primary-button" data-action="deliver-order-completion" data-id="${order.id}">お客様へ納品する</button>
        <button class="secondary-button" data-action="remake-order-completion" data-id="${order.id}" data-jewelry="${jewelry.id}">作り直す</button>`
-    : `<button class="primary-button" data-action="nav" data-screen="inventory" data-tab="finished">保管する</button>
-       <button class="secondary-button" data-action="open-craft">ジュエリー制作を続ける</button>
-       <button class="text-button" data-action="nav" data-screen="workshop">工房へ戻る</button>`;
+    : `<button class="primary-button" data-action="open-craft">ジュエリー作成を続ける</button>
+       <button class="secondary-button" data-action="nav" data-screen="workshop">工房へ戻る</button>`;
   return shell('完成', `
     <section class="center-card glass-panel result-card">
       <div class="jewelry-preview large metal-${jewelry.metal} item-${jewelry.item}" style="--gem:${GEMS[jewelry.gem]?.hue || '#ffffff'}">
@@ -7955,6 +8892,7 @@ function storeTheftEventState() {
     : {};
   const validStages = new Set(['idle', 'intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice', 'completed']);
   state.events.storeTheftEvent = {
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
@@ -7980,7 +8918,11 @@ function maybeStartStoreTheftEvent(branch = currentStoreBranch()) {
   if (!branch) return false;
   const candidates = robberyItemsInBranch(branch);
   if (!candidates.length) return false;
-  if (Math.random() >= STORE_THEFT_EVENT_CHANCE) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= STORE_THEFT_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
   const target = randomFrom(candidates, candidates[0]);
   if (!target?.item) return false;
   eventState.totalTriggered += 1;
@@ -8821,6 +9763,7 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   if (mealId === 'indian' && !skipEventCheck && maybeStartDiamondPolishingLapEvent()) return;
   if (mealId === 'indian' && !skipEventCheck && maybeStartGaneshaTuskEvent()) return;
   if (mealId === 'ramen' && !skipEventCheck && maybeStartChildhoodFriendEvent()) return;
+  if (mealId === 'chinese' && !skipEventCheck && maybeStartMysteryChineseMealEvent()) return;
 
   mealTransitioning = true;
   const stateBeforeMeal = structuredClone(state);
@@ -8871,6 +9814,459 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   }
 }
 
+
+function ensureGiftState(gameState = state) {
+  if (!gameState || typeof gameState !== 'object') return { outbox: [], inbox: [] };
+  gameState.gifts = gameState.gifts && typeof gameState.gifts === 'object' && !Array.isArray(gameState.gifts) ? gameState.gifts : {};
+  gameState.gifts.outbox = Array.isArray(gameState.gifts.outbox) ? gameState.gifts.outbox : [];
+  gameState.gifts.inbox = Array.isArray(gameState.gifts.inbox) ? gameState.gifts.inbox : [];
+  return gameState.gifts;
+}
+
+function giftCategoryLabel(category) {
+  return ({ rough: '原石', loose: 'ルース', item: 'アイテム', metal: '地金', jewelry: '完成品' })[category] || 'プレゼント';
+}
+
+function giftRoundedWeight(value) {
+  return Math.round(Math.max(0, Number(value) || 0) * 10) / 10;
+}
+
+function giftPayloadSummary(payload) {
+  const quantity = payload?.type === 'metal'
+    ? `${metalWeightLabel(payload.quantity)}g`
+    : payload?.type === 'jewelry'
+      ? '1点'
+      : `${Math.max(1, Math.floor(Number(payload?.quantity) || 1))}個`;
+  return {
+    category: giftCategoryLabel(payload?.type),
+    name: String(payload?.name || 'プレゼント'),
+    quantity,
+  };
+}
+
+function giftSendableRows(category) {
+  if (!state?.inventory) return [];
+  if (category === 'rough') {
+    return Object.values(GEMS).map((gem) => {
+      const max = Math.max(0, Math.floor(Number(state.inventory.rough?.[gem.id]) || 0));
+      return { key: gem.id, name: roughDisplayName(gem.id), max, payload: { type: 'rough', id: gem.id, name: roughDisplayName(gem.id) } };
+    }).filter((row) => row.max > 0);
+  }
+  if (category === 'loose') {
+    const rows = [];
+    for (const gem of Object.values(GEMS)) {
+      for (const shapeId of looseShapeIdsForGem(gem.id)) {
+        const max = looseAvailableQuantity(gem.id, shapeId);
+        if (max <= 0) continue;
+        rows.push({
+          key: `${gem.id}|${shapeId}`,
+          name: `${gem.name}・${looseShapeLabel(shapeId)}`,
+          max,
+          payload: { type: 'loose', id: gem.id, shapeId, name: `${gem.name}・${looseShapeLabel(shapeId)}ルース` },
+        });
+      }
+    }
+    return rows;
+  }
+  if (category === 'item') {
+    return Object.values(GENERAL_ITEMS).map((item) => {
+      const max = Math.max(0, Math.floor(Number(state.inventory.items?.[item.id]) || 0));
+      return { key: item.id, name: item.name, max, payload: { type: 'item', id: item.id, name: item.name } };
+    }).filter((row) => row.max > 0);
+  }
+  if (category === 'metal') {
+    return Object.values(METALS).map((metal) => {
+      const max = metalAvailableWeight(metal.id);
+      return { key: metal.id, name: metal.shortName || metal.name, max, payload: { type: 'metal', id: metal.id, name: `${metal.shortName || metal.name}地金` } };
+    }).filter((row) => row.max >= 0.1);
+  }
+  if (category === 'jewelry') {
+    return (state.inventory.jewelry || []).filter((item) => item.status === 'stored').map((item) => ({
+      key: item.id,
+      name: item.name || '完成品',
+      max: 1,
+      payload: { type: 'jewelry', id: item.id, name: item.name || '完成品', itemData: structuredClone(item) },
+    }));
+  }
+  return [];
+}
+
+function normalizeGiftDraft() {
+  const categories = ['rough', 'loose', 'item', 'metal', 'jewelry'];
+  if (!categories.includes(giftDraft.category)) giftDraft.category = 'rough';
+  const rows = giftSendableRows(giftDraft.category);
+  if (!rows.some((row) => row.key === giftDraft.itemKey)) giftDraft.itemKey = rows[0]?.key || '';
+  const row = rows.find((entry) => entry.key === giftDraft.itemKey) || rows[0] || null;
+  if (!row) giftDraft.quantity = 1;
+  else if (giftDraft.category === 'metal') giftDraft.quantity = Math.max(0.1, Math.min(row.max, giftRoundedWeight(giftDraft.quantity || 0.1)));
+  else giftDraft.quantity = Math.max(1, Math.min(Math.floor(row.max), Math.floor(Number(giftDraft.quantity) || 1)));
+  return { rows, row };
+}
+
+function giftVisualMarkup(payload, className = 'gift-item-visual') {
+  if (!payload) return `<span class="${className}" aria-hidden="true">◆</span>`;
+  if (payload.type === 'rough') return roughVisual(payload.id, className, payload.name || '原石');
+  if (payload.type === 'loose') return looseVisual(payload.id, className, payload.name || 'ルース', payload.shapeId);
+  if (payload.type === 'metal') return metalVisual(payload.id, className, payload.name || '地金');
+  if (payload.type === 'item') {
+    const item = GENERAL_ITEMS[payload.id];
+    return item?.image
+      ? `<img class="${className}" src="${esc(item.image)}?v=${VERSION}" alt="${esc(payload.name || item.name)}" draggable="false">`
+      : `<span class="${className}" role="img" aria-label="${esc(payload.name || item?.name || 'アイテム')}">${esc(item?.symbol || '◆')}</span>`;
+  }
+  if (payload.type === 'jewelry') {
+    const item = payload.itemData || {};
+    return `<span class="gift-jewelry-visual ${className}">${jewelryItemVisual(item.item, 'jewelry-item-shape', item.useLoose !== false)}${item.useLoose === false ? '' : jewelryLooseSetVisual(item.item, item.gem, item.looseShape, 'small')}</span>`;
+  }
+  return `<span class="${className}" aria-hidden="true">◆</span>`;
+}
+
+function giftOutboxEntry(code, payload, status = 'pending') {
+  const summary = giftPayloadSummary(payload);
+  return {
+    code,
+    status,
+    category: summary.category,
+    name: summary.name,
+    quantity: summary.quantity,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function removeGiftFromGameState(gameState, payload, code) {
+  const inventory = gameState?.inventory;
+  if (!inventory) throw new Error('在庫データを確認できません。');
+  const quantity = payload.type === 'metal' ? giftRoundedWeight(payload.quantity) : Math.max(1, Math.floor(Number(payload.quantity) || 1));
+  if (payload.type === 'rough') {
+    if (!GEMS[payload.id]) throw new Error('原石データを確認できません。');
+    const current = Math.max(0, Math.floor(Number(inventory.rough?.[payload.id]) || 0));
+    if (current < quantity) throw new Error('原石の所持数が足りません。');
+    inventory.rough[payload.id] = current - quantity;
+  } else if (payload.type === 'loose') {
+    if (!GEMS[payload.id] || !looseShapeIdsForGem(payload.id).includes(payload.shapeId)) throw new Error('ルースデータを確認できません。');
+    const current = Math.max(0, Math.floor(Number(inventory.loose?.[payload.id]?.[payload.shapeId]) || 0));
+    if (current < quantity) throw new Error('ルースの所持数が足りません。');
+    inventory.loose[payload.id][payload.shapeId] = current - quantity;
+  } else if (payload.type === 'item') {
+    if (!GENERAL_ITEMS[payload.id]) throw new Error('アイテムデータを確認できません。');
+    const current = Math.max(0, Math.floor(Number(inventory.items?.[payload.id]) || 0));
+    if (current < quantity) throw new Error('アイテムの所持数が足りません。');
+    inventory.items[payload.id] = current - quantity;
+  } else if (payload.type === 'metal') {
+    if (!METALS[payload.id]) throw new Error('地金データを確認できません。');
+    const current = giftRoundedWeight(inventory.metals?.[payload.id]);
+    if (quantity < 0.1 || current + 0.0001 < quantity) throw new Error('地金の所持重量が足りません。');
+    inventory.metals[payload.id] = giftRoundedWeight(current - quantity);
+  } else if (payload.type === 'jewelry') {
+    const index = (inventory.jewelry || []).findIndex((item) => item.id === payload.id && item.status === 'stored');
+    if (index < 0) throw new Error('この完成品は現在プレゼントにできません。');
+    inventory.jewelry.splice(index, 1);
+  } else throw new Error('プレゼントの種類を確認できません。');
+  const gifts = ensureGiftState(gameState);
+  gifts.outbox.unshift(giftOutboxEntry(code, payload, 'pending'));
+  gifts.outbox = gifts.outbox.slice(0, 50);
+  return gameState;
+}
+
+function addGiftToGameState(gameState, payload, code) {
+  const inventory = gameState?.inventory;
+  if (!inventory) throw new Error('在庫データを確認できません。');
+  const quantity = payload.type === 'metal' ? giftRoundedWeight(payload.quantity) : Math.max(1, Math.floor(Number(payload.quantity) || 1));
+  if (payload.type === 'rough') {
+    if (!GEMS[payload.id]) throw new Error('原石データを確認できません。');
+    inventory.rough[payload.id] = Math.max(0, Math.floor(Number(inventory.rough?.[payload.id]) || 0)) + quantity;
+  } else if (payload.type === 'loose') {
+    if (!GEMS[payload.id] || !looseShapeIdsForGem(payload.id).includes(payload.shapeId)) throw new Error('ルースデータを確認できません。');
+    inventory.loose[payload.id] = inventory.loose[payload.id] || {};
+    inventory.loose[payload.id][payload.shapeId] = Math.max(0, Math.floor(Number(inventory.loose[payload.id][payload.shapeId]) || 0)) + quantity;
+  } else if (payload.type === 'item') {
+    if (!GENERAL_ITEMS[payload.id]) throw new Error('アイテムデータを確認できません。');
+    inventory.items[payload.id] = Math.max(0, Math.floor(Number(inventory.items?.[payload.id]) || 0)) + quantity;
+  } else if (payload.type === 'metal') {
+    if (!METALS[payload.id]) throw new Error('地金データを確認できません。');
+    const current = giftRoundedWeight(inventory.metals?.[payload.id]);
+    const capacity = Math.max(0.1, Number(inventory.metalCapacity?.[payload.id]) || Number(METALS[payload.id].storageLimit) || 1);
+    if (current + quantity > capacity + 0.0001) throw new Error(`${METALS[payload.id].shortName || METALS[payload.id].name}の保管上限を超えるため受け取れません。`);
+    inventory.metals[payload.id] = giftRoundedWeight(current + quantity);
+  } else if (payload.type === 'jewelry') {
+    const used = (inventory.jewelry || []).filter((item) => item.status !== 'sold').length;
+    const capacity = finishedJewelryCapacity(gameState);
+    if (used >= capacity) throw new Error('完成品の保管場所に空きがありません。');
+    const item = structuredClone(payload.itemData || {});
+    if (!item.item || !ITEMS[item.item]) throw new Error('完成品データを確認できません。');
+    item.id = `gift-${String(code).replace(/[^A-Z0-9]/gi, '').toLowerCase()}`;
+    item.status = 'stored';
+    item.receivedGiftCode = code;
+    item.receivedDay = Math.max(1, Math.floor(Number(gameState.game?.day) || 1));
+    delete item.displayBranchNumber;
+    delete item.orderId;
+    if ((inventory.jewelry || []).some((entry) => entry.id === item.id)) throw new Error('このプレゼントはすでに在庫へ追加されています。');
+    inventory.jewelry.push(item);
+  } else throw new Error('プレゼントの種類を確認できません。');
+  const gifts = ensureGiftState(gameState);
+  const summary = giftPayloadSummary(payload);
+  gifts.inbox.unshift({ code, ...summary, receivedAt: new Date().toISOString() });
+  gifts.inbox = gifts.inbox.slice(0, 50);
+  gameState.notifications = Array.isArray(gameState.notifications) ? gameState.notifications : [];
+  gameState.notifications.unshift({
+    id: `gift-${String(code).replace(/[^A-Z0-9]/gi, '').toLowerCase()}-received`,
+    title: 'プレゼントを受け取りました',
+    body: `${summary.name} ${summary.quantity}を受け取りました。`,
+    type: 'special',
+    day: Math.max(1, Math.floor(Number(gameState.game?.day) || 1)),
+    unread: true,
+  });
+  return gameState;
+}
+
+function restoreGiftToGameState(gameState, payload, code) {
+  const inventory = gameState?.inventory;
+  if (!inventory) throw new Error('在庫データを確認できません。');
+  const quantity = payload.type === 'metal' ? giftRoundedWeight(payload.quantity) : Math.max(1, Math.floor(Number(payload.quantity) || 1));
+  if (payload.type === 'rough') inventory.rough[payload.id] = Math.max(0, Math.floor(Number(inventory.rough?.[payload.id]) || 0)) + quantity;
+  else if (payload.type === 'loose') {
+    inventory.loose[payload.id] = inventory.loose[payload.id] || {};
+    inventory.loose[payload.id][payload.shapeId] = Math.max(0, Math.floor(Number(inventory.loose[payload.id][payload.shapeId]) || 0)) + quantity;
+  } else if (payload.type === 'item') inventory.items[payload.id] = Math.max(0, Math.floor(Number(inventory.items?.[payload.id]) || 0)) + quantity;
+  else if (payload.type === 'metal') inventory.metals[payload.id] = giftRoundedWeight(Number(inventory.metals?.[payload.id]) + quantity);
+  else if (payload.type === 'jewelry') {
+    const item = structuredClone(payload.itemData || {});
+    item.status = 'stored';
+    delete item.displayBranchNumber;
+    delete item.orderId;
+    if (!(inventory.jewelry || []).some((entry) => entry.id === item.id)) inventory.jewelry.push(item);
+  }
+  const gifts = ensureGiftState(gameState);
+  const entry = gifts.outbox.find((item) => item.code === code);
+  if (entry) entry.status = 'cancelled';
+  gameState.notifications = Array.isArray(gameState.notifications) ? gameState.notifications : [];
+  const summary = giftPayloadSummary(payload);
+  gameState.notifications.unshift({
+    id: `gift-${String(code).replace(/[^A-Z0-9]/gi, '').toLowerCase()}-cancelled`,
+    title: 'プレゼントを取り消しました',
+    body: `${summary.name} ${summary.quantity}を在庫へ戻しました。`,
+    type: 'info',
+    day: Math.max(1, Math.floor(Number(gameState.game?.day) || 1)),
+    unread: true,
+  });
+  return gameState;
+}
+
+function persistTransactionalGiftState(nextState) {
+  state = migrateState(nextState);
+  ensureGiftState(state);
+  syncFinishedJewelryCapacity();
+  cloudSave = structuredClone(state);
+  localStorage.setItem(localSaveKey(), JSON.stringify(state));
+  localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
+}
+
+function giftStatusLabel(status) {
+  return ({ pending: '未受取', claimed: '受取済み', cancelled: '取消済み' })[status] || status || '不明';
+}
+
+function renderGiftOutbox() {
+  const outbox = ensureGiftState().outbox.slice(0, 10);
+  if (!outbox.length) return '';
+  return `<section class="gift-history-section"><h3>発行したプレゼント</h3><div class="gift-history-list">${outbox.map((entry) => `
+    <article class="gift-history-row">
+      <div><strong>${esc(entry.name || 'プレゼント')}</strong><span>${esc(entry.quantity || '')}・${esc(entry.code || '')}</span></div>
+      <div class="gift-history-actions"><small class="gift-status gift-status-${esc(entry.status || 'pending')}">${esc(giftStatusLabel(entry.status))}</small>${entry.status === 'pending' ? `<button type="button" class="text-button" data-action="gift-cancel" data-code="${esc(entry.code)}" ${giftBusy ? 'disabled' : ''}>取り消す</button>` : ''}</div>
+    </article>`).join('')}</div></section>`;
+}
+
+function renderGiftMenu() {
+  return `<section class="phone-gift-menu">
+    <div class="gift-menu-hero"><span aria-hidden="true">🎁</span><h2>プレゼント</h2><p>プレゼントコードを使って、ほかのプレイヤーと品物を受け渡せます。</p></div>
+    <div class="gift-menu-buttons">
+      <button type="button" class="primary-button full-button" data-action="gift-view" data-view="send"><strong>プレゼントを渡す</strong><small>品物を選んでコードを発行します</small></button>
+      <button type="button" class="secondary-button full-button" data-action="gift-view" data-view="receive"><strong>プレゼントを受け取る</strong><small>相手から届いたコードを入力します</small></button>
+    </div>
+    <p class="small-note">渡せるもの：原石、ルース、アイテム、地金、完成品。工具・設備・ツルハシは対象外です。</p>
+    ${renderGiftOutbox()}
+  </section>`;
+}
+
+function renderGiftSend() {
+  const { rows, row } = normalizeGiftDraft();
+  const categoryOptions = [
+    ['rough', '原石'], ['loose', 'ルース'], ['item', 'アイテム'], ['metal', '地金'], ['jewelry', '完成品'],
+  ].map(([value, label]) => `<option value="${value}" ${giftDraft.category === value ? 'selected' : ''}>${label}</option>`).join('');
+  if (!row) return `<section class="phone-gift-panel"><button type="button" class="text-button gift-back-button" data-action="gift-view" data-view="menu">‹ プレゼントへ戻る</button><h2>プレゼントを渡す</h2><label class="gift-field"><span>種類</span><select data-gift-category>${categoryOptions}</select></label><div class="empty-state"><strong>この種類で渡せるものがありません。</strong><p>別の種類を選んでください。</p></div></section>`;
+  const isMetal = giftDraft.category === 'metal';
+  const isJewelry = giftDraft.category === 'jewelry';
+  const quantity = isJewelry ? 1 : giftDraft.quantity;
+  const itemOptions = rows.map((entry) => `<option value="${esc(entry.key)}" ${entry.key === row.key ? 'selected' : ''}>${esc(entry.name)}（${isMetal ? `${metalWeightLabel(entry.max)}g` : `${entry.max}${isJewelry ? '点' : '個'}`}）</option>`).join('');
+  const payload = { ...row.payload, quantity, ...(isJewelry ? { itemData: row.payload.itemData } : {}) };
+  const summary = giftPayloadSummary(payload);
+  return `<section class="phone-gift-panel">
+    <button type="button" class="text-button gift-back-button" data-action="gift-view" data-view="menu">‹ プレゼントへ戻る</button>
+    <h2>プレゼントを渡す</h2>
+    <div class="gift-form-grid">
+      <label class="gift-field"><span>種類</span><select data-gift-category>${categoryOptions}</select></label>
+      <label class="gift-field"><span>渡すもの</span><select data-gift-item>${itemOptions}</select></label>
+      ${isJewelry ? '' : `<label class="gift-field"><span>${isMetal ? '重量' : '数量'}</span><span class="gift-quantity-row"><input type="number" data-gift-quantity min="${isMetal ? '0.1' : '1'}" max="${row.max}" step="${isMetal ? '0.1' : '1'}" value="${quantity}"><em>${isMetal ? 'g' : '個'}</em></span><small>渡せる上限：${isMetal ? `${metalWeightLabel(row.max)}g` : `${row.max}個`}</small></label>`}
+    </div>
+    <article class="gift-preview-card">${giftVisualMarkup(payload)}<div><small>${esc(summary.category)}</small><strong>${esc(summary.name)}</strong><span>${esc(summary.quantity)}</span></div></article>
+    <p class="gift-warning">コードを発行した時点で、選んだプレゼントは在庫から減ります。受け取られる前なら取り消せます。</p>
+    <button type="button" class="primary-button full-button gift-create-button" data-action="gift-create" ${giftBusy ? 'disabled' : ''}>${giftBusy ? '発行しています…' : 'プレゼントコードを発行する'}</button>
+  </section>`;
+}
+
+function renderGiftCreated() {
+  const gift = giftLastCreated;
+  if (!gift) return renderGiftMenu();
+  const summary = giftPayloadSummary(gift.payload);
+  return `<section class="phone-gift-panel gift-created-panel">
+    <div class="gift-success-mark" aria-hidden="true">🎁</div>
+    <h2>プレゼントコードを発行しました</h2>
+    <article class="gift-preview-card">${giftVisualMarkup(gift.payload)}<div><small>${esc(summary.category)}</small><strong>${esc(summary.name)}</strong><span>${esc(summary.quantity)}</span></div></article>
+    <button type="button" class="gift-code-card" data-action="gift-copy-code" data-code="${esc(gift.code)}"><small>相手へこのコードを伝えてください</small><strong>${esc(gift.code)}</strong><span>タップしてコピー</span></button>
+    <div class="gift-complete-actions"><button type="button" class="primary-button full-button" data-action="gift-view" data-view="menu">プレゼントへ戻る</button><button type="button" class="secondary-button full-button" data-action="gift-view" data-view="send">続けて渡す</button></div>
+  </section>`;
+}
+
+function renderGiftReceive() {
+  if (giftView === 'received' && giftLastReceived) {
+    const summary = giftPayloadSummary(giftLastReceived.payload);
+    return `<section class="phone-gift-panel gift-created-panel"><div class="gift-success-mark" aria-hidden="true">✨</div><h2>プレゼントを受け取りました</h2><article class="gift-preview-card">${giftVisualMarkup(giftLastReceived.payload)}<div><small>${esc(summary.category)}</small><strong>${esc(summary.name)}</strong><span>${esc(summary.quantity)}</span></div></article><button type="button" class="primary-button full-button" data-action="gift-view" data-view="menu">プレゼントへ戻る</button></section>`;
+  }
+  const preview = giftPreview;
+  return `<section class="phone-gift-panel">
+    <button type="button" class="text-button gift-back-button" data-action="gift-view" data-view="menu">‹ プレゼントへ戻る</button>
+    <h2>プレゼントを受け取る</h2>
+    ${preview ? (() => {
+      const summary = giftPayloadSummary(preview.payload);
+      return `<article class="gift-receive-confirm"><small>${esc(preview.senderName || 'プレイヤー')}さんからのプレゼント</small><div class="gift-preview-card">${giftVisualMarkup(preview.payload)}<div><small>${esc(summary.category)}</small><strong>${esc(summary.name)}</strong><span>${esc(summary.quantity)}</span></div></div><code>${esc(preview.code)}</code><button type="button" class="primary-button full-button" data-action="gift-claim" ${giftBusy ? 'disabled' : ''}>${giftBusy ? '受け取っています…' : 'プレゼントを受け取る'}</button><button type="button" class="text-button full-button" data-action="gift-receive-reset">別のコードを入力する</button></article>`;
+    })() : `<label class="gift-field gift-code-input"><span>プレゼントコード</span><input type="text" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="13" data-gift-code-input value="${esc(giftCodeInput)}" placeholder="JXJ-XXXX-XXXX"><small>相手から届いたコードを入力してください。</small></label><button type="button" class="primary-button full-button" data-action="gift-inspect" ${giftBusy ? 'disabled' : ''}>${giftBusy ? '確認しています…' : 'コードを確認する'}</button>`}
+  </section>`;
+}
+
+function renderPhoneGift() {
+  ensureGiftState();
+  if (giftView === 'send') return renderGiftSend();
+  if (giftView === 'created') return renderGiftCreated();
+  if (giftView === 'receive' || giftView === 'received') return renderGiftReceive();
+  giftView = 'menu';
+  return renderGiftMenu();
+}
+
+async function createGiftFromDraft() {
+  if (giftBusy || !currentUser) return;
+  const { row } = normalizeGiftDraft();
+  if (!row) return showToast('渡せるプレゼントがありません。', 'error');
+  const quantity = giftDraft.category === 'jewelry' ? 1 : (giftDraft.category === 'metal' ? giftRoundedWeight(giftDraft.quantity) : Math.max(1, Math.floor(Number(giftDraft.quantity) || 1)));
+  if (quantity <= 0 || quantity > row.max + 0.0001) return showToast('数量を確認してください。', 'error');
+  const payload = { ...structuredClone(row.payload), quantity };
+  giftBusy = true;
+  render();
+  try {
+    await saveGame();
+    const result = await createGiftCode(currentUser.uid, state.playerName, payload, removeGiftFromGameState);
+    persistTransactionalGiftState(result.gameState);
+    giftLastCreated = { code: result.code, payload };
+    giftView = 'created';
+    playSfx('western-union-handover', { gain: 0.94 });
+    setTimeout(() => playSfx('loose-sparkle', { gain: 1.02 }), 140);
+    vibrate([28, 28, 58]);
+    render();
+  } catch (error) {
+    console.error('プレゼントコード発行エラー', error);
+    showToast(giftErrorMessage(error), 'error');
+  } finally {
+    giftBusy = false;
+    if (screen === 'phone' && phoneTab === 'gift') render();
+  }
+}
+
+async function inspectGiftInput() {
+  if (giftBusy) return;
+  const code = normalizeGiftCode(giftCodeInput);
+  if (!code) return showToast('プレゼントコードを入力してください。', 'error');
+  giftBusy = true;
+  render();
+  try {
+    const gift = await inspectGiftCode(code);
+    if (gift.status === 'claimed') throw Object.assign(new Error('受取済み'), { code: 'gift/already-claimed' });
+    if (gift.status === 'cancelled') throw Object.assign(new Error('取消済み'), { code: 'gift/cancelled' });
+    if (gift.senderUid === currentUser?.uid) throw Object.assign(new Error('自分のコード'), { code: 'gift/self-claim' });
+    giftPreview = gift;
+    giftCodeInput = gift.code;
+    playSfx('select', { gain: 0.84 });
+  } catch (error) {
+    console.error('プレゼントコード確認エラー', error);
+    giftPreview = null;
+    showToast(giftErrorMessage(error), 'error');
+  } finally {
+    giftBusy = false;
+    render();
+  }
+}
+
+async function claimGiftPreview() {
+  if (giftBusy || !giftPreview || !currentUser) return;
+  giftBusy = true;
+  render();
+  try {
+    await saveGame();
+    const result = await claimGiftCode(currentUser.uid, state.playerName, giftPreview.code, addGiftToGameState);
+    persistTransactionalGiftState(result.gameState);
+    giftLastReceived = { code: giftPreview.code, senderName: giftPreview.senderName, payload: structuredClone(giftPreview.payload) };
+    giftPreview = null;
+    giftCodeInput = '';
+    giftView = 'received';
+    playSfx('loose-sparkle', { gain: 1.12 });
+    setTimeout(() => playSfx('success', { gain: 1.0 }), 130);
+    vibrate([35, 25, 70, 25, 90]);
+    render();
+  } catch (error) {
+    console.error('プレゼント受取エラー', error);
+    showToast(giftErrorMessage(error), 'error');
+  } finally {
+    giftBusy = false;
+    if (screen === 'phone' && phoneTab === 'gift') render();
+  }
+}
+
+async function cancelGift(code) {
+  if (giftBusy || !currentUser || !code) return;
+  giftBusy = true;
+  render();
+  try {
+    await saveGame();
+    const result = await cancelGiftCode(currentUser.uid, code, restoreGiftToGameState);
+    persistTransactionalGiftState(result.gameState);
+    playSfx('success', { gain: 0.9 });
+    vibrate([30, 25, 55]);
+    showToast('プレゼントを取り消し、在庫へ戻しました。', 'info', false);
+  } catch (error) {
+    console.error('プレゼント取消エラー', error);
+    if (error?.code === 'gift/already-claimed') {
+      const entry = ensureGiftState().outbox.find((item) => item.code === code);
+      if (entry) entry.status = 'claimed';
+      saveGame();
+    }
+    showToast(giftErrorMessage(error), 'error');
+  } finally {
+    giftBusy = false;
+    render();
+  }
+}
+
+async function copyGiftCode(code) {
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(code);
+    copied = true;
+  } catch (_) {
+    copied = fallbackCopyText(code);
+  }
+  if (!copied) return showToast('コードをコピーできませんでした。', 'error');
+  playSfx('success', { gain: 0.82 });
+  vibrate(30);
+  showToast('プレゼントコードをコピーしました。', 'info', false);
+}
+
 function renderPhone() {
   phoneTab = validPhoneTab(phoneTab);
   state.notifications = visibleNotifications();
@@ -8887,13 +10283,14 @@ function renderPhone() {
           <button class="${phoneTab === 'calendar' ? 'active' : ''}" data-action="phone-tab" data-tab="calendar">カレンダー</button>
           <button class="${phoneTab === 'finance' ? 'active' : ''}" data-action="phone-tab" data-tab="finance">収支</button>
           <button class="${phoneTab === 'items' ? 'active' : ''}" data-action="phone-tab" data-tab="items">アイテム</button>
+          <button class="${phoneTab === 'gift' ? 'active' : ''}" data-action="phone-tab" data-tab="gift">プレゼント</button>
           <button class="phone-game-tab" data-action="open-phone-game" aria-label="スマホゲームを開く">スマホゲーム</button>
           <button class="${phoneTab === 'ai' ? 'active' : ''}" data-action="phone-tab" data-tab="ai">AI</button>
           <button class="${phoneTab === 'settings' ? 'active' : ''}" data-action="phone-tab" data-tab="settings">設定</button>
         </nav>
         <div class="phone-content">${renderPhoneContent()}</div>
       </section>
-    </div>`, { help: '通知、プロフィール、カレンダー、収支、アイテム、スマホゲーム、AI、設定を利用できます。プロフィールではゲームクリア条件の進捗を確認できます。' });
+    </div>`, { help: '通知、プロフィール、カレンダー、収支、アイテム、プレゼント、スマホゲーム、AI、設定を利用できます。プレゼントでは1回限りのコードを使って、ほかのプレイヤーと品物を受け渡せます。' });
 }
 
 
@@ -9400,6 +10797,7 @@ function renderPhoneContent() {
       <div class="phone-finance-list">${rows.slice().reverse().map((row) => `<article class="finance-row"><span>${financeRowDateLabel(row.day)} ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || `<div class="phone-empty">${period === 'today' ? '今日' : period === 'month' ? '今月' : period === 'year' ? '今年' : '累計'}の収支記録はありません。</div>`}</div></section>`;
   }
   if (phoneTab === 'items') return renderPhoneItems();
+  if (phoneTab === 'gift') return renderPhoneGift();
   if (phoneTab === 'ai') return renderPhoneAI();
   return renderSettingsForm(false, true);
 }
@@ -9764,6 +11162,8 @@ function polishRough() {
   if (!workshopOperating()) return showToast('工房は作業停止中です。', 'error');
   const gem = GEMS[selectedPolishing];
   selectedPolishingShape = normalizeLooseShape(selectedPolishing, selectedPolishingShape);
+  const completedGemId = selectedPolishing;
+  const completedShapeId = selectedPolishingShape;
   if (!toolUsable('polishingMachine')) return showToast(toolOwned('polishingMachine') ? `宝石研磨用平面研磨機は${workshopToolStatusText('polishingMachine')}です。` : '宝石研磨用平面研磨機が必要です。', 'error');
   if (selectedPolishing === 'diamond' && !toolUsable('diamondPolishingLap')) return showToast('選択した原石は研磨できません。', 'error');
   if (!gem || state.inventory.rough[selectedPolishing] < 1) return showToast('選択した原石を持っていません。', 'error');
@@ -9787,8 +11187,15 @@ function polishRough() {
   saveGame();
   playSfx('loose-sparkle', { gain: 1.12 });
   vibrate([35, 25, 55]);
-  showToast(`${roughDisplayName(selectedPolishing)}を${looseShapeLabel(selectedPolishingShape)}へ研磨しました。`);
   render();
+  showModal({
+    title: `${roughDisplayName(completedGemId)}を${looseShapeLabel(completedShapeId)}へカットしました`,
+    body: `<section class="polishing-result-modal-content"><div class="polishing-result-loose-visual">${looseVisual(completedGemId, 'polishing-result-loose-image', '', completedShapeId)}</div><strong>${esc(GEMS[completedGemId]?.name || '')}・${esc(looseShapeLabel(completedShapeId))}</strong><p>完成したルースを保管しました。</p></section>`,
+    confirm: '閉じる',
+    action: 'modal-close',
+    hideCancel: true,
+    className: 'polishing-result-modal',
+  });
 }
 
 function qualityProbabilities() {
@@ -11315,6 +12722,7 @@ function settleDay({ showResult = true, save = true } = {}) {
     expense: state.daily.expense,
   };
   state.store.lastResult = result;
+  progressWinterColdSleep({ showResult });
 
   state.game.day += 1;
   progressAlienAbductionSleep();
@@ -11418,13 +12826,79 @@ function updateOrderNotifications() {
   });
 }
 
+function birthdaySleepEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.birthdaySleepEvent && typeof state.events.birthdaySleepEvent === 'object' && !Array.isArray(state.events.birthdaySleepEvent)
+    ? state.events.birthdaySleepEvent
+    : {};
+  const validStages = new Set(['idle', 'phone', 'greeting', 'congratulations', 'thanks', 'completed']);
+  state.events.birthdaySleepEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    eventYear: Math.max(0, Math.floor(Number(saved.eventYear) || 0)),
+    lastCompletedYear: Math.max(0, Math.floor(Number(saved.lastCompletedYear) || 0)),
+  };
+  if (!state.events.birthdaySleepEvent.active && !['idle', 'completed'].includes(state.events.birthdaySleepEvent.stage)) {
+    state.events.birthdaySleepEvent.stage = 'completed';
+  }
+  return state.events.birthdaySleepEvent;
+}
+
+function maybeStartBirthdaySleepEvent() {
+  const today = gameDate();
+  if (!birthdayMatchesDate(today)) return false;
+  const year = today.getFullYear();
+  const eventState = birthdaySleepEventState();
+  if (eventState.active) {
+    setScreen('birthdaySleepEvent', {}, false);
+    return true;
+  }
+  if (eventState.lastCompletedYear === year) return false;
+  eventState.active = true;
+  eventState.stage = 'phone';
+  eventState.eventYear = year;
+  saveGame();
+  setScreen('birthdaySleepEvent', {}, false);
+  playSfx('alarm', { gain: 0.52, rate: 0.92 });
+  vibrate([28, 80, 28, 80, 42]);
+  return true;
+}
+
+function showNormalSleepConfirmation() {
+  showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
+}
+
+function advanceBirthdaySleepEvent() {
+  const eventState = birthdaySleepEventState();
+  if (!eventState.active) {
+    goMain();
+    return;
+  }
+  if (eventState.stage === 'phone') eventState.stage = 'greeting';
+  else if (eventState.stage === 'greeting') eventState.stage = 'congratulations';
+  else if (eventState.stage === 'congratulations') eventState.stage = 'thanks';
+  else if (eventState.stage === 'thanks') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    eventState.lastCompletedYear = eventState.eventYear || gameDate().getFullYear();
+    saveGame();
+    setScreen('main', {}, false);
+    queueMicrotask(showNormalSleepConfirmation);
+    return;
+  }
+  saveGame();
+  playSfx('select', { gain: 0.46 });
+  render();
+}
+
 function confirmSleep() {
   if (!canSleepNow()) {
     showToast(sleepRestrictionMessage(), 'error');
     return;
   }
+  if (maybeStartBirthdaySleepEvent()) return;
   if (maybeStartHauntingEvent()) return;
-  showModal({ title: '今日はもう休みますか？', body: '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>', confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
+  showNormalSleepConfirmation();
 }
 
 function wait(ms) {
@@ -11651,7 +13125,7 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'winter-cold-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice', 'mystery-chinese-meal-event-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
@@ -11662,7 +13136,7 @@ root.addEventListener('click', async (event) => {
     goMain();
     return;
   }
-  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
@@ -11889,6 +13363,12 @@ root.addEventListener('click', async (event) => {
     case 'glab-sns-link':
       openGlabSns(button.dataset.platform || '');
       break;
+    case 'winter-cold-event-next':
+      advanceWinterColdEvent();
+      break;
+    case 'birthday-sleep-event-next':
+      advanceBirthdaySleepEvent();
+      break;
     case 'western-union-choice':
       chooseWesternUnionEvent(button.dataset.answer);
       break;
@@ -11900,6 +13380,21 @@ root.addEventListener('click', async (event) => {
       break;
     case 'mermaid-event-next':
       advanceMermaidEvent();
+      break;
+    case 'tattoo-woman-amber-event-next':
+      advanceTattooWomanAmberEvent();
+      break;
+    case 'tattoo-woman-amber-event-receive':
+      receiveTattooWomanAmber();
+      break;
+    case 'clock-tower-donation-event-next':
+      advanceClockTowerDonationEvent();
+      break;
+    case 'cinema-visit-event-start':
+      beginCinemaVisitEvent();
+      break;
+    case 'cinema-video-start':
+      retryCinemaVisitPlayback();
       break;
     case 'wood-sword-event-next':
       advanceTouristWoodSwordEvent();
@@ -11933,6 +13428,9 @@ root.addEventListener('click', async (event) => {
       break;
     case 'diamond-polishing-lap-event-next':
       await advanceDiamondPolishingLapEvent();
+      break;
+    case 'mystery-chinese-meal-event-next':
+      advanceMysteryChineseMealEvent();
       break;
     case 'ganesha-tusk-event-next':
       advanceGaneshaTuskEvent();
@@ -11987,6 +13485,7 @@ root.addEventListener('click', async (event) => {
           break;
         }
       }
+      if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       setScreen(target, target === 'supplierMetals' ? { tab: button.dataset.tab || 'market' } : {});
       break;
     }
@@ -12286,6 +13785,43 @@ root.addEventListener('click', async (event) => {
     case 'install-app': await requestHomeInstall(); break;
     case 'open-install-browser': openInstallInAndroidBrowser(); break;
     case 'open-phone-game': openPhoneGame(); break;
+    case 'gift-view': {
+      giftView = ['menu', 'send', 'receive', 'created', 'received'].includes(button.dataset.view) ? button.dataset.view : 'menu';
+      if (giftView === 'receive') {
+        giftPreview = null;
+        giftLastReceived = null;
+      }
+      if (giftView === 'send') giftLastCreated = null;
+      render();
+      break;
+    }
+    case 'gift-create':
+      await createGiftFromDraft();
+      break;
+    case 'gift-inspect':
+      await inspectGiftInput();
+      break;
+    case 'gift-claim':
+      await claimGiftPreview();
+      break;
+    case 'gift-receive-reset':
+      giftPreview = null;
+      giftCodeInput = '';
+      render();
+      break;
+    case 'gift-copy-code':
+      await copyGiftCode(button.dataset.code || '');
+      break;
+    case 'gift-cancel':
+      screenData.giftCancelCode = button.dataset.code || '';
+      showModal({ title: 'プレゼントを取り消しますか？', body: '<p>まだ受け取られていない場合、プレゼントを在庫へ戻します。</p>', confirm: '取り消す', cancel: '戻る', danger: true, action: 'gift-cancel-confirm' });
+      break;
+    case 'gift-cancel-confirm': {
+      const code = screenData.giftCancelCode || '';
+      closeModal();
+      await cancelGift(code);
+      break;
+    }
     case 'copy-ai-game-data': await copyGameDataForAI(); break;
     case 'open-active-orders':
       itemUseFeedback = null;
@@ -12381,6 +13917,21 @@ root.addEventListener('change', (event) => {
     syncBirthdayDaySelect();
     return;
   }
+  if (target.matches('[data-gift-category]')) {
+    giftDraft.category = target.value;
+    giftDraft.itemKey = '';
+    giftDraft.quantity = 1;
+    playSfx('select', { gain: 0.72 });
+    render();
+    return;
+  }
+  if (target.matches('[data-gift-item]')) {
+    giftDraft.itemKey = target.value;
+    giftDraft.quantity = 1;
+    playSfx('select', { gain: 0.72 });
+    render();
+    return;
+  }
   if (target.matches('[data-phone-home-image-input]')) {
     preparePhoneHomeImage(target.files?.[0]);
     target.value = '';
@@ -12430,11 +13981,22 @@ root.addEventListener('keydown', (event) => {
   } else if (target?.matches?.('[data-player-name-input]')) {
     event.preventDefault();
     root.querySelector('[data-action="update-player-name"]')?.click();
+  } else if (target?.matches?.('[data-gift-code-input]')) {
+    event.preventDefault();
+    root.querySelector('[data-action="gift-inspect"]')?.click();
   }
 });
 
 root.addEventListener('input', (event) => {
   const target = event.target;
+  if (target.matches('[data-gift-quantity]')) {
+    giftDraft.quantity = target.value;
+    return;
+  }
+  if (target.matches('[data-gift-code-input]')) {
+    giftCodeInput = target.value.toUpperCase();
+    return;
+  }
   if (target.matches('[data-metal-trade-input]')) {
     const mode = target.dataset.mode;
     const id = target.dataset.id;
@@ -12696,12 +14258,34 @@ document.addEventListener('visibilitychange', () => {
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     return;
   }
-  resumeAudio();
+  if (screen === 'cinemaVisitEvent' && cinemaVisitEventState().stage === 'playing') suspendAudio();
+  else resumeAudio();
   if (currentUser && !needsEmailVerification(currentUser)) {
     heartbeat(currentUser.uid, sessionId);
     if (!heartbeatTimer) heartbeatTimer = setInterval(() => heartbeat(currentUser.uid, sessionId), 300000);
   }
 });
+
+
+root.addEventListener('ended', (event) => {
+  const video = event.target instanceof Element ? event.target.closest('video[data-cinema-event-video]') : null;
+  if (!video) return;
+  completeCinemaVisitEvent();
+}, true);
+
+root.addEventListener('playing', (event) => {
+  const video = event.target instanceof Element ? event.target.closest('video[data-cinema-event-video]') : null;
+  if (!video) return;
+  video.closest('.cinema-video-stage')?.classList.add('is-playing');
+  video.closest('.cinema-video-stage')?.classList.remove('needs-start', 'has-error');
+  suspendAudio();
+}, true);
+
+root.addEventListener('error', (event) => {
+  const video = event.target instanceof Element ? event.target.closest('video[data-cinema-event-video]') : null;
+  if (!video) return;
+  video.closest('.cinema-video-stage')?.classList.add('has-error', 'needs-start');
+}, true);
 
 morningBriefEl?.addEventListener('click', (event) => {
   const button = event.target.closest('[data-action="morning-main"]');
@@ -12716,7 +14300,7 @@ modalEl.addEventListener('click', async (event) => {
   const action = button.dataset.action;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice']);
+  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'winter-cold-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice', 'mystery-chinese-meal-event-next']);
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)

@@ -7,24 +7,24 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-07-28T10:18:04.608Z",
-  "updatedAt": "2026-07-28T10:19:00Z",
-  "marketDateJst": "2026-07-28",
-  "previousMarketDateJst": "2026-07-27",
+  "marketTimestamp": "2026-07-29T01:26:03.938Z",
+  "updatedAt": "2026-07-29T01:26:33Z",
+  "marketDateJst": "2026-07-29",
+  "previousMarketDateJst": "2026-07-28",
   "spotPerGram": {
+    "gold": 21143.1843,
+    "silver": 301.1739,
+    "platinum": 8419.8254
+  },
+  "previousSpotPerGram": {
     "gold": 21211.3956,
     "silver": 302.0315,
     "platinum": 8412.598
   },
-  "previousSpotPerGram": {
-    "gold": 21507.6005,
-    "silver": 310.9759,
-    "platinum": 8607.1005
-  },
   "changeFromPreviousDayPerGram": {
-    "gold": -296.2049,
-    "silver": -8.9444,
-    "platinum": -194.5025
+    "gold": -68.2113,
+    "silver": -0.8576,
+    "platinum": 7.2274
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -123,20 +123,28 @@
         "silver": 302.0315,
         "platinum": 8412.598
       }
+    },
+    {
+      "date": "2026-07-29",
+      "spotPerGram": {
+        "gold": 21143.1843,
+        "silver": 301.1739,
+        "platinum": 8419.8254
+      }
     }
   ],
   "gamePricesPerGram": {
-    "K18": 18290,
+    "K18": 18240,
     "Pt900": 8710,
-    "SV925": 363
+    "SV925": 362
   },
   "gamePurchasePricesPerGram": {
-    "K18": 18290,
+    "K18": 18240,
     "Pt900": 8710,
-    "SV925": 363
+    "SV925": 362
   },
   "gameSellPricesPerGram": {
-    "K18": 15590,
+    "K18": 15540,
     "Pt900": 7120,
     "SV925": 251
   },
@@ -144,7 +152,7 @@
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 18290
+      "price": 18240
     },
     "platinum": {
       "alloy": "Pt900",
@@ -154,14 +162,14 @@
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 363
+      "price": 362
     }
   },
   "gameSellPrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 15590
+      "price": 15540
     },
     "platinum": {
       "alloy": "Pt900",

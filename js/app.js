@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.458';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.462';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -202,6 +202,220 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
 ]);
 
+// v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
+// 保存途中・画像読込停止・イベント状態不整合のどれが起きても、セーブ削除なしで操作へ戻れるようにする。
+const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
+  winterColdEvent: { eventKey: 'winterColdEvent', fallback: 'main' },
+  birthdaySleepEvent: { eventKey: 'birthdaySleepEvent', fallback: 'main' },
+  westernUnionEvent: { eventKey: 'westernUnionEvent', fallback: 'main' },
+  mermaidEvent: { eventKey: 'mermaidEvent', fallback: 'main' },
+  tattooWomanAmberEvent: { eventKey: 'tattooWomanAmberEvent', fallback: 'okachimachi' },
+  clockTowerDonationEvent: { eventKey: 'clockTowerDonationEvent', fallback: 'okachimachi' },
+  cinemaVisitEvent: { eventKey: 'cinemaVisitEvent', fallback: 'okachimachi' },
+  mysteryChineseMealEvent: { eventKey: 'mysteryChineseMealEvent', fallback: 'main' },
+  kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
+  sushiChefEvent: { eventKey: 'sushiChefEvent', fallback: 'main' },
+  cyclopsEvent: { eventKey: 'cyclopsEvent', fallback: 'main' },
+  ganeshaTuskEvent: { eventKey: 'ganeshaTuskEvent', fallback: 'main' },
+  childhoodFriendEvent: { eventKey: 'childhoodFriendEvent', fallback: 'main' },
+  touristWoodSwordEvent: { eventKey: 'touristWoodSwordEvent', fallback: 'main' },
+  diamondPolishingLapEvent: { eventKey: 'diamondPolishingLapEvent', fallback: 'main' },
+  hauntingEvent: { eventKey: 'hauntingEvent', fallback: 'main' },
+  storeTheftEvent: { eventKey: 'storeTheftEvent', fallback: 'store' },
+  alienAbductionEvent: { eventKey: 'alienAbductionEvent', fallback: 'main' },
+  alienReturnEvent: { eventKey: 'alienAbductionEvent', fallback: 'main' },
+  miningPazupanEvent: { eventKey: 'miningPazupanEvent', fallback: 'mining' },
+  okachimachiQuiz: { eventKey: '', fallback: 'okachimachi' },
+  robberyReport: { eventKey: '', fallback: 'main' },
+  kaitenzushi: { eventKey: 'sushiChefEvent', fallback: 'main' },
+});
+const EVENT_RECOVERY_SCREENS = new Set(Object.keys(EVENT_SCREEN_RECOVERY_CONFIG));
+const TRANSIENT_EVENT_KEYS = Object.freeze(Object.keys(EVENT_ACTIVE_STAGE_MAP).filter((key) => key !== 'winterColdEvent'));
+const EVENT_PROGRESS_ACTIONS = new Set([
+  'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-choice', 'western-union-next',
+  'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
+  'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'cinema-video-finish',
+  'kappa-jade-event-next', 'kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
+  'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
+  'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover',
+  'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
+  'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
+  'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
+  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'kaitenzushi-finish',
+  'mystery-chinese-meal-event-next', 'event-emergency-recover',
+]);
+const HUNGER_ALLOWED_ACTIONS = new Set([
+  'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'hit-rock',
+  'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi',
+  ...EVENT_PROGRESS_ACTIONS,
+]);
+
+function eventRecord(key, targetState = state) {
+  if (!targetState) return null;
+  targetState.events = targetState.events && typeof targetState.events === 'object' && !Array.isArray(targetState.events) ? targetState.events : {};
+  const value = targetState.events[key];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) targetState.events[key] = {};
+  return targetState.events[key];
+}
+
+function recoverPaidChildhoodFriendMeal(eventState) {
+  if (!state || !eventState?.mealPaid || eventState.mealCompleted) return false;
+  state.wellbeing = state.wellbeing && typeof state.wellbeing === 'object' && !Array.isArray(state.wellbeing) ? state.wellbeing : {};
+  const maxHunger = Math.max(1, Math.floor(Number(state.wellbeing.maxHunger) || 7));
+  const current = Math.max(0, Math.min(maxHunger, Math.floor(Number(state.wellbeing.hunger) || 0)));
+  const recovery = Math.max(0, Math.floor(Number(MEALS.ramen?.recovery) || 3));
+  eventState.hungerBefore = Math.max(0, Math.min(maxHunger, Math.floor(Number(eventState.hungerBefore) || current)));
+  state.wellbeing.hunger = Math.min(maxHunger, current + recovery);
+  eventState.hungerAfter = state.wellbeing.hunger;
+  eventState.mealCompleted = true;
+  return true;
+}
+
+function completeTransientEventSafely(key, { preserveLongRunning = true, force = false } = {}) {
+  const eventState = eventRecord(key);
+  if (!eventState) return false;
+  const stage = String(eventState.stage || 'idle');
+  const wasInProgress = Boolean(eventState.active) || EVENT_ACTIVE_STAGE_MAP[key]?.has(stage);
+
+  if (!wasInProgress && !force) return false;
+  if (key === 'winterColdEvent') {
+    if (preserveLongRunning && stage === 'sick') {
+      eventState.active = true;
+      eventState.stage = 'sick';
+      return false;
+    }
+    eventState.active = false;
+    eventState.stage = 'completed';
+    return wasInProgress;
+  }
+  if (key === 'alienAbductionEvent' && preserveLongRunning && ['abducted', 'returnPending'].includes(stage)) {
+    eventState.active = true;
+    eventState.stage = stage;
+    return false;
+  }
+  if (key === 'childhoodFriendEvent') {
+    clearChildhoodFriendMealWatchdog();
+    recoverPaidChildhoodFriendMeal(eventState);
+    eventState.nextTriggerDay = Math.max(
+      Math.floor(Number(eventState.nextTriggerDay) || 0),
+      Math.floor(Number(state?.game?.day) || 1) + 30,
+    );
+  }
+  if (key === 'birthdaySleepEvent') {
+    const completionYear = Math.max(0, Math.floor(Number(eventState.eventYear) || gameDate().getFullYear()));
+    eventState.eventYear = completionYear;
+    eventState.lastCompletedYear = Math.max(Math.floor(Number(eventState.lastCompletedYear) || 0), completionYear);
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  return wasInProgress;
+}
+
+function clearTransientEventRuntime({ releaseDayLocks = false } = {}) {
+  clearChildhoodFriendMealWatchdog();
+  mealTransitioning = false;
+  storeTheftSequenceRunning = false;
+  kaitenzushiSession = null;
+  okachimachiQuizSession = null;
+  modalEl?.classList.add('hidden');
+  if (modalEl) modalEl.innerHTML = '';
+  sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
+  clearMorningBrief();
+  stopPoliceSiren();
+  if (releaseDayLocks) {
+    sleepTransitioning = false;
+    nextDayTransitionPromise = null;
+  }
+}
+
+function repairLegacyTransientEventDeadlocksV462({ save = false } = {}) {
+  if (!state) return false;
+  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+  if (!state.migrations.transientEventRecoveryV462Pending) return false;
+
+  let repaired = false;
+  for (const key of TRANSIENT_EVENT_KEYS) {
+    if (completeTransientEventSafely(key, { preserveLongRunning: true })) repaired = true;
+  }
+  const cold = eventRecord('winterColdEvent');
+  if (cold && cold.active && String(cold.stage || '') === 'intro') {
+    cold.active = false;
+    cold.stage = 'completed';
+    repaired = true;
+  }
+  const robbery = eventRecord('robbery');
+  if (robbery?.pendingReport) {
+    robbery.pendingReport = null;
+    repaired = true;
+  }
+  clearTransientEventRuntime({ releaseDayLocks: true });
+  screen = 'main';
+  screenData = {};
+  navigation = [];
+  state.game.screen = 'main';
+  state.migrations.transientEventRecoveryV462Pending = false;
+  state.migrations.transientEventRecoveryV462 = true;
+  if (save) void saveGame();
+  return repaired || true;
+}
+
+function suppressAllTransientEventsForIllness({ save = false } = {}) {
+  if (!state || !illnessEventSuppressionActive()) return 0;
+  let repaired = 0;
+  for (const key of TRANSIENT_EVENT_KEYS) {
+    // 体調不良と宇宙滞在が同時に残った不整合も、宇宙側を終了して地上の療養を優先する。
+    if (completeTransientEventSafely(key, { preserveLongRunning: false })) repaired += 1;
+  }
+  const robbery = eventRecord('robbery');
+  if (robbery?.pendingReport) {
+    robbery.pendingReport = null;
+    repaired += 1;
+  }
+  if (okachimachiQuizSession || kaitenzushiSession || ILLNESS_SUPPRESSED_EVENT_SCREENS.has(screen)) repaired += 1;
+  okachimachiQuizSession = null;
+  kaitenzushiSession = null;
+  mealTransitioning = false;
+  storeTheftSequenceRunning = false;
+  clearChildhoodFriendMealWatchdog();
+  if (ILLNESS_SUPPRESSED_EVENT_SCREENS.has(screen)) {
+    screen = 'main';
+    screenData = {};
+    navigation = [];
+    state.game.screen = 'main';
+  }
+  if (repaired > 0 && save) void saveGame();
+  return repaired;
+}
+
+function recoverCurrentEventDeadlock({ save = true, notify = true } = {}) {
+  if (!state) return false;
+  const stuckScreen = String(screen || state.game?.screen || 'unknown');
+  const config = EVENT_SCREEN_RECOVERY_CONFIG[screen] || EVENT_SCREEN_RECOVERY_CONFIG[state.game?.screen];
+  if (config?.eventKey) completeTransientEventSafely(config.eventKey, { preserveLongRunning: false, force: true });
+  if (screen === 'robberyReport') {
+    const robbery = eventRecord('robbery');
+    if (robbery) robbery.pendingReport = null;
+  }
+  if (screen === 'okachimachiQuiz') okachimachiQuizSession = null;
+  if (screen === 'kaitenzushi') kaitenzushiSession = null;
+  clearTransientEventRuntime({ releaseDayLocks: true });
+  const fallback = illnessEventSuppressionActive() ? 'main' : (config?.fallback || 'main');
+  screen = fallback;
+  screenData = fallback === 'store' ? { branchId: String(eventRecord('storeTheftEvent')?.branchId || '') } : {};
+  navigation = [];
+  state.game.screen = fallback;
+  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+  state.migrations.lastManualEventRecoveryV462 = { day: Math.max(1, Number(state.game.day) || 1), screen: stuckScreen };
+  if (save) void saveGame();
+  render();
+  if (notify) showToast('イベントを安全に終了し、操作できる画面へ戻りました。', 'warning');
+  return true;
+}
+
+function installEventRecoveryControl() {
+  if (!state || !EVENT_RECOVERY_SCREENS.has(screen) || root.querySelector('[data-action="event-emergency-recover"]')) return;
+  root.insertAdjacentHTML('beforeend', `<button type="button" class="event-safety-recovery" data-action="event-emergency-recover" data-illness-readable="true">進まない場合は復旧</button>`);
+}
 
 function repairEventProgressStates(targetState = state) {
   const events = targetState?.events;
@@ -209,12 +423,31 @@ function repairEventProgressStates(targetState = state) {
   let repaired = 0;
   Object.entries(EVENT_ACTIVE_STAGE_MAP).forEach(([key, activeStages]) => {
     const eventState = events[key];
-    if (!eventState || typeof eventState !== 'object' || Array.isArray(eventState) || !eventState.active) return;
-    if (activeStages.has(String(eventState.stage || ''))) return;
+    if (!eventState || typeof eventState !== 'object' || Array.isArray(eventState)) return;
+    const stage = String(eventState.stage || '');
+    const invalidActive = Boolean(eventState.active) && !activeStages.has(stage);
+    const orphanedStage = !eventState.active && activeStages.has(stage);
+    const missingCinemaVideo = key === 'cinemaVisitEvent' && eventState.active && ['invitation', 'playing'].includes(stage) && !normalizeCinemaEventVideoName(eventState.selectedVideo);
+    if (!invalidActive && !orphanedStage && !missingCinemaVideo) return;
     eventState.active = false;
     eventState.stage = 'completed';
     repaired += 1;
   });
+  const config = EVENT_SCREEN_RECOVERY_CONFIG[screen];
+  if (config?.eventKey) {
+    const eventState = events[config.eventKey];
+    const activeStages = EVENT_ACTIVE_STAGE_MAP[config.eventKey];
+    const inProgress = Boolean(eventState?.active) && activeStages?.has(String(eventState?.stage || ''));
+    const longRunningAlien = config.eventKey === 'alienAbductionEvent' && ['abducted', 'returnPending'].includes(String(eventState?.stage || ''));
+    const longRunningCold = config.eventKey === 'winterColdEvent' && String(eventState?.stage || '') === 'sick';
+    if (!inProgress && !longRunningAlien && !longRunningCold) {
+      screen = config.fallback || 'main';
+      screenData = {};
+      navigation = [];
+      targetState.game.screen = screen;
+      repaired += 1;
+    }
+  }
   return repaired;
 }
 
@@ -1306,16 +1539,28 @@ function mealBackgroundImage(mealId) {
   return versionedAsset(`./assets/images/${mealBackgroundAssetName(mealId)}.webp`);
 }
 
+const IMAGE_PRELOAD_TIMEOUT_MS = 3000;
 function preloadImage(src) {
   if (!src) return Promise.resolve(false);
   if (imagePreloadCache.has(src)) return imagePreloadCache.get(src);
   const promise = new Promise((resolve) => {
     const image = new Image();
-    image.onload = async () => {
-      try { await image.decode?.(); } catch (_) {}
-      resolve(true);
+    let settled = false;
+    const finish = (loaded) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      image.onload = null;
+      image.onerror = null;
+      if (!loaded) imagePreloadCache.delete(src);
+      resolve(Boolean(loaded));
     };
-    image.onerror = () => resolve(false);
+    const timeout = window.setTimeout(() => finish(false), IMAGE_PRELOAD_TIMEOUT_MS);
+    image.onload = () => {
+      finish(true);
+      try { image.decode?.().catch?.(() => {}); } catch (_) {}
+    };
+    image.onerror = () => finish(false);
     image.src = src;
   });
   imagePreloadCache.set(src, promise);
@@ -1323,10 +1568,11 @@ function preloadImage(src) {
 }
 
 async function preloadMealAssets(mealId) {
-  return Promise.all([
+  const assets = Promise.all([
     preloadImage(mealBackgroundImage(mealId)),
     preloadImage(mealFoodImage(mealId)),
   ]);
+  return Promise.race([assets, wait(IMAGE_PRELOAD_TIMEOUT_MS + 200)]);
 }
 
 function readImageFileAsDataUrl(file) {
@@ -3957,6 +4203,10 @@ function hungerLocked() {
   return Boolean(state && hungerLevel() <= 0);
 }
 
+function alienHungerEmergency() {
+  return Boolean(isAlienAbducted() && hungerLocked() && Number(state?.game?.minutes) < SLEEP_UNLOCK_MINUTES);
+}
+
 function hasSelectableRegularMeal() {
   if (!state) return false;
   return Object.values(MEALS).some((meal) => {
@@ -3968,11 +4218,10 @@ function hasSelectableRegularMeal() {
 function canSleepNow() {
   if (!state) return false;
   if (winterColdTextActive()) return true;
+  // 宇宙滞在中は食事へ移動できない。19時以降、または空腹度0なら必ず就寝できる。
+  // この判定を地球上の食事可否から完全に分離し、宇宙での進行不能を防ぐ。
+  if (isAlienAbducted()) return Number(state.game.minutes) >= SLEEP_UNLOCK_MINUTES || hungerLocked();
   if (Number(state.game.minutes) >= SLEEP_UNLOCK_MINUTES) return true;
-  // 宇宙滞在中は食事へ移動できないため、空腹度0なら時刻に関係なく就寝できる。
-  // 地球上の「所持金があり食事を選べる」という判定を宇宙へ持ち込むと、
-  // 採掘不可・就寝不可・時間経過不可の進行不能になる。
-  if (isAlienAbducted() && hungerLocked()) return true;
   return hungerLocked() && !hasSelectableRegularMeal();
 }
 
@@ -4258,14 +4507,17 @@ function winterColdEventState() {
     ? state.events.winterColdEvent
     : {};
   const validStages = new Set(['idle', 'intro', 'sick', 'completed']);
+  const normalizedDaysCompleted = Math.max(0, Math.min(WINTER_COLD_EVENT_DAYS, Math.floor(Number(saved.daysCompleted) || 0)));
+  // 旧保存で active=false / stage=sick が残っていても、療養日数が未完了なら体調不良を継続して復旧する。
+  const legacySickState = saved.stage === 'sick' && normalizedDaysCompleted < WINTER_COLD_EVENT_DAYS;
   state.events.winterColdEvent = {
-    active: Boolean(saved.active),
+    active: Boolean(saved.active) || legacySickState,
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     seasonKey: /^\d{4}-\d{4}$/.test(String(saved.seasonKey || '')) ? String(saved.seasonKey) : '',
     lastCompletedSeason: /^\d{4}-\d{4}$/.test(String(saved.lastCompletedSeason || '')) ? String(saved.lastCompletedSeason) : '',
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     startDay: Math.max(0, Math.floor(Number(saved.startDay) || 0)),
-    daysCompleted: Math.max(0, Math.min(WINTER_COLD_EVENT_DAYS, Math.floor(Number(saved.daysCompleted) || 0))),
+    daysCompleted: normalizedDaysCompleted,
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
     recoveryNoticePending: Boolean(saved.recoveryNoticePending),
   };
@@ -4283,6 +4535,112 @@ function winterColdTextActive() {
 
 function illnessEventSuppressionActive() {
   return winterColdTextActive();
+}
+
+function repairIllnessBirthdayDeadlock({ save = false } = {}) {
+  if (!state) return false;
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const rawCold = state.events.winterColdEvent && typeof state.events.winterColdEvent === 'object' && !Array.isArray(state.events.winterColdEvent)
+    ? state.events.winterColdEvent
+    : {};
+  const rawBirthday = state.events.birthdaySleepEvent && typeof state.events.birthdaySleepEvent === 'object' && !Array.isArray(state.events.birthdaySleepEvent)
+    ? state.events.birthdaySleepEvent
+    : {};
+  const coldDays = Math.max(0, Math.min(WINTER_COLD_EVENT_DAYS, Math.floor(Number(rawCold.daysCompleted) || 0)));
+  const illnessConflictState = rawCold.stage === 'sick';
+  const illnessStillActive = illnessConflictState && (rawCold.active !== false || coldDays < WINTER_COLD_EVENT_DAYS);
+  const birthdayInProgress = Boolean(rawBirthday.active)
+    || ['phone', 'greeting', 'congratulations', 'thanks'].includes(String(rawBirthday.stage || ''))
+    || screen === 'birthdaySleepEvent'
+    || state.game?.screen === 'birthdaySleepEvent';
+  if (!illnessConflictState || !birthdayInProgress) return false;
+
+  state.events.winterColdEvent = illnessStillActive
+    ? {
+      ...rawCold,
+      active: true,
+      stage: 'sick',
+      daysCompleted: coldDays,
+    }
+    : {
+      ...rawCold,
+      active: false,
+      stage: 'completed',
+      daysCompleted: coldDays,
+      lastCompletedSeason: String(rawCold.lastCompletedSeason || rawCold.seasonKey || ''),
+      recoveryNoticePending: true,
+    };
+  const completionYear = Math.max(
+    0,
+    Math.floor(Number(rawBirthday.eventYear) || gameDate().getFullYear()),
+  );
+  state.events.birthdaySleepEvent = {
+    active: false,
+    stage: 'completed',
+    eventYear: completionYear,
+    lastCompletedYear: Math.max(
+      Math.max(0, Math.floor(Number(rawBirthday.lastCompletedYear) || 0)),
+      completionYear,
+    ),
+  };
+  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+  state.migrations.illnessBirthdayDeadlockV460 = true;
+  screen = 'main';
+  screenData = {};
+  navigation = [];
+  state.game.screen = 'main';
+  sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
+  modalEl?.classList.add('hidden');
+  if (modalEl) modalEl.innerHTML = '';
+  clearMorningBrief();
+  if (save) void saveGame();
+  return true;
+}
+
+function repairChildhoodFriendEventDeadlock({ save = false, force = false } = {}) {
+  if (!state) return false;
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+  const raw = state.events.childhoodFriendEvent && typeof state.events.childhoodFriendEvent === 'object' && !Array.isArray(state.events.childhoodFriendEvent)
+    ? state.events.childhoodFriendEvent
+    : {};
+  const activeStages = new Set(['intro1', 'intro2', 'intro3', 'eating', 'postMeal']);
+  const stage = String(raw.stage || 'idle');
+  const savedOnEventScreen = screen === 'childhoodFriendEvent' || state.game?.screen === 'childhoodFriendEvent';
+  const eventInProgress = Boolean(raw.active) || activeStages.has(stage);
+  const invalidActiveState = Boolean(raw.active) && !activeStages.has(stage);
+  const orphanedScreen = savedOnEventScreen && !eventInProgress;
+  const illnessConflict = illnessEventSuppressionActive() && eventInProgress;
+  if (!force && !invalidActiveState && !orphanedScreen && !illnessConflict) return false;
+
+  clearChildhoodFriendMealWatchdog();
+  mealTransitioning = false;
+  const meal = MEALS.ramen;
+  const before = Math.max(0, Math.min(7, Math.floor(Number(raw.hungerBefore) || hungerLevel())));
+  if (raw.mealPaid && !raw.mealCompleted) {
+    state.wellbeing = state.wellbeing && typeof state.wellbeing === 'object' ? state.wellbeing : {};
+    const maxHunger = Math.max(1, Math.floor(Number(state.wellbeing.maxHunger) || 7));
+    state.wellbeing.hunger = Math.min(maxHunger, hungerLevel() + Number(meal?.recovery || 3));
+    raw.hungerBefore = before;
+    raw.hungerAfter = state.wellbeing.hunger;
+    raw.mealCompleted = true;
+  }
+  raw.active = false;
+  raw.stage = 'completed';
+  raw.nextTriggerDay = Math.max(
+    Math.floor(Number(raw.nextTriggerDay) || 0),
+    Math.floor(Number(state.game?.day) || 1) + randomEventDayOffset(CHILDHOOD_FRIEND_REPEAT_TRIGGER_MIN, CHILDHOOD_FRIEND_REPEAT_TRIGGER_MAX),
+  );
+  state.events.childhoodFriendEvent = raw;
+  state.migrations.childhoodFriendDeadlockV461 = true;
+  screen = 'main';
+  screenData = {};
+  navigation = [];
+  state.game.screen = 'main';
+  modalEl?.classList.add('hidden');
+  if (modalEl) modalEl.innerHTML = '';
+  if (save) void saveGame();
+  return true;
 }
 
 function suppressBirthdaySleepEventForIllness({ save = false } = {}) {
@@ -4361,6 +4719,7 @@ function advanceWinterColdEvent() {
   }
   eventState.stage = 'sick';
   suppressBirthdaySleepEventForIllness();
+  suppressAllTransientEventsForIllness();
   winterColdMorningBriefPending = false;
   clearMorningBrief();
   clearCustomerVisitsForIllness();
@@ -4611,8 +4970,13 @@ async function showMorningBrief() {
 
 async function beginNextDay() {
   // 日次結果画面で朝表示フラグが異常に残っていても、翌日へ進めるように復旧する。
+  repairIllnessBirthdayDeadlock();
+  repairLegacyTransientEventDeadlocksV462();
   if (morningBriefShowing) clearMorningBrief();
-  if (illnessEventSuppressionActive()) suppressBirthdaySleepEventForIllness();
+  if (illnessEventSuppressionActive()) {
+    suppressBirthdaySleepEventForIllness();
+    suppressAllTransientEventsForIllness();
+  }
   if (nextDayTransitionPromise) return nextDayTransitionPromise;
 
   nextDayTransitionPromise = (async () => {
@@ -5644,18 +6008,25 @@ function waitForNextPaintWithTimeout(timeout = 320) {
   ]);
 }
 
+async function preloadChildhoodFriendMealAssets() {
+  const assets = Promise.all([
+    preloadImage(childhoodFriendBackgroundImage(false)),
+    preloadImage(childhoodFriendBackgroundImage(true)),
+    preloadImage(mealFoodImage('ramen')),
+  ]);
+  // Service Worker更新直後などに画像取得が応答しなくても、イベント操作を止めない。
+  await Promise.race([assets, wait(2200)]);
+}
+
 async function startChildhoodFriendMeal() {
   const eventState = childhoodFriendEventState();
   if (!eventState.active || !['intro3', 'eating'].includes(eventState.stage) || mealTransitioning) return;
   const meal = MEALS.ramen;
   mealTransitioning = true;
-  const stateBeforeMeal = structuredClone(state);
+  let stateBeforeMeal = null;
   try {
-    await Promise.all([
-      preloadImage(childhoodFriendBackgroundImage(false)),
-      preloadImage(childhoodFriendBackgroundImage(true)),
-      preloadImage(mealFoodImage('ramen')),
-    ]);
+    stateBeforeMeal = structuredClone(state);
+    await preloadChildhoodFriendMealAssets();
     if (!eventState.mealPaid) {
       const before = hungerLevel();
       if (before >= 7) throw new Error('空腹度は満タンです。');
@@ -5681,21 +6052,21 @@ async function startChildhoodFriendMeal() {
   } catch (error) {
     console.error('幼なじみとの再会イベント食事処理エラー', error);
     clearChildhoodFriendMealWatchdog();
-    state = stateBeforeMeal;
-    const restored = childhoodFriendEventState();
-    restored.active = false;
-    restored.stage = 'idle';
-    restored.nextTriggerDay = Math.max(state.game.day + 1, Number(restored.nextTriggerDay) || state.game.day + 1);
-    state.game.screen = 'main';
-    saveGame();
-    goMain();
-    showToast(error?.message || '食事処理を中断しました。', 'error');
+    if (stateBeforeMeal) state = stateBeforeMeal;
+    repairChildhoodFriendEventDeadlock({ save: true, force: true });
+    render();
+    showToast('ラーメン屋イベントを安全に終了し、メイン画面へ戻りました。', 'warning');
   } finally {
     mealTransitioning = false;
   }
 }
 
 async function advanceChildhoodFriendEvent() {
+  if (illnessEventSuppressionActive()) {
+    repairChildhoodFriendEventDeadlock({ save: true, force: true });
+    render();
+    return;
+  }
   const eventState = childhoodFriendEventState();
   if (!eventState.active) return goMain();
   if (eventState.stage === 'intro1') eventState.stage = 'intro2';
@@ -5721,6 +6092,10 @@ async function advanceChildhoodFriendEvent() {
     return;
   } else if (eventState.stage === 'eating') {
     await startChildhoodFriendMeal();
+    return;
+  } else {
+    repairChildhoodFriendEventDeadlock({ save: true, force: true });
+    render();
     return;
   }
   saveGame();
@@ -6055,20 +6430,23 @@ function validOkachimachiQuizQuestion(row) {
 
 async function loadOkachimachiQuizQuestions() {
   if (!okachimachiQuizQuestionsPromise) {
-    okachimachiQuizQuestionsPromise = fetch(OKACHIMACHI_QUIZ_DATA_URL, { cache: 'no-store' })
-      .then((response) => {
+    okachimachiQuizQuestionsPromise = (async () => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 5000);
+      try {
+        const response = await fetch(OKACHIMACHI_QUIZ_DATA_URL, { cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(`クイズデータを読み込めませんでした（${response.status}）`);
-        return response.json();
-      })
-      .then((rows) => {
+        const rows = await response.json();
         const questions = Array.isArray(rows) ? rows.filter(validOkachimachiQuizQuestion) : [];
         if (!questions.length) throw new Error('使用できるクイズ問題がありません。');
         return questions;
-      })
-      .catch((error) => {
+      } catch (error) {
         okachimachiQuizQuestionsPromise = null;
         throw error;
-      });
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    })();
   }
   return okachimachiQuizQuestionsPromise;
 }
@@ -6558,9 +6936,16 @@ function restoreGiftSendScrollState(snapshot) {
 }
 
 function render() {
+  if (state) {
+    const legacyDeadlockRepaired = repairLegacyTransientEventDeadlocksV462();
+    const deadlockRepaired = repairIllnessBirthdayDeadlock();
+    const ramenDeadlockRepaired = repairChildhoodFriendEventDeadlock();
+    if (legacyDeadlockRepaired || deadlockRepaired || ramenDeadlockRepaired) queueMicrotask(() => saveGame());
+  }
   if (state && illnessEventSuppressionActive()) {
     const birthdaySuppressed = suppressBirthdaySleepEventForIllness();
-    if (birthdaySuppressed) queueMicrotask(() => saveGame());
+    const otherEventsSuppressed = suppressAllTransientEventsForIllness();
+    if (birthdaySuppressed || otherEventsSuppressed > 0) queueMicrotask(() => saveGame());
   }
   if (state && illnessEventSuppressionActive() && ILLNESS_SUPPRESSED_EVENT_SCREENS.has(screen)) {
     screen = 'main';
@@ -6681,6 +7066,7 @@ function render() {
     root.innerHTML = currentFacilityAvailability && !currentFacilityAvailability.open
       ? renderClosedOkachimachiFacility(currentFacilityId, currentFacilityAvailability)
       : (renderers[screen] || renderMain)();
+    installEventRecoveryControl();
     scheduleScreenContentTopOffsetSync();
     if (screen === 'phone' && state?.settings?.phoneHomeImage) {
       root.querySelector('.phone-ui.custom-home-background')?.style.setProperty('--phone-home-image', `url("${state.settings.phoneHomeImage}")`);
@@ -6711,7 +7097,7 @@ function render() {
     console.error('画面描画エラー', error);
     sleepCurtainEl?.classList.remove('active');
     clearMorningBrief();
-    root.innerHTML = `<main class="title-screen"><section class="title-actions glass-panel login-panel"><strong>画面を安全に復帰しました</strong><p class="small-note">表示処理中に問題が発生したため、暗転したままにならないよう停止しました。</p><button class="primary-button full-button" data-action="reload-page">再読み込みする</button></section></main>`;
+    root.innerHTML = `<main class="title-screen"><section class="title-actions glass-panel login-panel"><strong>画面を安全に復帰しました</strong><p class="small-note">表示処理中に問題が発生したため、暗転したままにならないよう停止しました。</p>${state ? '<button class="primary-button full-button" data-action="event-emergency-recover" data-illness-readable="true">イベントを終了してメインへ戻る</button>' : ''}<button class="secondary-button full-button" data-action="reload-page">再読み込みする</button></section></main>`;
   }
 }
 
@@ -7442,20 +7828,23 @@ function normalizeCinemaEventVideoName(value) {
 
 async function loadCinemaEventVideos() {
   if (!cinemaEventVideosPromise) {
-    cinemaEventVideosPromise = fetch(CINEMA_EVENT_VIDEO_MANIFEST_URL, { cache: 'no-store' })
-      .then((response) => {
+    cinemaEventVideosPromise = (async () => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 5000);
+      try {
+        const response = await fetch(CINEMA_EVENT_VIDEO_MANIFEST_URL, { cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(`cinema video manifest ${response.status}`);
-        return response.json();
-      })
-      .then((data) => {
+        const data = await response.json();
         const raw = Array.isArray(data) ? data : Array.isArray(data?.videos) ? data.videos : [];
         return [...new Set(raw.map(normalizeCinemaEventVideoName).filter(Boolean))];
-      })
-      .catch((error) => {
+      } catch (error) {
         console.warn('映画館イベントの動画一覧を読み込めませんでした。', error);
         cinemaEventVideosPromise = null;
         return [];
-      });
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    })();
   }
   return cinemaEventVideosPromise;
 }
@@ -8021,6 +8410,7 @@ function renderChildhoodFriendEvent() {
             <strong>もぐもぐもぐ...</strong>
             <small>自動で進まない場合はタップ</small>
           </button>
+          <button type="button" class="childhood-friend-recovery-button" data-action="childhood-friend-event-recover">進まない場合はメインへ戻る</button>
         </section>
       </main>`;
   }
@@ -8039,6 +8429,7 @@ function renderChildhoodFriendEvent() {
           <strong>${dialogue}</strong>
           <span>タップして進む</span>
         </button>
+        <button type="button" class="childhood-friend-recovery-button" data-action="childhood-friend-event-recover">進まない場合はメインへ戻る</button>
       </section>
     </main>`;
 }
@@ -8138,6 +8529,7 @@ function renderAlienSpaceMain() {
     return `${mainStatusHeader()}<main class="main-screen alien-space-main-screen"><div class="alien-space-status glass-panel" role="status"><strong>地球へ帰還しています</strong><span>帰還画面へ移動します</span></div></main>`;
   }
   const locked = hungerLocked();
+  const emergency = alienHungerEmergency();
   const remaining = Math.max(0, ALIEN_ABDUCTION_DAYS - eventState.daysSlept);
   return `${mainStatusHeader()}
     <main class="main-screen alien-space-main-screen">
@@ -8145,11 +8537,11 @@ function renderAlienSpaceMain() {
         <strong>誘拐されました</strong>
         <span>地球帰還まで あと${remaining}回寝る</span>
       </div>
-      ${locked ? '<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>採掘はできません。今日は休んでください。</span></div>' : ''}
+      ${locked ? '<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>宇宙では食事ができないため、19時前でもすぐに休めます。</span></div>' : ''}
       <nav class="main-menu alien-space-menu" aria-label="宇宙での行動">
         <button data-action="nav" data-screen="mining" ${locked ? 'disabled aria-disabled="true"' : ''}>${mainMenuIcon('mining')}<strong>採掘</strong></button>
         <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
-        <button data-action="sleep" data-illness-readable="true" ${canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'}>${mainMenuIcon('sleep')}<strong>寝る</strong></button>
+        <button data-action="${emergency ? 'alien-emergency-sleep' : 'sleep'}" data-illness-readable="true" ${canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'}>${mainMenuIcon('sleep')}<strong>${emergency ? '空腹のため休む' : '寝る'}</strong></button>
       </nav>
     </main>`;
 }
@@ -8289,19 +8681,23 @@ function renderMining() {
   if (selectedMining && !locations.some((place) => place.id === selectedMining)) selectedMining = null;
   const location = selectedMining ? miningLocationById(selectedMining) : null;
   const hasSelection = Boolean(location);
-  const hasTime = hasSelection && canSpendHours(location.hours);
+  const hungerBlocked = hungerLocked();
+  const hasTime = hasSelection && !hungerBlocked && canSpendHours(location.hours);
+  const spaceEmergency = alienHungerEmergency();
   return shell('採掘', `
     <div class="split-layout">
       <section class="scene-space"></section>
       <section class="action-panel glass-panel">
         <div class="choice-grid three">
           ${locations.map((place) => `
-            <button class="choice-card ${place.id === selectedMining ? 'selected' : ''}" data-action="select-mining" data-id="${place.id}">
+            <button class="choice-card ${place.id === selectedMining ? 'selected' : ''}" data-action="select-mining" data-id="${place.id}" ${hungerBlocked ? 'disabled aria-disabled="true"' : ''}>
               <strong>${esc(place.name)}</strong><small>${place.hours}時間</small>
             </button>`).join('')}
         </div>
         <button class="primary-button full-button" data-action="mine" ${hasTime ? '' : 'disabled'}>採掘を始める</button>
-        ${hasSelection && !hasTime ? '<p class="error-text">今日は採掘する時間がありません。</p>' : ''}
+        ${spaceEmergency ? '<p class="error-text">空腹度が0になりました。宇宙では食事ができないため、すぐに休んで翌日へ進めます。</p><button class="primary-button full-button" data-action="alien-emergency-sleep">空腹のため休む</button>' : ''}
+        ${!spaceEmergency && hungerBlocked ? '<p class="error-text">空腹で採掘できません。</p>' : ''}
+        ${!hungerBlocked && hasSelection && !hasTime ? '<p class="error-text">今日は採掘する時間がありません。</p>' : ''}
       </section>
     </div>`);
 }
@@ -8330,6 +8726,7 @@ function renderMiningResult() {
   const result = screenData.result || { missRockImage: pickRandomMiningBrokenRockImage() };
   const success = Boolean(result?.gem);
   const missRockImage = result?.missRockImage || pickRandomMiningBrokenRockImage();
+  const spaceEmergency = alienHungerEmergency();
   return shell('採掘結果', `
     <section class="center-card glass-panel result-card">
       <div class="gem-symbol">${success ? roughVisual(result.gem, 'gem-result-image') : `<img class="mining-broken-rock-image" src="${esc(missRockImage)}" alt="砕けた岩" draggable="false">`}</div>
@@ -8340,7 +8737,9 @@ function renderMiningResult() {
         <h1>何も出てこなかった。</h1>
         <p>今回はハズレです。</p>`}
       <div class="button-stack">
-        <button class="primary-button" data-action="mine-again">もう一度採掘する</button>
+        ${spaceEmergency
+          ? '<button class="primary-button" data-action="alien-emergency-sleep">空腹のため休む</button>'
+          : '<button class="primary-button" data-action="mine-again">もう一度採掘する</button>'}
         <button class="secondary-button" data-action="main">メイン画面へ戻る</button>
       </div>
     </section>`, { main: false });
@@ -14270,7 +14669,23 @@ function showNormalSleepConfirmation() {
   showModal({ title: '今日はもう休みますか？', body, confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
 }
 
+function showAlienHungerSleepConfirmation() {
+  showModal({
+    title: '空腹のため休みますか？',
+    body: '<p>宇宙では食事ができません。19時前でも休んで翌日へ進めます。</p>',
+    confirm: '休んで翌日へ',
+    cancel: '戻る',
+    action: 'do-sleep',
+    className: 'sleep-confirm-modal alien-hunger-sleep-modal',
+  });
+}
+
 function advanceBirthdaySleepEvent() {
+  if (repairIllnessBirthdayDeadlock({ save: true })) {
+    setScreen('main', {}, false);
+    queueMicrotask(showNormalSleepConfirmation);
+    return;
+  }
   if (illnessEventSuppressionActive()) {
     suppressBirthdaySleepEventForIllness({ save: true });
     setScreen('main', {}, false);
@@ -14302,6 +14717,13 @@ function advanceBirthdaySleepEvent() {
 function confirmSleep() {
   if (!canSleepNow()) {
     showToast(sleepRestrictionMessage(), 'error');
+    return;
+  }
+  // 宇宙滞在中は既に宇宙人イベントが進行中のため、誕生日・怪異など別の就寝イベントを重ねない。
+  // 空腹度0で19時前の場合は専用確認から必ず翌日処理へ進める。
+  if (isAlienAbducted()) {
+    if (alienHungerEmergency()) showAlienHungerSleepConfirmation();
+    else showNormalSleepConfirmation();
     return;
   }
   if (illnessEventSuppressionActive()) {
@@ -14549,15 +14971,20 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   const action = button.dataset.action;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'childhood-friend-meal-finish', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'winter-cold-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover', 'cinema-video-finish', 'kaitenzushi-finish', 'mystery-chinese-meal-event-next']);
+  const hungerAllowed = HUNGER_ALLOWED_ACTIONS;
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
     && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
   if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !informationalNavigation && !autopilotPhoneAccess) {
-    showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
-    goMain();
+    if (alienHungerEmergency()) {
+      goMain();
+      queueMicrotask(showAlienHungerSleepConfirmation);
+    } else {
+      showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
+      goMain();
+    }
     return;
   }
   if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start'].includes(action)) playSfx('select');
@@ -14696,6 +15123,8 @@ root.addEventListener('click', async (event) => {
         if (!state) return showToast('セーブデータを読み込めませんでした。', 'error');
         navigation = [];
         phoneTab = validPhoneTab(state.game?.phoneTab);
+        repairIllnessBirthdayDeadlock();
+        repairChildhoodFriendEventDeadlock();
         const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
         setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
         if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
@@ -14787,6 +15216,9 @@ root.addEventListener('click', async (event) => {
     case 'glab-sns-link':
       openGlabSns(button.dataset.platform || '');
       break;
+    case 'event-emergency-recover':
+      recoverCurrentEventDeadlock({ save: true, notify: true });
+      break;
     case 'winter-cold-event-next':
       advanceWinterColdEvent();
       break;
@@ -14870,6 +15302,11 @@ root.addEventListener('click', async (event) => {
       break;
     case 'childhood-friend-meal-finish':
       finishChildhoodFriendMeal({ manual: true });
+      break;
+    case 'childhood-friend-event-recover':
+      repairChildhoodFriendEventDeadlock({ save: true, force: true });
+      render();
+      showToast('ラーメン屋イベントを終了し、メイン画面へ戻りました。', 'info');
       break;
     case 'haunting-event-next':
       await advanceHauntingEvent();
@@ -15363,6 +15800,7 @@ root.addEventListener('click', async (event) => {
     case 'play-kaitenzushi': startKaitenzushi(); break;
     case 'kaitenzushi-finish': finishKaitenzushiFromParent(); break;
     case 'sleep': confirmSleep(); break;
+    case 'alien-emergency-sleep': showAlienHungerSleepConfirmation(); break;
     case 'do-sleep': await beginSleepTransition(); break;
     case 'next-day': await beginNextDay(); break;
     case 'choose-phone-home-image': root.querySelector('[data-phone-home-image-input]')?.click(); break;
@@ -15536,6 +15974,9 @@ async function enterGameAfterLogin() {
   }
   navigation = [];
   phoneTab = validPhoneTab(state.game?.phoneTab);
+  repairLegacyTransientEventDeadlocksV462();
+  repairIllnessBirthdayDeadlock();
+  repairChildhoodFriendEventDeadlock();
   const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
   if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
@@ -15793,15 +16234,20 @@ modalEl.addEventListener('click', async (event) => {
   const action = button.dataset.action;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
-  const hungerAllowed = new Set(['sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'western-union-choice', 'western-union-next', 'pazupan-event-next', 'mermaid-event-next', 'sushi-chef-event-next', 'cyclops-event-next', 'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive', 'childhood-friend-event-next', 'childhood-friend-meal-finish', 'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next', 'alien-return-next', 'diamond-polishing-lap-event-next', 'winter-cold-event-next', 'haunting-event-next', 'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover', 'cinema-video-finish', 'kaitenzushi-finish', 'mystery-chinese-meal-event-next']);
+  const hungerAllowed = HUNGER_ALLOWED_ACTIONS;
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
   const informationalNavigation = action === 'nav' && button.dataset.screen === 'todayGem';
   const autopilotPhoneAccess = Boolean(state?.settings?.autopilotEnabled)
     && ((action === 'nav' && button.dataset.screen === 'phone') || action === 'open-finance');
   const guardScreen = !['loading', 'login', 'emailVerification', 'title', 'nameSetup', 'dayResult'].includes(screen);
   if (state && guardScreen && hungerLocked() && !hungerAllowed.has(action) && !mealNavigation && !informationalNavigation && !autopilotPhoneAccess) {
-    showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
-    goMain();
+    if (alienHungerEmergency()) {
+      goMain();
+      queueMicrotask(showAlienHungerSleepConfirmation);
+    } else {
+      showToast('空腹で動けません。食事をするか、今日は休んでください。', 'error');
+      goMain();
+    }
     return;
   }
   playSfx('select');

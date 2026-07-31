@@ -12343,3 +12343,60 @@ body[data-screen="jewelryShop"] .jewelry-shop-layout-with-hero>.jewelry-shop-her
     margin-top: 0 !important;
   }
 }
+
+
+/* v0.10.461 ラーメン屋イベント停止時の手動復旧 */
+body[data-screen="childhoodFriendEvent"] .childhood-friend-recovery-button{
+  position:absolute;
+  z-index:6;
+  top:calc(max(10px,var(--safe-top)) + 4px);
+  right:calc(max(10px,var(--safe-right)) + 4px);
+  appearance:none;
+  -webkit-appearance:none;
+  border:1px solid rgba(255,255,255,.36);
+  border-radius:999px;
+  background:rgba(12,10,8,.68);
+  color:rgba(255,255,255,.9);
+  padding:8px 12px;
+  font:inherit;
+  font-size:clamp(.68rem,2.2vw,.82rem);
+  line-height:1.2;
+  cursor:pointer;
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+}
+body[data-screen="childhoodFriendEvent"] .childhood-friend-recovery-button:active{
+  transform:scale(.98);
+}
+
+/* v0.10.462 全イベント共通の緊急復旧導線 */
+.event-safety-recovery{
+  position:fixed;
+  z-index:12050;
+  right:calc(max(10px,env(safe-area-inset-right)) + 4px);
+  bottom:calc(max(12px,env(safe-area-inset-bottom)) + 4px);
+  appearance:none;
+  -webkit-appearance:none;
+  border:1px solid rgba(255,255,255,.44);
+  border-radius:999px;
+  background:rgba(15,13,18,.78);
+  color:#fff;
+  padding:10px 14px;
+  min-height:42px;
+  font:inherit;
+  font-size:clamp(.72rem,2.2vw,.88rem);
+  font-weight:700;
+  line-height:1.2;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.34);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+}
+.event-safety-recovery:active{transform:scale(.98)}
+@media (max-width:520px){
+  .event-safety-recovery{
+    right:calc(max(8px,env(safe-area-inset-right)) + 2px);
+    bottom:calc(max(8px,env(safe-area-inset-bottom)) + 2px);
+    padding:9px 12px;
+  }
+}

@@ -1,4 +1,4 @@
-export const VERSION = '0.10.458';
+export const VERSION = '0.10.462';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -2227,7 +2227,7 @@ export function initialState() {
     version: VERSION,
     saveRevision: 0,
     started: true,
-    migrations: { looseInventoryCanonicalV231: true },
+    migrations: { looseInventoryCanonicalV231: true, childhoodFriendDeadlockV461: true, transientEventRecoveryV462: true, transientEventRecoveryV462Pending: false },
     playerName: '',
     game: {
       day: 1,
@@ -2642,6 +2642,107 @@ export function migrateState(saved) {
   state.game.calendarEvents = Object.fromEntries(Object.entries(rawCalendarEvents)
     .filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && String(value || '').trim())
     .map(([key, value]) => [key, String(value).trim().slice(0, 120)]));
+
+  // v0.10.460: 体調不良中に誕生日イベントが保存された旧データを、読み込み時点で復旧する。
+  // 旧版では体調不良の進行状態と誕生日画面が同時に残り、操作不能になる場合があった。
+  state.events = isRecord(state.events) ? state.events : {};
+  {
+    const savedCold = isRecord(state.events.winterColdEvent) ? state.events.winterColdEvent : {};
+    const savedBirthday = isRecord(state.events.birthdaySleepEvent) ? state.events.birthdaySleepEvent : {};
+    const coldDays = Math.max(0, Math.min(3, Math.floor(Number(savedCold.daysCompleted) || 0)));
+    const coldStage = String(savedCold.stage || '');
+    const illnessConflictState = coldStage === 'sick';
+    const illnessStillActive = illnessConflictState && (savedCold.active !== false || coldDays < 3);
+    const birthdayStage = String(savedBirthday.stage || '');
+    const birthdayInProgress = Boolean(savedBirthday.active)
+      || ['phone', 'greeting', 'congratulations', 'thanks'].includes(birthdayStage)
+      || String(legacy.game?.screen || '') === 'birthdaySleepEvent';
+
+    if (illnessConflictState && birthdayInProgress) {
+      // active=false / stage=sick という不整合保存も、残り日数に応じて療養継続または回復へ正規化する。
+      state.events.winterColdEvent = illnessStillActive
+        ? {
+          ...savedCold,
+          active: true,
+          stage: 'sick',
+          daysCompleted: coldDays,
+        }
+        : {
+          ...savedCold,
+          active: false,
+          stage: 'completed',
+          daysCompleted: coldDays,
+          lastCompletedSeason: String(savedCold.lastCompletedSeason || savedCold.seasonKey || ''),
+          recoveryNoticePending: true,
+        };
+
+      const start = new Date(`${state.game.startDate}T12:00:00`);
+      if (!Number.isNaN(start.getTime())) start.setDate(start.getDate() + Math.max(0, state.game.day - 1));
+      const gameYear = Number.isNaN(start.getTime()) ? new Date().getFullYear() : start.getFullYear();
+      const completionYear = Math.max(0, Math.floor(Number(savedBirthday.eventYear) || gameYear));
+      state.events.birthdaySleepEvent = {
+        active: false,
+        stage: 'completed',
+        eventYear: completionYear,
+        lastCompletedYear: Math.max(
+          Math.max(0, Math.floor(Number(savedBirthday.lastCompletedYear) || 0)),
+          completionYear,
+        ),
+      };
+      state.game.screen = 'main';
+      state.migrations.illnessBirthdayDeadlockV460 = true;
+    } else {
+      state.migrations.illnessBirthdayDeadlockV460 = Boolean(state.migrations.illnessBirthdayDeadlockV460);
+    }
+  }
+
+  // v0.10.462: 旧版でイベント途中のまま保存されたデータを一度だけ安全に復旧する。
+  // 画面に留まり続ける可能性がある短期イベントだけを対象にし、通常の宇宙滞在と療養中の進行は維持する。
+  {
+    const legacyScreen = String(legacy.game?.screen || '');
+    const recoveryScreens = new Set([
+      'winterColdEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent',
+      'clockTowerDonationEvent', 'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent',
+      'cyclopsEvent', 'ganeshaTuskEvent', 'childhoodFriendEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
+      'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
+      'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
+    ]);
+    const activeStages = {
+      birthdaySleepEvent: ['phone', 'greeting', 'congratulations', 'thanks'],
+      westernUnionEvent: ['choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3'],
+      miningPazupanEvent: ['intro', 'reward'],
+      kappaJadeEvent: ['intro1', 'intro2', 'reward', 'farewell'],
+      tattooWomanAmberEvent: ['intro1', 'intro2', 'intro3', 'reward', 'farewell'],
+      mermaidEvent: ['intro', 'reward'],
+      sushiChefEvent: ['intro1', 'intro2', 'playing', 'farewell'],
+      cyclopsEvent: ['intro1', 'intro2', 'reward'],
+      ganeshaTuskEvent: ['intro1', 'intro2', 'intro3', 'reward', 'farewell'],
+      hauntingEvent: ['intro1', 'intro2', 'processing'],
+      childhoodFriendEvent: ['intro1', 'intro2', 'intro3', 'eating', 'postMeal'],
+      touristWoodSwordEvent: ['intro1', 'route', 'reward', 'farewell'],
+      diamondPolishingLapEvent: ['intro1', 'intro2', 'reward', 'outro'],
+      cinemaVisitEvent: ['invitation', 'playing'],
+      clockTowerDonationEvent: ['intro1', 'intro2', 'intro3'],
+      mysteryChineseMealEvent: ['intro1', 'intro2', 'intro3', 'reward'],
+      storeTheftEvent: ['intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice'],
+    };
+    const hasTransientEvent = Object.entries(activeStages).some(([key, stages]) => {
+      const eventState = isRecord(state.events[key]) ? state.events[key] : {};
+      return Boolean(eventState.active) || stages.includes(String(eventState.stage || ''));
+    });
+    const cold = isRecord(state.events.winterColdEvent) ? state.events.winterColdEvent : {};
+    const alien = isRecord(state.events.alienAbductionEvent) ? state.events.alienAbductionEvent : {};
+    const hasInterruptibleLongEvent = (Boolean(cold.active) && String(cold.stage || '') === 'intro')
+      || (Boolean(alien.active) && ['intro1', 'intro2'].includes(String(alien.stage || '')));
+    const needsRecovery = versionBefore(legacy.version, '0.10.462')
+      && (recoveryScreens.has(legacyScreen) || hasTransientEvent || hasInterruptibleLongEvent);
+    state.migrations.transientEventRecoveryV462Pending = needsRecovery
+      || Boolean(state.migrations.transientEventRecoveryV462Pending);
+    state.migrations.transientEventRecoveryV462 = !state.migrations.transientEventRecoveryV462Pending
+      && Boolean(state.migrations.transientEventRecoveryV462);
+    if (needsRecovery) state.game.screen = 'main';
+  }
+
   state.progressFlags = state.progressFlags && typeof state.progressFlags === 'object' && !Array.isArray(state.progressFlags)
     ? state.progressFlags
     : {};
@@ -3295,6 +3396,35 @@ export function migrateState(saved) {
       state.events.childhoodFriendEvent.stage = 'completed';
     }
   }
+  // v0.10.461: ラーメン屋の幼なじみイベントで停止している旧保存を一度だけ安全に復旧する。
+  {
+    const eventState = state.events.childhoodFriendEvent;
+    const activeStages = ['intro1', 'intro2', 'intro3', 'eating', 'postMeal'];
+    const legacyEventInProgress = versionBefore(legacy.version, '0.10.461') && (
+      Boolean(eventState.active)
+      || activeStages.includes(String(eventState.stage || ''))
+      || String(legacy.game?.screen || '') === 'childhoodFriendEvent'
+    );
+    if (legacyEventInProgress) {
+      if (eventState.mealPaid && !eventState.mealCompleted) {
+        const maxHunger = Math.max(1, Math.floor(Number(state.wellbeing?.maxHunger) || 7));
+        const before = Math.max(0, Math.min(maxHunger, Math.floor(Number(state.wellbeing?.hunger) || 0)));
+        state.wellbeing.hunger = Math.min(maxHunger, before + 3);
+        eventState.hungerBefore = Math.max(0, Math.min(7, Math.floor(Number(eventState.hungerBefore) || before)));
+        eventState.hungerAfter = state.wellbeing.hunger;
+        eventState.mealCompleted = true;
+      }
+      eventState.active = false;
+      eventState.stage = 'completed';
+      eventState.nextTriggerDay = Math.max(
+        Math.floor(Number(eventState.nextTriggerDay) || 0),
+        Math.floor(Number(state.game.day) || 1) + 30,
+      );
+      state.game.screen = 'main';
+    }
+    state.migrations.childhoodFriendDeadlockV461 = true;
+  }
+
   {
     const saved = isRecord(state.events.hauntingEvent) ? state.events.hauntingEvent : {};
     state.events.hauntingEvent = {

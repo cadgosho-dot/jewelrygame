@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.463';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.464';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -3765,7 +3765,7 @@ function looseVisual(id, className = 'loose-inline', alt = '', shapeId = 'defaul
   if (!gem) return '';
   const resolvedShape = shapeId === 'default' ? defaultLooseShapeForGem(id) : normalizeLooseShape(id, shapeId);
   const imagePath = looseImagePath(id, resolvedShape);
-  const label = alt || looseDisplayLabel(gemId, resolvedShape, { suffix: true });
+  const label = alt || looseDisplayLabel(id, resolvedShape, { suffix: true });
   if (imagePath) return `<img class="${className} loose-image" src="${imagePath}" alt="${esc(label)}">`;
   return `<span class="${className}" style="--gem:${gem.hue}" role="img" aria-label="${esc(label)}">◆</span>`;
 }

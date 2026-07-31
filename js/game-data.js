@@ -1,4 +1,4 @@
-export const VERSION = '0.10.462';
+export const VERSION = '0.10.463';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -2696,7 +2696,7 @@ export function migrateState(saved) {
     }
   }
 
-  // v0.10.462: 旧版でイベント途中のまま保存されたデータを一度だけ安全に復旧する。
+  // v0.10.463: 旧版でイベント途中のまま保存されたデータを一度だけ安全に復旧する。
   // 画面に留まり続ける可能性がある短期イベントだけを対象にし、通常の宇宙滞在と療養中の進行は維持する。
   {
     const legacyScreen = String(legacy.game?.screen || '');
@@ -2734,7 +2734,7 @@ export function migrateState(saved) {
     const alien = isRecord(state.events.alienAbductionEvent) ? state.events.alienAbductionEvent : {};
     const hasInterruptibleLongEvent = (Boolean(cold.active) && String(cold.stage || '') === 'intro')
       || (Boolean(alien.active) && ['intro1', 'intro2'].includes(String(alien.stage || '')));
-    const needsRecovery = versionBefore(legacy.version, '0.10.462')
+    const needsRecovery = versionBefore(legacy.version, '0.10.463')
       && (recoveryScreens.has(legacyScreen) || hasTransientEvent || hasInterruptibleLongEvent);
     state.migrations.transientEventRecoveryV462Pending = needsRecovery
       || Boolean(state.migrations.transientEventRecoveryV462Pending);

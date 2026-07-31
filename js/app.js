@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.462';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.463';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -6219,6 +6219,27 @@ function isAlienAbducted() {
   return Boolean(eventState?.active && ['abducted', 'returnPending'].includes(eventState.stage));
 }
 
+function repairAlienSpaceDeadlockV463({ forceMain = false } = {}) {
+  if (!state) return false;
+  const eventState = alienAbductionEventState();
+  const stranded = eventState.active && ['abducted', 'returnPending'].includes(eventState.stage);
+  if (!stranded) return false;
+  let repaired = false;
+  if (miningGame && typeof miningGame !== 'object') { miningGame = null; repaired = true; }
+  if (selectedMining !== SPACE_MINING_LOCATION.id) { selectedMining = SPACE_MINING_LOCATION.id; repaired = true; }
+  clearTransientEventRuntime({ releaseDayLocks: true });
+  if (forceMain || !['main','mining','miningGame','miningResult','alienReturnEvent'].includes(String(screen || state.game?.screen || ''))) {
+    screen = eventState.stage === 'returnPending' ? 'alienReturnEvent' : 'main';
+    screenData = {};
+    navigation = [];
+    state.game.screen = screen;
+    repaired = true;
+  }
+  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+  state.migrations.alienSpaceRecoveryV463 = true;
+  return repaired;
+}
+
 function resumeAlienAbductionEvent() {
   const eventState = alienAbductionEventState();
   if (!eventState.active || !['intro1', 'intro2'].includes(eventState.stage)) return false;
@@ -6937,10 +6958,11 @@ function restoreGiftSendScrollState(snapshot) {
 
 function render() {
   if (state) {
+    const alienDeadlockRepaired = repairAlienSpaceDeadlockV463();
     const legacyDeadlockRepaired = repairLegacyTransientEventDeadlocksV462();
     const deadlockRepaired = repairIllnessBirthdayDeadlock();
     const ramenDeadlockRepaired = repairChildhoodFriendEventDeadlock();
-    if (legacyDeadlockRepaired || deadlockRepaired || ramenDeadlockRepaired) queueMicrotask(() => saveGame());
+    if (alienDeadlockRepaired || legacyDeadlockRepaired || deadlockRepaired || ramenDeadlockRepaired) queueMicrotask(() => saveGame());
   }
   if (state && illnessEventSuppressionActive()) {
     const birthdaySuppressed = suppressBirthdaySleepEventForIllness();
@@ -7097,7 +7119,7 @@ function render() {
     console.error('画面描画エラー', error);
     sleepCurtainEl?.classList.remove('active');
     clearMorningBrief();
-    root.innerHTML = `<main class="title-screen"><section class="title-actions glass-panel login-panel"><strong>画面を安全に復帰しました</strong><p class="small-note">表示処理中に問題が発生したため、暗転したままにならないよう停止しました。</p>${state ? '<button class="primary-button full-button" data-action="event-emergency-recover" data-illness-readable="true">イベントを終了してメインへ戻る</button>' : ''}<button class="secondary-button full-button" data-action="reload-page">再読み込みする</button></section></main>`;
+    root.innerHTML = `<main class="title-screen"><section class="title-actions glass-panel login-panel"><strong>画面の表示を復旧しました</strong><p class="small-note">この画面の表示に問題が発生しました。セーブデータは削除せず、安全にメイン画面へ戻れます。</p>${state ? '<button class="primary-button full-button" data-action="event-emergency-recover" data-illness-readable="true">メイン画面へ戻る</button>' : ''}<button class="secondary-button full-button" data-action="reload-page">再読み込みする</button></section></main>`;
   }
 }
 
@@ -9554,6 +9576,7 @@ function ownedEquipmentCount() {
 }
 
 function renderWorkshop() {
+  const workshopStatus = workshopUpgradeStatus();
   const roughTotal = Object.values(state.inventory.rough).reduce((a, b) => a + b, 0);
   const looseTotal = looseInventoryTotal();
   const metalTotal = roundedMetalWeight(Object.values(state.inventory.metals).reduce((a, b) => a + Number(b || 0), 0));
@@ -15974,6 +15997,7 @@ async function enterGameAfterLogin() {
   }
   navigation = [];
   phoneTab = validPhoneTab(state.game?.phoneTab);
+  repairAlienSpaceDeadlockV463({ forceMain: true });
   repairLegacyTransientEventDeadlocksV462();
   repairIllnessBirthdayDeadlock();
   repairChildhoodFriendEventDeadlock();

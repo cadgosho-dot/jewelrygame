@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.464';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.471';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -61,6 +61,7 @@ let itemUseFeedback = null;
 let itemUseFeedbackTimer = null;
 let selectedMeal = 'convenience';
 let mealTransitioning = false;
+let mealEatingCompletionController = null;
 let childhoodFriendMealWatchdogTimer = null;
 let hungerFeedback = null;
 let hungerFeedbackTimer = null;
@@ -246,7 +247,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
   'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'hit-rock',
-  'back', 'main', 'eat-meal', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi',
+  'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi',
   ...EVENT_PROGRESS_ACTIONS,
 ]);
 
@@ -6810,7 +6811,14 @@ function gameTimePanel() {
   return `<span class="header-status-item header-time game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}" ${note ? `title="${esc(note)}"` : ''}>${clock(minutes)}</span>`;
 }
 
-const PORTRAIT_TWO_BAR_SCREENS = new Set(['mining', 'workshop', 'store', 'okachimachi', 'phone', 'todayGem']);
+// v0.10.471: 縦画面ではメイン画面だけを従来の上部バーとし、
+// それ以外のゲーム画面はすべて上部バー1（情報）・上部バー2（操作）の2段へ統一する。
+// 画面名の追加登録方式ではなく除外方式にすることで、今後新しい画面が増えても自動的に2段になる。
+const PORTRAIT_TWO_BAR_EXCLUDED_SCREENS = new Set(['main']);
+
+function usesPortraitTwoBarHeader(screenName) {
+  return !PORTRAIT_TWO_BAR_EXCLUDED_SCREENS.has(String(screenName || ''));
+}
 
 function portraitHeaderHelpText(screenName) {
   const descriptions = {
@@ -6985,7 +6993,7 @@ function render() {
   try {
     if (screen !== 'robberyReport') stopPoliceSiren();
     document.body.dataset.screen = screen;
-    if (PORTRAIT_TWO_BAR_SCREENS.has(screen)) document.body.dataset.headerMode = 'two-bar';
+    if (usesPortraitTwoBarHeader(screen)) document.body.dataset.headerMode = 'two-bar';
     else delete document.body.dataset.headerMode;
     delete document.body.dataset.textSize;
     applyCurrentBackground();
@@ -8544,6 +8552,8 @@ function renderAlienAbductionEvent() {
     </main>`;
 }
 
+// v0.10.469: 宇宙の空腹案内は確認モーダルを挟まず、案内自体のタップで就寝処理を開始する。
+// 下部の「空腹のため休む」ボタンは従来どおり確認付きの予備導線として維持する。
 function renderAlienSpaceMain() {
   const eventState = alienAbductionEventState();
   if (eventState.stage === 'returnPending') {
@@ -8559,7 +8569,7 @@ function renderAlienSpaceMain() {
         <strong>誘拐されました</strong>
         <span>地球帰還まで あと${remaining}回寝る</span>
       </div>
-      ${locked ? '<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>宇宙では食事ができないため、19時前でもすぐに休めます。</span></div>' : ''}
+      ${locked ? '<button type="button" class="hunger-lock-notice alien-hunger-emergency-card" data-action="do-sleep" data-illness-readable="true" aria-label="タップして休み、翌日へ進む"><strong>空腹で動けません</strong><span>採掘は出来ません。今日は休んでください。</span><em>タップすると翌日へ進みます</em></button>' : ''}
       <nav class="main-menu alien-space-menu" aria-label="宇宙での行動">
         <button data-action="nav" data-screen="mining" ${locked ? 'disabled aria-disabled="true"' : ''}>${mainMenuIcon('mining')}<strong>採掘</strong></button>
         <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
@@ -8853,14 +8863,27 @@ function renderToolLearningGuide(tool) {
   const guide = tool?.guide;
   if (!guide) return `<p>${esc(tool?.detail || tool?.description || '')}</p>`;
   const sections = Array.isArray(guide.sections) ? guide.sections : [];
+  const references = Array.isArray(guide.references) ? guide.references : [];
+  const chapterWordCount = sections.reduce((total, section) => total
+    + (section.paragraphs || []).join('').length
+    + (section.points || []).join('').length, 0);
   return `<article class="tool-learning-guide">
+    <div class="tool-guide-stats" aria-label="解説の収録範囲">
+      <strong>専門解説 全${sections.length}章</strong>
+      <span>本文約${chapterWordCount.toLocaleString('ja-JP')}字</span>
+      <span>専門資料${references.length}件</span>
+      ${guide.revision ? `<span>改訂 ${esc(guide.revision)}</span>` : ''}
+    </div>
     <p class="tool-guide-lead">${esc(guide.overview || tool.detail || tool.description || '')}</p>
-    ${sections.map((section) => `<section class="tool-guide-section">
+    ${guide.scope ? `<p class="tool-guide-scope">収録範囲：${esc(guide.scope)}</p>` : ''}
+    <details class="tool-guide-toc"><summary>目次を開く</summary><ol>${sections.map((section, index) => `<li><a href="#tool-guide-section-${index + 1}">${esc(section.title || '')}</a></li>`).join('')}</ol></details>
+    ${sections.map((section, index) => `<section class="tool-guide-section" id="tool-guide-section-${index + 1}">
+      <div class="tool-guide-chapter-number">${String(index + 1).padStart(2, '0')}</div>
       <h3>${esc(section.title || '')}</h3>
       ${(section.paragraphs || []).map((paragraph) => `<p>${esc(paragraph)}</p>`).join('')}
       ${(section.points || []).length ? `<ul>${section.points.map((point) => `<li>${esc(point)}</li>`).join('')}</ul>` : ''}
     </section>`).join('')}
-    ${(guide.references || []).length ? `<section class="tool-guide-section tool-guide-references"><h3>参考にした専門資料</h3><ul>${guide.references.map((reference) => `<li>${esc(reference)}</li>`).join('')}</ul><p>実際の使用条件、法令、安全基準、適合材料は、使用する機器・薬剤・地域の最新の取扱説明書、SDS、法令を優先してください。</p></section>` : ''}
+    ${references.length ? `<section class="tool-guide-section tool-guide-references"><h3>参考にした専門資料</h3><ul>${references.map((reference) => `<li>${esc(reference)}</li>`).join('')}</ul><p>実際の使用条件、法令、安全基準、適合材料は、使用する機器・薬剤・地域の最新の取扱説明書、SDS、法令を優先してください。</p></section>` : ''}
   </article>`;
 }
 
@@ -11064,10 +11087,10 @@ function renderMeal() {
     const meal = MEALS[screenData.mealId];
     const foodImage = mealFoodImage(meal.id);
     return shell('食事', `
-      <section class="meal-eating-panel glass-panel" aria-live="polite">
+      <button type="button" class="meal-eating-panel meal-eating-finish-button glass-panel" data-action="meal-eating-finish" aria-label="食事を終えてメイン画面へ戻る" aria-live="polite">
         ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
         <strong>もぐもぐもぐ...</strong>
-      </section>`, { help: `${meal.name}で食事をしています。` });
+      </button>`, { help: `${meal.name}で食事をしています。画面をタップすると食事を終え、操作しなくても自動でメイン画面へ戻ります。` });
   }
   return shell('食事', `
     <section class="meal-choice-panel glass-panel">
@@ -11285,6 +11308,35 @@ function handleKaitenzushiMessage(event) {
 
 window.addEventListener('message', handleKaitenzushiMessage);
 
+// v0.10.469: 通常の食事演出は、タップで即終了できる一方、
+// 操作しない場合も従来どおり自動で終了する。
+function waitForMealEatingCompletion({ autoDelay = 2500, eatSoundDelay = 420 } = {}) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let autoTimer = null;
+    let soundTimer = null;
+    const finish = (reason = 'auto') => {
+      if (settled) return false;
+      settled = true;
+      if (autoTimer) clearTimeout(autoTimer);
+      if (soundTimer) clearTimeout(soundTimer);
+      if (mealEatingCompletionController?.finish === finish) mealEatingCompletionController = null;
+      resolve(reason);
+      return true;
+    };
+    mealEatingCompletionController = { finish };
+    soundTimer = setTimeout(() => {
+      if (!settled) playSfx('eat');
+    }, Math.max(0, Number(eatSoundDelay) || 420));
+    autoTimer = setTimeout(() => finish('auto'), Math.max(300, Number(autoDelay) || 2500));
+  });
+}
+
+function finishMealEatingEarly() {
+  if (screen !== 'meal' || !screenData?.eating) return false;
+  return Boolean(mealEatingCompletionController?.finish?.('manual'));
+}
+
 async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   const meal = MEALS[mealId];
   if (!meal || mealTransitioning) return;
@@ -11313,11 +11365,11 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
     saveGame();
     setScreen('meal', { mealId, eating: true }, false);
 
-    // 読み込み済みの店内と料理を、画面へ移動してから合計2.5秒間表示する。
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    await wait(420);
-    playSfx('eat');
-    await wait(2080);
+    // 読み込み済みの店内と料理を表示する。タップ時は即終了し、
+    // 操作しない場合は従来どおり合計2.5秒で自動終了する。
+    const eatingCompletion = waitForMealEatingCompletion();
+    await waitForNextPaintWithTimeout();
+    await eatingCompletion;
 
     spendMealTime();
     state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
@@ -11346,6 +11398,7 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
     render();
     try { showToast('食事処理を中断し、直前の状態へ戻しました。', 'error'); } catch (_) {}
   } finally {
+    mealEatingCompletionController = null;
     mealTransitioning = false;
   }
 }
@@ -15820,6 +15873,7 @@ root.addEventListener('click', async (event) => {
     case 'use-phone-item': usePhoneItem(button.dataset.id); break;
     case 'toggle-equipment': togglePhoneEquipment(button.dataset.id); break;
     case 'eat-meal': await eatMeal(button.dataset.id); break;
+    case 'meal-eating-finish': finishMealEatingEarly(); break;
     case 'play-kaitenzushi': startKaitenzushi(); break;
     case 'kaitenzushi-finish': finishKaitenzushiFromParent(); break;
     case 'sleep': confirmSleep(); break;

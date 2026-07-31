@@ -1,0 +1,36 @@
+JEWELRY×JEWELRY v0.10.471 検査結果
+実施日: 2026-07-31
+
+変更対象:
+- 縦画面の2段ヘッダー判定を、メイン画面以外の全登録画面へ拡張
+- 対象画面の個別登録方式を廃止し、メイン画面だけを除外する方式へ変更
+- 今後追加する新画面も自動的に2段表示モードへ含める
+- メイン画面と横画面は従来表示を維持
+
+結果:
+- node --check js/app.js: OK
+- node --check js/game-data.js: OK
+- node tools/validate-v471.mjs: OK（登録73画面、メイン以外72画面）
+- python3 scripts/check-v471-all-screen-headers.py: OK（縦端末5サイズ、メイン・横画面維持）
+- python3 scripts/check-v454-portrait-header.py: OK（46画面×5端末=230ケース）
+- python3 scripts/check_phone_layout_baseline.py: OK（縦横14サイズ）
+- python3 scripts/check-regression-baseline.py: OK
+- node tools/test-alien-hunger-notice-v469.mjs: OK
+- node tools/test-meal-tap-finish-v468.mjs: OK
+- node tools/validate-time-and-meals.mjs: OK
+- node tools/test-workshop-staff-growth.mjs: OK
+- node tools/test-store-staff-growth.mjs: OK
+- node tools/validate-store-showcase-return.mjs: OK
+- node tools/validate-store-customer-indicator.mjs: OK
+- node tools/validate-polishing-result-modal.mjs: OK
+- node tools/validate-audio-scenes.mjs: OK
+
+保存互換:
+- 保存キー変更なし
+- 保存構造変更なし
+- アプリのアンインストール不要
+- 保存データ削除不要
+
+補足:
+- ログイン・タイトルなど、元からゲーム上部バーを持たない開始前画面には新しいバーを追加しない
+- 全画面演出として上部バーを非表示にしているイベントは演出を維持する

@@ -1,0 +1,32 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "baseVersion": "0.10.471",
+  "platform": [
+    "GitHub Pages",
+    "PWA",
+    "mobile",
+    "desktop"
+  ],
+  "implemented": {
+    "portraitTwoBarAllNonMainScreens": true,
+    "portraitTwoBarExclusionMode": "main-only",
+    "registeredScreenCount": 73,
+    "portraitTwoBarTargetScreenCount": 72,
+    "futureScreensAutomaticallyIncluded": true,
+    "mainHeaderLayoutPreserved": true,
+    "landscapeHeaderLayoutPreserved": true,
+    "saveDataSchemaChanged": false,
+    "portraitRegressionTestCases": 230,
+    "portraitTwoBarGlobalModeAssignments": 72,
+    "portraitTwoBarHeaderScreenTestCases": 230
+  },
+  "saveCompatibility": {
+    "saveKey": "jewelrygame-clean-v0.4.0",
+    "requiresSaveDeletion": false,
+    "requiresAppUninstall": false
+  },
+  "pending": [
+    "Process and display workshop staff images according to approved level allocation",
+    "Design concrete level-down events only after user approval"
+  ]
+}

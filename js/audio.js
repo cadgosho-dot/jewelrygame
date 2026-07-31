@@ -1,3 +1,5 @@
+import { AUDIO_SCENE_DEFINITIONS, AUDIO_SCENE_KEYS, audioSceneDefinition, audioSceneUsesWeather } from './audio-scene-map.js';
+
 const AUDIO_DIR = './assets/audio';
 
 const tracks = new Map();
@@ -19,11 +21,7 @@ let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .
 
 let weatherEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear', audioKey: 'main' };
 
-const validKeys = new Set([
-  'main', 'space', 'mining', 'workshop', 'craft', 'polishing', 'store', 'displayShop', 'materialShop', 'looseShop', 'jewelryShop', 'realEstate', 'glab', 'okachimachi', 'okachimachiQuiz', 'phone', 'sleep',
-  'meal', 'meal-convenience', 'meal-soba', 'meal-ramen', 'meal-hamburger',
-  'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab', 'kaitenzushi',
-]);
+const validKeys = new Set(AUDIO_SCENE_KEYS);
 const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'ganesha-appear', 'ganesha-gift', 'kappa-appear', 'jade-gift', 'haunting-appear', 'haunting-whisper', 'old-lady-appear', 'shoplift-steal', 'quiz-correct', 'quiz-incorrect']);
 
 function createAudio(url, loop = false) {
@@ -45,35 +43,40 @@ function isMealAudioKey(key) {
   return key === 'meal' || key === 'kaitenzushi' || String(key || '').startsWith('meal-');
 }
 
-function usesLayeredOutdoorEnvironment(key) {
-  return key === 'okachimachi' || isMealAudioKey(key);
-}
-
 function hasActiveWeatherEnvironment(key) {
   return weatherEnvironment.active && weatherEnvironment.audioKey === key;
 }
 
-function ambientUrl(key) {
-  if (key === 'kaitenzushi') return './assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg';
-  const weatherKey = hasActiveWeatherEnvironment(key)
+function weatherAmbientUrl() {
+  const weatherKey = hasActiveWeatherEnvironment(weatherEnvironment.audioKey)
     ? environmentWeather(weatherEnvironment.weather)
     : 'clear';
-  if (key === 'space') return `${AUDIO_DIR}/space-ambient.mp3`;
-  if (key === 'main' || (key === 'phone' && hasActiveWeatherEnvironment(key))) return `${AUDIO_DIR}/amb-main-${weatherKey}.ogg`;
-  if (usesLayeredOutdoorEnvironment(key) && hasActiveWeatherEnvironment(key)) {
-    return `${AUDIO_DIR}/amb-street-crowd.ogg`;
-  }
-  return `${AUDIO_DIR}/amb-${key}.ogg`;
+  return `${AUDIO_DIR}/amb-main-${weatherKey}.ogg`;
+}
+
+function bgmUrlFor(key) {
+  return audioSceneDefinition(key).bgm;
+}
+
+function ambientUrl(key) {
+  const ambient = audioSceneDefinition(key).ambient;
+  if (!ambient) return null;
+  if (ambient.type === 'weather') return weatherAmbientUrl();
+  return ambient.type === 'file' ? ambient.url : null;
 }
 
 function supplementalAmbientSpecs(key) {
-  if (!hasActiveWeatherEnvironment(key) || !usesLayeredOutdoorEnvironment(key)) return [];
-  const weatherKey = environmentWeather(weatherEnvironment.weather);
-  return [{
-    name: 'weather',
-    url: `${AUDIO_DIR}/amb-main-${weatherKey}.ogg`,
-    scale: key === 'okachimachi' ? .58 : .48,
-  }];
+  const scene = audioSceneDefinition(key);
+  return scene.supplemental.flatMap((item) => {
+    if (item.type === 'weather') {
+      if (!hasActiveWeatherEnvironment(key)) return [];
+      return [{ name: item.name || 'weather', url: weatherAmbientUrl(), scale: Number(item.scale) || 1 }];
+    }
+    if (item.type === 'file' && item.url) {
+      return [{ name: item.name || 'layer', url: item.url, scale: Number(item.scale) || 1 }];
+    }
+    return [];
+  });
 }
 
 function loopSupplementalAmbients(key) {
@@ -104,24 +107,20 @@ function loopSupplementalAmbients(key) {
   });
 }
 
-// 御徒町とg-Lab.以外の各店舗は同じBGM URLを共有し、画面遷移でも再生位置を維持する。
-// 環境音はscene keyごとに別管理するため、店舗ごとの設定がそのまま切り替わる。
-function bgmUrlFor(key) {
-  const bgmKey = (key === 'craft' || key === 'polishing')
-    ? 'workshop'
-    : ((key === 'displayShop' || key === 'jewelryShop' || key === 'looseShop' || key === 'materialShop' || key === 'realEstate') ? 'okachimachi' : key);
-  if (key === 'okachimachiQuiz') return `${AUDIO_DIR}/quiz_show_thinking_bgm_60s_loop.mp3`;
-  if (key === 'space') return `${AUDIO_DIR}/space-main-bgm.mp3`;
-  if (key === 'kaitenzushi') return './assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg';
-  return `${AUDIO_DIR}/bgm-${bgmKey}.ogg`;
-}
-
 function loopAudio(kind, key) {
   if (!validKeys.has(key)) return null;
   if (kind === 'ambient' && key === 'okachimachiQuiz') return null;
   const map = kind === 'bgm' ? tracks : ambients;
   const url = kind === 'bgm' ? bgmUrlFor(key) : ambientUrl(key);
   const existing = map.get(key);
+  if (!url) {
+    if (existing) {
+      existing.pause();
+      existing.currentTime = 0;
+      map.delete(key);
+    }
+    return null;
+  }
   if (existing && existing.dataset.audioUrl !== url) {
     existing.pause();
     existing.currentTime = 0;
@@ -153,25 +152,16 @@ export async function unlockAudio() {
   try { await startCurrentAudio(); } catch (_) {}
 }
 
-const BGM_SCALE = {
-  main: 1, space: .84, mining: .98, workshop: .96, craft: .96, polishing: .96, store: .94, displayShop: .96, materialShop: .98, looseShop: .98, jewelryShop: .96, realEstate: .96, glab: .96, okachimachi: .98, okachimachiQuiz: .94, phone: .92, sleep: .64,
-  meal: .66, 'meal-convenience': .64, 'meal-soba': .66, 'meal-ramen': .64, 'meal-hamburger': .62,
-  'meal-indian': .64, 'meal-korean': .62, 'meal-chinese': .64, 'meal-kebab': .64, kaitenzushi: .90,
-};
 // v0.10.298: 環境音全体を従来の約50％へ抑える。設定スライダーの値は保持する。
 const AMBIENT_MASTER_SCALE = .50;
-const AMBIENT_SCALE = {
-  main: .42, space: .46, mining: 1, workshop: 1, craft: 1, polishing: 1, store: .90, displayShop: .92, materialShop: .96, looseShop: .96, jewelryShop: .92, realEstate: .94, glab: .94, okachimachi: 1, phone: .88, sleep: .56,
-  meal: .54, 'meal-convenience': .50, 'meal-soba': .58, 'meal-ramen': .50, 'meal-hamburger': .52,
-  'meal-indian': .50, 'meal-korean': .50, 'meal-chinese': .56, 'meal-kebab': .54, kaitenzushi: .82,
-};
 
 function targetVolume(kind, key, settings) {
   if (settings.externalAudioPriority) return 0;
   const muted = kind === 'bgm' ? settings.bgmMuted : settings.ambientMuted;
   if (muted) return 0;
   const base = Number(kind === 'bgm' ? settings.bgmVolume : settings.ambientVolume) || 0;
-  const scale = (kind === 'bgm' ? BGM_SCALE : AMBIENT_SCALE)[key] ?? 1;
+  const scene = audioSceneDefinition(key);
+  const scale = kind === 'bgm' ? scene.bgmScale : scene.ambientScale;
   const duck = kind === 'ambient' && key === currentKey ? ambientDuckFactor : 1;
   const master = kind === 'ambient' ? AMBIENT_MASTER_SCALE : 1;
   return Math.max(0, Math.min(1, base * scale * duck * master));
@@ -350,6 +340,18 @@ export async function switchAudio(key) {
     if (!suspended) await startCurrentAudio();
     return;
   }
+  // 映画上映などの無音場はフェード待ちをせず、その場ですべて停止する。
+  if (key === 'silent') {
+    transitionSerial += 1;
+    resetAmbientDuck(false);
+    pendingStopTimers.forEach((timer) => clearTimeout(timer));
+    pendingStopTimers.clear();
+    tracks.forEach((audio) => { cancelFade(audio); audio.pause(); audio.currentTime = 0; });
+    ambients.forEach((audio) => { cancelFade(audio); audio.pause(); audio.currentTime = 0; });
+    supplementalAmbients.forEach((audio) => { cancelFade(audio); audio.pause(); audio.currentTime = 0; });
+    currentKey = key;
+    return;
+  }
   const oldKey = currentKey;
   const sharedBgm = Boolean(oldKey && bgmUrlFor(oldKey) === bgmUrlFor(key));
   const inheritedTrack = sharedBgm ? tracks.get(oldKey) : null;
@@ -414,7 +416,7 @@ export function updateMainEnvironment({ active = false, weather = '晴れ', minu
   // Only replace the weather layer when the destination uses the same audio scene.
   // When leaving for a different scene, switchAudio() performs the fade-out so a
   // clear-weather clip cannot briefly leak into the transition.
-  if (currentKey === normalized.audioKey) restartWeatherAmbient(normalized.audioKey).catch(() => {});
+  if (currentKey === normalized.audioKey && audioSceneUsesWeather(normalized.audioKey)) restartWeatherAmbient(normalized.audioKey).catch(() => {});
 }
 
 export function stopMealAudio() {

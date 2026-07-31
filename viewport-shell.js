@@ -5,6 +5,21 @@
   const frame = document.querySelector('#game-frame');
   let deferredInstallPrompt = null;
   let resizeTimer = 0;
+  let serviceWorkerReloaded = false;
+
+  function refreshServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (serviceWorkerReloaded) return;
+      serviceWorkerReloaded = true;
+      window.location.reload();
+    });
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((registration) => registration.update())
+        .catch((error) => console.error('Service Worker update failed', error));
+    }, { once: true });
+  }
 
   function isStandalone() {
     return window.matchMedia?.('(display-mode: standalone)').matches
@@ -172,5 +187,6 @@
   window.visualViewport?.addEventListener('resize', scheduleStageUpdate, { passive: true });
   window.visualViewport?.addEventListener('scroll', scheduleStageUpdate, { passive: true });
 
+  refreshServiceWorker();
   updateStage();
 })();

@@ -1,18 +1,101 @@
-export const VERSION = '0.10.418';
+export const VERSION = '0.10.457';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
 export const STORE_MONTHLY_RENTS = Object.freeze({ 1: 150000, 2: 400000, 3: 700000 });
 export const WORKSHOP_MONTHLY_COST = 50000;
 export const HOME_MONTHLY_RENT = 70000;
-export const WORKSHOP_EXPANSION_COSTS = Object.freeze({ 2: 50000, 3: 100000, 4: 200000, 5: 300000, 6: 500000, 7: 750000, 8: 1000000, 9: 1500000, 10: 2000000 });
-export const ARTISAN_LEVEL_XP = Object.freeze([0, 150, 600, 1500, 3750]);
+export const ARTISAN_LEVEL_XP = Object.freeze([0, 100, 300, 650, 1100, 1700, 2500, 3500, 4700, 6200, 8000, 10500, 13500, 17000, 21000, 25500, 30500, 36000, 42000, 50000]);
+export const ARTISAN_LEVEL_TITLES = Object.freeze(['', '見習い職人', '見習い職人', '見習い職人', '駆け出し職人', '駆け出し職人', '駆け出し職人', '一人前職人', '一人前職人', '一人前職人', '熟練職人', '熟練職人', '熟練職人', '上級職人', '上級職人', '上級職人', '名人', '名人', '名人', '一級職人', 'マイスター']);
+export const WORKSHOP_LEVEL_REQUIREMENTS = Object.freeze([
+  Object.freeze({ level: 1, hours: 0, quality: 0, cost: 0, requiredTools: [] }),
+  Object.freeze({ level: 2, hours: 20, quality: 3, cost: 50000, requiredTools: ['jewelryBench', 'benchPeg'] }),
+  Object.freeze({ level: 3, hours: 50, quality: 5, cost: 100000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer'] }),
+  Object.freeze({ level: 4, hours: 90, quality: 8, cost: 150000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers'] }),
+  Object.freeze({ level: 5, hours: 140, quality: 11, cost: 250000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner'] }),
+  Object.freeze({ level: 6, hours: 210, quality: 14, cost: 400000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock', 'stamps', 'milgrainTool'] }),
+  Object.freeze({ level: 7, hours: 300, quality: 17, cost: 600000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock', 'stamps', 'milgrainTool', 'polishingMachine', 'rollingMill'] }),
+  Object.freeze({ level: 8, hours: 420, quality: 20, cost: 850000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock', 'stamps', 'milgrainTool', 'polishingMachine', 'rollingMill', 'computer', 'cadSoftware', 'printer3d'] }),
+  Object.freeze({ level: 9, hours: 560, quality: 23, cost: 1200000, requiredTools: [] }),
+  Object.freeze({ level: 10, hours: 730, quality: 26, cost: 1600000, requiredTools: [] }),
+  Object.freeze({ level: 11, hours: 930, quality: 30, cost: 2100000, requiredTools: [] }),
+  Object.freeze({ level: 12, hours: 1160, quality: 34, cost: 2700000, requiredTools: [] }),
+  Object.freeze({ level: 13, hours: 1420, quality: 38, cost: 3400000, requiredTools: [] }),
+  Object.freeze({ level: 14, hours: 1710, quality: 42, cost: 4200000, requiredTools: [] }),
+  Object.freeze({ level: 15, hours: 2030, quality: 46, cost: 5200000, requiredTools: [] }),
+  Object.freeze({ level: 16, hours: 2400, quality: 50, cost: 6400000, requiredTools: [] }),
+  Object.freeze({ level: 17, hours: 2820, quality: 54, cost: 7800000, requiredTools: [] }),
+  Object.freeze({ level: 18, hours: 3300, quality: 58, cost: 9500000, requiredTools: [] }),
+  Object.freeze({ level: 19, hours: 3850, quality: 62, cost: 11500000, requiredTools: [] }),
+  Object.freeze({ level: 20, hours: 4500, quality: 66, cost: 14000000, requiredTools: [] }),
+]);
+export const WORKSHOP_EXPANSION_COSTS = Object.freeze(Object.fromEntries(WORKSHOP_LEVEL_REQUIREMENTS.slice(1).map((entry) => [entry.level, entry.cost])));
+export const STORE_LEVEL_REQUIREMENTS = Object.freeze([
+  [1,0,0,0,0,0],[2,15,10,500000,5,100000],[3,35,25,1500000,12,150000],[4,60,50,3000000,25,250000],[5,90,80,6000000,40,400000],
+  [6,130,120,10000000,60,600000],[7,180,180,16000000,90,850000],[8,240,250,24000000,125,1200000],[9,310,340,35000000,170,1600000],[10,390,450,50000000,220,2100000],
+  [11,480,580,70000000,280,2700000],[12,590,730,95000000,350,3400000],[13,720,900,125000000,430,4200000],[14,870,1100,160000000,520,5200000],[15,1040,1350,205000000,630,6400000],
+  [16,1230,1650,260000000,760,7800000],[17,1440,2000,325000000,900,9500000],[18,1680,2400,400000000,1080,11500000],[19,2040,2900,500000000,1280,14000000],[20,2400,3500,650000000,1500,17000000],
+].map(([level, operatingDays, sales, revenue, serviceSuccesses, cost]) => Object.freeze({ level, operatingDays, sales, revenue, serviceSuccesses, cost })));
+// 旧保存データの読み込み互換性のために残す。新仕様では店舗レベル判定には使用しない。
 export const STORE_LEVEL_POINTS = Object.freeze([0, 15, 40, 80, 130, 200, 300, 430, 600, 850]);
+export const STORE_EMPLOYEE_CANDIDATES = Object.freeze({
+  1: Object.freeze({
+    name: '青木 ひなた',
+    profile: '明るく素直で、接客経験を少しずつ積んでいきます。',
+  }),
+  2: Object.freeze({
+    name: '白石 真奈',
+    profile: '落ち着いた接客を身につけながら、販売経験を重ねます。',
+  }),
+  3: Object.freeze({
+    name: '城戸 涼介',
+    profile: '商品知識を学び、時間をかけて販売力を伸ばします。',
+  }),
+});
+export const STORE_STAFF_GROWTH_LEVELS = Object.freeze([
+  Object.freeze({ level: 1, label: '見習い', minWorkDays: 0, visitorBonus: 0, customerVisitBonus: 0.01, purchaseBonus: 0.01, saleBonus: 0.02 }),
+  Object.freeze({ level: 2, label: '新人', minWorkDays: 5, visitorBonus: 0, customerVisitBonus: 0.02, purchaseBonus: 0.03, saleBonus: 0.05 }),
+  Object.freeze({ level: 3, label: '一人前', minWorkDays: 15, visitorBonus: 1, customerVisitBonus: 0.04, purchaseBonus: 0.05, saleBonus: 0.08 }),
+  Object.freeze({ level: 4, label: 'ベテラン', minWorkDays: 30, visitorBonus: 1, customerVisitBonus: 0.06, purchaseBonus: 0.08, saleBonus: 0.12 }),
+  Object.freeze({ level: 5, label: '熟練', minWorkDays: 60, visitorBonus: 2, customerVisitBonus: 0.08, purchaseBonus: 0.10, saleBonus: 0.15 }),
+]);
+
+export function storeStaffGrowthForWorkDays(workDays = 0) {
+  const days = Math.max(0, Math.floor(Number(workDays) || 0));
+  return [...STORE_STAFF_GROWTH_LEVELS].reverse().find((level) => days >= Number(level.minWorkDays))
+    || STORE_STAFF_GROWTH_LEVELS[0];
+}
+
+export function storeStaffNextGrowthForWorkDays(workDays = 0) {
+  const current = storeStaffGrowthForWorkDays(workDays);
+  return STORE_STAFF_GROWTH_LEVELS.find((level) => Number(level.level) === Number(current.level) + 1) || null;
+}
+
+
+export const WORKSHOP_STAFF_GROWTH_LEVELS = Object.freeze([
+  Object.freeze({ level: 1, label: '見習い職人', minWorkDays: 0, dailyWage: 25000, speedMultiplier: 0.55, goodChance: 0, premiumChance: 0 }),
+  Object.freeze({ level: 2, label: '若手職人', minWorkDays: 480, dailyWage: 30000, speedMultiplier: 0.70, goodChance: 0.10, premiumChance: 0 }),
+  Object.freeze({ level: 3, label: '一人前職人', minWorkDays: 960, dailyWage: 40000, speedMultiplier: 0.85, goodChance: 0.20, premiumChance: 0.02 }),
+  Object.freeze({ level: 4, label: '熟練職人', minWorkDays: 1440, dailyWage: 55000, speedMultiplier: 1.00, goodChance: 0.32, premiumChance: 0.08 }),
+  Object.freeze({ level: 5, label: '匠', minWorkDays: 2400, dailyWage: 75000, speedMultiplier: 1.20, goodChance: 0.42, premiumChance: 0.15 }),
+]);
+
+export function workshopStaffGrowthForWorkDays(workDays = 0) {
+  const days = Math.max(0, Math.floor(Number(workDays) || 0));
+  return [...WORKSHOP_STAFF_GROWTH_LEVELS].reverse().find((level) => days >= Number(level.minWorkDays))
+    || WORKSHOP_STAFF_GROWTH_LEVELS[0];
+}
+
+export function workshopStaffNextGrowthForWorkDays(workDays = 0) {
+  const current = workshopStaffGrowthForWorkDays(workDays);
+  return WORKSHOP_STAFF_GROWTH_LEVELS.find((level) => Number(level.level) === Number(current.level) + 1) || null;
+}
 export const JEWELRY_BENCH_PRICE = 85000;
 export const POLISHING_MACHINE_PRICE = 400000;
 export const POLISHING_HOURS = 2;
 export const DAY_START_MINUTES = 9 * 60;
-export const DAY_END_MINUTES = 21 * 60;
+export const DAY_END_MINUTES = 22 * 60;
+export const MEAL_DURATION_MINUTES = 60;
 export const STORE_OPEN_MINUTES = 9 * 60;
 export const STORE_CLOSE_MINUTES = 19 * 60;
 export const BASE_FINISHED_JEWELRY_CAPACITY = 10;
@@ -470,6 +553,7 @@ export const WORKSHOP_TOOLS = {
   },
   file: {
     id: 'file', name: 'ヤスリ', type: '工具', symbol: '▰', price: 5000, qualityPoints: 1,
+    image: './assets/images/tools/file.png',
     initiallyAvailable: true, breakable: true, repairable: false,
     description: '地金の切断面、ろう付け部、鋳造肌を削り、寸法・輪郭・平面・曲面を整える基本工具です。',
     detail: '形状、目の粗さ、刃の方向を使い分け、地金を必要な量だけ正確に除去する手工具です。',
@@ -501,6 +585,7 @@ export const WORKSHOP_TOOLS = {
   },
   pliers: {
     id: 'pliers', name: 'ヤットコ', type: '工具', symbol: '⌁', price: 4000, qualityPoints: 1,
+    image: './assets/images/tools/pliers.png',
     initiallyAvailable: true, breakable: true, repairable: false,
     description: '地金や金具を保持し、曲げ、締め、開閉、位置合わせを行うための手工具です。',
     detail: '先端形状と噛み合わせを使い分け、小さな部品へ必要な力を正確に伝えます。',
@@ -532,6 +617,7 @@ export const WORKSHOP_TOOLS = {
   },
   torch: {
     id: 'torch', name: 'バーナー', type: '工具', symbol: '♨', price: 30000, qualityPoints: 2,
+    image: './assets/images/tools/torch.png',
     initiallyAvailable: true, breakable: true, repairable: true,
     description: '焼きなまし、ろう付け、溶解などで地金へ制御された熱を与える加熱工具です。',
     detail: '炎の大きさ、温度分布、酸化・還元の状態を調整し、母材全体と接合部を適切な温度へ導きます。',
@@ -563,6 +649,7 @@ export const WORKSHOP_TOOLS = {
   },
   hammer: {
     id: 'hammer', name: 'ハンマー', type: '工具', symbol: '🔨', price: 2000, qualityPoints: 1,
+    image: './assets/images/tools/hammer.png',
     initiallyAvailable: true, breakable: true, repairable: false,
     description: '地金を打撃して成形、伸展、締結、表面仕上げ、加工硬化を行うための工具です。',
     detail: '打面の形状、重量、材質と、受け側の金床・芯金を組み合わせて地金へ狙った変形を与えます。',
@@ -594,6 +681,7 @@ export const WORKSHOP_TOOLS = {
   },
   magnifier: {
     id: 'magnifier', name: '作業用拡大鏡', type: '設備', symbol: '◎', price: 150000, qualityPoints: 4,
+    image: './assets/images/tools/magnifier.png',
     initiallyAvailable: false, breakable: true, repairable: true,
     unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '両手を自由にしたまま、石留め、彫り、仕上げ、欠陥検査を拡大観察するための設備です。',
@@ -658,6 +746,7 @@ export const WORKSHOP_TOOLS = {
   },
   benchPeg: {
     id: 'benchPeg', name: 'スリ板', type: '工具', symbol: '▱', price: 3000, qualityPoints: 1,
+    image: './assets/images/tools/bench-peg.png',
     initiallyAvailable: true, breakable: false, repairable: false,
     description: '彫金机へ固定し、糸鋸、ヤスリ、切削、保持作業の支点として加工物を支える木製工具です。',
     detail: '作業内容に合わせて切り込みや形を作り、工具と加工物を安定させる消耗品です。',
@@ -689,6 +778,7 @@ export const WORKSHOP_TOOLS = {
   },
   graver: {
     id: 'graver', name: 'タガネ', type: '工具', symbol: '✦', price: 5000, qualityPoints: 1,
+    image: './assets/images/tools/graver.png',
     initiallyAvailable: true, breakable: true, repairable: false,
     description: '彫刻、石留め、地金の押し上げ、溝切り、面出しを行うための精密切削工具です。',
     detail: '先端断面、刃角、ヒール、研ぎの状態によって切削抵抗と地金の動きが変わります。',
@@ -720,6 +810,7 @@ export const WORKSHOP_TOOLS = {
   },
   engravingBlock: {
     id: 'engravingBlock', name: '彫刻台', type: '設備', symbol: '⬡', price: 75000, qualityPoints: 3,
+    image: './assets/images/tools/engraving-block.png',
     initiallyAvailable: false, breakable: false, repairable: false,
     unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '加工物を強固に保持し、角度と向きを滑らかに変えながら彫刻・石留めを行う回転式固定設備です。',
@@ -752,6 +843,7 @@ export const WORKSHOP_TOOLS = {
   },
   stamps: {
     id: 'stamps', name: '刻印セット', type: '工具', symbol: 'Ａ', price: 150000, qualityPoints: 4,
+    image: './assets/images/tools/stamps.png',
     initiallyAvailable: false, breakable: true, repairable: false,
     unlock: { enabled: true, minWorkshopLevel: 5 },
     description: '品位、メーカー記号、文字、数字、装飾模様を地金へ打ち込むための刻印工具一式です。',
@@ -784,6 +876,7 @@ export const WORKSHOP_TOOLS = {
   },
   rotaryTool: {
     id: 'rotaryTool', name: 'リューター', type: '設備', symbol: '⟳', price: 160000, qualityPoints: 4,
+    image: './assets/images/tools/rotary-tool.png',
     initiallyAvailable: true, breakable: true, repairable: true,
     description: 'バー、ドリル、砥石、シリコンポイントなどを回転させ、切削・穴あけ・研磨を行う設備です。',
     detail: '回転数、先端工具、圧力、保持角度を調整し、手作業では届きにくい部分を効率よく加工します。',
@@ -813,8 +906,152 @@ export const WORKSHOP_TOOLS = {
       ],
     },
   },
+  piercingSaw: {
+    id: 'piercingSaw', name: '糸鋸', type: '工具', symbol: '≋', price: 6000, qualityPoints: 1,
+    image: './assets/images/tools/piercing-saw.png',
+    initiallyAvailable: true, breakable: true, repairable: false,
+    description: '細い鋸刃で板材を切り抜き、輪郭、透かし、窓、細部の切断を行う精密切断工具です。',
+    detail: '張力をかけた鋸刃を上下させ、スリ板を支点にしながら小回りの利く切断を行います。',
+    guide: {
+      overview: '糸鋸は、金属を力任せに切る工具ではなく、刃の張り、番手、姿勢、送り量で切れ味と精度を作る工具です。正しく使えば、薄板の複雑な透かしや輪郭も高い精度で切り出せます。',
+      sections: [
+        {
+          title: '刃の選び方',
+          paragraphs: ['板厚、材質、切りたい曲率に応じて刃の番手を選びます。細かい刃ほど小回りが利きますが、無理な送りでは折れやすくなります。'],
+          points: ['板厚に対して常に複数の刃山が掛かる番手を選ぶ', '刃の向きを正しく取り付ける', '錆びた刃や曲がった刃を使わない', '切断面の要求精度に応じて番手を変える'],
+        },
+        {
+          title: '基本操作',
+          paragraphs: ['刃をしっかり張り、スリ板のV溝を使って加工点のすぐ近くを支えます。鋸は真っ直ぐ上下させ、曲線は手元ではなく材料側を回して追従させます。'],
+          points: ['肩を上げず肘と手首を安定させる', '送りは刃が自ら切る速度に合わせる', '急激に方向転換しない', '切断線を常に視認できる角度を保つ'],
+        },
+        {
+          title: '穴あけと透かし',
+          paragraphs: ['内側の透かしは先にドリルで穴を開け、そこへ鋸刃を通してから張り直して切ります。狭い角は小さな半径でつなぎ、後でヤスリやタガネで整えます。'],
+          points: ['下穴径を刃幅に合わせる', '透かしごとに無理のない切断順を考える', '細い橋部分を最後まで残して変形を防ぐ', 'バリや刃跡は後工程で整える'],
+        },
+        {
+          title: '刃折れ対策と保守',
+          paragraphs: ['刃折れの主因は張力不足、ねじれ、押し込みすぎ、支点不足です。使用後は刃の緩みとフレームの変形を点検し、替刃は湿気を避けて保管します。'],
+          points: ['刃の音で張り具合を確認する', '潤滑が必要な材質ではワックス等を検討する', 'フレームのねじれを放置しない', '折れた刃片の飛散に注意して保護眼鏡を使う'],
+        },
+      ],
+    },
+  },
+  nipper: {
+    id: 'nipper', name: 'ニッパー', type: '工具', symbol: '✂', price: 4500, qualityPoints: 1,
+    image: './assets/images/tools/nipper.png',
+    initiallyAvailable: true, breakable: true, repairable: false,
+    description: '線材、ピン、チェーンの一部、鋸刃などを切断するための手工具です。',
+    detail: '刃先の形状と角度を使い、必要な位置で材料を逃がさず切断します。',
+    guide: {
+      overview: 'ニッパーは切れれば何でもよい工具ではありません。切断したい材質と太さに合う刃先で、切り口の位置、つぶれ量、飛散方向を管理することが重要です。',
+      sections: [
+        {
+          title: '用途と使い分け',
+          paragraphs: ['片刃、両刃、エンドカッターなど形状によって切り口が変わります。ジュエリーではチェーン、線材、ピン、爪材、鋸刃など細かな部材の切断に使います。'],
+          points: ['太すぎる材料へ無理に使わない', '硬い鋼材は専用工具で切る', '切り口の仕上がりと逃げ方向を考える', '用途外のこじりや曲げに使わない'],
+        },
+        {
+          title: '基本操作',
+          paragraphs: ['切断位置を明確にし、材料を逃がさないよう加工点の近くで保持します。切れ端は飛びやすいため、指や布で受けるなど安全に配慮します。'],
+          points: ['刃の根元寄りで切る', '一度で切れない太さを無理に挟まない', '石や完成面の近くでは保護と方向確認を行う', '切断後のバリを点検する'],
+        },
+        {
+          title: '刃先管理',
+          paragraphs: ['刃欠けや噛み合わせ不良は切断面を荒らし、部材をつぶします。摩耗したまま使うと余計な力が必要になり、他の部位を変形させる原因になります。'],
+          points: ['刃先へ過大な横力をかけない', '落下や衝突で刃を傷めない', '切断用途ごとに工具を分ける', '錆と汚れを除去して保管する'],
+        },
+        {
+          title: '安全',
+          paragraphs: ['小さな切れ端は高速で飛散するため、保護眼鏡が有効です。切断後の鋭い端面で手を傷つけないよう、次工程前に整えます。'],
+          points: ['飛散方向へ顔を近づけない', '周囲の人へ切れ端が飛ばない向きで使う', '手のひらへ刃先を向けない', '柄の被覆や支点の緩みを点検する'],
+        },
+      ],
+    },
+  },
+  electronicScale: {
+    id: 'electronicScale', name: '電子秤', type: '設備', symbol: '⚖', price: 60000, qualityPoints: 2,
+    image: './assets/images/tools/electronic-scale.png',
+    initiallyAvailable: true, breakable: true, repairable: true,
+    description: '地金、石、部材、完成品の重量を測定し、見積、配合、在庫管理の基準にする計量設備です。',
+    detail: '風、防振、ゼロ点、容器差引きを管理し、必要な桁数で重量を正確に読み取ります。',
+    guide: {
+      overview: '電子秤は数字を見るだけの設備ではなく、配合、材料管理、見積、検品の基準値を作る計量設備です。周囲環境や使い方が悪いと、同じものでも表示値が揺れます。',
+      sections: [
+        {
+          title: '計量の基本',
+          paragraphs: ['水平な場所へ設置し、ゼロ点を確認してから測定します。皿へ直接置けないものは容器を使い、風袋引きを行います。'],
+          points: ['安定するまで表示を待つ', '必要な最小表示桁を理解する', '熱いものをそのまま載せない', '磁性や静電気の影響に注意する'],
+        },
+        {
+          title: 'ジュエリー作業での用途',
+          paragraphs: ['地金使用量の確認、端材回収、ルース重量、完成品重量、発送前確認などに用います。見積や加工前後の差分確認にも役立ちます。'],
+          points: ['地金は材質ごとに分けて量る', '小さなメレや部材は紛失しない容器を使う', '完成品は付属品込みか本体のみか条件を統一する', '数値を記録して再確認できるようにする'],
+        },
+        {
+          title: '誤差要因',
+          paragraphs: ['振動、送風、傾き、汚れ、電池残量、ゼロ点ずれは表示の安定性を損ないます。高精度秤ほど周囲環境の影響を受けやすいため、保護カバーを閉じて測定します。'],
+          points: ['秤皿の汚れを除去する', '使用前に既知分銅で確認する', '水平器がある場合は中心を合わせる', '大きすぎる容器で風の影響を増やさない'],
+        },
+        {
+          title: '保守と安全',
+          paragraphs: ['過積載は故障の原因です。使用後は清掃し、薬品や切粉が内部へ入らないよう管理します。計量値が重要な取引では、必要に応じて校正された基準器を使用します。'],
+          points: ['最大秤量を超えない', '表示異常やボタン不良を点検する', '移動時は皿や風防を保護する', '液体や酸をこぼさない'],
+        },
+      ],
+    },
+  },
+
+  woodBlock: {
+    id: 'woodBlock', name: '木台', type: '工具', symbol: '▥', price: 8000, qualityPoints: 1,
+    image: './assets/images/tools/wood-block.png', initiallyAvailable: true, breakable: true, repairable: false,
+    description: '打ち出しや成形時に品物を支え、金属製の台より柔らかく傷を抑える木製の作業台です。',
+    detail: '作業面の木目、割れ、傾きを確認し、加工物の形状に合う当て方で衝撃を分散します。',
+    guide: { overview: '木台は地金へ直接深い打痕を付けずに、曲げ、打ち出し、軽い矯正を行うための支持具です。', sections: [
+      { title: '支持面の選び方', paragraphs: ['平面、曲面、溝の位置を加工物に合わせ、品物が跳ねたり傾いたりしない接触面を作ります。'], points: ['木屑と異物を除く', '鋭い角を品物へ当てない', '割れた台は交換する'] },
+      { title: '打撃と成形', paragraphs: ['強い一撃ではなく、小さな打撃を分散して形状を確認しながら進めます。木が吸収する力を見込み、必要以上に叩き続けません。'], points: ['地金の加工硬化を確認する', '必要に応じて焼鈍する', '仕上げ代を残す'] },
+      { title: '保守と安全', paragraphs: ['湿気による反り、亀裂、油分の付着を点検し、安定した台の上で使用します。'], points: ['使用前にぐらつきを確認', '手指を打撃線から外す', '金属粉を回収する'] },
+    ] },
+  },
+  rollingMill: {
+    id: 'rollingMill', name: 'ローラー', type: '設備', symbol: '▤', price: 350000, qualityPoints: 5,
+    image: './assets/images/tools/rolling-mill.png', initiallyAvailable: false, breakable: true, repairable: true,
+    unlock: { enabled: true, minWorkshopLevel: 6 },
+    description: '板材や線材を圧延し、厚みや幅を段階的に整える彫金用ローラーです。',
+    detail: '一度に大きく潰さず、左右の平行、圧下率、焼鈍時期、ロール面の清浄を管理します。',
+    guide: { overview: 'ローラーは地金を均一な板や線へ加工する中核設備です。圧延方向と加工率を記録し、割れや蛇行を防ぎます。', sections: [
+      { title: '圧延前の準備', paragraphs: ['地金の酸化物、ろう、異物を除き、端部の割れとロール間隙を確認します。'], points: ['材質を混同しない', '入口と出口を確保する', '長い髪や衣服を巻き込ませない'] },
+      { title: '圧下率と焼鈍', paragraphs: ['小さな圧下を繰り返し、厚みを測定します。加工硬化が進んだら材質に合う条件で焼鈍します。'], points: ['厚みを複数点で測る', '急激な圧下を避ける', '圧延方向を管理する'] },
+      { title: 'ロールの保守', paragraphs: ['ロール面の傷や錆はそのまま地金へ転写されます。使用後は清掃・防錆し、平行調整を保ちます。'], points: ['硬い異物を噛ませない', '過負荷を避ける', '異音時は停止する'] },
+    ] },
+  },
+  milgrainTool: {
+    id: 'milgrainTool', name: 'ミルタガネ', type: '工具', symbol: '⋯', price: 12000, qualityPoints: 2,
+    image: './assets/images/tools/milgrain-tool.png', initiallyAvailable: false, breakable: true, repairable: false,
+    unlock: { enabled: true, minWorkshopLevel: 5 },
+    description: '地金の縁へ連続した小粒模様を刻み、アンティーク調のミル打ちを施す工具です。',
+    detail: '粒径、角度、送り量、圧力を一定にし、下地の厚みと支持状態を確認して使用します。',
+    guide: { overview: 'ミルタガネは小さな車輪状の刃を転がし、連続した粒模様を形成します。仕上がりは下地精度と送りの安定で決まります。', sections: [
+      { title: '工具と粒径', paragraphs: ['意匠と地金幅に合う粒径を選び、摩耗や欠け、回転の渋さを確認します。'], points: ['試し材で模様を確認', '左右の余白を揃える', '刃先を汚さない'] },
+      { title: '送りと圧力', paragraphs: ['最初の粒へ次の粒を正確につなぎ、一定の角度と圧力で進めます。戻して重ねると模様が潰れるため、位置を見ながら一方向へ送ります。'], points: ['地金を十分に支持', '曲線では少しずつ方向転換', '石や爪へ接触させない'] },
+      { title: '仕上げと安全', paragraphs: ['施工後はバリ、地金のめくれ、石留め部への干渉を拡大して確認します。'], points: ['深く押し過ぎない', '滑り方向に指を置かない', '摩耗工具は交換する'] },
+    ] },
+  },
+  dividers: {
+    id: 'dividers', name: 'ケガキ（カニコンパス）', type: '工具', symbol: '⌇', price: 8000, qualityPoints: 1,
+    image: './assets/images/tools/dividers.png', initiallyAvailable: true, breakable: true, repairable: false,
+    description: '地金へ平行線、中心、等間隔、円弧を写し、切削や穴あけ位置を決める罫書き工具です。',
+    detail: '両脚の先端、支点の遊び、開き量を確認し、必要最小限の力で基準線を引きます。',
+    guide: { overview: 'ケガキは完成形を直接作る工具ではなく、加工精度の基準を地金へ移す測定・罫書き工具です。', sections: [
+      { title: '基準の取り方', paragraphs: ['仕上げ面、中心線、端面のどこを基準にするかを決め、同じ基準から寸法を移します。'], points: ['ノギス等で開きを確認', '支点の緩みを点検', '仕上げ代を含める'] },
+      { title: '罫書き', paragraphs: ['片脚を基準面へ沿わせ、もう片脚で薄く線を引きます。深く傷を付けると亀裂や仕上げ傷になるため、複数回なぞりません。'], points: ['先端を適切に研ぐ', '線の交点を明確にする', '滑り止めを使う'] },
+      { title: '保管と安全', paragraphs: ['鋭い先端を保護し、落下や曲がりを避けます。'], points: ['先端を人へ向けない', '使用後は閉じる', '錆と曲がりを確認する'] },
+    ] },
+  },
   buffer: {
     id: 'buffer', name: 'バッファー', type: '設備', symbol: '✺', price: 300000, qualityPoints: 5,
+    image: './assets/images/tools/buffer.png',
     initiallyAvailable: false, breakable: true, repairable: true,
     unlock: { enabled: true, minWorkshopLevel: 3 },
     description: '回転するバフと研磨剤で地金表面の微細傷を除去し、均一な光沢や鏡面を作る仕上げ設備です。',
@@ -847,6 +1084,7 @@ export const WORKSHOP_TOOLS = {
   },
   ultrasonicCleaner: {
     id: 'ultrasonicCleaner', name: '超音波洗浄機', type: '設備', symbol: '≈', price: 90000, qualityPoints: 3,
+    image: './assets/images/tools/ultrasonic-cleaner.png',
     initiallyAvailable: false, breakable: true, repairable: true,
     unlock: { enabled: true, minWorkshopLevel: 3 },
     description: '液中の微細なキャビテーションを利用し、研磨剤、油分、細部の汚れを除去する洗浄設備です。',
@@ -1690,7 +1928,7 @@ export const PRICE_MODES = {
 export const DISPLAY_SHOP_PRODUCTS = {
   showcase: {
     id: 'showcase', name: 'ショーケース', price: 150000, symbol: '▤', levelGain: 0, image: './assets/images/display-products/showcase.png',
-    description: '1台150,000円。店舗へ設置すると、完成品を5個まで陳列でき、完成品の保管上限も5個増えます。小さな店舗には2台まで設置できます。',
+    description: '1台150,000円。店舗へ設置すると、完成品を5個まで陳列でき、完成品の保管上限も5個増えます。店舗1は拡大前1台まで、拡大後は3台まで設置できます。店舗2と店舗3は3台まで設置できます。',
   },
   displaySupplies: {
     id: 'displaySupplies', name: 'ディスプレイ用品', price: 50000, symbol: '◇', levelGain: 1, image: './assets/images/display-products/display-supplies.png',
@@ -1927,10 +2165,8 @@ export function productionCost({ item, gem, looseShape, metal, useLoose = true }
   return Math.round(looseCost + (metalData.price * metalWeight));
 }
 
-export function productionHours({ item, design, finish }, employee = null) {
-  const base = ITEMS[item].hours + DESIGNS[design].hours + FINISHES[finish].hours;
-  const assisted = employee?.hired && employee?.working && employee?.role === 'craft';
-  return Math.max(1, base - (assisted ? 1 : 0));
+export function productionHours({ item, design, finish }) {
+  return Math.max(1, ITEMS[item].hours + DESIGNS[design].hours + FINISHES[finish].hours);
 }
 
 export function itemName({ gem, looseShape, metal, item, useLoose = true }) {
@@ -1967,6 +2203,25 @@ export function isBirthdayOnDate(birthday, date) {
   return date.getMonth() + 1 === month && date.getDate() === day;
 }
 
+function storeEmployeeDefaults(branchNumber = 1) {
+  const number = Math.max(1, Math.min(3, Math.floor(Number(branchNumber) || 1)));
+  const candidate = STORE_EMPLOYEE_CANDIDATES[number] || STORE_EMPLOYEE_CANDIDATES[1];
+  return { hired: false, name: candidate.name, workDays: 0, working: true };
+}
+
+function normalizeStoreEmployee(value, branchNumber = 1, legacyFallback = null) {
+  const defaults = storeEmployeeDefaults(branchNumber);
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? value
+    : (legacyFallback && typeof legacyFallback === 'object' && !Array.isArray(legacyFallback) ? legacyFallback : {});
+  return {
+    hired: Boolean(source.hired),
+    name: defaults.name,
+    workDays: Math.max(0, Math.floor(Number(source.workDays) || 0)),
+    working: source.working !== false,
+  };
+}
+
 export function initialState() {
   return {
     version: VERSION,
@@ -1985,8 +2240,9 @@ export function initialState() {
       financePeriod: 'today',
       calendarEvents: {},
     },
-    artisan: { level: 1, xp: 0 },
-    workshop: { level: 1 },
+    artisan: { level: 1, peakLevel: 1, xp: 0, levelPenalty: 0 },
+    workshop: { level: 1, peakLevel: 1, activeHours: 0, paidThroughLevel: 1 },
+    workshopStaff: { hired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [], evolutionStage: 1 },
     business: { workshopSuspended: false, workshopUnpaid: 0, homeRentUnpaid: 0, homeRentReports: [], lastProcessedHomeRentMonth: '', branchUnpaid: {}, monthlyReports: [], lastProcessedMonth: '' },
     wellbeing: { hunger: 7, maxHunger: 7, lastMeal: '', mealsEaten: 0 },
     inventory: {
@@ -2034,12 +2290,20 @@ export function initialState() {
       displaySuppliesInstalled: 0,
       casesInstalled: 0,
       level: 1,
+      peakLevel: 1,
+      paidThroughLevel: 1,
       points: 0,
       rating: 50,
       salesCount: 0,
+      operatingDays: 0,
       totalRevenue: 0,
+      serviceSuccesses: 0,
+      openMinutesToday: 0,
+      visitorsToday: 0,
       totalProfit: 0,
       totalVisitors: 0,
+      playerCraftedCount: 0,
+      deliveredOrderCount: 0,
       lastResult: null,
     },
     customers: Object.fromEntries(Object.keys(CUSTOMERS).map((customerId) => [customerId, {
@@ -2056,7 +2320,7 @@ export function initialState() {
       proposedItemIds: [],
     }])),
     orders: [],
-    employee: { hired: false, name: '田中 葵', role: 'sales', working: true },
+    employee: storeEmployeeDefaults(1),
     events: {
       robbery: {
         lastTriggeredDay: 0,
@@ -2183,7 +2447,7 @@ export function initialState() {
     },
     notifications: [],
     finance: [],
-    daily: { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 },
+    daily: { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], workshopStaffCrafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 },
     settings: {
       bgmVolume: 0.35,
       ambientVolume: 0.60,
@@ -2316,6 +2580,9 @@ export function chooseNewestSavedState(localSaved, cloudSaved) {
 export function migrateState(saved) {
   const legacy = saved && typeof saved === 'object' ? structuredClone(saved) : {};
   const state = merge(initialState(), legacy);
+  // v0.10.454以降の保存データは20段階制の数値をそのまま保持する。
+  // 旧保存データだけを従来の10段階から移行し、再読込でLv.11以上が失われないようにする。
+  const savedUsesV454Levels = !versionBefore(legacy.version, '0.10.454');
 
   // v0.1系のクラウドセーブから、保持できる基本情報を引き継ぐ。
   if (legacy.game?.dayNumber != null && legacy.game?.day == null) state.game.day = Number(legacy.game.dayNumber) || 1;
@@ -2493,7 +2760,21 @@ export function migrateState(saved) {
   }, 0);
   const migratedWorkshopLevel = Math.max(1, Math.min(10, 1 + Math.floor(Math.sqrt(legacyWorkshopPoints))));
   state.workshop = { ...initialState().workshop, ...(state.workshop || {}) };
-  state.workshop.level = Math.max(1, Math.min(10, Math.floor(Number(legacy.workshop?.level) || migratedWorkshopLevel || 1)));
+  state.workshop.level = savedUsesV454Levels
+    ? Math.max(1, Math.min(20, Math.floor(Number(legacy.workshop?.level ?? state.workshop.level) || 1)))
+    : Math.max(1, Math.min(10, Math.floor(Number(legacy.workshop?.level) || migratedWorkshopLevel || 1)));
+
+  const workshopStaffSource = state.workshopStaff && typeof state.workshopStaff === 'object' && !Array.isArray(state.workshopStaff)
+    ? state.workshopStaff
+    : {};
+  state.workshopStaff = {
+    hired: Boolean(workshopStaffSource.hired),
+    working: workshopStaffSource.working !== false,
+    workDays: Math.max(0, Math.floor(Number(workshopStaffSource.workDays) || 0)),
+    workMinutesBank: Math.max(0, Number(workshopStaffSource.workMinutesBank) || 0),
+    workedMinutesToday: Math.max(0, Math.floor(Number(workshopStaffSource.workedMinutesToday) || 0)),
+    craftedToday: Array.isArray(workshopStaffSource.craftedToday) ? workshopStaffSource.craftedToday.slice(-20) : [],
+  };
 
   state.business = { ...initialState().business, ...(state.business || {}) };
   state.business.workshopSuspended = Boolean(state.business.workshopSuspended);
@@ -2505,6 +2786,7 @@ export function migrateState(saved) {
   state.business.monthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports.slice(-24) : [];
   state.business.lastProcessedMonth = String(state.business.lastProcessedMonth || '');
 
+  state.employee = normalizeStoreEmployee(state.employee, 1);
   state.facilities = { ...initialState().facilities, ...(state.facilities || {}) };
   // 初期から利用できるのは地金屋、ルース屋、ジュエリーショップ、g-Lab.、ディスプレイ屋、不動産屋。
   state.facilities.materialShop = true;
@@ -2513,8 +2795,8 @@ export function migrateState(saved) {
   state.facilities.jewelryShop = true;
   state.facilities.displayShop = true;
   state.facilities.realEstate = true;
-  // 既存セーブで利用済みの施設は閉じない。
-  if (state.employee?.hired) state.facilities.recruitment = true;
+  // 御徒町の人材紹介は現在未解放。店舗内の店舗スタッフ機能とは分離して扱う。
+  state.facilities.recruitment = false;
   // v0.5.8より店舗は不動産で契約してから利用する。旧セーブは実際の店舗利用履歴がある場合のみ契約済みとして引き継ぐ。
   if (typeof legacy.store?.rented !== 'boolean') {
     const usedStore = Number(state.store.salesCount) > 0
@@ -2530,7 +2812,7 @@ export function migrateState(saved) {
   state.store.branchNumber = Math.max(1, Number(state.store.branchNumber) || 1);
   state.store.rentedDay = state.store.rented ? (Number(state.store.rentedDay) || 1) : null;
   const usesSimplifiedStoreProgress = !versionBefore(legacy.version, '0.10.91');
-  const legacyStoreLevel = Math.max(1, Math.min(10, Math.floor(Number(legacy.store?.level ?? state.store.level) || 1)));
+  const legacyStoreLevel = Math.max(1, Math.min(savedUsesV454Levels ? 20 : 10, Math.floor(Number(legacy.store?.level ?? state.store.level) || 1)));
   const legacyCompletedOrders = Array.isArray(legacy.orders)
     ? legacy.orders.filter((order) => order?.status === '完了').length
     : 0;
@@ -2542,13 +2824,16 @@ export function migrateState(saved) {
     ? (usesSimplifiedStoreProgress ? Math.round(rawLegacyRating) : Math.round(50 + Math.max(0, rawLegacyRating - 1) * 12.5))
     : 50;
   state.store.points = Math.max(0, legacyStorePoints);
-  state.store.level = STORE_LEVEL_POINTS.reduce((level, threshold, index) => state.store.points >= threshold ? index + 1 : level, 1);
+  state.store.level = savedUsesV454Levels
+    ? legacyStoreLevel
+    : STORE_LEVEL_POINTS.reduce((level, threshold, index) => state.store.points >= threshold ? index + 1 : level, 1);
   state.store.rating = Math.max(0, Math.min(100, migratedStoreRating));
 
   const savedBranches = Array.isArray(state.store.branches) ? state.store.branches : [];
   state.store.branches = savedBranches
     .filter((branch) => branch && Number(branch.number) >= 1)
     .map((branch) => {
+      const branchNumber = Math.max(1, Number(branch.number) || 1);
       const branchPoints = usesSimplifiedStoreProgress && Number.isFinite(Number(branch.points))
         ? Math.max(0, Math.floor(Number(branch.points)))
         : Math.max(0, Math.floor(Number(branch.salesCount) || 0)) + Math.max(0, Math.floor(Number(branch.orderDeliveries) || 0)) * 2;
@@ -2557,34 +2842,56 @@ export function migrateState(saved) {
         ? Math.round(branchRawRating)
         : state.store.rating;
       return {
-        id: branch.id || `branch-${Number(branch.number)}`,
-        number: Math.max(1, Number(branch.number) || 1),
-        label: `店舗${Math.max(1, Number(branch.number) || 1)}`,
+        id: branch.id || `branch-${branchNumber}`,
+        number: branchNumber,
+        label: `店舗${branchNumber}`,
         name: String(branch.name || state.store.name || '').trim().slice(0, 30),
         rentedDay: Math.max(1, Number(branch.rentedDay) || state.store.rentedDay || 1),
         suspended: Boolean(branch.suspended),
         unpaidRent: Math.max(0, Number(branch.unpaidRent) || 0),
         points: branchPoints,
-        level: STORE_LEVEL_POINTS.reduce((level, threshold, index) => branchPoints >= threshold ? index + 1 : level, 1),
+        level: savedUsesV454Levels
+          ? Math.max(1, Math.min(20, Math.floor(Number(branch.level) || 1)))
+          : STORE_LEVEL_POINTS.reduce((level, threshold, index) => branchPoints >= threshold ? index + 1 : level, 1),
+        peakLevel: Math.max(1, Math.min(20, Math.floor(Number(branch.peakLevel) || Number(branch.level) || 1))),
+        paidThroughLevel: Math.max(1, Math.min(20, Math.floor(Number(branch.paidThroughLevel) || Number(branch.level) || 1))),
         rating: Math.max(0, Math.min(100, branchRating)),
         salesCount: Math.max(0, Math.floor(Number(branch.salesCount) || 0)),
+        operatingDays: Math.max(0, Math.floor(Number(branch.operatingDays) || 0)),
+        totalRevenue: Math.max(0, Math.floor(Number(branch.totalRevenue) || 0)),
+        serviceSuccesses: Math.max(0, Math.floor(Number(branch.serviceSuccesses) || 0)),
+        openMinutesToday: Math.max(0, Math.floor(Number(branch.openMinutesToday) || 0)),
+        visitorsToday: Math.max(0, Math.floor(Number(branch.visitorsToday) || 0)),
         orderDeliveries: Math.max(0, Math.floor(Number(branch.orderDeliveries) || 0)),
         displaySuppliesInstalled: Math.max(0, Math.floor(Number.isFinite(Number(branch.displaySuppliesInstalled)) ? Number(branch.displaySuppliesInstalled) : (Number(branch.number) === 1 ? Number(state.store.displaySuppliesInstalled) || 0 : 0))),
         casesInstalled: Math.min(50, Math.max(0, Math.floor(Number.isFinite(Number(branch.casesInstalled)) ? Number(branch.casesInstalled) : (Number(branch.number) === 1 ? Number(state.store.casesInstalled) || 0 : 0)))),
         showcases: Array.isArray(branch.showcases) ? structuredClone(branch.showcases) : [],
         showcaseCount: Array.isArray(branch.showcases) ? branch.showcases.length : 0,
+        employee: normalizeStoreEmployee(branch.employee, branchNumber, branchNumber === 1 ? state.employee : null),
       };
     });
   if (state.store.rented && state.store.name && !state.store.branches.some((branch) => branch.number === 1)) {
     state.store.branches.unshift({
       id: 'branch-1', number: 1, label: '店舗1', name: state.store.name, rentedDay: state.store.rentedDay || 1,
-      suspended: false, unpaidRent: 0, points: state.store.points, level: state.store.level, rating: state.store.rating,
-      salesCount: Math.max(0, Math.floor(Number(state.store.salesCount) || 0)), orderDeliveries: 0,
+      suspended: false, unpaidRent: 0, points: state.store.points, level: state.store.level,
+      peakLevel: Math.max(1, Math.min(20, Math.floor(Number(state.store.peakLevel) || Number(state.store.level) || 1))),
+      paidThroughLevel: Math.max(1, Math.min(20, Math.floor(Number(state.store.paidThroughLevel) || Number(state.store.level) || 1))),
+      rating: state.store.rating,
+      salesCount: Math.max(0, Math.floor(Number(state.store.salesCount) || 0)),
+      operatingDays: Math.max(0, Math.floor(Number(state.store.operatingDays) || 0)),
+      totalRevenue: Math.max(0, Math.floor(Number(state.store.totalRevenue) || 0)),
+      serviceSuccesses: Math.max(0, Math.floor(Number(state.store.serviceSuccesses) || 0)),
+      openMinutesToday: Math.max(0, Math.floor(Number(state.store.openMinutesToday) || 0)),
+      visitorsToday: Math.max(0, Math.floor(Number(state.store.visitorsToday) || 0)), orderDeliveries: 0,
       displaySuppliesInstalled: Math.max(0, Math.floor(Number(state.store.displaySuppliesInstalled) || 0)),
       casesInstalled: Math.min(50, Math.max(0, Math.floor(Number(state.store.casesInstalled) || 0))),
-      showcases: [], showcaseCount: 0,
+      showcases: [], showcaseCount: 0, employee: normalizeStoreEmployee(null, 1, state.employee),
     });
   }
+  const firstBranchEmployee = state.store.branches.find((branch) => Number(branch.number) === 1)?.employee;
+  state.employee = normalizeStoreEmployee(firstBranchEmployee || state.employee, 1);
+  // 店舗スタッフを雇用済みでも、御徒町の人材紹介はまだ解放しない。
+  state.facilities.recruitment = false;
   state.facilities.realEstate = true;
   const legacyRecommendedPrices = new Map(
     (Array.isArray(state.inventory.jewelry) ? state.inventory.jewelry : [])
@@ -2623,8 +2930,12 @@ export function migrateState(saved) {
   for (const branch of state.store.branches) {
     branch.displaySuppliesInstalled = Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0));
     branch.casesInstalled = Math.min(50, Math.max(0, Math.floor(Number(branch.casesInstalled) || 0)));
-    const baseLevel = STORE_LEVEL_POINTS.reduce((level, threshold, index) => branch.points >= threshold ? index + 1 : level, 1);
-    branch.level = Math.min(10, baseLevel + branch.displaySuppliesInstalled + (branch.casesInstalled > 0 ? 1 : 0));
+    if (savedUsesV454Levels) {
+      branch.level = Math.max(1, Math.min(20, Math.floor(Number(branch.level) || 1)));
+    } else {
+      const baseLevel = STORE_LEVEL_POINTS.reduce((level, threshold, index) => branch.points >= threshold ? index + 1 : level, 1);
+      branch.level = Math.min(10, baseLevel + branch.displaySuppliesInstalled + (branch.casesInstalled > 0 ? 1 : 0));
+    }
   }
   const activeBranch = state.store.branches.find((branch) => branch.number === Math.max(1, Number(state.store.branchNumber) || 1)) || state.store.branches[0];
   if (activeBranch) {
@@ -2671,13 +2982,13 @@ export function migrateState(saved) {
     }
     return normalized;
   };
-  const maximumShowcases = state.store.expanded ? 5 : 2;
   const legacyGlobalShowcases = normalizeShowcases(Array.isArray(state.store.showcases) ? state.store.showcases : []);
   const hasBranchShowcaseData = !versionBefore(legacy.version, '0.10.98')
     && state.store.branches.some((branch) => Array.isArray(branch.showcases));
   const usedJewelryIds = new Set();
   let refundedShowcases = 0;
   for (const branch of state.store.branches.sort((left, right) => Number(left.number) - Number(right.number))) {
+    const maximumShowcases = Number(branch.number) >= 2 ? 3 : (state.store.expanded ? 3 : 1);
     const sourceShowcases = hasBranchShowcaseData
       ? normalizeShowcases(branch.showcases)
       : (Number(branch.number) === 1 ? legacyGlobalShowcases : []);
@@ -2701,8 +3012,12 @@ export function migrateState(saved) {
     const installedDisplaySupplies = Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0));
     if (installedDisplaySupplies > maximumDisplaySupplies) refundedDisplaySupplies += installedDisplaySupplies - maximumDisplaySupplies;
     branch.displaySuppliesInstalled = Math.min(installedDisplaySupplies, maximumDisplaySupplies);
-    const baseLevel = STORE_LEVEL_POINTS.reduce((level, threshold, index) => branch.points >= threshold ? index + 1 : level, 1);
-    branch.level = Math.min(10, baseLevel + branch.displaySuppliesInstalled + (branch.casesInstalled > 0 ? 1 : 0));
+    if (savedUsesV454Levels) {
+      branch.level = Math.max(1, Math.min(20, Math.floor(Number(branch.level) || 1)));
+    } else {
+      const baseLevel = STORE_LEVEL_POINTS.reduce((level, threshold, index) => branch.points >= threshold ? index + 1 : level, 1);
+      branch.level = Math.min(10, baseLevel + branch.displaySuppliesInstalled + (branch.casesInstalled > 0 ? 1 : 0));
+    }
   }
   if (refundedDisplaySupplies > 0) {
     state.store.displayInventory.displaySupplies = Math.max(0, Math.floor(Number(state.store.displayInventory.displaySupplies) || 0)) + refundedDisplaySupplies;
@@ -2714,7 +3029,11 @@ export function migrateState(saved) {
   state.store.displaySuppliesInstalled = refreshedActiveBranch?.displaySuppliesInstalled || 0;
   state.store.casesInstalled = refreshedActiveBranch?.casesInstalled || 0;
   state.store.points = Math.max(0, Math.floor(Number(state.store.points) || 0));
-  state.store.level = refreshedActiveBranch ? refreshedActiveBranch.level : Math.min(10, STORE_LEVEL_POINTS.reduce((level, threshold, index) => state.store.points >= threshold ? index + 1 : level, 1) + state.store.displaySuppliesInstalled + (state.store.casesInstalled > 0 ? 1 : 0));
+  state.store.level = refreshedActiveBranch
+    ? refreshedActiveBranch.level
+    : (savedUsesV454Levels
+      ? Math.max(1, Math.min(20, Math.floor(Number(state.store.level) || 1)))
+      : Math.min(10, STORE_LEVEL_POINTS.reduce((level, threshold, index) => state.store.points >= threshold ? index + 1 : level, 1) + state.store.displaySuppliesInstalled + (state.store.casesInstalled > 0 ? 1 : 0)));
   state.store.rating = Math.max(0, Math.min(100, Number.isFinite(Number(state.store.rating)) ? Math.round(Number(state.store.rating)) : 50));
   const displayedJewelryIds = new Set(state.store.branches.flatMap((branch) => branch.showcases.flatMap((showcase) => showcase.slots)).filter(Boolean).map((slot) => slot.jewelryId));
   const displayBranchByJewelryId = new Map();
@@ -2736,10 +3055,10 @@ export function migrateState(saved) {
   }
   const orderDifficultyDefaults = {
     basic: { days: 7, artisanLevel: 1 },
-    general: { days: 10, artisanLevel: 2 },
-    complex: { days: 14, artisanLevel: 3 },
-    high: { days: 21, artisanLevel: 4 },
-    special: { days: 21, artisanLevel: 5 },
+    general: { days: 10, artisanLevel: 4 },
+    complex: { days: 14, artisanLevel: 8 },
+    high: { days: 21, artisanLevel: 12 },
+    special: { days: 21, artisanLevel: 16 },
   };
   const migratedFromOldOrders = versionBefore(legacy.version, '0.10.94');
   state.orders = Array.isArray(state.orders)
@@ -2771,7 +3090,7 @@ export function migrateState(saved) {
           ...entry,
           looseShape,
           difficulty,
-          requiredArtisanLevel: Math.max(1, Math.min(5, Number(entry.requiredArtisanLevel) || difficultyData.artisanLevel)),
+          requiredArtisanLevel: Math.max(1, Math.min(20, versionBefore(legacy.version, '0.10.454') ? difficultyData.artisanLevel : (Number(entry.requiredArtisanLevel) || difficultyData.artisanLevel))),
           requiredTools: Array.isArray(entry.requiredTools) && entry.requiredTools.length ? [...new Set(entry.requiredTools.map(String))] : ['jewelryBench'],
           desiredConditions: String(entry.desiredConditions || customer?.preferenceText || `${GEMS[entry.gem].name}・${LOOSE_SHAPES[looseShape].name}・${METALS[entry.metal].name}・${DESIGNS[entry.design]?.name || '指定なし'}`),
           requiredMetalWeight: Math.max(0.1, Number(entry.requiredMetalWeight) || Number(item.metalWeight) || Number(METALS[entry.metal].unitWeight) || 5),
@@ -2823,6 +3142,7 @@ export function migrateState(saved) {
     roughSold: Array.isArray(state.daily?.roughSold) ? state.daily.roughSold : [],
     looseSold: Array.isArray(state.daily?.looseSold) ? state.daily.looseSold : [],
     crafted: Array.isArray(state.daily?.crafted) ? state.daily.crafted : [],
+    workshopStaffCrafted: Array.isArray(state.daily?.workshopStaffCrafted) ? state.daily.workshopStaffCrafted : [],
     sold: Array.isArray(state.daily?.sold) ? state.daily.sold : [],
     meals: Array.isArray(state.daily?.meals) ? state.daily.meals : [],
     visitors: Number(state.daily?.visitors) || 0,
@@ -3112,6 +3432,53 @@ export function migrateState(saved) {
   for (const key of ['player', 'profile', 'character', 'avatar', 'customization', 'characterCustomize', 'onboardingComplete']) {
     if (Object.prototype.hasOwnProperty.call(state, key)) delete state[key];
   }
+
+
+  // v0.10.454：職人・工房・店舗を20段階へ移行し、現在レベルと過去最高レベルを分離する。
+  const migratedToV454 = versionBefore(legacy.version, '0.10.454');
+  const legacyArtisanLevelV454 = Math.max(1, Math.min(5, Math.floor(Number(legacy.artisan?.level) || 1)));
+  const artisanLegacyMapV454 = [1, 1, 4, 8, 12, 16];
+  if (migratedToV454) state.artisan.xp = Math.max(state.artisan.xp, ARTISAN_LEVEL_XP[(artisanLegacyMapV454[legacyArtisanLevelV454] || 1) - 1] || 0);
+  state.artisan.levelPenalty = Math.max(0, Math.floor(Number(state.artisan.levelPenalty) || 0));
+  const artisanBaseLevelV454 = ARTISAN_LEVEL_XP.reduce((level, threshold, index) => state.artisan.xp >= threshold ? index + 1 : level, 1);
+  state.artisan.level = Math.max(1, Math.min(20, artisanBaseLevelV454 - state.artisan.levelPenalty));
+  state.artisan.peakLevel = Math.max(state.artisan.level, Math.min(20, Math.floor(Number(state.artisan.peakLevel) || state.artisan.level)));
+
+  const savedWorkshopLevelV454 = Math.max(1, Math.min(migratedToV454 ? 10 : 20, Math.floor(Number(legacy.workshop?.level ?? state.workshop.level) || 1)));
+  const mappedWorkshopLevelV454 = migratedToV454
+    ? Math.max(1, Math.min(20, savedWorkshopLevelV454 === 1 ? 1 : savedWorkshopLevelV454 * 2))
+    : savedWorkshopLevelV454;
+  state.workshop.level = mappedWorkshopLevelV454;
+  state.workshop.peakLevel = Math.max(mappedWorkshopLevelV454, Math.min(20, Math.floor(Number(state.workshop.peakLevel) || mappedWorkshopLevelV454)));
+  const workshopRequirementV454 = WORKSHOP_LEVEL_REQUIREMENTS.find((entry) => entry.level === mappedWorkshopLevelV454);
+  state.workshop.activeHours = Math.max(0, Number(state.workshop.activeHours) || 0, migratedToV454 ? Number(workshopRequirementV454?.hours || 0) : 0);
+  state.workshop.paidThroughLevel = Math.max(mappedWorkshopLevelV454, Math.min(20, Math.floor(Number(state.workshop.paidThroughLevel) || mappedWorkshopLevelV454)));
+
+  state.store.playerCraftedCount = Math.max(0, Math.floor(Number(state.store.playerCraftedCount) || (state.daily?.crafted?.length || 0)));
+  state.store.deliveredOrderCount = Math.max(0, Math.floor(Number(state.store.deliveredOrderCount) || state.orders.filter((order) => order.status === '完了').length));
+  for (const branch of state.store.branches) {
+    const legacyBranch = Array.isArray(legacy.store?.branches)
+      ? legacy.store.branches.find((entry) => Number(entry?.number) === Number(branch.number))
+      : null;
+    const legacyLevelSource = legacyBranch?.level ?? (Number(branch.number) === 1 ? legacy.store?.level : branch.level);
+    const savedBranchLevel = Math.max(1, Math.min(migratedToV454 ? 10 : 20, Math.floor(Number(legacyLevelSource ?? branch.level) || 1)));
+    const mappedLevel = migratedToV454
+      ? Math.max(1, Math.min(20, savedBranchLevel === 1 ? 1 : Math.round(1 + (savedBranchLevel - 1) * 19 / 9)))
+      : savedBranchLevel;
+    branch.level = mappedLevel;
+    branch.peakLevel = Math.max(mappedLevel, Math.min(20, Math.floor(Number(branch.peakLevel) || mappedLevel)));
+    branch.paidThroughLevel = Math.max(mappedLevel, Math.min(20, Math.floor(Number(branch.paidThroughLevel) || mappedLevel)));
+    const storeRequirementV454 = STORE_LEVEL_REQUIREMENTS.find((entry) => entry.level === mappedLevel);
+    branch.operatingDays = Math.max(0, Math.floor(Number(branch.operatingDays) || 0), migratedToV454 ? Number(storeRequirementV454?.operatingDays || 0) : 0);
+    branch.salesCount = Math.max(0, Math.floor(Number(branch.salesCount) || 0), migratedToV454 ? Number(storeRequirementV454?.sales || 0) : 0);
+    branch.totalRevenue = Math.max(0, Math.floor(Number(branch.totalRevenue) || 0), migratedToV454 ? Number(storeRequirementV454?.revenue || 0) : 0);
+    branch.serviceSuccesses = Math.max(0, Math.floor(Number(branch.serviceSuccesses) || 0), migratedToV454 ? Number(storeRequirementV454?.serviceSuccesses || 0) : 0);
+    branch.openMinutesToday = Math.max(0, Math.floor(Number(branch.openMinutesToday) || 0));
+    branch.visitorsToday = Math.max(0, Math.floor(Number(branch.visitorsToday) || 0));
+  }
+  const activeBranchV454 = state.store.branches.find((branch) => Number(branch.number) === Math.max(1, Number(state.store.branchNumber) || 1)) || state.store.branches[0];
+  if (activeBranchV454) state.store.level = activeBranchV454.level;
+  state.workshopStaff.evolutionStage = workshopStaffGrowthForWorkDays(state.workshopStaff.workDays).level >= 4 ? 2 : 1;
 
   return state;
 }

@@ -1,9 +1,9 @@
-const VERSION = '0.10.482';
+const VERSION = '0.10.488';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/daily-gems.js?v=0.10.482', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/daily-gems.js?v=0.10.488', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './data/jewelry_okachimachi_quiz_200_game_format.json',
   './data/daily-gems-365.json', './data/cinema-event-videos.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp', './assets/images/main-menu.webp', './assets/images/main-menu-portrait.webp', './assets/images/today-gem.webp',
   './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/tools/gem-polishing-machine.png', './assets/images/tools/diamond-polishing-lap.png', './assets/images/tools/piercing-saw.png', './assets/images/tools/nipper.png', './assets/images/tools/electronic-scale.png', './assets/images/tools/wood-block.png', './assets/images/tools/dividers.png', './assets/images/tools/milgrain-tool.png', './assets/images/tools/rolling-mill.png', './assets/images/tools/file.png', './assets/images/tools/pliers.png', './assets/images/tools/torch.png', './assets/images/tools/hammer.png', './assets/images/tools/magnifier.png', './assets/images/tools/bench-peg.png', './assets/images/tools/graver.png', './assets/images/tools/engraving-block.png', './assets/images/tools/stamps.png', './assets/images/tools/rotary-tool.png', './assets/images/tools/buffer.png', './assets/images/tools/ultrasonic-cleaner.png', './assets/images/events/indian-restaurant-manager.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
@@ -16,7 +16,7 @@ const APP_SHELL = [
 const CORE_SHELL = [
   './', './index.html', './game.html', './viewport-shell.css', './viewport-shell.js', './styles.css',
   './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js',
-  './js/daily-gems.js?v=0.10.482', './js/japan-holidays.js', './js/firebase-config.js',
+  './js/daily-gems.js?v=0.10.488', './js/japan-holidays.js', './js/firebase-config.js',
   './js/google-auth-bridge.js', './js/security-config.js', './js/firebase-service.js',
 ];
 
@@ -150,6 +150,28 @@ async function networkFirst(request, fallback = './index.html') {
   }
 }
 
+async function kaitenzushiDocumentNetworkFirst(request) {
+  const cache = await caches.open(APP_CACHE);
+  const canonicalUrl = new URL('./assets/minigames/kaitenzushi/game/index.html', self.registration.scope).href;
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      await Promise.allSettled([
+        cache.put(request, response.clone()),
+        cache.put(canonicalUrl, response.clone()),
+      ]);
+      return response;
+    }
+  } catch (_) {}
+  const cached = (await cache.match(request, { ignoreSearch: true }))
+    || (await cache.match(canonicalUrl, { ignoreSearch: true }));
+  if (cached) return cached;
+  return new Response(`<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>回転寿司 読み込みエラー</title><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#120b08;color:#fff2d2;font-family:sans-serif;text-align:center"><main><strong>回転寿司を読み込めませんでした</strong><p>通信またはキャッシュを更新して、もう一度お試しください。</p></main></body></html>`, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   const appCache = await caches.open(APP_CACHE);
@@ -206,6 +228,10 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.endsWith('/js/daily-gems.js')) {
     const freshRequest = new Request(event.request, { cache: 'no-store' });
     event.respondWith(networkFirst(freshRequest));
+    return;
+  }
+  if (url.pathname.endsWith('/assets/minigames/kaitenzushi/game/index.html')) {
+    event.respondWith(kaitenzushiDocumentNetworkFirst(event.request));
     return;
   }
   if (event.request.mode === 'navigate' || ['document', 'script', 'style'].includes(destination)) {

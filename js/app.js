@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.482';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.488';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -97,6 +97,8 @@ let moneyAnimationFrame = null;
 let pendingDayMoneyDelta = 0;
 let jewelryShopPendingTrade = null;
 let kaitenzushiSession = null;
+let kaitenzushiReadyTimer = null;
+let kaitenzushiLoadNonce = 0;
 let okachimachiQuizSession = null;
 let okachimachiQuizQuestionsPromise = null;
 let cinemaEventVideosPromise = null;
@@ -7050,6 +7052,7 @@ function scheduleScreenContentTopOffsetSync() {
 }
 
 function setScreen(target, data = {}, push = true) {
+  if (target !== 'kaitenzushi') clearKaitenzushiLoadWatch();
   if (state && illnessEventSuppressionActive() && ILLNESS_SUPPRESSED_EVENT_SCREENS.has(target)) {
     target = 'main';
     data = {};
@@ -11445,6 +11448,17 @@ function kaitenzushiAudioParameters() {
   });
 }
 
+function clearKaitenzushiLoadWatch() {
+  if (kaitenzushiReadyTimer) clearTimeout(kaitenzushiReadyTimer);
+  kaitenzushiReadyTimer = null;
+}
+
+function kaitenzushiFrameSource() {
+  const hash = kaitenzushiAudioParameters().toString();
+  const query = new URLSearchParams({ v: VERSION, attempt: String(kaitenzushiLoadNonce) }).toString();
+  return `./assets/minigames/kaitenzushi/game/index.html?${query}#${hash}`;
+}
+
 function renderKaitenzushi() {
   if (!kaitenzushiSession) {
     const sushiEvent = sushiChefEventState();
@@ -11455,15 +11469,16 @@ function renderKaitenzushi() {
       plates: 0,
       settled: false,
       free,
+      ready: false,
+      loadError: false,
     };
   }
-  const hash = kaitenzushiAudioParameters().toString();
   return `<main class="kaitenzushi-game-screen" aria-label="回転寿司ミニゲーム">
     <button type="button" class="kaitenzushi-parent-finish-button" data-action="kaitenzushi-finish">回転寿司を終了する</button>
     <iframe
       class="kaitenzushi-game-frame"
       data-kaitenzushi-frame
-      src="./assets/minigames/kaitenzushi/game/index.html#${esc(hash)}"
+      src="${esc(kaitenzushiFrameSource())}"
       title="回転寿司ミニゲーム"
       allow="autoplay; fullscreen"
       loading="eager"
@@ -11471,24 +11486,83 @@ function renderKaitenzushi() {
   </main>`;
 }
 
+function showKaitenzushiLoadError(reason = '') {
+  if (screen !== 'kaitenzushi') return;
+  clearKaitenzushiLoadWatch();
+  if (kaitenzushiSession) kaitenzushiSession.loadError = true;
+  const stage = root.querySelector('.kaitenzushi-game-screen');
+  const frame = root.querySelector('[data-kaitenzushi-frame]');
+  if (!(stage instanceof HTMLElement)) return;
+  if (frame instanceof HTMLIFrameElement) frame.hidden = true;
+  stage.querySelector('.kaitenzushi-load-error')?.remove();
+  stage.insertAdjacentHTML('beforeend', `<section class="kaitenzushi-load-error" role="alert">
+    <strong>回転寿司を読み込めませんでした</strong>
+    <p>ゲーム本体の画面へ誤って戻らないよう停止しました。通信またはキャッシュを更新して、もう一度読み込んでください。</p>
+    ${reason ? `<small>${esc(reason)}</small>` : ''}
+    <div class="kaitenzushi-load-error-actions">
+      <button type="button" class="primary-button" data-action="retry-kaitenzushi">もう一度読み込む</button>
+      <button type="button" class="secondary-button" data-action="cancel-kaitenzushi">食事選択へ戻る</button>
+    </div>
+  </section>`);
+}
+
+function retryKaitenzushi() {
+  if (screen !== 'kaitenzushi') return;
+  clearKaitenzushiLoadWatch();
+  kaitenzushiLoadNonce += 1;
+  if (kaitenzushiSession) {
+    kaitenzushiSession.ready = false;
+    kaitenzushiSession.loadError = false;
+  }
+  render();
+}
+
+function cancelKaitenzushi() {
+  clearKaitenzushiLoadWatch();
+  kaitenzushiSession = null;
+  setScreen('meal', {}, false);
+}
+
+function postKaitenzushiSettings(frame) {
+  if (!(frame instanceof HTMLIFrameElement)) return;
+  const settings = state?.settings || {};
+  frame.contentWindow?.postMessage({
+    source: 'jxj-kaitenzushi-parent',
+    type: 'settings',
+    // 回転寿司のBGM・環境音は親ゲーム側で再生する。iframeでは食事効果音だけを有効にする。
+    bgmVolume: 0,
+    sfxVolume: Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0)),
+    ambientVolume: 0,
+    bgmMuted: true,
+    sfxMuted: Boolean(settings.sfxMuted),
+    ambientMuted: true,
+    externalAudioPriority: false,
+  }, '*');
+}
+
 function bindKaitenzushiFrame() {
   const frame = root.querySelector('[data-kaitenzushi-frame]');
   if (!(frame instanceof HTMLIFrameElement)) return;
+  clearKaitenzushiLoadWatch();
   frame.addEventListener('load', () => {
-    const settings = state?.settings || {};
-    frame.contentWindow?.postMessage({
-      source: 'jxj-kaitenzushi-parent',
-      type: 'settings',
-      // 回転寿司のBGM・環境音は親ゲーム側で再生する。iframeでは食事効果音だけを有効にする。
-      bgmVolume: 0,
-      sfxVolume: Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0)),
-      ambientVolume: 0,
-      bgmMuted: true,
-      sfxMuted: Boolean(settings.sfxMuted),
-      ambientMuted: true,
-      externalAudioPriority: false,
-    }, '*');
+    if (screen !== 'kaitenzushi') return;
+    let correctDocument = false;
+    try {
+      correctDocument = frame.contentDocument?.documentElement?.dataset?.jxjKaitenzushi === '1';
+    } catch (_) {}
+    if (!correctDocument) {
+      showKaitenzushiLoadError('回転寿司ではない画面が読み込まれました。');
+      return;
+    }
+    postKaitenzushiSettings(frame);
+    if (kaitenzushiSession?.ready) return;
+    kaitenzushiReadyTimer = setTimeout(() => {
+      if (screen === 'kaitenzushi' && !kaitenzushiSession?.ready) {
+        showKaitenzushiLoadError('回転寿司から起動完了の応答がありません。');
+      }
+    }, 8000);
   }, { once: true });
+  frame.addEventListener('error', () => showKaitenzushiLoadError('回転寿司のファイルを取得できませんでした。'), { once: true });
 }
 
 function startKaitenzushi({ skipEventCheck = false, free = false } = {}) {
@@ -11506,6 +11580,8 @@ function startKaitenzushi({ skipEventCheck = false, free = false } = {}) {
     plates: 0,
     settled: false,
     free: eventFree,
+    ready: false,
+    loadError: false,
   };
   setScreen('kaitenzushi', {}, true);
 }
@@ -11520,6 +11596,7 @@ function finishKaitenzushiFromParent() {
 }
 
 function completeKaitenzushi(totalValue, plateValue) {
+  clearKaitenzushiLoadWatch();
   const session = kaitenzushiSession;
   if (!session || session.settled || screen !== 'kaitenzushi') return;
   session.settled = true;
@@ -11600,6 +11677,13 @@ function handleKaitenzushiMessage(event) {
   if (!(frame instanceof HTMLIFrameElement) || event.source !== frame.contentWindow) return;
   const message = event.data;
   if (!message || message.source !== 'jxj-kaitenzushi') return;
+  if (message.type === 'ready') {
+    kaitenzushiSession.ready = true;
+    kaitenzushiSession.loadError = false;
+    clearKaitenzushiLoadWatch();
+    postKaitenzushiSettings(frame);
+    return;
+  }
   if (message.type === 'chew') {
     duckCurrentAmbient({ factor: .2, duration: 1000 });
     return;
@@ -16189,6 +16273,8 @@ root.addEventListener('click', async (event) => {
     case 'eat-meal': await eatMeal(button.dataset.id); break;
     case 'meal-eating-finish': finishMealEatingEarly(); break;
     case 'play-kaitenzushi': startKaitenzushi(); break;
+    case 'retry-kaitenzushi': retryKaitenzushi(); break;
+    case 'cancel-kaitenzushi': cancelKaitenzushi(); break;
     case 'kaitenzushi-finish': finishKaitenzushiFromParent(); break;
     case 'sleep': confirmSleep(); break;
     case 'alien-emergency-sleep': showAlienHungerSleepConfirmation(); break;

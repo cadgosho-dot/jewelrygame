@@ -1,4 +1,4 @@
-export const VERSION = '0.10.482';
+export const VERSION = '0.10.488';
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;

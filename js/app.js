@@ -1,5 +1,5 @@
 import {
-  VERSION, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
+  VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather,
@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.471';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.482';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -102,6 +102,8 @@ let okachimachiQuizQuestionsPromise = null;
 let cinemaEventVideosPromise = null;
 let storeTheftSequenceRunning = false;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+let screenHeaderResizeObserver = null;
+let screenHeaderFontSyncPromise = null;
 
 const JEWELRY_SHOP_STOCK_SIZE = 5;
 const JEWELRY_SHOP_TRANSACTION_HOURS = 1;
@@ -415,7 +417,7 @@ function recoverCurrentEventDeadlock({ save = true, notify = true } = {}) {
 
 function installEventRecoveryControl() {
   if (!state || !EVENT_RECOVERY_SCREENS.has(screen) || root.querySelector('[data-action="event-emergency-recover"]')) return;
-  root.insertAdjacentHTML('beforeend', `<button type="button" class="event-safety-recovery" data-action="event-emergency-recover" data-illness-readable="true">進まない場合は復旧</button>`);
+  root.insertAdjacentHTML('beforeend', `<button type="button" class="event-safety-recovery" data-action="event-emergency-recover" data-illness-readable="true" aria-label="イベントを終了して画面を復旧する" title="イベントを終了">イベント終了</button>`);
 }
 
 function repairEventProgressStates(targetState = state) {
@@ -2726,10 +2728,18 @@ function loadTitleSettings() {
   try {
     const settingsKey = `${SAVE_KEY}-settings`;
     const bgmMigrationKey = `${SAVE_KEY}-bgm-volume-v0.10.12`;
+    const birthdayMigrationKey = `${SAVE_KEY}-birthday-default-v0.10.480`;
     const saved = JSON.parse(localStorage.getItem(settingsKey) || 'null');
     const settings = { ...initialState().settings, ...(saved || {}) };
     delete settings.textSize;
     settings.birthday = normalizeBirthday(settings.birthday);
+    // タイトル側に残っている旧既定値1月1日も一度だけ4月1日へ更新する。
+    // 移行後にユーザーが設定画面から1月1日へ変更した場合は、その設定を保持する。
+    if (localStorage.getItem(birthdayMigrationKey) !== '1') {
+      if (settings.birthday === '01-01') settings.birthday = DEFAULT_BIRTHDAY;
+      localStorage.setItem(birthdayMigrationKey, '1');
+      localStorage.setItem(settingsKey, JSON.stringify(settings));
+    }
     // 自動操縦はゲームごとの進行設定のため、タイトル画面の共通設定から新規ゲームへ引き継がない。
     settings.autopilotEnabled = false;
     settings.bgmVolume = Number.isFinite(Number(settings.bgmVolume)) ? Math.max(0, Math.min(1, Number(settings.bgmVolume))) : 0.35;
@@ -4318,7 +4328,7 @@ function birthdayParts(value = configuredBirthday()) {
   const birthday = normalizeBirthday(value);
   return birthday
     ? { month: Number(birthday.slice(0, 2)), day: Number(birthday.slice(3, 5)) }
-    : { month: 1, day: 1 };
+    : { month: 4, day: 1 };
 }
 
 function birthdayMaximumDay(month) {
@@ -4479,6 +4489,13 @@ function currentCalendarEvents() {
 }
 
 
+function winterColdBlackoutDate(date) {
+  const targetDate = date || gameDate();
+  const month = targetDate.getMonth();
+  const day = targetDate.getDate();
+  return (month === 11 && day >= 23) || (month === 0 && day <= 3);
+}
+
 function winterColdSeasonKey(date = gameDate()) {
   const month = date.getMonth();
   const year = date.getFullYear();
@@ -4534,6 +4551,33 @@ function winterColdTextActive() {
   return eventState.active && eventState.stage === 'sick';
 }
 
+function cancelWinterColdDuringBlackout({ save = false } = {}) {
+  if (!state || !winterColdBlackoutDate()) return false;
+  const eventState = winterColdEventState();
+  const shouldCancel = Boolean(eventState.active) || eventState.stage === 'intro' || eventState.stage === 'sick';
+  if (!shouldCancel) return false;
+
+  eventState.active = false;
+  eventState.stage = 'idle';
+  eventState.seasonKey = '';
+  eventState.lastCheckedDate = dateKey(gameDate());
+  eventState.startDay = 0;
+  eventState.daysCompleted = 0;
+  eventState.recoveryNoticePending = false;
+  winterColdMorningBriefPending = false;
+
+  if (screen === 'winterColdEvent' || state.game?.screen === 'winterColdEvent') {
+    screen = 'main';
+    screenData = {};
+    navigation = [];
+    state.game.screen = 'main';
+  }
+  sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
+  scheduleWinterColdTextEffect();
+  if (save) void saveGame();
+  return true;
+}
+
 function illnessEventSuppressionActive() {
   return winterColdTextActive();
 }
@@ -4571,19 +4615,14 @@ function repairIllnessBirthdayDeadlock({ save = false } = {}) {
       lastCompletedSeason: String(rawCold.lastCompletedSeason || rawCold.seasonKey || ''),
       recoveryNoticePending: true,
     };
-  const completionYear = Math.max(
-    0,
-    Math.floor(Number(rawBirthday.eventYear) || gameDate().getFullYear()),
-  );
   state.events.birthdaySleepEvent = {
-    active: false,
-    stage: 'completed',
-    eventYear: completionYear,
-    lastCompletedYear: Math.max(
-      Math.max(0, Math.floor(Number(rawBirthday.lastCompletedYear) || 0)),
-      completionYear,
-    ),
+    ...rawBirthday,
+    active: Boolean(rawBirthday.active),
+    stage: String(rawBirthday.stage || 'idle'),
+    eventYear: Math.max(0, Math.floor(Number(rawBirthday.eventYear) || 0)),
+    lastCompletedYear: Math.max(0, Math.floor(Number(rawBirthday.lastCompletedYear) || 0)),
   };
+  resetStaleBirthdayEventForIllness(state.events.birthdaySleepEvent);
   state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
   state.migrations.illnessBirthdayDeadlockV460 = true;
   screen = 'main';
@@ -4594,6 +4633,79 @@ function repairIllnessBirthdayDeadlock({ save = false } = {}) {
   modalEl?.classList.add('hidden');
   if (modalEl) modalEl.innerHTML = '';
   clearMorningBrief();
+  if (save) void saveGame();
+  return true;
+}
+
+function resetStaleBirthdayEventForIllness(eventState) {
+  eventState = eventState || birthdaySleepEventState();
+  const today = gameDate();
+  const currentYear = today.getFullYear();
+  const birthdayToday = birthdayMatchesDate(today);
+  const eventYear = Math.max(0, Math.floor(Number(eventState.eventYear) || 0));
+  eventState.active = false;
+  if (birthdayToday) {
+    eventState.stage = 'completed';
+    eventState.eventYear = currentYear;
+    eventState.lastCompletedYear = Math.max(Math.floor(Number(eventState.lastCompletedYear) || 0), currentYear);
+  } else {
+    // 旧1月1日など、現在の設定日と一致しない誕生日イベントは将来の誕生日を塞がない。
+    eventState.stage = 'idle';
+    eventState.eventYear = 0;
+    if (eventYear === currentYear || configuredBirthday() === DEFAULT_BIRTHDAY) eventState.lastCompletedYear = 0;
+  }
+  return true;
+}
+
+function reconcileMorningPaymentsIdempotently() {
+  try { processMonthlyFixedCosts(); } catch (error) { console.error('月初固定費の復旧エラー', error); }
+  try { processHomeRent(); } catch (error) { console.error('自宅家賃の復旧エラー', error); }
+}
+
+function repairIllnessPaymentBirthdayOverlapV481({ save = false } = {}) {
+  if (!state || !illnessEventSuppressionActive() || sleepTransitioning) return false;
+  const transition = dayTransitionState();
+  const birthday = birthdaySleepEventState();
+  const today = gameDate();
+  const birthdayInProgress = Boolean(birthday.active)
+    || ['phone', 'greeting', 'congratulations', 'thanks'].includes(String(birthday.stage || ''))
+    || screen === 'birthdaySleepEvent'
+    || state.game?.screen === 'birthdaySleepEvent';
+  const staleJanuaryCompletion = configuredBirthday() === DEFAULT_BIRTHDAY
+    && today.getMonth() === 0
+    && today.getDate() === 1
+    && Math.floor(Number(birthday.lastCompletedYear) || 0) === today.getFullYear();
+  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+  const paymentReconcilePending = Boolean(state.migrations.illnessPaymentBirthdayOverlapV481PaymentPending);
+  const currentDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  const targetDay = Math.max(0, Math.floor(Number(transition.toDay) || 0));
+  const advancedToMorning = transition.phase === 'morningPending'
+    || (transition.phase === 'settling' && targetDay > 0 && currentDay >= targetDay);
+  const interruptedBeforeAdvance = transition.phase === 'settling' && !advancedToMorning;
+  const suppressedScreen = ILLNESS_SUPPRESSED_EVENT_SCREENS.has(String(screen || state.game?.screen || ''));
+  if (!birthdayInProgress && !staleJanuaryCompletion && !paymentReconcilePending && transition.phase === 'idle' && !suppressedScreen) return false;
+
+  clearTransientEventRuntime({ releaseDayLocks: true });
+  suppressAllTransientEventsForIllness();
+  if (birthdayInProgress || staleJanuaryCompletion) resetStaleBirthdayEventForIllness(birthday);
+
+  if (advancedToMorning || paymentReconcilePending) {
+    state.game.minutes = DAY_START_MINUTES;
+    state.wellbeing.hunger = Math.max(1, Math.floor(Number(state.wellbeing.maxHunger) || 7));
+    reconcileMorningPaymentsIdempotently();
+  }
+  if (transition.phase !== 'idle') completeMorningTransition();
+  if (interruptedBeforeAdvance) {
+    // 日付が進む前の中断は当日の状態へ戻し、次の「休む」で改めて日次処理を行う。
+    transition.phase = 'idle';
+  }
+
+  screen = 'main';
+  screenData = {};
+  navigation = [];
+  state.game.screen = 'main';
+  state.migrations.illnessPaymentBirthdayOverlapV481 = true;
+  state.migrations.illnessPaymentBirthdayOverlapV481PaymentPending = false;
   if (save) void saveGame();
   return true;
 }
@@ -4653,15 +4765,7 @@ function suppressBirthdaySleepEventForIllness({ save = false } = {}) {
   const birthdayPendingToday = birthdayToday && eventState.lastCompletedYear !== currentYear;
   if (!eventState.active && !birthdayPendingToday) return false;
 
-  const completionYear = birthdayToday
-    ? currentYear
-    : Math.max(0, Math.floor(Number(eventState.eventYear) || 0));
-  eventState.active = false;
-  eventState.stage = 'completed';
-  if (completionYear > 0) {
-    eventState.eventYear = completionYear;
-    eventState.lastCompletedYear = Math.max(eventState.lastCompletedYear, completionYear);
-  }
+  resetStaleBirthdayEventForIllness(eventState);
   if (screen === 'birthdaySleepEvent') {
     screen = 'main';
     screenData = {};
@@ -4680,13 +4784,18 @@ function resumeWinterColdEvent() {
   return true;
 }
 
-function maybeStartWinterColdEvent(randomValue = Math.random()) {
-  if (illnessEventSuppressionActive()) return false;
+function maybeStartWinterColdEvent(randomValue) {
+  if (randomValue === undefined) randomValue = Math.random();
   if (!state || isAlienAbducted()) return false;
+  const today = gameDate();
+  if (winterColdBlackoutDate(today)) {
+    cancelWinterColdDuringBlackout();
+    return false;
+  }
+  if (illnessEventSuppressionActive()) return false;
   const eventState = winterColdEventState();
   if (eventState.active) return resumeWinterColdEvent();
   if (Number(state.game.minutes) !== DAY_START_MINUTES) return false;
-  const today = gameDate();
   const seasonKey = winterColdSeasonKey(today);
   if (!seasonKey || eventState.lastCompletedSeason === seasonKey) return false;
   const todayKey = dateKey(today);
@@ -4724,6 +4833,8 @@ function advanceWinterColdEvent() {
   winterColdMorningBriefPending = false;
   clearMorningBrief();
   clearCustomerVisitsForIllness();
+  // 朝の体調不良開始イベントを閉じた時点で、翌朝処理を必ず完了させる。
+  completeMorningTransition();
   saveGame();
   playSfx('impact', { gain: 0.22, rate: 0.58 });
   setScreen('main', {}, false);
@@ -4844,13 +4955,133 @@ function clearMorningBrief() {
   morningBriefShowing = false;
 }
 
+function dayTransitionState() {
+  if (!state?.game) return { phase: 'idle', fromDay: 0, toDay: 0, startedDateKey: '', morningDateKey: '', overlapRecoveryCount: 0 };
+  const saved = state.game.dayTransition && typeof state.game.dayTransition === 'object' && !Array.isArray(state.game.dayTransition)
+    ? state.game.dayTransition
+    : {};
+  const validPhases = new Set(['idle', 'settling', 'morningPending']);
+  state.game.dayTransition = {
+    phase: validPhases.has(String(saved.phase || '')) ? String(saved.phase) : 'idle',
+    fromDay: Math.max(0, Math.floor(Number(saved.fromDay) || 0)),
+    toDay: Math.max(0, Math.floor(Number(saved.toDay) || 0)),
+    startedDateKey: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.startedDateKey || '')) ? String(saved.startedDateKey) : '',
+    morningDateKey: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.morningDateKey || '')) ? String(saved.morningDateKey) : '',
+    overlapRecoveryCount: Math.max(0, Math.floor(Number(saved.overlapRecoveryCount) || 0)),
+  };
+  return state.game.dayTransition;
+}
+
+function markNightTransitionCheckpoint() {
+  const transition = dayTransitionState();
+  transition.phase = 'settling';
+  transition.fromDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  transition.toDay = transition.fromDay + 1;
+  transition.startedDateKey = dateKey(gameDate());
+  transition.morningDateKey = '';
+  return transition;
+}
+
+function markMorningTransitionPending() {
+  const transition = dayTransitionState();
+  transition.phase = 'morningPending';
+  transition.toDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  transition.morningDateKey = dateKey(gameDate());
+  return transition;
+}
+
+function completeMorningTransition({ save = false } = {}) {
+  if (!state?.game) return false;
+  const transition = dayTransitionState();
+  if (transition.phase === 'idle') return false;
+  transition.phase = 'idle';
+  transition.fromDay = 0;
+  transition.toDay = 0;
+  transition.startedDateKey = '';
+  transition.morningDateKey = '';
+  if (save) void saveGame();
+  return true;
+}
+
+function morningOverlapStatus(date = gameDate()) {
+  const birthday = birthdaySleepEventState();
+  return {
+    holiday: Boolean(japaneseHolidayName(date)),
+    payment: scheduledBusinessPaymentsForDate(date).length > 0,
+    hungerZero: hungerLocked(),
+    birthdayActive: Boolean(birthday.active) || ['phone', 'greeting', 'congratulations', 'thanks'].includes(String(birthday.stage || '')),
+  };
+}
+
+function repairMorningOverlapDeadlockV475({ save = false } = {}) {
+  if (!state?.game) return false;
+  const transition = dayTransitionState();
+  const currentDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  const atMorningStart = Number(state.game.minutes) <= DAY_START_MINUTES;
+  const advancedDuringSettling = transition.phase === 'settling' && transition.toDay > 0 && currentDay >= transition.toDay;
+  const interruptedBeforeAdvance = transition.phase === 'settling' && !advancedDuringSettling;
+  const normalMorningScreens = new Set(['main', 'dayResult', 'robberyReport', 'alienReturnEvent', 'alienAbductionEvent', 'winterColdEvent', 'mermaidEvent', 'westernUnionEvent']);
+  const abnormalMorningScreen = transition.phase === 'morningPending'
+    && !normalMorningScreens.has(String(screen || state.game.screen || ''));
+  const overlap = morningOverlapStatus();
+  const staleBirthdayAtMorning = transition.phase === 'morningPending' && atMorningStart && overlap.birthdayActive;
+  const overlapCount = Object.values(overlap).filter(Boolean).length;
+  const legacyOverlap = transition.phase === 'idle'
+    && atMorningStart
+    && overlap.birthdayActive
+    && overlap.hungerZero
+    && (overlap.holiday || overlap.payment);
+  if (!interruptedBeforeAdvance && !advancedDuringSettling && !abnormalMorningScreen && !staleBirthdayAtMorning && !legacyOverlap) return false;
+
+  sleepTransitioning = false;
+  sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
+  modalEl?.classList.add('hidden');
+  if (modalEl) modalEl.innerHTML = '';
+  clearMorningBrief();
+
+  if (interruptedBeforeAdvance) {
+    // 日付が進む前に中断された場合は、金銭・在庫・日次結果を二重処理せず、その日のメイン画面へ戻す。
+    completeMorningTransition();
+  } else {
+    // 翌朝まで進んでいる場合は、朝の初期値と固定費を冪等に整え、夜の誕生日状態を残さない。
+    state.game.minutes = DAY_START_MINUTES;
+    if (hungerLocked()) state.wellbeing.hunger = Math.max(1, Number(state.wellbeing.maxHunger) || 7);
+    try { processMonthlyFixedCosts(); } catch (error) { console.error('月初固定費の復旧エラー', error); }
+    try { processHomeRent(); } catch (error) { console.error('自宅家賃の復旧エラー', error); }
+    const birthday = birthdaySleepEventState();
+    if (birthday.active || !['idle', 'completed'].includes(birthday.stage)) {
+      const completionYear = Math.max(0, Math.floor(Number(birthday.eventYear) || gameDate().getFullYear()));
+      birthday.active = false;
+      birthday.stage = 'completed';
+      birthday.eventYear = completionYear;
+      birthday.lastCompletedYear = Math.max(Number(birthday.lastCompletedYear) || 0, completionYear);
+    }
+    transition.phase = 'idle';
+    transition.fromDay = 0;
+    transition.toDay = 0;
+    transition.startedDateKey = '';
+    transition.morningDateKey = '';
+    transition.overlapRecoveryCount += 1;
+  }
+
+  screen = 'main';
+  screenData = {};
+  navigation = [];
+  state.game.screen = 'main';
+  if (save) void saveGame();
+  if (overlapCount >= 2) queueMicrotask(() => showToast('重なった朝の処理を整理し、メイン画面へ復帰しました。', 'warning'));
+  return true;
+}
+
 function continueMorningAfterSpecialEvents() {
   if (illnessEventSuppressionActive()) {
     clearMorningBrief();
+    completeMorningTransition({ save: true });
     goMain();
     return;
   }
   if (isAlienAbducted()) {
+    completeMorningTransition({ save: true });
     goMain();
     return;
   }
@@ -4861,6 +5092,7 @@ function continueMorningAfterSpecialEvents() {
     setScreen('robberyReport', {}, false);
     return;
   }
+  completeMorningTransition({ save: true });
   goMain();
 }
 
@@ -4876,10 +5108,12 @@ function specialMorningEventTriggeredToday() {
 function finishMorningBriefAndContinue() {
   clearMorningBrief();
   if (illnessEventSuppressionActive()) {
+    completeMorningTransition({ save: true });
     goMain();
     return;
   }
   if (isAlienAbducted()) {
+    completeMorningTransition({ save: true });
     goMain();
     return;
   }
@@ -4893,10 +5127,16 @@ function finishMorningBriefAndContinue() {
 
 async function maybeResumeMorningSequence() {
   if (!state || screen !== 'main' || morningBriefShowing || winterColdMorningBriefPending || sleepTransitioning) return;
+  if (cancelWinterColdDuringBlackout({ save: true })) {
+    completeMorningTransition({ save: true });
+  }
   if (resumeWinterColdEvent()) return;
   if (illnessEventSuppressionActive()) {
     clearMorningBrief();
     clearCustomerVisitsForIllness();
+    repairIllnessPaymentBirthdayOverlapV481({ save: true });
+    completeMorningTransition({ save: true });
+    if (screen !== 'main') goMain();
     return;
   }
   if (maybeStartWinterColdEvent()) return;
@@ -4909,7 +5149,10 @@ async function maybeResumeMorningSequence() {
     if (maybeStartWesternUnionEvent()) return;
   }
   const report = pendingRobberyReport();
-  if (!report) return;
+  if (!report) {
+    if (dayTransitionState().phase === 'morningPending') await showMorningBrief();
+    return;
+  }
   if (report.stage === 'showing') {
     setScreen('robberyReport', {}, false);
     return;
@@ -4919,8 +5162,11 @@ async function maybeResumeMorningSequence() {
 
 async function showMorningBrief() {
   if (!morningBriefEl || !state || morningBriefShowing) return;
+  cancelWinterColdDuringBlackout({ save: true });
   if (illnessEventSuppressionActive()) {
     clearMorningBrief();
+    repairIllnessPaymentBirthdayOverlapV481({ save: true });
+    completeMorningTransition({ save: true });
     if (screen !== 'main') goMain();
     return;
   }
@@ -4971,8 +5217,11 @@ async function showMorningBrief() {
 
 async function beginNextDay() {
   // 日次結果画面で朝表示フラグが異常に残っていても、翌日へ進めるように復旧する。
+  cancelWinterColdDuringBlackout();
   repairIllnessBirthdayDeadlock();
+  repairIllnessPaymentBirthdayOverlapV481();
   repairLegacyTransientEventDeadlocksV462();
+  repairMorningOverlapDeadlockV475();
   if (morningBriefShowing) clearMorningBrief();
   if (illnessEventSuppressionActive()) {
     suppressBirthdaySleepEventForIllness();
@@ -4994,7 +5243,8 @@ async function beginNextDay() {
       playSfx('sleep', { gain: .9 });
       await wait(2000);
       const recoveredFromCold = finishWinterColdRecoveryAfterNight();
-      if (recoveredFromCold) await saveGame();
+      const cancelledForBlackout = cancelWinterColdDuringBlackout();
+      if (recoveredFromCold || cancelledForBlackout) await saveGame();
       const stillSick = illnessEventSuppressionActive();
       const returningFromSpace = alienAbductionEventState().active && alienAbductionEventState().stage === 'returnPending';
       let coldStarted = false;
@@ -5003,6 +5253,8 @@ async function beginNextDay() {
         setScreen('alienReturnEvent', {}, false);
       } else if (stillSick) {
         clearMorningBrief();
+        repairIllnessPaymentBirthdayOverlapV481({ save: true });
+        completeMorningTransition({ save: true });
         goMain();
       } else {
         coldStarted = maybeStartWinterColdEvent();
@@ -6707,6 +6959,27 @@ function syncTodayGemHeaderLayout() {
 }
 
 
+function visibleHeaderBottom(headerEl) {
+  if (!(headerEl instanceof HTMLElement)) return 0;
+  let bottom = headerEl.getBoundingClientRect().bottom;
+  const elements = [headerEl, ...headerEl.querySelectorAll('*')];
+  for (const element of elements) {
+    if (!(element instanceof HTMLElement)) continue;
+    const styles = getComputedStyle(element);
+    if (styles.display === 'none' || styles.visibility === 'hidden') continue;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+    bottom = Math.max(bottom, rect.bottom);
+  }
+  return bottom;
+}
+
+function polishingTopAnchor() {
+  if (screen !== 'polishing') return null;
+  const anchor = root.querySelector('.polishing-first-heading');
+  return anchor instanceof HTMLElement ? anchor : null;
+}
+
 function syncScreenContentTopOffset() {
   const shellEl = root.querySelector('.screen-shell:not(.event-shell-no-header)');
   const headerEl = shellEl?.querySelector(':scope > .game-header');
@@ -6722,26 +6995,58 @@ function syncScreenContentTopOffset() {
     contentEl.style.removeProperty('scroll-padding-top');
     return;
   }
-  // 過去の画面別CSSに大きな固定余白が残っていても、縦画面では実測値をインラインの!importantで上書きする。
-  // 本文枠が既にヘッダーから離れている場合は余白を追加せず、重なっている分と8pxの視認間隔だけを確保する。
+  // 固定されたヘッダー枠だけでなく、折り返しによって枠外へ伸びた日付・名前・操作列も実測する。
+  // 原石研磨は最初の見出しを追加確認し、石種選択の上端が2段バーへ潜り込まないようにする。
   contentEl.style.setProperty('padding-top', '0px', 'important');
   contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
-  const headerRect = headerEl.getBoundingClientRect();
   const contentRect = contentEl.getBoundingClientRect();
-  const desiredGap = 8;
-  const offset = Math.max(0, Math.ceil(headerRect.bottom + desiredGap - contentRect.top));
-  document.documentElement.style.setProperty('--jwj-content-top-offset', `${offset}px`);
+  const desiredGap = screen === 'polishing' ? 16 : 8;
+  const headerBottom = visibleHeaderBottom(headerEl);
+  let offset = Math.max(0, Math.ceil(headerBottom + desiredGap - contentRect.top));
   contentEl.style.setProperty('padding-top', `${offset}px`, 'important');
   contentEl.style.setProperty('scroll-padding-top', `${offset}px`, 'important');
+
+  const polishingAnchor = polishingTopAnchor();
+  if (polishingAnchor) {
+    const anchorRect = polishingAnchor.getBoundingClientRect();
+    const missing = Math.max(0, Math.ceil(headerBottom + desiredGap - anchorRect.top));
+    if (missing > 0) {
+      offset += missing;
+      contentEl.style.setProperty('padding-top', `${offset}px`, 'important');
+      contentEl.style.setProperty('scroll-padding-top', `${offset}px`, 'important');
+    }
+  }
+  document.documentElement.style.setProperty('--jwj-content-top-offset', `${offset}px`);
+}
+
+function observeScreenHeaderLayout() {
+  screenHeaderResizeObserver?.disconnect();
+  screenHeaderResizeObserver = null;
+  const headerEl = root.querySelector('.screen-shell:not(.event-shell-no-header) > .game-header');
+  if (!(headerEl instanceof HTMLElement) || typeof ResizeObserver !== 'function') return;
+  screenHeaderResizeObserver = new ResizeObserver(() => syncScreenContentTopOffset());
+  screenHeaderResizeObserver.observe(headerEl);
+  for (const selector of ['.status-left', '.header-money-area', '.header-center', '.header-secondary-actions']) {
+    const element = headerEl.querySelector(selector);
+    if (element instanceof HTMLElement) screenHeaderResizeObserver.observe(element);
+  }
 }
 
 function scheduleScreenContentTopOffsetSync() {
   syncScreenContentTopOffset();
+  observeScreenHeaderLayout();
   requestAnimationFrame(() => {
     syncScreenContentTopOffset();
     requestAnimationFrame(syncScreenContentTopOffset);
   });
   window.setTimeout(syncScreenContentTopOffset, 80);
+  window.setTimeout(syncScreenContentTopOffset, 240);
+  if (document.fonts?.ready && !screenHeaderFontSyncPromise) {
+    screenHeaderFontSyncPromise = document.fonts.ready
+      .then(() => syncScreenContentTopOffset())
+      .catch(() => {})
+      .finally(() => { screenHeaderFontSyncPromise = null; });
+  }
 }
 
 function setScreen(target, data = {}, push = true) {
@@ -6966,11 +7271,14 @@ function restoreGiftSendScrollState(snapshot) {
 
 function render() {
   if (state) {
+    const coldBlackoutRepaired = cancelWinterColdDuringBlackout();
     const alienDeadlockRepaired = repairAlienSpaceDeadlockV463();
     const legacyDeadlockRepaired = repairLegacyTransientEventDeadlocksV462();
     const deadlockRepaired = repairIllnessBirthdayDeadlock();
+    const illnessOverlapRepaired = repairIllnessPaymentBirthdayOverlapV481();
     const ramenDeadlockRepaired = repairChildhoodFriendEventDeadlock();
-    if (alienDeadlockRepaired || legacyDeadlockRepaired || deadlockRepaired || ramenDeadlockRepaired) queueMicrotask(() => saveGame());
+    const morningOverlapRepaired = repairMorningOverlapDeadlockV475();
+    if (coldBlackoutRepaired || alienDeadlockRepaired || legacyDeadlockRepaired || deadlockRepaired || illnessOverlapRepaired || ramenDeadlockRepaired || morningOverlapRepaired) queueMicrotask(() => saveGame());
   }
   if (state && illnessEventSuppressionActive()) {
     const birthdaySuppressed = suppressBirthdaySleepEventForIllness();
@@ -8665,7 +8973,7 @@ function renderMain() {
       <section class="main-spacer" aria-hidden="true"></section>
       ${coldActive ? '<div class="winter-cold-main-status" role="status" aria-live="polite" data-illness-readable="true"><strong>体調不良</strong></div>' : ''}
       ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
-      ${locked && !autopilotEnabled ? `<div class="hunger-lock-notice"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
+      ${locked && !autopilotEnabled ? `<button type="button" class="hunger-lock-notice hunger-meal-shortcut" data-action="nav" data-screen="meal" aria-label="食事画面を開く"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span><em>タップして食事へ</em></button>` : ''}
       ${hungerFeedback && !autopilotEnabled ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
       ${visiting.length && !locked && !autopilotEnabled ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
       ${outstandingCosts > 0 ? `<button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>` : ''}
@@ -9762,7 +10070,7 @@ function renderPolishing() {
   const canPolish = canSpendHours(POLISHING_HOURS);
   return shell('原石研磨', `
     <section class="wide-panel glass-panel">
-      <h2>石種を選ぶ</h2>
+      <h2 class="polishing-first-heading">石種を選ぶ</h2>
       <div class="choice-grid many polishing-grid">
         ${ownedRoughGems.map((gem) => `<button class="choice-card ${selectedPolishing === gem.id ? 'selected' : ''}" data-action="select-polishing" data-id="${gem.id}">
           <span class="choice-visual">${roughVisual(gem.id, 'choice-gem')}</span>
@@ -11088,8 +11396,10 @@ function renderMeal() {
     const foodImage = mealFoodImage(meal.id);
     return shell('食事', `
       <button type="button" class="meal-eating-panel meal-eating-finish-button glass-panel" data-action="meal-eating-finish" aria-label="食事を終えてメイン画面へ戻る" aria-live="polite">
-        ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
-        <strong>もぐもぐもぐ...</strong>
+        <span class="meal-eating-center">
+          ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
+          <strong>もぐもぐもぐ...</strong>
+        </span>
       </button>`, { help: `${meal.name}で食事をしています。画面をタップすると食事を終え、操作しなくても自動でメイン画面へ戻ります。` });
   }
   return shell('食事', `
@@ -12908,7 +13218,7 @@ function polishRough() {
   render();
   showModal({
     title: `${roughDisplayName(completedGemId)}を${looseShapeLabel(completedShapeId)}へカットしました`,
-    body: `<section class="polishing-result-modal-content"><button type="button" class="polishing-result-loose-button" data-action="polishing-result-return" aria-label="原石研磨画面へ戻る">${looseVisual(completedGemId, 'polishing-result-loose-image', '', completedShapeId)}</button></section>`,
+    body: `<section class="polishing-result-modal-content"><div class="polishing-result-loose-visual" aria-label="完成したルース">${looseVisual(completedGemId, 'polishing-result-loose-image', '', completedShapeId)}</div><button type="button" class="secondary-button polishing-result-return-button" data-action="polishing-result-return">戻る</button></section>`,
     hideActions: true,
     className: 'polishing-result-modal',
   });
@@ -14599,6 +14909,7 @@ function settleDay({ showResult = true, save = true } = {}) {
   scheduleCustomerVisit();
   updateOrderNotifications();
   restoreLooseInventory(looseBeforeSettlement, 'settleDay');
+  markMorningTransitionPending();
   const daySave = save ? saveGame() : Promise.resolve();
   if (showResult) setScreen('dayResult', {}, false);
   return daySave;
@@ -14826,6 +15137,8 @@ async function beginSleepTransition() {
   sleepTransitioning = true;
   closeModal();
   const stateBeforeSleep = structuredClone(state);
+  markNightTransitionCheckpoint();
+  await saveGame();
 
   try {
     // 「寝る」を押した直後から就寝専用BGMと夜の環境音へ切り替える。
@@ -15201,6 +15514,7 @@ root.addEventListener('click', async (event) => {
         phoneTab = validPhoneTab(state.game?.phoneTab);
         repairIllnessBirthdayDeadlock();
         repairChildhoodFriendEventDeadlock();
+        repairMorningOverlapDeadlockV475();
         const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
         setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
         if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
@@ -16054,7 +16368,9 @@ async function enterGameAfterLogin() {
   repairAlienSpaceDeadlockV463({ forceMain: true });
   repairLegacyTransientEventDeadlocksV462();
   repairIllnessBirthdayDeadlock();
+  repairIllnessPaymentBirthdayOverlapV481();
   repairChildhoodFriendEventDeadlock();
+  repairMorningOverlapDeadlockV475();
   const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
   if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);

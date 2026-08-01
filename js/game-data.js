@@ -1,4 +1,5 @@
-export const VERSION = '0.10.471';
+export const VERSION = '0.10.482';
+export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
 export const STORE_LEASE_COSTS = Object.freeze({ 1: 10000, 2: 1000000, 3: 3000000 });
@@ -4163,7 +4164,7 @@ export function initialState() {
     version: VERSION,
     saveRevision: 0,
     started: true,
-    migrations: { looseInventoryCanonicalV231: true, childhoodFriendDeadlockV461: true, transientEventRecoveryV462: true, transientEventRecoveryV462Pending: false },
+    migrations: { looseInventoryCanonicalV231: true, childhoodFriendDeadlockV461: true, transientEventRecoveryV462: true, transientEventRecoveryV462Pending: false, birthdayDefaultAprilV480: true, illnessPaymentBirthdayOverlapV481: true, illnessPaymentBirthdayOverlapV481PaymentPending: false },
     playerName: '',
     game: {
       day: 1,
@@ -4175,6 +4176,7 @@ export function initialState() {
       phoneTab: 'notifications',
       financePeriod: 'today',
       calendarEvents: {},
+      dayTransition: { phase: 'idle', fromDay: 0, toDay: 0, startedDateKey: '', morningDateKey: '', overlapRecoveryCount: 0 },
     },
     artisan: { level: 1, peakLevel: 1, xp: 0, levelPenalty: 0 },
     workshop: { level: 1, peakLevel: 1, activeHours: 0, paidThroughLevel: 1 },
@@ -4393,7 +4395,7 @@ export function initialState() {
       sfxMuted: false,
       externalAudioPriority: false,
       phoneHomeImage: '',
-      birthday: '',
+      birthday: DEFAULT_BIRTHDAY,
       vibration: true,
       autopilotEnabled: false,
       showHints: true,
@@ -5168,6 +5170,16 @@ export function migrateState(saved) {
   state.game.financePeriod = ['today', 'month', 'year', 'cumulative'].includes(state.game.financePeriod)
     ? state.game.financePeriod
     : 'today';
+  const savedDayTransition = isRecord(state.game.dayTransition) ? state.game.dayTransition : {};
+  const dayTransitionPhases = new Set(['idle', 'settling', 'morningPending']);
+  state.game.dayTransition = {
+    phase: dayTransitionPhases.has(String(savedDayTransition.phase || '')) ? String(savedDayTransition.phase) : 'idle',
+    fromDay: Math.max(0, Math.floor(Number(savedDayTransition.fromDay) || 0)),
+    toDay: Math.max(0, Math.floor(Number(savedDayTransition.toDay) || 0)),
+    startedDateKey: /^\d{4}-\d{2}-\d{2}$/.test(String(savedDayTransition.startedDateKey || '')) ? String(savedDayTransition.startedDateKey) : '',
+    morningDateKey: /^\d{4}-\d{2}-\d{2}$/.test(String(savedDayTransition.morningDateKey || '')) ? String(savedDayTransition.morningDateKey) : '',
+    overlapRecoveryCount: Math.max(0, Math.floor(Number(savedDayTransition.overlapRecoveryCount) || 0)),
+  };
   state.wellbeing = { ...initialState().wellbeing, ...(state.wellbeing || {}) };
   state.wellbeing.maxHunger = 7;
   state.wellbeing.hunger = Math.max(0, Math.min(7, Math.round(Number(state.wellbeing.hunger) || 0)));
@@ -5446,7 +5458,88 @@ export function migrateState(saved) {
   state.settings.externalAudioPriority = Boolean(state.settings.externalAudioPriority);
   state.settings.vibration = state.settings.vibration !== false;
   state.settings.autopilotEnabled = Boolean(state.settings.autopilotEnabled);
+  const savedBirthday = normalizeBirthday(legacy.settings?.birthday);
+  const birthdayDefaultMigrationDone = legacy.migrations?.birthdayDefaultAprilV480 === true;
   state.settings.birthday = normalizeBirthday(state.settings.birthday);
+  // v0.10.480: 誕生日の初期値を4月1日へ変更。
+  // 既存保存で1月1日だったプレイヤーだけを一度だけ4月1日へ移行し、
+  // それ以外の設定日と、移行後にユーザーが手動で1月1日へ戻した設定は尊重する。
+  if (!birthdayDefaultMigrationDone && savedBirthday === '01-01') {
+    state.settings.birthday = DEFAULT_BIRTHDAY;
+    const birthdayEvent = isRecord(state.events?.birthdaySleepEvent) ? state.events.birthdaySleepEvent : {};
+    state.events.birthdaySleepEvent = {
+      ...birthdayEvent,
+      active: false,
+      stage: 'idle',
+      eventYear: 0,
+      lastCompletedYear: 0,
+    };
+    if (state.game.screen === 'birthdaySleepEvent') state.game.screen = 'main';
+  }
+  state.migrations.birthdayDefaultAprilV480 = true;
+
+  // v0.10.481: 1月1日の旧誕生日イベント、体調不良、月初支払い、朝処理が重なって
+  // 停止した保存データを一度だけ正規化する。支払い額はここでは変更せず、
+  // 日付境界の状態とイベント画面だけを安全に解除する。
+  const illnessOverlapRecoveryDone = legacy.migrations?.illnessPaymentBirthdayOverlapV481 === true;
+  if (!illnessOverlapRecoveryDone) {
+    const cold = isRecord(state.events?.winterColdEvent) ? state.events.winterColdEvent : {};
+    const birthdayEvent = isRecord(state.events?.birthdaySleepEvent) ? state.events.birthdaySleepEvent : {};
+    const transition = isRecord(state.game?.dayTransition) ? state.game.dayTransition : {};
+    const coldDays = Math.max(0, Math.min(3, Math.floor(Number(cold.daysCompleted) || 0)));
+    const illnessActive = String(cold.stage || '') === 'sick' && (cold.active !== false || coldDays < 3);
+    const birthdayStage = String(birthdayEvent.stage || '');
+    const birthdayInProgress = Boolean(birthdayEvent.active)
+      || ['phone', 'greeting', 'congratulations', 'thanks'].includes(birthdayStage)
+      || String(legacy.game?.screen || '') === 'birthdaySleepEvent';
+    const recoveryStartDate = new Date(`${state.game.startDate}T12:00:00`);
+    if (!Number.isNaN(recoveryStartDate.getTime())) recoveryStartDate.setDate(recoveryStartDate.getDate() + Math.max(0, Number(state.game.day || 1) - 1));
+    const recoveryYear = Number.isNaN(recoveryStartDate.getTime()) ? 0 : recoveryStartDate.getFullYear();
+    const staleJanuaryCompletion = state.settings.birthday === DEFAULT_BIRTHDAY
+      && !Number.isNaN(recoveryStartDate.getTime())
+      && recoveryStartDate.getMonth() === 0
+      && recoveryStartDate.getDate() === 1
+      && Math.floor(Number(birthdayEvent.lastCompletedYear) || 0) === recoveryYear;
+    const transitionPhase = String(transition.phase || 'idle');
+    const currentDay = Math.max(1, Math.floor(Number(state.game?.day) || 1));
+    const targetDay = Math.max(0, Math.floor(Number(transition.toDay) || 0));
+    const advancedToMorning = transitionPhase === 'morningPending'
+      || (transitionPhase === 'settling' && targetDay > 0 && currentDay >= targetDay);
+    const interruptedBeforeAdvance = transitionPhase === 'settling' && !advancedToMorning;
+
+    if (illnessActive && (birthdayInProgress || staleJanuaryCompletion || transitionPhase !== 'idle')) {
+      state.events.winterColdEvent = {
+        ...cold,
+        active: true,
+        stage: 'sick',
+        daysCompleted: coldDays,
+      };
+      state.events.birthdaySleepEvent = {
+        ...birthdayEvent,
+        active: false,
+        stage: 'idle',
+        eventYear: 0,
+        lastCompletedYear: state.settings.birthday === DEFAULT_BIRTHDAY ? 0 : Math.max(0, Math.floor(Number(birthdayEvent.lastCompletedYear) || 0)),
+      };
+      if (advancedToMorning) {
+        state.game.minutes = DAY_START_MINUTES;
+        state.wellbeing = isRecord(state.wellbeing) ? state.wellbeing : {};
+        state.wellbeing.maxHunger = 7;
+        state.wellbeing.hunger = 7;
+      }
+      state.game.dayTransition = {
+        phase: 'idle', fromDay: 0, toDay: 0, startedDateKey: '', morningDateKey: '',
+        overlapRecoveryCount: Math.max(0, Math.floor(Number(transition.overlapRecoveryCount) || 0)) + 1,
+      };
+      state.migrations.illnessPaymentBirthdayOverlapV481PaymentPending = advancedToMorning;
+      state.game.screen = 'main';
+      // 日付が進む前に中断した場合は、日付・時刻・空腹度をそのまま維持して再度休める。
+      if (interruptedBeforeAdvance) state.game.minutes = Math.max(DAY_START_MINUTES, Math.min(DAY_END_MINUTES, Number(state.game.minutes) || DAY_START_MINUTES));
+    }
+  }
+  state.migrations.illnessPaymentBirthdayOverlapV481 = true;
+  state.migrations.illnessPaymentBirthdayOverlapV481PaymentPending = Boolean(state.migrations.illnessPaymentBirthdayOverlapV481PaymentPending);
+
   const savedAutopilot = isRecord(state.autopilot) ? state.autopilot : {};
   const normalizedAutopilotDate = String(savedAutopilot.lastRealDate || '').match(/^\d{4}-\d{2}-\d{2}$/)
     ? String(savedAutopilot.lastRealDate)

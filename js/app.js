@@ -7,7 +7,7 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.488';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.489';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -11399,10 +11399,8 @@ function renderMeal() {
     const foodImage = mealFoodImage(meal.id);
     return shell('食事', `
       <button type="button" class="meal-eating-panel meal-eating-finish-button glass-panel" data-action="meal-eating-finish" aria-label="食事を終えてメイン画面へ戻る" aria-live="polite">
-        <span class="meal-eating-center">
-          ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
-          <strong>もぐもぐもぐ...</strong>
-        </span>
+        ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
+        <strong>もぐもぐもぐ...</strong>
       </button>`, { help: `${meal.name}で食事をしています。画面をタップすると食事を終え、操作しなくても自動でメイン画面へ戻ります。` });
   }
   return shell('食事', `

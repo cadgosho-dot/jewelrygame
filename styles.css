@@ -12722,68 +12722,6 @@ body[data-screen="meal"] .meal-eating-finish-button:focus-visible{
 }
 
 
-/* v0.10.478: 食事画像と「もぐもぐもぐ...」を食事枠の縦横中央へまとめて配置 */
-body[data-screen="meal"] .meal-eating-panel{
-  display:grid!important;
-  place-items:center!important;
-  align-content:center!important;
-  justify-content:center!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  grid-template-rows:minmax(0,1fr)!important;
-}
-body[data-screen="meal"] .meal-eating-center{
-  display:grid!important;
-  place-items:center!important;
-  align-content:center!important;
-  justify-content:center!important;
-  gap:clamp(.65rem,2.2vh,1.15rem)!important;
-  width:min(100%,680px)!important;
-  max-height:100%!important;
-  margin:auto!important;
-}
-body[data-screen="meal"] .meal-eating-center .meal-food-display{
-  width:min(100%,560px)!important;
-  height:auto!important;
-  min-height:0!important;
-  max-height:min(58dvh,360px)!important;
-  margin:0 auto!important;
-}
-body[data-screen="meal"] .meal-eating-center .meal-food-display img{
-  width:auto!important;
-  height:auto!important;
-  max-width:100%!important;
-  max-height:min(58dvh,360px)!important;
-  margin:0 auto!important;
-  object-fit:contain!important;
-  object-position:center center!important;
-  transform:none!important;
-}
-body[data-screen="meal"] .meal-eating-center > strong{
-  display:block!important;
-  margin:0!important;
-  text-align:center!important;
-}
-@media (orientation:portrait), (max-aspect-ratio:1/1){
-  body[data-screen="meal"] .meal-eating-center{
-    width:min(100%,520px)!important;
-    gap:clamp(.6rem,2vh,1rem)!important;
-  }
-  body[data-screen="meal"] .meal-eating-center .meal-food-display,
-  body[data-screen="meal"] .meal-eating-center .meal-food-display img{
-    max-height:min(46dvh,320px)!important;
-  }
-}
-@media (orientation:landscape) and (max-height:620px){
-  body[data-screen="meal"] .meal-eating-center{
-    width:min(100%,760px)!important;
-    gap:clamp(.45rem,1.4vh,.8rem)!important;
-  }
-  body[data-screen="meal"] .meal-eating-center .meal-food-display,
-  body[data-screen="meal"] .meal-eating-center .meal-food-display img{
-    max-height:min(48dvh,270px)!important;
-  }
-}
-
 /* v0.10.478: 工具等の専門詳細ページの目次を通常本文と同じ文字色へ統一 */
 .tool-guide-toc,
 .tool-guide-toc summary,
@@ -13108,3 +13046,83 @@ body[data-screen="meal"] .meal-eating-center > strong{
 .kaitenzushi-load-error small{color:rgba(255,242,210,.72);line-height:1.5}
 .kaitenzushi-load-error-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:.55rem;width:100%}
 .kaitenzushi-load-error-actions>button{min-width:10rem}
+
+/* v0.10.489: 食事中の料理画像を以前のコンパクト表示へ戻し、全体と「もぐもぐもぐ...」を常時表示 */
+body[data-screen="meal"] .meal-eating-panel{
+  width:min(640px,92vw)!important;
+  height:auto!important;
+  max-height:100%!important;
+  min-height:0!important;
+  margin:auto!important;
+  padding:clamp(9px,1.6vw,14px)!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:minmax(0,auto) auto!important;
+  align-content:center!important;
+  justify-items:center!important;
+  gap:clamp(.45rem,1.5vh,.75rem)!important;
+  overflow:hidden!important;
+}
+body[data-screen="meal"] .meal-eating-panel > .meal-food-display{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:min(420px,76vw)!important;
+  height:min(34dvh,270px)!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:270px!important;
+  margin:0 auto!important;
+  overflow:visible!important;
+}
+body[data-screen="meal"] .meal-eating-panel > .meal-food-display img{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  margin:auto!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  transform:none!important;
+}
+body[data-screen="meal"] .meal-eating-panel > strong{
+  display:block!important;
+  position:relative!important;
+  z-index:1!important;
+  margin:0!important;
+  padding:0!important;
+  font-size:clamp(.92rem,2.8vw,1.08rem)!important;
+  line-height:1.2!important;
+  text-align:center!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  body[data-screen="meal"] .meal-eating-panel{
+    width:min(88vw,440px)!important;
+    padding:10px!important;
+    gap:clamp(.4rem,1.25vh,.65rem)!important;
+  }
+  body[data-screen="meal"] .meal-eating-panel > .meal-food-display{
+    width:min(72vw,320px)!important;
+    height:min(28dvh,220px)!important;
+    max-height:220px!important;
+  }
+}
+@media (orientation:landscape) and (max-height:620px){
+  body[data-screen="meal"] .meal-eating-panel{
+    width:min(620px,82vw)!important;
+    padding:7px 10px!important;
+    gap:.35rem!important;
+  }
+  body[data-screen="meal"] .meal-eating-panel > .meal-food-display{
+    width:min(42vw,360px)!important;
+    height:min(34dvh,170px)!important;
+    max-height:170px!important;
+  }
+  body[data-screen="meal"] .meal-eating-panel > strong{
+    font-size:.88rem!important;
+  }
+}

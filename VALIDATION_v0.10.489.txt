@@ -1,0 +1,89 @@
+JEWELRY×JEWELRY v0.10.489 VALIDATION
+Date: 2026-08-01
+
+== JavaScript syntax ==
+OK: js/app.js
+OK: js/game-data.js
+OK: sw.js
+
+== Version-specific validator ==
+v0.10.489 年末年始の体調不良停止期間検査: OK
+- 12月23日〜1月3日を両端含みで抽選対象外
+- 停止期間へ持ち越された既存のintro／sick状態も自動解除
+- 1月4日以降は通常の冬季抽選を再開
+- v0.10.481の1月1日・支払い・誕生日重複停止復旧を維持
+v0.10.489 validation passed: 19 tool images implemented including buffer.png.
+
+== Meal display ==
+v0.10.489 食事中表示検査: OK（料理8種類 × 携帯縦横14サイズ = 112ケース）
+- 料理画像全体を枠内に表示
+- 画像の縦横比を維持
+- 「もぐもぐもぐ...」を画像の下へ常時表示
+- 縦画面最大320×220px
+- 低い横画面最大360×170px
+- 料理画像の拡大transformを解除
+- v0.10.478の一体型ラッパーを解除し、以前の上下配置へ復元
+
+== Meal image local fetch ==
+HTTP 200: 8/8 meal images
+
+== Event emergency recovery button ==
+v0.10.488 イベント終了ボタン検査: OK（6画面サイズ）
+- 画面上端・左端
+- 幅70px以下、高さ19.5px以下
+- 通常時不透明度0.5以下
+
+== Kaitenzushi Service Worker route ==
+v0.10.487 回転寿司Service Worker経路検査: OK
+- オフライン時も回転寿司キャッシュを返し、メインindex.htmlへフォールバックしない
+- キャッシュ未取得時は専用503画面を返す
+- オンライン取得時は要求URLと正規URLを保存
+
+== Upper bar 1 ==
+v0.10.487 上部バー1検査: OK（携帯縦画面5サイズ）
+- 情報文字 11.8px〜14.5px、所持金 15px〜19px
+- 2行を枠の縦中央へ配置
+- 上下padding 0px、行間1px以下
+
+== Polishing result size ==
+v0.10.487 原石研磨完成画面サイズ検査: OK（16サイズ）
+- 完成ルース: 縦88px以下、低い横92px以下、通常112px以下
+- 結果枠: 縦286px以下、低い横430px以下、通常330px以下
+
+== Portrait header ==
+v0.10.489 縦画面ヘッダー検査: OK（46画面 × 5端末サイズ = 230ケース）
+上部バーと本文先頭の間隔は、通常画面8px・原石研磨16pxです。
+
+== Phone layout ==
+携帯表示基準チェック: OK
+320×568から932×430までの縦横14サイズを確認しました。
+
+== General regression ==
+回帰防止チェック: OK（v0.10.489）
+365日の宝石、200問クイズ、携帯共通表示、主要画面、イベント、店舗、ショーケース、来店赤丸、原石研磨、BGM・環境音を確認しました。
+
+== Workshop staff growth ==
+職人スタッフ成長境界テスト: OK
+
+== Store staff growth ==
+店舗スタッフ成長境界テスト: OK
+
+== Time and meals ==
+時間・食事ルール検査: OK
+- 通常食事・食事イベント・回転寿司・自動操縦の食事: 1時間
+
+== Showcase return ==
+OK: ショーケース位置の取得・復元、陳列後の位置維持
+
+== Store customer indicator ==
+OK: 店舗別来店判定、来店店舗の赤丸表示、接客ボタン順
+
+== Polishing result modal ==
+原石研磨完了画面チェック: OK
+
+== Audio scenes ==
+音場定義 27件、画面割り当て 73件、音源 47件: OK
+
+RESULT: PASS
+NOTE: 回転寿司のブラウザ統合検査は、実行環境のlocalhost遷移制限により実行できませんでした。Service Worker経路のモック検査は正常です。
+NOTE: 公開中のGitHub Pagesおよび利用端末の旧キャッシュは、この環境から直接確認していません。

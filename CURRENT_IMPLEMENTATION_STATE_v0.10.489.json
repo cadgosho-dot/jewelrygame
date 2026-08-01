@@ -1,0 +1,27 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "canonicalVersion": "0.10.489",
+  "createdAt": "2026-08-01T20:35:42+09:00",
+  "base": "v0.10.488",
+  "saveCompatibility": {
+    "preserved": true,
+    "saveDeletionRequired": false,
+    "reinstallRequired": false
+  },
+  "change": {
+    "component": "meal-eating-display",
+    "layout": "restored compact pre-v0.10.478 structure",
+    "portraitImageLimit": "320px wide / 220px high",
+    "lowLandscapeImageLimit": "360px wide / 170px high",
+    "message": "もぐもぐもぐ... always visible below food image"
+  },
+  "unchanged": [
+    "meal duration",
+    "meal prices",
+    "hunger recovery",
+    "tap-to-finish",
+    "automatic finish",
+    "meal audio",
+    "existing save data"
+  ]
+}

@@ -1,0 +1,23 @@
+JEWELRY×JEWELRY v0.10.429 検証結果
+
+1. JavaScript構文検査
+- プロジェクト内の全JavaScriptファイルを node --check で検査：正常
+
+2. JSON検査
+- プロジェクト内の全JSONファイルを解析：正常
+
+3. CSS・HTML構造検査
+- styles.cssをtinycss2で解析：正常
+- game.html、index.html、auth.htmlをHTMLParserで解析：正常
+
+4. 設定画面の表示順検査
+- 「効果音を消す」の直下に「YouTubeなど外部音声を優先」があることを確認
+- 外部音声優先設定がバイブレーション・自動操縦モードより前にあることを確認
+- externalAudioPriorityの設定要素が重複していないことを確認
+- 文言・設定キー・保存処理は変更していないことを確認
+
+5. バージョン・キャッシュ
+- VERSION、Service Worker、HTML参照を0.10.429へ更新
+
+備考
+- 表示順のみの変更で、音声制御の動作仕様は変更していません。

@@ -1,0 +1,38 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "baseVersion": "0.10.455",
+  "platform": ["GitHub Pages", "PWA", "mobile", "desktop"],
+  "implemented": {
+    "artisanLevelMax": 20,
+    "workshopLevelMax": 20,
+    "storeLevelMaxPerBranch": 20,
+    "workshopRequiredEquipmentCompleteByLevel": 8,
+    "levelDecreaseCommonFunctions": true,
+    "levelDecreaseEvents": false,
+    "workshopStaff": {
+      "unlockImplemented": true,
+      "contractFee": 0,
+      "growthWorkDays": [0, 480, 960, 1440, 2400],
+      "dailyWages": [25000, 30000, 40000, 55000, 75000],
+      "imageStageLogic": true,
+      "imageDisplay": false
+    },
+    "pearlCutFieldsHidden": true,
+    "pearlDetailedGuide": true,
+    "portraitHeaderCollisionFix": true,
+    "portraitTestCases": 230,
+    "sicknessStopsEvents": true,
+    "nextDayLockFix": true
+  },
+  "pending": [
+    "Process initial workshop staff image to transparent contour-cropped PNG",
+    "Correct apron text from 9-Lab. appearance to g-Lab.",
+    "Process evolved workshop staff image to transparent contour-cropped PNG",
+    "Display initial image at staff levels 1-3 and evolved image at levels 4-5",
+    "Design and connect concrete artisan/workshop/store level-down events after user approval"
+  ],
+  "pendingImageFiles": {
+    "initial": "pending_staff_images/1000019106.png",
+    "evolved": "pending_staff_images/1000019107.png"
+  }
+}

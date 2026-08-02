@@ -1,0 +1,15 @@
+JEWELRY×JEWELRY v0.10.515 VALIDATION
+
+[OK] node --check js/app.js
+[OK] node --check js/game-data.js
+[OK] node --check sw.js
+[OK] VERSION 0.10.515 / saveSchemaVersion 1
+[OK] 旧セーブへ形式番号を追加
+[OK] 同一データを2回移行してもガーネット数量7を維持
+[OK] 読み込み前原本保存コードを確認
+[OK] 正常バックアップのローテーションコードを確認
+[OK] 破損原本の退避コードを確認
+[OK] バックアップ自動復元コードを確認
+[OK] 復元不能時の案内モーダルを確認
+
+未実施: 実際のAndroid端末、容量不足状態、ブラウザ強制終了中の物理テスト。

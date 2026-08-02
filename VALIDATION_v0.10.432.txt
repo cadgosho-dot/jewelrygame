@@ -1,0 +1,7 @@
+JEWELRY×JEWELRY v0.10.432 検証結果
+
+- styles.css: 読み込み確認
+- sw.js VERSION: 0.10.432
+- js/game-data.js VERSION: 0.10.432
+- game.html 参照: styles.css?v=0.10.432 / app.js?v=0.10.432
+- 変更内容: 縦画面の地金表示の重なり防止

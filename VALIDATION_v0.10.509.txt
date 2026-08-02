@@ -1,0 +1,29 @@
+JEWELRY×JEWELRY v0.10.509 VALIDATION
+
+== JavaScript syntax ==
+PASS: js/app.js
+PASS: js/game-data.js
+PASS: sw.js
+
+== Version alignment ==
+PASS: index.html -> 0.10.509
+PASS: game.html -> 0.10.509
+PASS: sw.js -> 0.10.509
+PASS: js/app.js imports -> 0.10.509
+PASS: js/game-data.js VERSION -> 0.10.509
+
+== Event recovery foundation ==
+PASS: emergency settlement hook exists
+PASS: emergency recovery policy exists
+PASS: recovery history stores event key and policy
+PASS: normal kaitenzushi does not directly complete sushiChefEvent
+PASS: sushiChefEvent is selected only when actually active
+
+== Regression ==
+PASS: check-regression-baseline.py
+PASS: check-v509-event-recovery-foundation.py
+
+== Browser-specific test note ==
+The old Playwright localhost regression test could not run in this execution environment because localhost navigation was blocked by the administrator. Static checks and the project regression baseline passed.
+
+RESULT: PASS

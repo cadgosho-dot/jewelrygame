@@ -1,0 +1,26 @@
+JEWELRY×JEWELRY v0.10.478 検査結果
+
+実施済み・すべて成功:
+- node --check js/app.js
+- node --check js/game-data.js
+- node tools/validate-v478.mjs
+- node tools/test-meal-tap-finish-v468.mjs
+- python3 scripts/check-v471-all-screen-headers.py
+- node tools/validate-polishing-result-modal.mjs
+- python3 scripts/check_phone_layout_baseline.py
+- python3 scripts/check-v454-portrait-header.py
+- python3 scripts/check-regression-baseline.py
+- node tools/validate-time-and-meals.mjs
+- node tools/validate-audio-scenes.mjs
+- node tools/validate-store-showcase-return.mjs
+- node tools/validate-store-customer-indicator.mjs
+- node tools/test-workshop-staff-growth.mjs
+- node tools/test-store-staff-growth.mjs
+
+確認内容:
+- 食事画像と「もぐもぐもぐ...」を食事枠の縦横中央へ配置
+- 縦画面・横画面・低い横画面で中央配置を維持
+- 食事画面タップ終了と未操作時自動終了を維持
+- 工具・設備の詳細ページの目次を通常本文と同じ色へ統一
+- 閲覧済みリンクやブラウザ既定色でも青・紫にならない
+- 保存データ構造の変更なし

@@ -1,0 +1,42 @@
+JEWELRY×JEWELRY v0.10.493 VALIDATION
+Date: 2026-08-01
+
+== JavaScript syntax ==
+OK: js/app.js, js/game-data.js, sw.js
+
+== Version-specific validator ==
+v0.10.493 年末年始の体調不良停止期間検査: OK
+- 12月23日〜1月3日を両端含みで抽選対象外
+- 停止期間へ持ち越された既存のintro／sick状態も自動解除
+- 1月4日以降は通常の冬季抽選を再開
+- v0.10.481の1月1日・支払い・誕生日重複停止復旧を維持
+v0.10.493 validation passed: 19 tool images implemented including buffer.png.
+
+== Meal/header structural isolation ==
+v0.10.493 食事画面・上部バー構造分離検査: OK
+- 料理8種類 × 携帯縦横14サイズ × UI倍率3 = 336ケース
+- 上部バーと食事本文をCSS Gridの別行へ配置
+- 料理・「もぐもぐもぐ...」・操作領域が上部バーより下に表示
+- 端末倍率や文字サイズの変化でも重なりなし
+
+== Meal image display ==
+v0.10.489 食事中表示検査: OK
+- 料理8種類 × 携帯縦横14サイズ = 112ケース
+- 料理画像全体を枠内に表示
+- 画像の縦横比を維持
+- 「もぐもぐもぐ...」を画像の下へ常時表示
+
+== Portrait header ==
+v0.10.493 縦画面ヘッダー検査: OK
+- 46画面 × 5端末サイズ = 230ケース
+- 通常画面8px・原石研磨16pxの間隔を維持
+
+== Phone layout ==
+携帯表示基準チェック: OK
+- 320×568から932×430までの縦横14サイズ
+
+== General regression ==
+回帰防止チェック: OK（v0.10.493）
+- 365日の宝石、200問クイズ、主要画面、イベント、スタッフ成長、ショーケース、来店赤丸、原石研磨、音声などを確認
+
+RESULT: PASS

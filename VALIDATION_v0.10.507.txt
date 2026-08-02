@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.507 VALIDATION
+
+== Event emergency button position and size ==
+OK: event-safety-recovery moved from top-left to top-right
+OK: button remains top-aligned using safe-area insets
+OK: button size increased slightly (padding / font-size / min-height)
+OK: subdued emergency-only styling preserved
+OK: functionality unchanged
+
+RESULT: PASS

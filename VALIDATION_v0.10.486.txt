@@ -1,0 +1,58 @@
+JEWELRY×JEWELRY v0.10.486 VALIDATION
+Date: 2026-08-01
+
+== JavaScript syntax ==
+OK: js/app.js, js/game-data.js, sw.js
+
+== Version-specific validator ==
+v0.10.486 年末年始の体調不良停止期間検査: OK
+- 12月23日〜1月3日を両端含みで抽選対象外
+- 停止期間へ持ち越された既存のintro／sick状態も自動解除
+- 1月4日以降は通常の冬季抽選を再開
+- v0.10.481の1月1日・支払い・誕生日重複停止復旧を維持
+v0.10.486 validation passed: 19 tool images implemented including buffer.png.
+
+== Polishing result compact size ==
+v0.10.486 原石研磨完成画面サイズ検査: OK（16サイズ）
+- 完成ルース: 縦88px以下、低い横92px以下、通常112px以下
+- 結果枠: 縦286px以下、低い横430px以下、通常330px以下
+- 縦画面は縦横中央、横画面は横中央で画面内に収まることを確認
+
+== Upper bar 1 layout ==
+v0.10.486 上部バー1検査: OK（携帯縦画面5サイズ）
+- v0.10.485の大型文字・縦中央・低余白を維持
+
+== Portrait header 230 cases ==
+v0.10.486 縦画面ヘッダー検査: OK（46画面 × 5端末サイズ = 230ケース）
+上部バーと本文先頭の間隔は、通常画面8px・原石研磨16pxです。
+
+== Phone layout 14 sizes ==
+携帯表示基準チェック: OK
+320×568から932×430までの縦横14サイズで確認しました。
+
+== General regression ==
+回帰防止チェック: OK（v0.10.486）
+
+== Workshop staff growth ==
+職人スタッフ成長境界テスト: OK
+
+== Store staff growth ==
+店舗スタッフ成長境界テスト: OK
+
+== Time and meals ==
+時間・食事ルール検査: OK
+
+== Showcase return ==
+ショーケース位置復元検査: OK
+
+== Store customer indicator ==
+来店店舗赤丸・接客ボタン順検査: OK
+
+== Polishing result modal ==
+原石研磨完了画面チェック: OK
+完成ルースと結果枠をさらに縮小し、戻る操作と中央配置を16種類の画面サイズで確認しました。
+
+== Audio scenes ==
+音場定義 27件、画面割り当て 73件、音源 47件: OK
+
+RESULT: PASS

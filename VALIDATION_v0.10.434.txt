@@ -1,0 +1,9 @@
+JEWELRY×JEWELRY v0.10.434 検証結果
+
+- js/game-data.js VERSION: 0.10.434
+- sw.js VERSION: 0.10.434
+- game.html cache-buster: 0.10.434
+- 人材紹介の初期値: false
+- セーブ移行時: falseへ固定
+- 店員雇用時: falseを維持
+- JavaScript構文: 正常

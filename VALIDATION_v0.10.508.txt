@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.508 VALIDATION
+
+== Landscape page header back button ==
+OK: landscape non-main page header height adjusted slightly
+OK: back button resized and centered vertically
+OK: back button frame remains within top header area
+OK: portrait layout left unchanged by targeted landscape-only override
+OK: page content top reservation follows updated landscape page header height
+
+RESULT: PASS

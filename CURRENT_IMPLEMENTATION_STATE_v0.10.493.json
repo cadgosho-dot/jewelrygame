@@ -1,0 +1,24 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "canonicalVersion": "0.10.493",
+  "createdAt": "2026-08-01T23:23:32+09:00",
+  "base": "v0.10.492",
+  "saveCompatibility": {
+    "preserved": true,
+    "saveDeletionRequired": false,
+    "reinstallRequired": false
+  },
+  "changes": [
+    "食事中専用のmeal-eating-shellを追加",
+    "上部バーと食事本文をCSS Gridの別行へ分離",
+    "固定余白推測ではなく通常フローで重なりを防止"
+  ],
+  "unchanged": [
+    "meal image size",
+    "meal prices",
+    "hunger recovery",
+    "meal duration",
+    "tap/automatic completion",
+    "save data"
+  ]
+}

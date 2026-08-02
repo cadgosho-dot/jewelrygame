@@ -1,0 +1,15 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "baseVersion": "0.10.477",
+  "platform": ["GitHub Pages", "PWA", "mobile", "desktop"],
+  "implemented": {
+    "eventRecoveryLabel": "イベント終了",
+    "eventRecoveryPosition": "top-right",
+    "eventRecoveryCompact": true,
+    "portraitAndLandscape": true,
+    "safeAreaAware": true,
+    "existingRecoveryBehaviorPreserved": true,
+    "saveCompatibility": true
+  },
+  "saveCompatibility": "unchanged"
+}

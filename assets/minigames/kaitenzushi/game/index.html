@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-jxj-kaitenzushi="1">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1527,7 +1527,7 @@
 (() => {
   "use strict";
 
-  const integrationParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const integrationParams = new URLSearchParams(document.documentElement.dataset.jxjConfig || window.location.hash.replace(/^#/, ""));
   const integrationNumber = (name, fallback) => {
     const raw = integrationParams.get(name);
     if (raw === null || raw === "") return fallback;
@@ -1560,6 +1560,8 @@
       ...detail,
     }, "*");
   }
+
+  window.addEventListener("load", () => sendIntegrationMessage("ready"), { once: true });
 
   function effectiveBgmVolume() {
     if (integrationConfig.externalAudioPriority || integrationConfig.bgmMuted) return 0;
@@ -2180,8 +2182,11 @@
     if (data.image) {
       el.classList.add("image-sushi");
       el.innerHTML = `
-      <img class="custom-sushi-image" src="${data.image}" alt="${data.name}" draggable="false" onerror="this.style.display='none'">
+      <img class="custom-sushi-image" src="${data.image}" alt="${data.name}" draggable="false">
       `;
+      el.querySelector(".custom-sushi-image")?.addEventListener("error", (event) => {
+        event.currentTarget.style.display = "none";
+      }, { once: true });
     } else {
       el.innerHTML = `
       <div class="food" aria-label="${data.name}">${data.emoji}</div>

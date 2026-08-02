@@ -1,0 +1,17 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "baseVersion": "0.10.480",
+  "platform": ["GitHub Pages", "PWA", "mobile", "desktop"],
+  "implemented": {
+    "defaultBirthday": "04-01",
+    "legacyJanuaryFirstBirthdayMigration": true,
+    "migrationOnlyOnce": true,
+    "otherBirthdayDatesPreserved": true,
+    "birthdayEventStateResetForMigratedPlayers": true
+  },
+  "migration": {
+    "key": "birthdayDefaultAprilV480",
+    "from": "01-01",
+    "to": "04-01"
+  }
+}

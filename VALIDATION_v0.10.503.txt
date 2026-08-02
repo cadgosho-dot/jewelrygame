@@ -1,0 +1,13 @@
+JEWELRY×JEWELRY v0.10.503 VALIDATION
+Date: 2026-08-02
+
+== JavaScript syntax ==
+OK: js/app.js, js/game-data.js, sw.js
+
+== Loose shop landscape micro-adjustments ==
+OK: ルース名文字サイズを微増
+OK: 商品カード余白を圧縮
+OK: 価格を右寄せ化
+OK: 数量・合計・詳細・購入ボタンの間隔と高さを微調整
+
+RESULT: PASS

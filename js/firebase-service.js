@@ -231,27 +231,13 @@ export async function logout() {
   await signOut(auth);
 }
 
-function saveProgressScore(candidate) {
-  if (!candidate || typeof candidate !== 'object') return 0;
-  const day = Math.max(0, Number(candidate.game?.day) || 0);
-  const money = Math.max(0, Number(candidate.game?.money) || 0);
-  const xp = Math.max(0, Number(candidate.artisan?.xp) || 0);
-  const jewelry = Array.isArray(candidate.inventory?.jewelry) ? candidate.inventory.jewelry.length : 0;
-  const sales = Math.max(0, Number(candidate.store?.salesCount) || 0);
-  return day * 1000000 + xp * 1000 + sales * 100 + jewelry * 10 + Math.min(money, 999999);
-}
-
 export async function loadState(uid) {
   if (previewMode) {
     const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
     return saved ? JSON.parse(saved) : null;
   }
   const snapshot = await getDoc(doc(db, 'users', uid));
-  if (!snapshot.exists()) return null;
-  const data = snapshot.data() || {};
-  const current = data.gameState || null;
-  const backup = data.gameStateBackup || null;
-  return saveProgressScore(backup) > saveProgressScore(current) ? backup : current;
+  return snapshot.exists() ? snapshot.data().gameState || null : null;
 }
 
 export async function saveState(uid, state) {
@@ -263,18 +249,11 @@ export async function saveState(uid, state) {
   }
   const userRef = doc(db, 'users', uid);
   try {
-    const previousSnapshot = await getDoc(userRef);
-    const previous = previousSnapshot.exists() ? previousSnapshot.data()?.gameState || null : null;
-    const update = {
+    // gameStateフィールド全体を置き換え、旧版のinventory.general / inventory.gemsなどをクラウドに残さない。
+    await updateDoc(userRef, {
       gameState: clean,
       updatedAt: serverTimestamp(),
-    };
-    // 進行済みデータを初期状態で上書きしそうな場合は、直前データを退避する。
-    if (saveProgressScore(previous) > saveProgressScore(clean)) {
-      update.gameStateBackup = previous;
-      update.gameStateBackupAt = serverTimestamp();
-    }
-    await updateDoc(userRef, update);
+    });
   } catch (error) {
     if (error?.code !== 'not-found') throw error;
     await setDoc(userRef, {

@@ -1,0 +1,18 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "baseVersion": "0.10.476",
+  "platform": ["GitHub Pages", "PWA", "mobile", "desktop"],
+  "implemented": {
+    "polishingResultLooseReduced": true,
+    "polishingResultReturnButtonBelowLoose": true,
+    "polishingResultReturnsToPolishingScreen": true,
+    "portraitPolishingResultCenteredBothAxes": true,
+    "saveCompatibility": true
+  },
+  "displayLimits": {
+    "defaultLooseMaxPx": 170,
+    "portraitLooseMaxPx": 132,
+    "shortLandscapeLooseMaxPx": 130
+  },
+  "saveCompatibility": "unchanged"
+}

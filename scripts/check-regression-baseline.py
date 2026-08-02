@@ -224,13 +224,27 @@ require_rgba_png("assets/images/events/store-thief-old-woman.png")
 require_file("assets/audio/sfx-old-lady-appear.wav")
 require_file("assets/audio/sfx-shoplift-steal.wav")
 
+# 1日の行動時間と食事時間（v0.10.450）
+require_marker(game_data, "export const DAY_END_MINUTES = 22 * 60", "1日の行動終了22:00")
+require_marker(game_data, "export const MEAL_DURATION_MINUTES = 60", "食事時間1時間")
+require_marker(app, "function canSpendMealTime()", "食事時間の事前判定")
+require_marker(app, "function spendMealTime()", "食事時間の共通消費処理")
+require_marker(app, "if (!canSpendMealTime()) return showToast(mealTimeUnavailableMessage(), 'error');", "食事開始前の残り時間確認")
+require_marker(app, "if (plates > 0) spendMealTime();", "回転寿司の1時間経過")
+require_marker(app, "spendMealTime();\n    state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);", "通常食事とイベント食事の1時間経過")
+require_marker(app, "if (!canSpendMinutes(MEAL_DURATION_MINUTES + actionMinutes)) return false;", "自動操縦の食事時間込み行動判定")
+require_marker(app, "食事には1時間かかります。", "食事画面の所要時間案内")
+require_marker(app, "actionLimit: '22:00まで'", "AI相談用の行動終了時刻")
+if "21:00を超える行動" in app or "actionLimit: '21:00まで'" in app:
+    errors.append("回帰の可能性: 現行ルールに21:00行動終了の表記が残っています")
+
 # 現在の重要な数値仕様
 require_marker(game_data, "STORE_MONTHLY_RENTS = Object.freeze({ 1: 150000, 2: 400000, 3: 700000 })", "店舗家賃")
 require_marker(app, "let chance = 0.19 + visitors * 0.055", "店頭自動販売の基本確率19％")
 require_marker(app, "const EMPLOYEE_DAILY_WAGE = 18000", "アルバイトの日給18,000円")
 require_marker(app, "const salary = EMPLOYEE_DAILY_WAGE;", "アルバイト給与の実支払い計算")
 require_marker(app, "給与${yen(EMPLOYEE_DAILY_WAGE)}", "雇用後の給与表示")
-require_marker(app, "給与：勤務日ごとに${yen(EMPLOYEE_DAILY_WAGE)}", "雇用前の給与表示")
+require_marker(app, "給与：配置日ごとに${yen(EMPLOYEE_DAILY_WAGE)}", "雇用前の給与表示")
 
 # 通常接客のお客様10人と来店頻度
 customer_block = re.search(r"export const CUSTOMERS = \{(.*?)\n\};", game_data, re.S)
@@ -334,6 +348,75 @@ phone_check = subprocess.run(
 if phone_check.returncode != 0:
     errors.append("携帯表示基準チェックに失敗しました: " + (phone_check.stdout + phone_check.stderr).strip())
 
+audio_check = subprocess.run(
+    ["node", str(ROOT / "tools/validate-audio-scenes.mjs")],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+)
+if audio_check.returncode != 0:
+    errors.append("BGM・環境音割り当てチェックに失敗しました: " + (audio_check.stdout + audio_check.stderr).strip())
+
+audio_transition_check = subprocess.run(
+    ["node", str(ROOT / "tools/test-audio-transitions.mjs")],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+)
+if audio_transition_check.returncode != 0:
+    errors.append("BGM・環境音の画面遷移チェックに失敗しました: " + (audio_transition_check.stdout + audio_transition_check.stderr).strip())
+
+staff_check = subprocess.run(
+    ["node", str(ROOT / "tools/validate-store-staff.mjs")],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+)
+if staff_check.returncode != 0:
+    errors.append("店舗スタッフ仕様チェックに失敗しました: " + (staff_check.stdout + staff_check.stderr).strip())
+
+staff_growth_test = subprocess.run(
+    ["node", str(ROOT / "tools/test-store-staff-growth.mjs")],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+)
+if staff_growth_test.returncode != 0:
+    errors.append("店舗スタッフ成長境界テストに失敗しました: " + (staff_growth_test.stdout + staff_growth_test.stderr).strip())
+
+store_showcase_return_check = subprocess.run(
+    ["node", str(ROOT / "tools/validate-store-showcase-return.mjs")],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+)
+if store_showcase_return_check.returncode != 0:
+    errors.append("店舗ショーケース位置維持チェックに失敗しました: " + (store_showcase_return_check.stdout + store_showcase_return_check.stderr).strip())
+
+store_customer_indicator_check = subprocess.run(
+    ["node", str(ROOT / "tools/validate-store-customer-indicator.mjs")],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+)
+if store_customer_indicator_check.returncode != 0:
+    errors.append("店舗来店赤丸・接客ボタン順チェックに失敗しました: " + (store_customer_indicator_check.stdout + store_customer_indicator_check.stderr).strip())
+
+polishing_result_check = subprocess.run(
+    ["node", str(ROOT / "tools/validate-polishing-result-modal.mjs")],
+    cwd=ROOT,
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+)
+if polishing_result_check.returncode != 0:
+    errors.append("原石研磨完了画面チェックに失敗しました: " + (polishing_result_check.stdout + polishing_result_check.stderr).strip())
+
 if errors:
     print("回帰防止チェック: NG")
     for error in errors:
@@ -342,4 +425,4 @@ if errors:
 
 version = next(iter(versions.values()), "不明")
 print(f"回帰防止チェック: OK（v{version}）")
-print("365日の宝石、200問クイズ、携帯共通表示、主要22画面の縦背景、イベント人物位置、横画面クイズ王、メイン上部バー、イベント中の上部バー非表示、ルース屋、家賃、販売確率、ガネーシャの牙イベント、ラーメン屋背景、幼なじみとの再会イベント、盗難老婆イベント、お客様10人と来店頻度を確認しました。")
+print("365日の宝石、200問クイズ、携帯共通表示、主要22画面の縦背景、イベント人物位置、横画面クイズ王、メイン上部バー、イベント中の上部バー非表示、ルース屋、家賃、販売確率、ガネーシャの牙イベント、ラーメン屋背景、幼なじみとの再会イベント、盗難老婆イベント、お客様10人と来店頻度、BGM・環境音の全画面割り当て、店舗スタッフの勤務日数成長・担当制廃止・制作非連動、ショーケース陳列後の位置維持、店舗スタッフボタン配置、来店店舗の赤丸表示、接客ボタン順、原石研磨完了画面の簡略表示と画像タップ復帰を確認しました。")

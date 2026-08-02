@@ -1,0 +1,13 @@
+JEWELRY×JEWELRY v0.10.502 VALIDATION
+Date: 2026-08-02
+
+== JavaScript syntax ==
+OK: js/app.js, js/game-data.js, sw.js
+
+== Loose shop landscape layout ==
+OK: phone landscape の loose shop 商品行を1カラム寄りに再構成
+OK: ルース名・カット名の表示幅を確保
+OK: 価格表示と購入操作を名称から分離
+OK: 購入操作の2段配置を横画面携帯へ適用
+
+RESULT: PASS

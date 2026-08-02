@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.513 VALIDATION
+
+== Aquarium is not an event ==
+OK: phone screen is explicitly excluded from event recovery controls
+OK: future aquarium screen is explicitly excluded from event recovery controls
+OK: installEventRecoveryControl checks non-event exclusion before inserting the button
+OK: aquarium unlock hooks remain available only for the separate unlock event
+OK: version references unified to 0.10.513
+
+RESULT: PASS

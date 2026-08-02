@@ -1,0 +1,27 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "canonicalVersion": "0.10.484",
+  "createdAt": "2026-08-01T15:04:31+09:00",
+  "base": "v0.10.483 applied to v0.10.455 full repository baseline",
+  "saveCompatibility": {
+    "preserved": true,
+    "saveDeletionRequired": false,
+    "reinstallRequired": false
+  },
+  "toolImages": {
+    "implementedCount": 19,
+    "missingCount": 0,
+    "missing": [],
+    "processedAs": "true RGBA PNG with transparent background and trimmed bounds"
+  },
+  "unchanged": [
+    "tool prices",
+    "quality points",
+    "unlock conditions",
+    "break/repair behavior",
+    "existing save data"
+  ],
+  "notes": [
+    "The final pending tool image (buffer) has now been implemented. All 19 received tool/facility images are reflected in-game."
+  ]
+}

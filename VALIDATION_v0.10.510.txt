@@ -1,0 +1,16 @@
+JEWELRY×JEWELRY v0.10.510 VALIDATION
+
+- Main JavaScript syntax: PASS
+- game-data.js syntax: PASS
+- Service Worker syntax: PASS
+- Version markers unified to 0.10.510: PASS
+- Emergency policy categories present: PASS
+- Guaranteed rewards use idempotent rewardGranted checks: PASS
+- Clock donation uses donationApplied and finance record: PASS
+- Mystery meal uses mealApplied and records meal/time/cost: PASS
+- Haunting uses paymentApplied: PASS
+- Cinema settles only at playing stage and uses settled: PASS
+- Store theft settles only after acceptance and uses theftApplied: PASS
+- Western Union reward remains conditional on reward stage: PASS
+
+RESULT: PASS

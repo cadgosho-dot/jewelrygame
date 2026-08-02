@@ -5,27 +5,24 @@
   const frame = document.querySelector('#game-frame');
   let deferredInstallPrompt = null;
   let resizeTimer = 0;
-  let serviceWorkerReloaded = false;
-
-  function refreshServiceWorker() {
-    if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (serviceWorkerReloaded) return;
-      serviceWorkerReloaded = true;
-      window.location.reload();
-    });
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((registration) => registration.update())
-        .catch((error) => console.error('Service Worker update failed', error));
-    }, { once: true });
-  }
 
   function isStandalone() {
     return window.matchMedia?.('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
   }
 
+  // v0.10.514: ホーム画面アプリではiframeシェルを使わず、ゲーム本体を直接開く。
+  // Androidのstandalone表示で起きるタップ座標・クリック伝達の不安定さを避ける。
+  if (isStandalone()) {
+    const directUrl = new URL('./game.html', window.location.href);
+    directUrl.searchParams.set('source', 'pwa');
+    const currentParams = new URLSearchParams(window.location.search);
+    for (const key of ['google-login', 'phone-game-return', 'glab-about-return', 'glab-sns-return', 'okachimachi-external-return']) {
+      if (currentParams.has(key)) directUrl.searchParams.set(key, currentParams.get(key) || '1');
+    }
+    window.location.replace(directUrl.href);
+    return;
+  }
 
   function openGoogleLoginInBrowser() {
     const authUrl = new URL('./auth.html?from=game&source=shell&browser=1', window.location.href);
@@ -187,6 +184,5 @@
   window.visualViewport?.addEventListener('resize', scheduleStageUpdate, { passive: true });
   window.visualViewport?.addEventListener('scroll', scheduleStageUpdate, { passive: true });
 
-  refreshServiceWorker();
   updateStage();
 })();

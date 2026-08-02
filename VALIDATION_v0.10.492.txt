@@ -1,0 +1,47 @@
+JEWELRY×JEWELRY v0.10.492 VALIDATION
+Date: 2026-08-01
+
+== Root cause ==
+CONFIRMED: the meal eating panel did not have a final position guarantee against the visible fixed header, allowing its top edge to move under the header on some device ratios/scales.
+
+== JavaScript syntax ==
+OK: js/app.js
+OK: js/game-data.js
+OK: js/kaitenzushi-embedded.js
+OK: sw.js
+
+== Version-specific validator ==
+v0.10.492 年末年始の体調不良停止期間検査: OK
+v0.10.492 工具画像実体・参照・Service Worker登録: 19/19 OK
+
+== Meal / header clearance ==
+v0.10.492 食事画面・上部バー重なり検査: OK（料理8種類 × 携帯縦横14サイズ = 112ケース）
+- 料理枠上端を上部バー下8px以上に固定
+- 料理画像全体を枠内表示
+- 「もぐもぐもぐ...」を画像下に表示
+
+== Existing compact meal display ==
+v0.10.489 食事中表示検査: OK（料理8種類 × 携帯縦横14サイズ = 112ケース）
+
+== Kaitenzushi srcdoc integration ==
+v0.10.492 回転寿司srcdoc起動検査: OK（縦横2サイズ）
+
+== Portrait header ==
+v0.10.492 縦画面ヘッダー検査: OK（46画面 × 5端末サイズ = 230ケース）
+
+== Phone layout ==
+携帯表示基準チェック: OK（縦横14サイズ）
+
+== General regression ==
+回帰防止チェック: OK（v0.10.492）
+
+== Workshop / store / time / audio ==
+職人スタッフ成長: OK
+店舗スタッフ成長: OK
+時間・食事ルール: OK
+ショーケース復帰: OK
+来店赤丸: OK
+原石研磨結果: OK
+音場定義: OK
+
+RESULT: PASS

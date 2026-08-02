@@ -1,0 +1,18 @@
+JEWELRY×JEWELRY v0.10.498 VALIDATION
+Date: 2026-08-02
+
+== JavaScript syntax ==
+OK: js/app.js, js/game-data.js, sw.js
+
+== Version markers ==
+OK: index.html, game.html, sw.js, js/app.js, js/game-data.js updated to v0.10.498
+
+== Meal landscape layout ==
+OK: 横画面の食事専用CSSを追加
+- meal-eating-screen-content: 中央寄せ・縦余白再調整
+- meal-eating-panel: 高さ100%使用・2行グリッド化
+- meal-food-display: 高さ100%使用
+- meal-food-display img: max-width/max-height 100%
+- 「もぐもぐもぐ...」文字サイズ拡大
+
+RESULT: PASS

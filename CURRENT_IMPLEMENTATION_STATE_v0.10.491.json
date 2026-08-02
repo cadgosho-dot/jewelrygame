@@ -1,0 +1,32 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "canonicalVersion": "0.10.491",
+  "createdAt": "2026-08-01T21:07:06+09:00",
+  "base": "v0.10.490",
+  "saveCompatibility": {
+    "preserved": true,
+    "saveDeletionRequired": false,
+    "reinstallRequired": false
+  },
+  "problem": {
+    "screen": "g-Lab. 工具・設備一覧",
+    "symptom": "user-provided tool images displayed as broken image icons",
+    "cause": "the latest differential update package did not contain the 19 image files even though game-data.js referenced them"
+  },
+  "fix": {
+    "toolImageCount": 19,
+    "directory": "assets/images/tools/",
+    "packageIncludesAllImages": true,
+    "cacheVersion": "0.10.491",
+    "freshRepositoryApplyTest": true,
+    "browserDecodeTest": true
+  },
+  "unchanged": [
+    "tool prices",
+    "workshop levels",
+    "unlock conditions",
+    "purchase state",
+    "break and repair behavior",
+    "existing save data"
+  ]
+}

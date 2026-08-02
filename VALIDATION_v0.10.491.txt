@@ -1,0 +1,63 @@
+JEWELRY×JEWELRY v0.10.491 VALIDATION
+Date: 2026-08-01
+
+== Root cause ==
+CONFIRMED: v0.10.490 update ZIP contained tool image references but did not contain assets/images/tools/*.png for the 19 user-provided images.
+
+== JavaScript syntax ==
+OK: js/app.js
+OK: js/game-data.js
+OK: js/kaitenzushi-embedded.js
+OK: sw.js
+
+== Version-specific validator ==
+v0.10.491 年末年始の体調不良停止期間検査: OK
+v0.10.491 工具画像実体・参照・Service Worker登録: 19/19 OK
+
+== Browser tool image decode ==
+v0.10.491 工具画像ブラウザ読込検査: OK（19/19点）
+- v0.10.491クエリ付きURLでHTTP取得
+- naturalWidth / naturalHeightが全画像で1以上
+- 破損画像なし
+
+== Fresh repository apply simulation ==
+- ユーザー提供工具画像19点を削除したv0.10.490複製を作成
+- v0.10.491更新ZIPをリポジトリ直下へ上書き
+- 19点すべて復元
+- HTTP 200およびブラウザデコードを再検査
+
+== Kaitenzushi srcdoc integration ==
+v0.10.491 回転寿司srcdoc起動検査: OK（縦横2サイズ）
+- 自動開始、寿司出現、お会計通知を確認
+
+== Meal display ==
+v0.10.489 食事中表示検査: OK（料理8種類 × 携帯縦横14サイズ = 112ケース）
+
+== Event recovery button ==
+v0.10.488 イベント終了ボタン検査: OK（6画面サイズ）
+
+== Upper bar 1 ==
+v0.10.487 上部バー1検査: OK（携帯縦画面5サイズ）
+
+== Polishing result size ==
+v0.10.487 原石研磨完成画面サイズ検査: OK（16サイズ）
+
+== Portrait header ==
+v0.10.491 縦画面ヘッダー検査: OK（46画面 × 5端末サイズ = 230ケース）
+
+== Phone layout ==
+携帯表示基準チェック: OK（縦横14サイズ）
+
+== General regression ==
+回帰防止チェック: OK（v0.10.491）
+
+== Workshop / store / time / audio ==
+職人スタッフ成長: OK
+店舗スタッフ成長: OK
+時間・食事ルール: OK
+ショーケース復帰: OK
+来店赤丸: OK
+原石研磨結果: OK
+音場定義: OK
+
+RESULT: PASS

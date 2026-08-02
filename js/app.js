@@ -1,5 +1,5 @@
 import {
-  VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
+  VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather,
@@ -7,7 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.489';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.517';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.517';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -73,6 +74,16 @@ let authEntryRequested = false;
 const GOOGLE_LOGIN_REDIRECT_KEY = 'jxj-google-login-redirect';
 const GOOGLE_LOGIN_ERROR_KEY = 'jxj-google-login-error';
 let saveQueue = Promise.resolve();
+let autosaveTimer = null;
+let autosavePending = false;
+let autosaveLastReason = '';
+let autosaveStatusHideTimer = null;
+let lastSavedFingerprint = '';
+let lastSuccessfulSaveAt = '';
+const AUTOSAVE_DELAY_MS = 450;
+const AUTOSAVE_STATUS_HIDE_MS = 2200;
+let saveRecoveryNotice = null;
+let saveRecoveryDetails = null;
 let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 let stopSessionWatch = null;
 let heartbeatTimer = null;
@@ -232,9 +243,199 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   miningPazupanEvent: { eventKey: 'miningPazupanEvent', fallback: 'mining' },
   okachimachiQuiz: { eventKey: '', fallback: 'okachimachi' },
   robberyReport: { eventKey: '', fallback: 'main' },
-  kaitenzushi: { eventKey: 'sushiChefEvent', fallback: 'main' },
+  kaitenzushi: { eventKey: '', fallback: 'main', conditionalEventKey: 'sushiChefEvent' },
 });
 const EVENT_RECOVERY_SCREENS = new Set(Object.keys(EVENT_SCREEN_RECOVERY_CONFIG));
+
+// v0.10.514: 水槽はスマートフォン内の通常機能であり、イベントではない。
+// 将来、水槽ミニゲームを独立画面へ分離しても「イベント終了」を誤表示しないよう明示的に除外する。
+const NON_EVENT_RECOVERY_SCREENS = new Set(['phone', 'aquarium']);
+
+// v0.10.514: 全イベントの緊急終了方針を明示する。
+// 報酬・支払い・損失はイベント段階と冪等フラグを確認し、通常進行と二重反映しない。
+const EVENT_EMERGENCY_POLICY = Object.freeze({
+  guaranteedReward: new Set([
+    'miningPazupanEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'kappaJadeEvent',
+    'cyclopsEvent', 'ganeshaTuskEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
+  ]),
+  conditionalReward: new Set(['westernUnionEvent']),
+  committedExpense: new Set([
+    'clockTowerDonationEvent', 'mysteryChineseMealEvent', 'hauntingEvent', 'cinemaVisitEvent',
+  ]),
+  conditionalLoss: new Set(['storeTheftEvent']),
+  completionOnly: new Set([
+    'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent',
+    'alienAbductionEvent',
+  ]),
+  sessionOnly: new Set(['okachimachiQuiz', 'robberyReport', 'kaitenzushi']),
+});
+
+function recoveryPolicyFor(screenName, eventKey = '') {
+  if (EVENT_EMERGENCY_POLICY.sessionOnly.has(screenName) && !eventKey) return 'session-only';
+  if (EVENT_EMERGENCY_POLICY.guaranteedReward.has(eventKey)) return 'guaranteed-reward';
+  if (EVENT_EMERGENCY_POLICY.conditionalReward.has(eventKey)) return 'conditional-reward';
+  if (EVENT_EMERGENCY_POLICY.committedExpense.has(eventKey)) return 'committed-expense';
+  if (EVENT_EMERGENCY_POLICY.conditionalLoss.has(eventKey)) return 'conditional-loss';
+  if (EVENT_EMERGENCY_POLICY.completionOnly.has(eventKey)) return 'completion-only';
+  return eventKey ? 'event-specific' : 'session-only';
+}
+
+function resolveEmergencyRecoveryEventKey(screenName, config) {
+  const directKey = String(config?.eventKey || '');
+  if (directKey) return directKey;
+  const conditionalKey = String(config?.conditionalEventKey || '');
+  if (!conditionalKey) return '';
+  const candidate = eventRecord(conditionalKey);
+  const stage = String(candidate?.stage || '');
+  return candidate?.active && EVENT_ACTIVE_STAGE_MAP[conditionalKey]?.has(stage) ? conditionalKey : '';
+}
+
+function grantEmergencyItem(eventState, itemId, notificationTitle, notificationBody) {
+  if (eventState.rewardGranted) return false;
+  state.inventory.items[itemId] = Math.max(0, Math.floor(Number(state.inventory.items?.[itemId]) || 0)) + 1;
+  eventState.rewardGranted = true;
+  addNotification(notificationTitle, notificationBody, 'special');
+  return true;
+}
+
+function grantEmergencyRough(eventState, gemId, notificationTitle, notificationBody) {
+  if (eventState.rewardGranted) return false;
+  state.inventory.rough[gemId] = Math.max(0, Math.floor(Number(state.inventory.rough?.[gemId]) || 0)) + 1;
+  eventState.rewardGranted = true;
+  addNotification(notificationTitle, notificationBody, 'special');
+  return true;
+}
+
+function settleMysteryChineseMealEmergency(eventState) {
+  if (eventState.mealApplied) return false;
+  const meal = MEALS.chinese;
+  if (!meal) return false;
+  const before = hungerLevel();
+  eventState.mealApplied = true;
+  eventState.lastDish = eventState.selectedDish;
+  state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - MYSTERY_CHINESE_MEAL_EVENT_COST);
+  addFinance('謎の中華料理', 0, MYSTERY_CHINESE_MEAL_EVENT_COST);
+  spendMealTime();
+  state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
+  state.wellbeing.lastMeal = meal.id;
+  state.wellbeing.mealsEaten = Math.max(0, Math.floor(Number(state.wellbeing.mealsEaten) || 0)) + 1;
+  state.daily.meals = Array.isArray(state.daily.meals) ? state.daily.meals : [];
+  state.daily.meals.push({
+    id: meal.id,
+    name: '謎の中華料理',
+    price: MYSTERY_CHINESE_MEAL_EVENT_COST,
+    recovery: state.wellbeing.hunger - before,
+  });
+  addNotification('謎の中華料理を食べた', `${yen(MYSTERY_CHINESE_MEAL_EVENT_COST)}を支払い、空腹度が回復しました。`, 'special');
+  return true;
+}
+
+function runEventEmergencySettlement(key, eventState) {
+  if (!key || !eventState) return false;
+  const stage = String(eventState.stage || '');
+  let changed = false;
+
+  switch (key) {
+    case 'westernUnionEvent':
+      // 「いいえ」を選んだ場合や、まだ名前確認中の場合は報酬を付与しない。
+      if (['gift', 'explain1', 'explain2', 'explain3'].includes(stage) && !eventState.rewardGranted) {
+        grantWesternUnionAntiqueDiamond(eventState);
+        changed = true;
+      }
+      break;
+
+    case 'miningPazupanEvent':
+      if (!eventState.rewardGranted) { grantPazupan(eventState); changed = true; }
+      break;
+
+    case 'mermaidEvent':
+      if (!eventState.rewardGranted) { grantMermaidPearl(eventState); changed = true; }
+      break;
+
+    case 'tattooWomanAmberEvent':
+      if (!eventState.rewardGranted) {
+        adjustLooseInventory(TATTOO_WOMAN_AMBER_EVENT_GEM_ID, TATTOO_WOMAN_AMBER_EVENT_SHAPE_ID, 1);
+        eventState.rewardGranted = true;
+        addNotification('琥珀を手に入れました', '工房のルースへ追加されました。', 'special');
+        changed = true;
+      }
+      break;
+
+    case 'kappaJadeEvent':
+      changed = grantEmergencyRough(eventState, 'jade', '翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。') || changed;
+      break;
+
+    case 'cyclopsEvent':
+      changed = grantEmergencyItem(eventState, 'energyDrink', '栄養ドリンクを手に入れました', 'コンビニのサイクロプスから、キャンペーン中の栄養ドリンクを1本受け取りました。') || changed;
+      break;
+
+    case 'ganeshaTuskEvent':
+      changed = grantEmergencyRough(eventState, GANESHA_TUSK_GEM_ID, 'ガネーシャの牙を手に入れました', '工房の原石へ追加されました。研磨すると象牙のルースになります。') || changed;
+      break;
+
+    case 'touristWoodSwordEvent':
+      changed = grantEmergencyItem(eventState, 'bokuto', '木刀を手に入れました', '観光客から木刀を受け取りました。持っている間は強盗の発生率が半分になります。') || changed;
+      eventState.triggered = true;
+      break;
+
+    case 'diamondPolishingLapEvent':
+      if (!eventState.rewardGranted || !toolOwned('diamondPolishingLap')) {
+        grantDiamondPolishingLap(eventState);
+        changed = true;
+      }
+      break;
+
+    case 'clockTowerDonationEvent':
+      if (!eventState.donationApplied) {
+        state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - 100000);
+        eventState.donationApplied = true;
+        addFinance('時計台募金', 0, 100000);
+        addNotification('時計台募金で100,000円を支払いました', '御徒町パンダ広場の時計台建設へ寄付しました。', 'special');
+        changed = true;
+      }
+      break;
+
+    case 'mysteryChineseMealEvent':
+      changed = settleMysteryChineseMealEmergency(eventState) || changed;
+      eventState.selectedDish = '';
+      break;
+
+    case 'hauntingEvent':
+      if (!eventState.paymentApplied) {
+        state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - HAUNTING_EVENT_COST);
+        addFinance('お祓い', 0, HAUNTING_EVENT_COST);
+        eventState.paymentApplied = true;
+        changed = true;
+      }
+      break;
+
+    case 'cinemaVisitEvent':
+      // 招待画面で終了した場合はキャンセル扱い。上映開始後だけ料金と時間を確定する。
+      if (stage === 'playing' && !eventState.settled) {
+        eventState.settled = true;
+        eventState.lastVideo = eventState.selectedVideo;
+        state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - CINEMA_VISIT_EVENT_COST);
+        spendHours(CINEMA_VISIT_EVENT_HOURS);
+        addFinance('映画館で映画鑑賞', 0, CINEMA_VISIT_EVENT_COST);
+        addNotification('映画を観ました', `${CINEMA_VISIT_EVENT_HOURS}時間が経過し、${yen(CINEMA_VISIT_EVENT_COST)}を支払いました。`, 'special');
+        changed = true;
+      }
+      eventState.selectedVideo = '';
+      break;
+
+    case 'storeTheftEvent':
+      // 試着を断る前・断った後は盗難なし。了承後の段階だけ損失を確定する。
+      if (['intro2', 'intro3', 'farewell', 'pause', 'theftNotice'].includes(stage) && !eventState.theftApplied) {
+        applyStoreTheftEventLoss();
+        changed = true;
+      }
+      break;
+
+    default:
+      break;
+  }
+  return changed;
+}
 const TRANSIENT_EVENT_KEYS = Object.freeze(Object.keys(EVENT_ACTIVE_STAGE_MAP).filter((key) => key !== 'winterColdEvent'));
 const EVENT_PROGRESS_ACTIONS = new Set([
   'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-choice', 'western-union-next',
@@ -392,15 +593,34 @@ function suppressAllTransientEventsForIllness({ save = false } = {}) {
   return repaired;
 }
 
+function applyEmergencyFeatureUnlocks(config, eventKey = '') {
+  const features = Array.isArray(config?.unlockFeaturesOnEmergency) ? config.unlockFeaturesOnEmergency : [];
+  let aquariumWasUnlocked = false;
+  if (features.includes('aquarium')) {
+    aquariumWasUnlocked = unlockAquariumFeature({ source: eventKey || 'emergency-event', notify: true }) || aquariumWasUnlocked;
+  }
+  return { aquariumWasUnlocked };
+}
+
 function recoverCurrentEventDeadlock({ save = true, notify = true } = {}) {
   if (!state) return false;
   const stuckScreen = String(screen || state.game?.screen || 'unknown');
   const config = EVENT_SCREEN_RECOVERY_CONFIG[screen] || EVENT_SCREEN_RECOVERY_CONFIG[state.game?.screen];
-  if (config?.eventKey) completeTransientEventSafely(config.eventKey, { preserveLongRunning: false, force: true });
+  const recoveryEventKey = resolveEmergencyRecoveryEventKey(stuckScreen, config);
+  const recoveryPolicy = recoveryPolicyFor(stuckScreen, recoveryEventKey);
+  const emergencyFeatureResult = applyEmergencyFeatureUnlocks(config, recoveryEventKey);
+  if (recoveryEventKey) {
+    const recoveryEventState = eventRecord(recoveryEventKey);
+    runEventEmergencySettlement(recoveryEventKey, recoveryEventState);
+    completeTransientEventSafely(recoveryEventKey, { preserveLongRunning: false, force: true });
+  }
   if (screen === 'robberyReport') {
     const robbery = eventRecord('robbery');
     if (robbery) robbery.pendingReport = null;
   }
+  const quizRewardSettled = screen === 'okachimachiQuiz'
+    ? grantOkachimachiQuizReward({ renderAfter: false, saveAfter: false })
+    : false;
   if (screen === 'okachimachiQuiz') okachimachiQuizSession = null;
   if (screen === 'kaitenzushi') kaitenzushiSession = null;
   clearTransientEventRuntime({ releaseDayLocks: true });
@@ -411,15 +631,48 @@ function recoverCurrentEventDeadlock({ save = true, notify = true } = {}) {
   state.game.screen = fallback;
   state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
   state.migrations.lastManualEventRecoveryV462 = { day: Math.max(1, Number(state.game.day) || 1), screen: stuckScreen };
+  state.migrations.lastManualEventRecoveryV509 = {
+    day: Math.max(1, Number(state.game.day) || 1),
+    screen: stuckScreen,
+    eventKey: recoveryEventKey,
+    policy: recoveryPolicy,
+  };
+  state.migrations.lastManualEventRecoveryV511 = {
+    day: Math.max(1, Number(state.game.day) || 1),
+    screen: stuckScreen,
+    quizRewardSettled: Boolean(quizRewardSettled),
+  };
+  state.migrations.lastManualEventRecoveryV512 = {
+    day: Math.max(1, Number(state.game.day) || 1),
+    screen: stuckScreen,
+    aquariumUnlocked: Boolean(emergencyFeatureResult.aquariumWasUnlocked),
+  };
   if (save) void saveGame();
   render();
-  if (notify) showToast('イベントを安全に終了し、操作できる画面へ戻りました。', 'warning');
+  if (notify) showToast(
+    emergencyFeatureResult.aquariumWasUnlocked
+      ? '水槽機能を解放し、イベントを安全に終了しました。'
+      : quizRewardSettled
+        ? '正解報酬の原石を受け取り、イベントを安全に終了しました。'
+        : 'イベントを安全に終了し、操作できる画面へ戻りました。',
+    emergencyFeatureResult.aquariumWasUnlocked || quizRewardSettled ? 'success' : 'warning',
+  );
   return true;
 }
 
 function installEventRecoveryControl() {
-  if (!state || !EVENT_RECOVERY_SCREENS.has(screen) || root.querySelector('[data-action="event-emergency-recover"]')) return;
-  root.insertAdjacentHTML('beforeend', `<button type="button" class="event-safety-recovery" data-action="event-emergency-recover" data-illness-readable="true" aria-label="イベントを終了して画面を復旧する" title="イベントを終了">イベント終了</button>`);
+  if (!state || NON_EVENT_RECOVERY_SCREENS.has(screen) || !EVENT_RECOVERY_SCREENS.has(screen) || root.querySelector('[data-action="event-emergency-recover"]')) return;
+  const markup = `<button type="button" class="event-safety-recovery" data-action="event-emergency-recover" data-illness-readable="true" aria-label="イベントを終了して画面を復旧する" title="イベントを終了">イベント終了</button>`;
+  // クイズ王画面は全画面イベント自身が独立した重なり順を持つため、
+  // 復旧ボタンをイベント要素の内側へ直接置いて確実に表示する。
+  if (screen === 'okachimachiQuiz') {
+    const quizEvent = root.querySelector('.okachimachi-quiz-event');
+    if (quizEvent) {
+      quizEvent.insertAdjacentHTML('afterbegin', markup);
+      return;
+    }
+  }
+  root.insertAdjacentHTML('beforeend', markup);
 }
 
 function repairEventProgressStates(targetState = state) {
@@ -2785,59 +3038,247 @@ function visibleNotifications() {
   return (state?.notifications || []).filter((note) => !isUnneededHungerNotification(note));
 }
 
-function localSavedState() {
+function localSaveBackupKey() {
+  return `${localSaveKey()}-backup`;
+}
+
+function localSavePreMigrationKey() {
+  return `${localSaveKey()}-pre-migration`;
+}
+
+function localSaveCorruptKey() {
+  return `${localSaveKey()}-corrupt`;
+}
+
+function localLastSaveAtKey() {
+  return `${localSaveKey()}-last-saved-at`;
+}
+
+function saveStateFingerprint(value = state) {
+  if (!value) return '';
   try {
-    return JSON.parse(localStorage.getItem(localSaveKey()) || 'null');
+    return JSON.stringify(value, (key, item) => (
+      key === 'updatedAt' || key === 'saveRevision' ? undefined : item
+    ));
   } catch (_) {
-    return null;
+    return '';
+  }
+}
+
+function ensureAutosaveStatusElement() {
+  let element = document.querySelector('[data-autosave-status]');
+  if (element) return element;
+  element = document.createElement('div');
+  element.className = 'autosave-status';
+  element.dataset.autosaveStatus = 'idle';
+  element.setAttribute('role', 'status');
+  element.setAttribute('aria-live', 'polite');
+  element.hidden = true;
+  document.body.appendChild(element);
+  return element;
+}
+
+function showAutosaveStatus(mode, text, { persistent = false } = {}) {
+  const element = ensureAutosaveStatusElement();
+  if (autosaveStatusHideTimer) {
+    clearTimeout(autosaveStatusHideTimer);
+    autosaveStatusHideTimer = null;
+  }
+  element.dataset.autosaveStatus = String(mode || 'idle');
+  element.textContent = String(text || '');
+  element.hidden = !text;
+  if (!persistent && text) {
+    autosaveStatusHideTimer = window.setTimeout(() => {
+      element.hidden = true;
+      element.dataset.autosaveStatus = 'idle';
+      autosaveStatusHideTimer = null;
+    }, AUTOSAVE_STATUS_HIDE_MS);
+  }
+}
+
+function formatAutosaveTime(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function isSaveStateCandidate(value) {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value)
+    && value.game && typeof value.game === 'object'
+    && value.inventory && typeof value.inventory === 'object');
+}
+
+function parseSaveText(raw) {
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (!isSaveStateCandidate(parsed)) throw new Error('セーブデータの必須項目がありません。');
+  return parsed;
+}
+
+function preserveCorruptLocalSave(raw, reason) {
+  if (!raw) return;
+  try {
+    localStorage.setItem(localSaveCorruptKey(), JSON.stringify({
+      savedAt: new Date().toISOString(),
+      reason: String(reason?.message || reason || 'unknown'),
+      raw,
+    }));
+  } catch (_) {}
+}
+
+function localSavedState() {
+  const raw = localStorage.getItem(localSaveKey());
+  if (!raw) return null;
+  try {
+    const parsed = parseSaveText(raw);
+    // 読み込み・移行前の原本を保存。移行を繰り返しても数量は変化しない。
+    localStorage.setItem(localSavePreMigrationKey(), raw);
+    return parsed;
+  } catch (error) {
+    preserveCorruptLocalSave(raw, error);
+    const backupRaw = localStorage.getItem(localSaveBackupKey());
+    try {
+      const backup = parseSaveText(backupRaw);
+      saveRecoveryNotice = '破損した端末セーブを直前の正常なバックアップから復元しました。';
+      saveRecoveryDetails = String(error?.message || error);
+      localStorage.setItem(localSaveKey(), backupRaw);
+      return backup;
+    } catch (backupError) {
+      saveRecoveryNotice = '端末セーブを読み込めず、正常なバックアップも見つかりませんでした。';
+      saveRecoveryDetails = String(error?.message || error);
+      return null;
+    }
   }
 }
 
 function preferredSavedState() {
-  return chooseNewestSavedState(localSavedState(), cloudSave);
+  const safeCloudSave = isSaveStateCandidate(cloudSave) ? cloudSave : null;
+  return chooseNewestSavedState(localSavedState(), safeCloudSave);
 }
 
 function loadGame() {
   try {
     const preferred = preferredSavedState();
-    const loaded = preferred.state ? migrateState(preferred.state) : null;
+    if (!preferred.state) return null;
+    const loaded = migrateState(preferred.state);
+    if (!isSaveStateCandidate(loaded)) throw new Error('移行後のセーブデータが不正です。');
+    loaded.saveSchemaVersion = SAVE_SCHEMA_VERSION;
     if (loaded?.notifications) loaded.notifications = loaded.notifications.filter((note) => !isUnneededHungerNotification(note));
     return loaded;
-  } catch (_) {
+  } catch (error) {
+    saveRecoveryNotice = saveRecoveryNotice || 'セーブデータの移行または整合性確認に失敗しました。';
+    saveRecoveryDetails = String(error?.message || error);
     return null;
   }
 }
 
 function saveLocalBackup() {
-  if (!state || !currentUser || sessionTakenOver) return;
-  state.saveRevision = Math.max(0, Math.floor(Number(state.saveRevision) || 0)) + 1;
-  state.updatedAt = new Date().toISOString();
-  // 廃止済みの旧在庫を保存データへ戻さない。
-  if (state.inventory && Object.prototype.hasOwnProperty.call(state.inventory, 'general')) delete state.inventory.general;
-  if (state.inventory && Object.prototype.hasOwnProperty.call(state.inventory, 'gems')) delete state.inventory.gems;
-  state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
-  state.migrations.looseInventoryCanonicalV231 = true;
-  localStorage.setItem(localSaveKey(), JSON.stringify(state));
-  localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
-  cloudSave = structuredClone(state);
+  if (!state || !currentUser || sessionTakenOver) return { saved: false, skipped: true };
+  try {
+    state.saveRevision = Math.max(0, Math.floor(Number(state.saveRevision) || 0)) + 1;
+    state.updatedAt = new Date().toISOString();
+    // 廃止済みの旧在庫を保存データへ戻さない。
+    if (state.inventory && Object.prototype.hasOwnProperty.call(state.inventory, 'general')) delete state.inventory.general;
+    if (state.inventory && Object.prototype.hasOwnProperty.call(state.inventory, 'gems')) delete state.inventory.gems;
+    state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+    state.migrations.looseInventoryCanonicalV231 = true;
+    state.saveSchemaVersion = SAVE_SCHEMA_VERSION;
+    const key = localSaveKey();
+    const nextRaw = JSON.stringify(state);
+    const currentRaw = localStorage.getItem(key);
+    if (currentRaw && currentRaw !== nextRaw) {
+      try {
+        parseSaveText(currentRaw);
+        localStorage.setItem(localSaveBackupKey(), currentRaw);
+      } catch (error) {
+        preserveCorruptLocalSave(currentRaw, error);
+      }
+    }
+    localStorage.setItem(key, nextRaw);
+    localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
+    lastSuccessfulSaveAt = state.updatedAt;
+    localStorage.setItem(localLastSaveAtKey(), lastSuccessfulSaveAt);
+    lastSavedFingerprint = saveStateFingerprint(state);
+    cloudSave = structuredClone(state);
+    return { saved: true, savedAt: lastSuccessfulSaveAt };
+  } catch (error) {
+    console.error('端末保存に失敗しました', error);
+    return { saved: false, error };
+  }
 }
 
 function saveGame(message = false) {
   if (!state) return Promise.resolve();
   syncGameClearState();
   if (!currentUser || sessionTakenOver) return Promise.resolve();
-  saveLocalBackup();
+  if (autosaveTimer) {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = null;
+  }
+  autosavePending = false;
+  const fingerprint = saveStateFingerprint(state);
+  if (fingerprint && fingerprint === lastSavedFingerprint) {
+    if (message) showAutosaveStatus('saved', `保存済み ${formatAutosaveTime(lastSuccessfulSaveAt)}`.trim());
+    return saveQueue;
+  }
+  showAutosaveStatus('saving', '保存中…', { persistent: true });
+  const localResult = saveLocalBackup();
+  if (!localResult.saved) {
+    showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
+    return Promise.resolve();
+  }
+  showAutosaveStatus('local', `端末に保存しました ${formatAutosaveTime(localResult.savedAt)}`.trim(), { persistent: true });
   const snapshot = structuredClone(state);
   const userId = currentUser.uid;
   saveQueue = saveQueue
     .catch(() => {})
     .then(() => saveState(userId, snapshot))
+    .then(() => {
+      showAutosaveStatus('saved', `保存しました ${formatAutosaveTime(localResult.savedAt)}`.trim());
+      if (message) showToast('保存しました。');
+    })
     .catch((error) => {
       console.error(error);
+      showAutosaveStatus('error', '端末には保存済み／クラウド保存に失敗', { persistent: true });
       showToast('クラウド保存に失敗しました。通信を確認してください。', 'error');
     });
-  if (message) showToast('保存しました。');
   return saveQueue;
+}
+
+function scheduleAutosave(reason = 'state-change', delay = AUTOSAVE_DELAY_MS) {
+  if (!state || !currentUser || sessionTakenOver) return;
+  autosavePending = true;
+  autosaveLastReason = String(reason || 'state-change');
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = window.setTimeout(() => {
+    autosaveTimer = null;
+    if (!autosavePending) return;
+    void saveGame(false).catch(() => {});
+  }, Math.max(0, Number(delay) || 0));
+}
+
+function flushAutosave(reason = 'lifecycle') {
+  if (!state || !currentUser || sessionTakenOver) return Promise.resolve();
+  autosaveLastReason = String(reason || 'lifecycle');
+  if (autosaveTimer) {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = null;
+  }
+  autosavePending = false;
+  return saveGame(false).catch(() => {});
+}
+
+function flushAutosaveLocally(reason = 'lifecycle-local') {
+  if (!state || !currentUser || sessionTakenOver) return;
+  autosaveLastReason = String(reason || 'lifecycle-local');
+  if (autosaveTimer) {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = null;
+  }
+  autosavePending = false;
+  syncGameClearState();
+  const result = saveLocalBackup();
+  if (!result.saved && !result.skipped) showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
 }
 
 function esc(value = '') {
@@ -6807,18 +7248,22 @@ function answerOkachimachiQuiz(index) {
   vibrate(correct ? [35, 45, 80] : 110);
 }
 
-function grantOkachimachiQuizReward() {
+function grantOkachimachiQuizReward({ renderAfter = true, saveAfter = true } = {}) {
   const session = okachimachiQuizSession;
-  if (!session || session.stage !== 'correct') return;
-  const gemIds = Object.values(GEMS).filter((gem) => !gem.eventOnly && (gem.id !== 'diamond' || toolOwned('diamondPolishingLap'))).map((gem) => gem.id);
+  if (!session || session.stage !== 'correct') return false;
+  const gemIds = Object.values(GEMS)
+    .filter((gem) => !gem.eventOnly && (gem.id !== 'diamond' || toolOwned('diamondPolishingLap')))
+    .map((gem) => gem.id);
+  if (!gemIds.length) return false;
   const gemId = gemIds[Math.floor(Math.random() * gemIds.length)];
   state.inventory.rough[gemId] = Math.max(0, Math.floor(Number(state.inventory.rough[gemId]) || 0)) + 1;
   session.rewardGemId = gemId;
   session.stage = 'reward';
-  saveGame();
-  render();
+  if (saveAfter) saveGame();
+  if (renderAfter) render();
   playSfx('loose-sparkle', { gain: 1.06 });
   vibrate([28, 35, 58]);
+  return true;
 }
 
 function finishOkachimachiQuiz() {
@@ -6990,8 +7435,16 @@ function syncScreenContentTopOffset() {
     document.documentElement.style.removeProperty('--jwj-content-top-offset');
     return;
   }
+  // 食事中はヘッダーと本文を専用グリッドの別行に置くため、重なり補正の余白を加算しない。
+  // 固定座標の推測ではなく通常フローで上下を分離し、端末倍率や文字折返しでも重ならないようにする。
+  if (shellEl.classList.contains('meal-eating-shell')) {
+    document.documentElement.style.setProperty('--jwj-content-top-offset', '0px');
+    contentEl.style.setProperty('padding-top', '8px', 'important');
+    contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
+    return;
+  }
   const portrait = window.matchMedia('(orientation: portrait)').matches || window.innerHeight > window.innerWidth;
-  if (!portrait || screen === 'main') {
+  if ((!portrait && screen !== 'meal') || screen === 'main') {
     document.documentElement.style.removeProperty('--jwj-content-top-offset');
     contentEl.style.removeProperty('padding-top');
     contentEl.style.removeProperty('scroll-padding-top');
@@ -7011,6 +7464,19 @@ function syncScreenContentTopOffset() {
   const polishingAnchor = polishingTopAnchor();
   if (polishingAnchor) {
     const anchorRect = polishingAnchor.getBoundingClientRect();
+    const missing = Math.max(0, Math.ceil(headerBottom + desiredGap - anchorRect.top));
+    if (missing > 0) {
+      offset += missing;
+      contentEl.style.setProperty('padding-top', `${offset}px`, 'important');
+      contentEl.style.setProperty('scroll-padding-top', `${offset}px`, 'important');
+    }
+  }
+
+  // 食事中は料理枠そのものを実測し、上部バーの下へ確実に収める。
+  // 画面中央配置や端末の表示倍率で枠が上へ寄っても、料理の上端を隠さない。
+  const mealAnchor = screen === 'meal' ? root.querySelector('.meal-eating-panel') : null;
+  if (mealAnchor instanceof HTMLElement) {
+    const anchorRect = mealAnchor.getBoundingClientRect();
     const missing = Math.max(0, Math.ceil(headerBottom + desiredGap - anchorRect.top));
     if (missing > 0) {
       offset += missing;
@@ -7068,6 +7534,7 @@ function setScreen(target, data = {}, push = true) {
   screenData = data;
   if (state) state.game.screen = target;
   render();
+  scheduleAutosave(`screen:${target}`);
   if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory' || target === 'pureMetalProfessionalGuide') {
     loadMetalMarket().then(() => {
       if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory' || screen === 'pureMetalProfessionalGuide') && state) render();
@@ -7083,6 +7550,7 @@ function goBack() {
     screenData = previous.data || {};
     if (state) state.game.screen = screen;
     render();
+    scheduleAutosave(`screen:${screen}`);
     return;
   }
   setScreen(state ? 'main' : 'title', {}, false);
@@ -7157,16 +7625,26 @@ function header(title, { back = true, main = true, help = '' } = {}) {
       <div class="status-left" aria-label="日付、曜日、何日目、天気、時間、名前、空腹度">
         <div class="status-top-line">
           <div class="status-primary-line">
-            <span class="header-status-item header-calendar-date">${esc(dateLabel)}</span>
-            <span class="header-status-item header-weekday ${weekdayTone}"${holidayName ? ` title="${esc(holidayName)}" aria-label="${esc(`${weekdayLabel} ${holidayName}`)}"` : ''}>${esc(weekdayLabel)}</span>
+            <span class="header-status-item header-calendar-date">
+              <span class="header-full-label">${esc(dateLabel)}</span>
+              <span class="header-compact-label" aria-hidden="true">${currentDate.getMonth() + 1}/${currentDate.getDate()}</span>
+            </span>
+            <span class="header-status-item header-weekday ${weekdayTone}"${holidayName ? ` title="${esc(holidayName)}" aria-label="${esc(`${weekdayLabel} ${holidayName}`)}"` : ''}>
+              <span class="header-full-label">${esc(weekdayLabel)}</span>
+              <span class="header-compact-label" aria-hidden="true">${esc(weekdays[currentDate.getDay()])}</span>
+            </span>
             <span class="header-status-item header-day">${state.game.day}日目</span>
-            <span class="header-status-item header-weather">${weatherIcon(state.game.weather)} ${esc(state.game.weather)}</span>
+            <span class="header-status-item header-weather">
+              <span class="header-weather-icon">${weatherIcon(state.game.weather)}</span>
+              <span class="header-full-label"> ${esc(state.game.weather)}</span>
+              <span class="header-compact-label">${esc(state.game.weather)}</span>
+            </span>
             <span class="header-time-slot header-time-primary">${gameTimePanel()}</span>
           </div>
           <div class="status-secondary-line">
             <span class="header-time-slot header-time-secondary">${gameTimePanel()}</span>
             <span class="header-status-item header-player-name">${esc(playerLabel)}</span>
-            <span class="header-status-item header-hunger">空腹度 ${hungerLevel()}／7</span>
+            <span class="header-status-item header-hunger"><span class="header-full-label">空腹度 </span><span class="header-compact-label">空腹 </span>${hungerLevel()}／7</span>
           </div>
         </div>
       </div>
@@ -7187,8 +7665,13 @@ function header(title, { back = true, main = true, help = '' } = {}) {
 
 function shell(title, body, options = {}) {
   const hideHeader = Boolean(options.hideHeader);
-  const shellClass = hideHeader ? 'screen-shell event-shell-no-header' : 'screen-shell';
-  return `<main class="${shellClass}">${hideHeader ? '' : header(title, options)}<section class="screen-content">${body}</section></main>`;
+  const shellClass = [
+    'screen-shell',
+    hideHeader ? 'event-shell-no-header' : '',
+    String(options.shellClass || '').trim(),
+  ].filter(Boolean).join(' ');
+  const contentClass = ['screen-content', String(options.contentClass || '').trim()].filter(Boolean).join(' ');
+  return `<main class="${shellClass}">${hideHeader ? '' : header(title, options)}<section class="${contentClass}">${body}</section></main>`;
 }
 
 function mainStatusHeader() {
@@ -7886,8 +8369,78 @@ function orderClosedSortValue(order, index = 0) {
   return day * 100000 + Math.max(0, Number(index) || 0);
 }
 
+function aquariumState() {
+  state.aquarium = state.aquarium && typeof state.aquarium === 'object' && !Array.isArray(state.aquarium)
+    ? state.aquarium
+    : {};
+  state.aquarium.unlocked = Boolean(state.aquarium.unlocked);
+  state.aquarium.unlockedDay = Math.max(0, Math.floor(Number(state.aquarium.unlockedDay) || 0));
+  state.aquarium.unlockSource = String(state.aquarium.unlockSource || '').slice(0, 80);
+  state.aquarium.dataVersion = Math.max(1, Math.floor(Number(state.aquarium.dataVersion) || 1));
+  state.aquarium.lastSyncRevision = Math.max(0, Math.floor(Number(state.aquarium.lastSyncRevision) || 0));
+  state.aquarium.items = state.aquarium.items && typeof state.aquarium.items === 'object' && !Array.isArray(state.aquarium.items)
+    ? state.aquarium.items
+    : {};
+  return state.aquarium;
+}
+
+function aquariumUnlocked() {
+  return Boolean(state && aquariumState().unlocked);
+}
+
+function unlockAquariumFeature({ source = 'event', notify = true } = {}) {
+  const aquarium = aquariumState();
+  const newlyUnlocked = !aquarium.unlocked;
+  aquarium.unlocked = true;
+  if (!aquarium.unlockedDay) aquarium.unlockedDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (!aquarium.unlockSource) aquarium.unlockSource = String(source || 'event').slice(0, 80);
+  if (newlyUnlocked && notify) {
+    addNotification('水槽機能を解放しました', 'スマートフォンに「水槽」が追加されました。', 'special');
+  }
+  return newlyUnlocked;
+}
+
+function setAquariumItemQuantity(id, quantity, metadata = {}) {
+  const aquarium = aquariumState();
+  const safeId = String(id || '').trim().slice(0, 100);
+  if (!safeId) return false;
+  const nextQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+  const previous = aquarium.items[safeId] && typeof aquarium.items[safeId] === 'object' ? aquarium.items[safeId] : {};
+  if (nextQuantity < 1) {
+    if (!aquarium.items[safeId]) return false;
+    delete aquarium.items[safeId];
+    aquarium.lastSyncRevision += 1;
+    return true;
+  }
+  const next = {
+    id: safeId,
+    name: String(metadata.name || previous.name || safeId).slice(0, 100),
+    category: ['fish', 'plant', 'display', 'other'].includes(metadata.category || previous.category)
+      ? (metadata.category || previous.category)
+      : 'other',
+    quantity: nextQuantity,
+    asset: String(metadata.asset || previous.asset || '').slice(0, 240),
+    acquiredDay: Math.max(0, Math.floor(Number(metadata.acquiredDay ?? previous.acquiredDay ?? state?.game?.day) || 0)),
+  };
+  const changed = JSON.stringify(previous) !== JSON.stringify(next);
+  aquarium.items[safeId] = next;
+  if (changed) aquarium.lastSyncRevision += 1;
+  return changed;
+}
+
+function addAquariumItem(id, quantity = 1, metadata = {}) {
+  const aquarium = aquariumState();
+  const safeId = String(id || '').trim().slice(0, 100);
+  if (!safeId) return false;
+  const current = Math.max(0, Math.floor(Number(aquarium.items?.[safeId]?.quantity) || 0));
+  return setAquariumItemQuantity(safeId, current + Math.max(0, Math.floor(Number(quantity) || 0)), metadata);
+}
+
 function validPhoneTab(value) {
-  return ['profile', 'calendar', 'notifications', 'finance', 'items', 'gift', 'ai', 'settings'].includes(value) ? value : 'notifications';
+  const tabs = ['profile', 'calendar', 'notifications', 'finance', 'items', 'gift'];
+  if (aquariumUnlocked()) tabs.push('aquarium');
+  tabs.push('ai', 'settings');
+  return tabs.includes(value) ? value : 'notifications';
 }
 
 function validFinancePeriod(value) {
@@ -8397,6 +8950,9 @@ function advanceClockTowerDonationEvent() {
     if (!eventState.donationApplied) {
       state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - 100000);
       eventState.donationApplied = true;
+      addFinance('時計台募金', 0, 100000);
+      startMoneyFeedback(-100000, 1800);
+      showToast('時計台募金　−100,000円', 'money-spent', false);
       addNotification('時計台募金で100,000円を支払いました', '御徒町パンダ広場の時計台建設へ寄付しました。', 'special');
     }
     eventState.active = false;
@@ -8976,7 +9532,7 @@ function renderMain() {
       <section class="main-spacer" aria-hidden="true"></section>
       ${coldActive ? '<div class="winter-cold-main-status" role="status" aria-live="polite" data-illness-readable="true"><strong>体調不良</strong></div>' : ''}
       ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
-      ${locked && !autopilotEnabled ? `<button type="button" class="hunger-lock-notice hunger-meal-shortcut" data-action="nav" data-screen="meal" aria-label="食事画面を開く"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span><em>タップして食事へ</em></button>` : ''}
+      ${locked && !autopilotEnabled ? `<div class="hunger-lock-notice" role="status" aria-live="polite"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
       ${hungerFeedback && !autopilotEnabled ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
       ${visiting.length && !locked && !autopilotEnabled ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
       ${outstandingCosts > 0 ? `<button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>` : ''}
@@ -11401,7 +11957,11 @@ function renderMeal() {
       <button type="button" class="meal-eating-panel meal-eating-finish-button glass-panel" data-action="meal-eating-finish" aria-label="食事を終えてメイン画面へ戻る" aria-live="polite">
         ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
         <strong>もぐもぐもぐ...</strong>
-      </button>`, { help: `${meal.name}で食事をしています。画面をタップすると食事を終え、操作しなくても自動でメイン画面へ戻ります。` });
+      </button>`, {
+        help: `${meal.name}で食事をしています。画面をタップすると食事を終え、操作しなくても自動でメイン画面へ戻ります。`,
+        shellClass: 'meal-eating-shell',
+        contentClass: 'meal-eating-screen-content',
+      });
   }
   return shell('食事', `
     <section class="meal-choice-panel glass-panel">
@@ -11457,6 +12017,17 @@ function kaitenzushiFrameSource() {
   return `./assets/minigames/kaitenzushi/game/index.html?${query}#${hash}`;
 }
 
+function kaitenzushiEmbeddedDocument() {
+  const config = kaitenzushiAudioParameters().toString()
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+  return KAITENZUSHI_EMBEDDED_HTML
+    .replace('__JXJ_CONFIG__', config)
+    .replace('__JXJ_ATTEMPT__', String(kaitenzushiLoadNonce));
+}
+
 function renderKaitenzushi() {
   if (!kaitenzushiSession) {
     const sushiEvent = sushiChefEventState();
@@ -11476,7 +12047,6 @@ function renderKaitenzushi() {
     <iframe
       class="kaitenzushi-game-frame"
       data-kaitenzushi-frame
-      src="${esc(kaitenzushiFrameSource())}"
       title="回転寿司ミニゲーム"
       allow="autoplay; fullscreen"
       loading="eager"
@@ -11542,25 +12112,57 @@ function bindKaitenzushiFrame() {
   const frame = root.querySelector('[data-kaitenzushi-frame]');
   if (!(frame instanceof HTMLIFrameElement)) return;
   clearKaitenzushiLoadWatch();
-  frame.addEventListener('load', () => {
-    if (screen !== 'kaitenzushi') return;
-    let correctDocument = false;
+
+  let launchAssigned = false;
+  let correctDocumentSeen = false;
+  const handleLoad = () => {
+    if (screen !== 'kaitenzushi' || !launchAssigned) return;
+    let marker = '';
+    let href = '';
     try {
-      correctDocument = frame.contentDocument?.documentElement?.dataset?.jxjKaitenzushi === '1';
+      marker = frame.contentDocument?.documentElement?.dataset?.jxjKaitenzushi || '';
+      href = frame.contentWindow?.location?.href || '';
     } catch (_) {}
-    if (!correctDocument) {
+    // iframe creation can emit an initial about:blank load before srcdoc is committed.
+    if (!marker && (href === 'about:blank' || href === '')) return;
+    if (marker !== '1') {
       showKaitenzushiLoadError('回転寿司ではない画面が読み込まれました。');
       return;
     }
+    correctDocumentSeen = true;
     postKaitenzushiSettings(frame);
     if (kaitenzushiSession?.ready) return;
+    clearKaitenzushiLoadWatch();
     kaitenzushiReadyTimer = setTimeout(() => {
       if (screen === 'kaitenzushi' && !kaitenzushiSession?.ready) {
         showKaitenzushiLoadError('回転寿司から起動完了の応答がありません。');
       }
-    }, 8000);
-  }, { once: true });
-  frame.addEventListener('error', () => showKaitenzushiLoadError('回転寿司のファイルを取得できませんでした。'), { once: true });
+    }, 12000);
+  };
+
+  frame.addEventListener('load', handleLoad);
+  frame.addEventListener('error', () => showKaitenzushiLoadError('回転寿司の画面を準備できませんでした。'), { once: true });
+  launchAssigned = true;
+
+  try {
+    if ('srcdoc' in frame) {
+      // content://・PWA・GitHub Pagesのどの起動方法でも、別ページ遷移を行わず同じ文書を直接起動する。
+      frame.srcdoc = kaitenzushiEmbeddedDocument();
+    } else {
+      // 古いブラウザだけ従来の同一オリジンURLへフォールバックする。
+      frame.src = kaitenzushiFrameSource();
+    }
+  } catch (_) {
+    frame.src = kaitenzushiFrameSource();
+  }
+
+  clearKaitenzushiLoadWatch();
+  kaitenzushiReadyTimer = setTimeout(() => {
+    if (screen !== 'kaitenzushi' || kaitenzushiSession?.ready) return;
+    showKaitenzushiLoadError(correctDocumentSeen
+      ? '回転寿司から起動完了の応答がありません。'
+      : '回転寿司の画面を準備できませんでした。');
+  }, 15000);
 }
 
 function startKaitenzushi({ skipEventCheck = false, free = false } = {}) {
@@ -12384,13 +12986,14 @@ function renderPhone() {
           <button class="${phoneTab === 'finance' ? 'active' : ''}" data-action="phone-tab" data-tab="finance">収支</button>
           <button class="${phoneTab === 'items' ? 'active' : ''}" data-action="phone-tab" data-tab="items">アイテム</button>
           <button class="${phoneTab === 'gift' ? 'active' : ''}" data-action="phone-tab" data-tab="gift">プレゼント</button>
+          ${aquariumUnlocked() ? `<button class="${phoneTab === 'aquarium' ? 'active' : ''} phone-aquarium-tab" data-action="phone-tab" data-tab="aquarium">水槽</button>` : ''}
           <button class="phone-game-tab" data-action="open-phone-game" aria-label="スマホゲームを開く">スマホゲーム</button>
           <button class="${phoneTab === 'ai' ? 'active' : ''}" data-action="phone-tab" data-tab="ai">AI</button>
           <button class="${phoneTab === 'settings' ? 'active' : ''}" data-action="phone-tab" data-tab="settings">設定</button>
         </nav>
         <div class="phone-content">${renderPhoneContent()}</div>
       </section>
-    </div>`, { help: '通知、プロフィール、カレンダー、収支、アイテム、プレゼント、スマホゲーム、AI、設定を利用できます。プレゼントでは1回限りのコードを使って、ほかのプレイヤーと品物を受け渡せます。' });
+    </div>`, { help: `通知、プロフィール、カレンダー、収支、アイテム、プレゼント、${aquariumUnlocked() ? '水槽、' : ''}スマホゲーム、AI、設定を利用できます。プレゼントでは1回限りのコードを使って、ほかのプレイヤーと品物を受け渡せます。` });
 }
 
 
@@ -12823,6 +13426,23 @@ async function copyGameDataForAI() {
   showToast('AI相談用の簡易データをコピーしました。', 'info', false);
 }
 
+function renderPhoneAquarium() {
+  const aquarium = aquariumState();
+  if (!aquarium.unlocked) return '<div class="phone-empty">水槽機能はまだ解放されていません。</div>';
+  const rows = Object.values(aquarium.items || {}).filter((row) => Number(row?.quantity) > 0);
+  const total = rows.reduce((sum, row) => sum + Math.max(0, Math.floor(Number(row.quantity) || 0)), 0);
+  return `<section class="phone-aquarium-screen">
+    <header class="phone-aquarium-heading"><div><small>連動ミニゲーム</small><h2>水槽</h2></div><strong>${total}点</strong></header>
+    <section class="phone-aquarium-placeholder" aria-live="polite">
+      <div class="phone-aquarium-water" aria-hidden="true"><span></span><span></span><span></span></div>
+      <strong>水槽ミニゲーム準備中</strong>
+      <p>ミニゲーム本体を接続すると、ここに水槽が表示されます。</p>
+      <small>魚・水草・ディスプレイ用品は、本ゲームで入手した数だけ自動で追加されます。</small>
+    </section>
+    ${rows.length ? `<section class="phone-aquarium-inventory"><h3>水槽へ追加済み</h3>${rows.map((row) => `<article><div><strong>${esc(row.name || row.id)}</strong><small>${row.category === 'fish' ? '魚' : row.category === 'plant' ? '水草' : row.category === 'display' ? 'ディスプレイ用品' : 'その他'}</small></div><b>${Math.max(0, Math.floor(Number(row.quantity) || 0))}</b></article>`).join('')}</section>` : '<div class="phone-empty compact">水槽へ追加された生体・用品はまだありません。</div>'}
+  </section>`;
+}
+
 function renderPhoneContent() {
   if (phoneTab === 'profile') return renderPhoneProfile();
   if (phoneTab === 'calendar') {
@@ -12898,6 +13518,7 @@ function renderPhoneContent() {
   }
   if (phoneTab === 'items') return renderPhoneItems();
   if (phoneTab === 'gift') return renderPhoneGift();
+  if (phoneTab === 'aquarium') return renderPhoneAquarium();
   if (phoneTab === 'ai') return renderPhoneAI();
   return renderSettingsForm(false, true);
 }
@@ -12965,24 +13586,60 @@ function renderDayResult() {
   const result = state.store.lastResult;
   if (!result) return shell('1日の結果', '<p>結果がありません。</p>', { main: false });
   const closingMessage = winterColdTextActive() ? 'ゆっくり休んでください' : 'お疲れ様でした';
+  const mined = Array.isArray(result.mined) ? result.mined : [];
+  const polished = Array.isArray(result.polished) ? result.polished : [];
+  const crafted = Array.isArray(result.crafted) ? result.crafted : [];
+  const sold = Array.isArray(result.sold) ? result.sold : [];
+  const roughSoldCount = (Array.isArray(result.roughSold) ? result.roughSold : []).reduce((sum, entry) => sum + (Number(entry?.qty) || 1), 0);
+  const looseSoldCount = (Array.isArray(result.looseSold) ? result.looseSold : []).reduce((sum, entry) => sum + (Number(entry?.qty) || 1), 0);
+  const activityRows = [];
+  if (mined.length) activityRows.push(`<div><span>採掘した原石</span><strong>${mined.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、')}</strong></div>`);
+  if (polished.length) activityRows.push(`<div><span>研磨したルース</span><strong>${polished.map((entry) => `${looseDisplayLabel(entry.gem, normalizeLooseShape(entry.gem, entry.looseShape))}${entry.qty}個`).join('、')}</strong></div>`);
+  if (crafted.length) activityRows.push(`<div><span>制作</span><strong>${crafted.length}点</strong></div>`);
+  const salesRows = [];
+  if (roughSoldCount > 0) salesRows.push(`<div><span>原石売却</span><strong>${roughSoldCount}個</strong></div>`);
+  if (looseSoldCount > 0) salesRows.push(`<div><span>ルース売却</span><strong>${looseSoldCount}個</strong></div>`);
+  if (sold.length) salesRows.push(`<div><span>ジュエリー販売</span><strong>${sold.length}点</strong></div>`);
+  salesRows.push(`<div><span>来店人数</span><strong>${Math.max(0, Number(result.visitors) || 0)}人</strong></div>`);
+  const income = Math.max(0, Number(result.income) || 0);
+  const expense = Math.max(0, Number(result.expense) || 0);
+  const balance = income - expense;
+  const balancePrefix = balance > 0 ? '＋' : balance < 0 ? '－' : '';
+  const balanceClass = balance > 0 ? 'positive' : balance < 0 ? 'negative' : 'neutral';
+  const meals = Array.isArray(result.meals) ? result.meals : [];
   return `
     <main class="day-result-screen">
       <section class="sleep-card glass-panel">
         <div class="day-result-scroll" tabindex="0" aria-label="1日の結果一覧">
           <h1>${result.day}日目の結果</h1>
-          <div class="result-list">
-            <div><span>採掘した原石</span><strong>${result.mined.length ? result.mined.map((entry) => `${GEMS[entry.gem].name}${entry.qty}個`).join('、') : 'なし'}</strong></div>
-            <div><span>研磨</span><strong>${result.polished?.length ? result.polished.map((entry) => `${looseDisplayLabel(entry.gem, normalizeLooseShape(entry.gem, entry.looseShape))}${entry.qty}個`).join('、') : 'なし'}</strong></div>
-            <div><span>原石売却</span><strong>${(result.roughSold || []).reduce((sum, entry) => sum + (Number(entry.qty) || 1), 0)}個</strong></div>
-            <div><span>ルース売却</span><strong>${(result.looseSold || []).reduce((sum, entry) => sum + (Number(entry.qty) || 1), 0)}個</strong></div>
-            <div><span>制作</span><strong>${result.crafted.length}点</strong></div>
-            <div><span>販売</span><strong>${result.sold.length}点</strong></div>
-            <div><span>来店人数</span><strong>${result.visitors}人</strong></div>
-            <div><span>店舗スタッフ</span><strong>${result.staffEffects?.length ? result.staffEffects.map((entry) => `${entry.name}（店舗${entry.branchNumber}・販売力Lv.${entry.level} ${entry.levelLabel}・勤務${entry.workDays}日${entry.leveledUp ? '・成長' : ''}）`).join('、') : 'なし'}</strong></div>
-            <div><span>職人スタッフ</span><strong>${result.workshopStaff?.worked ? `制作力Lv.${result.workshopStaff.level} ${result.workshopStaff.levelLabel}・実働制作${result.workshopStaff.workDays}日・自動制作${result.workshopStaff.crafted}点・日当${yen(result.workshopStaff.wage)}${result.workshopStaff.leveledUp ? '・成長' : ''}` : '出勤なし'}</strong></div>
-            <div><span>売上</span><strong>${yen(result.income)}</strong></div>
-            <div><span>支出</span><strong>${yen(result.expense)}</strong></div>
-            <div><span>食事</span><strong>${result.meals?.length ? result.meals.map((entry) => entry.name).join('、') : 'なし'}</strong></div>
+          <div class="day-result-sections">
+            <section class="day-result-section" aria-labelledby="day-result-work-heading">
+              <h2 id="day-result-work-heading">今日の作業</h2>
+              ${activityRows.length ? `<div class="result-list">${activityRows.join('')}</div>` : '<p class="day-result-empty">なし</p>'}
+            </section>
+            <section class="day-result-section" aria-labelledby="day-result-sales-heading">
+              <h2 id="day-result-sales-heading">販売・店舗</h2>
+              <div class="result-list">${salesRows.join('')}</div>
+            </section>
+            <section class="day-result-section" aria-labelledby="day-result-staff-heading">
+              <h2 id="day-result-staff-heading">スタッフ</h2>
+              <div class="result-list">
+                <div class="day-result-store-staff"><span>店舗スタッフ</span><strong class="day-result-staff-list">${result.staffEffects?.length ? result.staffEffects.map((entry) => `<span class="day-result-staff-entry">${esc(entry.name)}｜店舗${entry.branchNumber}｜販売力Lv.${entry.level} ${esc(entry.levelLabel)}｜勤務${entry.workDays}日${entry.leveledUp ? '｜成長' : ''}</span>`).join('') : '<span class="day-result-staff-entry">なし</span>'}</strong></div>
+                <div><span>職人スタッフ</span><strong>${result.workshopStaff?.worked ? `制作力Lv.${result.workshopStaff.level} ${esc(result.workshopStaff.levelLabel)}｜実働${result.workshopStaff.workDays}日｜自動制作${result.workshopStaff.crafted}点｜日当${yen(result.workshopStaff.wage)}${result.workshopStaff.leveledUp ? '｜成長' : ''}` : '出勤なし'}</strong></div>
+              </div>
+            </section>
+            <section class="day-result-section" aria-labelledby="day-result-finance-heading">
+              <h2 id="day-result-finance-heading">今日の収支</h2>
+              <div class="result-list">
+                <div><span>売上</span><strong>${yen(income)}</strong></div>
+                <div><span>支出</span><strong>${yen(expense)}</strong></div>
+                <div class="day-result-balance"><span>収支</span><strong class="${balanceClass}">${balancePrefix}${yen(Math.abs(balance))}</strong></div>
+              </div>
+            </section>
+            <section class="day-result-section day-result-meal-section" aria-labelledby="day-result-meal-heading">
+              <h2 id="day-result-meal-heading">食事</h2>
+              <p class="day-result-meal-value"><strong>${meals.length ? meals.map((entry) => esc(entry.name)).join('、') : 'なし'}</strong></p>
+            </section>
           </div>
           <p class="goodnight" data-illness-readable="true">${closingMessage}<br>おやすみなさい...${esc(state.playerName || 'プレイヤー')}...</p>
           <div class="day-result-actions">
@@ -16444,7 +17101,13 @@ async function enterGameAfterLogin() {
   if (!state) {
     screen = 'title';
     render();
-    showToast('セーブデータを読み込めませんでした。', 'error');
+    showModal({
+      title: 'セーブデータを読み込めませんでした',
+      body: `<p>${esc(saveRecoveryNotice || '端末またはクラウドのセーブデータを確認できませんでした。')}</p><p class="muted">破損した原本は端末内に退避しています。新規ゲームを始めても、退避データを自動的に削除しません。</p>`,
+      confirm: '閉じる',
+      action: 'modal-close',
+      hideCancel: true,
+    });
     return;
   }
   navigation = [];
@@ -16457,9 +17120,17 @@ async function enterGameAfterLogin() {
   repairMorningOverlapDeadlockV475();
   const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
+  if (saveRecoveryNotice) {
+    showToast(saveRecoveryNotice, 'info', false);
+    saveRecoveryNotice = null;
+    saveRecoveryDetails = null;
+  }
   if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
+  lastSuccessfulSaveAt = String(state.updatedAt || localStorage.getItem(localLastSaveAtKey()) || '');
+  lastSavedFingerprint = saveStateFingerprint(state);
+  showAutosaveStatus('loaded', `前回の保存を読み込みました ${formatAutosaveTime(lastSuccessfulSaveAt)}`.trim());
   // 読み込み直後に正規化済みデータを保存し、クラウドの旧在庫項目を完全に除去する。
-  saveGame();
+  scheduleAutosave('post-load-normalization', 0);
 }
 
 window.addEventListener('beforeunload', () => saveLocalBackup());
@@ -16660,6 +17331,7 @@ document.addEventListener('focusout', (event) => {
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
+    flushAutosaveLocally('visibility-hidden');
     suspendAudio();
     stopGiftStatusSyncTimer();
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
@@ -16678,6 +17350,10 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+
+window.addEventListener('pagehide', () => flushAutosaveLocally('pagehide'), { capture: true });
+window.addEventListener('beforeunload', () => flushAutosaveLocally('beforeunload'), { capture: true });
+window.addEventListener('freeze', () => flushAutosaveLocally('freeze'), { capture: true });
 
 root.addEventListener('ended', (event) => {
   const video = event.target instanceof Element ? event.target.closest('video[data-cinema-event-video]') : null;
@@ -16780,6 +17456,18 @@ modalEl.addEventListener('click', async (event) => {
     default: break;
   }
 });
+
+// v0.10.517: 画面内の操作完了後も保存要求をまとめて発行する。
+// 個別処理の saveGame() が先に実行された場合は、その保存が予約を取り消すため二重保存を抑えられる。
+const scheduleInteractionAutosave = (event) => {
+  const target = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+  if (!target) return;
+  queueMicrotask(() => scheduleAutosave(`interaction:${target.dataset.action || 'unknown'}`));
+};
+root.addEventListener('click', scheduleInteractionAutosave);
+modalEl.addEventListener('click', scheduleInteractionAutosave);
+root.addEventListener('change', () => scheduleAutosave('form-change'));
+modalEl.addEventListener('change', () => scheduleAutosave('modal-form-change'));
 
 window.addEventListener('resize', scheduleScreenContentTopOffsetSync, { passive: true });
 window.addEventListener('orientationchange', scheduleScreenContentTopOffsetSync, { passive: true });

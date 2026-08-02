@@ -1,0 +1,35 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "canonicalVersion": "0.10.492",
+  "createdAt": "2026-08-01T21:31:00+09:00",
+  "base": "v0.10.491",
+  "saveCompatibility": {
+    "preserved": true,
+    "saveDeletionRequired": false,
+    "reinstallRequired": false
+  },
+  "problem": {
+    "screen": "食事中画面",
+    "symptom": "料理枠の上部が固定上部バーへ潜り込み、料理の上側が見えない",
+    "cause": "食事中コンテンツに上部バー実寸との最終的な位置保証がなく、画面比率・表示倍率によって料理枠が上へ寄る余地があった"
+  },
+  "fix": {
+    "contentClass": "meal-eating-screen-content",
+    "layout": "top-safe flex layout below visible header",
+    "minimumHeaderGapPx": 8,
+    "portraitAndLandscapeChecked": true,
+    "mealCasesChecked": 112
+  },
+  "unchanged": [
+    "meal image compact size",
+    "もぐもぐもぐ... text",
+    "tap-to-finish",
+    "automatic finish",
+    "meal duration",
+    "meal prices",
+    "hunger recovery",
+    "save data",
+    "kaitenzushi integration",
+    "tool images"
+  ]
+}

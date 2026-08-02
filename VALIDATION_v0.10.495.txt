@@ -1,0 +1,39 @@
+JEWELRY×JEWELRY v0.10.495 VALIDATION
+Date: 2026-08-02
+
+== JavaScript syntax ==
+OK: js/app.js, js/game-data.js, sw.js
+
+== Version-specific validator ==
+v0.10.495 年末年始の体調不良停止期間検査: OK
+v0.10.495 validation passed: 19 tool images implemented including buffer.png.
+
+== Small-phone upper bar 1 ==
+v0.10.495 小型携帯の上部バー1検査: OK（280px〜390px、長い日数・名前・所持金）
+- 360px以下では日付・曜日・空腹度を短縮表示
+- 情報項目同士の重なりなし
+- 情報欄と所持金欄の重なりなし
+- 1234日目、長いプレイヤー名、99,999,999円で確認
+- 390px以上では従来の完全表示を維持
+
+== Portrait header 230 cases ==
+v0.10.493 縦画面ヘッダー検査: OK（46画面 × 5端末サイズ = 230ケース）
+上部バーと本文先頭の間隔は、通常画面8px・原石研磨16pxです。
+
+== Phone layout 14 sizes ==
+携帯表示基準チェック: OK
+320×568から932×430までの縦横14サイズを確認しました。
+
+== Meal header isolation ==
+v0.10.493 食事画面・上部バー構造分離検査: OK（料理8種類 × 携帯縦横14サイズ × UI倍率3 = 336ケース）
+
+== Day result staff lines ==
+v0.10.494 1日の結果・店舗スタッフ改行表示検査: OK（スタッフ3人 × 4画面サイズ）
+
+== General regression ==
+回帰防止チェック: OK（v0.10.495）
+
+RESULT: PASS
+- 小型携帯で上部バー1の文字が重ならない
+- 通常サイズ端末の完全表示を維持
+- 保存データと既存機能に変更なし

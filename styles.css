@@ -1531,10 +1531,6 @@ body :is(.screen-content,.title-screen,.game-header,.main-menu,.floating-notice)
 .hunger-pips i.filled{opacity:1;background:currentColor}
 .hunger-lock-notice{position:fixed;left:50%;top:50%;z-index:12;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:.35rem;padding:1rem 1.4rem;border:1px solid rgba(255,211,127,.72);border-radius:14px;background:rgba(8,6,4,.82);text-align:center;box-shadow:0 18px 55px rgba(0,0,0,.55)}
 .hunger-lock-notice strong{font-size:1.25rem;color:#ffe0a1}.hunger-lock-notice span{font-size:.84rem;color:#e8d6b5}
-.hunger-meal-shortcut{width:min(620px,calc(100vw - 28px));cursor:pointer;color:#f7e6c4;font:inherit;appearance:none;-webkit-appearance:none}
-.hunger-meal-shortcut em{display:inline-flex;align-items:center;justify-content:center;margin-top:.4rem;padding:.55rem 1rem;border:1px solid rgba(255,224,161,.75);border-radius:999px;background:linear-gradient(180deg,rgba(128,83,32,.92),rgba(70,42,17,.94));color:#fff0ca;font-size:.92rem;font-style:normal;font-weight:900;box-shadow:0 8px 20px rgba(0,0,0,.36)}
-.hunger-meal-shortcut:active{transform:translate(-50%,-50%) scale(.985)}
-.hunger-meal-shortcut:focus-visible{outline:3px solid rgba(255,224,161,.95);outline-offset:4px}
 .hunger-recovery-overlay{position:fixed;left:50%;top:48%;z-index:80;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:.35rem;min-width:240px;padding:1.05rem 1.35rem;border:1px solid rgba(255,231,155,.9);border-radius:15px;background:rgba(7,5,3,.82);box-shadow:0 20px 70px rgba(0,0,0,.65),0 0 32px rgba(255,213,107,.22);animation:hunger-levelup 1.55s ease both;pointer-events:none}
 .hunger-recovery-overlay small{color:#e6cf9d}.hunger-recovery-overlay>strong{color:#fff1c7;font-size:1rem}.hunger-recovery-overlay>div{display:flex;align-items:center;gap:.8rem}.hunger-recovery-overlay b{font-size:2rem;color:#ffe184}.hunger-recovery-overlay span{font-size:1.25rem}
 @keyframes hunger-levelup{0%{opacity:0;transform:translate(-50%,-44%) scale(.84)}15%,76%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-56%) scale(1.05)}}
@@ -12398,33 +12394,33 @@ body[data-screen="childhoodFriendEvent"] .childhood-friend-recovery-button:activ
   transform:scale(.98);
 }
 
-/* v0.10.488 全イベント共通の緊急終了導線：画面上端・左端へ控えめに配置 */
+/* v0.10.507 全イベント共通の緊急終了導線：画面上端・右端に少しだけ大きく配置 */
 .event-safety-recovery{
   position:fixed;
   z-index:12050;
-  top:env(safe-area-inset-top,0px);
-  left:env(safe-area-inset-left,0px);
-  right:auto;
+  top:calc(env(safe-area-inset-top,0px) + 1px);
+  right:calc(env(safe-area-inset-right,0px) + 1px);
+  left:auto;
   bottom:auto;
   appearance:none;
   -webkit-appearance:none;
   border:0;
-  border-right:1px solid rgba(255,255,255,.18);
-  border-bottom:1px solid rgba(255,255,255,.18);
-  border-radius:0 0 5px 0;
-  background:rgba(12,10,14,.34);
-  color:rgba(255,255,255,.64);
-  padding:2px 4px;
+  border-left:1px solid rgba(255,255,255,.2);
+  border-bottom:1px solid rgba(255,255,255,.2);
+  border-radius:0 0 0 7px;
+  background:rgba(12,10,14,.38);
+  color:rgba(255,255,255,.72);
+  padding:3px 6px;
   min-width:0;
-  min-height:18px;
+  min-height:21px;
   font:inherit;
-  font-size:8px;
-  font-weight:600;
-  line-height:1;
+  font-size:9px;
+  font-weight:700;
+  line-height:1.05;
   letter-spacing:0;
   white-space:nowrap;
   cursor:pointer;
-  opacity:.46;
+  opacity:.56;
   box-shadow:none;
   backdrop-filter:blur(2px);
   -webkit-backdrop-filter:blur(2px);
@@ -12432,16 +12428,18 @@ body[data-screen="childhoodFriendEvent"] .childhood-friend-recovery-button:activ
 }
 .event-safety-recovery:hover,
 .event-safety-recovery:focus-visible{
-  opacity:.88;
-  background:rgba(12,10,14,.68);
-  color:rgba(255,255,255,.92);
+  opacity:.9;
+  background:rgba(12,10,14,.7);
+  color:rgba(255,255,255,.95);
 }
 .event-safety-recovery:active{transform:scale(.96);opacity:1}
 @media (max-width:520px){
   .event-safety-recovery{
-    padding:1px 3px;
-    min-height:17px;
-    font-size:7.5px;
+    top:env(safe-area-inset-top,0px);
+    right:env(safe-area-inset-right,0px);
+    padding:2px 5px;
+    min-height:20px;
+    font-size:8.5px;
   }
 }
 
@@ -13125,4 +13123,814 @@ body[data-screen="meal"] .meal-eating-panel > strong{
   body[data-screen="meal"] .meal-eating-panel > strong{
     font-size:.88rem!important;
   }
+}
+
+/* v0.10.492: 食事中の料理枠を上部バーの下へ固定し、上端の隠れを防止 */
+body[data-screen="meal"] .meal-eating-screen-content{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  min-height:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+}
+body[data-screen="meal"] .meal-eating-screen-content > .meal-eating-panel{
+  flex:0 0 auto!important;
+  margin:clamp(4px,1.2vh,12px) auto max(10px,var(--safe-bottom))!important;
+  max-height:calc(100dvh - var(--jwj-content-top-offset,96px) - max(20px,var(--safe-bottom)))!important;
+  scroll-margin-top:8px;
+}
+@media (orientation:landscape) and (max-height:620px){
+  body[data-screen="meal"] .meal-eating-screen-content > .meal-eating-panel{
+    margin-top:2px!important;
+    max-height:calc(100dvh - var(--jwj-content-top-offset,72px) - max(8px,var(--safe-bottom)))!important;
+  }
+}
+
+
+/* v0.10.493: 食事中は上部バーと全表示を通常フローの別行へ分離し、重なりを構造的に防止 */
+body[data-screen="meal"] .meal-eating-shell{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+body[data-screen="meal"] .meal-eating-shell > .game-header{
+  position:relative!important;
+  inset:auto!important;
+  top:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  left:auto!important;
+  grid-row:1!important;
+  width:auto!important;
+  max-width:none!important;
+  margin:calc(var(--safe-top,0px) + var(--jwj-edge-gap,8px)) var(--jwj-edge-gap,8px) 0!important;
+  flex:0 0 auto!important;
+  transform:none!important;
+}
+body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content{
+  position:relative!important;
+  inset:auto!important;
+  grid-row:2!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  padding:8px clamp(7px,1.5vw,18px) max(10px,var(--safe-bottom,0px))!important;
+  scroll-padding-top:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+}
+body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel{
+  flex:0 0 auto!important;
+  margin:0 auto!important;
+  max-height:none!important;
+  scroll-margin-top:0!important;
+}
+@media (orientation:landscape) and (max-height:620px){
+  body[data-screen="meal"] .meal-eating-shell > .game-header{
+    margin-top:calc(var(--safe-top,0px) + var(--jwj-edge-gap,5px))!important;
+  }
+  body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content{
+    padding-top:5px!important;
+    padding-bottom:max(5px,var(--safe-bottom,0px))!important;
+  }
+}
+
+/* v0.10.493: 携帯共通の固定ヘッダー指定より高い優先度で、食事中だけ相対配置を確定 */
+html[data-device-class="phone"] body[data-screen="meal"][data-header-mode="two-bar"] .meal-eating-shell > .game-header.game-header{
+  position:relative!important;
+  top:0!important;
+  right:0!important;
+  bottom:auto!important;
+  left:0!important;
+  margin:calc(var(--safe-top,0px) + var(--jwj-edge-gap,8px)) var(--jwj-edge-gap,8px) 0!important;
+}
+
+
+/* v0.10.494 1日の結果・店舗スタッフをスタッフごとに改行 */
+body[data-screen="dayResult"] .day-result-store-staff{
+  align-items:flex-start;
+}
+body[data-screen="dayResult"] .day-result-staff-list{
+  display:grid;
+  justify-items:end;
+  gap:.24rem;
+  min-width:0;
+}
+body[data-screen="dayResult"] .day-result-staff-entry{
+  display:block;
+  color:inherit;
+  line-height:1.45;
+}
+@media (max-width:430px){
+  body[data-screen="dayResult"] .day-result-staff-list{
+    gap:.18rem;
+  }
+}
+
+/* v0.10.495: 小型携帯で上部バー1の文字が重ならない可変コンパクト表示 */
+.game-header .header-compact-label{
+  display:none;
+}
+
+@media (orientation:portrait) and (max-width:360px){
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header{
+    grid-template-columns:minmax(0,1fr) minmax(68px,31vw)!important;
+    column-gap:2px!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .status-left{
+    min-width:0!important;
+    padding-left:2px!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .status-top-line{
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header :is(.status-primary-line,.status-secondary-line){
+    min-width:0!important;
+    width:100%!important;
+    gap:2px!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-status-item,
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .status-secondary-line .game-time-panel{
+    flex:0 0 auto!important;
+    min-width:0!important;
+    max-width:100%!important;
+    font-size:clamp(10.6px,3.7vw,11.8px)!important;
+    letter-spacing:-.015em!important;
+    white-space:nowrap!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header :is(.header-calendar-date,.header-weekday,.header-weather,.header-hunger)>.header-full-label{
+    display:none!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header :is(.header-calendar-date,.header-weekday,.header-weather,.header-hunger)>.header-compact-label{
+    display:inline!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-weather{
+    display:inline-flex!important;
+    align-items:center!important;
+    gap:0!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-player-name{
+    flex:1 1 auto!important;
+    min-width:18px!important;
+    max-width:none!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header :is(.header-time-slot,.header-hunger){
+    flex:0 0 auto!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-money-area{
+    min-width:0!important;
+    max-width:31vw!important;
+    padding-right:2px!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-money{
+    min-width:0!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    font-size:clamp(11px,3.8vw,13.5px)!important;
+    letter-spacing:-.045em!important;
+    white-space:nowrap!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-money-value{
+    display:block!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+}
+
+@media (orientation:portrait) and (max-width:300px){
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header{
+    grid-template-columns:minmax(0,1fr) minmax(64px,32vw)!important;
+    column-gap:1px!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header :is(.status-primary-line,.status-secondary-line){
+    gap:1px!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-status-item,
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .status-secondary-line .game-time-panel{
+    font-size:10.6px!important;
+    letter-spacing:-.025em!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-money{
+    font-size:10.8px!important;
+  }
+}
+
+
+/* v0.10.496: 1日の結果を作業・販売・スタッフ・収支・食事へ整理 */
+body[data-screen="dayResult"] .sleep-card h1{
+  font-size:clamp(1.15rem,5.4vw,1.65rem);
+  line-height:1.25;
+  white-space:nowrap;
+}
+body[data-screen="dayResult"] .day-result-sections{
+  display:grid;
+  gap:.85rem;
+}
+body[data-screen="dayResult"] .day-result-section{
+  padding:.7rem .8rem .55rem;
+  border:1px solid rgba(233,194,106,.18);
+  border-radius:12px;
+  background:rgba(8,10,15,.24);
+}
+body[data-screen="dayResult"] .day-result-section h2{
+  margin:0 0 .28rem;
+  color:var(--gold-light);
+  font-size:.92rem;
+  line-height:1.35;
+  letter-spacing:.03em;
+}
+body[data-screen="dayResult"] .day-result-section .result-list{
+  gap:0;
+}
+body[data-screen="dayResult"] .day-result-section .result-list>div{
+  padding:.48rem 0;
+}
+body[data-screen="dayResult"] .day-result-empty,
+body[data-screen="dayResult"] .day-result-meal-value{
+  margin:.15rem 0 .2rem;
+  padding:.42rem 0;
+  text-align:right;
+}
+body[data-screen="dayResult"] .day-result-empty{
+  color:var(--muted);
+}
+body[data-screen="dayResult"] .day-result-meal-section{
+  margin-bottom:0;
+}
+body[data-screen="dayResult"] .day-result-balance strong.positive{
+  color:#9de7b2;
+}
+body[data-screen="dayResult"] .day-result-balance strong.negative{
+  color:#ffaaa3;
+}
+body[data-screen="dayResult"] .day-result-balance strong.neutral{
+  color:inherit;
+}
+@media (max-width:430px){
+  body[data-screen="dayResult"] .day-result-sections{
+    gap:.55rem;
+  }
+  body[data-screen="dayResult"] .day-result-section{
+    padding:.5rem .58rem .38rem;
+    border-radius:10px;
+  }
+  body[data-screen="dayResult"] .day-result-section h2{
+    font-size:.82rem;
+    margin-bottom:.18rem;
+  }
+  body[data-screen="dayResult"] .day-result-section .result-list>div{
+    gap:.55rem;
+    padding:.34rem 0;
+  }
+}
+
+/* v0.10.497: 空腹時の案内を非操作のメッセージ表示へ変更 */
+.hunger-lock-notice[role="status"]{cursor:default}
+
+
+/* v0.10.498: 横画面の食事画像と「もぐもぐもぐ…」を縦いっぱいに表示 */
+@media (orientation:landscape){
+  body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content{
+    justify-content:center!important;
+    padding-top:4px!important;
+    padding-bottom:max(6px,var(--safe-bottom,0px))!important;
+  }
+  body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr) auto!important;
+    align-content:stretch!important;
+    justify-items:center!important;
+    width:min(78vw,680px)!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    padding:clamp(10px,2.2vh,18px) clamp(10px,1.8vw,18px)!important;
+    gap:clamp(6px,1.3vh,12px)!important;
+  }
+  body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel > .meal-food-display{
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    display:grid!important;
+    place-items:center!important;
+    align-self:stretch!important;
+    margin:0!important;
+  }
+  body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel > .meal-food-display img{
+    max-width:100%!important;
+    max-height:100%!important;
+    width:auto!important;
+    height:auto!important;
+  }
+  body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel > strong{
+    font-size:clamp(1rem,3.1vh,1.42rem)!important;
+    line-height:1.1!important;
+    margin:0!important;
+  }
+}
+
+
+/* v0.10.499: クイズ王イベントでも緊急終了ボタンを確実に最前面表示 */
+body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event > .event-safety-recovery{
+  position:absolute!important;
+  top:0!important;
+  left:0!important;
+  right:auto!important;
+  bottom:auto!important;
+  z-index:2147483647!important;
+  display:block!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+
+
+/* v0.10.500: 上部バー1の時刻と所持金だけを再拡大 */
+.game-header .game-time-panel,
+.game-header .header-time-primary,
+.game-header .header-time-secondary{
+  font-size:clamp(14px,calc(16px * var(--jwj-ui-scale,1)),18px)!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:-.015em!important;
+}
+.game-header .header-money{
+  font-size:clamp(16px,calc(18px * var(--jwj-ui-scale,1)),20px)!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+@media (orientation:portrait) and (max-width:360px){
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .status-secondary-line .game-time-panel,
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header :is(.header-time-primary,.header-time-secondary){
+    font-size:clamp(12.4px,4vw,14px)!important;
+    letter-spacing:-.025em!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-money{
+    font-size:clamp(14px,4.65vw,16.5px)!important;
+    letter-spacing:-.045em!important;
+  }
+}
+@media (orientation:portrait) and (max-width:300px){
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .status-secondary-line .game-time-panel,
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header :is(.header-time-primary,.header-time-secondary){
+    font-size:12px!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"] .game-header.game-header .header-money{
+    font-size:13.8px!important;
+  }
+}
+
+
+/* v0.10.501: クイズ王4択の枠内余白を詰めて表示 */
+body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-panel{
+  align-content:start!important;
+  justify-content:start!important;
+}
+body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-grid{
+  align-content:start!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question{
+  grid-template-rows:minmax(138px,29%) minmax(0,71%)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-panel{
+  padding:10px 10px 12px!important;
+  gap:8px!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-kicker{
+  padding:.22rem .58rem!important;
+  font-size:.68rem!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-question-panel h2{
+  font-size:clamp(.98rem,4.7vw,1.28rem)!important;
+  line-height:1.34!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-grid{
+  gap:8px!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-button{
+  grid-template-columns:1.9rem minmax(0,1fr)!important;
+  min-height:58px!important;
+  padding:.52rem .62rem!important;
+  gap:.5rem!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-button>span{
+  width:1.9rem!important;
+  height:1.9rem!important;
+  font-size:.8rem!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question .quiz-answer-button strong{
+  font-size:clamp(.78rem,3.6vw,.96rem)!important;
+  line-height:1.28!important;
+}
+
+
+/* v0.10.502 ルース屋横画面の名称つぶれを改善 */
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row{
+  grid-template-columns:minmax(0,1fr)!important;
+  align-items:start!important;
+  gap:.42rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row>.product-main{
+  grid-template-columns:54px minmax(0,1fr)!important;
+  align-items:start!important;
+  gap:.58rem!important;
+  min-width:0;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row .product-main>div{
+  min-width:0;
+  gap:.12rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row .product-main strong{
+  display:block;
+  font-size:clamp(.98rem,2.2vw,1.12rem)!important;
+  line-height:1.22!important;
+  white-space:normal!important;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row small{
+  line-height:1.34!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row>strong{
+  justify-self:start!important;
+  font-size:clamp(.94rem,2vw,1.06rem)!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:.42rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions>.loose-purchase-quantity{
+  grid-column:1/-1;
+  grid-row:1;
+  grid-template-columns:auto minmax(112px,1fr) auto;
+  width:100%;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions>.secondary-button{
+  grid-column:1;
+  grid-row:2;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions>.loose-inline-purchase{
+  grid-column:2;
+  grid-row:2;
+  width:100%;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-actions{
+  justify-content:stretch!important;
+}
+
+
+/* v0.10.503 ルース屋横画面の微調整 */
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list{
+  gap:.5rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row{
+  padding:.56rem .62rem!important;
+  gap:.34rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row>.product-main{
+  grid-template-columns:48px minmax(0,1fr)!important;
+  gap:.48rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-inline{
+  width:48px!important;
+  height:48px!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row .product-main>div{
+  padding:.18rem .28rem!important;
+  gap:.08rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row .product-main strong{
+  font-size:clamp(1.04rem,2.45vw,1.18rem)!important;
+  line-height:1.16!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row small{
+  font-size:.84rem!important;
+  line-height:1.25!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-product-row>strong{
+  justify-self:end!important;
+  width:100%;
+  text-align:right!important;
+  font-size:clamp(.98rem,2.18vw,1.12rem)!important;
+  padding:.08rem 0 .02rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions{
+  gap:.34rem!important;
+  padding:.22rem 0 0!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions>.loose-purchase-quantity{
+  grid-template-columns:auto minmax(104px,1fr) auto!important;
+  gap:.34rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-quantity-label{
+  font-size:.9rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-purchase-total{
+  font-size:.88rem!important;
+  justify-self:end!important;
+  text-align:right!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions>.secondary-button,
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="looseShop"] .loose-shop-cut-list .loose-shop-buy-actions>.loose-inline-purchase{
+  min-height:40px!important;
+  padding:.5rem .6rem!important;
+  font-size:.92rem!important;
+}
+
+
+/* v0.10.504 横画面の時計台募金イベントのセリフ枠を下詰めに補正 */
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="clockTowerDonationEvent"] .visit-character-event{
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  height:var(--jwj-layout-height,100dvh)!important;
+  grid-template-rows:minmax(0,1fr) auto!important;
+  align-items:stretch!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="clockTowerDonationEvent"] .visit-character-area{
+  position:absolute!important;
+  inset-inline:0!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  bottom:var(--jwj-event-dialogue-space)!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:var(--jwj-edge-gap) var(--jwj-edge-gap) 0!important;
+  transform:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:visible!important;
+  visibility:visible!important;
+  opacity:1!important;
+  z-index:7!important;
+  pointer-events:none!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="clockTowerDonationEvent"] .visit-character{
+  max-width:var(--jwj-character-max-width)!important;
+  max-height:100%!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="clockTowerDonationEvent"] .visit-event-dialogue{
+  width:calc(100% - var(--jwj-edge-gap) * 2)!important;
+  max-height:calc(var(--jwj-event-dialogue-space) - var(--safe-bottom) - var(--jwj-edge-gap))!important;
+  margin:0 auto calc(var(--safe-bottom) + var(--jwj-edge-gap))!important;
+  padding:calc(10px * var(--jwj-ui-scale,1)) calc(13px * var(--jwj-ui-scale,1))!important;
+  align-self:end!important;
+  overflow-y:auto!important;
+}
+
+/* v0.10.506 横画面の全画面イベント：セリフ枠を下端寄せし、下側の無駄な空白を削減 */
+html[data-device-class="phone"][data-orientation="landscape"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="kappaJadeEvent"],
+  [data-screen="clockTowerDonationEvent"],
+  [data-screen="tattooWomanAmberEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="mysteryChineseMealEvent"],
+  [data-screen="hauntingEvent"],
+  [data-screen="storeTheftEvent"],
+  [data-screen="childhoodFriendEvent"]
+) :is(
+  .western-union-event,
+  .pazupan-event,
+  .mermaid-event,
+  .visit-character-event,
+  .haunting-event,
+  .store-theft-event,
+  .childhood-friend-event
+){
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  height:var(--jwj-layout-height,100dvh)!important;
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr) auto!important;
+  align-items:stretch!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="kappaJadeEvent"],
+  [data-screen="clockTowerDonationEvent"],
+  [data-screen="tattooWomanAmberEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="mysteryChineseMealEvent"],
+  [data-screen="hauntingEvent"],
+  [data-screen="storeTheftEvent"]
+) :is(
+  .western-union-character-area,
+  .pazupan-character-area,
+  .mermaid-character-area,
+  .visit-character-area
+){
+  position:absolute!important;
+  inset-inline:0!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  bottom:var(--jwj-event-dialogue-space)!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:var(--jwj-edge-gap) var(--jwj-edge-gap) 0!important;
+  transform:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:visible!important;
+  visibility:visible!important;
+  opacity:1!important;
+  z-index:7!important;
+  pointer-events:none!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="kappaJadeEvent"],
+  [data-screen="clockTowerDonationEvent"],
+  [data-screen="tattooWomanAmberEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="mysteryChineseMealEvent"],
+  [data-screen="hauntingEvent"],
+  [data-screen="storeTheftEvent"]
+) :is(
+  .western-union-character,
+  .pazupan-character,
+  .mermaid-character,
+  .visit-character
+){
+  max-width:var(--jwj-character-max-width)!important;
+  max-height:100%!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="kappaJadeEvent"],
+  [data-screen="clockTowerDonationEvent"],
+  [data-screen="tattooWomanAmberEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="mysteryChineseMealEvent"],
+  [data-screen="hauntingEvent"],
+  [data-screen="storeTheftEvent"],
+  [data-screen="childhoodFriendEvent"]
+) :is(
+  .western-union-dialogue,
+  .event-dialogue-card,
+  .visit-event-dialogue,
+  .childhood-friend-dialogue
+){
+  width:calc(100% - var(--jwj-edge-gap) * 2)!important;
+  max-height:calc(var(--jwj-event-dialogue-space) - var(--safe-bottom) - var(--jwj-edge-gap))!important;
+  margin:0 auto calc(var(--safe-bottom) + var(--jwj-edge-gap))!important;
+  padding:calc(10px * var(--jwj-ui-scale,1)) calc(13px * var(--jwj-ui-scale,1))!important;
+  align-self:end!important;
+  overflow-y:auto!important;
+}
+
+/* v0.10.508 横画面の上部バー：戻るボタン枠を上部バー内へ収める */
+html[data-device-class="phone"][data-orientation="landscape"]{
+  --jwj-page-header-height:clamp(66px,calc(74px * var(--jwj-ui-scale,1)),80px);
+}
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header{
+  padding-top:calc(5px * var(--jwj-ui-scale,1))!important;
+  padding-bottom:calc(5px * var(--jwj-ui-scale,1))!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-center{
+  min-height:calc(30px * var(--jwj-ui-scale,1))!important;
+  align-items:center!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-center>[data-action="back"]{
+  align-self:center!important;
+  justify-self:start!important;
+  width:clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px)!important;
+  height:clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px)!important;
+  min-width:clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px)!important;
+  min-height:clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px)!important;
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+
+/* v0.10.512 スマートフォン「水槽」メニューの基礎表示 */
+.phone-tabs .phone-aquarium-tab{
+  border-color:rgba(92,205,226,.48)!important;
+  color:#dffaff!important;
+}
+.phone-tabs .phone-aquarium-tab.active{
+  background:rgba(30,139,170,.28)!important;
+  border-color:rgba(133,230,247,.88)!important;
+  color:#f2fdff!important;
+}
+.phone-aquarium-screen{display:grid;gap:.8rem;min-height:100%}
+.phone-aquarium-heading{display:flex;align-items:end;justify-content:space-between;gap:.8rem;padding:.2rem .1rem}
+.phone-aquarium-heading div{display:grid;gap:.1rem}
+.phone-aquarium-heading small{color:rgba(52,82,92,.72);font-size:.74rem;font-weight:800;letter-spacing:.08em}
+.phone-aquarium-heading h2{margin:0;color:#183e4c}
+.phone-aquarium-heading>strong{color:#18596c;font-size:1.05rem}
+.phone-aquarium-placeholder{position:relative;display:grid;place-items:center;align-content:center;gap:.45rem;min-height:240px;padding:1.2rem;border:1px solid rgba(49,143,168,.42);border-radius:18px;overflow:hidden;text-align:center;background:linear-gradient(180deg,rgba(214,249,255,.88),rgba(108,197,220,.32) 55%,rgba(31,111,139,.42));color:#123f50}
+.phone-aquarium-placeholder>*:not(.phone-aquarium-water){position:relative;z-index:2}
+.phone-aquarium-placeholder p{margin:0;max-width:34rem;line-height:1.55}
+.phone-aquarium-placeholder small{max-width:34rem;line-height:1.5;color:rgba(16,60,75,.76)}
+.phone-aquarium-water{position:absolute;inset:0;pointer-events:none;opacity:.72}
+.phone-aquarium-water::before{content:"";position:absolute;left:-10%;right:-10%;top:18%;height:16px;background:radial-gradient(ellipse at center,rgba(255,255,255,.64),transparent 66%);filter:blur(4px)}
+.phone-aquarium-water span{position:absolute;bottom:-18px;width:12px;height:12px;border:2px solid rgba(255,255,255,.66);border-radius:50%;animation:aquariumBubble 5s linear infinite}
+.phone-aquarium-water span:nth-child(1){left:18%;animation-delay:-1s}
+.phone-aquarium-water span:nth-child(2){left:54%;width:8px;height:8px;animation-delay:-3.4s}
+.phone-aquarium-water span:nth-child(3){left:82%;width:16px;height:16px;animation-delay:-2.2s}
+@keyframes aquariumBubble{from{transform:translateY(0) scale(.75);opacity:0}18%{opacity:.8}to{transform:translateY(-230px) scale(1.15);opacity:0}}
+.phone-aquarium-inventory{display:grid;gap:.45rem}
+.phone-aquarium-inventory h3{margin:.2rem 0;color:#234e5d;font-size:.92rem}
+.phone-aquarium-inventory article{display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.7rem .8rem;border:1px solid rgba(45,101,117,.25);border-radius:12px;background:rgba(255,255,255,.5);color:#253d45}
+.phone-aquarium-inventory article>div{display:grid;gap:.12rem;min-width:0}
+.phone-aquarium-inventory article strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phone-aquarium-inventory article small{color:rgba(35,67,77,.66)}
+.phone-aquarium-inventory article b{min-width:2.4rem;text-align:right;color:#18596c;font-size:1.05rem}
+@media (orientation:landscape) and (max-height:560px){
+  .phone-aquarium-screen{grid-template-columns:minmax(0,1.35fr) minmax(180px,.65fr);grid-template-rows:auto minmax(0,1fr);gap:.55rem}
+  .phone-aquarium-heading{grid-column:1/-1}
+  .phone-aquarium-placeholder{min-height:170px;height:100%}
+  .phone-aquarium-inventory{min-height:0;overflow-y:auto}
+}
+
+
+/* v0.10.517 オートセーブ状態表示 */
+.autosave-status{
+  position:fixed;
+  right:max(10px,calc(env(safe-area-inset-right) + 8px));
+  bottom:max(10px,calc(env(safe-area-inset-bottom) + 8px));
+  z-index:12000;
+  max-width:min(78vw,320px);
+  padding:.42rem .68rem;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:999px;
+  box-shadow:0 5px 18px rgba(0,0,0,.22);
+  background:rgba(16,25,32,.86);
+  color:#f5f7f8;
+  font-size:clamp(.68rem,2.4vw,.78rem);
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:.02em;
+  pointer-events:none;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  transition:opacity .18s ease,transform .18s ease;
+}
+.autosave-status[hidden]{display:none!important}
+.autosave-status[data-autosave-status="saving"]::before{content:"● ";animation:autosavePulse .9s ease-in-out infinite}
+.autosave-status[data-autosave-status="local"]{background:rgba(30,66,79,.9)}
+.autosave-status[data-autosave-status="saved"],.autosave-status[data-autosave-status="loaded"]{background:rgba(24,72,54,.9)}
+.autosave-status[data-autosave-status="error"]{background:rgba(126,31,31,.94);border-color:rgba(255,184,184,.55)}
+@keyframes autosavePulse{50%{opacity:.35}}
+@media (orientation:landscape) and (max-height:560px){
+  .autosave-status{right:max(8px,calc(env(safe-area-inset-right) + 6px));bottom:max(6px,calc(env(safe-area-inset-bottom) + 4px));padding:.32rem .58rem;font-size:.68rem}
 }

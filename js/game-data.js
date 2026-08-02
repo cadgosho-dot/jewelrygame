@@ -1,4 +1,5 @@
-export const VERSION = '0.10.489';
+export const VERSION = '0.10.517';
+export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
 export const STORE_LEASE_COST = 10000;
@@ -4162,6 +4163,7 @@ function normalizeStoreEmployee(value, branchNumber = 1, legacyFallback = null) 
 export function initialState() {
   return {
     version: VERSION,
+    saveSchemaVersion: SAVE_SCHEMA_VERSION,
     saveRevision: 0,
     started: true,
     migrations: { looseInventoryCanonicalV231: true, childhoodFriendDeadlockV461: true, transientEventRecoveryV462: true, transientEventRecoveryV462Pending: false, birthdayDefaultAprilV480: true, illnessPaymentBirthdayOverlapV481: true, illnessPaymentBirthdayOverlapV481PaymentPending: false },
@@ -4195,6 +4197,16 @@ export function initialState() {
       capacity: 10,
     },
     gifts: { outbox: [], inbox: [] },
+    // v0.10.514: 水槽ミニゲーム連動用の永続データ。
+    // items は将来、魚・水草・ディスプレイ用品を本ゲームの入手数と同期する。
+    aquarium: {
+      unlocked: false,
+      unlockedDay: 0,
+      unlockSource: '',
+      dataVersion: 1,
+      items: {},
+      lastSyncRevision: 0,
+    },
     tools: {
       items: Object.fromEntries(Object.keys(WORKSHOP_TOOLS).map((key) => [key, null])),
       morningMessages: [],
@@ -4553,6 +4565,7 @@ export function migrateState(saved) {
   }
 
   state.version = VERSION;
+  state.saveSchemaVersion = SAVE_SCHEMA_VERSION;
   state.saveRevision = Math.max(0, Math.floor(Number(legacy.saveRevision) || 0));
   state.migrations = isRecord(state.migrations) ? state.migrations : {};
   state.migrations.looseInventoryCanonicalV231 = true;
@@ -4573,7 +4586,31 @@ export function migrateState(saved) {
   state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 30000;
   state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
   state.game.screen = 'main';
-  state.game.phoneTab = ['profile', 'calendar', 'notifications', 'finance', 'items', 'ai', 'settings'].includes(state.game.phoneTab) ? state.game.phoneTab : 'notifications';
+  state.aquarium = isRecord(state.aquarium) ? state.aquarium : {};
+  state.aquarium.unlocked = Boolean(state.aquarium.unlocked);
+  state.aquarium.unlockedDay = Math.max(0, Math.floor(Number(state.aquarium.unlockedDay) || 0));
+  state.aquarium.unlockSource = String(state.aquarium.unlockSource || '').slice(0, 80);
+  state.aquarium.dataVersion = Math.max(1, Math.floor(Number(state.aquarium.dataVersion) || 1));
+  state.aquarium.lastSyncRevision = Math.max(0, Math.floor(Number(state.aquarium.lastSyncRevision) || 0));
+  const savedAquariumItems = isRecord(state.aquarium.items) ? state.aquarium.items : {};
+  state.aquarium.items = Object.fromEntries(Object.entries(savedAquariumItems).flatMap(([key, row]) => {
+    const safeKey = String(key || '').trim().slice(0, 100);
+    if (!safeKey) return [];
+    const source = isRecord(row) ? row : {};
+    const quantity = Math.max(0, Math.floor(Number(source.quantity) || 0));
+    if (quantity < 1) return [];
+    return [[safeKey, {
+      id: safeKey,
+      name: String(source.name || safeKey).slice(0, 100),
+      category: ['fish', 'plant', 'display', 'other'].includes(source.category) ? source.category : 'other',
+      quantity,
+      asset: String(source.asset || '').slice(0, 240),
+      acquiredDay: Math.max(0, Math.floor(Number(source.acquiredDay) || 0)),
+    }]];
+  }));
+  const allowedPhoneTabs = ['profile', 'calendar', 'notifications', 'finance', 'items', 'gift', 'ai', 'settings'];
+  if (state.aquarium.unlocked) allowedPhoneTabs.splice(6, 0, 'aquarium');
+  state.game.phoneTab = allowedPhoneTabs.includes(state.game.phoneTab) ? state.game.phoneTab : 'notifications';
   const rawCalendarEvents = state.game.calendarEvents && typeof state.game.calendarEvents === 'object' && !Array.isArray(state.game.calendarEvents)
     ? state.game.calendarEvents
     : {};

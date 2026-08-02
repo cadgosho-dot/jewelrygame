@@ -1,0 +1,14 @@
+JEWELRY×JEWELRY v0.10.516 検証結果
+
+PASS: version_app_import
+PASS: autosave_delay
+PASS: screen_autosave
+PASS: interaction_autosave
+PASS: visibility_flush
+PASS: pagehide_flush
+PASS: beforeunload_flush
+PASS: freeze_flush
+PASS: no_manual_save_ui
+
+node --check: app.js / game-data.js / sw.js は別途実行済み。
+実機でのAndroid終了・OS強制停止テストは未実施。

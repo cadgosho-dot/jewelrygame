@@ -1,0 +1,23 @@
+{
+  "project": "JEWELRY×JEWELRY",
+  "canonicalVersion": "0.10.495",
+  "createdAt": "2026-08-02T04:06:00+09:00",
+  "base": "v0.10.494",
+  "saveCompatibility": {
+    "preserved": true,
+    "saveDeletionRequired": false,
+    "reinstallRequired": false
+  },
+  "changes": [
+    "小型携帯の上部バー1を可変コンパクト表示へ変更",
+    "360px以下で日付・曜日・空腹度を短縮表示",
+    "長いプレイヤー名を省略し、所持金欄との重なりを防止",
+    "280px〜390pxの長い日数・名前・所持金で重なり検査を追加"
+  ],
+  "unchanged": [
+    "upper bar 2",
+    "normal phone full labels",
+    "game progression",
+    "save data"
+  ]
+}

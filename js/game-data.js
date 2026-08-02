@@ -1,4 +1,4 @@
-export const VERSION = '0.10.517';
+export const VERSION = '0.10.523';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -4272,6 +4272,7 @@ export function initialState() {
     orders: [],
     employee: storeEmployeeDefaults(1),
     events: {
+      grayHoodAquariumEvent: { active: false, completed: false, stage: 'idle', triggeredDay: 0 },
       robbery: {
         lastTriggeredDay: 0,
         pendingReport: null,
@@ -4608,6 +4609,15 @@ export function migrateState(saved) {
       acquiredDay: Math.max(0, Math.floor(Number(source.acquiredDay) || 0)),
     }]];
   }));
+  state.events = isRecord(state.events) ? state.events : {};
+  const grayHoodAquariumEvent = isRecord(state.events.grayHoodAquariumEvent) ? state.events.grayHoodAquariumEvent : {};
+  const grayHoodStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  grayHoodAquariumEvent.active = Boolean(grayHoodAquariumEvent.active);
+  grayHoodAquariumEvent.completed = Boolean(grayHoodAquariumEvent.completed);
+  grayHoodAquariumEvent.stage = grayHoodStages.has(grayHoodAquariumEvent.stage) ? grayHoodAquariumEvent.stage : 'idle';
+  grayHoodAquariumEvent.triggeredDay = Math.max(0, Math.floor(Number(grayHoodAquariumEvent.triggeredDay) || 0));
+  if (grayHoodAquariumEvent.completed) { grayHoodAquariumEvent.active = false; grayHoodAquariumEvent.stage = 'completed'; }
+  state.events.grayHoodAquariumEvent = grayHoodAquariumEvent;
   const allowedPhoneTabs = ['profile', 'calendar', 'notifications', 'finance', 'items', 'gift', 'ai', 'settings'];
   if (state.aquarium.unlocked) allowedPhoneTabs.splice(6, 0, 'aquarium');
   state.game.phoneTab = allowedPhoneTabs.includes(state.game.phoneTab) ? state.game.phoneTab : 'notifications';

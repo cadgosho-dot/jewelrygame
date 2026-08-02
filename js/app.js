@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.517';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.517';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.523';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.523';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -181,6 +181,8 @@ const CINEMA_VISIT_EVENT_CHANCE = 1 / 40;
 const CINEMA_VISIT_EVENT_COST = 1800;
 const CINEMA_VISIT_EVENT_HOURS = 3;
 const MYSTERY_CHINESE_MEAL_EVENT_CHANCE = 1 / 30;
+const GRAY_HOOD_AQUARIUM_EVENT_MIN_DAY = 366;
+const GRAY_HOOD_AQUARIUM_EVENT_CHANCE = 0.15;
 const MYSTERY_CHINESE_MEAL_EVENT_COST = 15000;
 const MYSTERY_CHINESE_MEAL_EVENT_IMAGES = Object.freeze(['mystery-chinese-food-01.png', 'mystery-chinese-food-02.png']);
 const OKACHIMACHI_AREA_SCREENS = new Set([
@@ -200,6 +202,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   ganeshaTuskEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   hauntingEvent: new Set(['intro1', 'intro2', 'processing']),
   childhoodFriendEvent: new Set(['intro1', 'intro2', 'intro3', 'eating', 'postMeal']),
+  grayHoodAquariumEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   touristWoodSwordEvent: new Set(['intro1', 'route', 'reward', 'farewell']),
   alienAbductionEvent: new Set(['intro1', 'intro2', 'abducted', 'returnPending']),
   diamondPolishingLapEvent: new Set(['intro1', 'intro2', 'reward', 'outro']),
@@ -213,7 +216,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
   'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
-  'ganeshaTuskEvent', 'childhoodFriendEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
+  'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
 ]);
@@ -234,6 +237,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   cyclopsEvent: { eventKey: 'cyclopsEvent', fallback: 'main' },
   ganeshaTuskEvent: { eventKey: 'ganeshaTuskEvent', fallback: 'main' },
   childhoodFriendEvent: { eventKey: 'childhoodFriendEvent', fallback: 'main' },
+  grayHoodAquariumEvent: { eventKey: 'grayHoodAquariumEvent', fallback: 'meal', unlockFeaturesOnEmergency: ['aquarium'] },
   touristWoodSwordEvent: { eventKey: 'touristWoodSwordEvent', fallback: 'main' },
   diamondPolishingLapEvent: { eventKey: 'diamondPolishingLapEvent', fallback: 'main' },
   hauntingEvent: { eventKey: 'hauntingEvent', fallback: 'main' },
@@ -444,6 +448,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'kappa-jade-event-next', 'kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover',
+  'gray-hood-aquarium-next', 'gray-hood-aquarium-receive',
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
@@ -3227,7 +3232,7 @@ function saveGame(message = false) {
     showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
     return Promise.resolve();
   }
-  showAutosaveStatus('local', `端末に保存しました ${formatAutosaveTime(localResult.savedAt)}`.trim(), { persistent: true });
+  // v0.10.523: 端末保存成功の通知は表示しない。クラウド同期完了または失敗時だけ更新する。
   const snapshot = structuredClone(state);
   const userId = currentUser.uid;
   saveQueue = saveQueue
@@ -7305,10 +7310,10 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
-    phone: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
+    phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
   };
   return map[target] || 'main';
 }
@@ -7330,6 +7335,7 @@ function backgroundAssetFor(target) {
   if (target === 'cyclopsEvent') return `meal-convenience${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'ganeshaTuskEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'childhoodFriendEvent') return childhoodFriendBackgroundAssetName();
+  if (target === 'grayHoodAquariumEvent') return `meal-korean${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'diamondPolishingLapEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'mysteryChineseMealEvent') return `meal-chinese${isPortraitLayout() ? '-portrait' : ''}`;
@@ -7455,7 +7461,7 @@ function syncScreenContentTopOffset() {
   contentEl.style.setProperty('padding-top', '0px', 'important');
   contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
   const contentRect = contentEl.getBoundingClientRect();
-  const desiredGap = screen === 'polishing' ? 16 : 8;
+  const desiredGap = screen === 'polishing' ? 16 : (screen === 'meal' ? 14 : 8);
   const headerBottom = visibleHeaderBottom(headerEl);
   let offset = Math.max(0, Math.ceil(headerBottom + desiredGap - contentRect.top));
   contentEl.style.setProperty('padding-top', `${offset}px`, 'important');
@@ -7472,9 +7478,9 @@ function syncScreenContentTopOffset() {
     }
   }
 
-  // 食事中は料理枠そのものを実測し、上部バーの下へ確実に収める。
-  // 画面中央配置や端末の表示倍率で枠が上へ寄っても、料理の上端を隠さない。
-  const mealAnchor = screen === 'meal' ? root.querySelector('.meal-eating-panel') : null;
+  // 食事画面は選択枠または料理枠そのものを実測し、上部バーの下へ確実に収める。
+  // 縦画面の文字折返しや端末倍率で枠が上へ寄っても、最上部の文字を隠さない。
+  const mealAnchor = screen === 'meal' ? root.querySelector('.meal-eating-panel, .meal-choice-panel') : null;
   if (mealAnchor instanceof HTMLElement) {
     const anchorRect = mealAnchor.getBoundingClientRect();
     const missing = Math.max(0, Math.ceil(headerBottom + desiredGap - anchorRect.top));
@@ -7831,6 +7837,8 @@ function render() {
       cyclopsEvent: renderCyclopsEvent,
       ganeshaTuskEvent: renderGaneshaTuskEvent,
       childhoodFriendEvent: renderChildhoodFriendEvent,
+      grayHoodAquariumEvent: renderGrayHoodAquariumEvent,
+      aquarium: renderAquariumGame,
       touristWoodSwordEvent: renderTouristWoodSwordEvent,
       diamondPolishingLapEvent: renderDiamondPolishingLapEvent,
       hauntingEvent: renderHauntingEvent,
@@ -9285,6 +9293,80 @@ function renderKappaJadeEvent() {
           : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="kappa-jade-event-next"><small>河童</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
       </section>
     </main>`;
+}
+
+
+function grayHoodAquariumEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.grayHoodAquariumEvent && typeof state.events.grayHoodAquariumEvent === 'object' && !Array.isArray(state.events.grayHoodAquariumEvent)
+    ? state.events.grayHoodAquariumEvent : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  Object.assign(saved, {
+    active: Boolean(saved.active),
+    completed: Boolean(saved.completed),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    triggeredDay: Math.max(0, Math.floor(Number(saved.triggeredDay) || 0)),
+  });
+  if (saved.completed) { saved.active = false; saved.stage = 'completed'; }
+  state.events.grayHoodAquariumEvent = saved;
+  return saved;
+}
+
+function maybeStartGrayHoodAquariumEvent() {
+  const eventState = grayHoodAquariumEventState();
+  if (eventState.active) { setScreen('grayHoodAquariumEvent', { mealId: 'korean' }, false); return true; }
+  if (eventState.completed || aquariumUnlocked() || Number(state?.game?.day || 1) < GRAY_HOOD_AQUARIUM_EVENT_MIN_DAY) return false;
+  if (Math.random() >= GRAY_HOOD_AQUARIUM_EVENT_CHANCE) return false;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.triggeredDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  state.game.screen = 'grayHoodAquariumEvent';
+  saveGame();
+  preloadImage('./assets/images/events/gray-hood-aquarium.png?v=' + VERSION);
+  preloadImage('./assets/images/events/aquarium-tank.png?v=' + VERSION);
+  setScreen('grayHoodAquariumEvent', { mealId: 'korean' }, false);
+  playSfx('impact', { gain: .38 });
+  return true;
+}
+
+async function advanceGrayHoodAquariumEvent({ receive = false } = {}) {
+  const e = grayHoodAquariumEventState();
+  if (!e.active) return;
+  if (receive || e.stage === 'reward') {
+    unlockAquariumFeature({ source: 'gray-hood-aquarium-event', notify: false });
+    e.stage = 'farewell';
+    saveGame(); render(); playSfx('success'); return;
+  }
+  if (e.stage === 'intro1') e.stage = 'intro2';
+  else if (e.stage === 'intro2') e.stage = 'intro3';
+  else if (e.stage === 'intro3') e.stage = 'reward';
+  else if (e.stage === 'farewell') {
+    e.active = false; e.completed = true; e.stage = 'completed';
+    saveGame();
+    await eatMeal('korean', { skipEventCheck: true });
+    return;
+  }
+  saveGame(); render(); playSfx('select', { gain: .55 });
+}
+
+function renderGrayHoodAquariumEvent() {
+  const e = grayHoodAquariumEventState();
+  if (!e.active) { queueMicrotask(() => setScreen('meal', {}, false)); return renderMeal(); }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  if (e.stage === 'reward') return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event is-reward" aria-live="polite"><button type="button" class="gray-hood-aquarium-reward" data-action="gray-hood-aquarium-receive"><img src="./assets/images/events/aquarium-tank.png?v=${VERSION}" alt="水槽" draggable="false"><strong>水槽</strong><span>水槽をもらった</span></button></section></main>`;
+  const dialogue = e.stage === 'intro1'
+    ? `あ、${playerName}、久しぶり、最後に会えるなんて、私達やっぱり何かあるんだね、、`
+    : e.stage === 'intro2'
+      ? 'しばらくこの街に戻れないことになったんだ、心配しないで、物騒な内容じゃないんだ、悪いのも私じゃない、、、'
+      : e.stage === 'intro3'
+        ? `${playerName}って熱帯魚飼ってたよね？これから今住んでるとこを出るんだけど、、水槽あげようと思って綺麗にしといたんだ、、、`
+        : 'またね、どうせどこかで会うよ、、、';
+  return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event" aria-live="polite"><div class="gray-hood-character-area"><img src="./assets/images/events/gray-hood-aquarium.png?v=${VERSION}" alt="灰色パーカー" draggable="false"></div><button type="button" class="event-dialogue-card gray-hood-dialogue glass-panel" data-action="gray-hood-aquarium-next"><small>灰色パーカー</small><strong>${dialogue}</strong><span>タップして進む</span></button></section></main>`;
+}
+
+function renderAquariumGame() {
+  if (!aquariumUnlocked()) { queueMicrotask(() => setScreen('phone', {}, false)); return renderPhone(); }
+  return `<main class="aquarium-game-screen"><button type="button" class="aquarium-game-close" data-action="close-aquarium">スマートフォンへ戻る</button><iframe class="aquarium-game-frame" src="./assets/minigames/aquarium/index.html?v=${VERSION}" title="水槽ミニゲーム" allow="fullscreen" loading="eager"></iframe></main>`;
 }
 
 function renderChildhoodFriendEvent() {
@@ -12345,6 +12427,7 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   if (mealId === 'indian' && !skipEventCheck && maybeStartGaneshaTuskEvent()) return;
   if (mealId === 'ramen' && !skipEventCheck && maybeStartChildhoodFriendEvent()) return;
   if (mealId === 'chinese' && !skipEventCheck && maybeStartMysteryChineseMealEvent()) return;
+  if (mealId === 'korean' && !skipEventCheck && maybeStartGrayHoodAquariumEvent()) return;
 
   mealTransitioning = true;
   const stateBeforeMeal = structuredClone(state);
@@ -12986,7 +13069,7 @@ function renderPhone() {
           <button class="${phoneTab === 'finance' ? 'active' : ''}" data-action="phone-tab" data-tab="finance">収支</button>
           <button class="${phoneTab === 'items' ? 'active' : ''}" data-action="phone-tab" data-tab="items">アイテム</button>
           <button class="${phoneTab === 'gift' ? 'active' : ''}" data-action="phone-tab" data-tab="gift">プレゼント</button>
-          ${aquariumUnlocked() ? `<button class="${phoneTab === 'aquarium' ? 'active' : ''} phone-aquarium-tab" data-action="phone-tab" data-tab="aquarium">水槽</button>` : ''}
+          ${aquariumUnlocked() ? `<button class="phone-aquarium-tab" data-action="open-aquarium">水槽</button>` : ''}
           <button class="phone-game-tab" data-action="open-phone-game" aria-label="スマホゲームを開く">スマホゲーム</button>
           <button class="${phoneTab === 'ai' ? 'active' : ''}" data-action="phone-tab" data-tab="ai">AI</button>
           <button class="${phoneTab === 'settings' ? 'active' : ''}" data-action="phone-tab" data-tab="settings">設定</button>
@@ -16896,6 +16979,10 @@ root.addEventListener('click', async (event) => {
       setScreen('phone');
       saveGame();
       break;
+    case 'open-aquarium': setScreen('aquarium', {}, false); saveGame(); break;
+    case 'close-aquarium': phoneTab = 'notifications'; setScreen('phone', {}, false); saveGame(); break;
+    case 'gray-hood-aquarium-next': await advanceGrayHoodAquariumEvent(); break;
+    case 'gray-hood-aquarium-receive': await advanceGrayHoodAquariumEvent({ receive: true }); break;
     case 'phone-tab': {
       const nextPhoneTab = validPhoneTab(button.dataset.tab);
       if (nextPhoneTab === 'calendar' && phoneTab !== 'calendar') calendarMonthOffset = 0;
@@ -17457,7 +17544,7 @@ modalEl.addEventListener('click', async (event) => {
   }
 });
 
-// v0.10.517: 画面内の操作完了後も保存要求をまとめて発行する。
+// v0.10.523: 画面内の操作完了後も保存要求をまとめて発行する。
 // 個別処理の saveGame() が先に実行された場合は、その保存が予約を取り消すため二重保存を抑えられる。
 const scheduleInteractionAutosave = (event) => {
   const target = event.target instanceof Element ? event.target.closest('[data-action]') : null;

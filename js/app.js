@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.523';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.523';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.524';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.524';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -3223,25 +3223,20 @@ function saveGame(message = false) {
   autosavePending = false;
   const fingerprint = saveStateFingerprint(state);
   if (fingerprint && fingerprint === lastSavedFingerprint) {
-    if (message) showAutosaveStatus('saved', `保存済み ${formatAutosaveTime(lastSuccessfulSaveAt)}`.trim());
     return saveQueue;
   }
-  showAutosaveStatus('saving', '保存中…', { persistent: true });
   const localResult = saveLocalBackup();
   if (!localResult.saved) {
     showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
     return Promise.resolve();
   }
-  // v0.10.523: 端末保存成功の通知は表示しない。クラウド同期完了または失敗時だけ更新する。
+  // v0.10.524: 正常なオートセーブ状態は画面へ表示せず、失敗時だけ警告する。
   const snapshot = structuredClone(state);
   const userId = currentUser.uid;
   saveQueue = saveQueue
     .catch(() => {})
     .then(() => saveState(userId, snapshot))
-    .then(() => {
-      showAutosaveStatus('saved', `保存しました ${formatAutosaveTime(localResult.savedAt)}`.trim());
-      if (message) showToast('保存しました。');
-    })
+    .then(() => {})
     .catch((error) => {
       console.error(error);
       showAutosaveStatus('error', '端末には保存済み／クラウド保存に失敗', { persistent: true });
@@ -17215,7 +17210,6 @@ async function enterGameAfterLogin() {
   if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
   lastSuccessfulSaveAt = String(state.updatedAt || localStorage.getItem(localLastSaveAtKey()) || '');
   lastSavedFingerprint = saveStateFingerprint(state);
-  showAutosaveStatus('loaded', `前回の保存を読み込みました ${formatAutosaveTime(lastSuccessfulSaveAt)}`.trim());
   // 読み込み直後に正規化済みデータを保存し、クラウドの旧在庫項目を完全に除去する。
   scheduleAutosave('post-load-normalization', 0);
 }

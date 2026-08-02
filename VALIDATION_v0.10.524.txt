@@ -1,0 +1,10 @@
+v0.10.524 validation
+
+PASS: js/app.js syntax
+PASS: js/game-data.js syntax
+PASS: sw.js syntax
+PASS: active version references updated to 0.10.524
+PASS: normal autosave saving/saved/loaded UI calls removed
+PASS: local-save and cloud-save failure warnings retained
+PASS: aquarium event and minigame assets retained
+PASS: data/metals.json excluded from update package

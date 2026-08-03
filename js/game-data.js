@@ -1,4 +1,4 @@
-export const VERSION = '0.10.529';
+export const VERSION = '0.10.530';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -5328,7 +5328,7 @@ export function migrateState(saved) {
   const savedOkachimachiTollEvent = isRecord(state.events.okachimachiTollEvent) ? state.events.okachimachiTollEvent : {};
   const validOkachimachiTollStages = ['idle', 'intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell', 'completed'];
   state.events.okachimachiTollEvent = {
-    // v0.10.529: 1日の抽選は1回だけ。旧保存データは発生日を抽選日として引き継ぐ。
+    // v0.10.530: 1日の抽選は1回だけ。旧保存データは発生日を抽選日として引き継ぐ。
     lastAttemptDay: Math.max(0, Math.floor(Number(savedOkachimachiTollEvent.lastAttemptDay ?? savedOkachimachiTollEvent.lastTriggeredDay) || 0)),
     lastTriggeredDay: Math.max(0, Math.floor(Number(savedOkachimachiTollEvent.lastTriggeredDay) || 0)),
     totalTriggered: Math.max(0, Math.floor(Number(savedOkachimachiTollEvent.totalTriggered) || 0)),

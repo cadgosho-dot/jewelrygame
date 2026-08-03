@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.529';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.529';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.530';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.530';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -7229,7 +7229,7 @@ function maybeStartOkachimachiTollEvent() {
   if (eventState.active) return resumeOkachimachiTollEvent();
   if (Math.floor(Number(state?.game?.money) || 0) < OKACHIMACHI_TOLL_EVENT_COST) return false;
 
-  // v0.10.529: 所持金条件を満たした御徒町への外部入場につき、ゲーム内1日1回だけ抽選する。
+  // v0.10.530: 所持金条件を満たした御徒町への外部入場につき、ゲーム内1日1回だけ抽選する。
   // その日に外れた場合、御徒町へ入り直しても再抽選しない。翌日に再び抽選可能になる。
   const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
   if (eventState.lastAttemptDay === currentDay) return false;

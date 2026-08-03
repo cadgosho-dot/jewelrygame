@@ -1,3 +1,11 @@
+# v0.10.530
+
+- GitHub Pagesから未公開のFirebase Hostingへ自動転送していた処理を停止。
+- 従来の共有URL `https://cadgosho-dot.github.io/jewelrygame/` でゲームを起動できる状態へ復旧。
+- `hosting-origin-guard.js` を無処理化し、旧キャッシュから読み込まれた場合もFirebaseへ転送しないよう修正。
+- Firebase Hostingへの切り替えは、実際の公開完了と動作確認後に別更新で行う方針へ変更。
+- Service Workerおよび各読み込みURLのバージョンを0.10.530へ更新。
+
 # v0.10.529
 
 - 御徒町のカエル保安官イベントを、所持金100,000円以上のときだけ抽選する仕様で確定。

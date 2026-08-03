@@ -1,4 +1,4 @@
-export const VERSION = '0.10.532';
+export const VERSION = '0.10.535';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -4160,6 +4160,22 @@ function normalizeStoreEmployee(value, branchNumber = 1, legacyFallback = null) 
   };
 }
 
+
+
+export const AQUARIUM_CONFIG = Object.freeze({"schemaVersion":1,"featureId":"aquarium_minigame","tankLimit":1,"capacity":{"fishLoadMax":40,"plantTotalMax":15},"fish":[{"id":"neon_tetra","name":"ネオンテトラ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"rummy_nose_tetra","name":"ラミーノーズテトラ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"red_phantom_tetra","name":"レッドファントムテトラ","speciesMax":18,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"african_lampeye","name":"アフリカンランプアイ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"platy","name":"プラティ","speciesMax":10,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"black_molly","name":"ブラックモーリー","speciesMax":10,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"corydoras","name":"コリドラス","speciesMax":8,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"dwarf_gourami","name":"ドワーフグラミー","speciesMax":4,"loadPoint":3,"initialOwned":0,"initialInTank":0},{"id":"altum_angelfish","name":"アルタムエンゼルフィッシュ","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0},{"id":"discus_blue_diamond","name":"ディスカス・ブルーダイヤモンド","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0},{"id":"discus_red_map","name":"ディスカス・レッドマップ","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0}],"plants":[{"id":"anacharis","name":"アナカリス","speciesMax":6,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"amazon_sword","name":"アマゾンソード","speciesMax":3,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"microsorum","name":"ミクロソリウム","speciesMax":4,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"anubias_nana","name":"アヌビアス・ナナ","speciesMax":5,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"willow_moss","name":"ウィローモス","speciesMax":4,"initialOwned":0,"initialInTank":0,"naturalPropagation":false}],"displayItems":[{"id":"tank","name":"水槽","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"hang_on_filter","name":"フィルター（壁掛け）","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"heater","name":"ヒーター","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"light","name":"ライト","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"soil","name":"底床（ソイル）","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"driftwood","name":"流木","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true},{"id":"layout_stone","name":"レイアウトストーン","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true}],"rules":{"releaseCapacityImmediatelyOnDeathSaleOrRemoval":true,"fishBreeding":{"juvenilesCanMatureUntilLimits":true,"noBirthWhenAnyApplicableLimitReached":true,"deleteExistingOnOverLimit":false},"plantPropagation":false,"purchaseAndRewardBlockedAtLimit":true,"overLimitExistingItemsAreNotDeleted":true,"messages":{"fishSpeciesLimit":"この魚種の飼育数上限です","fishLoadLimit":"水槽の飼育負荷上限です","plantSpeciesLimit":"水草の飼育数上限です","plantTotalLimit":"水草全体の飼育数上限です","displayLimit":"この用品の所持数上限です"}}});
+export const AQUARIUM_INITIAL_STATE = Object.freeze({"schemaVersion":1,"featureId":"aquarium_minigame","tankId":"tank_01","fishLoad":{"current":0,"max":40},"fish":{"neon_tetra":{"owned":0,"inTank":0,"juveniles":0},"rummy_nose_tetra":{"owned":0,"inTank":0,"juveniles":0},"red_phantom_tetra":{"owned":0,"inTank":0,"juveniles":0},"african_lampeye":{"owned":0,"inTank":0,"juveniles":0},"platy":{"owned":0,"inTank":0,"juveniles":0},"black_molly":{"owned":0,"inTank":0,"juveniles":0},"corydoras":{"owned":0,"inTank":0,"juveniles":0},"dwarf_gourami":{"owned":0,"inTank":0,"juveniles":0},"altum_angelfish":{"owned":0,"inTank":0,"juveniles":0},"discus_blue_diamond":{"owned":0,"inTank":0,"juveniles":0},"discus_red_map":{"owned":0,"inTank":0,"juveniles":0}},"plants":{"anacharis":{"owned":0,"inTank":0},"amazon_sword":{"owned":0,"inTank":0},"microsorum":{"owned":0,"inTank":0},"anubias_nana":{"owned":0,"inTank":0},"willow_moss":{"owned":0,"inTank":0}},"displayItems":{"tank":{"owned":1,"installed":1},"hang_on_filter":{"owned":1,"installed":1},"heater":{"owned":1,"installed":1},"light":{"owned":1,"installed":1},"soil":{"owned":1,"installed":1},"driftwood":{"owned":0,"installed":0},"layout_stone":{"owned":0,"installed":0}}});
+export function createInitialAquariumState(metadata = {}) {
+  const base = structuredClone(AQUARIUM_INITIAL_STATE);
+  return {
+    ...base,
+    unlocked: Boolean(metadata.unlocked),
+    unlockedDay: Math.max(0, Math.floor(Number(metadata.unlockedDay) || 0)),
+    unlockSource: String(metadata.unlockSource || '').slice(0, 80),
+    dataVersion: 2,
+    lastSyncRevision: Math.max(0, Math.floor(Number(metadata.lastSyncRevision) || 0)),
+  };
+}
+
 export function initialState() {
   return {
     version: VERSION,
@@ -4197,16 +4213,8 @@ export function initialState() {
       capacity: 10,
     },
     gifts: { outbox: [], inbox: [] },
-    // v0.10.514: 水槽ミニゲーム連動用の永続データ。
-    // items は将来、魚・水草・ディスプレイ用品を本ゲームの入手数と同期する。
-    aquarium: {
-      unlocked: false,
-      unlockedDay: 0,
-      unlockSource: '',
-      dataVersion: 1,
-      items: {},
-      lastSyncRevision: 0,
-    },
+    // v0.10.535: 水槽ミニゲーム統合データ。必須5用品のみ設置し、生体・水草・任意用品は0から開始。
+    aquarium: createInitialAquariumState(),
     tools: {
       items: Object.fromEntries(Object.keys(WORKSHOP_TOOLS).map((key) => [key, null])),
       morningMessages: [],
@@ -4470,6 +4478,65 @@ function merge(base, saved) {
   return out;
 }
 
+
+export function normalizeAquariumState(saved) {
+  const source = isRecord(saved) ? saved : {};
+  const next = merge(createInitialAquariumState({
+    unlocked: source.unlocked,
+    unlockedDay: source.unlockedDay,
+    unlockSource: source.unlockSource,
+    lastSyncRevision: source.lastSyncRevision,
+  }), source);
+  next.schemaVersion = 1;
+  next.featureId = 'aquarium_minigame';
+  next.tankId = 'tank_01';
+  next.unlocked = Boolean(source.unlocked);
+  next.unlockedDay = Math.max(0, Math.floor(Number(source.unlockedDay) || 0));
+  next.unlockSource = String(source.unlockSource || '').slice(0, 80);
+  next.dataVersion = 2;
+  next.lastSyncRevision = Math.max(0, Math.floor(Number(source.lastSyncRevision) || 0));
+  next.fish = isRecord(next.fish) ? next.fish : {};
+  for (const def of AQUARIUM_CONFIG.fish) {
+    const row = isRecord(next.fish[def.id]) ? next.fish[def.id] : {};
+    next.fish[def.id] = {
+      owned: Math.max(0, Math.floor(Number(row.owned) || 0)),
+      inTank: Math.max(0, Math.floor(Number(row.inTank) || 0)),
+      juveniles: Math.max(0, Math.floor(Number(row.juveniles) || 0)),
+    };
+  }
+  next.plants = isRecord(next.plants) ? next.plants : {};
+  for (const def of AQUARIUM_CONFIG.plants) {
+    const row = isRecord(next.plants[def.id]) ? next.plants[def.id] : {};
+    next.plants[def.id] = {
+      owned: Math.max(0, Math.floor(Number(row.owned) || 0)),
+      inTank: Math.max(0, Math.floor(Number(row.inTank) || 0)),
+    };
+  }
+  next.displayItems = isRecord(next.displayItems) ? next.displayItems : {};
+  for (const def of AQUARIUM_CONFIG.displayItems) {
+    const row = isRecord(next.displayItems[def.id]) ? next.displayItems[def.id] : {};
+    const minimum = def.required ? 1 : 0;
+    const owned = Math.max(minimum, Math.floor(Number(row.owned) || 0));
+    next.displayItems[def.id] = {
+      owned,
+      installed: def.required ? 1 : Math.max(0, Math.min(owned, Math.floor(Number(row.installed) || 0))),
+    };
+  }
+  // v0.10.514〜v0.10.535 の旧 items 形式を、新しい所持・水槽内形式へ移行する。
+  const legacyItems = isRecord(source.items) ? source.items : {};
+  for (const [id, legacy] of Object.entries(legacyItems)) {
+    const qty = Math.max(0, Math.floor(Number(isRecord(legacy) ? legacy.quantity : legacy) || 0));
+    if (!qty) continue;
+    if (next.fish[id]) { next.fish[id].owned = Math.max(next.fish[id].owned, qty); next.fish[id].inTank = Math.max(next.fish[id].inTank, qty); }
+    else if (next.plants[id]) { next.plants[id].owned = Math.max(next.plants[id].owned, qty); next.plants[id].inTank = Math.max(next.plants[id].inTank, qty); }
+    else if (next.displayItems[id]) { next.displayItems[id].owned = Math.max(next.displayItems[id].owned, qty); next.displayItems[id].installed = Math.max(next.displayItems[id].installed, Math.min(next.displayItems[id].owned, qty)); }
+  }
+  delete next.items;
+  const currentLoad = AQUARIUM_CONFIG.fish.reduce((sum, def) => sum + (next.fish[def.id]?.inTank || 0) * def.loadPoint, 0);
+  next.fishLoad = { current: currentLoad, max: AQUARIUM_CONFIG.capacity.fishLoadMax };
+  return next;
+}
+
 function versionBefore(value, target) {
   const parse = (input) => String(input || '0').split('.').map((part) => Math.max(0, Number.parseInt(part, 10) || 0));
   const a = parse(value);
@@ -4596,28 +4663,7 @@ export function migrateState(saved) {
   state.game.money = Number.isFinite(Number(state.game.money)) ? Number(state.game.money) : 30000;
   state.game.weather = WEATHER.includes(state.game.weather) ? state.game.weather : '晴れ';
   state.game.screen = 'main';
-  state.aquarium = isRecord(state.aquarium) ? state.aquarium : {};
-  state.aquarium.unlocked = Boolean(state.aquarium.unlocked);
-  state.aquarium.unlockedDay = Math.max(0, Math.floor(Number(state.aquarium.unlockedDay) || 0));
-  state.aquarium.unlockSource = String(state.aquarium.unlockSource || '').slice(0, 80);
-  state.aquarium.dataVersion = Math.max(1, Math.floor(Number(state.aquarium.dataVersion) || 1));
-  state.aquarium.lastSyncRevision = Math.max(0, Math.floor(Number(state.aquarium.lastSyncRevision) || 0));
-  const savedAquariumItems = isRecord(state.aquarium.items) ? state.aquarium.items : {};
-  state.aquarium.items = Object.fromEntries(Object.entries(savedAquariumItems).flatMap(([key, row]) => {
-    const safeKey = String(key || '').trim().slice(0, 100);
-    if (!safeKey) return [];
-    const source = isRecord(row) ? row : {};
-    const quantity = Math.max(0, Math.floor(Number(source.quantity) || 0));
-    if (quantity < 1) return [];
-    return [[safeKey, {
-      id: safeKey,
-      name: String(source.name || safeKey).slice(0, 100),
-      category: ['fish', 'plant', 'display', 'other'].includes(source.category) ? source.category : 'other',
-      quantity,
-      asset: String(source.asset || '').slice(0, 240),
-      acquiredDay: Math.max(0, Math.floor(Number(source.acquiredDay) || 0)),
-    }]];
-  }));
+  state.aquarium = normalizeAquariumState(state.aquarium);
   state.events = isRecord(state.events) ? state.events : {};
   const grayHoodAquariumEvent = isRecord(state.events.grayHoodAquariumEvent) ? state.events.grayHoodAquariumEvent : {};
   const grayHoodStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
@@ -5328,7 +5374,7 @@ export function migrateState(saved) {
   const savedOkachimachiTollEvent = isRecord(state.events.okachimachiTollEvent) ? state.events.okachimachiTollEvent : {};
   const validOkachimachiTollStages = ['idle', 'intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell', 'completed'];
   state.events.okachimachiTollEvent = {
-    // v0.10.532: 1日の抽選は1回だけ。旧保存データは発生日を抽選日として引き継ぐ。
+    // v0.10.535: 1日の抽選は1回だけ。旧保存データは発生日を抽選日として引き継ぐ。
     lastAttemptDay: Math.max(0, Math.floor(Number(savedOkachimachiTollEvent.lastAttemptDay ?? savedOkachimachiTollEvent.lastTriggeredDay) || 0)),
     lastTriggeredDay: Math.max(0, Math.floor(Number(savedOkachimachiTollEvent.lastTriggeredDay) || 0)),
     totalTriggered: Math.max(0, Math.floor(Number(savedOkachimachiTollEvent.totalTriggered) || 0)),

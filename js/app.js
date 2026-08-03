@@ -2,13 +2,13 @@ import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
-  clock, nextWeather,
+  clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.532';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.532';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.535';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.535';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -7229,7 +7229,7 @@ function maybeStartOkachimachiTollEvent() {
   if (eventState.active) return resumeOkachimachiTollEvent();
   if (Math.floor(Number(state?.game?.money) || 0) < OKACHIMACHI_TOLL_EVENT_COST) return false;
 
-  // v0.10.532: 所持金条件を満たした御徒町への外部入場につき、ゲーム内1日1回だけ抽選する。
+  // v0.10.535: 所持金条件を満たした御徒町への外部入場につき、ゲーム内1日1回だけ抽選する。
   // その日に外れた場合、御徒町へ入り直しても再抽選しない。翌日に再び抽選可能になる。
   const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
   if (eventState.lastAttemptDay === currentDay) return false;
@@ -8510,17 +8510,7 @@ function orderClosedSortValue(order, index = 0) {
 }
 
 function aquariumState() {
-  state.aquarium = state.aquarium && typeof state.aquarium === 'object' && !Array.isArray(state.aquarium)
-    ? state.aquarium
-    : {};
-  state.aquarium.unlocked = Boolean(state.aquarium.unlocked);
-  state.aquarium.unlockedDay = Math.max(0, Math.floor(Number(state.aquarium.unlockedDay) || 0));
-  state.aquarium.unlockSource = String(state.aquarium.unlockSource || '').slice(0, 80);
-  state.aquarium.dataVersion = Math.max(1, Math.floor(Number(state.aquarium.dataVersion) || 1));
-  state.aquarium.lastSyncRevision = Math.max(0, Math.floor(Number(state.aquarium.lastSyncRevision) || 0));
-  state.aquarium.items = state.aquarium.items && typeof state.aquarium.items === 'object' && !Array.isArray(state.aquarium.items)
-    ? state.aquarium.items
-    : {};
+  state.aquarium = normalizeAquariumState(state.aquarium || createInitialAquariumState());
   return state.aquarium;
 }
 
@@ -8528,53 +8518,92 @@ function aquariumUnlocked() {
   return Boolean(state && aquariumState().unlocked);
 }
 
+function aquariumFishDefinition(id) { return AQUARIUM_CONFIG.fish.find((row) => row.id === id) || null; }
+function aquariumPlantDefinition(id) { return AQUARIUM_CONFIG.plants.find((row) => row.id === id) || null; }
+function aquariumDisplayDefinition(id) { return AQUARIUM_CONFIG.displayItems.find((row) => row.id === id) || null; }
+function aquariumFishLoad(aquarium = aquariumState()) {
+  return AQUARIUM_CONFIG.fish.reduce((sum, def) => sum + Math.max(0, Number(aquarium.fish?.[def.id]?.inTank) || 0) * def.loadPoint, 0);
+}
+function refreshAquariumLoad(aquarium = aquariumState()) {
+  aquarium.fishLoad = { current: aquariumFishLoad(aquarium), max: AQUARIUM_CONFIG.capacity.fishLoadMax };
+  return aquarium.fishLoad.current;
+}
+function aquariumPlantTotal(aquarium = aquariumState()) {
+  return AQUARIUM_CONFIG.plants.reduce((sum, def) => sum + Math.max(0, Number(aquarium.plants?.[def.id]?.inTank) || 0), 0);
+}
+function aquariumLimitResult(ok, reason = '', message = '') { return { ok, reason, ...(message ? { message } : {}) }; }
+function canAcquireAquariumFish(id, quantity = 1) {
+  const def = aquariumFishDefinition(id), row = aquariumState().fish?.[id], qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  if (!def || !row) return aquariumLimitResult(false, 'unknown');
+  if (row.owned + qty > def.speciesMax) return aquariumLimitResult(false, 'species', AQUARIUM_CONFIG.rules.messages.fishSpeciesLimit);
+  return aquariumLimitResult(true);
+}
+function canAddAquariumFishToTank(id, quantity = 1) {
+  const aquarium = aquariumState(), def = aquariumFishDefinition(id), row = aquarium.fish?.[id], qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  if (!def || !row) return aquariumLimitResult(false, 'unknown');
+  if (row.inTank + qty > def.speciesMax) return aquariumLimitResult(false, 'species', AQUARIUM_CONFIG.rules.messages.fishSpeciesLimit);
+  if (aquariumFishLoad(aquarium) + qty * def.loadPoint > AQUARIUM_CONFIG.capacity.fishLoadMax) return aquariumLimitResult(false, 'load', AQUARIUM_CONFIG.rules.messages.fishLoadLimit);
+  if (row.inTank + qty > row.owned) return aquariumLimitResult(false, 'owned');
+  return aquariumLimitResult(true);
+}
+function canAcquireAquariumPlant(id, quantity = 1) {
+  const def = aquariumPlantDefinition(id), row = aquariumState().plants?.[id], qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  if (!def || !row) return aquariumLimitResult(false, 'unknown');
+  if (row.owned + qty > def.speciesMax) return aquariumLimitResult(false, 'species', AQUARIUM_CONFIG.rules.messages.plantSpeciesLimit);
+  return aquariumLimitResult(true);
+}
+function canAddAquariumPlantToTank(id, quantity = 1) {
+  const aquarium = aquariumState(), def = aquariumPlantDefinition(id), row = aquarium.plants?.[id], qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  if (!def || !row) return aquariumLimitResult(false, 'unknown');
+  if (row.inTank + qty > def.speciesMax) return aquariumLimitResult(false, 'species', AQUARIUM_CONFIG.rules.messages.plantSpeciesLimit);
+  if (aquariumPlantTotal(aquarium) + qty > AQUARIUM_CONFIG.capacity.plantTotalMax) return aquariumLimitResult(false, 'total', AQUARIUM_CONFIG.rules.messages.plantTotalLimit);
+  if (row.inTank + qty > row.owned) return aquariumLimitResult(false, 'owned');
+  return aquariumLimitResult(true);
+}
+function canAcquireAquariumDisplay(id, quantity = 1) {
+  const def = aquariumDisplayDefinition(id), row = aquariumState().displayItems?.[id], qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  if (!def || !row) return aquariumLimitResult(false, 'unknown');
+  if (row.owned + qty > def.ownedMax) return aquariumLimitResult(false, 'limit', AQUARIUM_CONFIG.rules.messages.displayLimit);
+  return aquariumLimitResult(true);
+}
 function unlockAquariumFeature({ source = 'event', notify = true } = {}) {
-  const aquarium = aquariumState();
-  const newlyUnlocked = !aquarium.unlocked;
-  aquarium.unlocked = true;
+  const aquarium = aquariumState(); const newlyUnlocked = !aquarium.unlocked; aquarium.unlocked = true;
   if (!aquarium.unlockedDay) aquarium.unlockedDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
   if (!aquarium.unlockSource) aquarium.unlockSource = String(source || 'event').slice(0, 80);
-  if (newlyUnlocked && notify) {
-    addNotification('水槽機能を解放しました', 'スマートフォンに「水槽」が追加されました。', 'special');
-  }
+  if (newlyUnlocked && notify) addNotification('水槽機能を解放しました', 'スマートフォンに「水槽」が追加されました。', 'special');
   return newlyUnlocked;
 }
-
 function setAquariumItemQuantity(id, quantity, metadata = {}) {
-  const aquarium = aquariumState();
-  const safeId = String(id || '').trim().slice(0, 100);
-  if (!safeId) return false;
-  const nextQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
-  const previous = aquarium.items[safeId] && typeof aquarium.items[safeId] === 'object' ? aquarium.items[safeId] : {};
-  if (nextQuantity < 1) {
-    if (!aquarium.items[safeId]) return false;
-    delete aquarium.items[safeId];
-    aquarium.lastSyncRevision += 1;
-    return true;
-  }
-  const next = {
-    id: safeId,
-    name: String(metadata.name || previous.name || safeId).slice(0, 100),
-    category: ['fish', 'plant', 'display', 'other'].includes(metadata.category || previous.category)
-      ? (metadata.category || previous.category)
-      : 'other',
-    quantity: nextQuantity,
-    asset: String(metadata.asset || previous.asset || '').slice(0, 240),
-    acquiredDay: Math.max(0, Math.floor(Number(metadata.acquiredDay ?? previous.acquiredDay ?? state?.game?.day) || 0)),
-  };
-  const changed = JSON.stringify(previous) !== JSON.stringify(next);
-  aquarium.items[safeId] = next;
-  if (changed) aquarium.lastSyncRevision += 1;
+  const aquarium = aquariumState(), safeId = String(id || '').trim().slice(0, 100), qty = Math.max(0, Math.floor(Number(quantity) || 0)); if (!safeId) return false;
+  const category = metadata.category || (aquarium.fish[safeId] ? 'fish' : aquarium.plants[safeId] ? 'plant' : aquarium.displayItems[safeId] ? 'display' : '');
+  const collection = category === 'fish' ? aquarium.fish : category === 'plant' ? aquarium.plants : category === 'display' ? aquarium.displayItems : null;
+  if (!collection?.[safeId]) return false;
+  const key = category === 'display' ? 'owned' : 'owned', previous = collection[safeId][key]; collection[safeId][key] = qty;
+  if (category === 'fish') collection[safeId].inTank = Math.min(collection[safeId].inTank, qty);
+  if (category === 'plant') collection[safeId].inTank = Math.min(collection[safeId].inTank, qty);
+  if (category === 'display') collection[safeId].installed = Math.min(collection[safeId].installed, qty);
+  const changed = previous !== qty; if (changed) { aquarium.lastSyncRevision += 1; refreshAquariumLoad(aquarium); }
   return changed;
 }
-
 function addAquariumItem(id, quantity = 1, metadata = {}) {
-  const aquarium = aquariumState();
-  const safeId = String(id || '').trim().slice(0, 100);
-  if (!safeId) return false;
-  const current = Math.max(0, Math.floor(Number(aquarium.items?.[safeId]?.quantity) || 0));
-  return setAquariumItemQuantity(safeId, current + Math.max(0, Math.floor(Number(quantity) || 0)), metadata);
+  const aquarium = aquariumState(), safeId = String(id || '').trim().slice(0, 100), qty = Math.max(0, Math.floor(Number(quantity) || 0)); if (!safeId || !qty) return false;
+  const category = metadata.category || (aquarium.fish[safeId] ? 'fish' : aquarium.plants[safeId] ? 'plant' : aquarium.displayItems[safeId] ? 'display' : '');
+  const check = category === 'fish' ? canAcquireAquariumFish(safeId, qty) : category === 'plant' ? canAcquireAquariumPlant(safeId, qty) : category === 'display' ? canAcquireAquariumDisplay(safeId, qty) : aquariumLimitResult(false, 'unknown');
+  if (!check.ok) { if (check.message) showToast(check.message); return false; }
+  const row = category === 'fish' ? aquarium.fish[safeId] : category === 'plant' ? aquarium.plants[safeId] : aquarium.displayItems[safeId]; row.owned += qty; aquarium.lastSyncRevision += 1; return true;
 }
+function setAquariumDisplayInstalled(id, target) {
+  const aquarium = aquariumState(), def = aquariumDisplayDefinition(id), row = aquarium.displayItems?.[id]; if (!def || !row || def.required) return aquariumLimitResult(false, 'required');
+  const next = Math.max(0, Math.floor(Number(target) || 0));
+  if (next > def.installedMax || next > row.owned) return aquariumLimitResult(false, 'limit', next > row.owned ? '所持数が不足しています' : AQUARIUM_CONFIG.rules.messages.displayLimit);
+  if (row.installed === next) return aquariumLimitResult(true);
+  row.installed = next; aquarium.lastSyncRevision += 1; return aquariumLimitResult(true);
+}
+function aquariumSnapshot() { const aquarium = aquariumState(); refreshAquariumLoad(aquarium); return structuredClone(aquarium); }
+function postAquariumSnapshot(frame = document.querySelector('.aquarium-game-frame')) {
+  if (!frame?.contentWindow) return false; frame.contentWindow.postMessage({ source: 'jxj-main-game', type: 'aquarium-state', state: aquariumSnapshot() }, window.location.origin); return true;
+}
+
 
 function validPhoneTab(value) {
   const tabs = ['profile', 'calendar', 'notifications', 'finance', 'items', 'gift'];
@@ -9498,6 +9527,7 @@ function renderGrayHoodAquariumEvent() {
 
 function renderAquariumGame() {
   if (!aquariumUnlocked()) { queueMicrotask(() => setScreen('phone', {}, false)); return renderPhone(); }
+  queueMicrotask(() => window.setTimeout(() => postAquariumSnapshot(), 80));
   return `<main class="aquarium-game-screen"><button type="button" class="aquarium-game-close" data-action="close-aquarium">スマートフォンへ戻る</button><iframe class="aquarium-game-frame" src="./assets/minigames/aquarium/index.html?v=${VERSION}" title="水槽ミニゲーム" allow="fullscreen" loading="eager"></iframe></main>`;
 }
 
@@ -12552,6 +12582,22 @@ function handleKaitenzushiMessage(event) {
   }
 }
 
+function handleAquariumFrameMessage(event) {
+  if (event.origin !== window.location.origin) return;
+  const frame = document.querySelector('.aquarium-game-frame');
+  if (!frame?.contentWindow || event.source !== frame.contentWindow) return;
+  const data = event.data || {};
+  if (data.source !== 'jxj-aquarium') return;
+  if (data.type === 'ready' || data.type === 'request-state') { postAquariumSnapshot(frame); return; }
+  if (data.type === 'display-install') {
+    const result = setAquariumDisplayInstalled(String(data.id || ''), data.target);
+    if (!result.ok && result.message) showToast(result.message);
+    saveGame(); postAquariumSnapshot(frame);
+    if (screen === 'phone' && phoneTab === 'aquarium') render();
+  }
+}
+window.addEventListener('message', handleAquariumFrameMessage);
+
 window.addEventListener('message', handleKaitenzushiMessage);
 
 // v0.10.469: 通常の食事演出は、タップで即終了できる一方、
@@ -13682,17 +13728,23 @@ async function copyGameDataForAI() {
 function renderPhoneAquarium() {
   const aquarium = aquariumState();
   if (!aquarium.unlocked) return '<div class="phone-empty">水槽機能はまだ解放されていません。</div>';
-  const rows = Object.values(aquarium.items || {}).filter((row) => Number(row?.quantity) > 0);
-  const total = rows.reduce((sum, row) => sum + Math.max(0, Math.floor(Number(row.quantity) || 0)), 0);
+  refreshAquariumLoad(aquarium);
+  const fishRows = AQUARIUM_CONFIG.fish.filter((def) => aquarium.fish[def.id].owned > 0 || aquarium.fish[def.id].inTank > 0);
+  const plantRows = AQUARIUM_CONFIG.plants.filter((def) => aquarium.plants[def.id].owned > 0 || aquarium.plants[def.id].inTank > 0);
+  const displayRows = AQUARIUM_CONFIG.displayItems.filter((def) => !def.required && (aquarium.displayItems[def.id].owned > 0 || aquarium.displayItems[def.id].installed > 0));
+  const rows = [
+    ...fishRows.map((def) => ({ name: def.name, kind: '魚', text: `所持 ${aquarium.fish[def.id].owned}匹 / 水槽 ${aquarium.fish[def.id].inTank}匹` })),
+    ...plantRows.map((def) => ({ name: def.name, kind: '水草', text: `所持 ${aquarium.plants[def.id].owned}株 / 水槽 ${aquarium.plants[def.id].inTank}株` })),
+    ...displayRows.map((def) => ({ name: def.name, kind: '用品', text: `所持 ${aquarium.displayItems[def.id].owned}個 / 設置 ${aquarium.displayItems[def.id].installed}個` })),
+  ];
   return `<section class="phone-aquarium-screen">
-    <header class="phone-aquarium-heading"><div><small>連動ミニゲーム</small><h2>水槽</h2></div><strong>${total}点</strong></header>
+    <header class="phone-aquarium-heading"><div><small>連動ミニゲーム</small><h2>水槽</h2></div><strong>飼育負荷 ${aquarium.fishLoad.current} / ${aquarium.fishLoad.max}</strong></header>
     <section class="phone-aquarium-placeholder" aria-live="polite">
       <div class="phone-aquarium-water" aria-hidden="true"><span></span><span></span><span></span></div>
-      <strong>水槽ミニゲーム準備中</strong>
-      <p>ミニゲーム本体を接続すると、ここに水槽が表示されます。</p>
-      <small>魚・水草・ディスプレイ用品は、本ゲームで入手した数だけ自動で追加されます。</small>
+      <p>水槽は1台です。魚・水草・流木・レイアウトストーンは0から集めます。</p>
+      <button type="button" class="primary-button full-button" data-action="open-aquarium">水槽を見る</button>
     </section>
-    ${rows.length ? `<section class="phone-aquarium-inventory"><h3>水槽へ追加済み</h3>${rows.map((row) => `<article><div><strong>${esc(row.name || row.id)}</strong><small>${row.category === 'fish' ? '魚' : row.category === 'plant' ? '水草' : row.category === 'display' ? 'ディスプレイ用品' : 'その他'}</small></div><b>${Math.max(0, Math.floor(Number(row.quantity) || 0))}</b></article>`).join('')}</section>` : '<div class="phone-empty compact">水槽へ追加された生体・用品はまだありません。</div>'}
+    ${rows.length ? `<section class="phone-aquarium-inventory"><h3>現在の水槽データ</h3>${rows.map((row) => `<article><div><strong>${esc(row.name)}</strong><small>${esc(row.kind)}</small></div><b>${esc(row.text)}</b></article>`).join('')}</section>` : '<div class="phone-empty compact">魚・水草・任意用品はまだありません。</div>'}
   </section>`;
 }
 

@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "featureId": "aquarium_minigame",
+  "tankId": "tank_01",
+  "fishLoad": {
+    "current": 0,
+    "max": 40
+  },
+  "fish": {
+    "neon_tetra": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "rummy_nose_tetra": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "red_phantom_tetra": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "african_lampeye": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "platy": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "black_molly": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "corydoras": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "dwarf_gourami": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "altum_angelfish": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "discus_blue_diamond": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    },
+    "discus_red_map": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
+    }
+  },
+  "plants": {
+    "anacharis": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "amazon_sword": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "microsorum": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "anubias_nana": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "willow_moss": {
+      "owned": 0,
+      "inTank": 0
+    }
+  },
+  "displayItems": {
+    "tank": {
+      "owned": 1,
+      "installed": 1
+    },
+    "hang_on_filter": {
+      "owned": 1,
+      "installed": 1
+    },
+    "heater": {
+      "owned": 1,
+      "installed": 1
+    },
+    "light": {
+      "owned": 1,
+      "installed": 1
+    },
+    "soil": {
+      "owned": 1,
+      "installed": 1
+    },
+    "driftwood": {
+      "owned": 0,
+      "installed": 0
+    },
+    "layout_stone": {
+      "owned": 0,
+      "installed": 0
+    }
+  }
+}

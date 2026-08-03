@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "featureId": "aquarium_minigame",
+  "tankLimit": 1,
+  "capacity": {
+    "fishLoadMax": 40,
+    "plantTotalMax": 15
+  },
+  "fish": [
+    {
+      "id": "neon_tetra",
+      "name": "ネオンテトラ",
+      "speciesMax": 20,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "rummy_nose_tetra",
+      "name": "ラミーノーズテトラ",
+      "speciesMax": 20,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "red_phantom_tetra",
+      "name": "レッドファントムテトラ",
+      "speciesMax": 18,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "african_lampeye",
+      "name": "アフリカンランプアイ",
+      "speciesMax": 20,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "platy",
+      "name": "プラティ",
+      "speciesMax": 10,
+      "loadPoint": 2,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "black_molly",
+      "name": "ブラックモーリー",
+      "speciesMax": 10,
+      "loadPoint": 2,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "corydoras",
+      "name": "コリドラス",
+      "speciesMax": 8,
+      "loadPoint": 2,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "dwarf_gourami",
+      "name": "ドワーフグラミー",
+      "speciesMax": 4,
+      "loadPoint": 3,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "altum_angelfish",
+      "name": "アルタムエンゼルフィッシュ",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "discus_blue_diamond",
+      "name": "ディスカス・ブルーダイヤモンド",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "discus_red_map",
+      "name": "ディスカス・レッドマップ",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
+    }
+  ],
+  "plants": [
+    {
+      "id": "anacharis",
+      "name": "アナカリス",
+      "speciesMax": 6,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "amazon_sword",
+      "name": "アマゾンソード",
+      "speciesMax": 3,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "microsorum",
+      "name": "ミクロソリウム",
+      "speciesMax": 4,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "anubias_nana",
+      "name": "アヌビアス・ナナ",
+      "speciesMax": 5,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "willow_moss",
+      "name": "ウィローモス",
+      "speciesMax": 4,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    }
+  ],
+  "displayItems": [
+    {
+      "id": "tank",
+      "name": "水槽",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "hang_on_filter",
+      "name": "フィルター（壁掛け）",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "heater",
+      "name": "ヒーター",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "light",
+      "name": "ライト",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "soil",
+      "name": "底床（ソイル）",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "driftwood",
+      "name": "流木",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true
+    },
+    {
+      "id": "layout_stone",
+      "name": "レイアウトストーン",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true
+    }
+  ],
+  "rules": {
+    "releaseCapacityImmediatelyOnDeathSaleOrRemoval": true,
+    "fishBreeding": {
+      "juvenilesCanMatureUntilLimits": true,
+      "noBirthWhenAnyApplicableLimitReached": true,
+      "deleteExistingOnOverLimit": false
+    },
+    "plantPropagation": false,
+    "purchaseAndRewardBlockedAtLimit": true,
+    "overLimitExistingItemsAreNotDeleted": true,
+    "messages": {
+      "fishSpeciesLimit": "この魚種の飼育数上限です",
+      "fishLoadLimit": "水槽の飼育負荷上限です",
+      "plantSpeciesLimit": "水草の飼育数上限です",
+      "plantTotalLimit": "水草全体の飼育数上限です",
+      "displayLimit": "この用品の所持数上限です"
+    }
+  }
+}

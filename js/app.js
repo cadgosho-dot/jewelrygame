@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.530';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.530';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.532';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.532';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -376,7 +376,7 @@ function runEventEmergencySettlement(key, eventState) {
     case 'okachimachiTollEvent': {
       const rewardStages = ['jadeReward', 'paymentDemand', 'paymentNotice', 'farewell'];
       if (rewardStages.includes(stage) && !eventState.rewardGranted) {
-        changed = grantEmergencyRough(eventState, 'jade', '翡翠原石を手に入れました', 'カエル保安官から渡された翡翠原石を工房へ追加しました。') || changed;
+        changed = grantEmergencyRough(eventState, 'jade', '翡翠原石を手に入れました', 'キャベツ野郎から渡された翡翠原石を工房へ追加しました。') || changed;
       }
       if ((eventState.rewardGranted || rewardStages.includes(stage)) && !eventState.paymentApplied) {
         state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - OKACHIMACHI_TOLL_EVENT_COST);
@@ -7229,7 +7229,7 @@ function maybeStartOkachimachiTollEvent() {
   if (eventState.active) return resumeOkachimachiTollEvent();
   if (Math.floor(Number(state?.game?.money) || 0) < OKACHIMACHI_TOLL_EVENT_COST) return false;
 
-  // v0.10.530: 所持金条件を満たした御徒町への外部入場につき、ゲーム内1日1回だけ抽選する。
+  // v0.10.532: 所持金条件を満たした御徒町への外部入場につき、ゲーム内1日1回だけ抽選する。
   // その日に外れた場合、御徒町へ入り直しても再抽選しない。翌日に再び抽選可能になる。
   const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
   if (eventState.lastAttemptDay === currentDay) return false;
@@ -7255,7 +7255,7 @@ function grantOkachimachiTollJade(eventState = okachimachiTollEventState()) {
   if (eventState.rewardGranted) return false;
   state.inventory.rough.jade = Math.max(0, Math.floor(Number(state.inventory.rough?.jade) || 0)) + 1;
   eventState.rewardGranted = true;
-  addNotification('翡翠原石を手に入れました', 'カエル保安官から渡された翡翠原石が、工房の原石へ追加されました。', 'special');
+  addNotification('翡翠原石を手に入れました', 'キャベツ野郎から渡された翡翠原石が、工房の原石へ追加されました。', 'special');
   return true;
 }
 
@@ -7263,7 +7263,7 @@ function applyOkachimachiTollPayment(eventState = okachimachiTollEventState()) {
   if (eventState.paymentApplied) return false;
   state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - OKACHIMACHI_TOLL_EVENT_COST);
   addFinance('御徒町の通行費', 0, OKACHIMACHI_TOLL_EVENT_COST);
-  addNotification('通行費を支払いました', `${yen(OKACHIMACHI_TOLL_EVENT_COST)}をカエル保安官へ支払いました。`, 'special');
+  addNotification('通行費を支払いました', `${yen(OKACHIMACHI_TOLL_EVENT_COST)}をキャベツ野郎へ支払いました。`, 'special');
   startMoneyFeedback(-OKACHIMACHI_TOLL_EVENT_COST, 1500);
   eventState.paymentApplied = true;
   return true;
@@ -10147,7 +10147,7 @@ function renderOkachimachiTollEvent() {
           ? `<div class="okachimachi-toll-jade-reveal" role="status"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/gems/jade.png?v=${VERSION}" alt="翡翠原石" draggable="false"><strong>翡翠原石を受け取った</strong></div>`
           : `<div class="visit-character-area okachimachi-toll-character-area" aria-hidden="true"><img class="visit-character okachimachi-toll-character" src="./assets/images/events/okachimachi-toll-frog.png?v=${VERSION}" alt="" draggable="false"></div>`}
         <button type="button" class="event-dialogue-card visit-event-dialogue okachimachi-toll-dialogue glass-panel" data-action="okachimachi-toll-event-next">
-          <small>${isPaymentNotice ? '支払い' : 'カエル保安官'}</small>
+          <small>${isPaymentNotice ? '支払い' : 'キャベツ野郎'}</small>
           <strong>${dialogue}</strong>
           ${isPaymentNotice ? `<em>－${yen(OKACHIMACHI_TOLL_EVENT_COST)}</em>` : ''}
           <span>タップして進む</span>

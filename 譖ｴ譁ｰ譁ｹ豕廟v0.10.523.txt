@@ -1,9 +1,0 @@
-v0.10.523 更新方法
-
-1. ZIPを展開します。
-2. 展開後に見える中身を、GitHub Desktopで管理している jewelrygame フォルダー直下へ上書きします。
-3. GitHub DesktopのSummaryへ「Update to v0.10.523」と入力します。
-4. Commit to main を押します。
-5. Push origin を押します。
-
-注意：data/metals.jsonは含めていません。現在の相場データを上書きしません。

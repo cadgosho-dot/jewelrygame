@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.527';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.527';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.529';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.529';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -126,6 +126,8 @@ const OKACHIMACHI_QUIZ_DATA_URL = './data/jewelry_okachimachi_quiz_200_game_form
 const CINEMA_EVENT_VIDEO_MANIFEST_URL = './data/cinema-event-videos.json';
 const OKACHIMACHI_QUIZ_TRIGGER_MIN = 26;
 const OKACHIMACHI_QUIZ_TRIGGER_MAX = 34;
+const OKACHIMACHI_TOLL_EVENT_CHANCE = 1 / 60;
+const OKACHIMACHI_TOLL_EVENT_COST = 100000;
 const WESTERN_UNION_EVENT_GEM_ID = 'antiqueDiamond';
 const WESTERN_UNION_EVENT_SHAPE_ID = 'antiqueCut';
 const WESTERN_UNION_EVENT_STAGES = new Set(['idle', 'choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3', 'completed']);
@@ -186,7 +188,7 @@ const GRAY_HOOD_AQUARIUM_EVENT_CHANCE = 0.15;
 const MYSTERY_CHINESE_MEAL_EVENT_COST = 15000;
 const MYSTERY_CHINESE_MEAL_EVENT_IMAGES = Object.freeze(['mystery-chinese-food-01.png', 'mystery-chinese-food-02.png']);
 const OKACHIMACHI_AREA_SCREENS = new Set([
-  'okachimachi', 'okachimachiQuiz', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
+  'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
 ]);
 
@@ -195,6 +197,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   westernUnionEvent: new Set(['choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3']),
   miningPazupanEvent: new Set(['intro', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
+  okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   tattooWomanAmberEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   mermaidEvent: new Set(['intro', 'reward']),
   sushiChefEvent: new Set(['intro1', 'intro2', 'playing', 'farewell']),
@@ -218,7 +221,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'okachimachiTollEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -233,6 +236,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   cinemaVisitEvent: { eventKey: 'cinemaVisitEvent', fallback: 'okachimachi' },
   mysteryChineseMealEvent: { eventKey: 'mysteryChineseMealEvent', fallback: 'main' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
+  okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   sushiChefEvent: { eventKey: 'sushiChefEvent', fallback: 'main' },
   cyclopsEvent: { eventKey: 'cyclopsEvent', fallback: 'main' },
   ganeshaTuskEvent: { eventKey: 'ganeshaTuskEvent', fallback: 'main' },
@@ -264,7 +268,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   ]),
   conditionalReward: new Set(['westernUnionEvent']),
   committedExpense: new Set([
-    'clockTowerDonationEvent', 'mysteryChineseMealEvent', 'hauntingEvent', 'cinemaVisitEvent',
+    'clockTowerDonationEvent', 'mysteryChineseMealEvent', 'hauntingEvent', 'cinemaVisitEvent', 'okachimachiTollEvent',
   ]),
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
@@ -369,6 +373,20 @@ function runEventEmergencySettlement(key, eventState) {
       changed = grantEmergencyRough(eventState, 'jade', '翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。') || changed;
       break;
 
+    case 'okachimachiTollEvent': {
+      const rewardStages = ['jadeReward', 'paymentDemand', 'paymentNotice', 'farewell'];
+      if (rewardStages.includes(stage) && !eventState.rewardGranted) {
+        changed = grantEmergencyRough(eventState, 'jade', '翡翠原石を手に入れました', 'カエル保安官から渡された翡翠原石を工房へ追加しました。') || changed;
+      }
+      if ((eventState.rewardGranted || rewardStages.includes(stage)) && !eventState.paymentApplied) {
+        state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - OKACHIMACHI_TOLL_EVENT_COST);
+        addFinance('御徒町の通行費', 0, OKACHIMACHI_TOLL_EVENT_COST);
+        eventState.paymentApplied = true;
+        changed = true;
+      }
+      break;
+    }
+
     case 'cyclopsEvent':
       changed = grantEmergencyItem(eventState, 'energyDrink', '栄養ドリンクを手に入れました', 'コンビニのサイクロプスから、キャンペーン中の栄養ドリンクを1本受け取りました。') || changed;
       break;
@@ -452,7 +470,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
-  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'kaitenzushi-finish',
+  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'okachimachi-toll-event-next', 'kaitenzushi-finish',
   'mystery-chinese-meal-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
@@ -7176,11 +7194,128 @@ function chooseOkachimachiQuizQuestion(questions, previousIndex = -1) {
   return { index, question: questions[index] };
 }
 
+function okachimachiTollEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.okachimachiTollEvent && typeof state.events.okachimachiTollEvent === 'object' && !Array.isArray(state.events.okachimachiTollEvent)
+    ? state.events.okachimachiTollEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell', 'completed']);
+  state.events.okachimachiTollEvent = {
+    // 1日の抽選は1回だけ。旧保存データは発生日を抽選日として扱う。
+    lastAttemptDay: Math.max(0, Math.floor(Number(saved.lastAttemptDay ?? saved.lastTriggeredDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+    paymentApplied: Boolean(saved.paymentApplied),
+  };
+  if (!state.events.okachimachiTollEvent.active && !['idle', 'completed'].includes(state.events.okachimachiTollEvent.stage)) {
+    state.events.okachimachiTollEvent.stage = 'completed';
+  }
+  return state.events.okachimachiTollEvent;
+}
+
+function resumeOkachimachiTollEvent() {
+  const eventState = okachimachiTollEventState();
+  if (!eventState.active) return false;
+  setScreen('okachimachiTollEvent', {}, false);
+  return true;
+}
+
+function maybeStartOkachimachiTollEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = okachimachiTollEventState();
+  if (eventState.active) return resumeOkachimachiTollEvent();
+  if (Math.floor(Number(state?.game?.money) || 0) < OKACHIMACHI_TOLL_EVENT_COST) return false;
+
+  // v0.10.529: 所持金条件を満たした御徒町への外部入場につき、ゲーム内1日1回だけ抽選する。
+  // その日に外れた場合、御徒町へ入り直しても再抽選しない。翌日に再び抽選可能になる。
+  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (eventState.lastAttemptDay === currentDay) return false;
+  eventState.lastAttemptDay = currentDay;
+  saveGame();
+
+  if (Math.random() >= OKACHIMACHI_TOLL_EVENT_CHANCE) return false;
+  eventState.lastTriggeredDay = currentDay;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  eventState.paymentApplied = false;
+  state.game.screen = 'okachimachiTollEvent';
+  saveGame();
+  setScreen('okachimachiTollEvent', {}, false);
+  playSfx('impact', { gain: .88, rate: .82 });
+  vibrate([42, 24, 72]);
+  return true;
+}
+
+function grantOkachimachiTollJade(eventState = okachimachiTollEventState()) {
+  if (eventState.rewardGranted) return false;
+  state.inventory.rough.jade = Math.max(0, Math.floor(Number(state.inventory.rough?.jade) || 0)) + 1;
+  eventState.rewardGranted = true;
+  addNotification('翡翠原石を手に入れました', 'カエル保安官から渡された翡翠原石が、工房の原石へ追加されました。', 'special');
+  return true;
+}
+
+function applyOkachimachiTollPayment(eventState = okachimachiTollEventState()) {
+  if (eventState.paymentApplied) return false;
+  state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - OKACHIMACHI_TOLL_EVENT_COST);
+  addFinance('御徒町の通行費', 0, OKACHIMACHI_TOLL_EVENT_COST);
+  addNotification('通行費を支払いました', `${yen(OKACHIMACHI_TOLL_EVENT_COST)}をカエル保安官へ支払いました。`, 'special');
+  startMoneyFeedback(-OKACHIMACHI_TOLL_EVENT_COST, 1500);
+  eventState.paymentApplied = true;
+  return true;
+}
+
+function advanceOkachimachiTollEvent() {
+  const eventState = okachimachiTollEventState();
+  if (!eventState.active) {
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') eventState.stage = 'intro2';
+  else if (eventState.stage === 'intro2') eventState.stage = 'intro3';
+  else if (eventState.stage === 'intro3') {
+    grantOkachimachiTollJade(eventState);
+    eventState.stage = 'jadeReward';
+    saveGame();
+    playSfx('jade-gift', { gain: 1.04 });
+    vibrate([34, 26, 66]);
+    render();
+    return;
+  } else if (eventState.stage === 'jadeReward') {
+    eventState.stage = 'paymentDemand';
+  } else if (eventState.stage === 'paymentDemand') {
+    applyOkachimachiTollPayment(eventState);
+    eventState.stage = 'paymentNotice';
+    saveGame();
+    playSfx('coin', { gain: .96 });
+    vibrate([22, 18, 42]);
+    render();
+    return;
+  } else if (eventState.stage === 'paymentNotice') {
+    eventState.stage = 'farewell';
+  } else if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: .82 });
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  saveGame();
+  playSfx('select', { gain: .80 });
+  render();
+}
+
 async function enterOkachimachiFromOutside() {
   if (illnessEventSuppressionActive()) {
     setScreen('okachimachi', {});
     return;
   }
+  if (resumeOkachimachiTollEvent()) return;
   if (resumeCinemaVisitEvent()) return;
   if (resumeClockTowerDonationEvent()) return;
   const eventState = okachimachiQuizEventState();
@@ -7192,6 +7327,7 @@ async function enterOkachimachiFromOutside() {
   }
   const shouldTrigger = eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1);
   saveGame();
+  if (maybeStartOkachimachiTollEvent()) return;
   if (await maybeStartCinemaVisitEvent()) return;
   if (maybeStartClockTowerDonationEvent()) return;
   if (!shouldTrigger) {
@@ -7305,7 +7441,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -7381,7 +7517,7 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
-  return resolveAudioScene(target, {
+  return resolveAudioScene(target === 'okachimachiTollEvent' ? 'okachimachi' : target, {
     alienAbducted: isAlienAbducted(),
     quizStage: okachimachiQuizSession?.stage || '',
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
@@ -7846,6 +7982,7 @@ function render() {
       miningResult: renderMiningResult,
       okachimachi: renderOkachimachi,
       okachimachiQuiz: renderOkachimachiQuiz,
+      okachimachiTollEvent: renderOkachimachiTollEvent,
       supplier: renderSupplier,
       supplierMetals: renderSupplierMetals,
       supplierMetalHistory: renderSupplierMetalHistory,
@@ -9979,6 +10116,44 @@ function renderOkachimachiQuiz() {
           <small>タップして進む</small>
         </button>`}
     </section>`, { back: false, main: false, hideHeader: true });
+}
+
+function renderOkachimachiTollEvent() {
+  const eventState = okachimachiTollEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const isJadeReward = eventState.stage === 'jadeReward';
+  const isPaymentNotice = eventState.stage === 'paymentNotice';
+  const dialogue = eventState.stage === 'intro1'
+    ? 'おい、とまれクソ、そこの間抜け面、、、'
+    : eventState.stage === 'intro2'
+      ? `あらら、${playerName}じゃねえか、偉そうに歩いてんじゃねえよ、面倒くさ`
+      : eventState.stage === 'intro3'
+        ? 'お前これやるよ、、、'
+        : eventState.stage === 'jadeReward'
+          ? 'このまえ河童から押収したやつだ、嬉しいだろ？もっと喜べよ、、、'
+          : eventState.stage === 'paymentDemand'
+            ? 'とりあえず、いつもの払ってさっさと消えろ、、、'
+            : eventState.stage === 'paymentNotice'
+              ? '通行費を支払いました'
+              : 'じゃあな、警察に言うなよ、オレたち友達だろ？';
+  return `
+    <main class="main-screen okachimachi-toll-event-screen">
+      <section class="visit-character-event okachimachi-toll-event ${isJadeReward ? 'is-jade-reward' : ''} ${isPaymentNotice ? 'is-payment-notice' : ''}" aria-live="polite">
+        ${isJadeReward
+          ? `<div class="okachimachi-toll-jade-reveal" role="status"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/gems/jade.png?v=${VERSION}" alt="翡翠原石" draggable="false"><strong>翡翠原石を受け取った</strong></div>`
+          : `<div class="visit-character-area okachimachi-toll-character-area" aria-hidden="true"><img class="visit-character okachimachi-toll-character" src="./assets/images/events/okachimachi-toll-frog.png?v=${VERSION}" alt="" draggable="false"></div>`}
+        <button type="button" class="event-dialogue-card visit-event-dialogue okachimachi-toll-dialogue glass-panel" data-action="okachimachi-toll-event-next">
+          <small>${isPaymentNotice ? '支払い' : 'カエル保安官'}</small>
+          <strong>${dialogue}</strong>
+          ${isPaymentNotice ? `<em>－${yen(OKACHIMACHI_TOLL_EVENT_COST)}</em>` : ''}
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
 }
 
 function renderOkachimachi() {
@@ -16532,6 +16707,9 @@ root.addEventListener('click', async (event) => {
       break;
     case 'okachimachi-quiz-answer':
       answerOkachimachiQuiz(button.dataset.index);
+      break;
+    case 'okachimachi-toll-event-next':
+      advanceOkachimachiTollEvent();
       break;
     case 'return-okachimachi':
       setScreen('okachimachi', {}, false);

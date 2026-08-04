@@ -1,0 +1,21 @@
+JEWELRYxJEWELRY v0.10.562 validation
+
+PASS: JavaScript syntax - js/app.js
+PASS: JavaScript syntax - js/game-data.js
+PASS: JavaScript syntax - sw.js
+PASS: version constants and HTML cache-busting references use 0.10.562
+PASS: new event audio exists at assets/audio/sfx-panda-music-event.ogg
+PASS: Ogg Vorbis decoding completed without errors
+PASS: audio metadata - 8.000 seconds, stereo, 44.1 kHz
+PASS: event audio is listed in the Service Worker AUDIO_MEDIA cache
+PASS: event trigger starts the dedicated sound from the beginning
+PASS: active-event resume restarts playback when allowed by the browser
+PASS: first dialogue tap keeps or restarts playback if autoplay was blocked
+PASS: event completion stops and resets the sound
+PASS: changing to another screen stops and resets the sound
+PASS: hidden-page lifecycle pauses the sound without discarding its position
+PASS: visible-page lifecycle resumes the sound only for the active music event
+PASS: sound-effect volume setting controls the event sound
+PASS: sound-effect mute disables the event sound
+PASS: external-audio priority disables the event sound
+PASS: event chance, dialogue, image selection, time passage, rewards, and save schema remain unchanged

@@ -1,4 +1,4 @@
-export const VERSION = '0.10.553';
+export const VERSION = '0.10.562';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -4183,7 +4183,7 @@ export function initialState() {
     saveSchemaVersion: SAVE_SCHEMA_VERSION,
     saveRevision: 0,
     started: true,
-    migrations: { looseInventoryCanonicalV231: true, childhoodFriendDeadlockV461: true, transientEventRecoveryV462: true, transientEventRecoveryV462Pending: false, birthdayDefaultAprilV480: true, illnessPaymentBirthdayOverlapV481: true, illnessPaymentBirthdayOverlapV481PaymentPending: false },
+    migrations: { looseInventoryCanonicalV231: true, childhoodFriendDeadlockV461: true, transientEventRecoveryV462: true, transientEventRecoveryV462Pending: false, birthdayDefaultAprilV480: true, illnessPaymentBirthdayOverlapV481: true, illnessPaymentBirthdayOverlapV481PaymentPending: false, alienBodyChipBackfillV556: true },
     playerName: '',
     game: {
       day: 1,
@@ -4615,6 +4615,8 @@ export function chooseNewestSavedState(localSaved, cloudSaved) {
 
 export function migrateState(saved) {
   const legacy = saved && typeof saved === 'object' ? structuredClone(saved) : {};
+  const alienBodyChipBackfillDone = legacy.migrations?.alienBodyChipBackfillV556 === true;
+  const legacyAlienAbductionEvent = isRecord(legacy.events?.alienAbductionEvent) ? legacy.events.alienAbductionEvent : {};
   const state = merge(initialState(), legacy);
   // v0.10.454以降の保存データは20段階制の数値をそのまま保持する。
   // 旧保存データだけを従来の10段階から移行し、再読込でLv.11以上が失われないようにする。
@@ -5572,6 +5574,26 @@ export function migrateState(saved) {
     };
     if (!state.events.alienAbductionEvent.active && ['intro1', 'intro2', 'abducted', 'returnPending'].includes(state.events.alienAbductionEvent.stage)) state.events.alienAbductionEvent.stage = 'completed';
   }
+
+  // v0.10.556: 過去に宇宙人イベントを完了した記録があるのに、
+  // 「身体の中のチップ」が0個の旧セーブだけを一度限り補填する。
+  // 新規イベントのreturnPendingは従来の帰還処理へ任せ、途中段階では付与しない。
+  if (!alienBodyChipBackfillDone) {
+    const alienEvent = state.events.alienAbductionEvent;
+    const completedTripRecorded = Math.max(0, Math.floor(Number(alienEvent.totalTrips) || 0)) > 0
+      || String(legacyAlienAbductionEvent.stage || '') === 'completed'
+      || legacyAlienAbductionEvent.chipGrantedThisTrip === true;
+    const chipCount = Math.max(0, Math.floor(Number(state.inventory.items?.bodyChip) || 0));
+    if (completedTripRecorded && chipCount < 1) {
+      state.inventory.items.bodyChip = 1;
+      alienEvent.totalTrips = Math.max(1, Math.floor(Number(alienEvent.totalTrips) || 0));
+    }
+  }
+  state.migrations.alienBodyChipBackfillV556 = true;
+  // v0.10.559: 補填処理は維持し、補填専用通知は表示・保存しない。
+  // v0.10.556で既に追加された同通知も、読み込み時に取り除く。
+  state.notifications = (Array.isArray(state.notifications) ? state.notifications : [])
+    .filter((notice) => notice?.id !== 'alien-body-chip-backfill-v556');
   delete state.events.nothingMattersEvent;
 
   state.settings = { ...initialState().settings, ...(state.settings || {}) };

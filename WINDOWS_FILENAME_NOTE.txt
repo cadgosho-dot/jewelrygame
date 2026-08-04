@@ -1,3 +1,2 @@
-JEWELRYxJEWELRY v0.10.553 Windows-safe update package
-
-All versioned update-document filenames use ASCII characters to prevent filename mojibake on Windows.
+All documentation filenames in this update use ASCII characters for Windows compatibility.
+The game files may still contain Japanese text inside the files.

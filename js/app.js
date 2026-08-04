@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.553';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.553';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.562';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.562';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -117,6 +117,7 @@ let storeTheftSequenceRunning = false;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
 let screenHeaderResizeObserver = null;
 let screenHeaderFontSyncPromise = null;
+let pandaMusicEventAudio = null;
 
 const JEWELRY_SHOP_STOCK_SIZE = 5;
 const JEWELRY_SHOP_TRANSACTION_HOURS = 1;
@@ -179,6 +180,8 @@ const WOOD_SWORD_EVENT_REQUIRED_DAYS = 365;
 const WOOD_SWORD_ROBBERY_MULTIPLIER = 0.5;
 const CLOCK_TOWER_DONATION_EVENT_CHANCE = 1 / 90;
 const PANDA_MUSIC_EVENT_CHANCE = 1 / 90;
+const PANDA_MUSIC_EVENT_AUDIO_URL = `./assets/audio/sfx-panda-music-event.ogg?v=${VERSION}`;
+const PANDA_MUSIC_EVENT_AUDIO_GAIN = 0.72;
 const PANDA_MUSIC_EVENT_IMAGES = Object.freeze([
   'panda-music-band-alien.png',
   'panda-music-band-cats.png',
@@ -7079,6 +7082,10 @@ function grantAlienBodyChip() {
 
 async function completeAlienReturnEvent() {
   const eventState = alienAbductionEventState();
+  // v0.10.556: 帰還画面へ直接復帰した場合も、終了前に必ずチップ付与を再確認する。
+  if (eventState.active && eventState.stage === 'returnPending' && !eventState.chipGrantedThisTrip) {
+    grantAlienBodyChip();
+  }
   eventState.active = false;
   eventState.stage = 'completed';
   eventState.daysSlept = 0;
@@ -7355,6 +7362,42 @@ function advanceOkachimachiTollEvent() {
   render();
 }
 
+function pandaMusicEventAudioVolume() {
+  const settings = state?.settings || {};
+  if (settings.sfxMuted || settings.externalAudioPriority || document.hidden) return 0;
+  const configured = Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0));
+  return Math.max(0, Math.min(1, configured * PANDA_MUSIC_EVENT_AUDIO_GAIN));
+}
+
+function stopPandaMusicEventAudio({ reset = true } = {}) {
+  if (!pandaMusicEventAudio) return;
+  pandaMusicEventAudio.pause();
+  if (reset) {
+    try { pandaMusicEventAudio.currentTime = 0; } catch (_) {}
+    pandaMusicEventAudio = null;
+  }
+}
+
+function playPandaMusicEventAudio({ restart = false } = {}) {
+  if (screen !== 'pandaMusicEvent' || !state?.events?.pandaMusicEvent?.active) return;
+  const volume = pandaMusicEventAudioVolume();
+  if (volume <= 0) {
+    stopPandaMusicEventAudio({ reset: false });
+    return;
+  }
+  if (!pandaMusicEventAudio) {
+    pandaMusicEventAudio = new Audio(PANDA_MUSIC_EVENT_AUDIO_URL);
+    pandaMusicEventAudio.loop = true;
+    pandaMusicEventAudio.preload = 'auto';
+    pandaMusicEventAudio.playsInline = true;
+  }
+  pandaMusicEventAudio.volume = volume;
+  if (restart) {
+    try { pandaMusicEventAudio.currentTime = 0; } catch (_) {}
+  }
+  if (pandaMusicEventAudio.paused) pandaMusicEventAudio.play().catch(() => {});
+}
+
 function pandaMusicEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.pandaMusicEvent && typeof state.events.pandaMusicEvent === 'object' && !Array.isArray(state.events.pandaMusicEvent)
@@ -7380,6 +7423,7 @@ function resumePandaMusicEvent() {
   const eventState = pandaMusicEventState();
   if (!eventState.active) return false;
   setScreen('pandaMusicEvent', {}, false);
+  playPandaMusicEventAudio();
   return true;
 }
 
@@ -7400,7 +7444,7 @@ function maybeStartPandaMusicEvent() {
   state.game.screen = 'pandaMusicEvent';
   saveGame();
   setScreen('pandaMusicEvent', {}, false);
-  playSfx('select', { gain: .72, rate: .96 });
+  playPandaMusicEventAudio({ restart: true });
   return true;
 }
 
@@ -7413,11 +7457,13 @@ function advancePandaMusicEvent() {
   if (eventState.stage === 'intro1') {
     eventState.stage = 'intro2';
     saveGame();
+    playPandaMusicEventAudio();
     render();
     return;
   }
   eventState.active = false;
   eventState.stage = 'completed';
+  stopPandaMusicEventAudio();
   saveGame();
   setScreen('okachimachi', {}, false);
 }
@@ -7694,8 +7740,7 @@ function syncScreenContentTopOffset() {
     contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
     return;
   }
-  const portrait = window.matchMedia('(orientation: portrait)').matches || window.innerHeight > window.innerWidth;
-  if ((!portrait && screen !== 'meal') || screen === 'main') {
+  if (screen === 'main') {
     document.documentElement.style.removeProperty('--jwj-content-top-offset');
     contentEl.style.removeProperty('padding-top');
     contentEl.style.removeProperty('scroll-padding-top');
@@ -7769,6 +7814,7 @@ function scheduleScreenContentTopOffsetSync() {
 }
 
 function setScreen(target, data = {}, push = true) {
+  if (target !== 'pandaMusicEvent') stopPandaMusicEventAudio();
   if (target !== 'kaitenzushi') clearKaitenzushiLoadWatch();
   if (state && illnessEventSuppressionActive() && ILLNESS_SUPPRESSED_EVENT_SCREENS.has(target)) {
     target = 'main';
@@ -7839,16 +7885,15 @@ function gameTimePanel() {
   return `<span class="header-status-item header-time game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}" ${note ? `title="${esc(note)}"` : ''}>${clock(minutes)}</span>`;
 }
 
-// v0.10.471: 縦画面ではメイン画面だけを従来の上部バーとし、
-// それ以外のゲーム画面はすべて上部バー1（情報）・上部バー2（操作）の2段へ統一する。
-// 画面名の追加登録方式ではなく除外方式にすることで、今後新しい画面が増えても自動的に2段になる。
-const PORTRAIT_TWO_BAR_EXCLUDED_SCREENS = new Set(['main']);
+// v0.10.561: メイン画面は上部バー1だけ、それ以外は上部バー1（情報）と
+// 上部バー2（操作）の2段へ統一する。画面追加時も自動的に2段を使う。
+const TWO_BAR_HEADER_EXCLUDED_SCREENS = new Set(['main', 'title', 'login', 'emailVerification', 'nameSetup', 'loading']);
 
-function usesPortraitTwoBarHeader(screenName) {
-  return !PORTRAIT_TWO_BAR_EXCLUDED_SCREENS.has(String(screenName || ''));
+function usesTwoBarHeader(screenName) {
+  return !TWO_BAR_HEADER_EXCLUDED_SCREENS.has(String(screenName || ''));
 }
 
-function portraitHeaderHelpText(screenName) {
+function headerHelpText(screenName) {
   const descriptions = {
     mining: '採掘場所を選び、表示された時間を使って原石を探します。',
     workshop: '原石研磨、ジュエリー製作、在庫、工具・設備を確認できます。',
@@ -7869,48 +7914,48 @@ function header(title, { back = true, main = true, help = '' } = {}) {
   const holidayName = japaneseHolidayName(currentDate);
   const weekdayTone = holidayName || currentDate.getDay() === 0 ? 'weekday-holiday' : currentDate.getDay() === 6 ? 'weekday-saturday' : 'weekday-normal';
   const playerLabel = state.playerName || '名前未設定';
-  const secondaryHelp = help || portraitHeaderHelpText(screen);
-  const primaryControls = `${help ? `<button class="icon-button header-help-button" data-action="help" data-help="${esc(help)}" aria-label="説明">?</button>` : ''}${main ? '<button class="small-button header-main-button" data-action="main" data-illness-readable="true">メイン画面</button>' : ''}`;
-  const secondaryControls = `${secondaryHelp ? `<button class="icon-button header-help-button ${help ? '' : 'header-fallback-help-button'}" data-action="help" data-help="${esc(secondaryHelp)}" aria-label="説明">?</button>` : ''}${main ? '<button class="small-button header-main-button" data-action="main" data-illness-readable="true">メイン画面</button>' : ''}`;
+  const resolvedHelp = help || headerHelpText(screen);
+  const actionControls = `${resolvedHelp ? `<button class="icon-button header-help-button ${help ? '' : 'header-fallback-help-button'}" data-action="help" data-help="${esc(resolvedHelp)}" aria-label="説明">?</button>` : ''}${main ? '<button class="small-button header-main-button" data-action="main" data-illness-readable="true">メイン画面</button>' : ''}`;
   return `
     <header class="game-header ${isMainMenu ? 'main-header' : ''}">
-      <div class="status-left" aria-label="日付、曜日、何日目、天気、時間、名前、空腹度">
-        <div class="status-top-line">
-          <div class="status-primary-line">
-            <span class="header-status-item header-calendar-date">
-              <span class="header-full-label">${esc(dateLabel)}</span>
-              <span class="header-compact-label" aria-hidden="true">${currentDate.getMonth() + 1}/${currentDate.getDate()}</span>
-            </span>
-            <span class="header-status-item header-weekday ${weekdayTone}"${holidayName ? ` title="${esc(holidayName)}" aria-label="${esc(`${weekdayLabel} ${holidayName}`)}"` : ''}>
-              <span class="header-full-label">${esc(weekdayLabel)}</span>
-              <span class="header-compact-label" aria-hidden="true">${esc(weekdays[currentDate.getDay()])}</span>
-            </span>
-            <span class="header-status-item header-day">${state.game.day}日目</span>
-            <span class="header-status-item header-weather">
-              <span class="header-weather-icon">${weatherIcon(state.game.weather)}</span>
-              <span class="header-full-label"> ${esc(state.game.weather)}</span>
-              <span class="header-compact-label">${esc(state.game.weather)}</span>
-            </span>
-            <span class="header-time-slot header-time-primary">${gameTimePanel()}</span>
-          </div>
-          <div class="status-secondary-line">
-            <span class="header-time-slot header-time-secondary">${gameTimePanel()}</span>
-            <span class="header-status-item header-player-name">${esc(playerLabel)}</span>
-            <span class="header-status-item header-hunger"><span class="header-full-label">空腹度 </span><span class="header-compact-label">空腹 </span>${hungerLevel()}／7</span>
+      <div class="top-bar-one" aria-label="ゲーム状況">
+        <div class="status-left top-bar-one-status" aria-label="日付、曜日、何日目、天気、時間、名前、空腹度">
+          <div class="status-top-line">
+            <div class="status-primary-line">
+              <span class="header-status-item header-calendar-date">
+                <span class="header-full-label">${esc(dateLabel)}</span>
+                <span class="header-compact-label" aria-hidden="true">${currentDate.getMonth() + 1}/${currentDate.getDate()}</span>
+              </span>
+              <span class="header-status-item header-weekday ${weekdayTone}"${holidayName ? ` title="${esc(holidayName)}" aria-label="${esc(`${weekdayLabel} ${holidayName}`)}"` : ''}>
+                <span class="header-full-label">${esc(weekdayLabel)}</span>
+                <span class="header-compact-label" aria-hidden="true">${esc(weekdays[currentDate.getDay()])}</span>
+              </span>
+              <span class="header-status-item header-day">${state.game.day}日目</span>
+              <span class="header-status-item header-weather">
+                <span class="header-weather-icon">${weatherIcon(state.game.weather)}</span>
+                <span class="header-full-label"> ${esc(state.game.weather)}</span>
+                <span class="header-compact-label">${esc(state.game.weather)}</span>
+              </span>
+              <span class="header-time-slot header-time-primary">${gameTimePanel()}</span>
+            </div>
+            <div class="status-secondary-line">
+              <span class="header-time-slot header-time-secondary">${gameTimePanel()}</span>
+              <span class="header-status-item header-player-name">${esc(playerLabel)}</span>
+              <span class="header-status-item header-hunger"><span class="header-full-label">空腹度 </span><span class="header-compact-label">空腹 </span>${hungerLevel()}／7</span>
+            </div>
           </div>
         </div>
+        <div class="header-money-area top-bar-one-money">
+          <span class="header-money ${moneyFeedback ? `money-change-active money-${moneyFeedback.direction}` : ''}" aria-label="所持金">
+            <span class="header-money-value">${yen(moneyFeedback?.displayAmount ?? state.game.money)}</span>
+            ${moneyFeedback ? `<span class="header-money-change ${moneyFeedback.direction}">${moneyFeedback.delta > 0 ? '+' : '−'}${moneyFeedback.amount.toLocaleString('ja-JP')}円</span>` : ''}
+          </span>
+        </div>
       </div>
-      <div class="header-money-area">
-        <div class="header-primary-actions">${primaryControls}</div>
-        <span class="header-money ${moneyFeedback ? `money-change-active money-${moneyFeedback.direction}` : ''}" aria-label="所持金">
-          <span class="header-money-value">${yen(moneyFeedback?.displayAmount ?? state.game.money)}</span>
-          ${moneyFeedback ? `<span class="header-money-change ${moneyFeedback.direction}">${moneyFeedback.delta > 0 ? '+' : '−'}${moneyFeedback.amount.toLocaleString('ja-JP')}円</span>` : ''}
-        </span>
-      </div>
-      <div class="header-center">
-        ${back ? '<button class="icon-button" data-action="back" data-illness-readable="true" aria-label="戻る">←</button>' : ''}
-        ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : ''}
-        <div class="header-actions header-secondary-actions">${secondaryControls}</div>
+      <div class="header-center top-bar-two" aria-label="画面操作">
+        ${back ? '<button class="icon-button header-back-button" data-action="back" data-illness-readable="true" aria-label="戻る">←</button>' : '<span class="header-back-spacer" aria-hidden="true"></span>'}
+        ${title ? `<div class="header-title"><strong>${esc(title)}</strong></div>` : '<div class="header-title" aria-hidden="true"></div>'}
+        <div class="header-actions header-secondary-actions">${actionControls}</div>
       </div>
     </header>`;
 }
@@ -8039,7 +8084,7 @@ function render() {
   try {
     if (screen !== 'robberyReport') stopPoliceSiren();
     document.body.dataset.screen = screen;
-    if (usesPortraitTwoBarHeader(screen)) document.body.dataset.headerMode = 'two-bar';
+    if (usesTwoBarHeader(screen)) document.body.dataset.headerMode = 'two-bar';
     else delete document.body.dataset.headerMode;
     delete document.body.dataset.textSize;
     applyCurrentBackground();
@@ -8051,6 +8096,11 @@ function render() {
       document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
     }
     const currentAudioKey = audioFor(screen);
+    if (screen === 'pandaMusicEvent') {
+      if (pandaMusicEventAudio) pandaMusicEventAudio.volume = pandaMusicEventAudioVolume();
+    } else {
+      stopPandaMusicEventAudio();
+    }
     if (backgroundFor(screen) !== 'meal') stopMealAudio();
     // 天気を使うかどうかはaudio-scene-map.jsの場面定義だけで判定する。
     // 画面側に重複した条件を持たせないことで、将来の変更時の戻りを防ぐ。
@@ -17948,6 +17998,7 @@ document.addEventListener('focusout', (event) => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     flushAutosaveLocally('visibility-hidden');
+    stopPandaMusicEventAudio({ reset: false });
     suspendAudio();
     stopGiftStatusSyncTimer();
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
@@ -17955,6 +18006,7 @@ document.addEventListener('visibilitychange', () => {
   }
   if (screen === 'cinemaVisitEvent' && cinemaVisitEventState().stage === 'playing') suspendAudio();
   else resumeAudio();
+  if (screen === 'pandaMusicEvent') playPandaMusicEventAudio();
   if (screen === 'phone' && phoneTab === 'gift') scheduleGiftOutboxStatusSync(0, true);
   if (screen === 'childhoodFriendEvent') {
     const eventState = childhoodFriendEventState();

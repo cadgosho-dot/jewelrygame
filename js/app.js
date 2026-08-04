@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.535';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.535';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.550';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.550';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -152,7 +152,7 @@ const STORE_THEFT_EVENT_CHANCE = 1 / 90;
 const CUSTOMER_FIRST_VISIT_CHANCE = 0.38;
 const CUSTOMER_REGULAR_VISIT_CHANCE = 0.18;
 const CUSTOMER_REPEAT_COOLDOWN_DAYS = 3;
-const EMPLOYEE_DAILY_WAGE = 18000;
+const MIN_LIVING_CASH_RESERVE = 10000;
 const WORKSHOP_STAFF_SHIFT_START_MINUTES = 9 * 60;
 const WORKSHOP_STAFF_SHIFT_END_MINUTES = 19 * 60;
 const CHILDHOOD_FRIEND_FIRST_TRIGGER_MAX = 420;
@@ -178,6 +178,12 @@ const SPACE_MINING_LOCATION = (() => {
 const WOOD_SWORD_EVENT_REQUIRED_DAYS = 365;
 const WOOD_SWORD_ROBBERY_MULTIPLIER = 0.5;
 const CLOCK_TOWER_DONATION_EVENT_CHANCE = 1 / 90;
+const PANDA_MUSIC_EVENT_CHANCE = 1 / 90;
+const PANDA_MUSIC_EVENT_IMAGES = Object.freeze([
+  'panda-music-band-alien.png',
+  'panda-music-band-cats.png',
+  'panda-music-band-horror.png',
+]);
 const WINTER_COLD_EVENT_DAYS = 3;
 const CINEMA_VISIT_EVENT_CHANCE = 1 / 40;
 const CINEMA_VISIT_EVENT_COST = 1800;
@@ -188,7 +194,7 @@ const GRAY_HOOD_AQUARIUM_EVENT_CHANCE = 0.15;
 const MYSTERY_CHINESE_MEAL_EVENT_COST = 15000;
 const MYSTERY_CHINESE_MEAL_EVENT_IMAGES = Object.freeze(['mystery-chinese-food-01.png', 'mystery-chinese-food-02.png']);
 const OKACHIMACHI_AREA_SCREENS = new Set([
-  'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
+  'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
 ]);
 
@@ -198,6 +204,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   miningPazupanEvent: new Set(['intro', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
+  pandaMusicEvent: new Set(['intro1', 'intro2']),
   tattooWomanAmberEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   mermaidEvent: new Set(['intro', 'reward']),
   sushiChefEvent: new Set(['intro1', 'intro2', 'playing', 'farewell']),
@@ -221,7 +228,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'okachimachiTollEvent', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -237,6 +244,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   mysteryChineseMealEvent: { eventKey: 'mysteryChineseMealEvent', fallback: 'main' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
+  pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
   sushiChefEvent: { eventKey: 'sushiChefEvent', fallback: 'main' },
   cyclopsEvent: { eventKey: 'cyclopsEvent', fallback: 'main' },
   ganeshaTuskEvent: { eventKey: 'ganeshaTuskEvent', fallback: 'main' },
@@ -470,7 +478,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
-  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'okachimachi-toll-event-next', 'kaitenzushi-finish',
+  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'okachimachi-toll-event-next', 'panda-music-event-next', 'kaitenzushi-finish',
   'mystery-chinese-meal-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
@@ -3388,7 +3396,7 @@ function storeBranchDisplayName(branch = currentStoreBranch()) {
 function storeEmployeeDefaults(branchNumber = 1) {
   const number = Math.max(1, Math.min(MAX_STORE_BRANCHES, Math.floor(Number(branchNumber) || 1)));
   const candidate = STORE_EMPLOYEE_CANDIDATES[number] || STORE_EMPLOYEE_CANDIDATES[1];
-  return { hired: false, name: candidate.name, workDays: 0, working: true };
+  return { hired: false, name: candidate.name, workDays: 0, working: true, wageUnpaid: 0 };
 }
 
 function normalizedStoreEmployee(value, branchNumber = 1, legacyFallback = null) {
@@ -3401,6 +3409,7 @@ function normalizedStoreEmployee(value, branchNumber = 1, legacyFallback = null)
     name: defaults.name,
     workDays: Math.max(0, Math.floor(Number(source.workDays) || 0)),
     working: source.working !== false,
+    wageUnpaid: Math.max(0, Math.floor(Number(source.wageUnpaid) || 0)),
   };
 }
 
@@ -3437,7 +3446,7 @@ function activeStoreStaff(branchOrNumber) {
     : storeBranchByNumber(Math.max(1, Number(branchOrNumber) || 1));
   if (!branch || !storeBranchOperating(branch) || !storeEmployeeAvailable(branch)) return null;
   const employee = storeBranchEmployee(branch);
-  if (!employee.hired || !employee.working) return null;
+  if (!employee.hired || !employee.working || Math.max(0, Number(employee.wageUnpaid) || 0) > 0) return null;
   return employee;
 }
 
@@ -3480,6 +3489,7 @@ function workshopStaffState() {
     workMinutesBank: Math.max(0, Number(source.workMinutesBank) || 0),
     workedMinutesToday: Math.max(0, Math.floor(Number(source.workedMinutesToday) || 0)),
     craftedToday: Array.isArray(source.craftedToday) ? source.craftedToday.slice(-20) : [],
+    wageUnpaid: Math.max(0, Math.floor(Number(source.wageUnpaid) || 0)),
     evolutionStage,
   };
   return state.workshopStaff;
@@ -3607,7 +3617,7 @@ function workshopStaffCraftOne(maxEffectiveMinutes, definition = workshopStaffDe
 function processWorkshopStaffElapsedTime(beforeMinutes, afterMinutes) {
   if (!state || workshopStaffHoliday(gameDate())) return 0;
   const staff = workshopStaffState();
-  if (!staff.hired || !staff.working || !workshopOperating()) return 0;
+  if (!staff.hired || !staff.working || !workshopOperating() || Math.max(0, Number(staff.wageUnpaid) || 0) > 0) return 0;
   const start = Math.max(WORKSHOP_STAFF_SHIFT_START_MINUTES, Number(beforeMinutes) || 0);
   const end = Math.min(WORKSHOP_STAFF_SHIFT_END_MINUTES, Number(afterMinutes) || 0);
   const elapsed = Math.max(0, end - start);
@@ -3638,26 +3648,47 @@ function settleWorkshopStaffDay() {
     return { worked: false, crafted: craftedRows.length, items: structuredClone(craftedRows) };
   }
   const beforeDefinition = workshopStaffDefinition(staff);
-  const wage = Math.max(0, Math.floor(Number(beforeDefinition.dailyWage) || 25000));
-  state.game.money = Math.max(0, state.game.money - wage);
-  addFinance(`職人スタッフの日当（Lv.${beforeDefinition.level}）`, 0, wage);
-  if (craftedRows.length > 0) staff.workDays += 1;
+  if (craftedRows.length <= 0) {
+    return {
+      worked: true,
+      productive: false,
+      level: beforeDefinition.level,
+      levelLabel: beforeDefinition.label,
+      workDays: staff.workDays,
+      wage: 0,
+      paidWage: 0,
+      unpaidWage: 0,
+      workedMinutes,
+      crafted: 0,
+      items: [],
+      leveledUp: false,
+    };
+  }
+  const wage = Math.max(0, Math.floor(Number(beforeDefinition.dailyWage) || 10000));
+  const wageResult = payFixedCost(`職人スタッフの日当（Lv.${beforeDefinition.level}）`, wage, (unpaid) => {
+    staff.wageUnpaid = Math.max(0, Number(staff.wageUnpaid) || 0) + unpaid;
+  });
+  if (wageResult.unpaid > 0) {
+    addNotification('職人スタッフの給与が未払いです', `${yen(wageResult.unpaid)}が未払いです。完済するまで職人スタッフは出勤しません。`, 'warning');
+  }
+  staff.workDays += 1;
   const afterDefinition = workshopStaffDefinition(staff);
   const leveledUp = Number(afterDefinition.level) > Number(beforeDefinition.level);
   staff.evolutionStage = Number(afterDefinition.level) >= 4 ? 2 : 1;
-  if (craftedRows.length) {
-    const names = craftedRows.slice(0, 3).map((entry) => entry.name).join('、');
-    addNotification('職人スタッフがジュエリーを制作しました', `${craftedRows.length}点を完成品在庫へ追加しました。${names}${craftedRows.length > 3 ? 'ほか' : ''}`);
-  }
+  const names = craftedRows.slice(0, 3).map((entry) => entry.name).join('、');
+  addNotification('職人スタッフがジュエリーを制作しました', `${craftedRows.length}点を完成品在庫へ追加しました。${names}${craftedRows.length > 3 ? 'ほか' : ''}`);
   if (leveledUp) {
     addNotification('職人スタッフが成長しました', `職人スタッフがLv.${afterDefinition.level}（${afterDefinition.label}）になりました。次回の日当は${yen(afterDefinition.dailyWage)}です。`, 'success');
   }
   return {
     worked: true,
+    productive: true,
     level: afterDefinition.level,
     levelLabel: afterDefinition.label,
     workDays: staff.workDays,
     wage,
+    paidWage: wageResult.paid,
+    unpaidWage: wageResult.unpaid,
     workedMinutes,
     crafted: craftedRows.length,
     items: structuredClone(craftedRows),
@@ -7310,11 +7341,79 @@ function advanceOkachimachiTollEvent() {
   render();
 }
 
+function pandaMusicEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.pandaMusicEvent && typeof state.events.pandaMusicEvent === 'object' && !Array.isArray(state.events.pandaMusicEvent)
+    ? state.events.pandaMusicEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'completed']);
+  const imageIndex = Math.max(0, Math.min(PANDA_MUSIC_EVENT_IMAGES.length - 1, Math.floor(Number(saved.imageIndex) || 0)));
+  state.events.pandaMusicEvent = {
+    lastAttemptDay: Math.max(0, Math.floor(Number(saved.lastAttemptDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    imageIndex,
+  };
+  if (!state.events.pandaMusicEvent.active && !['idle', 'completed'].includes(state.events.pandaMusicEvent.stage)) {
+    state.events.pandaMusicEvent.stage = 'completed';
+  }
+  return state.events.pandaMusicEvent;
+}
+
+function resumePandaMusicEvent() {
+  const eventState = pandaMusicEventState();
+  if (!eventState.active) return false;
+  setScreen('pandaMusicEvent', {}, false);
+  return true;
+}
+
+function maybeStartPandaMusicEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = pandaMusicEventState();
+  if (eventState.active) return resumePandaMusicEvent();
+  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (eventState.lastAttemptDay === currentDay) return false;
+  eventState.lastAttemptDay = currentDay;
+  saveGame();
+  if (Math.random() >= PANDA_MUSIC_EVENT_CHANCE) return false;
+  eventState.lastTriggeredDay = currentDay;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.imageIndex = Math.floor(Math.random() * PANDA_MUSIC_EVENT_IMAGES.length);
+  state.game.screen = 'pandaMusicEvent';
+  saveGame();
+  setScreen('pandaMusicEvent', {}, false);
+  playSfx('select', { gain: .72, rate: .96 });
+  return true;
+}
+
+function advancePandaMusicEvent() {
+  const eventState = pandaMusicEventState();
+  if (!eventState.active) {
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    render();
+    return;
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  setScreen('okachimachi', {}, false);
+}
+
 async function enterOkachimachiFromOutside() {
   if (illnessEventSuppressionActive()) {
     setScreen('okachimachi', {});
     return;
   }
+  if (resumePandaMusicEvent()) return;
   if (resumeOkachimachiTollEvent()) return;
   if (resumeCinemaVisitEvent()) return;
   if (resumeClockTowerDonationEvent()) return;
@@ -7327,6 +7426,7 @@ async function enterOkachimachiFromOutside() {
   }
   const shouldTrigger = eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1);
   saveGame();
+  if (maybeStartPandaMusicEvent()) return;
   if (maybeStartOkachimachiTollEvent()) return;
   if (await maybeStartCinemaVisitEvent()) return;
   if (maybeStartClockTowerDonationEvent()) return;
@@ -7441,7 +7541,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -7476,7 +7576,7 @@ function backgroundAssetFor(target) {
   if (target === 'jewelryShop') return isPortraitLayout() ? 'jewelry-shop-portrait' : 'jewelry-shop';
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
-  if (target === 'clockTowerDonationEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
+  if (target === 'clockTowerDonationEvent' || target === 'pandaMusicEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
   if (target === 'cinemaVisitEvent') {
     const stage = cinemaVisitEventState().stage;
     return stage === 'playing' ? (isPortraitLayout() ? 'cinema-event-portrait' : 'cinema-event') : (isPortraitLayout() ? 'okachimachi-portrait' : 'okachimachi');
@@ -7517,7 +7617,7 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
-  return resolveAudioScene(target === 'okachimachiTollEvent' ? 'okachimachi' : target, {
+  return resolveAudioScene(['okachimachiTollEvent', 'pandaMusicEvent'].includes(target) ? 'okachimachi' : target, {
     alienAbducted: isAlienAbducted(),
     quizStage: okachimachiQuizSession?.stage || '',
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
@@ -7983,6 +8083,7 @@ function render() {
       okachimachi: renderOkachimachi,
       okachimachiQuiz: renderOkachimachiQuiz,
       okachimachiTollEvent: renderOkachimachiTollEvent,
+      pandaMusicEvent: renderPandaMusicEvent,
       supplier: renderSupplier,
       supplierMetals: renderSupplierMetals,
       supplierMetalHistory: renderSupplierMetalHistory,
@@ -9683,7 +9784,6 @@ function renderAlienSpaceMain() {
       ${locked ? '<button type="button" class="hunger-lock-notice alien-hunger-emergency-card" data-action="do-sleep" data-illness-readable="true" aria-label="タップして休み、翌日へ進む"><strong>空腹で動けません</strong><span>採掘は出来ません。今日は休んでください。</span><em>タップすると翌日へ進みます</em></button>' : ''}
       <nav class="main-menu alien-space-menu" aria-label="宇宙での行動">
         <button data-action="nav" data-screen="mining" ${locked ? 'disabled aria-disabled="true"' : ''}>${mainMenuIcon('mining')}<strong>採掘</strong></button>
-        <button data-action="nav" data-screen="todayGem">${mainMenuIcon('gem')}<strong>今日の宝石</strong></button>
         <button data-action="${emergency ? 'alien-emergency-sleep' : 'sleep'}" data-illness-readable="true" ${canSleepNow() ? '' : 'disabled aria-disabled="true" title="19時になるまで寝られません"'}>${mainMenuIcon('sleep')}<strong>${emergency ? '空腹のため休む' : '寝る'}</strong></button>
       </nav>
     </main>`;
@@ -9695,7 +9795,7 @@ function renderAlienReturnEvent() {
     <main class="main-screen alien-return-event-screen">
       <section class="alien-return-card glass-panel" aria-live="polite">
         <strong>地球へ帰還した</strong>
-        <p>身体の中に見覚えのないチップが入っている。</p>
+        <p>身体の中に何か埋め込まれた、、、</p>
         <img src="./assets/images/items/body-chip.png?v=${VERSION}" alt="身体の中のチップ" draggable="false">
         <h2>身体の中のチップ</h2>
         <small>所持 ${count}個・効果はわからない</small>
@@ -9776,11 +9876,19 @@ function renderMain() {
       <section class="main-spacer" aria-hidden="true"></section>
       ${coldActive ? '<div class="winter-cold-main-status" role="status" aria-live="polite" data-illness-readable="true"><strong>体調不良</strong></div>' : ''}
       ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
-      ${locked && !autopilotEnabled ? `<div class="hunger-lock-notice" role="status" aria-live="polite"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></div>` : ''}
+      ${locked && !autopilotEnabled ? `<button type="button" class="hunger-lock-notice hunger-lock-meal-shortcut" data-action="nav" data-screen="meal" aria-label="空腹のため食事画面へ移動する"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></button>` : ''}
       ${hungerFeedback && !autopilotEnabled ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
       ${visiting.length && !locked && !autopilotEnabled ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
-      ${outstandingCosts > 0 ? `<button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>` : ''}
-      ${activeOrders > 0 && !autopilotEnabled ? `<button class="active-order-shortcut" data-action="open-active-orders" aria-label="現在の受注品を工房の注文書で確認する">現在受注品あり</button>` : ''}
+      ${outstandingCosts > 0 && activeOrders > 0 && !autopilotEnabled
+        ? `<div class="main-shortcut-stack" aria-label="未払いと受注品の案内">
+            <button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>
+            <button class="active-order-shortcut" data-action="open-active-orders" aria-label="現在の受注品を工房の注文書で確認する">現在受注品あり</button>
+          </div>`
+        : outstandingCosts > 0
+          ? `<button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>`
+          : activeOrders > 0 && !autopilotEnabled
+            ? `<button class="active-order-shortcut" data-action="open-active-orders" aria-label="現在の受注品を工房の注文書で確認する">現在受注品あり</button>`
+            : ''}
       <nav class="main-menu${autopilotEnabled ? ' autopilot-menu-locked' : ''}" aria-label="行動">
         <button data-action="nav" data-screen="mining" ${manualActionDisabled}>${mainMenuIcon('mining')}<strong>採掘</strong></button>
         <button data-action="nav" data-screen="workshop" ${manualActionDisabled}>${mainMenuIcon('workshop')}<strong>工房</strong></button>
@@ -9827,17 +9935,18 @@ function renderMining() {
   const hungerBlocked = hungerLocked();
   const hasTime = hasSelection && !hungerBlocked && canSpendHours(location.hours);
   const spaceEmergency = alienHungerEmergency();
+  const singleSpaceLocation = isAlienAbducted() && locations.length === 1;
   return shell('採掘', `
     <div class="split-layout">
       <section class="scene-space"></section>
-      <section class="action-panel glass-panel">
-        <div class="choice-grid three">
+      <section class="action-panel glass-panel ${singleSpaceLocation ? 'space-mining-single-panel' : ''}">
+        <div class="choice-grid three ${singleSpaceLocation ? 'space-mining-single-grid' : ''}">
           ${locations.map((place) => `
             <button class="choice-card ${place.id === selectedMining ? 'selected' : ''}" data-action="select-mining" data-id="${place.id}" ${hungerBlocked ? 'disabled aria-disabled="true"' : ''}>
               <strong>${esc(place.name)}</strong><small>${place.hours}時間</small>
             </button>`).join('')}
         </div>
-        <button class="primary-button full-button" data-action="mine" ${hasTime ? '' : 'disabled'}>採掘を始める</button>
+        <button class="primary-button full-button ${singleSpaceLocation ? 'space-mining-start-button' : ''}" data-action="mine" ${hasTime ? '' : 'disabled'}>採掘を始める</button>
         ${spaceEmergency ? '<p class="error-text">空腹度が0になりました。宇宙では食事ができないため、すぐに休んで翌日へ進めます。</p><button class="primary-button full-button" data-action="alien-emergency-sleep">空腹のため休む</button>' : ''}
         ${!spaceEmergency && hungerBlocked ? '<p class="error-text">空腹で採掘できません。</p>' : ''}
         ${!hungerBlocked && hasSelection && !hasTime ? '<p class="error-text">今日は採掘する時間がありません。</p>' : ''}
@@ -10180,6 +10289,31 @@ function renderOkachimachiTollEvent() {
           <small>${isPaymentNotice ? '支払い' : 'キャベツ野郎'}</small>
           <strong>${dialogue}</strong>
           ${isPaymentNotice ? `<em>－${yen(OKACHIMACHI_TOLL_EVENT_COST)}</em>` : ''}
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+function renderPandaMusicEvent() {
+  const eventState = pandaMusicEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  const imageName = PANDA_MUSIC_EVENT_IMAGES[eventState.imageIndex] || PANDA_MUSIC_EVENT_IMAGES[0];
+  const dialogue = eventState.stage === 'intro1'
+    ? 'あ、、今日はパンダ広場でイベントやってるんだな、、、'
+    : 'こういうの嬉しい、、';
+  return `
+    <main class="main-screen panda-music-event-screen">
+      <section class="visit-character-event panda-music-event" aria-live="polite">
+        <div class="visit-character-area panda-music-character-area" aria-hidden="true">
+          <img class="visit-character panda-music-character" src="./assets/images/events/${imageName}?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue panda-music-dialogue glass-panel" data-action="panda-music-event-next">
+          <small>御徒町・パンダ広場</small>
+          <strong>${dialogue}</strong>
           <span>タップして進む</span>
         </button>
       </section>
@@ -10802,11 +10936,11 @@ function workshopStaffUnlockStatus() {
   const branch1 = branches.find((branch) => Number(branch.number) === 1);
   const branch2 = branches.find((branch) => Number(branch.number) === 2);
   const totalStoreSales = branches.reduce((total, branch) => total + Math.max(0, Number(branch.salesCount) || 0), 0);
-  const unpaid = Math.max(0, Number(state.business.homeRentUnpaid) || 0) + Math.max(0, Number(state.business.workshopUnpaid) || 0) + branches.reduce((total, branch) => total + Math.max(0, Number(branch.unpaidRent) || 0), 0);
+  const unpaid = totalOutstandingBusinessCost();
   const missingTools = WORKSHOP_STAFF_REQUIRED_TOOLS.filter((id) => !toolUsable(id));
   const conditions = [
     { label: '職人レベル15以上', current: Math.max(1, Number(state.artisan.level) || 1), target: 15 },
-    { label: 'プレイヤー自身の累計制作', current: Math.max(0, Number(state.store.playerCraftedCount) || 0), target: 300 },
+    { label: 'プレイヤー自身の累計制作', current: Math.max(0, Number(state.store.playerCraftedCount) || 0), target: 100 },
     { label: '工房レベル15以上', current: workshopLevel(), target: 15 },
     { label: '主要工具・設備', current: missingTools.length ? `不足${missingTools.length}点` : '使用可能', target: 'すべて', met: missingTools.length === 0 },
     { label: '店舗1を拡大済み', current: state.store.expanded ? '完了' : '未完了', target: '完了', met: Boolean(state.store.expanded) },
@@ -10814,7 +10948,7 @@ function workshopStaffUnlockStatus() {
     { label: '店舗1・2がともにLv.5以上', current: `${branch1 ? storeLevel(branch1) : 0}・${branch2 ? storeLevel(branch2) : 0}`, target: '5・5', met: Boolean(branch1 && branch2 && storeLevel(branch1) >= 5 && storeLevel(branch2) >= 5) },
     { label: '店舗での累計販売', current: totalStoreSales, target: 300 },
     { label: 'オーダー納品', current: Math.max(0, Number(state.store.deliveredOrderCount) || 0), target: 50 },
-    { label: '家賃・工房費・店舗賃料の未払い', current: unpaid === 0 ? 'なし' : yen(unpaid), target: 'なし', met: unpaid === 0 },
+    { label: '家賃・工房費・給与の未払い', current: unpaid === 0 ? 'なし' : yen(unpaid), target: 'なし', met: unpaid === 0 },
   ].map((condition) => ({ ...condition, met: typeof condition.met === 'boolean' ? condition.met : Number(condition.current) >= Number(condition.target) }));
   return { conditions, missingTools, unlocked: conditions.every((condition) => condition.met) };
 }
@@ -10827,6 +10961,7 @@ function renderWorkshopStaff() {
   const definition = workshopStaffDefinition(staff);
   const nextDefinition = workshopStaffNextDefinition(staff);
   const workDays = Math.max(0, Math.floor(Number(staff.workDays) || 0));
+  const wageUnpaid = Math.max(0, Number(staff.wageUnpaid) || 0);
   const todayRows = Array.isArray(staff.craftedToday) ? staff.craftedToday : [];
   const growthText = nextDefinition
     ? `次の成長まであと${Math.max(0, Number(nextDefinition.minWorkDays) - workDays)}実働制作日`
@@ -10857,7 +10992,9 @@ function renderWorkshopStaff() {
         <p>${esc(growthText)}</p>
         <p>出勤中は${shiftHours}の経過時間に合わせ、工房にある地金とルースだけを使ってランダムにジュエリーを制作します。注文用に確保した材料は使用しません。</p>
         <p>本日の自動制作：${todayRows.length ? `${todayRows.length}点（${todayRows.slice(0, 3).map((entry) => esc(entry.name)).join('、')}${todayRows.length > 3 ? 'ほか' : ''}）` : 'まだありません'}</p>
-        <label class="toggle-row"><span>出勤させる</span><input type="checkbox" data-action="workshop-staff-working" ${staff.working ? 'checked' : ''}></label>` : `
+        <p>日当は完成品を1点以上制作した日だけ発生します。</p>
+        ${wageUnpaid ? `<section class="tool-break-alert"><strong>給与未払いのため出勤停止中です</strong><span>未払い ${yen(wageUnpaid)}をスマートフォンの収支画面から支払ってください。</span></section>` : ''}
+        <label class="toggle-row"><span>出勤させる</span><input type="checkbox" data-action="workshop-staff-working" ${staff.working ? 'checked' : ''} ${wageUnpaid ? 'disabled' : ''}></label>` : `
         <h1>職人スタッフを1人雇えます。</h1>
         <article class="candidate-card">
           <h2>見習い職人</h2>
@@ -12129,7 +12266,30 @@ function renderOrders() {
     const deadlineText = `${gameDateLabel(order.deadlineDay)}（${remaining === 0 ? '本日' : `あと${Math.max(0, remaining)}日`}）`;
     const isCrafted = order.status === '完成';
     const deliveryBranch = storeBranchByNumber(order.branchNumber);
-    const canDeliverNow = storeDeliveryOpen() && storeBranchOperating(deliveryBranch);
+    const deliveryOpen = storeDeliveryOpen();
+    const deliveryBranchOperating = storeBranchOperating(deliveryBranch);
+    const deadlinePassed = state.game.day > Number(order.deadlineDay);
+    const canDeliverNow = isCrafted && deliveryOpen && deliveryBranchOperating && !deadlinePassed;
+    const unpaidStoreRent = Math.max(0, Number(deliveryBranch?.unpaidRent) || 0);
+    let deliveryBlockedReason = '';
+    let deliveryButtonLabel = '納品する';
+    if (isCrafted && !canDeliverNow) {
+      if (!deliveryBranch) {
+        deliveryBlockedReason = '注文を受けた店舗が見つからないため納品できません。';
+        deliveryButtonLabel = '店舗を確認できません';
+      } else if (!deliveryBranchOperating) {
+        deliveryBlockedReason = unpaidStoreRent > 0
+          ? `注文を受けた${storeBranchDisplayName(deliveryBranch)}は、未払い家賃${yen(unpaidStoreRent)}のため休業中です。スマートフォンの収支画面から未払いを支払うと納品できます。`
+          : `注文を受けた${storeBranchDisplayName(deliveryBranch)}が休業中のため納品できません。`;
+        deliveryButtonLabel = '店舗休業中';
+      } else if (!deliveryOpen) {
+        deliveryBlockedReason = '注文品を納品できる時間は9:00～19:00です。';
+        deliveryButtonLabel = '店舗営業時間外';
+      } else if (deadlinePassed) {
+        deliveryBlockedReason = '納期を過ぎているため、この注文は納品できません。';
+        deliveryButtonLabel = '納期超過';
+      }
+    }
     const materialsReady = requirements.enoughMetal && requirements.enoughLoose;
     const craftReady = order.status === '受注' && materialsReady && feasibility.artisanReady && feasibility.equipmentReady;
     const missingRows = [];
@@ -12167,21 +12327,23 @@ function renderOrders() {
         <div class="wide"><dt>希望条件</dt><dd>${esc(order.desiredConditions || customer?.preferenceText || '指定なし')}</dd></div>
       </dl>
       <section class="order-material-section">
-        <h3>必要材料</h3>
-        <div class="order-material-table" role="table" aria-label="注文に必要な材料">
-          <div class="order-material-row heading" role="row"><span>材料</span><span>必要量</span><span>所持している数量</span></div>
-          <div class="order-material-row" role="row"><strong>${esc(METALS[order.metal].name)}</strong><span>${requirements.requiredMetalWeight}g</span><span>${metalWeightLabel(requirements.ownedMetalWeight)}g</span></div>
-          <div class="order-material-row" role="row"><strong>${esc(looseDisplayLabel(order.gem, order.looseShape))}</strong><span>${requirements.requiredLooseQuantity}個</span><span>${requirements.availableLooseQuantity}個</span></div>
+        <h3>${isCrafted ? '使用した材料' : '必要材料'}</h3>
+        <div class="order-material-table" role="table" aria-label="${isCrafted ? '注文品の製作に使用した材料' : '注文に必要な材料'}">
+          <div class="order-material-row heading" role="row"><span>材料</span><span>必要量</span><span>${isCrafted ? '状態' : '所持している数量'}</span></div>
+          <div class="order-material-row" role="row"><strong>${esc(METALS[order.metal].name)}</strong><span>${requirements.requiredMetalWeight}g</span><span>${isCrafted ? '製作時に使用済み' : `${metalWeightLabel(requirements.ownedMetalWeight)}g`}</span></div>
+          <div class="order-material-row" role="row"><strong>${esc(looseDisplayLabel(order.gem, order.looseShape))}</strong><span>${requirements.requiredLooseQuantity}個</span><span>${isCrafted ? '製作時に使用済み' : `${requirements.availableLooseQuantity}個`}</span></div>
         </div>
       </section>
-      <section class="order-shortage ${materialsReady && feasibility.artisanReady && feasibility.equipmentReady ? 'ready' : 'missing'}">
-        <strong>${!materialsReady ? '不足している材料' : '製作判定'}</strong>
-        ${isCrafted ? '<p>制作済みです。納期内に納品できます。</p>' : craftReady ? '<p>製作可能です。</p>' : `<ul>${missingRows.map((row) => `<li>${esc(row)}</li>`).join('')}</ul>`}
+      <section class="order-shortage ${isCrafted || (materialsReady && feasibility.artisanReady && feasibility.equipmentReady) ? 'ready' : 'missing'}">
+        <strong>${isCrafted || materialsReady ? '製作判定' : '不足している材料'}</strong>
+        ${isCrafted
+          ? `<p>${deadlinePassed ? '制作済みですが、納期を過ぎています。' : '制作済みです。納期内に納品できます。'}</p>`
+          : craftReady ? '<p>製作可能です。</p>' : `<ul>${missingRows.map((row) => `<li>${esc(row)}</li>`).join('')}</ul>`}
       </section>
-      ${!materialsReady ? '<div class="order-material-navigation"><button type="button" class="secondary-button full-button" data-action="nav" data-screen="okachimachi">御徒町へ行く</button></div>' : ''}
+      ${!isCrafted && !materialsReady ? '<div class="order-material-navigation"><button type="button" class="secondary-button full-button" data-action="nav" data-screen="okachimachi">御徒町へ行く</button></div>' : ''}
       <div class="order-sheet-actions">
         ${order.status === '受注' ? `<button class="primary-button full-button order-craft-button" data-action="craft-order" data-id="${order.id}" ${craftReady ? '' : 'disabled'}><strong>このジュエリーを制作する</strong></button>` : ''}
-        ${order.status === '完成' ? `<button class="primary-button full-button" data-action="deliver-order" data-id="${order.id}" ${canDeliverNow ? '' : 'disabled'}>${storeDeliveryOpen() ? '納品する' : '店舗営業時間外'}</button>` : ''}
+        ${order.status === '完成' ? `<button class="primary-button full-button" data-action="deliver-order" data-id="${order.id}" ${canDeliverNow ? '' : 'disabled'}>${esc(deliveryButtonLabel)}</button>${deliveryBlockedReason ? `<p class="error-text order-delivery-blocked-reason">${esc(deliveryBlockedReason)}</p>` : ''}` : ''}
         ${['受注', '完成'].includes(order.status) ? `<button class="text-button full-button" data-action="confirm-cancel-order" data-id="${order.id}">注文をキャンセル</button>` : ''}
       </div>
     </article>`;
@@ -12210,6 +12372,8 @@ function renderEmployee() {
   const nextDefinition = storeStaffNextDefinition(employee);
   const workDays = Math.max(0, Math.floor(Number(employee.workDays) || 0));
   const currentEffect = storeStaffSalesDescription(employee);
+  const wageUnpaid = Math.max(0, Number(employee.wageUnpaid) || 0);
+  const dailyWage = Math.max(0, Math.floor(Number(definition.dailyWage) || 5000));
   const growthText = nextDefinition
     ? `次の成長まであと${Math.max(0, Number(nextDefinition.minWorkDays) - workDays)}実働制作日`
     : '最高レベルまで成長しています';
@@ -12220,11 +12384,12 @@ function renderEmployee() {
         <h1>${esc(employee.name)}</h1>
         <p class="success-text">販売力 Lv.${definition.level}（${esc(definition.label)}）</p>
         <p>${esc(STORE_EMPLOYEE_CANDIDATES[branch.number]?.profile || `${branchName}専属の店舗スタッフです。`)}</p>
-        <article class="candidate-card"><strong>勤務日数 ${workDays}日</strong><p>${esc(growthText)}</p><strong>現在の効果</strong><p>${esc(currentEffect)}</p></article>
-        <p>店舗に配置して1日働くごとに勤務日数が増え、販売力が成長します。配置した日は、1日の終わりに給与${yen(EMPLOYEE_DAILY_WAGE)}を支払います。</p>
-        <label class="toggle-row"><span>店舗に配置する</span><input type="checkbox" data-action="employee-working" ${employee.working ? 'checked' : ''}></label>` : `
+        <article class="candidate-card"><strong>勤務日数 ${workDays}日</strong><p>${esc(growthText)}</p><strong>現在の効果</strong><p>${esc(currentEffect)}</p><strong>現在の日当 ${yen(dailyWage)}</strong></article>
+        ${wageUnpaid ? `<section class="tool-break-alert"><strong>給与未払いのため出勤停止中です</strong><span>未払い ${yen(wageUnpaid)}をスマートフォンの収支画面から支払ってください。</span></section>` : ''}
+        <p>店舗に配置して実際に営業した日は、1日の終わりに現在レベルの日当を支払います。</p>
+        <label class="toggle-row"><span>店舗に配置する</span><input type="checkbox" data-action="employee-working" ${employee.working ? 'checked' : ''} ${wageUnpaid ? 'disabled' : ''}></label>` : `
         <h1>店舗スタッフを1人雇えます。</h1>
-        <article class="candidate-card"><h2>${esc(employee.name)}</h2><p>${esc(STORE_EMPLOYEE_CANDIDATES[branch.number]?.profile || `${branchName}専属の店舗スタッフです。`)}</p><p class="success-text">販売力 Lv.1（見習い）</p><p>${esc(currentEffect)}</p><small>配置して働いた日数に応じて成長します。給与：配置日ごとに${yen(EMPLOYEE_DAILY_WAGE)}</small></article>
+        <article class="candidate-card"><h2>${esc(employee.name)}</h2><p>${esc(STORE_EMPLOYEE_CANDIDATES[branch.number]?.profile || `${branchName}専属の店舗スタッフです。`)}</p><p class="success-text">販売力 Lv.1（見習い）</p><p>${esc(currentEffect)}</p><small>配置して働いた日数に応じて成長します。初日当：${yen(STORE_STAFF_GROWTH_LEVELS[0].dailyWage)}</small></article>
         <button class="primary-button full-button" data-action="hire-employee">雇う</button>`}
     </section>`, { help: '店舗スタッフは店舗ごとに1人雇えます。担当選択はありません。雇った直後は販売力が低く、店舗に配置して働いた日数に応じて成長します。成長すると来店人数、来店抽選、接客購入率、ショーケース販売率が上がります。' });
 }
@@ -13748,6 +13913,12 @@ function renderPhoneAquarium() {
   </section>`;
 }
 
+function notificationOpensFinance(note) {
+  if (totalOutstandingBusinessCost() <= 0) return false;
+  const text = `${String(note?.title || '')} ${String(note?.body || '')}`;
+  return text.includes('未払い');
+}
+
 function renderPhoneContent() {
   if (phoneTab === 'profile') return renderPhoneProfile();
   if (phoneTab === 'calendar') {
@@ -13800,7 +13971,13 @@ function renderPhoneContent() {
   }
   if (phoneTab === 'notifications') {
     const notifications = visibleNotifications();
-    return `<section class="phone-standard-list phone-notification-list">${notifications.length ? notifications.map((note) => `<article class="phone-card"><strong>${esc(note.title)}</strong><span>${esc(note.body)}</span><small>${esc(notificationDateLabel(note.day))}</small></article>`).join('') : '<div class="phone-empty">通知はありません。</div>'}</section>`;
+    return `<section class="phone-standard-list phone-notification-list">${notifications.length ? notifications.map((note) => {
+      const opensFinance = notificationOpensFinance(note);
+      const content = `<strong>${esc(note.title)}</strong><span>${esc(note.body)}</span><small>${esc(notificationDateLabel(note.day))}${opensFinance ? '　タップして収支を開く' : ''}</small>`;
+      return opensFinance
+        ? `<button type="button" class="phone-card phone-notification-finance-link" data-action="open-finance" aria-label="${esc(note.title)}。収支画面を開く">${content}</button>`
+        : `<article class="phone-card">${content}</article>`;
+    }).join('') : '<div class="phone-empty">通知はありません。</div>'}</section>`;
   }
   if (phoneTab === 'finance') {
     const period = validFinancePeriod(state.game.financePeriod);
@@ -13818,7 +13995,8 @@ function renderPhoneContent() {
       </nav>
       <h2 class="finance-summary-title">${esc(financePeriodHeading(period))}</h2>
       <div class="phone-totals finance-totals"><div><small>収入</small><strong>${yen(income)}</strong></div><div><small>支出</small><strong>${yen(expense)}</strong></div><div><small>差引</small><strong class="${balance >= 0 ? 'income' : 'expense'}">${balance >= 0 ? '+' : '-'}${yen(Math.abs(balance))}</strong></div></div>
-      <article class="phone-card"><strong>毎月の固定費</strong><span>自宅家賃 ${yen(HOME_MONTHLY_RENT)}（毎月15日）・工房維持費 ${yen(WORKSHOP_MONTHLY_COST)}（月初）・店舗家賃（店舗ごと／月初）</span><small>未払い：${yen(outstanding)}</small>${outstanding ? '<button class="primary-button full-button" data-action="pay-outstanding-costs">未払いを支払う</button>' : ''}</article>
+      <article class="phone-card"><strong>毎月の固定費</strong><span>自宅家賃 ${yen(HOME_MONTHLY_RENT)}（毎月15日・開始30日間は初回猶予）・工房維持費 ${yen(WORKSHOP_MONTHLY_COST)}（月初）・店舗家賃（店舗ごと／月初）</span><small>自動徴収と一括支払いでは生活費 ${yen(MIN_LIVING_CASH_RESERVE)} を残します。</small></article>
+      ${outstanding ? `<section class="outstanding-payment-panel"><header><strong>未払い合計</strong><b>${yen(outstanding)}</b></header><div class="outstanding-payment-list">${outstandingPaymentTargets().map((target) => `<article class="phone-card outstanding-payment-row"><div><strong>${esc(target.label)}</strong><small>未払い ${yen(target.due)}</small></div><button type="button" class="secondary-button" data-action="pay-outstanding-item" data-kind="${esc(target.kind)}" data-id="${esc(target.id)}">この項目を支払う</button></article>`).join('')}</div><button class="primary-button full-button" data-action="pay-outstanding-costs">優先順でまとめて支払う</button><small>支払順：工房維持費 → 選択中店舗 → その他店舗 → スタッフ給与 → 自宅家賃</small></section>` : '<article class="phone-card success-text"><strong>未払いはありません。</strong></article>'}
       <div class="phone-finance-list">${rows.slice().reverse().map((row) => `<article class="finance-row"><span>${financeRowDateLabel(row.day)} ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || `<div class="phone-empty">${period === 'today' ? '今日' : period === 'month' ? '今月' : period === 'year' ? '今年' : '累計'}の収支記録はありません。</div>`}</div></section>`;
   }
   if (phoneTab === 'items') return renderPhoneItems();
@@ -13930,7 +14108,7 @@ function renderDayResult() {
               <h2 id="day-result-staff-heading">スタッフ</h2>
               <div class="result-list">
                 <div class="day-result-store-staff"><span>店舗スタッフ</span><strong class="day-result-staff-list">${result.staffEffects?.length ? result.staffEffects.map((entry) => `<span class="day-result-staff-entry">${esc(entry.name)}｜店舗${entry.branchNumber}｜販売力Lv.${entry.level} ${esc(entry.levelLabel)}｜勤務${entry.workDays}日${entry.leveledUp ? '｜成長' : ''}</span>`).join('') : '<span class="day-result-staff-entry">なし</span>'}</strong></div>
-                <div><span>職人スタッフ</span><strong>${result.workshopStaff?.worked ? `制作力Lv.${result.workshopStaff.level} ${esc(result.workshopStaff.levelLabel)}｜実働${result.workshopStaff.workDays}日｜自動制作${result.workshopStaff.crafted}点｜日当${yen(result.workshopStaff.wage)}${result.workshopStaff.leveledUp ? '｜成長' : ''}` : '出勤なし'}</strong></div>
+                <div><span>職人スタッフ</span><strong>${result.workshopStaff?.worked ? `制作力Lv.${result.workshopStaff.level} ${esc(result.workshopStaff.levelLabel)}｜実働${result.workshopStaff.workDays}日｜自動制作${result.workshopStaff.crafted}点｜日当${yen(result.workshopStaff.wage)}${result.workshopStaff.unpaidWage ? `（未払い${yen(result.workshopStaff.unpaidWage)}）` : ''}${result.workshopStaff.leveledUp ? '｜成長' : ''}` : '出勤なし'}</strong></div>
               </div>
             </section>
             <section class="day-result-section" aria-labelledby="day-result-finance-heading">
@@ -15081,10 +15259,15 @@ function previousMonthKey(date) {
   return `${previous.getFullYear()}-${String(previous.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function automaticPaymentCapacity() {
+  const money = Math.max(0, Math.floor(Number(state.game.money) || 0));
+  return Math.max(0, money - MIN_LIVING_CASH_RESERVE);
+}
+
 function payFixedCost(label, amount, onUnpaid) {
   const due = Math.max(0, Math.floor(Number(amount) || 0));
   if (!due) return { paid: 0, unpaid: 0 };
-  const paid = Math.min(Math.max(0, Math.floor(Number(state.game.money) || 0)), due);
+  const paid = Math.min(automaticPaymentCapacity(), due);
   state.game.money -= paid;
   if (paid) addFinance(label, 0, paid);
   const unpaid = due - paid;
@@ -15129,7 +15312,7 @@ function processMonthlyFixedCosts() {
   state.business.monthlyReports.push(report);
   state.business.monthlyReports = state.business.monthlyReports.slice(-24);
   const summary = report.unpaid
-    ? `${targetKey}分の固定費を処理しました。未払いは${yen(report.unpaid)}です。`
+    ? `${targetKey}分の固定費を処理しました。生活費${yen(MIN_LIVING_CASH_RESERVE)}を残し、未払いは${yen(report.unpaid)}です。`
     : `${targetKey}分の固定費 ${yen(report.paid)}を支払いました。`;
   addNotification('月初の固定費', summary, report.unpaid ? 'warning' : 'info');
   const paymentMessages = [];
@@ -15155,6 +15338,17 @@ function processHomeRent() {
   const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   if (state.business.lastProcessedHomeRentMonth === monthKey) return null;
 
+  if (Math.max(1, Number(state.game.day) || 1) <= 30) {
+    const report = { month: monthKey, amount: 0, paid: 0, unpaid: 0, grace: true };
+    state.business.lastProcessedHomeRentMonth = monthKey;
+    state.business.homeRentReports.push(report);
+    state.business.homeRentReports = state.business.homeRentReports.slice(-24);
+    const message = 'ゲーム開始から30日間は、自宅家賃の初回猶予期間です。今月の請求はありません。';
+    state.tools.morningMessages = [...(state.tools.morningMessages || []), message].slice(-10);
+    addNotification('自宅家賃の初回猶予', message, 'info');
+    return report;
+  }
+
   const result = payFixedCost(`${monthKey} 自宅家賃`, HOME_MONTHLY_RENT, (unpaid) => {
     state.business.homeRentUnpaid += unpaid;
   });
@@ -15164,63 +15358,116 @@ function processHomeRent() {
   state.business.homeRentReports = state.business.homeRentReports.slice(-24);
 
   const resultMessage = result.unpaid
-    ? `自宅家賃 ${yen(HOME_MONTHLY_RENT)}のうち${yen(result.paid)}を支払い、${yen(result.unpaid)}が未払いです。`
+    ? `自宅家賃 ${yen(HOME_MONTHLY_RENT)}のうち${yen(result.paid)}を支払い、${yen(result.unpaid)}が未払いです。生活費${yen(MIN_LIVING_CASH_RESERVE)}は残しています。`
     : `自宅家賃 ${yen(HOME_MONTHLY_RENT)}を支払いました。`;
   state.tools.morningMessages = [...(state.tools.morningMessages || []), resultMessage].slice(-10);
   addNotification('自宅家賃支払日', resultMessage, result.unpaid ? 'warning' : 'info');
   return report;
 }
 
-function totalOutstandingBusinessCost() {
-  return Math.max(0, Number(state.business.homeRentUnpaid) || 0)
-    + Math.max(0, Number(state.business.workshopUnpaid) || 0)
-    + (state.store.branches || []).reduce((sum, branch) => sum + Math.max(0, Number(branch.unpaidRent) || 0), 0);
+function outstandingPaymentTargets() {
+  const branches = contractedStoreBranches();
+  const currentNumber = Math.max(1, Number(state?.store?.branchNumber) || 1);
+  const orderedBranches = [...branches].sort((left, right) => {
+    const leftCurrent = Number(left.number) === currentNumber ? 0 : 1;
+    const rightCurrent = Number(right.number) === currentNumber ? 0 : 1;
+    return leftCurrent - rightCurrent || Number(left.number) - Number(right.number);
+  });
+  const targets = [];
+  const workshopDue = Math.max(0, Number(state.business?.workshopUnpaid) || 0);
+  if (workshopDue) targets.push({ kind: 'workshop', id: '', label: '工房維持費', due: workshopDue });
+  for (const branch of orderedBranches) {
+    const due = Math.max(0, Number(branch.unpaidRent) || 0);
+    if (due) targets.push({ kind: 'store-rent', id: branch.id, label: `${storeBranchDisplayName(branch)} 家賃`, due });
+  }
+  for (const branch of orderedBranches) {
+    const employee = storeBranchEmployee(branch);
+    const due = Math.max(0, Number(employee.wageUnpaid) || 0);
+    if (due) targets.push({ kind: 'store-wage', id: branch.id, label: `${storeBranchDisplayName(branch)} ${employee.name}さんの給与`, due });
+  }
+  const workshopStaff = workshopStaffState();
+  const workshopWageDue = Math.max(0, Number(workshopStaff.wageUnpaid) || 0);
+  if (workshopWageDue) targets.push({ kind: 'workshop-wage', id: '', label: '職人スタッフの給与', due: workshopWageDue });
+  const homeDue = Math.max(0, Number(state.business?.homeRentUnpaid) || 0);
+  if (homeDue) targets.push({ kind: 'home', id: '', label: '自宅家賃', due: homeDue });
+  return targets;
 }
 
-function payOutstandingBusinessCosts() {
-  let available = Math.max(0, Math.floor(Number(state.game.money) || 0));
-  const total = totalOutstandingBusinessCost();
-  if (!total) return showToast('未払いの固定費はありません。');
-  if (!available) return showToast('支払いに使える所持金がありません。', 'error');
-  const before = available;
+function totalOutstandingBusinessCost() {
+  return outstandingPaymentTargets().reduce((sum, target) => sum + target.due, 0);
+}
 
-  const homeRentDue = Math.max(0, Number(state.business.homeRentUnpaid) || 0);
-  if (homeRentDue && available) {
-    const paid = Math.min(available, homeRentDue);
-    available -= paid;
-    state.business.homeRentUnpaid -= paid;
-    addFinance('未払い自宅家賃を支払い', 0, paid);
-    if (state.business.homeRentUnpaid <= 0) state.business.homeRentUnpaid = 0;
-  }
+function outstandingPaymentTarget(kind, id = '') {
+  return outstandingPaymentTargets().find((target) => target.kind === String(kind || '') && String(target.id || '') === String(id || '')) || null;
+}
 
-  const workshopDue = Math.max(0, Number(state.business.workshopUnpaid) || 0);
-  if (workshopDue && available) {
-    const paid = Math.min(available, workshopDue);
-    available -= paid;
-    state.business.workshopUnpaid -= paid;
-    addFinance('未払い工房維持費を支払い', 0, paid);
+function applyOutstandingPayment(target, requestedAmount, prefix = '') {
+  if (!target) return 0;
+  const amount = Math.max(0, Math.min(Math.floor(Number(requestedAmount) || 0), Math.floor(Number(target.due) || 0)));
+  if (!amount) return 0;
+  if (target.kind === 'home') {
+    state.business.homeRentUnpaid = Math.max(0, Number(state.business.homeRentUnpaid) || 0) - amount;
+  } else if (target.kind === 'workshop') {
+    state.business.workshopUnpaid = Math.max(0, Number(state.business.workshopUnpaid) || 0) - amount;
     if (state.business.workshopUnpaid <= 0) {
       state.business.workshopUnpaid = 0;
       state.business.workshopSuspended = false;
     }
-  }
-  for (const branch of [...(state.store.branches || [])].sort((a, b) => Number(a.number) - Number(b.number))) {
-    const due = Math.max(0, Number(branch.unpaidRent) || 0);
-    if (!due || !available) continue;
-    const paid = Math.min(available, due);
-    available -= paid;
-    branch.unpaidRent -= paid;
-    addFinance(`${storeBranchLabel(branch.number)}の未払い家賃を支払い`, 0, paid);
+  } else if (target.kind === 'store-rent') {
+    const branch = (state.store.branches || []).find((entry) => String(entry.id) === String(target.id));
+    if (!branch) return 0;
+    branch.unpaidRent = Math.max(0, Number(branch.unpaidRent) || 0) - amount;
     if (branch.unpaidRent <= 0) {
       branch.unpaidRent = 0;
       branch.suspended = false;
     }
-  }
-  const paidTotal = before - available;
-  state.game.money = available;
-  startMoneyFeedback(-paidTotal);
+  } else if (target.kind === 'store-wage') {
+    const branch = (state.store.branches || []).find((entry) => String(entry.id) === String(target.id));
+    if (!branch) return 0;
+    const employee = storeBranchEmployee(branch);
+    employee.wageUnpaid = Math.max(0, Number(employee.wageUnpaid) || 0) - amount;
+    if (employee.wageUnpaid <= 0) employee.wageUnpaid = 0;
+  } else if (target.kind === 'workshop-wage') {
+    const staff = workshopStaffState();
+    staff.wageUnpaid = Math.max(0, Number(staff.wageUnpaid) || 0) - amount;
+    if (staff.wageUnpaid <= 0) staff.wageUnpaid = 0;
+  } else return 0;
+  addFinance(`${prefix}${target.label}を支払い`, 0, amount);
+  return amount;
+}
+
+function payOutstandingBusinessCostItem(kind, id = '') {
+  const target = outstandingPaymentTarget(kind, id);
+  if (!target) return showToast('この未払いはすでに解消されています。');
+  const available = Math.max(0, Math.floor(Number(state.game.money) || 0));
+  if (!available) return showToast('支払いに使える所持金がありません。', 'error');
+  const paid = applyOutstandingPayment(target, Math.min(available, target.due));
+  state.game.money = Math.max(0, available - paid);
+  if (paid) startMoneyFeedback(-paid);
   saveGame();
-  showToast(`${yen(paidTotal)}を支払いました。`, 'info', false);
+  const remaining = outstandingPaymentTarget(kind, id)?.due || 0;
+  showToast(remaining ? `${yen(paid)}を支払いました。残り${yen(remaining)}です。` : `${target.label}を完済しました。`, 'info', false);
+  render();
+}
+
+function payOutstandingBusinessCosts() {
+  const total = totalOutstandingBusinessCost();
+  if (!total) return showToast('未払いはありません。');
+  const money = Math.max(0, Math.floor(Number(state.game.money) || 0));
+  let available = Math.max(0, money - MIN_LIVING_CASH_RESERVE);
+  if (!available) return showToast(`一括支払いでは生活費${yen(MIN_LIVING_CASH_RESERVE)}を残します。個別支払いを利用してください。`, 'error');
+  let paidTotal = 0;
+  for (const target of outstandingPaymentTargets()) {
+    if (!available) break;
+    const paid = applyOutstandingPayment(target, Math.min(available, target.due));
+    available -= paid;
+    paidTotal += paid;
+  }
+  state.game.money = Math.max(0, money - paidTotal);
+  if (paidTotal) startMoneyFeedback(-paidTotal);
+  saveGame();
+  const remaining = totalOutstandingBusinessCost();
+  showToast(remaining ? `${yen(paidTotal)}を優先順で支払いました。未払い残高は${yen(remaining)}です。` : '未払いをすべて支払いました。', 'info', false);
   render();
 }
 
@@ -15344,44 +15591,18 @@ function autopilotCanSpendHours(hours, summary) {
 }
 
 function autopilotPayOutstandingCosts(summary) {
-  let available = Math.max(0, Math.floor(Number(state.game.money) || 0));
+  const money = Math.max(0, Math.floor(Number(state.game.money) || 0));
+  let available = Math.max(0, money - MIN_LIVING_CASH_RESERVE);
   if (!available) return;
-  const homeRentDue = Math.max(0, Number(state.business?.homeRentUnpaid) || 0);
-  if (homeRentDue) {
-    const paid = Math.min(available, homeRentDue);
-    available -= paid;
-    state.business.homeRentUnpaid -= paid;
-    if (paid) addFinance('自動操縦：未払い自宅家賃を支払い', 0, paid);
-    summary.expense += paid;
-    if (state.business.homeRentUnpaid <= 0) state.business.homeRentUnpaid = 0;
-  }
-  const workshopDue = Math.max(0, Number(state.business?.workshopUnpaid) || 0);
-  if (workshopDue) {
-    const paid = Math.min(available, workshopDue);
-    available -= paid;
-    state.business.workshopUnpaid -= paid;
-    if (paid) addFinance('自動操縦：未払い工房維持費を支払い', 0, paid);
-    summary.expense += paid;
-    if (state.business.workshopUnpaid <= 0) {
-      state.business.workshopUnpaid = 0;
-      state.business.workshopSuspended = false;
-    }
-  }
-  for (const branch of [...(state.store?.branches || [])].sort((a, b) => Number(a.number) - Number(b.number))) {
+  let paidTotal = 0;
+  for (const target of outstandingPaymentTargets()) {
     if (!available) break;
-    const due = Math.max(0, Number(branch.unpaidRent) || 0);
-    if (!due) continue;
-    const paid = Math.min(available, due);
+    const paid = applyOutstandingPayment(target, Math.min(available, target.due), '自動操縦：');
     available -= paid;
-    branch.unpaidRent -= paid;
-    if (paid) addFinance(`自動操縦：${storeBranchLabel(branch.number)}の未払い家賃を支払い`, 0, paid);
+    paidTotal += paid;
     summary.expense += paid;
-    if (branch.unpaidRent <= 0) {
-      branch.unpaidRent = 0;
-      branch.suspended = false;
-    }
   }
-  state.game.money = available;
+  state.game.money = Math.max(0, money - paidTotal);
 }
 
 function autopilotBuyTool(toolId, summary, reserve = 2000) {
@@ -15830,66 +16051,75 @@ function settleDay({ showResult = true, save = true } = {}) {
   const looseBeforeSettlement = looseInventorySnapshot();
   const moneyBeforeSettlement = state.game.money;
   const sold = [];
-  const activeSalesBranch = salesStoreBranch();
   const illnessSuppressingEvents = illnessEventSuppressionActive();
   if (illnessSuppressingEvents) suppressBirthdaySleepEventForIllness();
-  // 体調不良中は来客・販売を含む日次イベントを一切発生させない。
-  const storeOperating = Boolean(!illnessSuppressingEvents && state.store.rented && activeSalesBranch);
-  const activeEmployee = storeOperating && storeEmployeeAvailable(activeSalesBranch) ? storeBranchEmployee(activeSalesBranch) : null;
-  let visitors = storeOperating ? Math.floor(Math.random() * 4) + 1 : 0;
-  if (storeOperating && Number(activeSalesBranch?.number) === 1 && state.store.expanded) visitors += Math.floor(Math.random() * 3) + 1;
-  if (storeOperating && ['雨', '雪'].includes(state.game.weather)) visitors = Math.max(0, visitors - 1);
-  visitors += storeStaffVisitorBonus(activeEmployee);
+  const operatingBranches = illnessSuppressingEvents ? [] : contractedStoreBranches().filter((branch) => storeBranchOperating(branch));
+  let visitors = 0;
+  const branchDayStats = [];
 
-  const activeShowcases = activeSalesBranch ? branchShowcases(activeSalesBranch) : [];
-  if (storeOperating) for (let showcaseIndex = 0; showcaseIndex < activeShowcases.length; showcaseIndex += 1) {
-    const showcase = activeShowcases[showcaseIndex];
-    for (let slotIndex = 0; slotIndex < (showcase?.slots || []).length; slotIndex += 1) {
-      const slot = showcase.slots[slotIndex];
-      if (!slot) continue;
-      const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
-      if (!item) { showcase.slots[slotIndex] = null; continue; }
-      const price = showcaseSellingPrice(slot, item);
-      const priceStatus = sellingPriceStatus(item, price);
-      let chance = 0.19 + visitors * 0.055 + priceStatus.saleBonus + QUALITIES[item.quality].saleBonus + storeProductSaleBonus(item, activeSalesBranch.number) + (storeRating(activeSalesBranch) / 100) * 0.036;
-      chance += storeStaffSaleBonus(activeEmployee);
-      chance = clamp(chance, 0.08, 0.9);
-      if (Math.random() < chance) {
-        removeJewelry(item.id);
-        state.game.money += price;
-        state.store.salesCount += 1;
-        state.store.totalRevenue += price;
-        state.store.totalProfit += price - item.cost;
-        addStoreProgress({ branchNumber: activeSalesBranch.number, rating: 0, sale: true, revenue: price, serviceSuccess: Boolean(activeEmployee?.hired && activeEmployee?.working) });
-        addFinance(`${item.name}を販売`, price, 0);
-        addNotification('商品が売れました', `${storeBranchLabel(activeSalesBranch.number)}で${item.name}が${yen(price)}で売れました。`, 'sale');
-        const caseUsed = consumeStoreCase(activeSalesBranch);
-        sold.push({ itemId: item.id, name: item.name, price, profit: price - item.cost, caseUsed });
+  for (const branch of operatingBranches) {
+    const activeEmployee = storeEmployeeAvailable(branch) ? activeStoreStaff(branch) : null;
+    let branchVisitors = Math.floor(Math.random() * 4) + 1;
+    if (Number(branch.number) === 1 && state.store.expanded) branchVisitors += Math.floor(Math.random() * 3) + 1;
+    if (['雨', '雪'].includes(state.game.weather)) branchVisitors = Math.max(0, branchVisitors - 1);
+    branchVisitors += storeStaffVisitorBonus(activeEmployee);
+    visitors += branchVisitors;
+
+    const showcases = branchShowcases(branch);
+    for (let showcaseIndex = 0; showcaseIndex < showcases.length; showcaseIndex += 1) {
+      const showcase = showcases[showcaseIndex];
+      for (let slotIndex = 0; slotIndex < (showcase?.slots || []).length; slotIndex += 1) {
+        const slot = showcase.slots[slotIndex];
+        if (!slot) continue;
+        const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+        if (!item) { showcase.slots[slotIndex] = null; continue; }
+        const price = showcaseSellingPrice(slot, item);
+        const priceStatus = sellingPriceStatus(item, price);
+        let chance = 0.19 + branchVisitors * 0.055 + priceStatus.saleBonus + QUALITIES[item.quality].saleBonus + storeProductSaleBonus(item, branch.number) + (storeRating(branch) / 100) * 0.036;
+        chance += storeStaffSaleBonus(activeEmployee);
+        chance = clamp(chance, 0.08, 0.9);
+        if (Math.random() < chance) {
+          removeJewelry(item.id);
+          state.game.money += price;
+          state.store.salesCount += 1;
+          state.store.totalRevenue += price;
+          state.store.totalProfit += price - item.cost;
+          addStoreProgress({ branchNumber: branch.number, rating: 0, sale: true, revenue: price, serviceSuccess: Boolean(activeEmployee) });
+          addFinance(`${storeBranchLabel(branch.number)}で${item.name}を販売`, price, 0);
+          addNotification('商品が売れました', `${storeBranchLabel(branch.number)}で${item.name}が${yen(price)}で売れました。`, 'sale');
+          const caseUsed = consumeStoreCase(branch);
+          sold.push({ itemId: item.id, name: item.name, price, profit: price - item.cost, caseUsed, branchNumber: Number(branch.number) || 1 });
+        }
       }
     }
+
+    branch.visitorsToday = Math.max(0, Number(branch.visitorsToday) || 0) + branchVisitors;
+    branchDayStats.push({
+      branch,
+      employee: storeEmployeeAvailable(branch) ? storeBranchEmployee(branch) : null,
+      openMinutes: Math.max(0, Number(branch.openMinutesToday) || 0),
+      visitors: Math.max(0, Number(branch.visitorsToday) || 0),
+    });
   }
 
   state.store.totalVisitors += visitors;
   state.daily.visitors = visitors;
-  if (activeSalesBranch) activeSalesBranch.visitorsToday = Math.max(0, Number(activeSalesBranch.visitorsToday) || 0) + visitors;
-  for (const branch of contractedStoreBranches()) {
-    const qualifies = storeBranchOperating(branch) && Math.max(0, Number(branch.openMinutesToday) || 0) >= 240 && Math.max(0, Number(branch.visitorsToday) || 0) >= 1;
-    if (qualifies) branch.operatingDays = Math.max(0, Math.floor(Number(branch.operatingDays) || 0)) + 1;
-    branch.openMinutesToday = 0;
-    branch.visitorsToday = 0;
+  for (const row of branchDayStats) {
+    if (row.openMinutes >= 240 && row.visitors >= 1) row.branch.operatingDays = Math.max(0, Math.floor(Number(row.branch.operatingDays) || 0)) + 1;
   }
   state.daily.sold.push(...sold);
 
-  const workingStoreEmployees = (state.store.branches || [])
-    .filter((branch) => storeBranchOperating(branch) && storeEmployeeAvailable(branch))
-    .map((branch) => ({ branch, employee: storeBranchEmployee(branch) }))
-    .filter(({ employee }) => employee.hired && employee.working);
   const staffEffects = [];
-  for (const { branch, employee } of workingStoreEmployees) {
-    const salary = EMPLOYEE_DAILY_WAGE;
+  for (const { branch, employee, openMinutes } of branchDayStats) {
+    if (!employee?.hired || !employee.working || openMinutes <= 0 || Math.max(0, Number(employee.wageUnpaid) || 0) > 0) continue;
     const beforeDefinition = storeStaffDefinition(employee);
-    state.game.money = Math.max(0, state.game.money - salary);
-    addFinance(`${storeBranchDisplayName(branch)} ${employee.name}さんの給与`, 0, salary);
+    const salary = Math.max(0, Math.floor(Number(beforeDefinition.dailyWage) || 5000));
+    const wageResult = payFixedCost(`${storeBranchDisplayName(branch)} ${employee.name}さんの給与`, salary, (unpaid) => {
+      employee.wageUnpaid = Math.max(0, Number(employee.wageUnpaid) || 0) + unpaid;
+    });
+    if (wageResult.unpaid > 0) {
+      addNotification('店舗スタッフの給与が未払いです', `${storeBranchDisplayName(branch)}の${employee.name}さんへの給与${yen(wageResult.unpaid)}が未払いです。完済するまで出勤しません。`, 'warning');
+    }
     employee.workDays = Math.max(0, Math.floor(Number(employee.workDays) || 0)) + 1;
     const afterDefinition = storeStaffDefinition(employee);
     const leveledUp = Number(afterDefinition.level) > Number(beforeDefinition.level);
@@ -15902,11 +16132,18 @@ function settleDay({ showResult = true, save = true } = {}) {
       level: afterDefinition.level,
       levelLabel: afterDefinition.label,
       workDays: employee.workDays,
+      wage: salary,
+      paidWage: wageResult.paid,
+      unpaidWage: wageResult.unpaid,
       leveledUp,
     });
   }
 
   const workshopStaffResult = settleWorkshopStaffDay();
+  for (const branch of contractedStoreBranches()) {
+    branch.openMinutesToday = 0;
+    branch.visitorsToday = 0;
+  }
 
   pendingDayMoneyDelta = state.game.money - moneyBeforeSettlement;
 
@@ -15924,6 +16161,7 @@ function settleDay({ showResult = true, save = true } = {}) {
     staffEffects,
     workshopStaff: workshopStaffResult,
     visitors,
+    branchResults: branchDayStats.map((row) => ({ branchNumber: Number(row.branch.number) || 1, visitors: row.visitors, openMinutes: row.openMinutes })),
     income: state.daily.income,
     expense: state.daily.expense,
   };
@@ -16096,7 +16334,7 @@ function maybeStartBirthdaySleepEvent() {
 function showNormalSleepConfirmation() {
   const body = illnessEventSuppressionActive()
     ? '<p>体調不良のため本日のイベントは発生しません。休むと安全に翌日へ進みます。</p>'
-    : '<p>寝ると一般のお客様への販売判定を行い、翌日へ進みます。</p>';
+    : '';
   showModal({ title: '今日はもう休みますか？', body, confirm: '寝る', cancel: 'まだ起きている', action: 'do-sleep', className: 'sleep-confirm-modal' });
 }
 
@@ -16180,20 +16418,29 @@ async function beginSleepTransition() {
   }
   sleepTransitioning = true;
   closeModal();
+
+  // v0.10.550: 通信や音声準備を待つ前に暗転を開始し、操作が受け付けられたことを即座に示す。
+  sleepCurtainEl?.classList.add('active', 'sleep-starting');
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
   const stateBeforeSleep = structuredClone(state);
   markNightTransitionCheckpoint();
-  await saveGame();
+  // saveGame() は端末保存を同期的に完了してからクラウド保存を返す。
+  // クラウド通信は待たず、就寝処理を止めない。
+  void saveGame().catch((error) => console.error('就寝前クラウド保存エラー', error));
 
   try {
-    // 「寝る」を押した直後から就寝専用BGMと夜の環境音へ切り替える。
-    await switchAudio(isAlienAbducted() ? 'space' : 'sleep');
+    // 音声の読み込みが遅い端末でも、最大700msで翌日処理へ進む。
+    await Promise.race([
+      Promise.resolve(switchAudio(isAlienAbducted() ? 'space' : 'sleep'))
+        .catch((error) => console.error('就寝音声切り替えエラー', error)),
+      wait(700),
+    ]);
 
-    // 画面をゆっくり暗くし、完全な暗転の中で翌日の処理を行う。
-    sleepCurtainEl?.classList.add('active');
-    await wait(850);
     const daySave = settleDay();
     await Promise.race([daySave, wait(1800)]);
     await wait(420);
+    sleepCurtainEl?.classList.remove('sleep-starting');
     sleepCurtainEl?.classList.remove('active');
     await wait(120);
     if (pendingDayMoneyDelta) {
@@ -16213,7 +16460,7 @@ async function beginSleepTransition() {
     render();
     try { showToast('翌日の処理を中断し、暗転前の状態へ戻しました。', 'error'); } catch (_) {}
   } finally {
-    sleepCurtainEl?.classList.remove('active');
+    sleepCurtainEl?.classList.remove('active', 'sleep-starting');
     sleepTransitioning = false;
   }
 }
@@ -16763,6 +17010,9 @@ root.addEventListener('click', async (event) => {
     case 'okachimachi-toll-event-next':
       advanceOkachimachiTollEvent();
       break;
+    case 'panda-music-event-next':
+      advancePandaMusicEvent();
+      break;
     case 'return-okachimachi':
       setScreen('okachimachi', {}, false);
       break;
@@ -16944,6 +17194,7 @@ root.addEventListener('click', async (event) => {
     case 'confirm-workshop-expansion': confirmWorkshopExpansion(); break;
     case 'expand-workshop': expandWorkshop(); break;
     case 'pay-outstanding-costs': payOutstandingBusinessCosts(); break;
+    case 'pay-outstanding-item': payOutstandingBusinessCostItem(button.dataset.kind, button.dataset.id || ''); break;
     case 'repair-workshop-tool': repairWorkshopTool(button.dataset.id); break;
     case 'purchase':
       button.disabled = true;
@@ -17126,6 +17377,7 @@ root.addEventListener('click', async (event) => {
       staff.workMinutesBank = 0;
       staff.workedMinutesToday = 0;
       staff.craftedToday = [];
+      staff.wageUnpaid = 0;
       saveGame();
       showToast('職人スタッフを雇いました。');
       render();
@@ -17138,6 +17390,7 @@ root.addEventListener('click', async (event) => {
       employee.hired = true;
       employee.workDays = 0;
       employee.working = true;
+      employee.wageUnpaid = 0;
       // 店舗内の店舗スタッフ雇用では、御徒町の人材紹介を解放しない。
       state.facilities.recruitment = false;
       saveGame();

@@ -1,0 +1,12 @@
+JEWELRYxJEWELRY v0.10.550 VALIDATION
+
+[OK] Panda Plaza music event chance set to 1/90
+[OK] Event lottery limited to once per game day
+[OK] Event can trigger again on later days
+[OK] Three band images registered and randomly selected
+[OK] Band images use transparent PNG cutouts
+[OK] Panda Plaza landscape and portrait backgrounds selected
+[OK] Two dialogue steps return to normal Okachimachi screen
+[OK] Event save/resume and emergency recovery supported
+[OK] JavaScript syntax checks passed
+[OK] Version and Service Worker cache updated to 0.10.550

@@ -1,4 +1,4 @@
-export const VERSION = '0.10.535';
+export const VERSION = '0.10.550';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -55,11 +55,11 @@ export const STORE_EMPLOYEE_CANDIDATES = Object.freeze({
   }),
 });
 export const STORE_STAFF_GROWTH_LEVELS = Object.freeze([
-  Object.freeze({ level: 1, label: '見習い', minWorkDays: 0, visitorBonus: 0, customerVisitBonus: 0.01, purchaseBonus: 0.01, saleBonus: 0.02 }),
-  Object.freeze({ level: 2, label: '新人', minWorkDays: 5, visitorBonus: 0, customerVisitBonus: 0.02, purchaseBonus: 0.03, saleBonus: 0.05 }),
-  Object.freeze({ level: 3, label: '一人前', minWorkDays: 15, visitorBonus: 1, customerVisitBonus: 0.04, purchaseBonus: 0.05, saleBonus: 0.08 }),
-  Object.freeze({ level: 4, label: 'ベテラン', minWorkDays: 30, visitorBonus: 1, customerVisitBonus: 0.06, purchaseBonus: 0.08, saleBonus: 0.12 }),
-  Object.freeze({ level: 5, label: '熟練', minWorkDays: 60, visitorBonus: 2, customerVisitBonus: 0.08, purchaseBonus: 0.10, saleBonus: 0.15 }),
+  Object.freeze({ level: 1, label: '見習い', minWorkDays: 0, dailyWage: 5000, visitorBonus: 0, customerVisitBonus: 0.01, purchaseBonus: 0.01, saleBonus: 0.02 }),
+  Object.freeze({ level: 2, label: '新人', minWorkDays: 5, dailyWage: 7000, visitorBonus: 0, customerVisitBonus: 0.02, purchaseBonus: 0.03, saleBonus: 0.05 }),
+  Object.freeze({ level: 3, label: '一人前', minWorkDays: 15, dailyWage: 10000, visitorBonus: 1, customerVisitBonus: 0.04, purchaseBonus: 0.05, saleBonus: 0.08 }),
+  Object.freeze({ level: 4, label: 'ベテラン', minWorkDays: 30, dailyWage: 14000, visitorBonus: 1, customerVisitBonus: 0.06, purchaseBonus: 0.08, saleBonus: 0.12 }),
+  Object.freeze({ level: 5, label: '熟練', minWorkDays: 60, dailyWage: 18000, visitorBonus: 2, customerVisitBonus: 0.08, purchaseBonus: 0.10, saleBonus: 0.15 }),
 ]);
 
 export function storeStaffGrowthForWorkDays(workDays = 0) {
@@ -75,11 +75,11 @@ export function storeStaffNextGrowthForWorkDays(workDays = 0) {
 
 
 export const WORKSHOP_STAFF_GROWTH_LEVELS = Object.freeze([
-  Object.freeze({ level: 1, label: '見習い職人', minWorkDays: 0, dailyWage: 25000, speedMultiplier: 0.55, goodChance: 0, premiumChance: 0 }),
-  Object.freeze({ level: 2, label: '若手職人', minWorkDays: 480, dailyWage: 30000, speedMultiplier: 0.70, goodChance: 0.10, premiumChance: 0 }),
-  Object.freeze({ level: 3, label: '一人前職人', minWorkDays: 960, dailyWage: 40000, speedMultiplier: 0.85, goodChance: 0.20, premiumChance: 0.02 }),
-  Object.freeze({ level: 4, label: '熟練職人', minWorkDays: 1440, dailyWage: 55000, speedMultiplier: 1.00, goodChance: 0.32, premiumChance: 0.08 }),
-  Object.freeze({ level: 5, label: '匠', minWorkDays: 2400, dailyWage: 75000, speedMultiplier: 1.20, goodChance: 0.42, premiumChance: 0.15 }),
+  Object.freeze({ level: 1, label: '見習い職人', minWorkDays: 0, dailyWage: 10000, speedMultiplier: 0.55, goodChance: 0, premiumChance: 0 }),
+  Object.freeze({ level: 2, label: '若手職人', minWorkDays: 480, dailyWage: 15000, speedMultiplier: 0.70, goodChance: 0.10, premiumChance: 0 }),
+  Object.freeze({ level: 3, label: '一人前職人', minWorkDays: 960, dailyWage: 22000, speedMultiplier: 0.85, goodChance: 0.20, premiumChance: 0.02 }),
+  Object.freeze({ level: 4, label: '熟練職人', minWorkDays: 1440, dailyWage: 32000, speedMultiplier: 1.00, goodChance: 0.32, premiumChance: 0.08 }),
+  Object.freeze({ level: 5, label: '匠', minWorkDays: 2400, dailyWage: 45000, speedMultiplier: 1.20, goodChance: 0.42, premiumChance: 0.15 }),
 ]);
 
 export function workshopStaffGrowthForWorkDays(workDays = 0) {
@@ -4144,7 +4144,7 @@ export function isBirthdayOnDate(birthday, date) {
 function storeEmployeeDefaults(branchNumber = 1) {
   const number = Math.max(1, Math.min(3, Math.floor(Number(branchNumber) || 1)));
   const candidate = STORE_EMPLOYEE_CANDIDATES[number] || STORE_EMPLOYEE_CANDIDATES[1];
-  return { hired: false, name: candidate.name, workDays: 0, working: true };
+  return { hired: false, name: candidate.name, workDays: 0, working: true, wageUnpaid: 0 };
 }
 
 function normalizeStoreEmployee(value, branchNumber = 1, legacyFallback = null) {
@@ -4157,6 +4157,7 @@ function normalizeStoreEmployee(value, branchNumber = 1, legacyFallback = null) 
     name: defaults.name,
     workDays: Math.max(0, Math.floor(Number(source.workDays) || 0)),
     working: source.working !== false,
+    wageUnpaid: Math.max(0, Math.floor(Number(source.wageUnpaid) || 0)),
   };
 }
 
@@ -4198,7 +4199,7 @@ export function initialState() {
     },
     artisan: { level: 1, peakLevel: 1, xp: 0, levelPenalty: 0 },
     workshop: { level: 1, peakLevel: 1, activeHours: 0, paidThroughLevel: 1 },
-    workshopStaff: { hired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [], evolutionStage: 1 },
+    workshopStaff: { hired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [], evolutionStage: 1, wageUnpaid: 0 },
     business: { workshopSuspended: false, workshopUnpaid: 0, homeRentUnpaid: 0, homeRentReports: [], lastProcessedHomeRentMonth: '', branchUnpaid: {}, monthlyReports: [], lastProcessedMonth: '' },
     wellbeing: { hunger: 7, maxHunger: 7, lastMeal: '', mealsEaten: 0 },
     inventory: {
@@ -4302,6 +4303,14 @@ export function initialState() {
         stage: 'idle',
         rewardGranted: false,
         paymentApplied: false,
+      },
+      pandaMusicEvent: {
+        lastAttemptDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        imageIndex: 0,
       },
       westernUnionEvent: {
         scheduleYear: 0,
@@ -4915,6 +4924,7 @@ export function migrateState(saved) {
     workMinutesBank: Math.max(0, Number(workshopStaffSource.workMinutesBank) || 0),
     workedMinutesToday: Math.max(0, Math.floor(Number(workshopStaffSource.workedMinutesToday) || 0)),
     craftedToday: Array.isArray(workshopStaffSource.craftedToday) ? workshopStaffSource.craftedToday.slice(-20) : [],
+    wageUnpaid: Math.max(0, Math.floor(Number(workshopStaffSource.wageUnpaid) || 0)),
   };
 
   state.business = { ...initialState().business, ...(state.business || {}) };

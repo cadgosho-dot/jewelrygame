@@ -14677,7 +14677,7 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="m
 }
 
 
-/* v0.10.550: 未払い項目別支払い */
+/* v0.10.551: 未払い項目別支払い */
 .outstanding-payment-panel{display:grid;gap:.7rem;margin:.8rem 0;padding:.8rem;border:1px solid rgba(255,213,128,.45);border-radius:18px;background:rgba(20,12,8,.62)}
 .outstanding-payment-panel>header{display:flex;align-items:center;justify-content:space-between;gap:1rem;font-size:1.05rem}
 .outstanding-payment-panel>header b{color:#ffd98b;font-size:1.2rem}
@@ -14688,7 +14688,7 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="m
 @media (max-width:560px){.outstanding-payment-row{grid-template-columns:1fr}.outstanding-payment-row .secondary-button{width:100%}}
 
 
-/* v0.10.550: 御徒町・パンダ広場の音楽イベント */
+/* v0.10.551: 御徒町・パンダ広場の音楽イベント */
 body[data-screen="pandaMusicEvent"]{overflow:hidden}
 body[data-screen="pandaMusicEvent"] .game-header{display:none!important}
 body[data-screen="pandaMusicEvent"] .screen-content{min-height:100dvh;padding-top:0!important}
@@ -14730,4 +14730,62 @@ body[data-screen="pandaMusicEvent"] .panda-music-event::before{
   .panda-music-character{max-width:76vw;max-height:82dvh}
   .panda-music-dialogue{width:min(76vw,800px)!important;padding:10px 14px!important;gap:5px!important}
   .panda-music-dialogue>strong{font-size:.88rem!important;line-height:1.4!important}
+}
+
+
+/* v0.10.551: 縦画面のみ、食事中の枠を内容に合わせて縮小 */
+@media (orientation:portrait) and (max-aspect-ratio:1/1){
+  html[data-device-class="phone"] body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content{
+    display:grid!important;
+    place-items:center!important;
+    padding:clamp(8px,1.5vh,14px) 8px max(10px,var(--safe-bottom,0px))!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"] body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel{
+    width:min(88vw,440px)!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:calc(100% - 8px)!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    align-content:center!important;
+    justify-items:center!important;
+    margin:auto!important;
+    padding:clamp(8px,1.3vh,12px)!important;
+    gap:clamp(5px,.9vh,9px)!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"] body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel > .meal-food-display{
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    display:grid!important;
+    place-items:center!important;
+    margin:0!important;
+    overflow:visible!important;
+  }
+  html[data-device-class="phone"] body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel > .meal-food-display img{
+    width:auto!important;
+    height:auto!important;
+    max-width:min(76vw,340px)!important;
+    max-height:min(38dvh,310px)!important;
+    object-fit:contain!important;
+    object-position:center center!important;
+    margin:0 auto!important;
+  }
+  html[data-device-class="phone"] body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel > strong{
+    align-self:center!important;
+    margin:0!important;
+    padding:0!important;
+    line-height:1.15!important;
+    text-align:center!important;
+  }
+}
+
+@media (orientation:portrait) and (max-height:760px){
+  html[data-device-class="phone"] body[data-screen="meal"] .meal-eating-shell > .meal-eating-screen-content > .meal-eating-panel > .meal-food-display img{
+    max-height:min(34dvh,250px)!important;
+  }
 }

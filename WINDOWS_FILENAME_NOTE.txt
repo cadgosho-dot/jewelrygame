@@ -1,3 +1,3 @@
-JEWELRYxJEWELRY v0.10.550 Windows-safe update package
+JEWELRYxJEWELRY v0.10.553 Windows-safe update package
 
-All update document file names use ASCII characters to prevent mojibake in Windows Explorer.
+All versioned update-document filenames use ASCII characters to prevent filename mojibake on Windows.

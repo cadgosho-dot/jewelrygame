@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.550';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.550';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.553';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.553';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -4339,7 +4339,10 @@ function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャ
 function closeModal() {
   modalEl.classList.add('hidden');
   modalEl.innerHTML = '';
-  queueMicrotask(() => maybeShowGameClearModal());
+  queueMicrotask(() => {
+    maybeShowGameClearModal();
+    maybeStartForcedBirthdayRest();
+  });
 }
 
 function addNotification(title, body, type = 'info') {
@@ -4721,6 +4724,8 @@ function hasSelectableRegularMeal() {
 function canSleepNow() {
   if (!state) return false;
   if (winterColdTextActive()) return true;
+  // v0.10.552: 誕生日当日は時刻に関係なく「寝る」から誕生日イベントへ入れる。
+  if (birthdaySleepAvailableToday()) return true;
   // 宇宙滞在中は食事へ移動できない。19時以降、または空腹度0なら必ず就寝できる。
   // この判定を地球上の食事可否から完全に分離し、宇宙での進行不能を防ぐ。
   if (isAlienAbducted()) return Number(state.game.minutes) >= SLEEP_UNLOCK_MINUTES || hungerLocked();
@@ -4751,6 +4756,13 @@ function spendMinutes(minutes) {
   processWorkshopStaffElapsedTime(beforeMinutes, state.game.minutes);
   if (beforeMinutes < STORE_CLOSE_MINUTES && state.game.minutes >= STORE_CLOSE_MINUTES) closeVisitingCustomersAtStoreClosing();
   state.wellbeing.hunger = Math.max(0, before - hungerCost);
+  // v0.10.552: 現行ゲームでは空腹度が行動可能量を兼ねる。
+  // 誕生日当日に空腹度が1以下へ到達したら、現在の行動結果を反映した後で強制休息へ移る。
+  if (birthdaySleepAvailableToday() && state.wellbeing.hunger <= 1) {
+    const birthdayEvent = birthdaySleepEventState();
+    birthdayEvent.restPending = true;
+    birthdayEvent.triggerReason = 'energy';
+  }
 }
 
 function spendHours(hours) {
@@ -5136,6 +5148,8 @@ function resetStaleBirthdayEventForIllness(eventState) {
   const birthdayToday = birthdayMatchesDate(today);
   const eventYear = Math.max(0, Math.floor(Number(eventState.eventYear) || 0));
   eventState.active = false;
+  eventState.restPending = false;
+  eventState.triggerReason = '';
   if (birthdayToday) {
     eventState.stage = 'completed';
     eventState.eventYear = currentYear;
@@ -7772,6 +7786,7 @@ function setScreen(target, data = {}, push = true) {
   if (state) state.game.screen = target;
   render();
   scheduleAutosave(`screen:${target}`);
+  queueMicrotask(() => maybeStartForcedBirthdayRest());
   if (target === 'supplier' || target === 'supplierMetals' || target === 'supplierMetalHistory' || target === 'pureMetalProfessionalGuide') {
     loadMetalMarket().then(() => {
       if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory' || screen === 'pureMetalProfessionalGuide') && state) render();
@@ -10939,7 +10954,7 @@ function workshopStaffUnlockStatus() {
   const unpaid = totalOutstandingBusinessCost();
   const missingTools = WORKSHOP_STAFF_REQUIRED_TOOLS.filter((id) => !toolUsable(id));
   const conditions = [
-    { label: '職人レベル15以上', current: Math.max(1, Number(state.artisan.level) || 1), target: 15 },
+    { label: '職人レベル10以上', current: Math.max(1, Number(state.artisan.level) || 1), target: 10 },
     { label: 'プレイヤー自身の累計制作', current: Math.max(0, Number(state.store.playerCraftedCount) || 0), target: 100 },
     { label: '工房レベル15以上', current: workshopLevel(), target: 15 },
     { label: '主要工具・設備', current: missingTools.length ? `不足${missingTools.length}点` : '使用可能', target: 'すべて', met: missingTools.length === 0 },
@@ -16295,11 +16310,14 @@ function birthdaySleepEventState() {
     ? state.events.birthdaySleepEvent
     : {};
   const validStages = new Set(['idle', 'phone', 'greeting', 'congratulations', 'thanks', 'completed']);
+  const validReasons = new Set(['', 'energy', 'manual']);
   state.events.birthdaySleepEvent = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     eventYear: Math.max(0, Math.floor(Number(saved.eventYear) || 0)),
     lastCompletedYear: Math.max(0, Math.floor(Number(saved.lastCompletedYear) || 0)),
+    restPending: Boolean(saved.restPending),
+    triggerReason: validReasons.has(String(saved.triggerReason || '')) ? String(saved.triggerReason || '') : '',
   };
   if (!state.events.birthdaySleepEvent.active && !['idle', 'completed'].includes(state.events.birthdaySleepEvent.stage)) {
     state.events.birthdaySleepEvent.stage = 'completed';
@@ -16307,7 +16325,32 @@ function birthdaySleepEventState() {
   return state.events.birthdaySleepEvent;
 }
 
-function maybeStartBirthdaySleepEvent() {
+function birthdaySleepAvailableToday() {
+  if (!state || isAlienAbducted() || illnessEventSuppressionActive()) return false;
+  const today = gameDate();
+  if (!birthdayMatchesDate(today)) return false;
+  const eventState = birthdaySleepEventState();
+  return eventState.active || eventState.lastCompletedYear !== today.getFullYear();
+}
+
+function birthdayForcedRestBlocked() {
+  if (!state || sleepTransitioning || screen === 'birthdaySleepEvent') return true;
+  if (EVENT_RECOVERY_SCREENS.has(screen)) return true;
+  if (modalEl && !modalEl.classList.contains('hidden')) return true;
+  return false;
+}
+
+function maybeStartForcedBirthdayRest() {
+  if (!birthdaySleepAvailableToday()) return false;
+  const eventState = birthdaySleepEventState();
+  if (!eventState.restPending && hungerLevel() > 1) return false;
+  eventState.restPending = true;
+  eventState.triggerReason = 'energy';
+  if (birthdayForcedRestBlocked()) return false;
+  return maybeStartBirthdaySleepEvent({ triggerReason: 'energy' });
+}
+
+function maybeStartBirthdaySleepEvent({ triggerReason = 'manual' } = {}) {
   if (illnessEventSuppressionActive()) {
     suppressBirthdaySleepEventForIllness({ save: true });
     return false;
@@ -16324,6 +16367,8 @@ function maybeStartBirthdaySleepEvent() {
   eventState.active = true;
   eventState.stage = 'phone';
   eventState.eventYear = year;
+  eventState.restPending = false;
+  eventState.triggerReason = triggerReason === 'energy' ? 'energy' : 'manual';
   saveGame();
   setScreen('birthdaySleepEvent', {}, false);
   playSfx('alarm', { gain: 0.52, rate: 0.92 });
@@ -16373,9 +16418,11 @@ function advanceBirthdaySleepEvent() {
     eventState.active = false;
     eventState.stage = 'completed';
     eventState.lastCompletedYear = eventState.eventYear || gameDate().getFullYear();
+    eventState.restPending = false;
     saveGame();
     setScreen('main', {}, false);
-    queueMicrotask(showNormalSleepConfirmation);
+    // v0.10.552: 誕生日イベントは一日の締めとして、そのまま就寝して翌日へ進む。
+    queueMicrotask(() => beginSleepTransition({ allowEarly: true }));
     return;
   }
   saveGame();
@@ -16384,6 +16431,10 @@ function advanceBirthdaySleepEvent() {
 }
 
 function confirmSleep() {
+  // v0.10.552: 誕生日当日に「寝る」を選んだ場合は、時刻より先に誕生日イベントを開始する。
+  if (!isAlienAbducted() && !illnessEventSuppressionActive() && birthdaySleepAvailableToday()) {
+    if (maybeStartBirthdaySleepEvent({ triggerReason: 'manual' })) return;
+  }
   if (!canSleepNow()) {
     showToast(sleepRestrictionMessage(), 'error');
     return;
@@ -16400,7 +16451,6 @@ function confirmSleep() {
     showNormalSleepConfirmation();
     return;
   }
-  if (maybeStartBirthdaySleepEvent()) return;
   if (maybeStartHauntingEvent()) return;
   showNormalSleepConfirmation();
 }
@@ -16409,9 +16459,9 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function beginSleepTransition() {
+async function beginSleepTransition({ allowEarly = false } = {}) {
   if (sleepTransitioning) return;
-  if (!canSleepNow()) {
+  if (!allowEarly && !canSleepNow()) {
     closeModal();
     showToast(sleepRestrictionMessage(), 'error');
     return;
@@ -16419,7 +16469,7 @@ async function beginSleepTransition() {
   sleepTransitioning = true;
   closeModal();
 
-  // v0.10.550: 通信や音声準備を待つ前に暗転を開始し、操作が受け付けられたことを即座に示す。
+  // v0.10.552: 通信や音声準備を待つ前に暗転を開始し、操作が受け付けられたことを即座に示す。
   sleepCurtainEl?.classList.add('active', 'sleep-starting');
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
@@ -16650,6 +16700,7 @@ root.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
   const action = button.dataset.action;
+  if (state && action !== 'birthday-sleep-event-next' && maybeStartForcedBirthdayRest()) return;
   if (action?.startsWith('cancel-order:')) { cancelOrder(action.split(':')[1]); return; }
   const hungerAllowed = HUNGER_ALLOWED_ACTIONS;
   const mealNavigation = action === 'nav' && button.dataset.screen === 'meal';
@@ -17533,6 +17584,7 @@ root.addEventListener('click', async (event) => {
       break;
     default: break;
   }
+  queueMicrotask(() => maybeStartForcedBirthdayRest());
 });
 
 root.addEventListener('pointerdown', (event) => {
@@ -17950,6 +18002,7 @@ modalEl.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button || button.disabled) return;
   const action = button.dataset.action;
+  if (state && action !== 'birthday-sleep-event-next' && maybeStartForcedBirthdayRest()) return;
   if (action?.startsWith('confirm-order:')) { confirmOrder(action.split(':')[1]); return; }
   if (action?.startsWith('decline-order:')) { declineOrderOffer(action.split(':')[1]); return; }
   const hungerAllowed = HUNGER_ALLOWED_ACTIONS;
@@ -18019,6 +18072,7 @@ modalEl.addEventListener('click', async (event) => {
     }
     default: break;
   }
+  queueMicrotask(() => maybeStartForcedBirthdayRest());
 });
 
 // v0.10.523: 画面内の操作完了後も保存要求をまとめて発行する。

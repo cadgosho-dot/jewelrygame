@@ -15490,3 +15490,86 @@ html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:no
     max-width:34vw!important;
   }
 }
+
+/* v0.10.564: 上部バー1の縦画面クリップ修正／横画面の空腹度を左側へ整列 */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body{
+    /* 2行目の大きな時刻を含めても上下が欠けない実寸を確保する。 */
+    --jwj-bar-one-height:clamp(92px,25vw,102px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one{
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    overflow:visible!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .status-left.status-left{
+    padding:clamp(8px,2.1vw,11px) 0 clamp(8px,2.1vw,11px) clamp(9px,2.4vw,13px)!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .status-top-line.status-top-line{
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    display:grid!important;
+    grid-template-rows:auto auto!important;
+    align-content:center!important;
+    justify-content:start!important;
+    row-gap:clamp(7px,1.8vw,10px)!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header :is(.status-primary-line.status-primary-line,.status-secondary-line.status-secondary-line){
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    flex:0 0 auto!important;
+    width:auto!important;
+    height:auto!important;
+    min-height:clamp(18px,5.4vw,22px)!important;
+    align-items:center!important;
+    align-content:center!important;
+    justify-content:flex-start!important;
+    overflow:hidden!important;
+    line-height:1!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .status-secondary-line.status-secondary-line .game-time-panel.game-time-panel{
+    display:inline-flex!important;
+    align-items:center!important;
+    min-height:1em!important;
+    line-height:1!important;
+  }
+  /* 2段ヘッダー画面の本文開始位置も、拡大した上部バー1の実寸に連動。 */
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .screen-shell.screen-shell > .screen-content{
+    padding-top:calc(var(--safe-top) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
+    scroll-padding-top:calc(var(--safe-top) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
+  }
+}
+
+@media (orientation:landscape), (min-aspect-ratio:1/1){
+  /* 日付〜空腹度を一続きの左寄せ情報群にする。名前の伸長で空腹度を右へ押さない。 */
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .status-top-line.status-top-line{
+    justify-content:flex-start!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .status-primary-line.status-primary-line,
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .status-secondary-line.status-secondary-line{
+    flex:0 0 auto!important;
+    width:auto!important;
+    max-width:none!important;
+    justify-content:flex-start!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .header-player-name.header-player-name{
+    flex:0 1 auto!important;
+    width:auto!important;
+    min-width:0!important;
+    max-width:clamp(72px,16vw,150px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .header-hunger.header-hunger{
+    flex:0 0 auto!important;
+    margin-left:0!important;
+    justify-self:start!important;
+    text-align:left!important;
+  }
+}

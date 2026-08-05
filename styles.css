@@ -15666,3 +15666,177 @@ html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:no
     scroll-padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
   }
 }
+
+/* v0.10.566: 縦画面の上部バー1を明示的な2行グリッドへ固定
+   1行目＝日付・曜日・日数・天気
+   2行目＝時刻・名前・空腹度・所持金
+   横画面には適用しない。 */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body{
+    --jwj-bar-one-height:clamp(112px,32vw,124px)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one{
+    position:relative!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    grid-template-rows:minmax(42px,1fr) minmax(46px,1fr)!important;
+    grid-template-areas:
+      "primary primary"
+      "secondary money"!important;
+    align-items:stretch!important;
+    justify-items:stretch!important;
+    column-gap:clamp(5px,1.4vw,8px)!important;
+    row-gap:0!important;
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    padding:0!important;
+    overflow:visible!important;
+  }
+
+  /* 古い入れ子レイアウトの箱をなくし、2本の情報行を上部バー1の直接グリッド項目として扱う。 */
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .status-left.status-left,
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .status-left.status-left > .status-top-line.status-top-line{
+    display:contents!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header .status-primary-line.status-primary-line{
+    grid-area:primary!important;
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    display:flex!important;
+    align-items:center!important;
+    align-self:stretch!important;
+    justify-content:flex-start!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:clamp(8px,2.2vw,11px) clamp(11px,3vw,14px) 0!important;
+    gap:clamp(6px,1.7vw,9px)!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:2!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line{
+    grid-area:secondary!important;
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    display:flex!important;
+    align-items:center!important;
+    align-self:stretch!important;
+    justify-content:flex-start!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0 0 clamp(8px,2.2vw,11px) clamp(11px,3vw,14px)!important;
+    gap:clamp(7px,1.8vw,10px)!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:4!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area{
+    grid-area:money!important;
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    display:flex!important;
+    align-items:center!important;
+    align-self:stretch!important;
+    justify-content:flex-end!important;
+    justify-self:end!important;
+    width:auto!important;
+    height:100%!important;
+    min-width:max-content!important;
+    min-height:0!important;
+    max-width:44vw!important;
+    margin:0!important;
+    padding:0 clamp(11px,3vw,14px) clamp(8px,2.2vw,11px) clamp(3px,1vw,6px)!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:5!important;
+  }
+
+  /* 縦画面では時刻は必ず2行目へ表示する。 */
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .header-time-primary.header-time-primary{
+    display:none!important;
+    width:0!important;
+    height:0!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .header-time-secondary.header-time-secondary,
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line :is(.game-time-panel,.header-player-name,.header-hunger){
+    display:inline-flex!important;
+    align-items:center!important;
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    width:auto!important;
+    height:auto!important;
+    min-width:0!important;
+    min-height:1em!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    clip:auto!important;
+    clip-path:none!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line .game-time-panel.game-time-panel{
+    flex:0 0 auto!important;
+    font-size:clamp(18px,5.4vw,21px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line .header-player-name.header-player-name{
+    flex:0 1 auto!important;
+    max-width:clamp(58px,20vw,92px)!important;
+    text-overflow:ellipsis!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line .header-hunger.header-hunger{
+    flex:0 0 auto!important;
+  }
+
+  /* メイン画面と2段バー画面の内容開始位置を、新しい上部バー1の実寸へ合わせる。 */
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .main-screen.main-screen{
+    padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + 4px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .screen-shell.screen-shell > .screen-content{
+    padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
+    scroll-padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
+  }
+}

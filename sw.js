@@ -1,9 +1,9 @@
-const VERSION = '0.10.565';
+const VERSION = '0.10.566';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/kaitenzushi-embedded.js?v=0.10.565', './js/daily-gems.js?v=0.10.565', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/kaitenzushi-embedded.js?v=0.10.566', './js/daily-gems.js?v=0.10.566', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './data/jewelry_okachimachi_quiz_200_game_format.json',
   './data/daily-gems-365.json', './data/cinema-event-videos.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp', './assets/images/main-menu.webp', './assets/images/main-menu-portrait.webp', './assets/images/today-gem.webp',
   './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/tools/gem-polishing-machine.png', './assets/images/tools/diamond-polishing-lap.png', './assets/images/tools/piercing-saw.png', './assets/images/tools/nipper.png', './assets/images/tools/electronic-scale.png', './assets/images/tools/wood-block.png', './assets/images/tools/dividers.png', './assets/images/tools/milgrain-tool.png', './assets/images/tools/rolling-mill.png', './assets/images/tools/file.png', './assets/images/tools/pliers.png', './assets/images/tools/torch.png', './assets/images/tools/hammer.png', './assets/images/tools/magnifier.png', './assets/images/tools/bench-peg.png', './assets/images/tools/graver.png', './assets/images/tools/engraving-block.png', './assets/images/tools/stamps.png', './assets/images/tools/rotary-tool.png', './assets/images/tools/buffer.png', './assets/images/tools/ultrasonic-cleaner.png', './assets/images/events/indian-restaurant-manager.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
@@ -17,7 +17,7 @@ const APP_SHELL = [
 const CORE_SHELL = [
   './', './index.html', './game.html', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
   './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js',
-  './js/kaitenzushi-embedded.js?v=0.10.565', './js/daily-gems.js?v=0.10.565', './js/japan-holidays.js', './js/firebase-config.js',
+  './js/kaitenzushi-embedded.js?v=0.10.566', './js/daily-gems.js?v=0.10.566', './js/japan-holidays.js', './js/firebase-config.js',
   './js/google-auth-bridge.js', './js/security-config.js', './js/firebase-service.js',
 ];
 

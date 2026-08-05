@@ -1,0 +1,10 @@
+JEWELRYxJEWELRY v0.10.566 GitHub Desktop update
+
+1. Extract this ZIP.
+2. Copy all extracted files into the repository folder and overwrite existing files.
+3. Open GitHub Desktop and confirm the changed files.
+4. Commit with: Update to v0.10.566
+5. Push origin.
+6. After deployment, open the game with ?v=0.10.566 and confirm the portrait top bar shows both rows.
+
+This update does not reset or modify save data.

@@ -1,0 +1,14 @@
+JEWELRYxJEWELRY v0.10.566 validation
+
+PASS: node --check js/app.js
+PASS: node --check js/game-data.js
+PASS: node --check sw.js
+PASS: styles.css parsed successfully with PostCSS
+PASS: VERSION constants use 0.10.566
+PASS: HTML, module imports, and Service Worker cache-busting references use 0.10.566
+PASS: portrait top-bar-one uses an explicit two-row grid
+PASS: portrait row 1 is assigned to the full header width
+PASS: portrait row 2 assigns status information left and money right
+PASS: portrait second-row visibility, clipping, and overflow are explicitly reset
+PASS: landscape v0.10.564 layout rules remain unchanged
+PASS: no game-time, hunger, money, action, balance, or save-data logic was changed

@@ -16009,3 +16009,414 @@ html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not
     flex:0 0 auto!important;
   }
 }
+
+/* v0.10.568: 上部ステータスを新しい共通DOMで再構築
+   縦画面 1段目＝日付・曜日・日数・天気／所持金
+   縦画面 2段目＝時刻／プレイヤー名／空腹度
+   横画面＝従来どおり1行。枠内背景は縦横とも透明。 */
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell > .game-header.game-header.game-header{
+  position:absolute!important;
+  top:calc(max(8px,env(safe-area-inset-top)) + var(--jwj-edge-gap,6px))!important;
+  left:var(--jwj-edge-gap,6px)!important;
+  right:var(--jwj-edge-gap,6px)!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  gap:var(--jwj-header-gap,6px)!important;
+  overflow:visible!important;
+  contain:none!important;
+  isolation:auto!important;
+  z-index:var(--jwj-header-z,600)!important;
+  background:transparent!important;
+  background-image:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header > :is(.jwj-status-bar.top-bar-one,.top-bar-two){
+  position:relative!important;
+  inset:auto!important;
+  transform:none!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+  color:#fff0cf!important;
+  background:transparent!important;
+  background-image:none!important;
+  border:1px solid rgba(255,232,181,.42)!important;
+  border-radius:13px!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  overflow:visible!important;
+  contain:none!important;
+}
+
+html[data-device-class="phone"] body[data-screen="main"] .game-header.game-header.game-header > .top-bar-two{
+  display:none!important;
+}
+
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-status-primary,
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-status-secondary{
+  position:relative!important;
+  inset:auto!important;
+  transform:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  visibility:visible!important;
+  opacity:1!important;
+  clip:auto!important;
+  clip-path:none!important;
+  color:#fff0cf!important;
+  font-weight:800!important;
+  font-variant-numeric:tabular-nums!important;
+  text-shadow:0 2px 7px rgba(0,0,0,.98),0 0 2px rgba(0,0,0,.92)!important;
+}
+
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-status-item{
+  position:relative!important;
+  inset:auto!important;
+  transform:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  min-width:0!important;
+  min-height:1em!important;
+  margin:0!important;
+  padding:0!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  visibility:visible!important;
+  opacity:1!important;
+  clip:auto!important;
+  clip-path:none!important;
+}
+
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-weather{
+  gap:.16em!important;
+}
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-player-name{
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-status-time-wrap,
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-status-time.game-time-panel{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  width:auto!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:1em!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  font-weight:900!important;
+  letter-spacing:.015em!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  visibility:visible!important;
+  opacity:1!important;
+  overflow:visible!important;
+  clip:auto!important;
+  clip-path:none!important;
+  color:#fff2cf!important;
+}
+html[data-device-class="phone"] body[data-screen] .game-header .jwj-status-time.okachimachi-warning{color:#ffe85f!important}
+html[data-device-class="phone"] body[data-screen] .game-header .jwj-status-time.ending{color:#ffad58!important}
+html[data-device-class="phone"] body[data-screen] .game-header .jwj-status-time.ended{color:#ff7777!important}
+
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-money-area.header-money-area{
+  position:relative!important;
+  inset:auto!important;
+  transform:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  width:auto!important;
+  height:100%!important;
+  min-width:max-content!important;
+  min-height:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:visible!important;
+  visibility:visible!important;
+  opacity:1!important;
+  contain:none!important;
+  z-index:calc(var(--jwj-money-z,760) - 2)!important;
+}
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-money-area .header-money{
+  position:relative!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  width:auto!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  color:#fff0cf!important;
+  font-weight:900!important;
+  font-variant-numeric:tabular-nums!important;
+  text-shadow:0 2px 8px rgba(0,0,0,.98),0 0 2px rgba(0,0,0,.92)!important;
+  z-index:var(--jwj-money-z,760)!important;
+}
+
+/* 操作用の下段バー。背景は透明、ボタンと画面名は従来どおり。 */
+html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header > .top-bar-two.header-center{
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  align-items:center!important;
+  justify-items:stretch!important;
+  height:var(--jwj-bar-two-height,58px)!important;
+  min-height:var(--jwj-bar-two-height,58px)!important;
+  max-height:var(--jwj-bar-two-height,58px)!important;
+  padding:0 10px!important;
+  gap:8px!important;
+}
+html[data-device-class="phone"] body[data-header-mode="two-bar"] .game-header > .top-bar-two > .header-back-button{
+  position:static!important;
+  justify-self:start!important;
+}
+html[data-device-class="phone"] body[data-header-mode="two-bar"] .game-header > .top-bar-two > .header-title{
+  position:static!important;
+  justify-self:center!important;
+  min-width:0!important;
+  text-align:center!important;
+}
+html[data-device-class="phone"] body[data-header-mode="two-bar"] .game-header > .top-bar-two > .header-title strong{
+  display:block!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+html[data-device-class="phone"] body[data-header-mode="two-bar"] .game-header > .top-bar-two > .header-secondary-actions{
+  position:static!important;
+  justify-self:end!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+}
+
+/* 縦画面：承認済みの2段ステータス配置。 */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body{
+    --jwj-bar-one-height:94px!important;
+    --jwj-bar-two-height:60px!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .jwj-status-bar.top-bar-one{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    grid-template-rows:1fr 1fr!important;
+    grid-template-areas:
+      "primary money"
+      "secondary secondary"!important;
+    align-items:center!important;
+    justify-items:stretch!important;
+    column-gap:clamp(5px,1.4vw,8px)!important;
+    row-gap:0!important;
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    padding:0 clamp(10px,2.7vw,13px)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header .jwj-status-primary{
+    grid-area:primary!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    align-self:stretch!important;
+    gap:clamp(3px,1vw,6px)!important;
+    overflow:visible!important;
+    font-size:clamp(11.5px,3.55vw,15px)!important;
+    letter-spacing:-.018em!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header .jwj-status-secondary{
+    grid-area:secondary!important;
+    display:grid!important;
+    grid-template-columns:max-content minmax(0,1fr) max-content!important;
+    align-items:center!important;
+    justify-items:stretch!important;
+    align-self:stretch!important;
+    width:100%!important;
+    gap:clamp(7px,2vw,11px)!important;
+    overflow:visible!important;
+    font-size:clamp(13px,4vw,16px)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-status-time-wrap{
+    justify-self:start!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-status-time{
+    font-size:clamp(18px,5.6vw,22px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-player-name{
+    justify-self:center!important;
+    max-width:100%!important;
+    text-align:center!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-hunger{
+    justify-self:end!important;
+    text-align:right!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header .jwj-money-area{
+    grid-area:money!important;
+    align-self:stretch!important;
+    justify-self:end!important;
+    padding-left:5px!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-money-area .header-money{
+    font-size:clamp(17px,5.3vw,22px)!important;
+    letter-spacing:-.025em!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"] .main-screen.main-screen{
+    padding-top:calc(max(8px,env(safe-area-inset-top)) + var(--jwj-edge-gap,6px) + var(--jwj-bar-one-height) + 4px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .screen-shell.screen-shell > .screen-content{
+    padding-top:calc(max(8px,env(safe-area-inset-top)) + var(--jwj-edge-gap,6px) + var(--jwj-bar-one-height) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height) + 8px)!important;
+    scroll-padding-top:calc(max(8px,env(safe-area-inset-top)) + var(--jwj-edge-gap,6px) + var(--jwj-bar-one-height) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height) + 8px)!important;
+  }
+}
+
+/* 横画面：現在正常な一列表示を維持。 */
+@media (orientation:landscape), (min-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="landscape"] body{
+    --jwj-bar-one-height:58px!important;
+    --jwj-bar-two-height:54px!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .jwj-status-bar.top-bar-one{
+    display:grid!important;
+    grid-template-columns:max-content max-content minmax(0,1fr) max-content!important;
+    grid-template-rows:100%!important;
+    grid-template-areas:"primary secondary spacer money"!important;
+    align-items:center!important;
+    column-gap:clamp(8px,1.4vw,16px)!important;
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    padding:0 clamp(12px,1.8vw,18px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-status-primary{
+    grid-area:primary!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:clamp(6px,1vw,11px)!important;
+    font-size:clamp(13px,3.5vh,18px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-status-secondary{
+    grid-area:secondary!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:clamp(7px,1.1vw,12px)!important;
+    font-size:clamp(13px,3.5vh,18px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-status-time{
+    font-size:clamp(17px,4.5vh,22px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-player-name{
+    flex:0 1 auto!important;
+    max-width:clamp(72px,15vw,150px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-hunger{
+    flex:0 0 auto!important;
+    text-align:left!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-money-area{
+    grid-area:money!important;
+    justify-self:end!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-money-area .header-money{
+    font-size:clamp(20px,6vh,24px)!important;
+    letter-spacing:-.02em!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="main"] .main-screen.main-screen{
+    padding-top:calc(max(4px,env(safe-area-inset-top)) + var(--jwj-edge-gap,5px) + var(--jwj-bar-one-height) + 2px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .screen-shell.screen-shell > .screen-content{
+    padding-top:calc(max(4px,env(safe-area-inset-top)) + var(--jwj-edge-gap,5px) + var(--jwj-bar-one-height) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height) + 6px)!important;
+    scroll-padding-top:calc(max(4px,env(safe-area-inset-top)) + var(--jwj-edge-gap,5px) + var(--jwj-bar-one-height) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height) + 6px)!important;
+  }
+}
+
+/* v0.10.568 header container final guard: old main-header grid height must not clip the new rows. */
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+.main-screen.main-screen > .game-header.game-header.game-header.main-header{
+  display:flex!important;
+  flex-direction:column!important;
+  height:var(--jwj-bar-one-height)!important;
+  min-height:var(--jwj-bar-one-height)!important;
+  max-height:var(--jwj-bar-one-height)!important;
+  overflow:visible!important;
+  padding:0!important;
+  gap:0!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="main"]
+.main-screen.main-screen > .game-header.game-header.game-header.main-header{
+  display:flex!important;
+  flex-direction:column!important;
+  height:var(--jwj-bar-one-height)!important;
+  min-height:var(--jwj-bar-one-height)!important;
+  max-height:var(--jwj-bar-one-height)!important;
+  overflow:visible!important;
+  padding:0!important;
+  gap:0!important;
+}
+html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell > .game-header.game-header.game-header{
+  display:flex!important;
+  flex-direction:column!important;
+  height:calc(var(--jwj-bar-one-height) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height))!important;
+  min-height:calc(var(--jwj-bar-one-height) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height))!important;
+  max-height:calc(var(--jwj-bar-one-height) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height))!important;
+  overflow:visible!important;
+  padding:0!important;
+}

@@ -7,8 +7,8 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.567';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.567';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.568';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.568';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -7790,7 +7790,7 @@ function observeScreenHeaderLayout() {
   if (!(headerEl instanceof HTMLElement) || typeof ResizeObserver !== 'function') return;
   screenHeaderResizeObserver = new ResizeObserver(() => syncScreenContentTopOffset());
   screenHeaderResizeObserver.observe(headerEl);
-  for (const selector of ['.status-left', '.header-money-area', '.header-center', '.header-secondary-actions']) {
+  for (const selector of ['.jwj-status-primary', '.jwj-status-secondary', '.header-money-area', '.header-center', '.header-secondary-actions']) {
     const element = headerEl.querySelector(selector);
     if (element instanceof HTMLElement) screenHeaderResizeObserver.observe(element);
   }
@@ -7882,7 +7882,7 @@ function gameTimePanel() {
     tone = 'okachimachi-warning';
     note = `御徒町終了まで ${timeRemainingLabel(OKACHIMACHI_CLOSE_MINUTES - minutes)}`;
   }
-  return `<span class="header-status-item header-time game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}" ${note ? `title="${esc(note)}"` : ''}>${clock(minutes)}</span>`;
+  return `<span class="jwj-status-item jwj-status-time game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}" ${note ? `title="${esc(note)}"` : ''}>${clock(minutes)}</span>`;
 }
 
 // v0.10.561: メイン画面は上部バー1だけ、それ以外は上部バー1（情報）と
@@ -7918,34 +7918,19 @@ function header(title, { back = true, main = true, help = '' } = {}) {
   const actionControls = `${resolvedHelp ? `<button class="icon-button header-help-button ${help ? '' : 'header-fallback-help-button'}" data-action="help" data-help="${esc(resolvedHelp)}" aria-label="説明">?</button>` : ''}${main ? '<button class="small-button header-main-button" data-action="main" data-illness-readable="true">メイン画面</button>' : ''}`;
   return `
     <header class="game-header ${isMainMenu ? 'main-header' : ''}">
-      <div class="top-bar-one" aria-label="ゲーム状況">
-        <div class="status-left top-bar-one-status" aria-label="日付、曜日、何日目、天気、時間、名前、空腹度">
-          <div class="status-top-line">
-            <div class="status-primary-line">
-              <span class="header-status-item header-calendar-date">
-                <span class="header-full-label">${esc(dateLabel)}</span>
-                <span class="header-compact-label" aria-hidden="true">${currentDate.getMonth() + 1}/${currentDate.getDate()}</span>
-              </span>
-              <span class="header-status-item header-weekday ${weekdayTone}"${holidayName ? ` title="${esc(holidayName)}" aria-label="${esc(`${weekdayLabel} ${holidayName}`)}"` : ''}>
-                <span class="header-full-label">${esc(weekdayLabel)}</span>
-                <span class="header-compact-label" aria-hidden="true">${esc(weekdays[currentDate.getDay()])}</span>
-              </span>
-              <span class="header-status-item header-day">${state.game.day}日目</span>
-              <span class="header-status-item header-weather">
-                <span class="header-weather-icon">${weatherIcon(state.game.weather)}</span>
-                <span class="header-full-label"> ${esc(state.game.weather)}</span>
-                <span class="header-compact-label">${esc(state.game.weather)}</span>
-              </span>
-              <span class="header-time-slot header-time-primary">${gameTimePanel()}</span>
-            </div>
-            <div class="status-secondary-line">
-              <span class="header-time-slot header-time-secondary">${gameTimePanel()}</span>
-              <span class="header-status-item header-player-name">${esc(playerLabel)}</span>
-              <span class="header-status-item header-hunger"><span class="header-full-label">空腹度 </span><span class="header-compact-label">空腹 </span>${hungerLevel()}／7</span>
-            </div>
-          </div>
+      <div class="top-bar-one jwj-status-bar" aria-label="ゲーム状況">
+        <div class="jwj-status-primary" aria-label="日付、曜日、何日目、天気">
+          <span class="jwj-status-item jwj-calendar-date">${esc(dateLabel)}</span>
+          <span class="jwj-status-item jwj-weekday ${weekdayTone}"${holidayName ? ` title="${esc(holidayName)}" aria-label="${esc(`${weekdayLabel} ${holidayName}`)}"` : ''}>${esc(weekdayLabel)}</span>
+          <span class="jwj-status-item jwj-day">${state.game.day}日目</span>
+          <span class="jwj-status-item jwj-weather"><span class="jwj-weather-icon">${weatherIcon(state.game.weather)}</span><span>${esc(state.game.weather)}</span></span>
         </div>
-        <div class="header-money-area top-bar-one-money">
+        <div class="jwj-status-secondary" aria-label="現在時刻、プレイヤー名、空腹度">
+          <span class="jwj-status-time-wrap">${gameTimePanel()}</span>
+          <span class="jwj-status-item jwj-player-name">${esc(playerLabel)}</span>
+          <span class="jwj-status-item jwj-hunger">空腹度${hungerLevel()}／7</span>
+        </div>
+        <div class="header-money-area jwj-money-area">
           <span class="header-money ${moneyFeedback ? `money-change-active money-${moneyFeedback.direction}` : ''}" aria-label="所持金">
             <span class="header-money-value">${yen(moneyFeedback?.displayAmount ?? state.game.money)}</span>
             ${moneyFeedback ? `<span class="header-money-change ${moneyFeedback.direction}">${moneyFeedback.delta > 0 ? '+' : '−'}${moneyFeedback.amount.toLocaleString('ja-JP')}円</span>` : ''}

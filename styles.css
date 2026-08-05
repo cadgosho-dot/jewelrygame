@@ -15840,3 +15840,172 @@ html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:no
     scroll-padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
   }
 }
+
+/* v0.10.567: 縦画面の上部バー2行表示を安定化し、縦横とも黒背景を廃止 */
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header :is(.top-bar-one.top-bar-one,.top-bar-two.top-bar-two){
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body{
+    --jwj-bar-one-height:112px!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    grid-template-rows:100%!important;
+    grid-template-areas:"status money"!important;
+    align-items:stretch!important;
+    column-gap:clamp(5px,1.4vw,8px)!important;
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    overflow:visible!important;
+  }
+
+  /* Android WebViewでdisplay:contentsにより2行目が消えるため、通常の箱として描画する。 */
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .status-left.status-left{
+    grid-area:status!important;
+    position:relative!important;
+    display:block!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    padding:8px 0 8px 12px!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .status-left.status-left > .status-top-line.status-top-line{
+    position:relative!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr) minmax(0,1fr)!important;
+    align-items:center!important;
+    align-content:stretch!important;
+    row-gap:4px!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header :is(.status-primary-line.status-primary-line,.status-secondary-line.status-secondary-line){
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    display:flex!important;
+    align-items:center!important;
+    align-content:center!important;
+    justify-content:flex-start!important;
+    align-self:stretch!important;
+    width:100%!important;
+    height:auto!important;
+    min-width:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    clip:auto!important;
+    clip-path:none!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-primary-line.status-primary-line{
+    grid-row:1!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line{
+    grid-row:2!important;
+    gap:clamp(7px,1.8vw,10px)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area{
+    grid-area:money!important;
+    position:relative!important;
+    display:flex!important;
+    align-items:flex-end!important;
+    align-self:stretch!important;
+    justify-content:flex-end!important;
+    justify-self:end!important;
+    width:auto!important;
+    height:100%!important;
+    min-width:max-content!important;
+    min-height:0!important;
+    max-width:44vw!important;
+    margin:0!important;
+    padding:0 12px 17px 4px!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .header-time-primary.header-time-primary{
+    display:none!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .header-time-secondary.header-time-secondary,
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line :is(.game-time-panel,.header-player-name,.header-hunger){
+    display:inline-flex!important;
+    align-items:center!important;
+    position:relative!important;
+    width:auto!important;
+    height:auto!important;
+    min-width:0!important;
+    min-height:1em!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    clip:auto!important;
+    clip-path:none!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line .game-time-panel.game-time-panel{
+    flex:0 0 auto!important;
+    font-size:clamp(18px,5.4vw,21px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line .header-player-name.header-player-name{
+    flex:0 1 auto!important;
+    max-width:clamp(58px,20vw,92px)!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line .header-hunger.header-hunger{
+    flex:0 0 auto!important;
+  }
+}

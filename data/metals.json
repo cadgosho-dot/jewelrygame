@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-08-05T03:48:04.164Z",
-  "updatedAt": "2026-08-05T03:49:24Z",
+  "marketTimestamp": "2026-08-05T04:19:05.767Z",
+  "updatedAt": "2026-08-05T04:20:11Z",
   "marketDateJst": "2026-08-05",
   "previousMarketDateJst": "2026-08-04",
   "spotPerGram": {
-    "gold": 20904.9571,
-    "silver": 307.4867,
-    "platinum": 8887.5942
+    "gold": 20954.1994,
+    "silver": 308.053,
+    "platinum": 8914.807
   },
   "previousSpotPerGram": {
     "gold": 20618.7944,
@@ -22,9 +22,9 @@
     "platinum": 8433.905
   },
   "changeFromPreviousDayPerGram": {
-    "gold": 286.1627,
-    "silver": 8.4715,
-    "platinum": 453.6892
+    "gold": 335.405,
+    "silver": 9.0378,
+    "platinum": 480.902
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -183,37 +183,37 @@
     {
       "date": "2026-08-05",
       "spotPerGram": {
-        "gold": 20904.9571,
-        "silver": 307.4867,
-        "platinum": 8887.5942
+        "gold": 20954.1994,
+        "silver": 308.053,
+        "platinum": 8914.807
       }
     }
   ],
   "gamePricesPerGram": {
-    "K18": 18030,
-    "Pt900": 9200,
+    "K18": 18070,
+    "Pt900": 9230,
     "SV925": 370
   },
   "gamePurchasePricesPerGram": {
-    "K18": 18030,
-    "Pt900": 9200,
+    "K18": 18070,
+    "Pt900": 9230,
     "SV925": 370
   },
   "gameSellPricesPerGram": {
-    "K18": 15370,
-    "Pt900": 7520,
+    "K18": 15400,
+    "Pt900": 7540,
     "SV925": 256
   },
   "gamePurchasePrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 18030
+      "price": 18070
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 9200
+      "price": 9230
     },
     "silver": {
       "alloy": "SV925",
@@ -225,12 +225,12 @@
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 15370
+      "price": 15400
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 7520
+      "price": 7540
     },
     "silver": {
       "alloy": "SV925",

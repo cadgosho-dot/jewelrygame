@@ -16420,3 +16420,249 @@ html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:no
   overflow:visible!important;
   padding:0!important;
 }
+
+/* v0.10.569: サブ画面の上部バー2を完全透明化し、日付群の間隔を圧縮 */
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell > .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+  isolation:isolate!important;
+}
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell > .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center::before,
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell > .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center::after{
+  content:none!important;
+  display:none!important;
+  background:transparent!important;
+}
+
+/* 年月日・曜日・○○○日目は一つのまとまりとして詰め、天気の前だけ余白を残す。 */
+html[data-device-class="phone"]
+body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-status-primary.jwj-status-primary{
+  column-gap:2px!important;
+  gap:2px!important;
+}
+html[data-device-class="phone"]
+body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .jwj-status-primary.jwj-status-primary > .jwj-weather.jwj-weather{
+  margin-left:clamp(4px,.8vw,8px)!important;
+}
+
+/* v0.10.570: メインメニュー縦画面の時刻・名前・空腹度を確実に表示 */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]{
+    --jwj-bar-one-height:100px!important;
+  }
+
+  /* 旧グリッド指定の影響を受けず、上段と下段を明示的に固定する。 */
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header > .jwj-status-bar.top-bar-one{
+    position:relative!important;
+    display:block!important;
+    width:100%!important;
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    padding:0!important;
+    overflow:visible!important;
+    background:transparent!important;
+    background-image:none!important;
+  }
+
+  /* 1段目左：年月日・曜日・日数・天気 */
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-status-primary{
+    position:absolute!important;
+    top:0!important;
+    left:clamp(10px,2.7vw,13px)!important;
+    right:clamp(92px,27vw,108px)!important;
+    height:50%!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:2px!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:3!important;
+    font-size:clamp(11px,3.45vw,14px)!important;
+    letter-spacing:-.022em!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-status-primary > .jwj-weather{
+    margin-left:clamp(4px,1.1vw,7px)!important;
+  }
+
+  /* 1段目右：所持金 */
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-money-area{
+    position:absolute!important;
+    top:0!important;
+    right:clamp(10px,2.7vw,13px)!important;
+    width:auto!important;
+    height:50%!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    padding:0!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:5!important;
+  }
+
+  /* 2段目：時刻・名前・空腹度 */
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-status-secondary{
+    position:absolute!important;
+    left:clamp(10px,2.7vw,13px)!important;
+    right:clamp(10px,2.7vw,13px)!important;
+    bottom:0!important;
+    width:auto!important;
+    height:50%!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-columns:max-content minmax(0,1fr) max-content!important;
+    align-items:center!important;
+    justify-items:stretch!important;
+    gap:clamp(7px,2.2vw,12px)!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+    clip:auto!important;
+    clip-path:none!important;
+    z-index:4!important;
+    font-size:clamp(13px,4vw,16px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-status-secondary > *{
+    position:static!important;
+    transform:none!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    min-width:0!important;
+    min-height:1em!important;
+    visibility:visible!important;
+    opacity:1!important;
+    clip:auto!important;
+    clip-path:none!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-status-time-wrap{
+    justify-self:start!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-status-time{
+    display:inline-flex!important;
+    font-size:clamp(18px,5.6vw,22px)!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-player-name{
+    justify-self:center!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    text-align:center!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  .game-header.game-header.game-header .jwj-hunger{
+    justify-self:end!important;
+    white-space:nowrap!important;
+    text-align:right!important;
+  }
+}
+
+/* v0.10.570 root cause guard: main header is a direct child of #root, not of .main-screen. */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  #root > .game-header.game-header.game-header.main-header{
+    position:absolute!important;
+    top:calc(max(8px,env(safe-area-inset-top)) + var(--jwj-edge-gap,6px))!important;
+    left:var(--jwj-edge-gap,6px)!important;
+    right:var(--jwj-edge-gap,6px)!important;
+    width:auto!important;
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    margin:0!important;
+    padding:0!important;
+    display:block!important;
+    overflow:visible!important;
+    contain:none!important;
+    isolation:auto!important;
+    z-index:var(--jwj-header-z,600)!important;
+    background:transparent!important;
+    background-image:none!important;
+    border:0!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  #root > .game-header.game-header.game-header.main-header > .jwj-status-bar.top-bar-one{
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    display:block!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:100%!important;
+    max-height:100%!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    contain:none!important;
+  }
+}
+
+/* v0.10.570 direct-child positioning guard for the actual main header DOM. */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  #root > .game-header.main-header > .jwj-status-bar.top-bar-one > .jwj-status-primary{
+    position:absolute!important;
+    top:0!important;
+    left:clamp(10px,2.7vw,13px)!important;
+    right:clamp(92px,27vw,108px)!important;
+    bottom:auto!important;
+    width:auto!important;
+    height:50%!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  #root > .game-header.main-header > .jwj-status-bar.top-bar-one > .jwj-status-secondary{
+    position:absolute!important;
+    top:auto!important;
+    left:clamp(10px,2.7vw,13px)!important;
+    right:clamp(10px,2.7vw,13px)!important;
+    bottom:0!important;
+    width:auto!important;
+    height:50%!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="main"]
+  #root > .game-header.main-header > .jwj-status-bar.top-bar-one > .jwj-money-area{
+    position:absolute!important;
+    top:0!important;
+    right:clamp(10px,2.7vw,13px)!important;
+    bottom:auto!important;
+    left:auto!important;
+    width:auto!important;
+    height:50%!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+}

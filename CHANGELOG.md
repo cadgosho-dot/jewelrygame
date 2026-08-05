@@ -1,3 +1,18 @@
+## v0.10.570
+
+- Fixed the portrait main-menu status bar so the second row is always visible.
+- The second row now reliably shows current time, player name, and hunger.
+- Kept the first-row money position, transparent header background, compact date spacing, and landscape layout unchanged.
+
+# v0.10.569
+
+- 御徒町・採掘など、メインメニューから先の画面で上部バー2の黒い背景を完全に削除し、枠線だけを残しました。
+- 上部バー2の疑似要素による背景も無効化し、縦画面・横画面の両方へ適用しました。
+- 「年月日」「曜日」「○○○日目」の項目間隔を詰め、一つの情報群として読みやすくしました。
+- 天気の前には必要な余白を残し、日付群と天気が密着しすぎないよう調整しました。
+- 横画面の時刻・名前・空腹度・所持金の位置と大きさは変更していません。
+- バージョンを0.10.569へ更新し、Service Workerのキャッシュ世代を更新しました。
+
 # v0.10.568
 
 - 上部ステータスのHTML構造を新しい共通部品へ置き換え、過去の縦画面用CSSが文字を重ねたり隠したりしない構成へ変更。

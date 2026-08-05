@@ -1,0 +1,8 @@
+JEWELRYxJEWELRY v0.10.565 update
+
+1. Extract this ZIP.
+2. Copy all extracted files into the GitHub repository folder.
+3. Choose overwrite/replace when prompted.
+4. In GitHub Desktop, commit with: Update to v0.10.565
+5. Push origin.
+6. Confirm: https://cadgosho-dot.github.io/jewelrygame/?v=0.10.565

@@ -1,0 +1,17 @@
+JEWELRYxJEWELRY v0.10.565 validation
+
+PASS: node --check js/app.js
+PASS: node --check js/game-data.js
+PASS: node --check sw.js
+PASS: styles.css parsed successfully with PostCSS
+PASS: VERSION constants use 0.10.565
+PASS: HTML, module imports, and Service Worker cache-busting references use 0.10.565
+PASS: portrait top-bar-one height is responsive from 112px to 124px
+PASS: portrait primary and secondary status rows have explicit visible layout space
+PASS: portrait Android top safe-area guard is enabled
+PASS: portrait main and two-bar content offsets follow the revised header height
+PASS: v0.10.565 override is portrait-only; landscape v0.10.564 layout remains unchanged
+PASS: landscape hunger left alignment and enlarged money rules remain present
+PASS: ZIP archive integrity test passed
+
+No game-time, hunger, money, action, balance, or save-data logic was changed.

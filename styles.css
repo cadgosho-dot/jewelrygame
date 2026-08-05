@@ -15573,3 +15573,96 @@ html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:no
     text-align:left!important;
   }
 }
+
+/* v0.10.565: 縦画面の上部バー1を完全表示
+   横画面の正常な配置は変更せず、縦画面だけ高さ・安全余白・2行の描画領域を確保する。 */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"] body{
+    --jwj-bar-one-height:clamp(112px,32vw,124px)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .screen-shell.screen-shell > .game-header.game-header.game-header{
+    top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap))!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one{
+    flex-basis:var(--jwj-bar-one-height)!important;
+    height:var(--jwj-bar-one-height)!important;
+    min-height:var(--jwj-bar-one-height)!important;
+    max-height:var(--jwj-bar-one-height)!important;
+    overflow:visible!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .status-left.status-left{
+    align-items:stretch!important;
+    padding:clamp(10px,2.7vw,13px) 0 clamp(10px,2.7vw,13px) clamp(11px,3vw,14px)!important;
+    overflow:visible!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area{
+    padding:clamp(10px,2.7vw,13px) clamp(11px,3vw,14px) clamp(10px,2.7vw,13px) 2px!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header .status-top-line.status-top-line{
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    display:grid!important;
+    grid-template-rows:minmax(24px,auto) minmax(30px,auto)!important;
+    align-content:center!important;
+    justify-content:start!important;
+    row-gap:clamp(8px,2.2vw,11px)!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow:visible!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header :is(.status-primary-line.status-primary-line,.status-secondary-line.status-secondary-line){
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    flex:0 0 auto!important;
+    width:auto!important;
+    height:auto!important;
+    min-height:0!important;
+    align-items:center!important;
+    align-content:center!important;
+    justify-content:flex-start!important;
+    overflow:visible!important;
+    line-height:1!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header .status-secondary-line.status-secondary-line .game-time-panel.game-time-panel{
+    display:inline-flex!important;
+    align-items:center!important;
+    min-height:1.15em!important;
+    line-height:1!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen="main"] .main-screen.main-screen{
+    padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + 4px)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .screen-shell.screen-shell > .screen-content{
+    padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
+    scroll-padding-top:calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap) + var(--jwj-bar-one-height) + var(--jwj-header-gap) + var(--jwj-bar-two-height) + 8px)!important;
+  }
+}

@@ -1,3 +1,16 @@
+## v0.10.572
+
+- Moved the portrait meal-screen hunger summary below the operation header so it no longer overlaps the upper bars.
+- Removed the seven-segment hunger barometer from the meal selection screen.
+- Kept the numeric current hunger display, meal prices, recovery values, header layout, and game logic unchanged.
+
+## v0.10.571
+
+- Removed the black fill from the `メイン画面` button while keeping its border and label.
+- Rebuilt the portrait operation bar as three explicit columns: back button, screen title, and help/main actions.
+- Prevented the `スマートフォン` title from overlapping the help button on narrow portrait phones.
+- Kept the current landscape header, status bar, money display, and game logic unchanged.
+
 ## v0.10.570
 
 - Fixed the portrait main-menu status bar so the second row is always visible.

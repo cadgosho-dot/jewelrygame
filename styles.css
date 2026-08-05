@@ -16666,3 +16666,141 @@ body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([dat
     max-height:none!important;
   }
 }
+
+/* v0.10.571: メイン画面ボタン透明化／縦画面の画面名と操作ボタンの重なり防止 */
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .header-main-button.header-main-button{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .header-main-button.header-main-button:hover,
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header .header-main-button.header-main-button:focus-visible{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  /* 左の戻る、中央の画面名、右の説明＋メイン画面を別々の列へ固定する。 */
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center{
+    display:grid!important;
+    grid-template-columns:clamp(38px,10.8vw,44px) minmax(0,1fr) max-content!important;
+    align-items:center!important;
+    justify-items:stretch!important;
+    column-gap:clamp(5px,1.5vw,8px)!important;
+    padding:0 clamp(8px,2.4vw,11px)!important;
+    overflow:visible!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center > .header-back-button.header-back-button{
+    grid-column:1!important;
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    justify-self:start!important;
+    margin:0!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center > .header-title.header-title{
+    grid-column:2!important;
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    justify-self:stretch!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:0 2px!important;
+    text-align:center!important;
+    overflow:hidden!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center > .header-title.header-title > strong{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    margin:0!important;
+    font-size:clamp(15px,4.45vw,18px)!important;
+    line-height:1.05!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center > .header-secondary-actions.header-secondary-actions{
+    grid-column:3!important;
+    position:static!important;
+    inset:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
+    transform:none!important;
+    justify-self:end!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    width:auto!important;
+    min-width:max-content!important;
+    max-width:none!important;
+    height:auto!important;
+    margin:0!important;
+    padding:0!important;
+    gap:clamp(4px,1.1vw,6px)!important;
+    overflow:visible!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > .top-bar-two.top-bar-two.header-center.header-center > .header-secondary-actions.header-secondary-actions > :is(.header-help-button,.header-main-button){
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    flex:0 0 auto!important;
+    margin:0!important;
+  }
+}
+
+/* v0.10.572: 縦画面の食事空腹度枠を操作バーの下へ移動し、バロメーターを廃止 */
+body[data-screen="meal"] .meal-hunger-summary .hunger-pips{
+  display:none!important;
+}
+body[data-screen="meal"] .meal-hunger-summary{
+  justify-content:center!important;
+}
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen="meal"] .screen-shell:not(.meal-eating-shell) > .screen-content{
+    display:block!important;
+    justify-content:flex-start!important;
+    align-content:start!important;
+    overflow-y:auto!important;
+  }
+  html[data-device-class="phone"][data-orientation="portrait"]
+  body[data-screen="meal"] .screen-shell:not(.meal-eating-shell) > .screen-content > .meal-choice-panel{
+    margin:clamp(28px,7.5vw,36px) auto max(14px,var(--safe-bottom,0px))!important;
+    scroll-margin-top:clamp(28px,7.5vw,36px)!important;
+  }
+}

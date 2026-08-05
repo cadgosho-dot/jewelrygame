@@ -12464,7 +12464,6 @@ function renderMeal() {
     <section class="meal-choice-panel glass-panel">
       <div class="meal-hunger-summary">
         <div class="meal-current-hunger"><small>現在の空腹度</small><strong>${current}／7</strong></div>
-        ${hungerPips(current)}
       </div>
       <div class="meal-choice-grid">
         ${Object.values(MEALS).sort((a, b) => a.price - b.price || a.name.localeCompare(b.name, 'ja')).map((meal) => {

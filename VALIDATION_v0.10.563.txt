@@ -1,0 +1,19 @@
+JEWELRYxJEWELRY v0.10.563 validation
+
+PASS: JavaScript syntax - js/app.js
+PASS: JavaScript syntax - js/game-data.js
+PASS: JavaScript syntax - sw.js
+PASS: CSS parsed without syntax errors
+PASS: version constants and HTML cache-busting references use 0.10.563
+PASS: complete styles.css is included in the update
+PASS: portrait top bar 1 shows status information and money inside its own frame
+PASS: portrait top bar 2 shows back, centered title, help, and main-screen controls inside its own frame
+PASS: money does not overlap the operation bar
+PASS: title remains centered independently of left and right controls
+PASS: portrait layout checks completed at 280x640, 320x700, 360x800, and 412x915
+PASS: landscape layout checks completed at 731x313 and 915x412
+PASS: landscape money font is at least 20 CSS pixels and scales up to 24 CSS pixels
+PASS: time emphasis and time-warning colors remain enabled
+PASS: money-change animation foreground layer remains enabled
+PASS: Panda Plaza music-event audio asset remains included
+PASS: no save-data schema or game-balance changes

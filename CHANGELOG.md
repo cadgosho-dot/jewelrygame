@@ -1,3 +1,9 @@
+## v0.10.573
+- 縦画面・横画面の上部バー1／上部バー2を、枠線を残した完全透明表示へ統一。
+- 上部バー内の黒い塗り、グラデーション、ぼかし、影を削除。
+- メイン画面の下部メニュー外枠と各メニューボタンも、枠線・アイコン・文字を残して完全透明化。
+- ホバー・フォーカス・押下時にも黒背景が戻らないよう調整。
+
 ## v0.10.572
 
 - Moved the portrait meal-screen hunger summary below the operation header so it no longer overlaps the upper bars.

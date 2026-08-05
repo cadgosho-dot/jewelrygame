@@ -1,0 +1,8 @@
+JEWELRYxJEWELRY v0.10.573 UPDATE
+
+1. Extract this ZIP.
+2. Copy all extracted files into the GitHub repository folder and overwrite existing files.
+3. Open GitHub Desktop.
+4. Commit with: Update to v0.10.573
+5. Push origin.
+6. After deployment, open the game with ?v=0.10.573 to bypass an old cache.

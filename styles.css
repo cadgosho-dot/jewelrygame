@@ -16804,3 +16804,69 @@ body[data-screen="meal"] .meal-hunger-summary{
     scroll-margin-top:clamp(28px,7.5vw,36px)!important;
   }
 }
+
+/* v0.10.573: 上部バーと下部メニューの枠内を縦横とも完全透明化 */
+html[data-device-class="phone"]
+body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header > :is(.top-bar-one.top-bar-one,.top-bar-two.top-bar-two){
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}
+html[data-device-class="phone"]
+body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header > :is(.top-bar-one.top-bar-one,.top-bar-two.top-bar-two)::before,
+html[data-device-class="phone"]
+body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header.game-header > :is(.top-bar-one.top-bar-one,.top-bar-two.top-bar-two)::after{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+}
+
+/* メイン画面下部メニューは外枠・各ボタンとも背景を描かず、枠線と文字・アイコンだけ残す。 */
+html[data-device-class="phone"] body[data-screen="main"] .main-menu.main-menu{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}
+html[data-device-class="phone"] body[data-screen="main"] .main-menu.main-menu button{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}
+html[data-device-class="phone"] body[data-screen="main"] .main-menu.main-menu button:hover,
+html[data-device-class="phone"] body[data-screen="main"] .main-menu.main-menu button:focus-visible,
+html[data-device-class="phone"] body[data-screen="main"] .main-menu.main-menu button:active{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+
+/* Generic fallback before device/orientation attributes settle. */
+body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.game-header.game-header > :is(.top-bar-one.top-bar-one,.top-bar-two.top-bar-two),
+body[data-screen="main"] .main-menu.main-menu,
+body[data-screen="main"] .main-menu.main-menu button{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+}

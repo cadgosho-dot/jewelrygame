@@ -1,0 +1,302 @@
+[
+  {
+    "stage": "western-union-video-stage",
+    "size": "320x700",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "tattoo-woman-amber-video-stage",
+    "size": "320x700",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "mystery-chinese-meal-video-stage",
+    "size": "320x700",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "gray-hood-aquarium-video-stage",
+    "size": "320x700",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "okachimachi-quiz-video-stage",
+    "size": "320x700",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "western-union-video-stage",
+    "size": "360x800",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "tattoo-woman-amber-video-stage",
+    "size": "360x800",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "mystery-chinese-meal-video-stage",
+    "size": "360x800",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "gray-hood-aquarium-video-stage",
+    "size": "360x800",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "okachimachi-quiz-video-stage",
+    "size": "360x800",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 96.9375,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "western-union-video-stage",
+    "size": "412x915",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 99.21875,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "tattoo-woman-amber-video-stage",
+    "size": "412x915",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 99.21875,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "mystery-chinese-meal-video-stage",
+    "size": "412x915",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 99.21875,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "gray-hood-aquarium-video-stage",
+    "size": "412x915",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 99.21875,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "okachimachi-quiz-video-stage",
+    "size": "412x915",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 99.21875,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "western-union-video-stage",
+    "size": "640x360",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "tattoo-woman-amber-video-stage",
+    "size": "640x360",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "mystery-chinese-meal-video-stage",
+    "size": "640x360",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "gray-hood-aquarium-video-stage",
+    "size": "640x360",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "okachimachi-quiz-video-stage",
+    "size": "640x360",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "western-union-video-stage",
+    "size": "915x412",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "tattoo-woman-amber-video-stage",
+    "size": "915x412",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "mystery-chinese-meal-video-stage",
+    "size": "915x412",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "gray-hood-aquarium-video-stage",
+    "size": "915x412",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  },
+  {
+    "stage": "okachimachi-quiz-video-stage",
+    "size": "915x412",
+    "box": {
+      "x": 9,
+      "y": 9,
+      "width": 112.328125,
+      "height": 30
+    },
+    "clicked": true,
+    "visible": true
+  }
+]

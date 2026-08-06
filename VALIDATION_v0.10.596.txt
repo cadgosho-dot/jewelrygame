@@ -1,0 +1,27 @@
+JEWELRY×JEWELRY v0.10.596 検証結果
+
+[OK] version_game_data
+[OK] version_service_worker
+[OK] version_game_html
+[OK] brown_bunny_definition
+[OK] brown_bunny_female
+[OK] brown_bunny_special_only
+[OK] forced_customer_id
+[OK] normal_random_exclusion
+[OK] pending_visit_consumed
+[OK] actual_customer_start
+[OK] white_bunny_bgm_url
+[OK] white_bunny_bgm_only_event
+[OK] bgm_settings_linked
+[OK] service_worker_bgm_cache
+[OK] dialogue_original_rude
+[OK] dialogue_original_kind
+[OK] dialogue_next_day
+[OK] audio_file_exists : 655091 bytes
+[OK] audio_duration : 40.000s
+[OK] white_bunny_transparent_png : (0, 255)
+[OK] syntax_js/app.js
+[OK] syntax_js/game-data.js
+[OK] syntax_sw.js
+
+結果: 23/23 OK

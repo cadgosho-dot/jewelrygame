@@ -1,4 +1,4 @@
-export const VERSION = '0.10.586';
+export const VERSION = '0.10.596';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -362,6 +362,7 @@ export const GEMS = {
   paraibatourmaline: { id: 'paraibatourmaline', name: 'パライバトルマリン', roughPrice: 15000, price: 30000, looseRank: 'S', hue: '#1ed8dd' },
   tourmaline: { id: 'tourmaline', name: 'トルマリン', roughPrice: 7000, price: 8000, looseRank: 'C', hue: '#c36f98' },
   tanzanite: { id: 'tanzanite', name: 'タンザナイト', roughPrice: 11000, price: 11000, looseRank: 'B', hue: '#6a68df' },
+  benitoite: { id: 'benitoite', name: 'ベニトアイト', roughPrice: 0, price: 55000, looseRank: 'S', hue: '#2855d6', eventOnly: true },
   citrine: { id: 'citrine', name: 'シトリン', roughPrice: 3500, price: 3500, looseRank: 'D', hue: '#d89a22' },
 };
 
@@ -427,6 +428,7 @@ export function createLooseInventory() {
 
 
 export const MEALS = {
+  ice: { id: 'ice', name: 'アイス', price: 300, recovery: 1 },
   convenience: { id: 'convenience', name: 'コンビニ', price: 900, recovery: 3 },
   soba: { id: 'soba', name: '立ち食いそば', price: 850, recovery: 3 },
   ramen: { id: 'ramen', name: 'ラーメン', price: 900, recovery: 3 },
@@ -4122,6 +4124,26 @@ export const CUSTOMERS = {
     request: {
       item: 'ring', gem: 'emerald', looseShape: 'emerald', metal: 'gold', design: 'classic', budget: 130000, deadlineDays: 7, difficulty: 'general', requiredTools: ['jewelryBench'],
       preference: { type: 'gem', value: 'emerald', label: 'エメラルド' },
+    },
+  },
+  brownBunny: {
+    id: 'brownBunny', name: 'ブラウンバニー', specialOnly: true, gender: '女性',
+    opening: 'ホワイトバニーに聞いて、相談に来ました。',
+    profile: 'ホワイトバニーの知り合いとして来店した、自由で落ち着いた雰囲気の女性客です。',
+    traits: '親しみやすい一方で好みは明確。個性的でも日常で使えるジュエリーを探しています。',
+    openingTemplate: 'ホワイトバニーに聞いて、{item}の相談に来ました。',
+    profileTemplate: 'ホワイトバニーの紹介で、自分用の{item}を相談しに来店した女性客です。',
+    details: {
+      ageGroup: '20代後半', occupation: 'クリエイター',
+      purposeTemplate: '自分らしく日常で身につけられる{item}を注文するため', wearer: '本人',
+      wearingScene: '休日・ライブ・友人との外出', preference: '少し個性的で、色や形に遊びがありながら普段使いできるもの',
+      budgetStyle: '気に入ったデザインと仕立ての完成度を重視',
+    },
+    preferenceText: '色石を使った個性的で普段使いできるジュエリー',
+    image: './assets/images/customers/customer-placeholder.svg',
+    request: {
+      item: 'ring', gem: 'tourmaline', looseShape: 'oval', metal: 'silver', design: 'modern', budget: 90000, deadlineDays: 10, difficulty: 'general', requiredTools: ['jewelryBench'],
+      preference: { type: 'design', value: 'modern', label: 'モダン' },
     },
   },
 };

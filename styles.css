@@ -17532,3 +17532,448 @@ body[data-screen="main"] .main-menu.main-menu button{
     max-height: min(62vh, 680px);
   }
 }
+
+/* v0.10.589: event intro movie skip button */
+.event-movie-skip{
+  position:absolute!important;
+  z-index:8!important;
+  top:max(9px,env(safe-area-inset-top))!important;
+  left:max(9px,env(safe-area-inset-left))!important;
+  right:auto!important;
+  bottom:auto!important;
+  transform:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:30px!important;
+  margin:0!important;
+  padding:6px 9px!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  border-radius:7px!important;
+  background:rgba(0,0,0,.62)!important;
+  color:#fff!important;
+  font:800 clamp(10px,2.5vw,12px)/1 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+  letter-spacing:.035em!important;
+  white-space:nowrap!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.85)!important;
+  box-shadow:0 3px 12px rgba(0,0,0,.32)!important;
+  backdrop-filter:blur(4px)!important;
+  -webkit-backdrop-filter:blur(4px)!important;
+  cursor:pointer!important;
+  touch-action:manipulation!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+.event-movie-skip:hover,
+.event-movie-skip:focus-visible{
+  background:rgba(0,0,0,.82)!important;
+  border-color:#fff!important;
+  outline:2px solid rgba(255,255,255,.48)!important;
+  outline-offset:2px!important;
+}
+.event-movie-skip:active{transform:scale(.97)!important}
+
+
+/* v0.10.590 ピアス完成品を左右1組（2個）で表示 */
+.jewelry-item-shape.item-earrings{
+  -webkit-mask-image:none;
+  mask-image:none;
+  background:transparent;
+  filter:none;
+  position:relative;
+}
+.jewelry-item-shape.item-earrings::before,
+.jewelry-item-shape.item-earrings::after{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:46%;
+  display:block;
+  background:currentColor;
+  -webkit-mask-image:url('./assets/images/jewelry-items/earrings.png');
+  mask-image:url('./assets/images/jewelry-items/earrings.png');
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  -webkit-mask-position:center;
+  mask-position:center;
+  -webkit-mask-size:contain;
+  mask-size:contain;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.45));
+}
+.jewelry-item-shape.item-earrings::before{
+  left:2%;
+  transform:rotate(-3deg);
+  transform-origin:50% 18%;
+}
+.jewelry-item-shape.item-earrings::after{
+  right:2%;
+  transform:rotate(3deg);
+  transform-origin:50% 18%;
+}
+.jewelry-item-shape.small.item-earrings::before,
+.jewelry-item-shape.small.item-earrings::after{
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.45));
+}
+.jewelry-loose-set.item-earrings .center-gem.earring-left{
+  top:27%;
+  left:30%;
+}
+.jewelry-loose-set.item-earrings .center-gem.earring-right{
+  top:27%;
+  left:70%;
+}
+.jewelry-preview.item-earrings .jewelry-loose-preview{
+  width:58px;
+  height:58px;
+}
+.small-jewelry.item-earrings .center-gem.earring-left{
+  top:27%;
+  left:29%;
+}
+.small-jewelry.item-earrings .center-gem.earring-right{
+  top:27%;
+  left:71%;
+}
+.small-jewelry.item-earrings .small-jewelry-loose{
+  width:17px;
+  height:17px;
+}
+@media (max-width:700px){
+  .jewelry-preview.item-earrings .jewelry-loose-preview{
+    width:50px;
+    height:50px;
+  }
+}
+
+
+.terry-california-event-screen {
+  padding: 0;
+}
+
+.terry-california-event {
+  position: relative;
+  min-height: calc(var(--app-height, 100dvh) - var(--shell-header-height, 0px));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(18px, 4vw, 34px);
+  overflow: hidden;
+}
+
+.terry-california-backdrop {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(180deg, rgba(24, 12, 6, 0.2), rgba(20, 10, 6, 0.56)), var(--terry-bg);
+  background-size: cover;
+  background-position: center;
+}
+
+.terry-california-character-area,
+.terry-california-panel-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.terry-california-character-area {
+  width: min(100%, 520px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex: 1 1 auto;
+  padding-top: clamp(10px, 3vw, 24px);
+}
+
+.terry-california-character {
+  width: min(100%, 460px);
+  max-height: min(58vh, 760px);
+  object-fit: contain;
+  filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.38));
+}
+
+.terry-california-panel-wrap {
+  width: min(100%, 760px);
+  display: flex;
+  justify-content: center;
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+}
+
+.terry-california-dialogue,
+.terry-california-offer {
+  width: min(100%, 760px);
+  background: linear-gradient(180deg, rgba(34, 18, 12, 0.92), rgba(18, 10, 8, 0.9));
+  color: #fff4e7;
+  border: 1px solid rgba(255, 231, 192, 0.24);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.26);
+}
+
+.terry-california-dialogue small,
+.terry-california-offer small {
+  color: rgba(255, 222, 176, 0.86);
+}
+
+.terry-california-offer {
+  display: grid;
+  gap: 14px;
+  text-align: center;
+  padding: clamp(16px, 4vw, 24px);
+}
+
+.terry-california-offer > strong {
+  font-size: clamp(17px, 2.8vw, 22px);
+  line-height: 1.65;
+}
+
+.terry-california-gem-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: clamp(12px, 3vw, 16px);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.terry-california-gem-card img {
+  width: min(100%, 220px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.25));
+}
+
+.terry-california-gem-card h2 {
+  margin: 0;
+  font-size: clamp(22px, 4vw, 28px);
+}
+
+.terry-california-gem-card p {
+  margin: 0;
+  font-size: clamp(24px, 5vw, 34px);
+  font-weight: 900;
+  color: #ffe6a4;
+}
+
+.terry-california-gem-card span {
+  color: rgba(255, 244, 222, 0.86);
+  font-size: 13px;
+}
+
+.terry-california-offer-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.terry-system-dialogue strong {
+  color: #ffd1d1;
+}
+
+.terry-purchased-dialogue small {
+  color: #bde9ff;
+}
+
+@media (max-width: 720px) {
+  .terry-california-event {
+    padding: 12px 12px max(12px, env(safe-area-inset-bottom, 0px));
+  }
+  .terry-california-character {
+    width: min(100%, 360px);
+    max-height: 48vh;
+  }
+  .terry-california-offer-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* v0.10.592: テリー・カリフォルニア導入動画 */
+.terry-california-video-stage{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#000!important;
+}
+.terry-california-video-stage video{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  display:block!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:#000!important;
+  pointer-events:none!important;
+}
+.terry-california-video-loading,
+.terry-california-video-start,
+.terry-california-video-error{
+  position:absolute!important;
+  z-index:3!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  color:#fff!important;
+  text-align:center!important;
+}
+.terry-california-video-loading{
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  padding:10px 16px!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.68)!important;
+  font-weight:800!important;
+  letter-spacing:.08em!important;
+  white-space:nowrap!important;
+}
+.terry-california-video-stage.is-playing .terry-california-video-loading,
+.terry-california-video-stage.needs-start .terry-california-video-loading,
+.terry-california-video-stage.has-error .terry-california-video-loading{display:none!important}
+.terry-california-video-start{
+  display:none!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  min-width:min(260px,82vw)!important;
+  padding:15px 22px!important;
+  border:1px solid rgba(255,255,255,.62)!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.82)!important;
+  color:#fff!important;
+  font-size:clamp(16px,3.8vw,22px)!important;
+  font-weight:900!important;
+  box-shadow:0 14px 45px rgba(0,0,0,.58)!important;
+}
+.terry-california-video-stage.needs-start .terry-california-video-start{display:block!important}
+.terry-california-video-error{
+  display:none!important;
+  bottom:max(18px,env(safe-area-inset-bottom))!important;
+  width:min(620px,calc(100vw - 28px))!important;
+  padding:10px 14px!important;
+  border:1px solid rgba(255,145,145,.58)!important;
+  border-radius:14px!important;
+  background:rgba(78,0,0,.84)!important;
+  line-height:1.45!important;
+}
+.terry-california-video-error strong,
+.terry-california-video-error span{display:block!important}
+.terry-california-video-error span{font-size:.84rem!important;opacity:.9!important}
+.terry-california-video-stage.has-error .terry-california-video-error{display:block!important}
+@supports not (height:100dvh){
+  .terry-california-video-screen{height:100vh!important;min-height:100vh!important}
+}
+
+
+/* v0.10.593: 横画面の回転寿司カード切れ修正 */
+@media (orientation:landscape), (min-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-grid{
+    grid-template-columns:repeat(8,minmax(0,1fr)) minmax(0,1.25fr)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card-kaitenzushi{
+    align-content:center!important;
+    justify-content:stretch!important;
+    gap:clamp(2px,.55vh,4px)!important;
+    padding:clamp(4px,1.1vh,7px) clamp(5px,.75vw,9px)!important;
+    overflow:hidden!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card-kaitenzushi>strong{
+    font-size:clamp(.72rem,1.15vw,.9rem)!important;
+    line-height:1.15!important;
+    white-space:nowrap!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card-kaitenzushi>small{
+    display:block!important;
+    font-size:clamp(.58rem,.92vw,.72rem)!important;
+    line-height:1.25!important;
+    overflow-wrap:anywhere!important;
+  }
+}
+
+
+/* v0.10.594: アイス食事追加 */
+body[data-screen="meal"] .meal-eating-panel-ice > .meal-food-display-ice{
+  overflow:visible!important;
+}
+body[data-screen="meal"] .meal-eating-panel-ice > .meal-food-display-ice img{
+  width:auto!important;
+  height:auto!important;
+  max-width:min(44vw,360px)!important;
+  max-height:min(62vh,560px)!important;
+  transform:rotate(-9deg)!important;
+  transform-origin:50% 58%!important;
+  filter:drop-shadow(0 18px 28px rgba(0,0,0,.38))!important;
+}
+body[data-screen="meal"] .meal-choice-card-ice > strong{
+  color:#c9fff1!important;
+}
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  body[data-screen="meal"] .meal-eating-panel-ice > .meal-food-display-ice img{
+    max-width:min(62vw,330px)!important;
+    max-height:min(57vh,520px)!important;
+    transform:rotate(-9deg)!important;
+  }
+}
+@media (orientation:landscape), (min-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-grid{
+    grid-template-columns:repeat(9,minmax(0,1fr)) minmax(0,1.18fr)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card{
+    gap:clamp(2px,.45vh,4px)!important;
+    padding:clamp(4px,1.05vh,7px) clamp(3px,.52vw,7px)!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card>strong{
+    font-size:clamp(.68rem,1.05vw,.86rem)!important;
+    line-height:1.12!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card>span{
+    font-size:clamp(.68rem,1.05vw,.86rem)!important;
+    line-height:1.08!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card>small{
+    font-size:clamp(.54rem,.84vw,.68rem)!important;
+    line-height:1.18!important;
+  }
+}
+
+
+/* v0.10.595 ホワイトバニー・アイスイベント */
+body[data-screen="whiteBunnyIceEvent"] .visit-character-event{position:relative}
+body[data-screen="whiteBunnyIceEvent"] .visit-character-event::before{background:radial-gradient(circle at 50% 32%,rgba(199,255,244,.08),transparent 28%),radial-gradient(circle at 50% 39%,transparent 12%,rgba(0,0,0,.18) 58%,rgba(0,0,0,.62))}
+.white-bunny-character-area{bottom:clamp(148px,24vh,220px);padding-top:10px}
+.white-bunny-character{max-width:min(70vw,540px);max-height:min(70vh,760px);filter:drop-shadow(0 24px 34px rgba(0,0,0,.78))}
+.white-bunny-dialogue>small,.white-bunny-choice-card>small{display:block;color:#9ef7e4;font-size:.78rem;font-weight:900;letter-spacing:.08em}
+.white-bunny-dialogue>strong{color:#f5fffd}
+.white-bunny-choice-card{position:relative;z-index:10;align-self:end;justify-self:center;display:grid;gap:.8rem;width:min(640px,calc(100vw - 18px));margin:0 auto max(12px,var(--safe-bottom));padding:clamp(1rem,2.8vw,1.3rem);text-align:center;background:linear-gradient(180deg,rgba(7,17,19,.92),rgba(10,10,12,.9));border:1px solid rgba(146,245,227,.34);border-radius:18px;box-shadow:0 18px 42px rgba(0,0,0,.44)}
+.white-bunny-choice-card>strong{font-size:clamp(1.08rem,2.2vw,1.34rem);line-height:1.55;color:#ffffff}
+.white-bunny-choice-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.white-bunny-choice-button{min-height:54px;font-size:1rem;font-weight:900}
+.white-bunny-kind-dialogue{border-color:rgba(130,255,217,.38)!important}
+.white-bunny-rude-dialogue{border-color:rgba(255,188,188,.28)!important}
+@media (orientation:portrait),(max-width:760px){
+  .white-bunny-character-area{bottom:clamp(182px,31vh,268px)}
+  .white-bunny-character{max-width:min(84vw,480px);max-height:min(58vh,620px)}
+  .white-bunny-choice-card{width:min(94vw,540px)}
+  .white-bunny-choice-actions{grid-template-columns:1fr}
+}
+@media (orientation:landscape) and (max-height:560px){
+  .white-bunny-character-area{bottom:110px}
+  .white-bunny-character{max-width:min(44vw,400px);max-height:70vh}
+  .white-bunny-choice-card{margin-bottom:6px;padding:.9rem 1rem}
+  .white-bunny-choice-card>strong{font-size:.98rem}
+  .white-bunny-choice-button{min-height:42px;font-size:.9rem}
+}

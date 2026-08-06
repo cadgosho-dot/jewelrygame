@@ -7,9 +7,9 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.586';
-import { COMMON_LOOSE_PROFESSIONAL_SECTIONS, looseGemAdvancedData } from './loose-gem-professional.js?v=0.10.586';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.586';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.596';
+import { COMMON_LOOSE_PROFESSIONAL_SECTIONS, looseGemAdvancedData } from './loose-gem-professional.js?v=0.10.596';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.596';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -63,6 +63,9 @@ let itemUseFeedback = null;
 let itemUseFeedbackTimer = null;
 let selectedMeal = 'convenience';
 let mealTransitioning = false;
+let iceMealBgmAudio = null;
+let iceMealAmbientAudio = null;
+let whiteBunnyEventBgmAudio = null;
 let mealEatingCompletionController = null;
 let childhoodFriendMealWatchdogTimer = null;
 let hungerFeedback = null;
@@ -145,6 +148,7 @@ const MERMAID_EVENT_SHAPE_ID = 'pearl';
 const MEAL_RANDOM_EVENT_CHANCE = 1 / 30;
 const SUSHI_CHEF_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
 const CYCLOPS_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
+const WHITE_BUNNY_ICE_EVENT_CHANCE_DENOMINATOR = 50;
 const GANESHA_TUSK_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
 const TATTOO_WOMAN_AMBER_EVENT_CHANCE = 1 / 30;
 const GANESHA_TUSK_GEM_ID = 'ivory';
@@ -187,6 +191,8 @@ const CLOCK_TOWER_DONATION_EVENT_CHANCE = 1 / 90;
 const PANDA_MUSIC_EVENT_CHANCE = 1 / 90;
 const PANDA_MUSIC_EVENT_AUDIO_URL = `./assets/audio/sfx-panda-music-event.ogg?v=${VERSION}`;
 const PANDA_MUSIC_EVENT_AUDIO_GAIN = 0.72;
+const WHITE_BUNNY_EVENT_BGM_URL = `./assets/audio/bgm-white-bunny.ogg?v=${VERSION}`;
+const WHITE_BUNNY_EVENT_BGM_GAIN = 0.68;
 const PANDA_MUSIC_EVENT_IMAGES = Object.freeze([
   'panda-music-band-alien.png',
   'panda-music-band-cats.png',
@@ -228,6 +234,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   childhoodFriendEvent: new Set(['intro1', 'intro2', 'intro3', 'eating', 'postMeal']),
   grayHoodAquariumEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   touristWoodSwordEvent: new Set(['intro1', 'route', 'reward', 'farewell']),
+  terryCaliforniaEvent: new Set(['video', 'intro1', 'intro2', 'offer', 'insufficientFunds', 'declined', 'purchased']),
   alienAbductionEvent: new Set(['intro1', 'intro2', 'abducted', 'returnPending']),
   diamondPolishingLapEvent: new Set(['intro1', 'intro2', 'reward', 'outro']),
   cinemaVisitEvent: new Set(['invitation', 'playing']),
@@ -240,7 +247,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
   'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
-  'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
+  'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'robberyReport', 'kaitenzushi',
 ]);
@@ -266,6 +273,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   childhoodFriendEvent: { eventKey: 'childhoodFriendEvent', fallback: 'main' },
   grayHoodAquariumEvent: { eventKey: 'grayHoodAquariumEvent', fallback: 'meal', unlockFeaturesOnEmergency: ['aquarium'] },
   touristWoodSwordEvent: { eventKey: 'touristWoodSwordEvent', fallback: 'main' },
+  terryCaliforniaEvent: { eventKey: 'terryCaliforniaEvent', fallback: 'meal' },
   diamondPolishingLapEvent: { eventKey: 'diamondPolishingLapEvent', fallback: 'main' },
   hauntingEvent: { eventKey: 'hauntingEvent', fallback: 'main' },
   storeTheftEvent: { eventKey: 'storeTheftEvent', fallback: 'store' },
@@ -489,13 +497,14 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'kappa-jade-event-next', 'kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover',
+  'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
   'gray-hood-aquarium-video-start', 'gray-hood-aquarium-next', 'gray-hood-aquarium-receive',
   'okachimachi-quiz-video-start',
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
   'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'okachimachi-toll-event-next', 'panda-music-event-next', 'kaitenzushi-finish',
-  'mystery-chinese-meal-video-start', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
+  'mystery-chinese-meal-video-start', 'event-movie-skip', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
   'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'hit-rock',
@@ -1020,6 +1029,12 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
       ovalCabochon: './assets/images/loose/citrine/oval-cabochon.png',
     },
   },
+  benitoite: {
+    defaultShape: 'oval',
+    shapes: {
+      oval: './assets/images/loose/benitoite/oval.png',
+    },
+  },
 });
 
 function looseImagePath(gemId, shape = 'default') {
@@ -1081,6 +1096,7 @@ const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
   paraibatourmaline: 'ネオン感のある青緑色が特徴のトルマリンとして扱います。',
   tourmaline: '多彩な色を持つ宝石で、ゲーム内のルースはピンクトルマリンとして扱います。',
   tanzanite: '青から紫を帯びる色調が特徴のゾイサイトです。見る方向で色の印象が変わります。',
+  benitoite: '鮮やかな青色と強い分散が魅力の希少石です。ゲーム内ではテリー・カリフォルニアから購入できる特別なルースとして扱います。',
   citrine: '黄色から橙黄色を示すクォーツで、明るく温かい色調が特徴です。',
 });
 
@@ -1107,6 +1123,7 @@ const LOOSE_GEM_PROFILE_IDS = Object.freeze({
   paraibatourmaline: 'paraiba',
   tourmaline: 'tourmaline',
   tanzanite: 'tanzanite',
+  benitoite: 'benitoite',
   citrine: 'citrine',
 });
 
@@ -1565,6 +1582,17 @@ const GEM_LOOSE_GUIDES = Object.freeze({
       { title: '加工・石留め・手入れ', body: '劈開方向と内部亀裂を確認し、爪を一度に強く倒しません。尖った形では先端を保護します。柔らかい布と温かい石けん水で洗い、修理時は石を外してから加熱作業を行うのが安全です。' },
     ],
   },
+  benitoite: {
+    hardness: '6〜6.5', mineral: 'ベニトアイト（チタンを含むケイ酸塩鉱物）',
+    overview: 'ベニトアイトは鮮やかな青から青紫色を示す希少石で、高い分散による鋭いファイアが魅力です。代表産地のひとつとして知られるカリフォルニア州サンベニト郡では鉱山閉山の影響もあり、市場では大粒や高品質石の流通量が限られています。ゲーム内ではテリー・カリフォルニアから購入できる特別なオーバルルースとして扱います。',
+    sections: [
+      { title: '色とファイア', body: 'ベニトアイトはサファイアに近い青色の外観を持ちながら、分散が高く、白色光を虹色へ分けるファイアが出やすい宝石です。実際の評価では青の鮮やかさ、紫味や灰色味の少なさ、暗すぎない明度、正面での輝きとファイアのバランスを確認します。' },
+      { title: '希少性', body: '知名度に対して産出量が少なく、特にジュエリー向きの大きさと透明度を備えた石は限られます。産地や由来の話題性は魅力ですが、価値評価では実際の色、透明度、カット、重量、欠けの有無を個別に見ます。' },
+      { title: '耐久性', body: 'モース硬度はおおむね6〜6.5で、日常使用では擦り傷やエッジ欠けに注意が必要です。劈開方向の問題だけでなく、内部亀裂や薄いガードルがあると石留め時の圧力で欠けやすくなります。リングよりも、衝撃の少ないペンダントやピアスで扱いやすい石種です。' },
+      { title: 'カットと見え方', body: '高い分散を生かすには、単に深いだけでなく、光が正面へ戻る角度設計と対称性が重要です。オーバルでは中央の暗部やボウタイが強く出ることがあるため、正面色とファイアの見え方を複数方向で確認します。' },
+      { title: '鑑別と取り扱い', body: '鮮やかな青色石としてサファイア、タンザナイト、合成スピネル、ガラスなどと比較対象になります。外観だけで断定せず、屈折率、分散、二色性、内包物、必要に応じて専門検査を行います。洗浄は温かい石けん水を基本とし、超音波や強い熱、急冷を避けて扱います。' },
+    ],
+  },
   citrine: {
     hardness: '7', mineral: 'クォーツ（石英）',
     overview: 'シトリンは黄色から橙色を示すクォーツです。天然の黄色石英は比較的少なく、市場ではアメシストやスモーキークォーツを加熱して得たものも多く流通します。明るさ、彩度、褐色味、色帯が印象を左右します。',
@@ -1743,6 +1771,7 @@ function looseVariantRows({ ownedOnly = false } = {}) {
 }
 
 const MEAL_FOOD_IMAGES = Object.freeze({
+  ice: './assets/images/foods/ice-chocomint.png',
   convenience: './assets/images/foods/convenience.png',
   chinese: './assets/images/foods/chinese.png',
   korean: './assets/images/foods/korean.png',
@@ -1754,6 +1783,111 @@ const MEAL_FOOD_IMAGES = Object.freeze({
 });
 
 const imagePreloadCache = new Map();
+
+function ensureIceMealAudio() {
+  if (!(iceMealBgmAudio instanceof HTMLAudioElement)) {
+    iceMealBgmAudio = new Audio(versionedAsset('./assets/audio/bgm-meal-ice.ogg'));
+    iceMealBgmAudio.loop = true;
+    iceMealBgmAudio.preload = 'auto';
+    iceMealBgmAudio.setAttribute('playsinline', '');
+  }
+  if (!(iceMealAmbientAudio instanceof HTMLAudioElement)) {
+    iceMealAmbientAudio = new Audio(versionedAsset('./assets/audio/amb-meal-ice.ogg'));
+    iceMealAmbientAudio.loop = true;
+    iceMealAmbientAudio.preload = 'auto';
+    iceMealAmbientAudio.setAttribute('playsinline', '');
+  }
+}
+
+function updateIceMealAudioVolumes() {
+  ensureIceMealAudio();
+  const settings = state?.settings || {};
+  const bgmVolume = settings.bgmMuted ? 0 : Math.max(0, Math.min(1, Number(settings.bgmVolume) || 0)) * 0.72;
+  const ambientVolume = settings.ambientMuted ? 0 : Math.max(0, Math.min(1, Number(settings.ambientVolume) || 0)) * 0.82;
+  iceMealBgmAudio.volume = bgmVolume;
+  iceMealAmbientAudio.volume = ambientVolume;
+}
+
+function startIceMealAudio() {
+  ensureIceMealAudio();
+  updateIceMealAudioVolumes();
+  [iceMealBgmAudio, iceMealAmbientAudio].forEach((audio) => {
+    if (!(audio instanceof HTMLAudioElement)) return;
+    const promise = audio.play();
+    if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+  });
+}
+
+function stopIceMealAudio({ rewind = true } = {}) {
+  [iceMealBgmAudio, iceMealAmbientAudio].forEach((audio) => {
+    if (!(audio instanceof HTMLAudioElement)) return;
+    audio.pause();
+    if (rewind) {
+      try { audio.currentTime = 0; } catch (_) {}
+    }
+  });
+}
+
+function syncIceMealAudio() {
+  const active = screen === 'meal' && screenData?.eating === true && screenData?.mealId === 'ice';
+  if (!active) {
+    stopIceMealAudio();
+    return;
+  }
+  stopMealAudio();
+  startIceMealAudio();
+}
+
+function whiteBunnyEventBgmVolume() {
+  const settings = state?.settings || {};
+  if (settings.bgmMuted || settings.externalAudioPriority || document.hidden) return 0;
+  const configured = Math.max(0, Math.min(1, Number(settings.bgmVolume) || 0));
+  return Math.max(0, Math.min(1, configured * WHITE_BUNNY_EVENT_BGM_GAIN));
+}
+
+function ensureWhiteBunnyEventBgm() {
+  if (whiteBunnyEventBgmAudio instanceof HTMLAudioElement) return;
+  whiteBunnyEventBgmAudio = new Audio(WHITE_BUNNY_EVENT_BGM_URL);
+  whiteBunnyEventBgmAudio.loop = true;
+  whiteBunnyEventBgmAudio.preload = 'auto';
+  whiteBunnyEventBgmAudio.setAttribute('playsinline', '');
+}
+
+function stopWhiteBunnyEventBgm({ reset = true } = {}) {
+  if (!(whiteBunnyEventBgmAudio instanceof HTMLAudioElement)) return;
+  whiteBunnyEventBgmAudio.pause();
+  if (reset) {
+    try { whiteBunnyEventBgmAudio.currentTime = 0; } catch (_) {}
+  }
+}
+
+function playWhiteBunnyEventBgm({ restart = false } = {}) {
+  if (screen !== 'whiteBunnyIceEvent' || !whiteBunnyIceEventState().active) return;
+  ensureWhiteBunnyEventBgm();
+  const volume = whiteBunnyEventBgmVolume();
+  whiteBunnyEventBgmAudio.volume = volume;
+  if (volume <= 0) {
+    stopWhiteBunnyEventBgm({ reset: false });
+    return;
+  }
+  if (restart) {
+    try { whiteBunnyEventBgmAudio.currentTime = 0; } catch (_) {}
+  }
+  if (whiteBunnyEventBgmAudio.paused) {
+    const promise = whiteBunnyEventBgmAudio.play();
+    if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+  }
+}
+
+function syncWhiteBunnyEventBgm() {
+  if (screen !== 'whiteBunnyIceEvent' || !whiteBunnyIceEventState().active) {
+    stopWhiteBunnyEventBgm();
+    return;
+  }
+  stopMealAudio();
+  stopIceMealAudio();
+  playWhiteBunnyEventBgm();
+}
 
 function measuredPortraitLayout() {
   const viewport = window.visualViewport;
@@ -4351,6 +4485,10 @@ function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large
   const looseClass = mode === 'small' ? 'small-jewelry-loose' : 'jewelry-loose-preview';
   const wrapperClass = mode === 'small' ? 'jewelry-loose-set small' : 'jewelry-loose-set';
   const single = looseVisual(gemId, looseClass, '', shapeId);
+  if (itemId === 'earrings') {
+    const pair = looseVisual(gemId, looseClass, '', shapeId);
+    return `<span class="${wrapperClass} item-earrings" aria-hidden="true"><span class="center-gem earring-left">${single}</span><span class="center-gem earring-right">${pair}</span></span>`;
+  }
   return `<span class="${wrapperClass} item-${itemId}" aria-hidden="true"><span class="center-gem">${single}</span></span>`;
 }
 
@@ -4745,8 +4883,12 @@ function hasCraftedJewelry() {
   return Boolean(state && (state.artisan.xp > 0 || state.inventory.jewelry.length > 0 || state.store.salesCount > 0));
 }
 
+function specialOrderCustomerVisiting() {
+  return Boolean(state?.customers?.brownBunny?.visiting);
+}
+
 function canServeCustomers() {
-  return Boolean(state?.store?.rented && storeBusinessOpen() && storeBranchOperating(currentStoreBranch()) && hasCraftedJewelry());
+  return Boolean(state?.store?.rented && storeBusinessOpen() && storeBranchOperating(currentStoreBranch()) && (hasCraftedJewelry() || specialOrderCustomerVisiting()));
 }
 
 function canAcceptOrders() {
@@ -7105,6 +7247,7 @@ function advanceTouristWoodSwordEvent() {
     setScreen('meal', {}, false);
     return;
   }
+  if (eventState.stage === 'video') return;
   if (eventState.stage === 'intro1') {
     eventState.stage = 'route';
     saveGame();
@@ -7145,6 +7288,307 @@ function receiveTouristWoodSword() {
   playSfx('success', { gain: 1.08 });
   vibrate([36, 28, 62]);
   render();
+}
+
+
+function anyInstalledShowcaseExists() {
+  const branches = Array.isArray(state?.store?.branches) ? state.store.branches : [];
+  if (branches.some((branch) => installedShowcaseCount(branch) >= 1)) return true;
+  return installedShowcaseCount(null) >= 1;
+}
+
+function whiteBunnyIceEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.whiteBunnyIceEvent && typeof state.events.whiteBunnyIceEvent === 'object' && !Array.isArray(state.events.whiteBunnyIceEvent)
+    ? state.events.whiteBunnyIceEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'intro4', 'choice', 'rudeReply', 'kindReply1', 'kindReply2', 'completed']);
+  state.events.whiteBunnyIceEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    pendingMealId: typeof saved.pendingMealId === 'string' ? saved.pendingMealId : '',
+    pendingCustomerVisit: Boolean(saved.pendingCustomerVisit),
+    lastChoice: ['rude', 'kind'].includes(saved.lastChoice) ? saved.lastChoice : '',
+  };
+  if (!state.events.whiteBunnyIceEvent.active && !['idle', 'completed'].includes(state.events.whiteBunnyIceEvent.stage)) {
+    state.events.whiteBunnyIceEvent.stage = 'completed';
+  }
+  return state.events.whiteBunnyIceEvent;
+}
+
+function maybeStartWhiteBunnyIceEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  if (!state?.store?.rented || !anyInstalledShowcaseExists()) return false;
+  const eventState = whiteBunnyIceEventState();
+  if (eventState.active) {
+    setScreen('whiteBunnyIceEvent', { mealId: 'ice' }, false);
+    return true;
+  }
+  if (Math.floor(Math.random() * WHITE_BUNNY_ICE_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.pendingMealId = 'ice';
+  eventState.lastChoice = '';
+  state.game.screen = 'whiteBunnyIceEvent';
+  saveGame();
+  playSfx('impact', { gain: 0.5, rate: 1.06 });
+  setTimeout(() => playSfx('loose-sparkle', { gain: 0.86, rate: 1.12 }), 120);
+  vibrate([18, 20, 44]);
+  setScreen('whiteBunnyIceEvent', { mealId: 'ice' }, false);
+  return true;
+}
+
+function chooseWhiteBunnyIceEvent(answer) {
+  const eventState = whiteBunnyIceEventState();
+  if (!eventState.active || eventState.stage !== 'choice') return;
+  if (answer === 'rude') {
+    eventState.lastChoice = 'rude';
+    eventState.stage = 'rudeReply';
+    saveGame();
+    playSfx('impact', { gain: 0.42, rate: 0.94 });
+    render();
+    return;
+  }
+  if (answer === 'kind') {
+    eventState.lastChoice = 'kind';
+    eventState.pendingCustomerVisit = true;
+    eventState.stage = 'kindReply1';
+    saveGame();
+    playSfx('success', { gain: 0.48, rate: 1.04 });
+    setTimeout(() => playSfx('loose-sparkle', { gain: 0.82, rate: 1.08 }), 110);
+    vibrate([16, 20, 32]);
+    render();
+  }
+}
+
+async function finishWhiteBunnyIceEventAndResumeMeal() {
+  const eventState = whiteBunnyIceEventState();
+  const mealId = eventState.pendingMealId || 'ice';
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.pendingMealId = '';
+  saveGame();
+  await eatMeal(mealId, { skipEventCheck: true });
+}
+
+async function advanceWhiteBunnyIceEvent() {
+  const eventState = whiteBunnyIceEventState();
+  if (!eventState.active) {
+    setScreen('meal', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro3') {
+    eventState.stage = 'intro4';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro4') {
+    eventState.stage = 'choice';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'rudeReply') {
+    await finishWhiteBunnyIceEventAndResumeMeal();
+    return;
+  }
+  if (eventState.stage === 'kindReply1') {
+    eventState.stage = 'kindReply2';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'kindReply2') {
+    await finishWhiteBunnyIceEventAndResumeMeal();
+  }
+}
+
+function terryCaliforniaEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.terryCaliforniaEvent && typeof state.events.terryCaliforniaEvent === 'object' && !Array.isArray(state.events.terryCaliforniaEvent)
+    ? state.events.terryCaliforniaEvent
+    : {};
+  const dialogueStages = new Set(['intro1', 'intro2', 'offer', 'insufficientFunds', 'declined', 'purchased']);
+  const validStages = new Set(['idle', 'video', ...dialogueStages, 'completed']);
+  state.events.terryCaliforniaEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    pendingMealId: typeof saved.pendingMealId === 'string' ? saved.pendingMealId : '',
+    lastOutcome: typeof saved.lastOutcome === 'string' ? saved.lastOutcome : '',
+    rewardGranted: Boolean(saved.rewardGranted),
+    introVideoCompleted: Boolean(saved.introVideoCompleted),
+    stageAfterVideo: dialogueStages.has(saved.stageAfterVideo) ? saved.stageAfterVideo : '',
+  };
+  const eventState = state.events.terryCaliforniaEvent;
+  if (eventState.active && !eventState.introVideoCompleted) {
+    if (eventState.stage !== 'video') eventState.stageAfterVideo = dialogueStages.has(eventState.stage) ? eventState.stage : (eventState.stageAfterVideo || 'intro1');
+    if (!eventState.stageAfterVideo) eventState.stageAfterVideo = 'intro1';
+    eventState.stage = 'video';
+  }
+  if (!eventState.active && !['idle', 'completed'].includes(eventState.stage)) eventState.stage = 'completed';
+  return eventState;
+}
+
+function terryCaliforniaIntroVideoUrl() {
+  return `./assets/videos/events/terry-california-intro.mp4?v=${VERSION}`;
+}
+
+function startTerryCaliforniaIntroPlayback() {
+  const eventState = terryCaliforniaEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  const video = root.querySelector('video[data-terry-california-intro-video]');
+  if (!(video instanceof HTMLVideoElement)) return;
+  const stage = video.closest('.terry-california-video-stage');
+  stage?.classList.remove('needs-start', 'has-error');
+  video.muted = false;
+  video.volume = 1;
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.then(() => {
+      stage?.classList.add('is-playing');
+      stage?.classList.remove('needs-start', 'has-error');
+    }).catch(() => stage?.classList.add('needs-start'));
+  }
+}
+
+function retryTerryCaliforniaIntroPlayback() {
+  const stage = root.querySelector('.terry-california-video-stage');
+  const video = root.querySelector('video[data-terry-california-intro-video]');
+  stage?.classList.remove('needs-start', 'has-error');
+  if (video instanceof HTMLVideoElement && video.error) video.load();
+  startTerryCaliforniaIntroPlayback();
+}
+
+function completeTerryCaliforniaIntroVideo() {
+  const eventState = terryCaliforniaEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  const dialogueStages = new Set(['intro1', 'intro2', 'offer', 'insufficientFunds', 'declined', 'purchased']);
+  eventState.introVideoCompleted = true;
+  eventState.stage = dialogueStages.has(eventState.stageAfterVideo) ? eventState.stageAfterVideo : 'intro1';
+  eventState.stageAfterVideo = '';
+  saveGame();
+  render();
+}
+
+function maybeStartTerryCaliforniaEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = terryCaliforniaEventState();
+  if (eventState.active) {
+    setScreen('terryCaliforniaEvent', { mealId: TERRY_CALIFORNIA_MEAL_ID }, false);
+    return true;
+  }
+  if (Math.floor(Math.random() * TERRY_CALIFORNIA_EVENT_CHANCE) !== 0) return false;
+  eventState.active = true;
+  eventState.stage = 'video';
+  eventState.pendingMealId = TERRY_CALIFORNIA_MEAL_ID;
+  eventState.lastOutcome = '';
+  eventState.rewardGranted = false;
+  eventState.introVideoCompleted = false;
+  eventState.stageAfterVideo = 'intro1';
+  state.game.screen = 'terryCaliforniaEvent';
+  saveGame();
+  playSfx('impact', { gain: 0.66, rate: 0.86 });
+  setTimeout(() => playSfx('eat', { gain: 0.64, rate: 0.92 }), 90);
+  vibrate([18, 24, 38]);
+  setScreen('terryCaliforniaEvent', { mealId: TERRY_CALIFORNIA_MEAL_ID }, false);
+  return true;
+}
+
+function advanceTerryCaliforniaEvent() {
+  const eventState = terryCaliforniaEventState();
+  if (!eventState.active) {
+    setScreen('meal', {}, false);
+    return;
+  }
+  if (eventState.stage === 'video') return;
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('eat', { gain: 0.66, rate: 0.94 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'offer';
+    saveGame();
+    playSfx('western-union-handover', { gain: 0.94, rate: 0.92 });
+    setTimeout(() => playSfx('loose-sparkle', { gain: 1.06 }), 130);
+    render();
+    return;
+  }
+  if (eventState.stage === 'insufficientFunds') {
+    eventState.stage = 'declined';
+    eventState.lastOutcome = 'declined';
+    saveGame();
+    render();
+    return;
+  }
+  if (eventState.stage === 'declined' || eventState.stage === 'purchased') {
+    void finishTerryCaliforniaEventAndResumeMeal();
+  }
+}
+
+function buyTerryCaliforniaBenitoite() {
+  const eventState = terryCaliforniaEventState();
+  if (!eventState.active || eventState.stage !== 'offer') return;
+  if (state.game.money < TERRY_CALIFORNIA_BENITOITE_PRICE) {
+    eventState.stage = 'insufficientFunds';
+    saveGame();
+    playSfx('alarm', { gain: 0.52, rate: 0.92 });
+    vibrate(38);
+    render();
+    return;
+  }
+  state.game.money -= TERRY_CALIFORNIA_BENITOITE_PRICE;
+  addFinance('テリー・カリフォルニアからベニトアイト購入', 0, TERRY_CALIFORNIA_BENITOITE_PRICE);
+  startMoneyFeedback(-TERRY_CALIFORNIA_BENITOITE_PRICE, 1400);
+  state.inventory.loose = state.inventory.loose && typeof state.inventory.loose === 'object' ? state.inventory.loose : {};
+  state.inventory.loose[TERRY_CALIFORNIA_GEM_ID] = state.inventory.loose[TERRY_CALIFORNIA_GEM_ID] && typeof state.inventory.loose[TERRY_CALIFORNIA_GEM_ID] === 'object' ? state.inventory.loose[TERRY_CALIFORNIA_GEM_ID] : {};
+  state.inventory.loose[TERRY_CALIFORNIA_GEM_ID][TERRY_CALIFORNIA_GEM_SHAPE] = Math.max(0, Math.floor(Number(state.inventory.loose[TERRY_CALIFORNIA_GEM_ID][TERRY_CALIFORNIA_GEM_SHAPE]) || 0)) + 1;
+  eventState.rewardGranted = true;
+  eventState.lastOutcome = 'purchased';
+  eventState.stage = 'purchased';
+  addNotification('ベニトアイトを手に入れた', '工房のルースにベニトアイトを追加しました。テリー・カリフォルニアから特別価格で購入した希少石です。', 'special');
+  saveGame();
+  showToast('ベニトアイトを手に入れた', 'success', false);
+  playSfx('coin', { gain: 0.92, rate: 1.02 });
+  setTimeout(() => playSfx('loose-sparkle', { gain: 1.08 }), 120);
+  vibrate([24, 24, 52]);
+  render();
+}
+
+function declineTerryCaliforniaOffer() {
+  const eventState = terryCaliforniaEventState();
+  if (!eventState.active || eventState.stage !== 'offer') return;
+  eventState.stage = 'declined';
+  eventState.lastOutcome = 'declined';
+  saveGame();
+  render();
+}
+
+async function finishTerryCaliforniaEventAndResumeMeal() {
+  const eventState = terryCaliforniaEventState();
+  const mealId = eventState.pendingMealId || TERRY_CALIFORNIA_MEAL_ID;
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.pendingMealId = '';
+  eventState.introVideoCompleted = true;
+  eventState.stageAfterVideo = '';
+  saveGame();
+  await eatMeal(mealId, { skipEventCheck: true });
 }
 
 
@@ -7888,7 +8332,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -7917,6 +8361,7 @@ function backgroundAssetFor(target) {
   if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'diamondPolishingLapEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'mysteryChineseMealEvent') return `meal-chinese${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'whiteBunnyIceEvent') return `meal-ice${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'todayGem') return isPortraitLayout() ? 'today-gem-portrait' : 'today-gem';
   if (target === 'craft' || target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';
   if (target === 'looseShop' || target === 'supplierRough') return isPortraitLayout() ? 'loose-shop-portrait-v385' : 'loose-shop-v385';
@@ -8373,6 +8818,11 @@ function render() {
     } else {
       stopPandaMusicEventAudio();
     }
+    if (screen === 'whiteBunnyIceEvent') {
+      if (whiteBunnyEventBgmAudio) whiteBunnyEventBgmAudio.volume = whiteBunnyEventBgmVolume();
+    } else {
+      stopWhiteBunnyEventBgm();
+    }
     if (backgroundFor(screen) !== 'meal') stopMealAudio();
     // 天気を使うかどうかはaudio-scene-map.jsの場面定義だけで判定する。
     // 画面側に重複した条件を持たせないことで、将来の変更時の戻りを防ぐ。
@@ -8382,7 +8832,23 @@ function render() {
       minutes: state?.game?.minutes ?? 9 * 60,
       audioKey: currentAudioKey,
     });
-    switchAudio(currentAudioKey);
+    const audioSwitchResult = switchAudio(currentAudioKey);
+    if (screen === 'whiteBunnyIceEvent') {
+      stopMealAudio();
+      stopIceMealAudio();
+      playWhiteBunnyEventBgm();
+      Promise.resolve(audioSwitchResult).finally(() => {
+        if (screen === 'whiteBunnyIceEvent') syncWhiteBunnyEventBgm();
+      });
+    } else if (screen === 'meal' && screenData?.eating === true && screenData?.mealId === 'ice') {
+      stopMealAudio();
+      startIceMealAudio();
+      Promise.resolve(audioSwitchResult).finally(() => {
+        if (screen === 'meal' && screenData?.eating === true && screenData?.mealId === 'ice') syncIceMealAudio();
+      });
+    } else {
+      stopIceMealAudio();
+    }
 
     const renderers = {
       loading: renderLoading,
@@ -8400,6 +8866,7 @@ function render() {
       clockTowerDonationEvent: renderClockTowerDonationEvent,
       cinemaVisitEvent: renderCinemaVisitEvent,
       mysteryChineseMealEvent: renderMysteryChineseMealEvent,
+      whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
       kappaJadeEvent: renderKappaJadeEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
@@ -8408,6 +8875,7 @@ function render() {
       grayHoodAquariumEvent: renderGrayHoodAquariumEvent,
       aquarium: renderAquariumGame,
       touristWoodSwordEvent: renderTouristWoodSwordEvent,
+      terryCaliforniaEvent: renderTerryCaliforniaEvent,
       diamondPolishingLapEvent: renderDiamondPolishingLapEvent,
       hauntingEvent: renderHauntingEvent,
       storeTheftEvent: renderStoreTheftEvent,
@@ -9303,6 +9771,7 @@ function renderWesternUnionEvent() {
     queueMicrotask(startWesternUnionIntroPlayback);
     return `<main class="western-union-video-screen" aria-label="アンティークダイヤイベント導入動画">
       <section class="western-union-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
         <video data-western-union-intro-video src="${esc(westernUnionIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="アンティークダイヤイベントの導入動画"></video>
         <div class="western-union-video-loading">動画を読み込んでいます</div>
         <button type="button" class="western-union-video-start" data-action="western-union-video-start">動画を再生する</button>
@@ -9368,6 +9837,7 @@ function renderTattooWomanAmberEvent() {
     queueMicrotask(startTattooWomanAmberIntroPlayback);
     return `<main class="tattoo-woman-amber-video-screen" aria-label="不動産屋の琥珀イベント導入動画">
       <section class="tattoo-woman-amber-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
         <video data-tattoo-woman-amber-intro-video src="${esc(tattooWomanAmberIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="不動産屋の琥珀イベント導入動画"></video>
         <div class="tattoo-woman-amber-video-loading">動画を読み込んでいます</div>
         <button type="button" class="tattoo-woman-amber-video-start" data-action="tattoo-woman-amber-video-start">動画を再生する</button>
@@ -9749,6 +10219,44 @@ function completeMysteryChineseMealIntroVideo() {
   playSfx('impact', { gain: 0.38 });
 }
 
+async function skipCurrentEventIntroVideo() {
+  const video = root.querySelector([
+    'video[data-western-union-intro-video]',
+    'video[data-tattoo-woman-amber-intro-video]',
+    'video[data-mystery-chinese-meal-intro-video]',
+    'video[data-gray-hood-aquarium-intro-video]',
+    'video[data-okachimachi-quiz-intro-video]',
+    'video[data-terry-california-intro-video]',
+  ].join(','));
+  if (!(video instanceof HTMLVideoElement)) return;
+  video.pause();
+  video.removeAttribute('autoplay');
+
+  if (video.matches('video[data-western-union-intro-video]')) {
+    completeWesternUnionIntroVideo();
+    return;
+  }
+  if (video.matches('video[data-tattoo-woman-amber-intro-video]')) {
+    completeTattooWomanAmberIntroVideo();
+    return;
+  }
+  if (video.matches('video[data-mystery-chinese-meal-intro-video]')) {
+    completeMysteryChineseMealIntroVideo();
+    return;
+  }
+  if (video.matches('video[data-gray-hood-aquarium-intro-video]')) {
+    await completeGrayHoodAquariumIntroVideo();
+    return;
+  }
+  if (video.matches('video[data-okachimachi-quiz-intro-video]')) {
+    completeOkachimachiQuizIntroVideo();
+    return;
+  }
+  if (video.matches('video[data-terry-california-intro-video]')) {
+    completeTerryCaliforniaIntroVideo();
+  }
+}
+
 function mysteryChineseMealEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.mysteryChineseMealEvent && typeof state.events.mysteryChineseMealEvent === 'object' && !Array.isArray(state.events.mysteryChineseMealEvent)
@@ -9890,6 +10398,7 @@ function renderMysteryChineseMealEvent() {
     queueMicrotask(startMysteryChineseMealIntroPlayback);
     return `<main class="mystery-chinese-meal-video-screen" aria-label="中華料理イベント導入動画">
       <section class="mystery-chinese-meal-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
         <video data-mystery-chinese-meal-intro-video src="${esc(mysteryChineseMealIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="中華料理イベント導入動画"></video>
         <div class="mystery-chinese-meal-video-loading">動画を読み込んでいます</div>
         <button type="button" class="mystery-chinese-meal-video-start" data-action="mystery-chinese-meal-video-start">動画を再生する</button>
@@ -10170,6 +10679,7 @@ function renderGrayHoodAquariumEvent() {
     queueMicrotask(startGrayHoodAquariumIntroPlayback);
     return `<main class="gray-hood-aquarium-video-screen" aria-label="韓国料理の水槽イベント導入動画">
       <section class="gray-hood-aquarium-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
         <video data-gray-hood-aquarium-intro-video src="${esc(grayHoodAquariumIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="水槽イベントの導入動画"></video>
         <div class="gray-hood-aquarium-video-loading">動画を読み込んでいます</div>
         <button type="button" class="gray-hood-aquarium-video-start" data-action="gray-hood-aquarium-video-start">動画を再生する</button>
@@ -10367,6 +10877,93 @@ function renderAlienReturnEvent() {
     </main>`;
 }
 
+
+
+function renderWhiteBunnyIceEvent() {
+  const eventState = whiteBunnyIceEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('meal', {}, false));
+    return renderMeal();
+  }
+  const playerName = esc(String(state?.playerName || '君').trim() || '君');
+  const characterPath = `./assets/images/events/white-bunny.png?v=${VERSION}`;
+  let panel = '';
+  if (eventState.stage === 'intro1') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue white-bunny-dialogue glass-panel" data-action="white-bunny-ice-event-next"><small>ホワイトバニー</small><strong>あ、${playerName}はっけ〜ん！私は君を愛ス、、、</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'intro2') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue white-bunny-dialogue glass-panel" data-action="white-bunny-ice-event-next"><small>ホワイトバニー</small><strong>${playerName}もチョコミント派なんだねぇ、やるじゃん！、、、</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'intro3') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue white-bunny-dialogue glass-panel" data-action="white-bunny-ice-event-next"><small>ホワイトバニー</small><strong>ねえ、さぁ、、夢ってすぐ忘れちゃうよね、、、寝てる時のやつも、子供の頃思い描いてたやつも、、、</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'intro4') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue white-bunny-dialogue glass-panel" data-action="white-bunny-ice-event-next"><small>ホワイトバニー</small><strong>、。私ってウザくね？</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'choice') {
+    panel = `<article class="white-bunny-choice-card glass-panel"><small>ホワイトバニー</small><strong>私ってウザくね？</strong><div class="white-bunny-choice-actions"><button type="button" class="secondary-button white-bunny-choice-button" data-action="white-bunny-ice-event-choice" data-answer="rude">ウザい</button><button type="button" class="primary-button white-bunny-choice-button" data-action="white-bunny-ice-event-choice" data-answer="kind">そんな事ない</button></div></article>`;
+  } else if (eventState.stage === 'rudeReply') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue white-bunny-dialogue glass-panel white-bunny-rude-dialogue" data-action="white-bunny-ice-event-next"><small>ホワイトバニー</small><strong>感謝感謝、だから${playerName}とは友達でいれるんだね！、、、じゃね！</strong><span>タップすると通常のアイス画面へ</span></button>`;
+  } else if (eventState.stage === 'kindReply1') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue white-bunny-dialogue glass-panel white-bunny-kind-dialogue" data-action="white-bunny-ice-event-next"><small>ホワイトバニー</small><strong>${playerName}優しいからさぁ、そういうのやめたほうが良いよんっ！</strong><span>タップして進む</span></button>`;
+  } else {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue white-bunny-dialogue glass-panel white-bunny-kind-dialogue" data-action="white-bunny-ice-event-next"><small>ホワイトバニー</small><strong>明日私の知り合いが${playerName}の店行くって！、、よろしく！じゃね、、、</strong><span>タップすると通常のアイス画面へ</span></button>`;
+  }
+  return `
+    <main class="main-screen white-bunny-ice-event-screen">
+      <section class="visit-character-event white-bunny-ice-event" aria-live="polite">
+        <div class="visit-character-area white-bunny-character-area" aria-hidden="true">
+          <img class="visit-character white-bunny-character" src="${characterPath}" alt="" draggable="false">
+        </div>
+        ${panel}
+      </section>
+    </main>`;
+}
+
+function renderTerryCaliforniaEvent() {
+  const eventState = terryCaliforniaEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('meal', {}, false));
+    return renderMeal();
+  }
+  if (eventState.stage === 'video') {
+    queueMicrotask(startTerryCaliforniaIntroPlayback);
+    return `<main class="terry-california-video-screen" aria-label="テリー・カリフォルニアの導入動画">
+      <section class="terry-california-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
+        <video data-terry-california-intro-video src="${esc(terryCaliforniaIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="テリー・カリフォルニアの導入動画"></video>
+        <div class="terry-california-video-loading">動画を読み込んでいます</div>
+        <button type="button" class="terry-california-video-start" data-action="terry-california-video-start">動画を再生する</button>
+        <div class="terry-california-video-error" role="alert"><strong>動画を読み込めませんでした</strong><span>通信状態を確認して、もう一度再生してください。</span></div>
+      </section>
+    </main>`;
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const bgPath = isPortraitLayout()
+    ? `./assets/images/backgrounds/terry-hamburger-portrait.png?v=${VERSION}`
+    : `./assets/images/backgrounds/terry-hamburger-landscape.png?v=${VERSION}`;
+  const charPath = `./assets/images/events/terry-california.png?v=${VERSION}`;
+  const gemPath = `./assets/images/loose/benitoite/oval.png?v=${VERSION}`;
+  const money = Math.max(0, Math.floor(Number(state?.game?.money) || 0));
+  let panel = '';
+  if (eventState.stage === 'intro1') {
+    panel = `<button type="button" class="event-dialogue-card terry-california-dialogue glass-panel" data-action="terry-california-event-next"><small>テリー・カリフォルニア</small><strong>もぐもぐ、おう、${playerName}じゃねえか、、、ベニトアイト手に入ったぜ、、</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'intro2') {
+    panel = `<button type="button" class="event-dialogue-card terry-california-dialogue glass-panel" data-action="terry-california-event-next"><small>テリー・カリフォルニア</small><strong>こいつは鉱山閉山でなかなかレアだ、、どうだ、買うか？</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'offer') {
+    panel = `<article class="terry-california-offer glass-panel"><small>テリー・カリフォルニア</small><strong>こいつは鉱山閉山でなかなかレアだ、、どうだ、買うか？</strong><div class="terry-california-gem-card"><img src="${gemPath}" alt="ベニトアイトのルース" draggable="false"><h2>ベニトアイト</h2><p>${yen(TERRY_CALIFORNIA_BENITOITE_PRICE)}</p><span>所持金 ${yen(money)}</span></div><div class="terry-california-offer-actions"><button type="button" class="primary-button" data-action="terry-california-event-buy">買う</button><button type="button" class="secondary-button" data-action="terry-california-event-decline">やめる</button></div></article>`;
+  } else if (eventState.stage === 'insufficientFunds') {
+    panel = `<button type="button" class="event-dialogue-card terry-california-dialogue glass-panel terry-system-dialogue" data-action="terry-california-event-next"><small>SYSTEM</small><strong>所持金が足りません</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'purchased') {
+    panel = `<button type="button" class="event-dialogue-card terry-california-dialogue glass-panel terry-purchased-dialogue" data-action="terry-california-event-next"><small>ベニトアイトを手に入れた</small><strong>また手に入ったら言うぜ、、じゃあな、、もぐもぐ、、、</strong><span>タップすると通常のハンバーガー画面へ</span></button>`;
+  } else {
+    panel = `<button type="button" class="event-dialogue-card terry-california-dialogue glass-panel" data-action="terry-california-event-next"><small>テリー・カリフォルニア</small><strong>そうか、、まあ、良いの入ったらまた教えるぜ、、もぐもぐ、、、</strong><span>タップすると通常のハンバーガー画面へ</span></button>`;
+  }
+  return `
+    <main class="main-screen terry-california-event-screen">
+      <section class="terry-california-event" aria-live="polite" style="--terry-bg:url('${bgPath}')">
+        <div class="terry-california-backdrop" aria-hidden="true"></div>
+        <div class="terry-california-character-area" aria-hidden="true"><img class="terry-california-character" src="${charPath}" alt="" draggable="false"></div>
+        <div class="terry-california-panel-wrap">${panel}</div>
+      </section>
+    </main>`;
+}
 
 function renderDiamondPolishingLapEvent() {
   const eventState = diamondPolishingLapEventState();
@@ -10805,6 +11402,7 @@ function renderOkachimachiQuiz() {
     queueMicrotask(startOkachimachiQuizIntroPlayback);
     return `<main class="okachimachi-quiz-video-screen" aria-label="通りすがりのクイズ王イベント導入動画">
       <section class="okachimachi-quiz-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
         <video data-okachimachi-quiz-intro-video src="${esc(okachimachiQuizIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="通りすがりのクイズ王イベントの導入動画"></video>
         <div class="okachimachi-quiz-video-loading">動画を読み込んでいます</div>
         <button type="button" class="okachimachi-quiz-video-start" data-action="okachimachi-quiz-video-start">動画を再生する</button>
@@ -12802,8 +13400,8 @@ function customerMatchResult(item, request, branchNumber = state?.store?.branchN
 function renderCustomer() {
   if (!state.store.rented) return shell('お客様', '<div class="empty-state"><strong>店舗を借りてから接客できます。</strong><p>御徒町の不動産屋で契約してください。</p><button class="primary-button" data-action="nav" data-screen="okachimachi">御徒町へ</button></div>');
   if (!storeBusinessOpen()) return shell('お客様', '<div class="empty-state"><strong>店舗の営業時間外です。</strong><p>接客と注文受付は9:00～19:00です。</p><button class="primary-button" data-action="nav" data-screen="store">店舗へ戻る</button></div>');
-  if (!hasCraftedJewelry()) return shell('お客様', '<div class="empty-state"><strong>まだ接客できません。</strong><p>工房でジュエリーを1点制作すると接客が解放されます。</p><button class="primary-button" data-action="nav" data-screen="workshop">工房へ</button></div>');
   const customerId = screenData.customerId;
+  if (!hasCraftedJewelry() && customerId !== 'brownBunny') return shell('お客様', '<div class="empty-state"><strong>まだ接客できません。</strong><p>工房でジュエリーを1点制作すると接客が解放されます。</p><button class="primary-button" data-action="nav" data-screen="workshop">工房へ</button></div>');
   const customer = CUSTOMERS[customerId];
   const customerState = state.customers[customerId];
   if (!customer || !customerState?.visiting) return shell('お客様', '<div class="empty-state"><strong>現在、接客中のお客様はいません。</strong></div>');
@@ -13041,8 +13639,8 @@ function renderMeal() {
     const meal = MEALS[screenData.mealId];
     const foodImage = mealFoodImage(meal.id);
     return shell('食事', `
-      <button type="button" class="meal-eating-panel meal-eating-finish-button glass-panel" data-action="meal-eating-finish" aria-label="食事を終えてメイン画面へ戻る" aria-live="polite">
-        ${foodImage ? `<figure class="meal-food-display"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
+      <button type="button" class="meal-eating-panel meal-eating-panel-${esc(meal.id)} meal-eating-finish-button glass-panel" data-action="meal-eating-finish" aria-label="食事を終えてメイン画面へ戻る" aria-live="polite">
+        ${foodImage ? `<figure class="meal-food-display meal-food-display-${esc(meal.id)}"><img src="${foodImage}" alt="${esc(meal.name)}の料理" loading="eager" decoding="sync" fetchpriority="high"></figure>` : `<div class="meal-steam" aria-hidden="true"><i></i><i></i><i></i></div>`}
         <strong>もぐもぐもぐ...</strong>
       </button>`, {
         help: `${meal.name}で食事をしています。画面をタップすると食事を終え、操作しなくても自動でメイン画面へ戻ります。`,
@@ -13059,7 +13657,7 @@ function renderMeal() {
         ${Object.values(MEALS).sort((a, b) => a.price - b.price || a.name.localeCompare(b.name, 'ja')).map((meal) => {
           const fullRecovery = meal.recovery >= 7;
           const disabled = state.game.money < meal.price || current >= 7;
-          return `<button class="meal-choice-card" data-action="eat-meal" data-id="${meal.id}" ${disabled ? 'disabled' : ''}>
+          return `<button class="meal-choice-card meal-choice-card-${esc(meal.id)}" data-action="eat-meal" data-id="${meal.id}" ${disabled ? 'disabled' : ''}>
             <strong>${esc(meal.name)}</strong>
             <span>${yen(meal.price)}</span>
             <small>${fullRecovery ? '空腹度を全回復' : `空腹度を${meal.recovery}回復`}</small>
@@ -13068,7 +13666,6 @@ function renderMeal() {
         <button class="meal-choice-card meal-choice-card-kaitenzushi" type="button" data-action="play-kaitenzushi" ${current >= 7 || state.game.money < 190 ? 'disabled' : ''}>
           <strong>回転寿司</strong>
           <small>皿1枚につき空腹度を1回復</small>
-          <small>お会計は食べた分だけ</small>
         </button>
       </div>
       ${current >= 7 ? '<p class="meal-note">空腹度は満タンです。</p>' : '<p class="meal-note">店を選ぶと店内へ移動し、食事をします。食事には1時間かかります。</p>'}
@@ -13438,11 +14035,13 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   if (!meal || mealTransitioning) return;
   const before = hungerLevel();
   if (before >= 7) return showToast('空腹度は満タンです。', 'error');
-  if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === mealId) return showToast('栄養が片寄るので違うものを食べましょう', 'error');
+  if (mealId !== 'ice' && state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === mealId) return showToast('栄養が片寄るので違うものを食べましょう', 'error');
   if (state.game.money < meal.price) return showToast('所持金が足りません。', 'error');
   if (!canSpendMealTime()) return showToast(mealTimeUnavailableMessage(), 'error');
   if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
+  if (mealId === 'ice' && !skipEventCheck && maybeStartWhiteBunnyIceEvent()) return;
   if (mealId === 'hamburger' && !skipEventCheck && maybeStartTouristWoodSwordEvent()) return;
+  if (mealId === 'hamburger' && !skipEventCheck && maybeStartTerryCaliforniaEvent()) return;
   if (mealId === 'indian' && !skipEventCheck && maybeStartDiamondPolishingLapEvent()) return;
   if (mealId === 'indian' && !skipEventCheck && maybeStartGaneshaTuskEvent()) return;
   if (mealId === 'ramen' && !skipEventCheck && maybeStartChildhoodFriendEvent()) return;
@@ -13453,6 +14052,8 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
   const stateBeforeMeal = structuredClone(state);
   try {
     selectedMeal = mealId;
+    if (mealId === 'ice') startIceMealAudio();
+    else stopIceMealAudio();
     await preloadMealAssets(mealId);
 
     // 店を決定して食事画面へ移る瞬間に支払いを確定する。
@@ -13486,6 +14087,7 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
     }, 1550);
   } catch (error) {
     console.error('食事処理エラー', error);
+    stopIceMealAudio();
     state = stateBeforeMeal;
     screen = 'main';
     screenData = {};
@@ -16868,8 +17470,10 @@ function scheduleCustomerVisit() {
     clearCustomerVisitsForIllness();
     return;
   }
+  const whiteBunnyEvent = whiteBunnyIceEventState();
+  const hasPendingWhiteBunnyVisit = Boolean(whiteBunnyEvent.pendingCustomerVisit);
   const visitBranch = salesStoreBranch();
-  if (!visitBranch || !storeBusinessOpen() || !hasCraftedJewelry()) {
+  if (!visitBranch || !storeBusinessOpen() || (!hasCraftedJewelry() && !hasPendingWhiteBunnyVisit)) {
     Object.values(state.customers).forEach((customer) => {
       customer.visiting = false;
       customer.visitingBranchNumber = null;
@@ -16882,17 +17486,27 @@ function scheduleCustomerVisit() {
   if (Object.values(state.customers).some((customer) => customer.visiting)) return;
 
   const customerIds = Object.keys(CUSTOMERS);
-  const hasMetCustomer = customerIds.some((id) => Boolean(state.customers[id]?.met));
-  const eligibleCustomers = customerIds.filter((id) => {
+  const normalCustomerIds = customerIds.filter((id) => !CUSTOMERS[id]?.specialOnly);
+  const hasMetCustomer = normalCustomerIds.some((id) => Boolean(state.customers[id]?.met));
+  const eligibleCustomers = normalCustomerIds.filter((id) => {
     const customer = state.customers[id];
     if (!customer) return false;
     if (!customer.met) return state.game.day >= 2;
     return state.game.day - (customer.lastVisitDay || 0) >= CUSTOMER_REPEAT_COOLDOWN_DAYS;
   });
-  if (!eligibleCustomers.length) return;
+  if (!eligibleCustomers.length && !hasPendingWhiteBunnyVisit) return;
 
-  // お客様を10人へ増やしても、来店抽選は1日1回・同時来店は最大1人のままにする。
-  // 最初の1人だけ従来の導入頻度を維持し、その後は従来の通常来店頻度で10人からランダム抽選する。
+  if (hasPendingWhiteBunnyVisit) {
+    const customerId = 'brownBunny';
+    if (state.customers?.[customerId] && startCustomerVisit(customerId, visitBranch.number)) {
+      whiteBunnyEvent.pendingCustomerVisit = false;
+      addNotification('ブラウンバニーが来店しています', `ホワイトバニーの紹介で、ブラウンバニーさんが${storeBranchLabel(visitBranch.number)}に来ています。`, 'special');
+      return;
+    }
+  }
+
+  // 通常客の来店抽選は1日1回・同時来店は最大1人のままにする。
+  // 特別来店客は通常抽選から除外し、通常客だけをランダム抽選する。
   const visitEmployee = storeEmployeeAvailable(visitBranch) ? storeBranchEmployee(visitBranch) : null;
   const employeeBonus = storeStaffCustomerVisitBonus(visitEmployee);
   const profileBonus = Number(visitBranch.number) === 2 ? 0.03 : Number(visitBranch.number) === 3 ? 0.05 : 0;
@@ -17344,7 +17958,7 @@ root.addEventListener('click', async (event) => {
     }
     return;
   }
-  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'wrist-found-event-next'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
@@ -17655,6 +18269,12 @@ root.addEventListener('click', async (event) => {
     case 'mystery-chinese-meal-video-start':
       retryMysteryChineseMealIntroPlayback();
       break;
+    case 'terry-california-video-start':
+      retryTerryCaliforniaIntroPlayback();
+      break;
+    case 'event-movie-skip':
+      await skipCurrentEventIntroVideo();
+      break;
     case 'mystery-chinese-meal-event-next':
       advanceMysteryChineseMealEvent();
       break;
@@ -17674,6 +18294,12 @@ root.addEventListener('click', async (event) => {
       repairChildhoodFriendEventDeadlock({ save: true, force: true });
       render();
       showToast('ラーメン屋イベントを終了し、メイン画面へ戻りました。', 'info');
+      break;
+    case 'white-bunny-ice-event-next':
+      await advanceWhiteBunnyIceEvent();
+      break;
+    case 'white-bunny-ice-event-choice':
+      chooseWhiteBunnyIceEvent(button.dataset.answer);
       break;
     case 'haunting-event-next':
       await advanceHauntingEvent();
@@ -18591,6 +19217,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     flushAutosaveLocally('visibility-hidden');
     stopPandaMusicEventAudio({ reset: false });
+    stopWhiteBunnyEventBgm({ reset: false });
     suspendAudio();
     stopGiftStatusSyncTimer();
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
@@ -18602,6 +19229,7 @@ document.addEventListener('visibilitychange', () => {
   if (criticalEventVideoPlaying) queueMicrotask(startGrayHoodAquariumIntroPlayback);
   if (screen === 'okachimachiQuiz' && okachimachiQuizSession?.stage === 'video') queueMicrotask(startOkachimachiQuizIntroPlayback);
   if (screen === 'pandaMusicEvent') playPandaMusicEventAudio();
+  if (screen === 'whiteBunnyIceEvent') syncWhiteBunnyEventBgm();
   if (screen === 'phone' && phoneTab === 'gift') scheduleGiftOutboxStatusSync(0, true);
   if (screen === 'childhoodFriendEvent') {
     const eventState = childhoodFriendEventState();
@@ -18626,8 +19254,12 @@ root.addEventListener('ended', (event) => {
   if (westernVideo) { completeWesternUnionIntroVideo(); return; }
   const amberVideo = target?.closest('video[data-tattoo-woman-amber-intro-video]');
   if (amberVideo) { completeTattooWomanAmberIntroVideo(); return; }
+  const mysteryVideo = target?.closest('video[data-mystery-chinese-meal-intro-video]');
+  if (mysteryVideo) { completeMysteryChineseMealIntroVideo(); return; }
   const aquariumVideo = target?.closest('video[data-gray-hood-aquarium-intro-video]');
   if (aquariumVideo) { completeGrayHoodAquariumIntroVideo(); return; }
+  const terryVideo = target?.closest('video[data-terry-california-intro-video]');
+  if (terryVideo) { completeTerryCaliforniaIntroVideo(); return; }
   const cinemaVideo = target?.closest('video[data-cinema-event-video]');
   if (cinemaVideo) completeCinemaVisitEvent();
 }, true);
@@ -18655,11 +19287,24 @@ root.addEventListener('playing', (event) => {
     // 不動産屋のBGM・環境音もそのまま継続。
     return;
   }
+  const mysteryVideo = target?.closest('video[data-mystery-chinese-meal-intro-video]');
+  if (mysteryVideo) {
+    mysteryVideo.closest('.mystery-chinese-meal-video-stage')?.classList.add('is-playing');
+    mysteryVideo.closest('.mystery-chinese-meal-video-stage')?.classList.remove('needs-start', 'has-error');
+    // 中華料理イベントのBGM・環境音もそのまま継続。
+    return;
+  }
   const aquariumVideo = target?.closest('video[data-gray-hood-aquarium-intro-video]');
   if (aquariumVideo) {
     aquariumVideo.closest('.gray-hood-aquarium-video-stage')?.classList.add('is-playing');
     aquariumVideo.closest('.gray-hood-aquarium-video-stage')?.classList.remove('needs-start', 'has-error');
     suspendAudio();
+    return;
+  }
+  const terryVideo = target?.closest('video[data-terry-california-intro-video]');
+  if (terryVideo) {
+    terryVideo.closest('.terry-california-video-stage')?.classList.add('is-playing');
+    terryVideo.closest('.terry-california-video-stage')?.classList.remove('needs-start', 'has-error');
     return;
   }
   const cinemaVideo = target?.closest('video[data-cinema-event-video]');
@@ -18686,9 +19331,19 @@ root.addEventListener('error', (event) => {
     amberVideo.closest('.tattoo-woman-amber-video-stage')?.classList.add('has-error', 'needs-start');
     return;
   }
+  const mysteryVideo = target?.closest('video[data-mystery-chinese-meal-intro-video]');
+  if (mysteryVideo) {
+    mysteryVideo.closest('.mystery-chinese-meal-video-stage')?.classList.add('has-error', 'needs-start');
+    return;
+  }
   const aquariumVideo = target?.closest('video[data-gray-hood-aquarium-intro-video]');
   if (aquariumVideo) {
     aquariumVideo.closest('.gray-hood-aquarium-video-stage')?.classList.add('has-error', 'needs-start');
+    return;
+  }
+  const terryVideo = target?.closest('video[data-terry-california-intro-video]');
+  if (terryVideo) {
+    terryVideo.closest('.terry-california-video-stage')?.classList.add('has-error', 'needs-start');
     return;
   }
   const cinemaVideo = target?.closest('video[data-cinema-event-video]');

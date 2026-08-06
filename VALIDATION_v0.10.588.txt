@@ -1,0 +1,40 @@
+JEWELRYxJEWELRY v0.10.588 validation
+
+- styles.css restored exactly to v0.10.586 layout baseline: PASS (baf0f739a8da0bfecc1469d860fa2743b873a5d3a0c44eb14ba5eb084541d181)
+- v0.10.587 layout override removed: PASS
+- video CSS retained .gray-hood-aquarium-video-screen: PASS
+- video CSS retained .okachimachi-quiz-video-screen: PASS
+- video CSS retained .western-union-video-screen: PASS
+- video CSS retained .mystery-chinese-meal-video-screen: PASS
+- tattoo amber video renderer retained tattoo-woman-amber-video-screen: PASS
+- tattoo amber video renderer retained data-tattoo-woman-amber-intro-video: PASS
+- renderWesternUnionEvent unchanged from v0.10.586: PASS
+- renderTattooWomanAmberEvent unchanged from v0.10.586: PASS
+- renderMysteryChineseMealEvent unchanged from v0.10.586: PASS
+- renderGrayHoodAquariumEvent unchanged from v0.10.586: PASS
+- renderOkachimachiQuiz unchanged from v0.10.586: PASS
+- completeWesternUnionIntroVideo unchanged from v0.10.586: PASS
+- completeTattooWomanAmberIntroVideo unchanged from v0.10.586: PASS
+- completeMysteryChineseMealIntroVideo unchanged from v0.10.586: PASS
+- completeGrayHoodAquariumIntroVideo unchanged from v0.10.586: PASS
+- completeOkachimachiQuizIntroVideo unchanged from v0.10.586: PASS
+- asset retained assets/videos/events/gray-hood-aquarium-intro.mp4: PASS (5500116)
+- asset retained assets/videos/events/okachimachi-quiz-king-intro.mp4: PASS (3163385)
+- asset retained assets/videos/events/tattoo-woman-amber-intro.mp4: PASS (5977611)
+- asset retained assets/videos/events/western-union-antique-diamond-intro.mp4: PASS (3324190)
+- asset retained assets/videos/events/mystery-chinese-meal-intro.mp4: PASS (5078384)
+- version reference js/game-data.js: PASS
+- version reference sw.js: PASS
+- version reference index.html: PASS
+- version reference game.html: PASS
+- version reference js/app.js: PASS
+- no stale runtime v0.10.587 in index.html: PASS
+- no stale runtime v0.10.587 in game.html: PASS
+- no stale runtime v0.10.587 in sw.js: PASS
+- no stale runtime v0.10.587 in js/app.js: PASS
+- no stale runtime v0.10.587 in js/game-data.js: PASS
+
+Node syntax checks:
+- node --check js/app.js: PASS
+- node --check js/game-data.js: PASS
+- node --check sw.js: PASS

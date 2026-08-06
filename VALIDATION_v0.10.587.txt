@@ -1,0 +1,47 @@
+JEWELRYxJEWELRY v0.10.587 validation
+
+1. JavaScript syntax
+- node --check js/app.js: PASS
+- node --check js/game-data.js: PASS
+- node --check sw.js: PASS
+
+2. CSS structure
+- Comments/quoted strings excluded, brace balance checked: PASS
+- v0.10.587 portrait-only override block present: PASS
+
+3. Automated browser layout harness
+Browser: Chromium controlled with Playwright
+CSS: actual v0.10.587 styles.css
+DOM: event-stage structures matching the five target renderers, with tall mock character images and long dialogue text
+
+Portrait sizes tested:
+- 320 x 700
+- 360 x 800
+- 412 x 915
+
+Target events tested at every portrait size:
+- Okachimachi quiz king (four-choice question)
+- Gray hood aquarium event
+- Tattoo woman amber event
+- Western Union antique diamond event
+- Mystery Chinese meal event
+
+Portrait assertions:
+- Scroll container overflow-y is auto/scroll: PASS
+- No horizontal overflow: PASS
+- Final dialogue/control is reachable: PASS
+- Character image height is capped below the reserved text/control area: PASS
+
+Landscape source-scope check:
+- New v0.10.587 rules are limited to portrait / max-aspect-ratio 1:1: PASS
+- Existing landscape rules were not edited.
+- Reference viewports inspected by the harness: 640 x 360 and 915 x 412.
+
+4. Version/cache references
+- js/game-data.js VERSION = 0.10.587: PASS
+- sw.js VERSION = 0.10.587: PASS
+- index.html/game.html cache query = 0.10.587: PASS
+- js/app.js static module query = 0.10.587: PASS
+
+5. Scope limitation
+The supplied ZIP is an overlay/update package and does not contain every base-game image/module referenced by the complete repository. Therefore, the validation used the real CSS and matching event DOM structures, but did not trigger all five events through a complete saved game from their probability conditions.

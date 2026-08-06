@@ -1,23 +1,24 @@
-const VERSION = '0.10.586';
+const VERSION = '0.10.596';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const APP_SHELL = [
   './', './index.html', './game.html', './auth.html', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/loose-gem-professional.js?v=0.10.586', './js/kaitenzushi-embedded.js?v=0.10.586', './js/daily-gems.js?v=0.10.586', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/loose-gem-professional.js?v=0.10.596', './js/kaitenzushi-embedded.js?v=0.10.596', './js/daily-gems.js?v=0.10.596', './js/japan-holidays.js', './js/firebase-config.js', './js/google-auth-bridge.js',
   './js/security-config.js', './js/firebase-service.js', './data/metals.json', './data/jewelry_okachimachi_quiz_200_game_format.json',
   './data/daily-gems-365.json', './data/cinema-event-videos.json', './assets/minigames/kaitenzushi/game/index.html', './assets/images/main.webp', './assets/images/main-portrait.webp', './assets/images/main-menu.webp', './assets/images/main-menu-portrait.webp', './assets/images/today-gem.webp',
   './assets/images/tools/placeholder.svg', './assets/images/tools/jewelry-bench.png', './assets/images/tools/loupe.png', './assets/images/tools/gem-polishing-machine.png', './assets/images/tools/diamond-polishing-lap.png', './assets/images/tools/piercing-saw.png', './assets/images/tools/nipper.png', './assets/images/tools/electronic-scale.png', './assets/images/tools/wood-block.png', './assets/images/tools/dividers.png', './assets/images/tools/milgrain-tool.png', './assets/images/tools/rolling-mill.png', './assets/images/tools/file.png', './assets/images/tools/pliers.png', './assets/images/tools/torch.png', './assets/images/tools/hammer.png', './assets/images/tools/magnifier.png', './assets/images/tools/bench-peg.png', './assets/images/tools/graver.png', './assets/images/tools/engraving-block.png', './assets/images/tools/stamps.png', './assets/images/tools/rotary-tool.png', './assets/images/tools/buffer.png', './assets/images/tools/ultrasonic-cleaner.png', './assets/images/events/indian-restaurant-manager.png', './assets/images/robbery-newspaper.webp', './assets/images/equipment/basic-pickaxe.png', './assets/images/customers/customer-placeholder.svg',
   './assets/images/quiz/quiz-king-normal.png', './assets/images/quiz/quiz-king-player-incorrect.png', './assets/images/quiz/quiz-king-player-correct.png', './assets/videos/events/okachimachi-quiz-king-intro.mp4', './assets/videos/events/tattoo-woman-amber-intro.mp4',
   './assets/images/events/gray-hood-aquarium.png', './assets/images/events/aquarium-tank.png', './assets/videos/events/gray-hood-aquarium-intro.mp4', './assets/minigames/aquarium/index.html', './assets/minigames/aquarium/aquarium_config.json', './assets/minigames/aquarium/aquarium_initial_state.json', './assets/minigames/aquarium/aquarium_state_manager.js', './assets/minigames/aquarium/assets/fish/black_molly.png',
   './assets/images/events/western-union-messenger.png', './assets/images/events/antique-diamond.png', './assets/videos/events/western-union-antique-diamond-intro.mp4', './assets/videos/events/mystery-chinese-meal-intro.mp4', './assets/images/events/pazupan-miner.png', './assets/images/events/pazupan.png', './assets/images/events/mermaid.png', './assets/images/events/pearl.png',
-  './assets/images/events/okachimachi-toll-frog.png', './assets/images/events/panda-music-band-alien.png', './assets/images/events/panda-music-band-cats.png', './assets/images/events/panda-music-band-horror.png', './assets/images/events/found-wrist.png', './assets/images/events/sushi-chef.png', './assets/images/events/cyclops.png', './assets/images/events/ganesha.png', './assets/images/events/ganesha-tusk.png', './assets/images/events/ivory-loose.png', './assets/images/events/kappa.png', './assets/images/events/tattoo-woman.png', './assets/images/events/amber.png', './assets/images/events/tourist.png', './assets/images/events/alien.png', './assets/images/events/haunting-ghost.png', './assets/images/events/store-thief-old-woman.png', './assets/images/events/mystery-chinese-chef.png', './assets/images/events/mystery-chinese-food-01.png', './assets/images/events/mystery-chinese-food-02.png', './assets/images/events/clock-tower-donation-old-woman.png', './assets/audio/sfx-haunting-appear.wav', './assets/audio/sfx-haunting-whisper.wav', './assets/images/gems/ivory.png', './assets/images/gems/jade.png', './assets/images/loose/ivory/round-cabochon.png', './assets/images/loose/ivory/oval-cabochon.png', './assets/images/loose/jade/round-cabochon.png', './assets/images/loose/jade/oval-cabochon.png', './assets/images/loose/amber/amber.png', './assets/images/items/energy-drink.png', './assets/images/items/bokuto.png', './assets/images/items/body-chip.png', './assets/images/space.webp', './assets/images/meal-kaitenzushi-event.webp', './assets/images/panda-hiroba.webp', './assets/images/panda-hiroba-portrait.webp', './assets/images/cinema-event.webp', './assets/images/cinema-event-portrait.webp',
+  './assets/images/meal-ice.webp', './assets/images/meal-ice-portrait.webp', './assets/images/foods/ice-chocomint.png',
+  './assets/images/events/okachimachi-toll-frog.png', './assets/images/events/panda-music-band-alien.png', './assets/images/events/panda-music-band-cats.png', './assets/images/events/panda-music-band-horror.png', './assets/images/events/found-wrist.png', './assets/images/events/white-bunny.png', './assets/images/events/terry-california.png', './assets/videos/events/terry-california-intro.mp4', './assets/images/backgrounds/terry-hamburger-landscape.png', './assets/images/backgrounds/terry-hamburger-portrait.png', './assets/images/loose/benitoite/oval.png', './assets/images/gems/benitoite.png', './assets/images/events/sushi-chef.png', './assets/images/events/cyclops.png', './assets/images/events/ganesha.png', './assets/images/events/ganesha-tusk.png', './assets/images/events/ivory-loose.png', './assets/images/events/kappa.png', './assets/images/events/tattoo-woman.png', './assets/images/events/amber.png', './assets/images/events/tourist.png', './assets/images/events/alien.png', './assets/images/events/haunting-ghost.png', './assets/images/events/store-thief-old-woman.png', './assets/images/events/mystery-chinese-chef.png', './assets/images/events/mystery-chinese-food-01.png', './assets/images/events/mystery-chinese-food-02.png', './assets/images/events/clock-tower-donation-old-woman.png', './assets/audio/sfx-haunting-appear.wav', './assets/audio/sfx-haunting-whisper.wav', './assets/images/gems/ivory.png', './assets/images/gems/jade.png', './assets/images/loose/ivory/round-cabochon.png', './assets/images/loose/ivory/oval-cabochon.png', './assets/images/loose/jade/round-cabochon.png', './assets/images/loose/jade/oval-cabochon.png', './assets/images/loose/amber/amber.png', './assets/images/items/energy-drink.png', './assets/images/items/bokuto.png', './assets/images/items/body-chip.png', './assets/images/space.webp', './assets/images/meal-kaitenzushi-event.webp', './assets/images/panda-hiroba.webp', './assets/images/panda-hiroba-portrait.webp', './assets/images/cinema-event.webp', './assets/images/cinema-event-portrait.webp',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png', './assets/icons/favicon.png',
 ];
 
 const CORE_SHELL = [
   './', './index.html', './game.html', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/loose-gem-professional.js?v=0.10.586',
-  './js/kaitenzushi-embedded.js?v=0.10.586', './js/daily-gems.js?v=0.10.586', './js/japan-holidays.js', './js/firebase-config.js',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/loose-gem-professional.js?v=0.10.596',
+  './js/kaitenzushi-embedded.js?v=0.10.596', './js/daily-gems.js?v=0.10.596', './js/japan-holidays.js', './js/firebase-config.js',
   './js/google-auth-bridge.js', './js/security-config.js', './js/firebase-service.js',
 ];
 
@@ -38,6 +39,7 @@ const AUDIO_MEDIA = [
   './assets/audio/amb-meal-convenience.ogg',
   './assets/audio/amb-meal-hamburger.ogg',
   './assets/audio/amb-meal-indian.ogg',
+  './assets/audio/amb-meal-ice.ogg',
   './assets/audio/amb-meal-kebab.ogg',
   './assets/audio/amb-meal-korean.ogg',
   './assets/audio/amb-meal-ramen.ogg',
@@ -57,6 +59,8 @@ const AUDIO_MEDIA = [
   './assets/audio/bgm-meal-convenience.ogg',
   './assets/audio/bgm-meal-hamburger.ogg',
   './assets/audio/bgm-meal-indian.ogg',
+  './assets/audio/bgm-meal-ice.ogg',
+  './assets/audio/bgm-white-bunny.ogg',
   './assets/audio/bgm-meal-kebab.ogg',
   './assets/audio/bgm-meal-korean.ogg',
   './assets/audio/bgm-meal-ramen.ogg',

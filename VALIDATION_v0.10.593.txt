@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.593 検証結果
+
+[OK] js/app.js JavaScript構文検査
+[OK] js/game-data.js JavaScript構文検査
+[OK] sw.js JavaScript構文検査
+[OK] 回転寿司カードから「お会計は食べた分だけ」を削除
+[OK] 横画面限定の回転寿司カード幅・文字サイズ調整を追加
+[OK] 縦画面用レイアウト指定は変更なし
+[OK] index.html / game.html / sw.js のバージョン参照をv0.10.593へ統一
+[OK] テリー・カリフォルニア関連アセットをservice workerへ登録

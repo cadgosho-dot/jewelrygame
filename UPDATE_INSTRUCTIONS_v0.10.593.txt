@@ -1,0 +1,8 @@
+JEWELRY×JEWELRY v0.10.593 更新手順
+
+1. ZIPを展開します。
+2. 展開した全ファイルをGitHubリポジトリへ上書きします。
+3. GitHub Desktopで変更内容を確認します。
+4. Commit名を Update to v0.10.593 にします。
+5. Commit後、Push originを実行します。
+6. 公開サイトを再読み込みし、横画面の食事選択で回転寿司カードが切れないことを確認します。

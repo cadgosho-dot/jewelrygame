@@ -1,0 +1,8 @@
+JEWELRYxJEWELRY v0.10.586 update
+
+1. Extract this ZIP.
+2. Copy all extracted files into the GitHub repository folder and overwrite existing files.
+3. Open GitHub Desktop.
+4. Commit with: Update to v0.10.586
+5. Push to origin.
+6. After GitHub Pages deploys, verify with ?v=0.10.586.

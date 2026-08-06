@@ -1,0 +1,7 @@
+JEWELRYxJEWELRY v0.10.585 update
+
+1. Replace the repository files with the contents of this update package.
+2. Commit in GitHub Desktop.
+3. Commit with: Update to v0.10.585
+4. Push to origin.
+5. Verify with ?v=0.10.585 after GitHub Pages deployment.

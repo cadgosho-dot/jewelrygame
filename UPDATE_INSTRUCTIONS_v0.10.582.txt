@@ -1,0 +1,12 @@
+JEWELRY x JEWELRY v0.10.582 update
+
+1. Extract this ZIP.
+2. Copy all extracted files into the root of the GitHub repository.
+3. Overwrite existing files when asked.
+4. In GitHub Desktop, commit with: Update to v0.10.582
+5. Push origin.
+6. Confirm with: https://cadgosho-dot.github.io/jewelrygame/?v=0.10.582
+
+Important:
+- Keep the assets/videos/events/okachimachi-quiz-king-intro.mp4 path unchanged.
+- Do not rename the video file.

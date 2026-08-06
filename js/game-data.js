@@ -1,4 +1,4 @@
-export const VERSION = '0.10.573';
+export const VERSION = '0.10.586';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -3929,6 +3929,14 @@ export const CUSTOMERS = {
     opening: '普段使いできるジュエリーを探しています。',
     profile: '普段使いのジュエリーを探して来店した、穏やかな雰囲気のお客様です。',
     traits: '落ち着いていて実用性を重視し、希望を丁寧に伝えるタイプです。',
+    openingTemplate: '普段使いできる{item}を探しています。',
+    profileTemplate: '普段使いの{item}を探して来店した、穏やかな雰囲気のお客様です。',
+    details: {
+      ageGroup: '20代後半', occupation: '事務職',
+      purposeTemplate: '通勤にも休日にも使える自分用の{item}を選ぶため', wearer: '本人',
+      wearingScene: '通勤・休日の外出', preference: '控えめで服に合わせやすく、手入れしやすいもの',
+      budgetStyle: '予算内で実用性と耐久性を重視',
+    },
     preferenceText: 'アメシストのラウンドカット・シルバー・シンプルなリング',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -3941,6 +3949,14 @@ export const CUSTOMERS = {
     opening: 'プレゼント用のジュエリーを探しています。',
     profile: '大切な人へのプレゼントを探して来店した、誠実な雰囲気のお客様です。',
     traits: '慎重で相手思い。贈る相手に似合うかを考えながら選ぶタイプです。',
+    openingTemplate: 'プレゼント用の{item}を探しています。',
+    profileTemplate: '大切な人へのプレゼントとして{item}を探して来店した、誠実な雰囲気のお客様です。',
+    details: {
+      ageGroup: '30代前半', occupation: '営業職',
+      purposeTemplate: 'パートナーへ贈る{item}を選ぶため', wearer: 'パートナー',
+      wearingScene: '記念日の食事・休日', preference: '相手の服装に合わせやすい、清潔感のあるデザイン',
+      budgetStyle: '候補を比較し、納得できれば予算を少し広げる',
+    },
     preferenceText: 'アクアマリンのオーバルカット・ゴールド・シンプルなペンダント',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -3953,6 +3969,14 @@ export const CUSTOMERS = {
     opening: '自分へのご褒美になるジュエリーを探しています。',
     profile: '仕事を頑張った記念に、自分用のジュエリーを探しているお客様です。',
     traits: '明るく直感的で、身につけたときの華やかさを重視します。',
+    openingTemplate: '自分へのご褒美になる{item}を探しています。',
+    profileTemplate: '仕事を頑張った記念に、自分用の{item}を探しているお客様です。',
+    details: {
+      ageGroup: '30代前半', occupation: 'アパレル関係',
+      purposeTemplate: '仕事の節目に自分へのご褒美となる{item}を選ぶため', wearer: '本人',
+      wearingScene: '休日の外出・会食', preference: '顔映りや手元が華やぐ、存在感のあるもの',
+      budgetStyle: '見た目の満足度を優先し、気に入れば即決',
+    },
     preferenceText: 'ガーネットのオーバルカット・ゴールド・ナチュラルなリング',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -3965,6 +3989,14 @@ export const CUSTOMERS = {
     opening: '記念日に贈るペンダントを探しています。',
     profile: 'パートナーとの記念日に贈る品を探して来店したお客様です。',
     traits: '予算と納期をきちんと確認し、長く使えるデザインを好みます。',
+    openingTemplate: '記念日に贈る{item}を探しています。',
+    profileTemplate: 'パートナーとの記念日に贈る{item}を探して来店したお客様です。',
+    details: {
+      ageGroup: '30代後半', occupation: 'ITエンジニア',
+      purposeTemplate: 'パートナーとの記念日に贈る{item}を選ぶため', wearer: 'パートナー',
+      wearingScene: '記念日・少し改まった外出', preference: '長く使えて流行に左右されにくいデザイン',
+      budgetStyle: '予算と納期を先に確認し、品質との釣り合いを重視',
+    },
     preferenceText: 'サファイアのラウンドカット・ゴールド・シンプルなペンダント',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -3977,6 +4009,14 @@ export const CUSTOMERS = {
     opening: '落ち着いた雰囲気のピアスを見せてください。',
     profile: '日常にも仕事にも使える上品なピアスを探しているお客様です。',
     traits: '品質を丁寧に見比べ、派手すぎない品の良さを好みます。',
+    openingTemplate: '落ち着いた雰囲気の{item}を見せてください。',
+    profileTemplate: '日常にも仕事にも使える上品な{item}を探しているお客様です。',
+    details: {
+      ageGroup: '40代前半', occupation: '会社員・管理職',
+      purposeTemplate: '仕事でも日常でも使える自分用の{item}を選ぶため', wearer: '本人',
+      wearingScene: '職場・会食・日常', preference: '派手すぎず、仕立てと石の質が伝わる上品なもの',
+      budgetStyle: '価格だけでなく品質差と使いやすさを丁寧に比較',
+    },
     preferenceText: 'ムーンストーンのラウンドカット・シルバー・ナチュラルなピアス',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -3989,6 +4029,14 @@ export const CUSTOMERS = {
     opening: '少し個性的なリングを探しています。',
     profile: '人と重ならないデザインのリングを求めて来店したお客様です。',
     traits: '新しいデザインに興味があり、特徴のある石や形を楽しみます。',
+    openingTemplate: '少し個性的な{item}を探しています。',
+    profileTemplate: '人と重ならないデザインの{item}を求めて来店したお客様です。',
+    details: {
+      ageGroup: '20代前半', occupation: 'クリエイティブ職',
+      purposeTemplate: '服装のアクセントになる自分用の{item}を探すため', wearer: '本人',
+      wearingScene: '休日・イベント・作品発表の場', preference: '珍しい石形や、ひと目で特徴が分かるデザイン',
+      budgetStyle: '個性を優先しつつ、価格とのバランスも確認',
+    },
     preferenceText: 'ペリドットのトリリアントカット・ゴールド・ゴージャスなリング',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -4001,6 +4049,14 @@ export const CUSTOMERS = {
     opening: '家族に受け継げるジュエリーを相談したいです。',
     profile: '長く大切にできるジュエリーを探している、穏やかなお客様です。',
     traits: '素材や耐久性を重視し、説明を聞いて納得してから決めます。',
+    openingTemplate: '家族に受け継げる{item}を相談したいです。',
+    profileTemplate: '家族へ受け継げる、長く大切にできる{item}を相談するため来店したお客様です。',
+    details: {
+      ageGroup: '50代前半', occupation: '会社員',
+      purposeTemplate: '将来家族へ受け継げる{item}を仕立てるため', wearer: '本人、将来は家族',
+      wearingScene: '家族行事・式典・日常', preference: '素材の耐久性が高く、修理しながら長く使えるもの',
+      budgetStyle: '素材・構造・メンテナンス性を理解してから判断',
+    },
     preferenceText: 'ルビーのオーバルカット・プラチナ・ナチュラルなペンダント',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -4013,6 +4069,14 @@ export const CUSTOMERS = {
     opening: 'シンプルで格好いいジュエリーはありますか？',
     profile: '服装に合わせやすい、すっきりしたジュエリーを探しているお客様です。',
     traits: '決断が早く、見た目と価格のバランスを重視します。',
+    openingTemplate: 'シンプルで格好いい{item}はありますか？',
+    profileTemplate: '服装に合わせやすい、すっきりした{item}を探しているお客様です。',
+    details: {
+      ageGroup: '30代前半', occupation: '技術職',
+      purposeTemplate: '普段の服装に合わせやすい自分用の{item}を選ぶため', wearer: '本人',
+      wearingScene: '通勤・休日・友人との外出', preference: '装飾を抑えた直線的で、扱いやすいデザイン',
+      budgetStyle: '見た目と価格のバランスが良ければ決断が早い',
+    },
     preferenceText: 'ラピスラズリのラウンドカボション・シルバー・シンプルなペンダント',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -4025,6 +4089,14 @@ export const CUSTOMERS = {
     opening: '色のきれいなピアスを探しています。',
     profile: '季節に合わせた色石のピアスを探して来店したお客様です。',
     traits: '色合いを重視し、左右の石の雰囲気まで細かく確認します。',
+    openingTemplate: '色のきれいな{item}を探しています。',
+    profileTemplate: '季節の装いに合わせる色石の{item}を探して来店したお客様です。',
+    details: {
+      ageGroup: '20代後半', occupation: '美容関係',
+      purposeTemplate: '季節の服装に合わせる自分用の{item}を選ぶため', wearer: '本人',
+      wearingScene: '休日・会食・季節のイベント', preference: '石の色、左右差、肌映りを細かく確認したい',
+      budgetStyle: '色の美しさと仕立ての完成度を優先',
+    },
     preferenceText: 'タンザナイトのペアカット・ゴールド・ゴージャスなピアス',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -4037,6 +4109,14 @@ export const CUSTOMERS = {
     opening: '妻への誕生日プレゼントを探しています。',
     profile: '妻の誕生日に贈るジュエリーを探している、慎重なお客様です。',
     traits: '贈る相手の好みを思い出しながら、候補をじっくり比較します。',
+    openingTemplate: '妻への誕生日プレゼントに{item}を探しています。',
+    profileTemplate: '妻の誕生日に贈る{item}を探している、慎重なお客様です。',
+    details: {
+      ageGroup: '50代前半', occupation: '自営業',
+      purposeTemplate: '妻の誕生日に贈る{item}を選ぶため', wearer: '妻',
+      wearingScene: '誕生日の食事・日常', preference: '妻が普段から使いやすい、上品で安心感のあるもの',
+      budgetStyle: '候補をじっくり比較し、説明に納得してから決定',
+    },
     preferenceText: 'エメラルドのエメラルドカット・ゴールド・ナチュラルなリング',
     image: './assets/images/customers/customer-placeholder.svg',
     request: {
@@ -4303,6 +4383,13 @@ export function initialState() {
         stage: 'idle',
         rewardGranted: false,
         paymentApplied: false,
+      },
+      wristFoundEvent: {
+        nextTriggerDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
       },
       pandaMusicEvent: {
         lastAttemptDay: 0,
@@ -4756,7 +4843,7 @@ export function migrateState(saved) {
       'clockTowerDonationEvent', 'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent',
       'cyclopsEvent', 'ganeshaTuskEvent', 'childhoodFriendEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
       'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-      'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
+      'wristFoundEvent', 'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
     ]);
     const activeStages = {
       birthdaySleepEvent: ['phone', 'greeting', 'congratulations', 'thanks'],
@@ -4775,6 +4862,7 @@ export function migrateState(saved) {
       cinemaVisitEvent: ['invitation', 'playing'],
       clockTowerDonationEvent: ['intro1', 'intro2', 'intro3'],
       mysteryChineseMealEvent: ['intro1', 'intro2', 'intro3', 'reward'],
+      wristFoundEvent: ['intro', 'report'],
       storeTheftEvent: ['intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice'],
     };
     const hasTransientEvent = Object.entries(activeStages).some(([key, stages]) => {
@@ -5397,6 +5485,19 @@ export function migrateState(saved) {
   };
   if (!state.events.okachimachiTollEvent.active && !['idle', 'completed'].includes(state.events.okachimachiTollEvent.stage)) {
     state.events.okachimachiTollEvent.stage = 'completed';
+  }
+
+  const savedWristFoundEvent = isRecord(state.events.wristFoundEvent) ? state.events.wristFoundEvent : {};
+  const validWristFoundStages = ['idle', 'intro', 'report', 'completed'];
+  state.events.wristFoundEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(savedWristFoundEvent.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(savedWristFoundEvent.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(savedWristFoundEvent.totalTriggered) || 0)),
+    active: Boolean(savedWristFoundEvent.active),
+    stage: validWristFoundStages.includes(savedWristFoundEvent.stage) ? savedWristFoundEvent.stage : 'idle',
+  };
+  if (!state.events.wristFoundEvent.active && !['idle', 'completed'].includes(state.events.wristFoundEvent.stage)) {
+    state.events.wristFoundEvent.stage = 'completed';
   }
 
   const savedWesternUnionEvent = isRecord(state.events.westernUnionEvent) ? state.events.westernUnionEvent : {};

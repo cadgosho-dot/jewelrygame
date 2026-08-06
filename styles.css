@@ -16870,3 +16870,665 @@ body[data-screen="main"] .main-menu.main-menu button{
   -webkit-backdrop-filter:none!important;
   filter:none!important;
 }
+
+
+/* v0.10.575: 天気アイコンを端末依存の色付き絵文字から単色シルエットSVGへ統一 */
+.weather-icon-svg{
+  display:inline-block!important;
+  width:1em!important;
+  height:1em!important;
+  min-width:1em!important;
+  flex:0 0 1em!important;
+  vertical-align:-.12em!important;
+  color:currentColor!important;
+  overflow:visible!important;
+  filter:none!important;
+  opacity:1!important;
+}
+.jwj-weather-icon,
+.header-weather-icon{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  color:inherit!important;
+  line-height:1!important;
+  filter:none!important;
+}
+
+/* v0.10.575: 横画面の食事選択を上部バー下から画面下端まで縦方向いっぱいに表示 */
+@media (orientation:landscape), (min-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .screen-shell:not(.meal-eating-shell) > .screen-content{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:stretch!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    padding-left:max(4px,var(--jwj-edge-gap,5px))!important;
+    padding-right:max(4px,var(--jwj-edge-gap,5px))!important;
+    padding-bottom:max(4px,var(--safe-bottom,0px))!important;
+    box-sizing:border-box!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .screen-shell:not(.meal-eating-shell) > .screen-content > .meal-choice-panel{
+    flex:1 1 auto!important;
+    align-self:stretch!important;
+    width:100%!important;
+    max-width:none!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:clamp(5px,1.5vh,8px) clamp(7px,1vw,12px)!important;
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;
+    align-items:stretch!important;
+    gap:clamp(4px,1.1vh,7px)!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-hunger-summary{
+    min-height:0!important;
+    margin:0!important;
+    padding:clamp(3px,.9vh,6px) clamp(7px,1vw,12px)!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-grid{
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    grid-template-columns:repeat(9,minmax(0,1fr))!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    grid-auto-rows:minmax(0,1fr)!important;
+    align-items:stretch!important;
+    align-content:stretch!important;
+    gap:clamp(4px,.7vw,7px)!important;
+    overflow:hidden!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-choice-card{
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:clamp(5px,1.5vh,9px) clamp(4px,.65vw,8px)!important;
+    align-content:center!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body[data-screen="meal"] .meal-note{
+    margin:0!important;
+    min-height:1.2em!important;
+    line-height:1.2!important;
+  }
+}
+
+/* v0.10.576: 工房ルース詳細をプロ向け宝石学資料へ拡張 */
+.loose-gem-professional-page .loose-professional-section-intro{
+  display:grid;
+  gap:.35rem;
+}
+.loose-gem-professional-page .loose-professional-section-intro .today-gem-data-note{
+  margin:.2rem 0 0;
+}
+.loose-gem-professional-page .today-gem-note-number{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  font-size:.68rem;
+  letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.loose-gem-professional-page .today-gem-note{
+  min-height:220px;
+}
+.loose-gem-professional-page .today-gem-note p{
+  line-height:1.95;
+}
+@media (max-width:720px){
+  .loose-gem-professional-page .today-gem-note{
+    min-height:0;
+  }
+}
+
+/* v0.10.577: お客様プロフィール詳細化・注文品と会話の一致 */
+.customer-profile-card{
+  display:grid;
+  gap:.65rem;
+  margin:0 0 .9rem;
+  padding:.85rem .9rem;
+  border:1px solid rgba(231,190,104,.38);
+  border-radius:12px;
+  background:rgba(0,0,0,.12);
+}
+.customer-profile-card>header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+}
+.customer-profile-card>header small{
+  color:var(--gold-light);
+  font-weight:900;
+  letter-spacing:.03em;
+}
+.customer-profile-card>header span{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:.15rem .5rem;
+  border:1px solid rgba(231,190,104,.42);
+  border-radius:999px;
+  color:var(--gold-light);
+  font-size:.72rem;
+  white-space:nowrap;
+}
+.customer-profile-summary{
+  margin:0!important;
+  color:#fff1d5;
+  font-size:.88rem;
+  line-height:1.6;
+}
+.customer-profile-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:.38rem .7rem;
+  margin:0;
+}
+.customer-profile-grid>div{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:.55rem;
+  align-items:start;
+  padding:.42rem 0;
+  border-top:1px solid rgba(255,255,255,.1);
+}
+.customer-profile-grid>div.wide{grid-column:1/-1}
+.customer-profile-grid dt{
+  color:var(--muted);
+  font-size:.76rem;
+  white-space:nowrap;
+}
+.customer-profile-grid dd{
+  margin:0;
+  color:#fff0cf;
+  font-size:.8rem;
+  line-height:1.45;
+  text-align:right;
+}
+.customer-profile-traits{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:.55rem;
+  margin:0!important;
+  padding-top:.48rem;
+  border-top:1px solid rgba(255,255,255,.12);
+  font-size:.8rem;
+  line-height:1.5;
+}
+.customer-profile-traits b{color:var(--gold-light);white-space:nowrap}
+.customer-profile-traits span{color:#efe0c5}
+.order-customer-profile-inline{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.order-customer-profile-inline span.wide{grid-column:1/-1}
+@media (max-width:700px){
+  .customer-profile-grid{grid-template-columns:1fr}
+  .customer-profile-grid>div.wide{grid-column:auto}
+  .customer-profile-grid dd{text-align:left}
+  .customer-profile-traits{grid-template-columns:1fr;gap:.2rem}
+  .order-customer-profile-inline{grid-template-columns:1fr}
+  .order-customer-profile-inline span.wide{grid-column:auto}
+}
+
+
+/* v0.10.579: 韓国料理・水槽イベントの一度限りの導入動画
+   - 縦横どちらでも画面中央に最大表示
+   - object-fit:contain で映像を一切切らず全体表示
+   - 自動再生不可・読込失敗時は同じ動画を再試行し、イベント本編を先に進めない */
+.gray-hood-aquarium-video-screen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483000!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  display:grid!important;
+  place-items:center!important;
+  background:#000!important;
+}
+.gray-hood-aquarium-video-stage{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#000!important;
+}
+.gray-hood-aquarium-video-stage video{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  display:block!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:#000!important;
+  pointer-events:none!important;
+}
+.gray-hood-aquarium-video-loading,
+.gray-hood-aquarium-video-start,
+.gray-hood-aquarium-video-error{
+  position:absolute!important;
+  z-index:3!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  color:#fff!important;
+  text-align:center!important;
+}
+.gray-hood-aquarium-video-loading{
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  padding:10px 16px!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.68)!important;
+  font-weight:800!important;
+  letter-spacing:.08em!important;
+  white-space:nowrap!important;
+}
+.gray-hood-aquarium-video-stage.is-playing .gray-hood-aquarium-video-loading,
+.gray-hood-aquarium-video-stage.needs-start .gray-hood-aquarium-video-loading,
+.gray-hood-aquarium-video-stage.has-error .gray-hood-aquarium-video-loading{display:none!important}
+.gray-hood-aquarium-video-start{
+  display:none!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  min-width:min(260px,82vw)!important;
+  padding:15px 22px!important;
+  border:1px solid rgba(255,255,255,.62)!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.82)!important;
+  color:#fff!important;
+  font-size:clamp(16px,3.8vw,22px)!important;
+  font-weight:900!important;
+  box-shadow:0 14px 45px rgba(0,0,0,.58)!important;
+}
+.gray-hood-aquarium-video-stage.needs-start .gray-hood-aquarium-video-start{display:block!important}
+.gray-hood-aquarium-video-error{
+  display:none!important;
+  bottom:max(18px,env(safe-area-inset-bottom))!important;
+  width:min(620px,calc(100vw - 28px))!important;
+  padding:10px 14px!important;
+  border:1px solid rgba(255,145,145,.58)!important;
+  border-radius:14px!important;
+  background:rgba(78,0,0,.84)!important;
+  line-height:1.45!important;
+}
+.gray-hood-aquarium-video-error strong,
+.gray-hood-aquarium-video-error span{display:block!important}
+.gray-hood-aquarium-video-error span{font-size:.84rem!important;opacity:.9!important}
+.gray-hood-aquarium-video-stage.has-error .gray-hood-aquarium-video-error{display:block!important}
+@supports not (height:100dvh){
+  .gray-hood-aquarium-video-screen{height:100vh!important;min-height:100vh!important}
+}
+
+/* v0.10.582: 通りすがりのクイズ王イベント導入動画
+   - 縦画面・横画面とも画面中央で可能な限り大きく表示
+   - object-fit:contain で映像全体を一切切らない
+   - 動画再生中も御徒町BGMを継続する（音声制御はJS側） */
+.okachimachi-quiz-video-screen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483000!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  display:grid!important;
+  place-items:center!important;
+  background:#000!important;
+}
+.okachimachi-quiz-video-stage{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#000!important;
+}
+.okachimachi-quiz-video-stage video{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  display:block!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:#000!important;
+  pointer-events:none!important;
+}
+.okachimachi-quiz-video-loading,
+.okachimachi-quiz-video-start,
+.okachimachi-quiz-video-error{
+  position:absolute!important;
+  z-index:3!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  color:#fff!important;
+  text-align:center!important;
+}
+.okachimachi-quiz-video-loading{
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  padding:10px 16px!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.68)!important;
+  font-weight:800!important;
+  letter-spacing:.08em!important;
+  white-space:nowrap!important;
+}
+.okachimachi-quiz-video-stage.is-playing .okachimachi-quiz-video-loading,
+.okachimachi-quiz-video-stage.needs-start .okachimachi-quiz-video-loading,
+.okachimachi-quiz-video-stage.has-error .okachimachi-quiz-video-loading{display:none!important}
+.okachimachi-quiz-video-start{
+  display:none!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  min-width:min(260px,82vw)!important;
+  padding:15px 22px!important;
+  border:1px solid rgba(255,255,255,.62)!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.82)!important;
+  color:#fff!important;
+  font-size:clamp(16px,3.8vw,22px)!important;
+  font-weight:900!important;
+  box-shadow:0 14px 45px rgba(0,0,0,.58)!important;
+}
+.okachimachi-quiz-video-stage.needs-start .okachimachi-quiz-video-start{display:block!important}
+.okachimachi-quiz-video-error{
+  display:none!important;
+  bottom:max(18px,env(safe-area-inset-bottom))!important;
+  width:min(620px,calc(100vw - 28px))!important;
+  padding:10px 14px!important;
+  border:1px solid rgba(255,145,145,.58)!important;
+  border-radius:14px!important;
+  background:rgba(78,0,0,.84)!important;
+  line-height:1.45!important;
+}
+.okachimachi-quiz-video-error strong,
+.okachimachi-quiz-video-error span{display:block!important}
+.okachimachi-quiz-video-error span{font-size:.84rem!important;opacity:.9!important}
+.okachimachi-quiz-video-stage.has-error .okachimachi-quiz-video-error{display:block!important}
+@supports not (height:100dvh){
+  .okachimachi-quiz-video-screen{height:100vh!important;min-height:100vh!important}
+}
+
+
+
+
+/* v0.10.585: 中華料理イベント導入動画
+   - 縦画面・横画面とも画面中央で最大表示
+   - object-fit:contain で映像全体を切らない
+   - 動画再生中もBGM・環境音はそのまま継続 */
+.mystery-chinese-meal-video-screen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483000!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  display:grid!important;
+  place-items:center!important;
+  background:#000!important;
+}
+.mystery-chinese-meal-video-stage{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#000!important;
+}
+.mystery-chinese-meal-video-stage video{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  display:block!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:#000!important;
+  pointer-events:none!important;
+}
+.mystery-chinese-meal-video-loading,
+.mystery-chinese-meal-video-start,
+.mystery-chinese-meal-video-error{
+  position:absolute!important;
+  z-index:3!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  color:#fff!important;
+  text-align:center!important;
+}
+.mystery-chinese-meal-video-loading{
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  padding:10px 16px!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.68)!important;
+  font-weight:800!important;
+  letter-spacing:.08em!important;
+  white-space:nowrap!important;
+}
+.mystery-chinese-meal-video-stage.is-playing .mystery-chinese-meal-video-loading,
+.mystery-chinese-meal-video-stage.needs-start .mystery-chinese-meal-video-loading,
+.mystery-chinese-meal-video-stage.has-error .mystery-chinese-meal-video-loading{display:none!important}
+.mystery-chinese-meal-video-start{
+  display:none!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  min-width:min(260px,82vw)!important;
+  padding:15px 22px!important;
+  border:1px solid rgba(255,255,255,.62)!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.82)!important;
+  color:#fff!important;
+  font-size:clamp(16px,3.8vw,22px)!important;
+  font-weight:900!important;
+  box-shadow:0 14px 45px rgba(0,0,0,.58)!important;
+}
+.mystery-chinese-meal-video-stage.needs-start .mystery-chinese-meal-video-start{display:block!important}
+.mystery-chinese-meal-video-error{
+  display:none!important;
+  bottom:max(18px,env(safe-area-inset-bottom))!important;
+  width:min(620px,calc(100vw - 28px))!important;
+  padding:10px 14px!important;
+  border:1px solid rgba(255,145,145,.58)!important;
+  border-radius:14px!important;
+  background:rgba(78,0,0,.84)!important;
+  line-height:1.45!important;
+}
+.mystery-chinese-meal-video-error strong,
+.mystery-chinese-meal-video-error span{display:block!important}
+.mystery-chinese-meal-video-error span{font-size:.84rem!important;opacity:.9!important}
+.mystery-chinese-meal-video-stage.has-error .mystery-chinese-meal-video-error{display:block!important}
+@supports not (height:100dvh){
+  .mystery-chinese-meal-video-screen{height:100vh!important;min-height:100vh!important}
+}
+
+/* v0.10.584: アンティークダイヤイベント導入動画
+   - 縦画面・横画面とも画面中央で可能な限り大きく表示
+   - object-fit:contain で映像全体を一切切らない
+   - 動画再生中もBGM・環境音を継続 */
+.western-union-video-screen{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483000!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  display:grid!important;
+  place-items:center!important;
+  background:#000!important;
+}
+.western-union-video-stage{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#000!important;
+}
+.western-union-video-stage video{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  display:block!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:#000!important;
+  pointer-events:none!important;
+}
+.western-union-video-loading,
+.western-union-video-start,
+.western-union-video-error{
+  position:absolute!important;
+  z-index:3!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  color:#fff!important;
+  text-align:center!important;
+}
+.western-union-video-loading{
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  padding:10px 16px!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.68)!important;
+  font-weight:800!important;
+  letter-spacing:.08em!important;
+  white-space:nowrap!important;
+}
+.western-union-video-stage.is-playing .western-union-video-loading,
+.western-union-video-stage.needs-start .western-union-video-loading,
+.western-union-video-stage.has-error .western-union-video-loading{display:none!important}
+.western-union-video-start{
+  display:none!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  min-width:min(260px,82vw)!important;
+  padding:15px 22px!important;
+  border:1px solid rgba(255,255,255,.62)!important;
+  border-radius:999px!important;
+  background:rgba(0,0,0,.82)!important;
+  color:#fff!important;
+  font-size:clamp(16px,3.8vw,22px)!important;
+  font-weight:900!important;
+  box-shadow:0 14px 45px rgba(0,0,0,.58)!important;
+}
+.western-union-video-stage.needs-start .western-union-video-start{display:block!important}
+.western-union-video-error{
+  display:none!important;
+  bottom:max(18px,env(safe-area-inset-bottom))!important;
+  width:min(620px,calc(100vw - 28px))!important;
+  padding:10px 14px!important;
+  border:1px solid rgba(255,145,145,.58)!important;
+  border-radius:14px!important;
+  background:rgba(78,0,0,.84)!important;
+  line-height:1.45!important;
+}
+.western-union-video-error strong,
+.western-union-video-error span{display:block!important}
+.western-union-video-error span{font-size:.84rem!important;opacity:.9!important}
+.western-union-video-stage.has-error .western-union-video-error{display:block!important}
+@supports not (height:100dvh){
+  .western-union-video-screen{height:100vh!important;min-height:100vh!important}
+}
+
+
+/* v0.10.586: 御徒町の『手首を拾った』イベント */
+.wrist-found-event-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 3vw, 28px);
+}
+.wrist-found-event {
+  width: min(100%, 860px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2.4vw, 24px);
+}
+.wrist-found-image-shell {
+  width: min(92vw, 520px);
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wrist-found-image {
+  width: 100%;
+  height: auto;
+  max-height: min(68vh, 860px);
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 16px 40px rgba(0,0,0,.42));
+}
+.wrist-found-dialogue {
+  width: min(92vw, 680px);
+  text-align: center;
+  gap: 10px;
+}
+.wrist-found-dialogue strong {
+  font-size: clamp(1.45rem, 4.6vw, 2.1rem);
+  line-height: 1.5;
+}
+.wrist-found-dialogue span {
+  font-size: clamp(0.92rem, 2.8vw, 1.06rem);
+}
+@media (orientation: landscape) {
+  .wrist-found-image {
+    max-height: min(62vh, 680px);
+  }
+}

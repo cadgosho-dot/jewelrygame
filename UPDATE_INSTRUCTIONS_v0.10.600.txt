@@ -1,0 +1,7 @@
+JEWELRY×JEWELRY v0.10.600 更新方法
+
+1. ZIPを展開してください。
+2. 展開した内容を現在のGitHubリポジトリへ上書きしてください。
+3. GitHub Desktopで変更内容を確認してください。
+4. Commit名を「Update to v0.10.600」にしてください。
+5. Commit後、Push originを実行してください。

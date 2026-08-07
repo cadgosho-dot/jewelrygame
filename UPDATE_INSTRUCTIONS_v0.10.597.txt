@@ -1,0 +1,6 @@
+JEWELRY×JEWELRY v0.10.597 更新手順
+
+1. ZIPを展開します。
+2. GitHubリポジトリへ内容を上書きします。
+3. GitHub Desktopで変更を確認します。
+4. Commit名「Update to v0.10.597」でCommit・Pushします。

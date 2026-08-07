@@ -1,0 +1,33 @@
+JEWELRY×JEWELRY v0.10.598 検証結果
+
+結果: 29/29 OK
+
+[OK] VERSION v0.10.598
+[OK] app import cache v0.10.598
+[OK] game CSS cache v0.10.598
+[OK] game JS cache v0.10.598
+[OK] service worker v0.10.598
+[OK] 共通レイアウト部品取得
+[OK] セリフ欄実測
+[OK] 実測値CSS変数
+[OK] 描画後に共通補正
+[OK] 画面リサイズ再計算
+[OK] 画面回転再計算
+[OK] フォント読込後再計算
+[OK] visit-character-event対象
+[OK] ウエスタン・ユニオン対象
+[OK] パズーパン対象
+[OK] 人魚対象
+[OK] 水槽イベント対象
+[OK] ホワイトバニー選択肢対象
+[OK] セリフ欄下端固定CSS
+[OK] 人物領域をセリフ直上へ
+[OK] 縦画面専用余白
+[OK] 横画面専用余白
+[OK] 動画ステージを直接対象にしない
+[OK] CSS波括弧整合 — 4424 / 4424
+[OK] JavaScript構文 js/app.js
+[OK] JavaScript構文 js/game-data.js
+[OK] JavaScript構文 js/loose-gem-professional.js
+[OK] 変更対象ソースを限定 — styles.css, sw.js, game.html, js/game-data.js, js/app.js
+[OK] 予期しない既存ファイル変更なし

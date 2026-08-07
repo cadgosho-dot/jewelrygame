@@ -7,9 +7,9 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.596';
-import { COMMON_LOOSE_PROFESSIONAL_SECTIONS, looseGemAdvancedData } from './loose-gem-professional.js?v=0.10.596';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.596';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.602';
+import { COMMON_LOOSE_PROFESSIONAL_SECTIONS, looseGemAdvancedData } from './loose-gem-professional.js?v=0.10.602';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.602';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -121,6 +121,8 @@ let storeTheftSequenceRunning = false;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
 let screenHeaderResizeObserver = null;
 let screenHeaderFontSyncPromise = null;
+let eventDialogueLayoutFrame = 0;
+let quizBottomLayoutFrame = 0;
 let pandaMusicEventAudio = null;
 
 const JEWELRY_SHOP_STOCK_SIZE = 5;
@@ -8252,6 +8254,7 @@ function completeOkachimachiQuizIntroVideo() {
   if (!session || session.stage !== 'video') return;
   session.stage = 'intro1';
   render();
+  scheduleOkachimachiQuizBottomLayoutSync();
   playSfx('quiz-intro', { gain: .96 });
   vibrate([20, 28, 46]);
 }
@@ -8543,6 +8546,117 @@ function scheduleScreenContentTopOffsetSync() {
       .catch(() => {})
       .finally(() => { screenHeaderFontSyncPromise = null; });
   }
+}
+
+
+function eventDialogueBottomLayoutParts() {
+  const eventRoot = root.querySelector('.visit-character-event, .western-union-event, .pazupan-event, .mermaid-event, .gray-hood-aquarium-event');
+  if (!(eventRoot instanceof HTMLElement)) return null;
+  const dialogueSelectors = [
+    ':scope > .visit-event-dialogue',
+    ':scope > .white-bunny-choice-card',
+    ':scope > .western-union-dialogue',
+    ':scope > .event-dialogue-card',
+    ':scope > .gray-hood-dialogue',
+  ];
+  const characterAreaSelectors = [
+    ':scope > .visit-character-area',
+    ':scope > .western-union-character-area',
+    ':scope > .pazupan-character-area',
+    ':scope > .mermaid-character-area',
+    ':scope > .gray-hood-character-area',
+  ];
+  const dialogue = dialogueSelectors.map((selector) => eventRoot.querySelector(selector)).find((element) => element instanceof HTMLElement);
+  const characterArea = characterAreaSelectors.map((selector) => eventRoot.querySelector(selector)).find((element) => element instanceof HTMLElement);
+  const mainScreen = eventRoot.closest('.main-screen');
+  if (!(dialogue instanceof HTMLElement) || !(characterArea instanceof HTMLElement) || !(mainScreen instanceof HTMLElement)) return null;
+  return { eventRoot, dialogue, characterArea, mainScreen };
+}
+
+function syncEventDialogueBottomLayout() {
+  const parts = eventDialogueBottomLayoutParts();
+  if (!parts) return false;
+  const { eventRoot, dialogue, characterArea, mainScreen } = parts;
+  mainScreen.classList.add('event-dialogue-bottom-screen');
+  eventRoot.classList.add('event-dialogue-bottom-layout');
+  dialogue.classList.add('event-dialogue-bottom-panel');
+  characterArea.classList.add('event-dialogue-character-area');
+
+  const eventRect = eventRoot.getBoundingClientRect();
+  const dialogueRect = dialogue.getBoundingClientRect();
+  if (eventRect.height <= 0 || dialogueRect.height <= 0) return false;
+  const gap = Math.max(4, Math.min(10, Math.round(eventRect.height * 0.008)));
+  const reserve = Math.max(92, Math.ceil(eventRect.bottom - dialogueRect.top + gap));
+  eventRoot.style.setProperty('--event-dialogue-reserve', `${reserve}px`);
+  return true;
+}
+
+function scheduleEventDialogueBottomLayoutSync() {
+  scheduleOkachimachiQuizBottomLayoutSync();
+  if (eventDialogueLayoutFrame) cancelAnimationFrame(eventDialogueLayoutFrame);
+  const parts = eventDialogueBottomLayoutParts();
+  if (!parts) return;
+  parts.mainScreen.classList.add('event-dialogue-bottom-screen');
+  parts.eventRoot.classList.add('event-dialogue-bottom-layout');
+  parts.dialogue.classList.add('event-dialogue-bottom-panel');
+  parts.characterArea.classList.add('event-dialogue-character-area');
+  eventDialogueLayoutFrame = requestAnimationFrame(() => {
+    eventDialogueLayoutFrame = 0;
+    syncEventDialogueBottomLayout();
+    requestAnimationFrame(syncEventDialogueBottomLayout);
+  });
+  window.setTimeout(syncEventDialogueBottomLayout, 80);
+  window.setTimeout(syncEventDialogueBottomLayout, 240);
+  if (document.fonts?.ready) document.fonts.ready.then(() => syncEventDialogueBottomLayout()).catch(() => {});
+}
+
+function okachimachiQuizBottomLayoutParts() {
+  if (screen !== 'okachimachiQuiz') return null;
+  const eventRoot = root.querySelector('.okachimachi-quiz-event:not(.quiz-stage-reward)');
+  if (!(eventRoot instanceof HTMLElement)) return null;
+  const panel = eventRoot.querySelector('.quiz-question-panel, .quiz-dialogue-panel');
+  const characterArea = eventRoot.querySelector('.quiz-character-area');
+  const mainScreen = eventRoot.closest('.main-screen, .screen-content, .screen-shell');
+  if (!(panel instanceof HTMLElement) || !(characterArea instanceof HTMLElement)) return null;
+  return { eventRoot, panel, characterArea, mainScreen };
+}
+
+function syncOkachimachiQuizBottomLayout() {
+  const parts = okachimachiQuizBottomLayoutParts();
+  if (!parts) return false;
+  const { eventRoot, panel, characterArea } = parts;
+  eventRoot.classList.add('quiz-bottom-safe-layout');
+  panel.classList.add('quiz-bottom-safe-panel');
+  characterArea.classList.add('quiz-bottom-safe-character');
+  const eventRect = eventRoot.getBoundingClientRect();
+  const panelRect = panel.getBoundingClientRect();
+  if (eventRect.height <= 0 || panelRect.height <= 0) return false;
+  const style = getComputedStyle(document.documentElement);
+  const safeBottom = Math.max(0, parseFloat(style.getPropertyValue('--safe-bottom')) || 0);
+  const gap = Math.max(5, Math.min(10, Math.round(eventRect.height * .008)));
+  const panelHeight = Math.min(panelRect.height, eventRect.height * .58);
+  const reserve = Math.max(96, Math.ceil(panelHeight + safeBottom + gap * 2));
+  eventRoot.style.setProperty('--quiz-bottom-reserve', `${reserve}px`);
+  eventRoot.style.setProperty('--quiz-bottom-gap', `${gap}px`);
+  return true;
+}
+
+function scheduleOkachimachiQuizBottomLayoutSync() {
+  if (quizBottomLayoutFrame) cancelAnimationFrame(quizBottomLayoutFrame);
+  const parts = okachimachiQuizBottomLayoutParts();
+  if (!parts) return;
+  parts.eventRoot.classList.add('quiz-bottom-safe-layout');
+  parts.panel.classList.add('quiz-bottom-safe-panel');
+  parts.characterArea.classList.add('quiz-bottom-safe-character');
+  quizBottomLayoutFrame = requestAnimationFrame(() => {
+    quizBottomLayoutFrame = 0;
+    syncOkachimachiQuizBottomLayout();
+    requestAnimationFrame(syncOkachimachiQuizBottomLayout);
+  });
+  window.setTimeout(syncOkachimachiQuizBottomLayout, 60);
+  window.setTimeout(syncOkachimachiQuizBottomLayout, 160);
+  window.setTimeout(syncOkachimachiQuizBottomLayout, 360);
+  if (document.fonts?.ready) document.fonts.ready.then(() => syncOkachimachiQuizBottomLayout()).catch(() => {});
 }
 
 function setScreen(target, data = {}, push = true) {
@@ -8939,6 +9053,7 @@ function render() {
       : (renderers[screen] || renderMain)();
     installEventRecoveryControl();
     scheduleScreenContentTopOffsetSync();
+    scheduleEventDialogueBottomLayoutSync();
     if (screen === 'phone' && state?.settings?.phoneHomeImage) {
       root.querySelector('.phone-ui.custom-home-background')?.style.setProperty('--phone-home-image', `url("${state.settings.phoneHomeImage}")`);
     }
@@ -9567,8 +9682,215 @@ function setAquariumDisplayInstalled(id, target) {
   row.installed = next; aquarium.lastSyncRevision += 1; return aquariumLimitResult(true);
 }
 function aquariumSnapshot() { const aquarium = aquariumState(); refreshAquariumLoad(aquarium); return structuredClone(aquarium); }
+
+const AQUARIUM_ENGINE_FISH_ALIASES = Object.freeze({
+  rummy_nose_tetra: ['rummy_nose_tetra', 'rummynose_tetra'],
+});
+const AQUARIUM_ENGINE_PLANT_ALIASES = Object.freeze({
+  amazon_sword: ['amazon_sword', 'amazon_sword_plant'],
+});
+const AQUARIUM_ENGINE_LAYOUT_ALIASES = Object.freeze({
+  driftwood: ['driftwood', 'driftwood_large_a', 'driftwood_medium_a', 'driftwood_small_a'],
+  layout_stone: ['layout_stone', 'stone_dark_medium', 'stone_smooth_medium', 'stone_gray_medium'],
+});
+
+function aquariumEngineCompatibleId(registry, id, aliases = {}) {
+  const candidates = aliases[id] || [id];
+  return candidates.find((candidate) => registry && Object.prototype.hasOwnProperty.call(registry, candidate)) || '';
+}
+
+function aquariumRuntimeFingerprint(snapshot = aquariumSnapshot()) {
+  return JSON.stringify({
+    revision: Math.max(0, Math.floor(Number(snapshot?.lastSyncRevision) || 0)),
+    fish: AQUARIUM_CONFIG.fish.map((definition) => [definition.id, Math.max(0, Math.floor(Number(snapshot?.fish?.[definition.id]?.inTank) || 0))]),
+    plants: AQUARIUM_CONFIG.plants.map((definition) => [definition.id, Math.max(0, Math.floor(Number(snapshot?.plants?.[definition.id]?.inTank) || 0))]),
+    layout: AQUARIUM_CONFIG.displayItems.filter((definition) => !definition.required).map((definition) => [definition.id, Math.max(0, Math.floor(Number(snapshot?.displayItems?.[definition.id]?.installed) || 0))]),
+  });
+}
+
+function normalizeAquariumObservationName(value) {
+  return String(value || '').replace(/[\s・･（）()\[\]【】「」『』]/g, '').toLowerCase();
+}
+
+function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine = null) {
+  const names = new Set();
+  const fishRegistry = engine?.config?.speciesProfiles || {};
+  const decorationRegistry = engine?.config?.decorationProfiles || {};
+  for (const definition of AQUARIUM_CONFIG.fish) {
+    if (Math.max(0, Math.floor(Number(snapshot.fish?.[definition.id]?.inTank) || 0)) <= 0) continue;
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(fishRegistry, definition.id, AQUARIUM_ENGINE_FISH_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(fishRegistry[engineId]?.displayName));
+  }
+  for (const definition of AQUARIUM_CONFIG.plants) {
+    if (Math.max(0, Math.floor(Number(snapshot.plants?.[definition.id]?.inTank) || 0)) <= 0) continue;
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+  }
+  return names;
+}
+
+function filterAquariumObservationDocument(frame) {
+  try {
+    const documentRef = frame?.contentDocument;
+    if (!documentRef) return false;
+    const engine = frame.contentWindow?.aquariumEngine || null;
+    const allowedNames = aquariumCurrentObservationNames(aquariumSnapshot(), engine);
+    documentRef.querySelectorAll('.empty').forEach((empty) => {
+      if (String(empty.textContent || '').includes('観察')) empty.textContent = '現在、水槽の中には観察できる魚・水草がありません。';
+    });
+    documentRef.querySelectorAll('.section').forEach((section) => {
+      const title = String(section.querySelector('.section-title')?.textContent || '');
+      if (title.includes('レイアウト')) {
+        section.remove();
+        return;
+      }
+      section.querySelectorAll('.item-card').forEach((card) => {
+        const name = normalizeAquariumObservationName(card.querySelector('.item-name')?.textContent);
+        if (!name || !allowedNames.has(name)) card.remove();
+      });
+      if (!section.querySelector('.item-card')) section.remove();
+    });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function installAquariumObservationGuard(frame) {
+  try {
+    const documentRef = frame?.contentDocument;
+    if (!documentRef?.documentElement) return false;
+    if (frame.__jxjObservationObserver) return true;
+    const Observer = frame.contentWindow?.MutationObserver || MutationObserver;
+    const observer = new Observer(() => filterAquariumObservationDocument(frame));
+    observer.observe(documentRef.documentElement, { childList: true, subtree: true });
+    frame.__jxjObservationObserver = observer;
+    filterAquariumObservationDocument(frame);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function installAquariumPortraitCentering(frame) {
+  try {
+    const documentRef = frame?.contentDocument;
+    if (!documentRef?.head) return false;
+    const styleId = 'jxj-main-game-portrait-centering';
+    let style = documentRef.getElementById(styleId);
+    if (!style) {
+      style = documentRef.createElement('style');
+      style.id = styleId;
+      style.textContent = `@media (orientation: portrait) {
+        .tank-view {
+          justify-content: center !important;
+          padding-top: 0 !important;
+        }
+      }`;
+      documentRef.head.appendChild(style);
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-frame')) {
+  if (!frame?.contentWindow) return false;
+  try {
+    const aquariumWindow = frame.contentWindow;
+    const engine = aquariumWindow.aquariumEngine;
+    if (!engine || typeof engine.getObservationEntries !== 'function') return false;
+
+    if (!engine.__jxjObservationFilterInstalled) {
+      const originalGetObservationEntries = engine.getObservationEntries.bind(engine);
+      engine.getObservationEntries = () => {
+        const allowed = engine.__jxjAllowedObservationKeys;
+        return originalGetObservationEntries().filter((entry) => {
+          const category = entry?.category === 'plant' ? 'plants' : entry?.category;
+          if (!entry || !['fish', 'plants'].includes(category)) return false;
+          return !(allowed instanceof Set) || allowed.has(`${category}:${entry.id}`);
+        });
+      };
+      engine.__jxjObservationFilterInstalled = true;
+    }
+
+    const snapshot = aquariumSnapshot();
+    const fingerprint = aquariumRuntimeFingerprint(snapshot);
+    if (engine.__jxjMainGameFingerprint !== fingerprint) {
+      const fishRegistry = engine.config?.speciesProfiles || {};
+      const decorationRegistry = engine.config?.decorationProfiles || {};
+      const allowedObservationKeys = new Set();
+      const wasRunning = Boolean(engine.running);
+      engine.stop?.();
+      engine.clear?.({ keepAcquisitionHistory: false, keepLossLedger: false });
+
+      for (const definition of AQUARIUM_CONFIG.fish) {
+        const count = Math.max(0, Math.floor(Number(snapshot.fish?.[definition.id]?.inTank) || 0));
+        if (count <= 0) continue;
+        const engineId = aquariumEngineCompatibleId(fishRegistry, definition.id, AQUARIUM_ENGINE_FISH_ALIASES);
+        if (!engineId) continue;
+        allowedObservationKeys.add(`fish:${engineId}`);
+        for (let index = 0; index < count; index += 1) engine.addFish?.({ species: engineId });
+      }
+
+      for (const definition of AQUARIUM_CONFIG.plants) {
+        const count = Math.max(0, Math.floor(Number(snapshot.plants?.[definition.id]?.inTank) || 0));
+        if (count <= 0) continue;
+        const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
+        if (!engineId) continue;
+        allowedObservationKeys.add(`plants:${engineId}`);
+        for (let index = 0; index < count; index += 1) engine.addDecoration?.({ itemId: engineId, category: 'plants' });
+      }
+
+      for (const definition of AQUARIUM_CONFIG.displayItems.filter((entry) => !entry.required)) {
+        const count = Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0));
+        if (count <= 0) continue;
+        const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_LAYOUT_ALIASES);
+        if (!engineId) continue;
+        for (let index = 0; index < count; index += 1) engine.addDecoration?.({ itemId: engineId, category: 'layout' });
+      }
+
+      engine.__jxjAllowedObservationKeys = allowedObservationKeys;
+      engine.__jxjMainGameFingerprint = fingerprint;
+      if (wasRunning || engine.options?.autoStart !== false) engine.start?.();
+    }
+
+    installAquariumObservationGuard(frame);
+    filterAquariumObservationDocument(frame);
+    return true;
+  } catch (error) {
+    console.warn('水槽ミニゲームの現在配置同期に失敗しました。', error);
+    return false;
+  }
+}
+
 function postAquariumSnapshot(frame = document.querySelector('.aquarium-game-frame')) {
-  if (!frame?.contentWindow) return false; frame.contentWindow.postMessage({ source: 'jxj-main-game', type: 'aquarium-state', state: aquariumSnapshot() }, window.location.origin); return true;
+  if (!frame?.contentWindow) return false;
+  const targetOrigin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : '*';
+  frame.contentWindow.postMessage({ source: 'jxj-main-game', type: 'aquarium-state', state: aquariumSnapshot() }, targetOrigin);
+  return true;
+}
+
+function bindAquariumFrameSync() {
+  const frame = document.querySelector('.aquarium-game-frame');
+  if (!(frame instanceof HTMLIFrameElement)) return;
+  const sync = () => {
+    postAquariumSnapshot(frame);
+    installAquariumPortraitCentering(frame);
+    syncAquariumRuntime(frame);
+  };
+  if (frame.dataset.jxjSyncBound !== '1') {
+    frame.dataset.jxjSyncBound = '1';
+    frame.addEventListener('load', () => {
+      sync();
+      [80, 260, 700, 1400].forEach((delay) => window.setTimeout(sync, delay));
+    });
+  }
+  sync();
+  [80, 260, 700, 1400].forEach((delay) => window.setTimeout(sync, delay));
 }
 
 
@@ -10701,7 +11023,7 @@ function renderGrayHoodAquariumEvent() {
 
 function renderAquariumGame() {
   if (!aquariumUnlocked()) { queueMicrotask(() => setScreen('phone', {}, false)); return renderPhone(); }
-  queueMicrotask(() => window.setTimeout(() => postAquariumSnapshot(), 80));
+  queueMicrotask(bindAquariumFrameSync);
   return `<main class="aquarium-game-screen"><button type="button" class="aquarium-game-close" data-action="close-aquarium">スマートフォンへ戻る</button><iframe class="aquarium-game-frame" src="./assets/minigames/aquarium/index.html?v=${VERSION}" title="水槽ミニゲーム" allow="fullscreen" loading="eager"></iframe></main>`;
 }
 
@@ -13984,16 +14306,21 @@ function handleKaitenzushiMessage(event) {
 }
 
 function handleAquariumFrameMessage(event) {
-  if (event.origin !== window.location.origin) return;
+  const expectedOrigin = window.location.origin;
+  if (expectedOrigin && expectedOrigin !== 'null' && event.origin !== expectedOrigin) return;
   const frame = document.querySelector('.aquarium-game-frame');
   if (!frame?.contentWindow || event.source !== frame.contentWindow) return;
   const data = event.data || {};
   if (data.source !== 'jxj-aquarium') return;
-  if (data.type === 'ready' || data.type === 'request-state') { postAquariumSnapshot(frame); return; }
+  if (data.type === 'ready' || data.type === 'request-state') {
+    postAquariumSnapshot(frame);
+    [0, 80, 260].forEach((delay) => window.setTimeout(() => syncAquariumRuntime(frame), delay));
+    return;
+  }
   if (data.type === 'display-install') {
     const result = setAquariumDisplayInstalled(String(data.id || ''), data.target);
     if (!result.ok && result.message) showToast(result.message);
-    saveGame(); postAquariumSnapshot(frame);
+    saveGame(); postAquariumSnapshot(frame); syncAquariumRuntime(frame);
     if (screen === 'phone' && phoneTab === 'aquarium') render();
   }
 }
@@ -19186,14 +19513,15 @@ window.addEventListener('resize', () => {
   applyCurrentBackground();
   updateKeyboardViewportLayout();
   syncTodayGemHeaderLayout();
+  scheduleEventDialogueBottomLayoutSync();
 });
 window.addEventListener('orientationchange', () => {
   syncDeviceViewportProfile();
   applyCurrentBackground();
   updateKeyboardViewportLayout();
-  window.setTimeout(() => syncTodayGemHeaderLayout(), 120);
+  window.setTimeout(() => { syncTodayGemHeaderLayout(); scheduleEventDialogueBottomLayoutSync(); }, 120);
 });
-window.visualViewport?.addEventListener('resize', () => { syncDeviceViewportProfile(); updateKeyboardViewportLayout(); syncTodayGemHeaderLayout(); });
+window.visualViewport?.addEventListener('resize', () => { syncDeviceViewportProfile(); updateKeyboardViewportLayout(); syncTodayGemHeaderLayout(); scheduleEventDialogueBottomLayoutSync(); });
 window.visualViewport?.addEventListener('scroll', () => updateKeyboardViewportLayout());
 document.addEventListener('focusin', (event) => {
   const field = event.target instanceof Element ? event.target.closest(KEYBOARD_AWARE_FIELD_SELECTOR) : null;

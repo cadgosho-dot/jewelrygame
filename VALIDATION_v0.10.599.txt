@@ -1,0 +1,30 @@
+JEWELRY×JEWELRY v0.10.599 検証結果
+
+結果: 25/25 OK
+
+[OK] VERSION v0.10.599
+[OK] app import cache v0.10.599
+[OK] game CSS cache v0.10.599
+[OK] game JS cache v0.10.599
+[OK] service worker v0.10.599
+[OK] 水槽iframe読み込み時の同期処理
+[OK] 水槽準備完了通知後の再同期
+[OK] 水槽内配置数 inTank を同期元として使用
+[OK] 所持数 owned を観察同期数に使用しない
+[OK] 魚の現在配置数をミニゲームへ反映
+[OK] 水草の現在配置数をミニゲームへ反映
+[OK] 未配置（inTank=0）の魚を観察対象外
+[OK] 未配置（inTank=0）の水草を観察対象外
+[OK] 観察カテゴリを魚・水草に限定
+[OK] レイアウト用品を観察一覧から除外
+[OK] 流木・石は水槽景観へ同期
+[OK] ラミーノーズテトラ内部ID互換
+[OK] アマゾンソード内部ID互換
+[OK] 観察画面の後表示をMutationObserverで再確認
+[OK] 空の観察一覧メッセージを魚・水草だけの表記へ統一
+[OK] アイスの専用文字色を削除
+[OK] 水槽同期モックテスト
+[OK] JavaScript構文 js/app.js / js/game-data.js / sw.js
+[OK] 既存のイベント・BGM・水槽画像を変更しない
+
+[OK] 更新ZIP整合性検査

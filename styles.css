@@ -17913,9 +17913,6 @@ body[data-screen="meal"] .meal-eating-panel-ice > .meal-food-display-ice img{
   transform-origin:50% 58%!important;
   filter:drop-shadow(0 18px 28px rgba(0,0,0,.38))!important;
 }
-body[data-screen="meal"] .meal-choice-card-ice > strong{
-  color:#c9fff1!important;
-}
 @media (orientation:portrait), (max-aspect-ratio:1/1){
   body[data-screen="meal"] .meal-eating-panel-ice > .meal-food-display-ice img{
     max-width:min(62vw,330px)!important;
@@ -17976,4 +17973,270 @@ body[data-screen="whiteBunnyIceEvent"] .visit-character-event::before{background
   .white-bunny-choice-card{margin-bottom:6px;padding:.9rem 1rem}
   .white-bunny-choice-card>strong{font-size:.98rem}
   .white-bunny-choice-button{min-height:42px;font-size:.9rem}
+}
+
+
+/* v0.10.597 ホワイトバニーイベント：セリフ欄を下端へ詰め、人物表示領域を拡大 */
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"]{
+  overflow:hidden!important;
+}
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-ice-event-screen{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:var(--jwj-layout-height,100dvh)!important;
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  max-height:var(--jwj-layout-height,100dvh)!important;
+  padding:0!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+}
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-ice-event{
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:100%!important;
+  max-height:100%!important;
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr) auto!important;
+  align-items:stretch!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-character-area{
+  position:absolute!important;
+  inset-inline:0!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:var(--jwj-edge-gap,6px) var(--jwj-edge-gap,6px) 0!important;
+  transform:none!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  overflow:visible!important;
+  visibility:visible!important;
+  opacity:1!important;
+  z-index:7!important;
+  pointer-events:none!important;
+}
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-character{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-height:100%!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"] :is(.white-bunny-dialogue,.white-bunny-choice-card){
+  position:relative!important;
+  z-index:18!important;
+  grid-row:2!important;
+  align-self:end!important;
+  justify-self:center!important;
+  width:calc(100% - var(--jwj-edge-gap,6px) * 2)!important;
+  margin:0 auto calc(var(--safe-bottom,0px) + var(--jwj-edge-gap,6px))!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="whiteBunnyIceEvent"]{
+  --white-bunny-dialogue-space:clamp(205px,28vh,276px);
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-character-area{
+  bottom:var(--white-bunny-dialogue-space)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-character{
+  max-width:min(92vw,560px)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="whiteBunnyIceEvent"] :is(.white-bunny-dialogue,.white-bunny-choice-card){
+  max-height:calc(var(--white-bunny-dialogue-space) - var(--safe-bottom,0px) - var(--jwj-edge-gap,6px))!important;
+  padding:clamp(14px,2.3vh,20px) clamp(16px,4vw,24px)!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="whiteBunnyIceEvent"]{
+  --white-bunny-dialogue-space:clamp(128px,27vh,178px);
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-character-area{
+  bottom:var(--white-bunny-dialogue-space)!important;
+  padding-top:2px!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="whiteBunnyIceEvent"] .white-bunny-character{
+  max-width:min(48vw,520px)!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="whiteBunnyIceEvent"] :is(.white-bunny-dialogue,.white-bunny-choice-card){
+  max-height:calc(var(--white-bunny-dialogue-space) - var(--safe-bottom,0px) - var(--jwj-edge-gap,6px))!important;
+  padding:clamp(9px,1.8vh,13px) clamp(12px,2vw,18px)!important;
+}
+
+/* v0.10.598 人物イベント共通：セリフ欄を下端へ固定し、実測した直上まで人物を表示 */
+html[data-device-class="phone"] body .event-dialogue-bottom-screen{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:var(--jwj-layout-height,100dvh)!important;
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  max-height:var(--jwj-layout-height,100dvh)!important;
+  padding:0!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+}
+html[data-device-class="phone"] body .event-dialogue-bottom-layout{
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:100%!important;
+  max-height:100%!important;
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr) auto!important;
+  align-items:stretch!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"] body .event-dialogue-bottom-layout>.event-dialogue-character-area{
+  position:absolute!important;
+  inset-inline:0!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  bottom:var(--event-dialogue-reserve,clamp(132px,25vh,230px))!important;
+  width:100%!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:var(--jwj-edge-gap,6px) var(--jwj-edge-gap,6px) 0!important;
+  transform:none!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  overflow:visible!important;
+  visibility:visible!important;
+  opacity:1!important;
+  z-index:7!important;
+  pointer-events:none!important;
+}
+html[data-device-class="phone"] body .event-dialogue-bottom-layout>.event-dialogue-character-area>img{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-height:100%!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+html[data-device-class="phone"] body .event-dialogue-bottom-layout>.event-dialogue-bottom-panel{
+  position:relative!important;
+  z-index:18!important;
+  grid-row:2!important;
+  align-self:end!important;
+  justify-self:center!important;
+  width:calc(100% - var(--jwj-edge-gap,6px) * 2)!important;
+  max-height:min(44vh,calc(var(--event-dialogue-reserve,230px) - var(--safe-bottom,0px) - var(--jwj-edge-gap,6px)))!important;
+  margin:0 auto calc(var(--safe-bottom,0px) + var(--jwj-edge-gap,6px))!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body .event-dialogue-bottom-layout>.event-dialogue-bottom-panel{
+  padding:clamp(14px,2.3vh,20px) clamp(16px,4vw,24px)!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body .event-dialogue-bottom-layout>.event-dialogue-bottom-panel{
+  max-height:min(46vh,calc(var(--event-dialogue-reserve,178px) - var(--safe-bottom,0px) - var(--jwj-edge-gap,6px)))!important;
+  padding:clamp(9px,1.8vh,13px) clamp(12px,2vw,18px)!important;
+}
+/* v0.10.597のホワイトバニー個別固定値より、実測値を優先する。 */
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"] .event-dialogue-bottom-layout>.event-dialogue-character-area{
+  bottom:var(--event-dialogue-reserve,clamp(132px,25vh,230px))!important;
+}
+html[data-device-class="phone"] body[data-screen="whiteBunnyIceEvent"] .event-dialogue-bottom-layout>.event-dialogue-bottom-panel{
+  max-height:min(46vh,calc(var(--event-dialogue-reserve,230px) - var(--safe-bottom,0px) - var(--jwj-edge-gap,6px)))!important;
+  margin:0 auto calc(var(--safe-bottom,0px) + var(--jwj-edge-gap,6px))!important;
+}
+
+
+/* v0.10.601 ピアス完成アイコンを2個表示へ修正 */
+.jewelry-item-shape.item-earrings{
+  -webkit-mask-image:url('./assets/images/jewelry-items/earrings.png')!important;
+  mask-image:url('./assets/images/jewelry-items/earrings.png')!important;
+  background:currentColor!important;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))!important;
+  position:relative;
+}
+.jewelry-item-shape.item-earrings::before,
+.jewelry-item-shape.item-earrings::after{content:none!important;display:none!important}
+.jewelry-item-shape.small.item-earrings{filter:drop-shadow(0 4px 8px rgba(0,0,0,.45))!important}
+
+
+/* v0.10.602 クイズ王：動画後も下端安全領域へ固定 */
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-bottom-safe-layout{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  height:var(--jwj-layout-height,100dvh)!important;
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  max-height:var(--jwj-layout-height,100dvh)!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-bottom-safe-layout>.quiz-bottom-safe-character{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:max(var(--safe-top,0px),var(--jwj-edge-gap,6px))!important;
+  bottom:var(--quiz-bottom-reserve,clamp(220px,42vh,450px))!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:var(--jwj-edge-gap,6px) var(--jwj-edge-gap,6px) 0!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  overflow:hidden!important;
+  transform:none!important;
+  z-index:5!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-bottom-safe-layout>.quiz-bottom-safe-character>.quiz-character-image{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:min(92vw,520px)!important;
+  max-height:100%!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  transform:none!important;
+}
+html[data-device-class="phone"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-bottom-safe-layout>.quiz-bottom-safe-panel{
+  position:absolute!important;
+  left:var(--jwj-edge-gap,6px)!important;
+  right:var(--jwj-edge-gap,6px)!important;
+  bottom:calc(var(--safe-bottom,0px) + var(--quiz-bottom-gap,6px))!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:min(58vh,calc(var(--jwj-layout-height,100dvh) - var(--safe-top,0px) - var(--safe-bottom,0px) - 24px))!important;
+  margin:0!important;
+  z-index:20!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question.quiz-bottom-safe-layout>.quiz-question-panel{
+  padding:clamp(9px,1.5vh,13px) clamp(9px,2vw,13px)!important;
+  gap:clamp(4px,.7vh,7px)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question.quiz-bottom-safe-layout .quiz-answer-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:clamp(5px,.8vh,8px)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-stage-question.quiz-bottom-safe-layout .quiz-answer-button{
+  min-height:clamp(48px,7.2vh,64px)!important;
+  padding:.42rem .55rem!important;
+}
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-bottom-safe-layout>.quiz-bottom-safe-character>.quiz-character-image{
+  max-width:min(56vw,520px)!important;
 }

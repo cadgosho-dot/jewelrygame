@@ -1,0 +1,8 @@
+JEWELRY×JEWELRY v0.10.601 検証結果
+
+[OK] VERSION v0.10.601
+[OK] game CSS cache v0.10.601
+[OK] game JS cache v0.10.601
+[OK] service worker v0.10.601
+[OK] ピアス完成アイコンの金属表示は2個のみ
+[OK] 石の表示仕様は変更なし

@@ -1,0 +1,16 @@
+JEWELRY×JEWELRY v0.10.597 検証結果
+
+12/12 OK
+
+[OK] VERSION v0.10.597
+[OK] app import cache v0.10.597
+[OK] game CSS cache v0.10.597
+[OK] game JS cache v0.10.597
+[OK] service worker v0.10.597
+[OK] 専用全画面高さ
+[OK] セリフ欄下端固定
+[OK] 人物領域拡大
+[OK] 縦画面調整
+[OK] 横画面調整
+[OK] ホワイトバニー画像あり
+[OK] 専用BGMあり

@@ -7,9 +7,9 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.602';
-import { COMMON_LOOSE_PROFESSIONAL_SECTIONS, looseGemAdvancedData } from './loose-gem-professional.js?v=0.10.602';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.602';
+import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.603';
+import { COMMON_LOOSE_PROFESSIONAL_SECTIONS, looseGemAdvancedData } from './loose-gem-professional.js?v=0.10.603';
+import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.603';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
@@ -151,6 +151,12 @@ const MEAL_RANDOM_EVENT_CHANCE = 1 / 30;
 const SUSHI_CHEF_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
 const CYCLOPS_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
 const WHITE_BUNNY_ICE_EVENT_CHANCE_DENOMINATOR = 50;
+// v0.10.603: テリー・カリフォルニアイベントの確定仕様値。
+const TERRY_CALIFORNIA_EVENT_CHANCE = 30;
+const TERRY_CALIFORNIA_BENITOITE_PRICE = 200000;
+const TERRY_CALIFORNIA_GEM_ID = 'benitoite';
+const TERRY_CALIFORNIA_GEM_SHAPE = 'oval';
+const TERRY_CALIFORNIA_MEAL_ID = 'hamburger';
 const GANESHA_TUSK_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
 const TATTOO_WOMAN_AMBER_EVENT_CHANCE = 1 / 30;
 const GANESHA_TUSK_GEM_ID = 'ivory';

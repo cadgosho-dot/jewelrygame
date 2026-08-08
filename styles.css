@@ -4948,6 +4948,29 @@ body[data-screen="phone"] .phone-content .settings-form>small{
   }
 }
 
+/* v0.10.606 縦画面の地金選択を3列1行で固定 */
+@media (orientation:portrait){
+  .craft-metal-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:.45rem;
+  }
+  .craft-metal-grid > .choice-card{
+    grid-column:auto!important;
+    min-width:0;
+    min-height:82px;
+    padding:.58rem .28rem;
+    align-content:center;
+  }
+  .craft-metal-grid .choice-card strong{
+    font-size:clamp(.82rem,3.7vw,.98rem);
+    line-height:1.15;
+  }
+  .craft-metal-grid .choice-card small{
+    font-size:clamp(.62rem,2.8vw,.78rem);
+    line-height:1.2;
+  }
+}
+
 /* v0.10.165 ジュエリー制作の完成予定詳細を画面下部へ統合 */
 .craft-layout.craft-layout-no-preview{
   grid-template-columns:minmax(0,760px);
@@ -14689,6 +14712,7 @@ body[data-screen="pandaMusicEvent"] .panda-music-event{
   height:100dvh;
   background:linear-gradient(180deg,rgba(4,7,8,.04),rgba(0,0,0,.54));
 }
+/* v0.10.607 パンダ広場イベントの縦画面キャラクター中央寄せ */
 body[data-screen="pandaMusicEvent"] .panda-music-event::before{
   background:radial-gradient(circle at 50% 40%,transparent 16%,rgba(0,0,0,.12) 58%,rgba(0,0,0,.66));
 }
@@ -14712,8 +14736,14 @@ body[data-screen="pandaMusicEvent"] .panda-music-event::before{
 .panda-music-dialogue>small{color:#efd27f!important}
 .panda-music-dialogue>strong{line-height:1.55}
 @media (orientation:portrait),(max-width:760px){
-  .panda-music-character-area{bottom:clamp(142px,27vh,218px);padding-inline:0}
-  .panda-music-character{max-width:98vw;max-height:68dvh}
+  .panda-music-character-area{
+    top:50%;
+    bottom:auto;
+    height:min(calc(100dvh - var(--jwj-event-dialogue-space,170px) - var(--safe-bottom) - 18px),60dvh);
+    padding-inline:0;
+    transform:translate(-50%,-50%);
+  }
+  .panda-music-character{max-width:98vw;max-height:100%}
   .panda-music-dialogue{width:calc(100% - 16px)!important}
 }
 @media (orientation:landscape) and (max-height:560px){
@@ -18239,4 +18269,346 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="o
 }
 html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="okachimachiQuiz"] .okachimachi-quiz-event.quiz-bottom-safe-layout>.quiz-bottom-safe-character>.quiz-character-image{
   max-width:min(56vw,520px)!important;
+}
+
+
+/* v0.10.604 スマートフォンのアイテム画像拡大・横画面食事カード上詰め */
+body[data-screen="phone"] .phone-item-row > .phone-item-image-button{
+  grid-column:1!important;
+  grid-row:1!important;
+  align-self:center!important;
+  justify-self:start!important;
+  width:48px!important;
+  height:48px!important;
+  min-width:48px!important;
+  min-height:48px!important;
+}
+body[data-screen="phone"] .phone-item-image-button{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  margin:0!important;
+  padding:3px!important;
+  color:inherit!important;
+  cursor:zoom-in!important;
+  touch-action:manipulation!important;
+  transition:transform .14s ease,border-color .14s ease!important;
+}
+body[data-screen="phone"] .phone-item-image-button.has-image{
+  padding:0!important;
+}
+body[data-screen="phone"] .phone-item-image-button:hover{
+  transform:scale(1.04)!important;
+  border-color:rgba(255,222,147,.72)!important;
+}
+body[data-screen="phone"] .phone-item-image-button:focus-visible{
+  outline:2px solid var(--gold-light)!important;
+  outline-offset:3px!important;
+}
+body[data-screen="phone"] .phone-item-image-button img{
+  pointer-events:none!important;
+  user-select:none!important;
+  -webkit-user-drag:none!important;
+}
+#modal-layer .modal-backdrop:has(.phone-item-image-modal){
+  display:grid!important;
+  place-items:center!important;
+  align-items:center!important;
+  min-height:100dvh!important;
+  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important;
+}
+#modal-layer .phone-item-image-modal{
+  position:fixed!important;
+  left:50%!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  width:min(720px,94vw)!important;
+  max-width:94vw!important;
+  max-height:88dvh!important;
+  margin:auto!important;
+  padding:clamp(12px,2vw,20px)!important;
+  overflow:auto!important;
+}
+#modal-layer .phone-item-image-modal h2{
+  margin:.05rem 0 .55rem!important;
+  text-align:center!important;
+}
+#modal-layer .phone-item-image-modal .modal-body{
+  display:grid!important;
+  place-items:center!important;
+  min-height:0!important;
+}
+#modal-layer .phone-item-image-preview{
+  display:grid!important;
+  place-items:center!important;
+  gap:.45rem!important;
+  width:100%!important;
+  min-height:0!important;
+}
+#modal-layer .phone-item-image-preview img{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:min(82vw,640px)!important;
+  max-height:min(64dvh,620px)!important;
+  object-fit:contain!important;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.5))!important;
+}
+#modal-layer .phone-item-image-preview small{
+  color:var(--gold-light)!important;
+  text-align:center!important;
+}
+#modal-layer .phone-item-image-modal .modal-actions{
+  grid-template-columns:1fr!important;
+  margin-top:.65rem!important;
+}
+@media (orientation:landscape), (min-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="meal"] .meal-choice-card{
+    align-content:start!important;
+    align-items:start!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+  .game-header.game-header.game-header > :is(.top-bar-one.top-bar-one,.top-bar-two.top-bar-two){
+    background:transparent!important;
+    background-color:transparent!important;
+    background-image:none!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  #modal-layer .phone-item-image-preview img{
+    max-height:min(54dvh,420px)!important;
+  }
+}
+
+@media (max-width:430px){
+  body[data-screen="phone"] .phone-item-row > .phone-item-image-button{
+    width:42px!important;
+    height:42px!important;
+    min-width:42px!important;
+    min-height:42px!important;
+  }
+}
+
+
+/* v0.10.605 横画面の注文者プロフィール配置修正（縦画面は変更しない） */
+@media (orientation:landscape), (min-aspect-ratio:1/1){
+  html[data-device-class="phone"][data-orientation="landscape"] .order-customer-summary{
+    width:100%!important;
+    min-width:0!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] .order-customer-name-profile{
+    grid-template-columns:minmax(0,1fr)!important;
+    width:100%!important;
+    min-width:0!important;
+    gap:.55rem!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] .order-customer-name-line{
+    width:100%!important;
+    min-width:0!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] .order-customer-profile-inline{
+    width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  html[data-device-class="phone"][data-orientation="landscape"] .order-customer-profile-inline span{
+    min-width:0!important;
+    grid-template-columns:max-content minmax(0,1fr)!important;
+    word-break:normal!important;
+    overflow-wrap:break-word!important;
+  }
+}
+
+
+/* v0.10.608 縦画面イベント共通：セリフは下端、キャラクターは縦中央へ統一 */
+html[data-device-class="phone"][data-orientation="portrait"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="kappaJadeEvent"],
+  [data-screen="clockTowerDonationEvent"],
+  [data-screen="tattooWomanAmberEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="mysteryChineseMealEvent"],
+  [data-screen="hauntingEvent"],
+  [data-screen="storeTheftEvent"],
+  [data-screen="okachimachiTollEvent"],
+  [data-screen="pandaMusicEvent"]
+){
+  --jwj-event-character-center-dialogue-space:var(--jwj-event-dialogue-space,170px);
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="whiteBunnyIceEvent"]{
+  --jwj-event-character-center-dialogue-space:var(--white-bunny-dialogue-space,clamp(205px,28vh,276px));
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="terryCaliforniaEvent"]{
+  --jwj-event-character-center-dialogue-space:clamp(170px,25vh,248px);
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="kappaJadeEvent"],
+  [data-screen="clockTowerDonationEvent"],
+  [data-screen="tattooWomanAmberEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="mysteryChineseMealEvent"],
+  [data-screen="hauntingEvent"],
+  [data-screen="storeTheftEvent"],
+  [data-screen="okachimachiTollEvent"],
+  [data-screen="pandaMusicEvent"],
+  [data-screen="whiteBunnyIceEvent"]
+) :is(.western-union-character-area,.pazupan-character-area,.mermaid-character-area,.visit-character-area,.okachimachi-toll-character-area,.panda-music-character-area,.white-bunny-character-area){
+  left:50%!important;
+  top:50%!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:min(calc(100dvh - var(--jwj-event-character-center-dialogue-space,170px) - var(--safe-bottom,0px) - 18px),60dvh)!important;
+  padding-inline:0!important;
+  padding-top:0!important;
+  transform:translate(-50%,-50%)!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:is(
+  [data-screen="westernUnionEvent"],
+  [data-screen="miningPazupanEvent"],
+  [data-screen="mermaidEvent"],
+  [data-screen="sushiChefEvent"],
+  [data-screen="cyclopsEvent"],
+  [data-screen="ganeshaTuskEvent"],
+  [data-screen="kappaJadeEvent"],
+  [data-screen="clockTowerDonationEvent"],
+  [data-screen="tattooWomanAmberEvent"],
+  [data-screen="touristWoodSwordEvent"],
+  [data-screen="diamondPolishingLapEvent"],
+  [data-screen="alienAbductionEvent"],
+  [data-screen="mysteryChineseMealEvent"],
+  [data-screen="hauntingEvent"],
+  [data-screen="storeTheftEvent"],
+  [data-screen="okachimachiTollEvent"],
+  [data-screen="pandaMusicEvent"],
+  [data-screen="whiteBunnyIceEvent"]
+) :is(.western-union-character,.pazupan-character,.mermaid-character,.visit-character,.okachimachi-toll-character,.panda-music-character,.white-bunny-character){
+  max-height:100%!important;
+  object-position:center center!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="terryCaliforniaEvent"] .terry-california-event{
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr) auto!important;
+  align-items:stretch!important;
+  min-height:calc(var(--jwj-layout-height,100dvh) - var(--shell-header-height,0px))!important;
+  padding:var(--jwj-edge-gap,6px)!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="terryCaliforniaEvent"] .terry-california-character-area{
+  position:absolute!important;
+  inset-inline:0!important;
+  left:50%!important;
+  top:50%!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:min(calc(100dvh - var(--jwj-event-character-center-dialogue-space,170px) - var(--safe-bottom,0px) - 18px),60dvh)!important;
+  padding:0!important;
+  transform:translate(-50%,-50%)!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  z-index:1!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="terryCaliforniaEvent"] .terry-california-character{
+  width:auto!important;
+  max-width:min(92vw,520px)!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="terryCaliforniaEvent"] .terry-california-panel-wrap{
+  position:relative!important;
+  z-index:2!important;
+  grid-row:2!important;
+  align-self:end!important;
+  justify-self:center!important;
+  width:calc(100% - var(--jwj-edge-gap,6px) * 2)!important;
+  margin:0 auto calc(var(--safe-bottom,0px) + var(--jwj-edge-gap,6px))!important;
+  padding-bottom:0!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="terryCaliforniaEvent"] :is(.terry-california-dialogue,.terry-california-offer){
+  width:100%!important;
+  max-height:calc(var(--jwj-event-character-center-dialogue-space,170px) - var(--safe-bottom,0px) - var(--jwj-edge-gap,6px))!important;
+  overflow-y:auto!important;
+}
+
+
+/* v0.10.613 上部バー重なり防止：実測ヘッダー高さを透明スペーサーとして本文前に確保 */
+.screen-header-spacer{
+  display:none;
+  width:100%;
+  height:0;
+  min-height:0;
+  flex:0 0 0;
+  pointer-events:none;
+  visibility:hidden;
+}
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell:not(.event-shell-no-header):not(.meal-eating-shell){
+  display:flex!important;
+  flex-direction:column!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell:not(.event-shell-no-header):not(.meal-eating-shell) > .screen-header-spacer{
+  display:block!important;
+  width:100%!important;
+  height:var(--jwj-screen-header-reserved,calc(var(--safe-top,0px) + var(--jwj-edge-gap,6px) + var(--jwj-bar-one-height,82px) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height,58px)))!important;
+  min-height:var(--jwj-screen-header-reserved,calc(var(--safe-top,0px) + var(--jwj-edge-gap,6px) + var(--jwj-bar-one-height,82px) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height,58px)))!important;
+  flex:0 0 var(--jwj-screen-header-reserved,calc(var(--safe-top,0px) + var(--jwj-edge-gap,6px) + var(--jwj-bar-one-height,82px) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height,58px)))!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  box-sizing:border-box!important;
+}
+html[data-device-class="phone"]
+body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"])
+.screen-shell.screen-shell:not(.event-shell-no-header):not(.meal-eating-shell) > .screen-content{
+  flex:1 1 auto!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  padding-top:8px!important;
+  scroll-padding-top:8px!important;
+}
+html[data-device-class="phone"] body[data-screen="polishing"][data-header-mode="two-bar"]
+.screen-shell.screen-shell:not(.event-shell-no-header) > .screen-content{
+  padding-top:16px!important;
+  scroll-padding-top:16px!important;
+}
+html[data-device-class="phone"] body[data-screen="meal"][data-header-mode="two-bar"]
+.screen-shell.screen-shell:not(.event-shell-no-header):not(.meal-eating-shell) > .screen-content{
+  padding-top:14px!important;
+  scroll-padding-top:14px!important;
+}
+body[data-screen="meal"] .meal-eating-shell > .screen-header-spacer{
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  flex-basis:0!important;
 }

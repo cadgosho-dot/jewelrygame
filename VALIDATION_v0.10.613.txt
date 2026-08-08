@@ -1,0 +1,32 @@
+JEWELRY×JEWELRY v0.10.613 検証結果
+
+[OK] version_game_data
+[OK] version_game_html_css
+[OK] version_game_html_js
+[OK] version_sw
+[OK] version_app_imports
+[OK] header_spacer_markup
+[OK] measured_visible_header_bottom
+[OK] measured_spacer_height
+[OK] phone_two_bar_spacer_css
+[OK] scroll_viewport_below_header
+[OK] meal_eating_spacer_excluded
+[OK] resize_observer_bars
+[OK] meal_hunger_v612_maintained
+[OK] store_sale_15_percent_maintained
+[OK] node --check js/app.js
+[OK] node --check js/game-data.js
+[OK] node --check sw.js
+[OK] アセットパスの追加・変更なし
+
+修正内容:
+- スマートフォンの2段上部バーを実測し、本文の前に同じ高さの透明スペーサーを確保。
+- 本文のスクロール領域自体を上部バーより下へ配置し、スクロール途中の文字もバー裏へ入らない構造へ変更。
+- 縦画面・横画面の両方を対象。
+- フォント読込、ResizeObserver、画面サイズ変更、縦横切替時に再計算。
+- 食事中専用レイアウトは二重補正を避けるため対象外。
+- v0.10.612の「食事1時間では空腹度を減らさない」仕様を維持。
+- 全店舗ショーケース日次販売確率15%を維持。
+
+未実施:
+- 実機Android端末での最終E2Eスクロール確認。

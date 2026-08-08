@@ -7,13 +7,13 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.612';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.613';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.612';
+} from './firebase-service.js?v=0.10.613';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -8553,32 +8553,73 @@ function polishingTopAnchor() {
 function syncScreenContentTopOffset() {
   const shellEl = root.querySelector('.screen-shell:not(.event-shell-no-header)');
   const headerEl = shellEl?.querySelector(':scope > .game-header');
+  const spacerEl = shellEl?.querySelector(':scope > .screen-header-spacer');
   const contentEl = shellEl?.querySelector(':scope > .screen-content');
   if (!(shellEl instanceof HTMLElement) || !(headerEl instanceof HTMLElement) || !(contentEl instanceof HTMLElement)) {
     document.documentElement.style.removeProperty('--jwj-content-top-offset');
+    document.documentElement.style.removeProperty('--jwj-screen-header-reserved');
     return;
   }
-  // 食事中はヘッダーと本文を専用グリッドの別行に置くため、重なり補正の余白を加算しない。
-  // 固定座標の推測ではなく通常フローで上下を分離し、端末倍率や文字折返しでも重ならないようにする。
+
+  // 食事中はヘッダーと本文を専用グリッドの別行に置くため、透明スペーサーは使用しない。
   if (shellEl.classList.contains('meal-eating-shell')) {
     document.documentElement.style.setProperty('--jwj-content-top-offset', '0px');
+    document.documentElement.style.removeProperty('--jwj-screen-header-reserved');
+    if (spacerEl instanceof HTMLElement) {
+      spacerEl.style.removeProperty('height');
+      spacerEl.style.removeProperty('min-height');
+      spacerEl.style.removeProperty('flex-basis');
+    }
     contentEl.style.setProperty('padding-top', '8px', 'important');
     contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
     return;
   }
+
   if (screen === 'main') {
     document.documentElement.style.removeProperty('--jwj-content-top-offset');
+    document.documentElement.style.removeProperty('--jwj-screen-header-reserved');
     contentEl.style.removeProperty('padding-top');
     contentEl.style.removeProperty('scroll-padding-top');
     return;
   }
-  // 固定されたヘッダー枠だけでなく、折り返しによって枠外へ伸びた日付・名前・操作列も実測する。
-  // 原石研磨は最初の見出しを追加確認し、石種選択の上端が2段バーへ潜り込まないようにする。
+
+  const desiredGap = screen === 'polishing' ? 16 : (screen === 'meal' ? 14 : 8);
+  const headerBottom = visibleHeaderBottom(headerEl);
+  const phoneTwoBar = document.documentElement.dataset.deviceClass === 'phone'
+    && document.body.dataset.headerMode === 'two-bar';
+
+  // v0.10.613: 携帯のサブ画面は「実測した上部バーの高さ」と同じ透明スペーサーを
+  // 本文の前に確保する。本文自身のpaddingで位置を推測しないため、長いタイトル・説明・
+  // 端末倍率・フォント読込・縦横切替でバー内部が伸びても本文が裏へ潜り込まない。
+  if (phoneTwoBar && spacerEl instanceof HTMLElement) {
+    const shellRect = shellEl.getBoundingClientRect();
+    let reserved = Math.max(0, Math.ceil(headerBottom - shellRect.top));
+    spacerEl.style.setProperty('height', `${reserved}px`, 'important');
+    spacerEl.style.setProperty('min-height', `${reserved}px`, 'important');
+    spacerEl.style.setProperty('flex-basis', `${reserved}px`, 'important');
+    contentEl.style.setProperty('padding-top', `${desiredGap}px`, 'important');
+    contentEl.style.setProperty('scroll-padding-top', `${desiredGap}px`, 'important');
+
+    // 実際の本文開始位置も確認し、CSSの古い個別指定や子要素の変形が残っていても
+    // 最低限「ヘッダー最下端 + 余白」より上へ来ないよう追加補正する。
+    const contentRect = contentEl.getBoundingClientRect();
+    const missing = Math.max(0, Math.ceil(headerBottom - contentRect.top));
+    if (missing > 0) {
+      reserved += missing;
+      spacerEl.style.setProperty('height', `${reserved}px`, 'important');
+      spacerEl.style.setProperty('min-height', `${reserved}px`, 'important');
+      spacerEl.style.setProperty('flex-basis', `${reserved}px`, 'important');
+    }
+
+    document.documentElement.style.setProperty('--jwj-screen-header-reserved', `${reserved}px`);
+    document.documentElement.style.setProperty('--jwj-content-top-offset', `${reserved + desiredGap}px`);
+    return;
+  }
+
+  // PCなど透明スペーサーを使用しない画面は、従来の実測padding補正を維持する。
   contentEl.style.setProperty('padding-top', '0px', 'important');
   contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
   const contentRect = contentEl.getBoundingClientRect();
-  const desiredGap = screen === 'polishing' ? 16 : (screen === 'meal' ? 14 : 8);
-  const headerBottom = visibleHeaderBottom(headerEl);
   let offset = Math.max(0, Math.ceil(headerBottom + desiredGap - contentRect.top));
   contentEl.style.setProperty('padding-top', `${offset}px`, 'important');
   contentEl.style.setProperty('scroll-padding-top', `${offset}px`, 'important');
@@ -8594,8 +8635,6 @@ function syncScreenContentTopOffset() {
     }
   }
 
-  // 食事画面は選択枠または料理枠そのものを実測し、上部バーの下へ確実に収める。
-  // 縦画面の文字折返しや端末倍率で枠が上へ寄っても、最上部の文字を隠さない。
   const mealAnchor = screen === 'meal' ? root.querySelector('.meal-eating-panel, .meal-choice-panel') : null;
   if (mealAnchor instanceof HTMLElement) {
     const anchorRect = mealAnchor.getBoundingClientRect();
@@ -8616,7 +8655,7 @@ function observeScreenHeaderLayout() {
   if (!(headerEl instanceof HTMLElement) || typeof ResizeObserver !== 'function') return;
   screenHeaderResizeObserver = new ResizeObserver(() => syncScreenContentTopOffset());
   screenHeaderResizeObserver.observe(headerEl);
-  for (const selector of ['.jwj-status-primary', '.jwj-status-secondary', '.header-money-area', '.header-center', '.header-secondary-actions']) {
+  for (const selector of ['.top-bar-one', '.top-bar-two', '.jwj-status-primary', '.jwj-status-secondary', '.header-money-area', '.header-center', '.header-title', '.header-title strong', '.header-title small', '.header-secondary-actions']) {
     const element = headerEl.querySelector(selector);
     if (element instanceof HTMLElement) screenHeaderResizeObserver.observe(element);
   }
@@ -8890,7 +8929,10 @@ function shell(title, body, options = {}) {
     String(options.shellClass || '').trim(),
   ].filter(Boolean).join(' ');
   const contentClass = ['screen-content', String(options.contentClass || '').trim()].filter(Boolean).join(' ');
-  return `<main class="${shellClass}">${hideHeader ? '' : header(title, options)}<section class="${contentClass}">${body}</section></main>`;
+  const headerMarkup = hideHeader
+    ? ''
+    : `${header(title, options)}<div class="screen-header-spacer" aria-hidden="true"></div>`;
+  return `<main class="${shellClass}">${headerMarkup}<section class="${contentClass}">${body}</section></main>`;
 }
 
 function mainStatusHeader() {

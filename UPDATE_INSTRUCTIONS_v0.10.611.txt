@@ -1,0 +1,13 @@
+JEWELRY×JEWELRY v0.10.611 GitHub Desktop更新手順
+
+1. GitHub Desktopで jewelrygame リポジトリを開きます。
+2. この更新ZIPを展開します。
+3. ZIP内のファイル／フォルダを jewelrygame リポジトリ直下へ上書きコピーします。
+4. GitHub DesktopのChangesで差分を確認します。
+5. Commit名: Update to v0.10.611
+6. Commit to main を実行します。
+7. Push origin を実行します。
+8. GitHub Pages反映後、最初の1回はService Worker更新のためページを再読み込みしてください。
+
+※ firebase-config.js は含めません。既存のGoogleログイン／Firebase設定を維持します。
+※ 演出時間は変更していません。

@@ -7,21 +7,102 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { DAILY_GEM_PROFILES, dailyGemForDate } from './daily-gems.js?v=0.10.603';
-import { COMMON_LOOSE_PROFESSIONAL_SECTIONS, looseGemAdvancedData } from './loose-gem-professional.js?v=0.10.603';
-import { KAITENZUSHI_EMBEDDED_HTML } from './kaitenzushi-embedded.js?v=0.10.603';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.611';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js';
+} from './firebase-service.js?v=0.10.611';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
 const modalEl = document.querySelector('#modal-layer');
 const sleepCurtainEl = document.querySelector('#sleep-curtain');
 const morningBriefEl = document.querySelector('#morning-brief');
+
+// v0.10.611: 大容量の専門データと回転寿司HTMLは、必要な画面を開いた時だけ読み込む。
+let dailyGemsModule = null;
+let dailyGemsLoadPromise = null;
+let looseProfessionalModule = null;
+let looseProfessionalLoadPromise = null;
+let kaitenzushiEmbeddedHtml = '';
+let kaitenzushiModuleLoadPromise = null;
+
+function ensureDailyGemsLoaded() {
+  if (dailyGemsModule) return Promise.resolve(dailyGemsModule);
+  if (!dailyGemsLoadPromise) {
+    dailyGemsLoadPromise = import(`./daily-gems.js?v=${VERSION}`)
+      .then((module) => {
+        dailyGemsModule = module;
+        return module;
+      })
+      .catch((error) => {
+        dailyGemsLoadPromise = null;
+        throw error;
+      });
+  }
+  return dailyGemsLoadPromise;
+}
+
+function ensureLooseProfessionalLoaded() {
+  if (looseProfessionalModule) return Promise.resolve(looseProfessionalModule);
+  if (!looseProfessionalLoadPromise) {
+    looseProfessionalLoadPromise = import(`./loose-gem-professional.js?v=${VERSION}`)
+      .then((module) => {
+        looseProfessionalModule = module;
+        return module;
+      })
+      .catch((error) => {
+        looseProfessionalLoadPromise = null;
+        throw error;
+      });
+  }
+  return looseProfessionalLoadPromise;
+}
+
+function ensureKaitenzushiModuleLoaded() {
+  if (kaitenzushiEmbeddedHtml) return Promise.resolve(kaitenzushiEmbeddedHtml);
+  if (!kaitenzushiModuleLoadPromise) {
+    kaitenzushiModuleLoadPromise = import(`./kaitenzushi-embedded.js?v=${VERSION}`)
+      .then((module) => {
+        kaitenzushiEmbeddedHtml = String(module.KAITENZUSHI_EMBEDDED_HTML || '');
+        return kaitenzushiEmbeddedHtml;
+      })
+      .catch((error) => {
+        kaitenzushiModuleLoadPromise = null;
+        throw error;
+      });
+  }
+  return kaitenzushiModuleLoadPromise;
+}
+
+function dailyGemForDate(dateLike) {
+  return dailyGemsModule?.dailyGemForDate?.(dateLike) || dailyGemSummaryForDate(dateLike);
+}
+
+function looseGemAdvancedData(gemId) {
+  return looseProfessionalModule?.looseGemAdvancedData?.(gemId) || { specs: [], sections: [] };
+}
+
+function commonLooseProfessionalSections() {
+  return Array.isArray(looseProfessionalModule?.COMMON_LOOSE_PROFESSIONAL_SECTIONS)
+    ? looseProfessionalModule.COMMON_LOOSE_PROFESSIONAL_SECTIONS
+    : [];
+}
+
+function warmFinishedVideoCache(video) {
+  if (!(video instanceof HTMLVideoElement)) return;
+  const url = String(video.currentSrc || video.src || '');
+  if (!url || !url.includes('/assets/videos/')) return;
+  const warm = () => fetch(url, { cache: 'force-cache', credentials: 'same-origin' }).catch(() => {});
+  if ('requestIdleCallback' in window) window.requestIdleCallback(warm, { timeout: 2500 });
+  else setTimeout(warm, 0);
+}
+
+document.addEventListener('ended', (event) => {
+  warmFinishedVideoCache(event.target);
+}, true);
 
 const winterColdOriginalText = new WeakMap();
 const winterColdOriginalAttributes = new WeakMap();
@@ -515,7 +596,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'mystery-chinese-meal-video-start', 'event-movie-skip', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
-  'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'hit-rock',
+  'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'hit-rock',
   'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi',
   ...EVENT_PROGRESS_ACTIONS,
 ]);
@@ -1271,7 +1352,7 @@ const COMMON_LOOSE_CUT_SECTIONS = Object.freeze([
 ]);
 
 function looseGemProfile(gemId) {
-  return DAILY_GEM_PROFILES[LOOSE_GEM_PROFILE_IDS[gemId]] || null;
+  return dailyGemsModule?.DAILY_GEM_PROFILES?.[LOOSE_GEM_PROFILE_IDS[gemId]] || null;
 }
 
 function mergeLooseProfessionalSpecs(...groups) {
@@ -1345,7 +1426,7 @@ function looseGemProfessionalSections(gemId, guide) {
   return {
     foundation: [...profileSections, ...guideSections, ...extras],
     advanced: Array.isArray(advanced?.sections) ? advanced.sections : [],
-    common: [...COMMON_LOOSE_PROFESSIONAL_SECTIONS],
+    common: [...commonLooseProfessionalSections()],
   };
 }
 
@@ -3397,7 +3478,7 @@ function loadGame() {
   }
 }
 
-function saveLocalBackup() {
+function saveLocalBackup({ fingerprint = null, createCloudSnapshot = true, updateFingerprint = true } = {}) {
   if (!state || !currentUser || sessionTakenOver) return { saved: false, skipped: true };
   try {
     state.saveRevision = Math.max(0, Math.floor(Number(state.saveRevision) || 0)) + 1;
@@ -3423,9 +3504,12 @@ function saveLocalBackup() {
     localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
     lastSuccessfulSaveAt = state.updatedAt;
     localStorage.setItem(localLastSaveAtKey(), lastSuccessfulSaveAt);
-    lastSavedFingerprint = saveStateFingerprint(state);
-    cloudSave = structuredClone(state);
-    return { saved: true, savedAt: lastSuccessfulSaveAt };
+    if (updateFingerprint) lastSavedFingerprint = fingerprint || saveStateFingerprint(state);
+    // JSON.stringify済みの保存文字列から一度だけスナップショットを作る。
+    // 同じstateをstructuredCloneで複数回コピーしない。
+    const snapshot = createCloudSnapshot ? JSON.parse(nextRaw) : null;
+    if (snapshot) cloudSave = snapshot;
+    return { saved: true, savedAt: lastSuccessfulSaveAt, snapshot, raw: nextRaw };
   } catch (error) {
     console.error('端末保存に失敗しました', error);
     return { saved: false, error };
@@ -3445,13 +3529,13 @@ function saveGame(message = false) {
   if (fingerprint && fingerprint === lastSavedFingerprint) {
     return saveQueue;
   }
-  const localResult = saveLocalBackup();
+  const localResult = saveLocalBackup({ fingerprint, createCloudSnapshot: true, updateFingerprint: true });
   if (!localResult.saved) {
     showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
     return Promise.resolve();
   }
-  // v0.10.524: 正常なオートセーブ状態は画面へ表示せず、失敗時だけ警告する。
-  const snapshot = structuredClone(state);
+  // v0.10.611: 端末保存時に作成した切り離し済みスナップショットをクラウド保存にも再利用する。
+  const snapshot = localResult.snapshot;
   const userId = currentUser.uid;
   saveQueue = saveQueue
     .catch(() => {})
@@ -3497,7 +3581,7 @@ function flushAutosaveLocally(reason = 'lifecycle-local') {
   }
   autosavePending = false;
   syncGameClearState();
-  const result = saveLocalBackup();
+  const result = saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false });
   if (!result.saved && !result.skipped) showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
 }
 
@@ -9999,6 +10083,15 @@ function renderRobberyReport() {
 }
 
 function renderTodayGem() {
+  if (!dailyGemsModule) {
+    void ensureDailyGemsLoaded()
+      .then(() => { if (screen === 'todayGem') render(); })
+      .catch((error) => {
+        console.error('今日の宝石データ読み込みエラー', error);
+        if (screen === 'todayGem') showToast('今日の宝石データを読み込めませんでした。', 'error');
+      });
+    return shell('今日の宝石', '<div class="empty-state"><strong>今日の宝石を読み込んでいます。</strong><p>初回だけ専門データを準備します。</p></div>');
+  }
   const date = gameDate();
   const gem = dailyGemForDate(date);
   const dateLabel = `${date.getMonth() + 1}月${date.getDate()}日`;
@@ -12967,6 +13060,15 @@ function renderLooseInventoryDetail() {
 function renderLooseGemGuide() {
   const gem = GEMS[screenData.gemId];
   const guide = gem ? GEM_LOOSE_GUIDES[gem.id] : null;
+  if (gem && guide && (!dailyGemsModule || !looseProfessionalModule)) {
+    void Promise.all([ensureDailyGemsLoaded(), ensureLooseProfessionalLoaded()])
+      .then(() => { if (screen === 'looseGemGuide' || screen === 'looseCutGuide') render(); })
+      .catch((error) => {
+        console.error('プロ向け宝石学データ読み込みエラー', error);
+        if (screen === 'looseGemGuide' || screen === 'looseCutGuide') showToast('専門データを読み込めませんでした。', 'error');
+      });
+    return shell(`${gem.name} ルースの詳細`, '<div class="empty-state"><strong>宝石学データを読み込んでいます。</strong><p>初回だけ専門データを準備します。</p></div>', { main: false });
+  }
   const profile = gem ? looseGemProfile(gem.id) : null;
   if (!gem || !guide) return shell('ルースの詳細', '<div class="empty-state"><strong>石種情報が見つかりません。</strong></div>');
   const specs = looseGemProfessionalSpecs(gem.id, guide);
@@ -14034,12 +14136,21 @@ function kaitenzushiEmbeddedDocument() {
     .replaceAll('"', '&quot;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
-  return KAITENZUSHI_EMBEDDED_HTML
+  return kaitenzushiEmbeddedHtml
     .replace('__JXJ_CONFIG__', config)
     .replace('__JXJ_ATTEMPT__', String(kaitenzushiLoadNonce));
 }
 
 function renderKaitenzushi() {
+  if (!kaitenzushiEmbeddedHtml) {
+    void ensureKaitenzushiModuleLoaded()
+      .then(() => { if (screen === 'kaitenzushi') render(); })
+      .catch((error) => {
+        console.error('回転寿司データ読み込みエラー', error);
+        if (screen === 'kaitenzushi') showKaitenzushiLoadError('回転寿司データを読み込めませんでした。');
+      });
+    return `<main class="kaitenzushi-game-screen" aria-label="回転寿司ミニゲーム"><button type="button" class="kaitenzushi-parent-finish-button" data-action="cancel-kaitenzushi">食事選択へ戻る</button><section class="kaitenzushi-load-error" role="status"><strong>回転寿司を準備しています</strong><p>初回だけミニゲームデータを読み込みます。</p></section></main>`;
+  }
   if (!kaitenzushiSession) {
     const sushiEvent = sushiChefEventState();
     const free = Boolean(sushiEvent.active && sushiEvent.stage === 'playing');
@@ -15061,8 +15172,11 @@ function renderPhoneItems() {
         const quantity = Number(state.inventory.items[item.id] || 0);
         const hungerEffect = Number(item.effect?.hunger || 0);
         const effectAvailable = !hungerEffect || hungerLevel() < 7;
+        const itemVisual = item.image
+          ? `<button type="button" class="phone-item-icon phone-item-image-button has-image" data-action="open-phone-item-image" data-kind="item" data-id="${esc(item.id)}" aria-label="${esc(item.name)}の画像を拡大表示"><img src="${esc(item.image)}?v=${VERSION}" alt="" draggable="false"></button>`
+          : `<span class="phone-item-icon" aria-hidden="true">${esc(item.symbol || '◆')}</span>`;
         return `<article class="phone-item-row">
-          <span class="phone-item-icon${item.image ? ' has-image' : ''}" aria-hidden="true">${item.image ? `<img src="${esc(item.image)}?v=${VERSION}" alt="" draggable="false">` : esc(item.symbol || '◆')}</span>
+          ${itemVisual}
           <div><strong>${esc(item.name)}</strong><small>${esc(item.category)}・${esc(item.description)}</small><span>所持 ${quantity}個</span></div>
           ${item.usable ? `<button class="secondary-button" data-action="use-phone-item" data-id="${esc(item.id)}" ${effectAvailable ? '' : 'disabled'}>${effectAvailable ? esc(item.useLabel || '使う') : '満腹'}</button>` : '<span class="item-status-label">使用不可</span>'}
         </article>`;
@@ -15074,14 +15188,34 @@ function renderPhoneItems() {
         const quantity = Number(state.inventory.equipment[item.id] || 0);
         const isBasicPickaxe = item.id === 'basicPickaxe';
         const equipped = isBasicPickaxe || state.inventory.equipped?.[item.slot] === item.id;
+        const equipmentIcon = item.image
+          ? `<button type="button" class="phone-item-icon phone-item-image-button equipment-image-icon" data-action="open-phone-item-image" data-kind="equipment" data-id="${esc(item.id)}" aria-label="${esc(item.name)}の画像を拡大表示">${equipmentVisual(item, 'phone-equipment-image', '')}</button>`
+          : `<span class="phone-item-icon equipment-image-icon" aria-hidden="true">${equipmentVisual(item, 'phone-equipment-image', '')}</span>`;
         return `<article class="phone-item-row equipment-item ${equipped ? 'equipped' : ''}">
-          <span class="phone-item-icon equipment-image-icon" aria-hidden="true">${equipmentVisual(item, 'phone-equipment-image', '')}</span>
+          ${equipmentIcon}
           <div><strong>${esc(item.name)}${equipped ? '<em>装備中</em>' : ''}</strong><small>${esc(item.category)}・${esc(item.description)}</small><span>所持 ${quantity}点</span></div>
           ${isBasicPickaxe ? '' : `<button class="secondary-button" data-action="toggle-equipment" data-id="${esc(item.id)}">${equipped ? '外す' : '装備'}</button>`}
         </article>`;
       }).join('')}</div>` : '<div class="phone-empty compact">装備品はありません。</div>'}
     </section>
   </section>`;
+}
+
+function showPhoneItemImage(kind, itemId) {
+  const catalog = kind === 'equipment' ? EQUIPMENT_ITEMS : GENERAL_ITEMS;
+  const item = catalog?.[itemId];
+  if (!item?.image) {
+    showToast('拡大表示できる画像がありません。', 'error');
+    return;
+  }
+  showModal({
+    title: item.name,
+    body: `<div class="phone-item-image-preview"><img src="${esc(item.image)}?v=${VERSION}" alt="${esc(item.name)}" draggable="false"><small>${esc(item.name)}</small></div>`,
+    confirm: '閉じる',
+    action: 'modal-close',
+    hideCancel: true,
+    className: 'phone-item-image-modal',
+  });
 }
 
 function usePhoneItem(itemId) {
@@ -17630,6 +17764,8 @@ function settleDay({ showResult = true, save = true } = {}) {
   const illnessSuppressingEvents = illnessEventSuppressionActive();
   if (illnessSuppressingEvents) suppressBirthdaySleepEventForIllness();
   const operatingBranches = illnessSuppressingEvents ? [] : contractedStoreBranches().filter((branch) => storeBranchOperating(branch));
+  // v0.10.611: ショーケースごとに完成品配列をfindし直さず、日次処理中だけID索引を使う。
+  const jewelryById = new Map((state.inventory.jewelry || []).map((item) => [item.id, item]));
   let visitors = 0;
   const branchDayStats = [];
 
@@ -17647,15 +17783,13 @@ function settleDay({ showResult = true, save = true } = {}) {
       for (let slotIndex = 0; slotIndex < (showcase?.slots || []).length; slotIndex += 1) {
         const slot = showcase.slots[slotIndex];
         if (!slot) continue;
-        const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+        const item = jewelryById.get(slot.jewelryId);
         if (!item) { showcase.slots[slotIndex] = null; continue; }
         const price = showcaseSellingPrice(slot, item);
-        const priceStatus = sellingPriceStatus(item, price);
-        let chance = 0.19 + branchVisitors * 0.055 + priceStatus.saleBonus + QUALITIES[item.quality].saleBonus + storeProductSaleBonus(item, branch.number) + (storeRating(branch) / 100) * 0.036;
-        chance += storeStaffSaleBonus(activeEmployee);
-        chance = clamp(chance, 0.08, 0.9);
+        const chance = 0.15;
         if (Math.random() < chance) {
           removeJewelry(item.id);
+          jewelryById.delete(item.id);
           state.game.money += price;
           state.store.salesCount += 1;
           state.store.totalRevenue += price;
@@ -17768,9 +17902,10 @@ function settleDay({ showResult = true, save = true } = {}) {
   updateOrderNotifications();
   restoreLooseInventory(looseBeforeSettlement, 'settleDay');
   markMorningTransitionPending();
-  const daySave = save ? saveGame() : Promise.resolve();
   if (showResult) setScreen('dayResult', {}, false);
-  return daySave;
+  // v0.10.611: 結果画面を先に描画キューへ渡し、その後に重い保存処理を開始する。
+  // 演出時間は変更せず、体感上の「計算待ち」を減らす。
+  return save ? (showResult ? saveGameAfterPaint() : saveGame()) : Promise.resolve();
 }
 
 function startCustomerVisit(customerId, branchNumber = state?.store?.branchNumber || 1) {
@@ -18032,6 +18167,14 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function saveGameAfterPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      setTimeout(() => resolve(saveGame()), 0);
+    });
+  }).then((result) => result);
+}
+
 async function beginSleepTransition({ allowEarly = false } = {}) {
   if (sleepTransitioning) return;
   if (!allowEarly && !canSleepNow()) {
@@ -18048,9 +18191,9 @@ async function beginSleepTransition({ allowEarly = false } = {}) {
 
   const stateBeforeSleep = structuredClone(state);
   markNightTransitionCheckpoint();
-  // saveGame() は端末保存を同期的に完了してからクラウド保存を返す。
-  // クラウド通信は待たず、就寝処理を止めない。
-  void saveGame().catch((error) => console.error('就寝前クラウド保存エラー', error));
+  // v0.10.611: 就寝前は復旧用の端末チェックポイントだけを保存する。
+  // 同じ遷移で直後に行う日次確定保存とクラウド書き込みを重複させない。
+  flushAutosaveLocally('sleep-checkpoint');
 
   try {
     // 音声の読み込みが遅い端末でも、最大700msで翌日処理へ進む。
@@ -18745,6 +18888,7 @@ root.addEventListener('click', async (event) => {
     case 'main': goMain(); break;
     case 'acknowledge-robbery': acknowledgeRobberyReport(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
+    case 'open-phone-item-image': showPhoneItemImage(button.dataset.kind, button.dataset.id); break;
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;
     case 'select-mining': selectedMining = button.dataset.id; render(); break;
@@ -19350,10 +19494,10 @@ async function enterGameAfterLogin() {
   scheduleAutosave('post-load-normalization', 0);
 }
 
-window.addEventListener('beforeunload', () => saveLocalBackup());
-window.addEventListener('pagehide', () => saveLocalBackup());
+window.addEventListener('beforeunload', () => saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false }));
+window.addEventListener('pagehide', () => saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false }));
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') saveLocalBackup();
+  if (document.visibilityState === 'hidden') saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false });
   else processAutopilotIfDue().catch((error) => console.error(error));
 });
 window.addEventListener('pageshow', () => {

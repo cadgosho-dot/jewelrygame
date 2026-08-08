@@ -241,8 +241,9 @@ export async function loadState(uid) {
 }
 
 export async function saveState(uid, state) {
-  const clean = structuredClone(state);
-  clean.updatedAt = new Date().toISOString();
+  // v0.10.611: 呼び出し元から渡される保存専用スナップショットは既にstateから切り離されている。
+  // ここで再度structuredCloneせず、トップレベルだけ複製して保存時刻を更新する。
+  const clean = { ...state, updatedAt: new Date().toISOString() };
   if (previewMode) {
     localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(clean));
     return;

@@ -1,0 +1,18 @@
+{
+  "version": "0.10.612",
+  "base_version": "0.10.611",
+  "feature_update": {
+    "meal_time_hunger_consumption": "disabled",
+    "meal_time_minutes": "maintained_60_minutes",
+    "non_meal_hunger_consumption": "maintained",
+    "startup_performance_optimizations": "maintained",
+    "video_cache_optimizations": "maintained",
+    "day_end_save_optimizations": "maintained",
+    "showcase_daily_sale_probability": "15_percent_all_stores"
+  },
+  "example": {
+    "before_hunger": 3,
+    "meal_recovery": 3,
+    "after_hunger": 6
+  }
+}

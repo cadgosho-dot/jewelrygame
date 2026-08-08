@@ -7,13 +7,13 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.611';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.612';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.611';
+} from './firebase-service.js?v=0.10.612';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -4964,7 +4964,8 @@ function canSpendMealTime() {
 }
 
 function spendMealTime() {
-  spendMinutes(MEAL_DURATION_MINUTES);
+  // v0.10.612: 食事は1時間経過するが、その1時間では空腹度を消費しない。
+  spendMinutes(MEAL_DURATION_MINUTES, { consumeHunger: false });
 }
 
 function mealTimeUnavailableMessage() {
@@ -5029,9 +5030,9 @@ function hungerPips(level = hungerLevel()) {
   return `<span class="hunger-pips" aria-label="空腹度 ${safe}／7">${Array.from({ length: 7 }, (_, index) => `<i class="${index < safe ? 'filled' : ''}"></i>`).join('')}</span>`;
 }
 
-function spendMinutes(minutes) {
+function spendMinutes(minutes, { consumeHunger = true } = {}) {
   const elapsedMinutes = Math.max(0, Math.round(Number(minutes) || 0));
-  const hungerCost = Math.floor(elapsedMinutes / 60);
+  const hungerCost = consumeHunger ? Math.floor(elapsedMinutes / 60) : 0;
   const before = hungerLevel();
   const beforeMinutes = state.game.minutes;
   state.game.minutes = Math.min(DAY_END_MINUTES, state.game.minutes + elapsedMinutes);
@@ -5044,7 +5045,7 @@ function spendMinutes(minutes) {
   state.wellbeing.hunger = Math.max(0, before - hungerCost);
   // v0.10.552: 現行ゲームでは空腹度が行動可能量を兼ねる。
   // 誕生日当日に空腹度が1以下へ到達したら、現在の行動結果を反映した後で強制休息へ移る。
-  if (birthdaySleepAvailableToday() && state.wellbeing.hunger <= 1) {
+  if (consumeHunger && birthdaySleepAvailableToday() && state.wellbeing.hunger <= 1) {
     const birthdayEvent = birthdaySleepEventState();
     birthdayEvent.restPending = true;
     birthdayEvent.triggerReason = 'energy';

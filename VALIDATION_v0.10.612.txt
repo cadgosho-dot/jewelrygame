@@ -1,0 +1,33 @@
+JEWELRY×JEWELRY v0.10.612 検証結果
+
+[OK] version_game_data
+[OK] version_game_html_css
+[OK] version_game_html_js
+[OK] version_sw
+[OK] version_app_imports
+[OK] meal_duration_still_60_minutes
+[OK] meal_time_disables_hunger_consumption
+[OK] normal_time_consumes_hunger_by_default
+[OK] hunger_cost_zero_only_when_disabled
+[OK] non_meal_spend_hours_unchanged
+[OK] all_meal_paths_share_spendMealTime
+[OK] meal_eating_wait_unchanged
+[OK] sleep_transition_waits_unchanged
+[OK] v0611_performance_code_maintained
+[OK] example_meal_3_plus_3_equals_6
+[OK] example_non_meal_1h_3_to_2
+[OK] node --check js/app.js
+[OK] node --check js/game-data.js
+[OK] node --check sw.js
+
+仕様確認:
+- 食事は1時間経過する。
+- 食事の1時間では空腹度を減らさない。
+- 空腹度3で回復+3の食事 → 3→6。
+- 食事以外の1時間行動は従来どおり空腹度を1消費 → 3→2。
+- 通常食事、回転寿司、ラーメンイベント、中華イベント、自動操縦など共通食事時間処理へ反映。
+- 食事・就寝などの演出待ち時間は変更なし。
+- v0.10.611高速化を維持。
+
+未実施:
+- 実機スマートフォンでの全食事イベントE2E確認。

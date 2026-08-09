@@ -1,0 +1,13 @@
+{
+  "version": "0.10.618",
+  "base_version": "0.10.617",
+  "feature_update": {
+    "existing_cinema_event_restored_separately": true,
+    "apprentice_cinema_event_separate": true,
+    "apprentice_weekend_probability": "3% per eligible Okachimachi entry",
+    "apprentice_requires_workshop_staff_never_hired": true,
+    "apprentice_cost_yen": 1800,
+    "apprentice_hours": 3,
+    "emerald_captain_kebab_event": "maintained"
+  }
+}

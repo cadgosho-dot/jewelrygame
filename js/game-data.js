@@ -1,4 +1,4 @@
-export const VERSION = '0.10.613';
+export const VERSION = '0.10.618';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -4301,7 +4301,7 @@ export function initialState() {
     },
     artisan: { level: 1, peakLevel: 1, xp: 0, levelPenalty: 0 },
     workshop: { level: 1, peakLevel: 1, activeHours: 0, paidThroughLevel: 1 },
-    workshopStaff: { hired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [], evolutionStage: 1, wageUnpaid: 0 },
+    workshopStaff: { hired: false, everHired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [], evolutionStage: 1, wageUnpaid: 0 },
     business: { workshopSuspended: false, workshopUnpaid: 0, homeRentUnpaid: 0, homeRentReports: [], lastProcessedHomeRentMonth: '', branchUnpaid: {}, monthlyReports: [], lastProcessedMonth: '' },
     wellbeing: { hunger: 7, maxHunger: 7, lastMeal: '', mealsEaten: 0 },
     inventory: {
@@ -4785,6 +4785,37 @@ export function migrateState(saved) {
   state.game.screen = 'main';
   state.aquarium = normalizeAquariumState(state.aquarium);
   state.events = isRecord(state.events) ? state.events : {};
+  // v0.10.618: v0.10.618で誤って既存映画館イベントへ上書きされた見習い職人イベントを分離して救済する。
+  {
+    const mixedCinema = isRecord(state.events.cinemaVisitEvent) ? state.events.cinemaVisitEvent : {};
+    const mixedStage = String(mixedCinema.stage || '');
+    const mixedApprenticeStages = new Set(['intro1', 'intro2', 'intro3', 'outro1', 'outro2']);
+    const looksLikeMixedApprentice = Object.prototype.hasOwnProperty.call(mixedCinema, 'workshopStaffLocked') || mixedApprenticeStages.has(mixedStage);
+    if (looksLikeMixedApprentice) {
+      const savedApprentice = isRecord(state.events.apprenticeCinemaEvent) ? state.events.apprenticeCinemaEvent : {};
+      const active = Boolean(mixedCinema.active) && mixedStage !== 'idle' && mixedStage !== 'completed';
+      state.events.apprenticeCinemaEvent = {
+        ...savedApprentice,
+        active: Boolean(savedApprentice.active) || active,
+        stage: savedApprentice.active ? String(savedApprentice.stage || 'intro1') : (active ? (mixedStage === 'playing' ? 'playing' : (mixedApprenticeStages.has(mixedStage) ? mixedStage : 'intro1')) : 'completed'),
+        selectedVideo: String(savedApprentice.selectedVideo || mixedCinema.selectedVideo || ''),
+        lastVideo: String(savedApprentice.lastVideo || mixedCinema.lastVideo || ''),
+        settled: Boolean(savedApprentice.settled || mixedCinema.settled),
+        totalTriggered: Math.max(0, Math.floor(Number(savedApprentice.totalTriggered ?? mixedCinema.totalTriggered) || 0)),
+        lastTriggeredDay: Math.max(0, Math.floor(Number(savedApprentice.lastTriggeredDay ?? mixedCinema.lastTriggeredDay) || 0)),
+      };
+      state.events.cinemaVisitEvent = {
+        lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(mixedCinema.lastCheckedDate || '')) ? String(mixedCinema.lastCheckedDate) : '',
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        selectedVideo: '',
+        lastVideo: '',
+        settled: false,
+      };
+    }
+  }
   const grayHoodAquariumEvent = isRecord(state.events.grayHoodAquariumEvent) ? state.events.grayHoodAquariumEvent : {};
   const grayHoodStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
   grayHoodAquariumEvent.active = Boolean(grayHoodAquariumEvent.active);
@@ -4862,7 +4893,7 @@ export function migrateState(saved) {
     const legacyScreen = String(legacy.game?.screen || '');
     const recoveryScreens = new Set([
       'winterColdEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent',
-      'clockTowerDonationEvent', 'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent',
+      'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent',
       'cyclopsEvent', 'ganeshaTuskEvent', 'childhoodFriendEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
       'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
       'wristFoundEvent', 'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
@@ -4882,6 +4913,7 @@ export function migrateState(saved) {
       touristWoodSwordEvent: ['intro1', 'route', 'reward', 'farewell'],
       diamondPolishingLapEvent: ['intro1', 'intro2', 'reward', 'outro'],
       cinemaVisitEvent: ['invitation', 'playing'],
+      apprenticeCinemaEvent: ['intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2'],
       clockTowerDonationEvent: ['intro1', 'intro2', 'intro3'],
       mysteryChineseMealEvent: ['intro1', 'intro2', 'intro3', 'reward'],
       wristFoundEvent: ['intro', 'report'],
@@ -5031,6 +5063,7 @@ export function migrateState(saved) {
     : {};
   state.workshopStaff = {
     hired: Boolean(workshopStaffSource.hired),
+    everHired: Boolean(workshopStaffSource.everHired || workshopStaffSource.hired),
     working: workshopStaffSource.working !== false,
     workDays: Math.max(0, Math.floor(Number(workshopStaffSource.workDays) || 0)),
     workMinutesBank: Math.max(0, Number(workshopStaffSource.workMinutesBank) || 0),

@@ -7,13 +7,13 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.613';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.618';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.613';
+} from './firebase-service.js?v=0.10.618';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -291,7 +291,15 @@ const WINTER_COLD_EVENT_DAYS = 3;
 const CINEMA_VISIT_EVENT_CHANCE = 1 / 40;
 const CINEMA_VISIT_EVENT_COST = 1800;
 const CINEMA_VISIT_EVENT_HOURS = 3;
+const APPRENTICE_CINEMA_EVENT_CHANCE = 0.03;
+const APPRENTICE_CINEMA_EVENT_COST = CINEMA_VISIT_EVENT_COST;
+const APPRENTICE_CINEMA_EVENT_HOURS = CINEMA_VISIT_EVENT_HOURS;
 const MYSTERY_CHINESE_MEAL_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
+const EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE_DENOMINATOR = 30;
+const EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID = 'kebab';
+const EMERALD_CAPTAIN_KEBAB_EVENT_GEM_ID = 'emerald';
+const EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME = 'エメラルド班班長';
+const EMERALD_CAPTAIN_KEBAB_EVENT_SHAPE_IDS = Object.freeze(['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon']);
 const GRAY_HOOD_AQUARIUM_EVENT_MIN_DAY = 366;
 // v0.10.586: 一度限りの重要イベントのため、韓国料理の水槽イベントのみ1/15。
 const GRAY_HOOD_AQUARIUM_EVENT_CHANCE = 1 / 15;
@@ -300,10 +308,13 @@ const TATTOO_WOMAN_AMBER_INTRO_VIDEO = './assets/videos/events/tattoo-woman-ambe
 const MYSTERY_CHINESE_MEAL_EVENT_COST = 15000;
 const MYSTERY_CHINESE_MEAL_EVENT_IMAGES = Object.freeze(['mystery-chinese-food-01.png', 'mystery-chinese-food-02.png']);
 const MYSTERY_CHINESE_MEAL_INTRO_VIDEO = './assets/videos/events/mystery-chinese-meal-intro.mp4';
+const RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR = 30;
+const RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID = 'soba';
+const RIDLEY_OKAZAKI_SOBA_EVENT_PRICE_MULTIPLIER = 2;
 const WRIST_FOUND_EVENT_CHANCE = 1 / 200;
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
-  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
+  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
 ]);
 
 const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
@@ -329,13 +340,15 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   cinemaVisitEvent: new Set(['invitation', 'playing']),
   clockTowerDonationEvent: new Set(['intro1', 'intro2', 'intro3']),
   mysteryChineseMealEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward']),
+  ridleyOkazakiSobaEvent: new Set(['intro1', 'intro2', 'intro3']),
+  emeraldCaptainKebabEvent: new Set(['intro1', 'intro2', 'showcase', 'purchase', 'eating', 'farewell']),
   storeTheftEvent: new Set(['intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice']),
   birthdaySleepEvent: new Set(['phone', 'greeting', 'congratulations', 'thanks']),
 });
 
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
-  'cinemaVisitEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
+  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'robberyReport', 'kaitenzushi',
@@ -351,7 +364,10 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   tattooWomanAmberEvent: { eventKey: 'tattooWomanAmberEvent', fallback: 'okachimachi' },
   clockTowerDonationEvent: { eventKey: 'clockTowerDonationEvent', fallback: 'okachimachi' },
   cinemaVisitEvent: { eventKey: 'cinemaVisitEvent', fallback: 'okachimachi' },
+  apprenticeCinemaEvent: { eventKey: 'apprenticeCinemaEvent', fallback: 'okachimachi' },
   mysteryChineseMealEvent: { eventKey: 'mysteryChineseMealEvent', fallback: 'main' },
+  ridleyOkazakiSobaEvent: { eventKey: 'ridleyOkazakiSobaEvent', fallback: 'meal' },
+  emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
@@ -388,12 +404,12 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   ]),
   conditionalReward: new Set(['westernUnionEvent']),
   committedExpense: new Set([
-    'clockTowerDonationEvent', 'mysteryChineseMealEvent', 'hauntingEvent', 'cinemaVisitEvent', 'okachimachiTollEvent',
+    'clockTowerDonationEvent', 'mysteryChineseMealEvent', 'hauntingEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'okachimachiTollEvent',
   ]),
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
     'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent',
-    'alienAbductionEvent', 'wristFoundEvent',
+    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent',
   ]),
   sessionOnly: new Set(['okachimachiQuiz', 'robberyReport', 'kaitenzushi']),
 });
@@ -565,6 +581,20 @@ function runEventEmergencySettlement(key, eventState) {
       eventState.selectedVideo = '';
       break;
 
+    case 'apprenticeCinemaEvent':
+      // 見習い職人イベントも上映開始後のみ映画代と時間を確定する。
+      if (['playing', 'outro1', 'outro2'].includes(stage) && !eventState.settled) {
+        eventState.settled = true;
+        eventState.lastVideo = eventState.selectedVideo;
+        state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - APPRENTICE_CINEMA_EVENT_COST);
+        spendHours(APPRENTICE_CINEMA_EVENT_HOURS);
+        addFinance('見習い職人と映画鑑賞', 0, APPRENTICE_CINEMA_EVENT_COST);
+        addNotification('見習い職人と映画を観ました', `${APPRENTICE_CINEMA_EVENT_HOURS}時間が経過し、${yen(APPRENTICE_CINEMA_EVENT_COST)}を支払いました。`, 'special');
+        changed = true;
+      }
+      eventState.selectedVideo = '';
+      break;
+
     case 'storeTheftEvent':
       // 試着を断る前・断った後は盗難なし。了承後の段階だけ損失を確定する。
       if (['intro2', 'intro3', 'farewell', 'pause', 'theftNotice'].includes(stage) && !eventState.theftApplied) {
@@ -582,10 +612,10 @@ const TRANSIENT_EVENT_KEYS = Object.freeze(Object.keys(EVENT_ACTIVE_STAGE_MAP).f
 const EVENT_PROGRESS_ACTIONS = new Set([
   'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
   'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-video-start', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
-  'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'cinema-video-finish',
+  'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'apprentice-cinema-event-next', 'apprentice-cinema-video-start', 'apprentice-cinema-video-finish', 'cinema-video-finish',
   'kappa-jade-event-next', 'kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
-  'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover',
+  'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
   'gray-hood-aquarium-video-start', 'gray-hood-aquarium-next', 'gray-hood-aquarium-receive',
   'okachimachi-quiz-video-start',
@@ -597,7 +627,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
   'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'hit-rock',
-  'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi',
+  'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi', 'ridley-okazaki-soba-event-next',
   ...EVENT_PROGRESS_ACTIONS,
 ]);
 
@@ -832,7 +862,8 @@ function repairEventProgressStates(targetState = state) {
     const invalidActive = Boolean(eventState.active) && !activeStages.has(stage);
     const orphanedStage = !eventState.active && activeStages.has(stage);
     const missingCinemaVideo = key === 'cinemaVisitEvent' && eventState.active && ['invitation', 'playing'].includes(stage) && !normalizeCinemaEventVideoName(eventState.selectedVideo);
-    if (!invalidActive && !orphanedStage && !missingCinemaVideo) return;
+    const missingApprenticeCinemaVideo = key === 'apprenticeCinemaEvent' && eventState.active && ['intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2'].includes(stage) && !normalizeCinemaEventVideoName(eventState.selectedVideo);
+    if (!invalidActive && !orphanedStage && !missingCinemaVideo && !missingApprenticeCinemaVideo) return;
     eventState.active = false;
     eventState.stage = 'completed';
     repaired += 1;
@@ -3754,7 +3785,7 @@ function storeStaffSaleBonus(employee) {
 
 
 function workshopStaffState() {
-  if (!state) return { hired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [] };
+  if (!state) return { hired: false, everHired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [] };
   const source = state.workshopStaff && typeof state.workshopStaff === 'object' && !Array.isArray(state.workshopStaff)
     ? state.workshopStaff
     : {};
@@ -3762,6 +3793,7 @@ function workshopStaffState() {
   const evolutionStage = workshopStaffGrowthForWorkDays(workDays).level >= 4 ? 2 : 1;
   state.workshopStaff = {
     hired: Boolean(source.hired),
+    everHired: Boolean(source.everHired || source.hired),
     working: source.working !== false,
     workDays,
     workMinutesBank: Math.max(0, Number(source.workMinutesBank) || 0),
@@ -7390,6 +7422,88 @@ function anyInstalledShowcaseExists() {
   return installedShowcaseCount(null) >= 1;
 }
 
+function ridleyOkazakiSobaEventCost() {
+  const meal = MEALS[RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID];
+  return Math.max(0, Math.floor(Number(meal?.price) || 0)) * RIDLEY_OKAZAKI_SOBA_EVENT_PRICE_MULTIPLIER;
+}
+
+function ridleyOkazakiSobaEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.ridleyOkazakiSobaEvent && typeof state.events.ridleyOkazakiSobaEvent === 'object' && !Array.isArray(state.events.ridleyOkazakiSobaEvent)
+    ? state.events.ridleyOkazakiSobaEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'completed']);
+  state.events.ridleyOkazakiSobaEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    pendingMealId: typeof saved.pendingMealId === 'string' ? saved.pendingMealId : '',
+    pendingPrice: Math.max(0, Math.floor(Number(saved.pendingPrice) || ridleyOkazakiSobaEventCost())),
+  };
+  if (!state.events.ridleyOkazakiSobaEvent.active && !['idle', 'completed'].includes(state.events.ridleyOkazakiSobaEvent.stage)) state.events.ridleyOkazakiSobaEvent.stage = 'completed';
+  return state.events.ridleyOkazakiSobaEvent;
+}
+
+function maybeStartRidleyOkazakiSobaEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const mealId = RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID;
+  const meal = MEALS[mealId];
+  const eventCost = ridleyOkazakiSobaEventCost();
+  if (!meal || eventCost <= 0 || state.game.money < eventCost) return false;
+  const eventState = ridleyOkazakiSobaEventState();
+  if (eventState.active) {
+    setScreen('ridleyOkazakiSobaEvent', { mealId }, false);
+    return true;
+  }
+  if (Math.floor(Math.random() * RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.pendingMealId = mealId;
+  eventState.pendingPrice = eventCost;
+  state.game.screen = 'ridleyOkazakiSobaEvent';
+  saveGame();
+  playSfx('impact', { gain: 0.54, rate: 0.9 });
+  setTimeout(() => playSfx('eat', { gain: 0.6, rate: 0.82 }), 90);
+  vibrate([18, 16, 34]);
+  setScreen('ridleyOkazakiSobaEvent', { mealId }, false);
+  return true;
+}
+
+async function advanceRidleyOkazakiSobaEvent() {
+  const eventState = ridleyOkazakiSobaEventState();
+  if (!eventState.active) {
+    setScreen('meal', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('eat', { gain: 0.62, rate: 0.84 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    playSfx('eat', { gain: 0.58, rate: 0.78 });
+    render();
+    return;
+  }
+  await finishRidleyOkazakiSobaEventAndResumeMeal();
+}
+
+async function finishRidleyOkazakiSobaEventAndResumeMeal() {
+  const eventState = ridleyOkazakiSobaEventState();
+  const mealId = eventState.pendingMealId || RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID;
+  const priceOverride = Math.max(0, Math.floor(Number(eventState.pendingPrice) || ridleyOkazakiSobaEventCost()));
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.pendingMealId = '';
+  eventState.pendingPrice = ridleyOkazakiSobaEventCost();
+  saveGame();
+  playSfx('decision', { gain: 0.76, rate: 0.92 });
+  await eatMeal(mealId, { skipEventCheck: true, priceOverride });
+}
+
 function whiteBunnyIceEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.whiteBunnyIceEvent && typeof state.events.whiteBunnyIceEvent === 'object' && !Array.isArray(state.events.whiteBunnyIceEvent)
@@ -8256,6 +8370,7 @@ async function enterOkachimachiFromOutside() {
   if (resumePandaMusicEvent()) return;
   if (resumeWristFoundEvent()) return;
   if (resumeOkachimachiTollEvent()) return;
+  if (resumeApprenticeCinemaEvent()) return;
   if (resumeCinemaVisitEvent()) return;
   if (resumeClockTowerDonationEvent()) return;
   const eventState = okachimachiQuizEventState();
@@ -8270,6 +8385,7 @@ async function enterOkachimachiFromOutside() {
   if (maybeStartWristFoundEvent()) return;
   if (maybeStartPandaMusicEvent()) return;
   if (maybeStartOkachimachiTollEvent()) return;
+  if (await maybeStartApprenticeCinemaEvent()) return;
   if (await maybeStartCinemaVisitEvent()) return;
   if (maybeStartClockTowerDonationEvent()) return;
   if (!shouldTrigger) {
@@ -8426,7 +8542,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -8455,6 +8571,8 @@ function backgroundAssetFor(target) {
   if (target === 'touristWoodSwordEvent') return `meal-hamburger${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'diamondPolishingLapEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'mysteryChineseMealEvent') return `meal-chinese${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'ridleyOkazakiSobaEvent') return `meal-soba${isPortraitLayout() ? '-portrait' : ''}`;
+  if (target === 'emeraldCaptainKebabEvent') return `meal-kebab${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'whiteBunnyIceEvent') return `meal-ice${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'todayGem') return isPortraitLayout() ? 'today-gem-portrait' : 'today-gem';
   if (target === 'craft' || target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';
@@ -8463,6 +8581,11 @@ function backgroundAssetFor(target) {
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
   if (target === 'clockTowerDonationEvent' || target === 'pandaMusicEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
+  if (target === 'apprenticeCinemaEvent') {
+    const stage = apprenticeCinemaEventState().stage;
+    const movieArea = ['playing', 'outro1', 'outro2'].includes(stage);
+    return movieArea ? (isPortraitLayout() ? 'cinema-event-portrait' : 'cinema-event') : (isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba');
+  }
   if (target === 'cinemaVisitEvent') {
     const stage = cinemaVisitEventState().stage;
     return stage === 'playing' ? (isPortraitLayout() ? 'cinema-event-portrait' : 'cinema-event') : (isPortraitLayout() ? 'okachimachi-portrait' : 'okachimachi');
@@ -8503,7 +8626,7 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
-  return resolveAudioScene(['okachimachiTollEvent', 'pandaMusicEvent'].includes(target) ? 'okachimachi' : target, {
+  return resolveAudioScene(['okachimachiTollEvent', 'pandaMusicEvent', 'apprenticeCinemaEvent'].includes(target) ? 'okachimachi' : target, {
     alienAbducted: isAlienAbducted(),
     quizStage: okachimachiQuizSession?.stage || '',
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
@@ -8588,7 +8711,7 @@ function syncScreenContentTopOffset() {
   const phoneTwoBar = document.documentElement.dataset.deviceClass === 'phone'
     && document.body.dataset.headerMode === 'two-bar';
 
-  // v0.10.613: 携帯のサブ画面は「実測した上部バーの高さ」と同じ透明スペーサーを
+  // v0.10.615: 携帯のサブ画面は「実測した上部バーの高さ」と同じ透明スペーサーを
   // 本文の前に確保する。本文自身のpaddingで位置を推測しないため、長いタイトル・説明・
   // 端末倍率・フォント読込・縦横切替でバー内部が伸びても本文が裏へ潜り込まない。
   if (phoneTwoBar && spacerEl instanceof HTMLElement) {
@@ -9112,7 +9235,10 @@ function render() {
       tattooWomanAmberEvent: renderTattooWomanAmberEvent,
       clockTowerDonationEvent: renderClockTowerDonationEvent,
       cinemaVisitEvent: renderCinemaVisitEvent,
+      apprenticeCinemaEvent: renderApprenticeCinemaEvent,
       mysteryChineseMealEvent: renderMysteryChineseMealEvent,
+      ridleyOkazakiSobaEvent: renderRidleyOkazakiSobaEvent,
+      emeraldCaptainKebabEvent: renderEmeraldCaptainKebabEvent,
       whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
       kappaJadeEvent: renderKappaJadeEvent,
       sushiChefEvent: renderSushiChefEvent,
@@ -9864,6 +9990,97 @@ function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine =
   return names;
 }
 
+function aquariumOwnedDiscoveryNames(snapshot = aquariumSnapshot(), engine = null) {
+  const names = new Set();
+  const fishRegistry = engine?.config?.speciesProfiles || {};
+  const decorationRegistry = engine?.config?.decorationProfiles || {};
+  for (const definition of AQUARIUM_CONFIG.fish) {
+    if (Math.max(0, Math.floor(Number(snapshot.fish?.[definition.id]?.owned) || 0)) <= 0) continue;
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(fishRegistry, definition.id, AQUARIUM_ENGINE_FISH_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(fishRegistry[engineId]?.displayName));
+  }
+  for (const definition of AQUARIUM_CONFIG.plants) {
+    if (Math.max(0, Math.floor(Number(snapshot.plants?.[definition.id]?.owned) || 0)) <= 0) continue;
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+  }
+  for (const definition of AQUARIUM_CONFIG.displayItems) {
+    if (Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.owned) || 0)) <= 0) continue;
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_LAYOUT_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+  }
+  return names;
+}
+
+function aquariumKnownDiscoveryNames(engine = null) {
+  const names = new Set();
+  const fishRegistry = engine?.config?.speciesProfiles || {};
+  const decorationRegistry = engine?.config?.decorationProfiles || {};
+  for (const definition of AQUARIUM_CONFIG.fish) {
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(fishRegistry, definition.id, AQUARIUM_ENGINE_FISH_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(fishRegistry[engineId]?.displayName));
+  }
+  for (const definition of AQUARIUM_CONFIG.plants) {
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+  }
+  for (const definition of AQUARIUM_CONFIG.displayItems) {
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_LAYOUT_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+  }
+  names.delete('');
+  return names;
+}
+
+// v0.10.615: 水槽内の一覧・選択肢にも未所持品の名前を出さず、存在自体を伏せる。
+function filterAquariumUndiscoveredDocument(frame) {
+  try {
+    const documentRef = frame?.contentDocument;
+    if (!documentRef) return false;
+    const engine = frame.contentWindow?.aquariumEngine || null;
+    const snapshot = aquariumSnapshot();
+    const ownedNames = aquariumOwnedDiscoveryNames(snapshot, engine);
+    const hiddenNames = [...aquariumKnownDiscoveryNames(engine)].filter((name) => !ownedNames.has(name));
+    if (!hiddenNames.length) return true;
+    const containsHiddenName = (text) => {
+      const normalized = normalizeAquariumObservationName(text);
+      return normalized && hiddenNames.some((name) => name && normalized.includes(name));
+    };
+
+    documentRef.querySelectorAll('option').forEach((option) => {
+      if (containsHiddenName(option.textContent)) option.remove();
+    });
+
+    const leafSelectors = '.item-name,.species-name,.plant-name,.decoration-name,.inventory-name,.collection-name,.catalog-name,[data-item-name],[data-species-name]';
+    documentRef.querySelectorAll(leafSelectors).forEach((nameNode) => {
+      if (!containsHiddenName(nameNode.textContent || nameNode.getAttribute('data-item-name') || nameNode.getAttribute('data-species-name'))) return;
+      const row = nameNode.closest('.item-card,.inventory-item,.collection-item,.catalog-item,.option-card,.shop-item,.list-item,tr,li');
+      (row || nameNode).remove();
+    });
+
+    const candidateSelectors = '.item-card,.inventory-item,.collection-item,.catalog-item,.option-card,.shop-item,.list-item,tr,li,[data-item-id],[data-species]';
+    documentRef.querySelectorAll(candidateSelectors).forEach((node) => {
+      if (containsHiddenName(node.textContent)) node.remove();
+    });
+
+    // カード構造に含まれない説明文・ボタン・ラベルに将来品名が出た場合も伏せる。
+    documentRef.querySelectorAll('button,label,span,strong,p,small,td,th').forEach((node) => {
+      if (!containsHiddenName(node.textContent)) return;
+      const row = node.closest('.item-card,.inventory-item,.collection-item,.catalog-item,.option-card,.shop-item,.list-item,tr,li');
+      (row || node).remove();
+    });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function filterAquariumObservationDocument(frame) {
   try {
     const documentRef = frame?.contentDocument;
@@ -9897,10 +10114,14 @@ function installAquariumObservationGuard(frame) {
     if (!documentRef?.documentElement) return false;
     if (frame.__jxjObservationObserver) return true;
     const Observer = frame.contentWindow?.MutationObserver || MutationObserver;
-    const observer = new Observer(() => filterAquariumObservationDocument(frame));
+    const observer = new Observer(() => {
+      filterAquariumObservationDocument(frame);
+      filterAquariumUndiscoveredDocument(frame);
+    });
     observer.observe(documentRef.documentElement, { childList: true, subtree: true });
     frame.__jxjObservationObserver = observer;
     filterAquariumObservationDocument(frame);
+    filterAquariumUndiscoveredDocument(frame);
     return true;
   } catch (_) {
     return false;
@@ -9993,6 +10214,7 @@ function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-fram
 
     installAquariumObservationGuard(frame);
     filterAquariumObservationDocument(frame);
+    filterAquariumUndiscoveredDocument(frame);
     return true;
   } catch (error) {
     console.warn('水槽ミニゲームの現在配置同期に失敗しました。', error);
@@ -10509,6 +10731,208 @@ function renderCinemaVisitEvent() {
         <strong>そうだ　映画館、行こう</strong>
         <span>タップして進む</span>
       </button>
+    </main>`;
+}
+
+function apprenticeCinemaEventWeekendEligible(date = gameDate()) {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+function apprenticeCinemaEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.apprenticeCinemaEvent && typeof state.events.apprenticeCinemaEvent === 'object' && !Array.isArray(state.events.apprenticeCinemaEvent)
+    ? state.events.apprenticeCinemaEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2', 'completed']);
+  state.events.apprenticeCinemaEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    selectedVideo: normalizeCinemaEventVideoName(saved.selectedVideo),
+    lastVideo: normalizeCinemaEventVideoName(saved.lastVideo),
+    settled: Boolean(saved.settled),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+  };
+  if (!state.events.apprenticeCinemaEvent.active && !['idle', 'completed'].includes(state.events.apprenticeCinemaEvent.stage)) {
+    state.events.apprenticeCinemaEvent.stage = 'completed';
+  }
+  return state.events.apprenticeCinemaEvent;
+}
+
+function resumeApprenticeCinemaEvent() {
+  const eventState = apprenticeCinemaEventState();
+  if (!eventState.active) return false;
+  setScreen('apprenticeCinemaEvent', {}, false);
+  return true;
+}
+
+async function maybeStartApprenticeCinemaEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = apprenticeCinemaEventState();
+  if (eventState.active) return resumeApprenticeCinemaEvent();
+  const staff = workshopStaffState();
+  if (staff.everHired || staff.hired) return false;
+  if (!apprenticeCinemaEventWeekendEligible()) return false;
+  if (Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < APPRENTICE_CINEMA_EVENT_COST) return false;
+  if (!canSpendHours(APPRENTICE_CINEMA_EVENT_HOURS)) return false;
+  const videos = await loadCinemaEventVideos();
+  if (!videos.length) return false;
+  // 「30回に1回くらい」なので、厳密な1/30ではなく3%抽選。御徒町へ入るたびに抽選する。
+  if (Math.random() >= APPRENTICE_CINEMA_EVENT_CHANCE) return false;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.selectedVideo = chooseCinemaEventVideo(videos, eventState.lastVideo);
+  eventState.settled = false;
+  eventState.totalTriggered += 1;
+  eventState.lastTriggeredDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  state.game.screen = 'apprenticeCinemaEvent';
+  saveGame();
+  setScreen('apprenticeCinemaEvent', {}, false);
+  playSfx('impact', { gain: 0.54, rate: 0.9 });
+  setTimeout(() => playSfx('success', { gain: 0.38, rate: 1.12 }), 90);
+  vibrate([18, 24, 42]);
+  return true;
+}
+
+function startApprenticeCinemaPlayback() {
+  const video = root.querySelector('video[data-apprentice-cinema-video]');
+  if (!(video instanceof HTMLVideoElement)) return;
+  video.volume = 1;
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise
+      .then(() => video.closest('.cinema-video-stage')?.classList.add('is-playing'))
+      .catch(() => video.closest('.cinema-video-stage')?.classList.add('needs-start'));
+  }
+}
+
+function retryApprenticeCinemaPlayback() {
+  const stage = root.querySelector('.cinema-video-stage');
+  stage?.classList.remove('needs-start', 'has-error');
+  const video = root.querySelector('video[data-apprentice-cinema-video]');
+  if (video instanceof HTMLVideoElement && video.error) video.load();
+  startApprenticeCinemaPlayback();
+}
+
+function beginApprenticeCinemaPlayback() {
+  const eventState = apprenticeCinemaEventState();
+  if (!eventState.active || eventState.stage !== 'intro3' || !eventState.selectedVideo) return;
+  eventState.stage = 'playing';
+  saveGame();
+  playSfx('success', { gain: 0.62, rate: 0.92 });
+  render();
+}
+
+async function completeApprenticeCinemaPlayback() {
+  const eventState = apprenticeCinemaEventState();
+  if (!eventState.active || eventState.stage !== 'playing') return;
+  if (!eventState.settled) {
+    eventState.settled = true;
+    eventState.lastVideo = eventState.selectedVideo;
+    state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - APPRENTICE_CINEMA_EVENT_COST);
+    spendHours(APPRENTICE_CINEMA_EVENT_HOURS);
+    addFinance('見習い職人と映画鑑賞', 0, APPRENTICE_CINEMA_EVENT_COST);
+    addNotification('見習い職人と映画を観ました', `${APPRENTICE_CINEMA_EVENT_HOURS}時間が経過し、${yen(APPRENTICE_CINEMA_EVENT_COST)}を支払いました。`, 'special');
+  }
+  eventState.stage = 'outro1';
+  saveGame();
+  await resumeAudio();
+  playSfx('success', { gain: 0.72 });
+  vibrate([18, 24, 42]);
+  render();
+}
+
+function advanceApprenticeCinemaEvent() {
+  const eventState = apprenticeCinemaEventState();
+  if (!eventState.active) {
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('select', { gain: 0.5 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    playSfx('select', { gain: 0.5 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro3') {
+    beginApprenticeCinemaPlayback();
+    return;
+  }
+  if (eventState.stage === 'outro1') {
+    eventState.stage = 'outro2';
+    saveGame();
+    playSfx('select', { gain: 0.5 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'outro2') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    eventState.selectedVideo = '';
+    eventState.settled = false;
+    saveGame();
+    playSfx('decision', { gain: 0.72, rate: 0.96 });
+    setScreen('okachimachi', {}, false);
+  }
+}
+
+function renderApprenticeCinemaEvent() {
+  const eventState = apprenticeCinemaEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  if (eventState.stage === 'playing') {
+    const videoUrl = cinemaEventVideoUrl(eventState.selectedVideo);
+    queueMicrotask(startApprenticeCinemaPlayback);
+    return `
+      <main class="main-screen apprentice-cinema-event-screen cinema-playing-screen">
+        <section class="cinema-video-stage" aria-live="polite">
+          <video data-apprentice-cinema-video src="${esc(videoUrl)}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1"></video>
+          <div class="cinema-video-loading">上映中</div>
+          <button type="button" class="cinema-video-start-button" data-action="apprentice-cinema-video-start">動画を再生する</button>
+          <div class="cinema-video-error-message">動画を読み込めませんでした。再生をやり直すか、上映を終了してください。</div>
+          <button type="button" class="cinema-video-finish-button" data-action="apprentice-cinema-video-finish">上映を終了して会話へ戻る</button>
+        </section>
+      </main>`;
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const characterPath = `./assets/images/events/cinema-apprentice.png?v=${VERSION}`;
+  let location = eventState.stage === 'outro1' || eventState.stage === 'outro2' ? '映画館' : '御徒町・パンダ広場';
+  let dialogue = `あ、、${playerName}さん、、土日も御徒町にいるんですか？！、、、やばぁ、、、`;
+  let hint = 'タップして進む';
+  if (eventState.stage === 'intro2') {
+    dialogue = `そうだ、これから映画観に行くんです、、、${playerName}さんも一緒に来てくださいよお、、、`;
+  } else if (eventState.stage === 'intro3') {
+    dialogue = '僕の好きな俳優さんが出てるから興味あるんですけど、、、ホラーみたいでひとりじゃ怖いかもって思ってたんです、、、<br>怖いな、怖いなあ、、、<br>いきましょーー！';
+    hint = `タップすると映画館へ（${yen(APPRENTICE_CINEMA_EVENT_COST)}）`;
+  } else if (eventState.stage === 'outro1') {
+    dialogue = 'いやぁ、、全然怖くなかったですね、それよりポップコーンが美味しかったですね、、、また食べに行きましょう！！、、、';
+  } else if (eventState.stage === 'outro2') {
+    dialogue = 'じゃあまた、、、、';
+    hint = 'タップすると通常の御徒町画面へ';
+  }
+  return `
+    <main class="main-screen apprentice-cinema-event-screen cinema-apprentice-screen">
+      <section class="visit-character-event cinema-apprentice-event" aria-live="polite">
+        <div class="visit-character-area cinema-apprentice-character-area" aria-hidden="true">
+          <img class="visit-character cinema-apprentice-character" src="${characterPath}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue cinema-apprentice-dialogue glass-panel" data-action="apprentice-cinema-event-next">
+          <small>${location} ／ 見習い職人</small>
+          <strong>${dialogue}</strong>
+          <span>${hint}</span>
+        </button>
+      </section>
     </main>`;
 }
 
@@ -11343,6 +11767,33 @@ function renderAlienReturnEvent() {
 
 
 
+function renderRidleyOkazakiSobaEvent() {
+  const eventState = ridleyOkazakiSobaEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('meal', {}, false));
+    return renderMeal();
+  }
+  const eventCost = ridleyOkazakiSobaEventCost();
+  const characterPath = `./assets/images/events/ridley-okazaki.png?v=${VERSION}`;
+  let dialogue = 'お客さん、、２つで十分ですよ！';
+  let hint = 'タップして進む';
+  if (eventState.stage === 'intro2') {
+    dialogue = '２つで十分ですよ！！';
+  } else if (eventState.stage === 'intro3') {
+    dialogue = '分かってくださいよぉ、、、';
+    hint = `タップすると通常の立ち食いそば画面へ（${yen(eventCost)}）`;
+  }
+  return `
+    <main class="main-screen ridley-okazaki-soba-event-screen">
+      <section class="visit-character-event ridley-okazaki-soba-event" aria-live="polite">
+        <div class="visit-character-area ridley-okazaki-soba-character-area" aria-hidden="true">
+          <img class="visit-character ridley-okazaki-soba-character" src="${characterPath}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue ridley-okazaki-soba-dialogue glass-panel" data-action="ridley-okazaki-soba-event-next"><small>リドリー・オカザキ</small><strong>${dialogue}</strong><span>${hint}</span></button>
+      </section>
+    </main>`;
+}
+
 function renderWhiteBunnyIceEvent() {
   const eventState = whiteBunnyIceEventState();
   if (!eventState.active) {
@@ -11374,6 +11825,275 @@ function renderWhiteBunnyIceEvent() {
       <section class="visit-character-event white-bunny-ice-event" aria-live="polite">
         <div class="visit-character-area white-bunny-character-area" aria-hidden="true">
           <img class="visit-character white-bunny-character" src="${characterPath}" alt="" draggable="false">
+        </div>
+        ${panel}
+      </section>
+    </main>`;
+}
+
+function emeraldCaptainKebabEventTotalCost() {
+  return EMERALD_CAPTAIN_KEBAB_EVENT_SHAPE_IDS.reduce((sum, shapeId) => sum + Math.max(0, Math.floor(Number(loosePurchasePrice(EMERALD_CAPTAIN_KEBAB_EVENT_GEM_ID, shapeId)) || 0)), 0);
+}
+
+function emeraldCaptainKebabEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.emeraldCaptainKebabEvent && typeof state.events.emeraldCaptainKebabEvent === 'object' && !Array.isArray(state.events.emeraldCaptainKebabEvent)
+    ? state.events.emeraldCaptainKebabEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'showcase', 'purchase', 'eating', 'farewell', 'completed']);
+  state.events.emeraldCaptainKebabEvent = {
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    pendingMealId: typeof saved.pendingMealId === 'string' ? saved.pendingMealId : '',
+    mealPaid: Boolean(saved.mealPaid),
+    mealCompleted: Boolean(saved.mealCompleted),
+    purchased: Boolean(saved.purchased),
+    hungerBefore: Math.max(0, Math.min(7, Number(saved.hungerBefore) || 0)),
+    hungerAfter: Math.max(0, Math.min(7, Number(saved.hungerAfter) || 0)),
+    gemTotalPrice: Math.max(0, Math.floor(Number(saved.gemTotalPrice) || emeraldCaptainKebabEventTotalCost())),
+  };
+  if (!state.events.emeraldCaptainKebabEvent.active && !['idle', 'completed'].includes(state.events.emeraldCaptainKebabEvent.stage)) {
+    state.events.emeraldCaptainKebabEvent.stage = 'completed';
+  }
+  return state.events.emeraldCaptainKebabEvent;
+}
+
+function maybeStartEmeraldCaptainKebabEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const mealId = EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID;
+  const meal = MEALS[mealId];
+  const gemCost = emeraldCaptainKebabEventTotalCost();
+  const totalRequired = gemCost + Math.max(0, Math.floor(Number(meal?.price) || 0));
+  if (!meal || gemCost <= 0 || Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < totalRequired) return false;
+  const eventState = emeraldCaptainKebabEventState();
+  if (eventState.active) {
+    setScreen('emeraldCaptainKebabEvent', { mealId }, false);
+    return true;
+  }
+  if (Math.floor(Math.random() * EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.pendingMealId = mealId;
+  eventState.mealPaid = false;
+  eventState.mealCompleted = false;
+  eventState.purchased = false;
+  eventState.hungerBefore = hungerLevel();
+  eventState.hungerAfter = hungerLevel();
+  eventState.gemTotalPrice = gemCost;
+  state.game.screen = 'emeraldCaptainKebabEvent';
+  saveGame();
+  playSfx('impact', { gain: 0.5, rate: 0.92 });
+  setTimeout(() => playSfx('loose-sparkle', { gain: 0.88, rate: 1.04 }), 120);
+  vibrate([18, 18, 38]);
+  setScreen('emeraldCaptainKebabEvent', { mealId }, false);
+  return true;
+}
+
+function applyEmeraldCaptainKebabPurchase() {
+  const eventState = emeraldCaptainKebabEventState();
+  if (eventState.purchased) return true;
+  const totalPrice = Math.max(0, Math.floor(Number(eventState.gemTotalPrice) || emeraldCaptainKebabEventTotalCost()));
+  if (state.game.money < totalPrice) return false;
+  state.game.money -= totalPrice;
+  EMERALD_CAPTAIN_KEBAB_EVENT_SHAPE_IDS.forEach((shapeId) => adjustLooseInventory(EMERALD_CAPTAIN_KEBAB_EVENT_GEM_ID, shapeId, 1));
+  addFinance('エメラルドをルース屋で購入', 0, totalPrice);
+  startMoneyFeedback(-totalPrice, 1300);
+  eventState.purchased = true;
+  saveGame();
+  showToast('エメラルドを購入した', 'success', false);
+  return true;
+}
+
+let emeraldCaptainMealWatchdogTimer = null;
+function clearEmeraldCaptainMealWatchdog() {
+  if (emeraldCaptainMealWatchdogTimer) clearTimeout(emeraldCaptainMealWatchdogTimer);
+  emeraldCaptainMealWatchdogTimer = null;
+}
+
+function scheduleEmeraldCaptainMealWatchdog(delay = 4200) {
+  clearEmeraldCaptainMealWatchdog();
+  emeraldCaptainMealWatchdogTimer = setTimeout(() => {
+    const eventState = emeraldCaptainKebabEventState();
+    if (eventState.active && eventState.stage === 'eating') finishEmeraldCaptainKebabMeal();
+  }, Math.max(800, Number(delay) || 4200));
+}
+
+async function preloadEmeraldCaptainMealAssets() {
+  const assets = Promise.all([
+    preloadImage(mealFoodImage('kebab')),
+    preloadImage(backgroundAssetPath(isPortraitLayout() ? 'meal-kebab-portrait' : 'meal-kebab')),
+  ]);
+  await Promise.race([assets, wait(2200)]);
+}
+
+function finishEmeraldCaptainKebabMeal({ manual = false } = {}) {
+  const eventState = emeraldCaptainKebabEventState();
+  if (!eventState.active || !['eating', 'farewell'].includes(eventState.stage)) return false;
+  clearEmeraldCaptainMealWatchdog();
+  const meal = MEALS[EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID];
+  if (!eventState.mealCompleted) {
+    const before = Math.max(0, Math.min(7, Number(eventState.hungerBefore) || hungerLevel()));
+    spendMealTime();
+    state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
+    state.wellbeing.lastMeal = EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID;
+    state.wellbeing.mealsEaten = Math.max(0, Number(state.wellbeing.mealsEaten) || 0) + 1;
+    eventState.hungerAfter = state.wellbeing.hunger;
+    state.daily.meals.push({ id: EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID, name: meal.name, price: meal.price, recovery: state.wellbeing.hunger - before });
+    eventState.mealCompleted = true;
+  }
+  eventState.stage = 'farewell';
+  mealTransitioning = false;
+  saveGame();
+  if (manual) playSfx('select', { gain: 0.42 });
+  else playSfx('success', { gain: 0.54 });
+  render();
+  return true;
+}
+
+async function startEmeraldCaptainKebabMeal() {
+  const eventState = emeraldCaptainKebabEventState();
+  if (!eventState.active || !['purchase', 'eating'].includes(eventState.stage) || mealTransitioning) return;
+  const meal = MEALS[EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID];
+  mealTransitioning = true;
+  let stateBeforeMeal = null;
+  try {
+    stateBeforeMeal = structuredClone(state);
+    await preloadEmeraldCaptainMealAssets();
+    if (!eventState.mealPaid) {
+      const before = hungerLevel();
+      if (before >= 7) throw new Error('空腹度は満タンです。');
+      if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID) throw new Error('同じ食事は連続で選べません。');
+      if (state.game.money < meal.price) throw new Error('所持金が足りません。');
+      if (!eventState.hungerBefore) eventState.hungerBefore = before;
+      state.game.money -= meal.price;
+      addFinance(`${meal.name}で食事`, 0, meal.price);
+      startMoneyFeedback(-meal.price, 1200);
+      eventState.mealPaid = true;
+    }
+    eventState.stage = 'eating';
+    state.game.screen = 'emeraldCaptainKebabEvent';
+    saveGame();
+    render();
+    scheduleEmeraldCaptainMealWatchdog();
+    await waitForNextPaintWithTimeout();
+    await wait(420);
+    if (emeraldCaptainKebabEventState().stage !== 'eating') return;
+    playSfx('eat');
+    await wait(2080);
+    finishEmeraldCaptainKebabMeal();
+  } catch (error) {
+    console.error('エメラルド班班長ケバブイベント食事処理エラー', error);
+    clearEmeraldCaptainMealWatchdog();
+    if (stateBeforeMeal) state = stateBeforeMeal;
+    const e = emeraldCaptainKebabEventState();
+    e.active = false;
+    e.stage = 'completed';
+    saveGame();
+    goMain();
+    render();
+    showToast('ケバブイベントを安全に終了し、メイン画面へ戻りました。', 'warning');
+  } finally {
+    mealTransitioning = false;
+  }
+}
+
+async function advanceEmeraldCaptainKebabEvent() {
+  const eventState = emeraldCaptainKebabEventState();
+  if (!eventState.active) {
+    setScreen('meal', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('select', { gain: 0.52 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'showcase';
+    saveGame();
+    playSfx('loose-sparkle', { gain: 0.84, rate: 1.05 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'showcase') {
+    if (!applyEmeraldCaptainKebabPurchase()) {
+      showToast('所持金が足りません。', 'error');
+      return;
+    }
+    eventState.stage = 'purchase';
+    saveGame();
+    playSfx('success', { gain: 0.72, rate: 1.02 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'purchase') {
+    saveGame();
+    await startEmeraldCaptainKebabMeal();
+    return;
+  }
+  if (eventState.stage === 'farewell') {
+    const before = eventState.hungerBefore;
+    const after = eventState.hungerAfter;
+    eventState.active = false;
+    eventState.stage = 'completed';
+    eventState.pendingMealId = '';
+    saveGame();
+    hungerFeedback = { before, after, mealName: 'ケバブ' };
+    clearTimeout(hungerFeedbackTimer);
+    goMain();
+    playSfx('decision', { gain: 0.68, rate: 0.94 });
+    hungerFeedbackTimer = setTimeout(() => {
+      hungerFeedback = null;
+      if (screen === 'main') render();
+    }, 1550);
+    return;
+  }
+  if (eventState.stage === 'eating') {
+    await startEmeraldCaptainKebabMeal();
+  }
+}
+
+function renderEmeraldCaptainKebabEvent() {
+  const eventState = emeraldCaptainKebabEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('meal', {}, false));
+    return renderMeal();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const characterPath = `./assets/images/events/emerald-captain.png?v=${VERSION}`;
+  const emeraldSetPath = `./assets/images/events/emerald-captain-loose-set.png?v=${VERSION}`;
+  if (eventState.stage === 'eating') {
+    const foodImage = mealFoodImage('kebab');
+    return `
+      <main class="main-screen emerald-captain-kebab-event-screen emerald-captain-eating-screen">
+        <section class="emerald-captain-kebab-event is-eating" aria-live="polite">
+          <button type="button" class="meal-eating-panel glass-panel emerald-captain-eating-continue" data-action="emerald-captain-kebab-meal-finish" aria-label="食事を終えて次へ進む">
+            <figure class="meal-food-display"><img src="${foodImage}" alt="ケバブ" loading="eager" decoding="sync" fetchpriority="high"></figure>
+            <strong>これが通常のケバブ画面...</strong>
+            <small>もぐもぐ... 自動で進まない場合はタップ</small>
+          </button>
+        </section>
+      </main>`;
+  }
+  let panel = '';
+  if (eventState.stage === 'intro1') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>フフ......へただなあ、${playerName}くん。へたっぴ......欲望の解放のさせ方がへた....。</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'intro2') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>${playerName}くんが本当に欲しいのは...こっち...</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'showcase') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel is-showcase" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><img class="emerald-captain-loose-set" src="${emeraldSetPath}" alt="エメラルドのルース一式" draggable="false"><strong>${playerName}くん.....贅沢ってやつはね........小出しはダメなの........</strong><span>タップして進む</span></button>`;
+  } else if (eventState.stage === 'purchase') {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel emerald-captain-purchase-dialogue" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>エメラルドを購入した</strong><span>これでケバブも美味しいわ....（タップすると通常のケバブ画面へ）</span></button>`;
+  } else {
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel emerald-captain-farewell-dialogue" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>今日をがんばった者..........今日もがんばり始めた者にのみ......明日が来るの......!じゃあね...</strong><span>タップするとメイン画面へ戻る</span></button>`;
+  }
+  return `
+    <main class="main-screen emerald-captain-kebab-event-screen">
+      <section class="visit-character-event emerald-captain-kebab-event ${eventState.stage === 'farewell' ? 'is-farewell' : ''}" aria-live="polite">
+        <div class="visit-character-area emerald-captain-character-area" aria-hidden="true">
+          <img class="visit-character emerald-captain-character" src="${characterPath}" alt="" draggable="false">
         </div>
         ${panel}
       </section>
@@ -14517,21 +15237,24 @@ function finishMealEatingEarly() {
   return Boolean(mealEatingCompletionController?.finish?.('manual'));
 }
 
-async function eatMeal(mealId, { skipEventCheck = false } = {}) {
+async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } = {}) {
   const meal = MEALS[mealId];
   if (!meal || mealTransitioning) return;
   const before = hungerLevel();
   if (before >= 7) return showToast('空腹度は満タンです。', 'error');
   if (mealId !== 'ice' && state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === mealId) return showToast('栄養が片寄るので違うものを食べましょう', 'error');
-  if (state.game.money < meal.price) return showToast('所持金が足りません。', 'error');
+  const actualPrice = Math.max(0, Math.floor(Number(priceOverride ?? meal.price) || 0));
+  if (state.game.money < actualPrice) return showToast('所持金が足りません。', 'error');
   if (!canSpendMealTime()) return showToast(mealTimeUnavailableMessage(), 'error');
   if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
   if (mealId === 'ice' && !skipEventCheck && maybeStartWhiteBunnyIceEvent()) return;
+  if (mealId === 'kebab' && !skipEventCheck && maybeStartEmeraldCaptainKebabEvent()) return;
   if (mealId === 'hamburger' && !skipEventCheck && maybeStartTouristWoodSwordEvent()) return;
   if (mealId === 'hamburger' && !skipEventCheck && maybeStartTerryCaliforniaEvent()) return;
   if (mealId === 'indian' && !skipEventCheck && maybeStartDiamondPolishingLapEvent()) return;
   if (mealId === 'indian' && !skipEventCheck && maybeStartGaneshaTuskEvent()) return;
   if (mealId === 'ramen' && !skipEventCheck && maybeStartChildhoodFriendEvent()) return;
+  if (mealId === 'soba' && !skipEventCheck && maybeStartRidleyOkazakiSobaEvent()) return;
   if (mealId === 'chinese' && !skipEventCheck && maybeStartMysteryChineseMealEvent()) return;
   if (mealId === 'korean' && !skipEventCheck && maybeStartGrayHoodAquariumEvent()) return;
 
@@ -14544,9 +15267,9 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
     await preloadMealAssets(mealId);
 
     // 店を決定して食事画面へ移る瞬間に支払いを確定する。
-    state.game.money -= meal.price;
-    addFinance(`${meal.name}で食事`, 0, meal.price);
-    startMoneyFeedback(-meal.price, 1200);
+    state.game.money -= actualPrice;
+    addFinance(`${meal.name}で食事`, 0, actualPrice);
+    startMoneyFeedback(-actualPrice, 1200);
     saveGame();
     setScreen('meal', { mealId, eating: true }, false);
 
@@ -14560,7 +15283,7 @@ async function eatMeal(mealId, { skipEventCheck = false } = {}) {
     state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
     state.wellbeing.lastMeal = mealId;
     state.wellbeing.mealsEaten += 1;
-    state.daily.meals.push({ id: mealId, name: meal.name, price: meal.price, recovery: state.wellbeing.hunger - before });
+    state.daily.meals.push({ id: mealId, name: meal.name, price: actualPrice, recovery: state.wellbeing.hunger - before });
     saveGame();
 
     hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
@@ -15657,10 +16380,10 @@ function renderPhoneAquarium() {
     <header class="phone-aquarium-heading"><div><small>連動ミニゲーム</small><h2>水槽</h2></div><strong>飼育負荷 ${aquarium.fishLoad.current} / ${aquarium.fishLoad.max}</strong></header>
     <section class="phone-aquarium-placeholder" aria-live="polite">
       <div class="phone-aquarium-water" aria-hidden="true"><span></span><span></span><span></span></div>
-      <p>水槽は1台です。魚・水草・流木・レイアウトストーンは0から集めます。</p>
+      <p>水槽は1台です。入手したものだけが一覧に追加されます。</p>
       <button type="button" class="primary-button full-button" data-action="open-aquarium">水槽を見る</button>
     </section>
-    ${rows.length ? `<section class="phone-aquarium-inventory"><h3>現在の水槽データ</h3>${rows.map((row) => `<article><div><strong>${esc(row.name)}</strong><small>${esc(row.kind)}</small></div><b>${esc(row.text)}</b></article>`).join('')}</section>` : '<div class="phone-empty compact">魚・水草・任意用品はまだありません。</div>'}
+    ${rows.length ? `<section class="phone-aquarium-inventory"><h3>現在の水槽データ</h3>${rows.map((row) => `<article><div><strong>${esc(row.name)}</strong><small>${esc(row.kind)}</small></div><b>${esc(row.text)}</b></article>`).join('')}</section>` : '<div class="phone-empty compact">まだ一覧に表示できる所持品はありません。</div>'}
   </section>`;
 }
 
@@ -18477,7 +19200,7 @@ root.addEventListener('click', async (event) => {
     }
     return;
   }
-  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
@@ -18752,6 +19475,15 @@ root.addEventListener('click', async (event) => {
     case 'cinema-video-finish':
       await completeCinemaVisitEvent();
       break;
+    case 'apprentice-cinema-event-next':
+      advanceApprenticeCinemaEvent();
+      break;
+    case 'apprentice-cinema-video-start':
+      retryApprenticeCinemaPlayback();
+      break;
+    case 'apprentice-cinema-video-finish':
+      await completeApprenticeCinemaPlayback();
+      break;
     case 'wood-sword-event-next':
       advanceTouristWoodSwordEvent();
       break;
@@ -18809,6 +19541,12 @@ root.addEventListener('click', async (event) => {
     case 'childhood-friend-meal-finish':
       finishChildhoodFriendMeal({ manual: true });
       break;
+    case 'emerald-captain-kebab-meal-finish':
+      finishEmeraldCaptainKebabMeal({ manual: true });
+      break;
+    case 'emerald-captain-kebab-event-next':
+      await advanceEmeraldCaptainKebabEvent();
+      break;
     case 'childhood-friend-event-recover':
       repairChildhoodFriendEventDeadlock({ save: true, force: true });
       render();
@@ -18816,6 +19554,9 @@ root.addEventListener('click', async (event) => {
       break;
     case 'white-bunny-ice-event-next':
       await advanceWhiteBunnyIceEvent();
+      break;
+    case 'ridley-okazaki-soba-event-next':
+      await advanceRidleyOkazakiSobaEvent();
       break;
     case 'white-bunny-ice-event-choice':
       chooseWhiteBunnyIceEvent(button.dataset.answer);
@@ -19210,6 +19951,7 @@ root.addEventListener('click', async (event) => {
       if (!unlock.unlocked) { showToast('職人スタッフの解放条件を満たしていません。', 'error'); break; }
       const staff = workshopStaffState();
       staff.hired = true;
+      staff.everHired = true;
       staff.working = true;
       staff.workDays = 0;
       staff.workMinutesBank = 0;
@@ -19745,7 +20487,8 @@ document.addEventListener('visibilitychange', () => {
     return;
   }
   const criticalEventVideoPlaying = screen === 'grayHoodAquariumEvent' && grayHoodAquariumEventState().stage === 'video';
-  if ((screen === 'cinemaVisitEvent' && cinemaVisitEventState().stage === 'playing') || criticalEventVideoPlaying) suspendAudio();
+  const apprenticeCinemaPlaying = screen === 'apprenticeCinemaEvent' && apprenticeCinemaEventState().stage === 'playing';
+  if ((screen === 'cinemaVisitEvent' && cinemaVisitEventState().stage === 'playing') || apprenticeCinemaPlaying || criticalEventVideoPlaying) suspendAudio();
   else resumeAudio();
   if (criticalEventVideoPlaying) queueMicrotask(startGrayHoodAquariumIntroPlayback);
   if (screen === 'okachimachiQuiz' && okachimachiQuizSession?.stage === 'video') queueMicrotask(startOkachimachiQuizIntroPlayback);
@@ -19782,7 +20525,9 @@ root.addEventListener('ended', (event) => {
   const terryVideo = target?.closest('video[data-terry-california-intro-video]');
   if (terryVideo) { completeTerryCaliforniaIntroVideo(); return; }
   const cinemaVideo = target?.closest('video[data-cinema-event-video]');
-  if (cinemaVideo) completeCinemaVisitEvent();
+  if (cinemaVideo) { completeCinemaVisitEvent(); return; }
+  const apprenticeCinemaVideo = target?.closest('video[data-apprentice-cinema-video]');
+  if (apprenticeCinemaVideo) completeApprenticeCinemaPlayback();
 }, true);
 
 root.addEventListener('playing', (event) => {
@@ -19829,9 +20574,16 @@ root.addEventListener('playing', (event) => {
     return;
   }
   const cinemaVideo = target?.closest('video[data-cinema-event-video]');
-  if (!cinemaVideo) return;
-  cinemaVideo.closest('.cinema-video-stage')?.classList.add('is-playing');
-  cinemaVideo.closest('.cinema-video-stage')?.classList.remove('needs-start', 'has-error');
+  if (cinemaVideo) {
+    cinemaVideo.closest('.cinema-video-stage')?.classList.add('is-playing');
+    cinemaVideo.closest('.cinema-video-stage')?.classList.remove('needs-start', 'has-error');
+    suspendAudio();
+    return;
+  }
+  const apprenticeCinemaVideo = target?.closest('video[data-apprentice-cinema-video]');
+  if (!apprenticeCinemaVideo) return;
+  apprenticeCinemaVideo.closest('.cinema-video-stage')?.classList.add('is-playing');
+  apprenticeCinemaVideo.closest('.cinema-video-stage')?.classList.remove('needs-start', 'has-error');
   suspendAudio();
 }, true);
 
@@ -19868,7 +20620,9 @@ root.addEventListener('error', (event) => {
     return;
   }
   const cinemaVideo = target?.closest('video[data-cinema-event-video]');
-  if (cinemaVideo) cinemaVideo.closest('.cinema-video-stage')?.classList.add('has-error', 'needs-start');
+  if (cinemaVideo) { cinemaVideo.closest('.cinema-video-stage')?.classList.add('has-error', 'needs-start'); return; }
+  const apprenticeCinemaVideo = target?.closest('video[data-apprentice-cinema-video]');
+  if (apprenticeCinemaVideo) apprenticeCinemaVideo.closest('.cinema-video-stage')?.classList.add('has-error', 'needs-start');
 }, true);
 
 morningBriefEl?.addEventListener('click', (event) => {

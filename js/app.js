@@ -7,13 +7,13 @@ import {
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.618';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.619';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.618';
+} from './firebase-service.js?v=0.10.619';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -9990,27 +9990,33 @@ function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine =
   return names;
 }
 
-function aquariumOwnedDiscoveryNames(snapshot = aquariumSnapshot(), engine = null) {
+function aquariumPlacedDiscoveryNames(snapshot = aquariumSnapshot(), engine = null) {
   const names = new Set();
   const fishRegistry = engine?.config?.speciesProfiles || {};
   const decorationRegistry = engine?.config?.decorationProfiles || {};
   for (const definition of AQUARIUM_CONFIG.fish) {
-    if (Math.max(0, Math.floor(Number(snapshot.fish?.[definition.id]?.owned) || 0)) <= 0) continue;
+    // v0.10.619: 所持しただけでは図鑑・一覧・詳細を解放しない。
+    // 実際に水槽へ入っている魚だけを既知扱いにする。
+    if (Math.max(0, Math.floor(Number(snapshot.fish?.[definition.id]?.inTank) || 0)) <= 0) continue;
     names.add(normalizeAquariumObservationName(definition.name));
     const engineId = aquariumEngineCompatibleId(fishRegistry, definition.id, AQUARIUM_ENGINE_FISH_ALIASES);
     if (engineId) names.add(normalizeAquariumObservationName(fishRegistry[engineId]?.displayName));
   }
   for (const definition of AQUARIUM_CONFIG.plants) {
-    if (Math.max(0, Math.floor(Number(snapshot.plants?.[definition.id]?.owned) || 0)) <= 0) continue;
+    // 水草も実際に水槽へ入っている種類だけ表示・詳細閲覧を許可する。
+    if (Math.max(0, Math.floor(Number(snapshot.plants?.[definition.id]?.inTank) || 0)) <= 0) continue;
     names.add(normalizeAquariumObservationName(definition.name));
     const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
     if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
   }
   for (const definition of AQUARIUM_CONFIG.displayItems) {
-    if (Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.owned) || 0)) <= 0) continue;
-    names.add(normalizeAquariumObservationName(definition.name));
-    const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_LAYOUT_ALIASES);
-    if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+    // 任意用品は設置されているものだけ既知扱いにする。必須用品は既存仕様を維持。
+    if (!definition.required && Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0)) <= 0) continue;
+    if (definition.required || Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0)) > 0) {
+      names.add(normalizeAquariumObservationName(definition.name));
+      const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_LAYOUT_ALIASES);
+      if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+    }
   }
   return names;
 }
@@ -10038,23 +10044,61 @@ function aquariumKnownDiscoveryNames(engine = null) {
   return names;
 }
 
-// v0.10.615: 水槽内の一覧・選択肢にも未所持品の名前を出さず、存在自体を伏せる。
+// v0.10.619: 魚・水草は「所持」だけでは一覧・詳細を解放せず、実際に水槽へ入った種類だけ表示する。
 function filterAquariumUndiscoveredDocument(frame) {
   try {
     const documentRef = frame?.contentDocument;
     if (!documentRef) return false;
     const engine = frame.contentWindow?.aquariumEngine || null;
     const snapshot = aquariumSnapshot();
-    const ownedNames = aquariumOwnedDiscoveryNames(snapshot, engine);
-    const hiddenNames = [...aquariumKnownDiscoveryNames(engine)].filter((name) => !ownedNames.has(name));
-    if (!hiddenNames.length) return true;
+    const placedNames = aquariumPlacedDiscoveryNames(snapshot, engine);
+    const hiddenNames = [...aquariumKnownDiscoveryNames(engine)].filter((name) => !placedNames.has(name));
+
+    // 名前がDOMに出ていないカードや詳細ボタンも、IDから未解放種を判定して消す。
+    // これにより画像だけのカード・selectのvalue・data属性経由の詳細導線も先に見えない。
+    const fishRegistry = engine?.config?.speciesProfiles || {};
+    const decorationRegistry = engine?.config?.decorationProfiles || {};
+    const allowedIds = new Set();
+    const knownIds = new Set();
+    const addIds = (set, values) => values.filter(Boolean).forEach((value) => set.add(String(value).trim().toLowerCase()));
+    for (const definition of AQUARIUM_CONFIG.fish) {
+      const engineId = aquariumEngineCompatibleId(fishRegistry, definition.id, AQUARIUM_ENGINE_FISH_ALIASES);
+      addIds(knownIds, [definition.id, engineId]);
+      if (Math.max(0, Math.floor(Number(snapshot.fish?.[definition.id]?.inTank) || 0)) > 0) addIds(allowedIds, [definition.id, engineId]);
+    }
+    for (const definition of AQUARIUM_CONFIG.plants) {
+      const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
+      addIds(knownIds, [definition.id, engineId]);
+      if (Math.max(0, Math.floor(Number(snapshot.plants?.[definition.id]?.inTank) || 0)) > 0) addIds(allowedIds, [definition.id, engineId]);
+    }
+    for (const definition of AQUARIUM_CONFIG.displayItems) {
+      const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_LAYOUT_ALIASES);
+      addIds(knownIds, [definition.id, engineId]);
+      if (definition.required || Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0)) > 0) addIds(allowedIds, [definition.id, engineId]);
+    }
+    const hiddenIds = new Set([...knownIds].filter((id) => !allowedIds.has(id)));
     const containsHiddenName = (text) => {
       const normalized = normalizeAquariumObservationName(text);
       return normalized && hiddenNames.some((name) => name && normalized.includes(name));
     };
+    const containsHiddenId = (node) => {
+      if (!(node instanceof Element)) return false;
+      const values = [
+        node.getAttribute('value'), node.getAttribute('data-item-id'), node.getAttribute('data-species'),
+        node.getAttribute('data-species-id'), node.getAttribute('data-id'), node.getAttribute('data-detail-id'),
+        node.getAttribute('data-fish-id'), node.getAttribute('data-plant-id'),
+      ].filter(Boolean).map((value) => String(value).trim().toLowerCase());
+      return values.some((value) => hiddenIds.has(value));
+    };
 
     documentRef.querySelectorAll('option').forEach((option) => {
-      if (containsHiddenName(option.textContent)) option.remove();
+      if (containsHiddenName(option.textContent) || containsHiddenId(option)) option.remove();
+    });
+
+    documentRef.querySelectorAll('[data-item-id],[data-species],[data-species-id],[data-id],[data-detail-id],[data-fish-id],[data-plant-id]').forEach((node) => {
+      if (!containsHiddenId(node)) return;
+      const row = node.closest('.item-card,.inventory-item,.collection-item,.catalog-item,.option-card,.shop-item,.list-item,tr,li');
+      (row || node).remove();
     });
 
     const leafSelectors = '.item-name,.species-name,.plant-name,.decoration-name,.inventory-name,.collection-name,.catalog-name,[data-item-name],[data-species-name]';
@@ -16368,9 +16412,11 @@ function renderPhoneAquarium() {
   const aquarium = aquariumState();
   if (!aquarium.unlocked) return '<div class="phone-empty">水槽機能はまだ解放されていません。</div>';
   refreshAquariumLoad(aquarium);
-  const fishRows = AQUARIUM_CONFIG.fish.filter((def) => aquarium.fish[def.id].owned > 0 || aquarium.fish[def.id].inTank > 0);
-  const plantRows = AQUARIUM_CONFIG.plants.filter((def) => aquarium.plants[def.id].owned > 0 || aquarium.plants[def.id].inTank > 0);
-  const displayRows = AQUARIUM_CONFIG.displayItems.filter((def) => !def.required && (aquarium.displayItems[def.id].owned > 0 || aquarium.displayItems[def.id].installed > 0));
+  // v0.10.619: スマートフォンの一覧も「水槽へ実際に入れたもの」だけ表示する。
+  // 所持しているだけの魚・水草・任意用品は、名称も詳細も先に見せない。
+  const fishRows = AQUARIUM_CONFIG.fish.filter((def) => aquarium.fish[def.id].inTank > 0);
+  const plantRows = AQUARIUM_CONFIG.plants.filter((def) => aquarium.plants[def.id].inTank > 0);
+  const displayRows = AQUARIUM_CONFIG.displayItems.filter((def) => !def.required && aquarium.displayItems[def.id].installed > 0);
   const rows = [
     ...fishRows.map((def) => ({ name: def.name, kind: '魚', text: `所持 ${aquarium.fish[def.id].owned}匹 / 水槽 ${aquarium.fish[def.id].inTank}匹` })),
     ...plantRows.map((def) => ({ name: def.name, kind: '水草', text: `所持 ${aquarium.plants[def.id].owned}株 / 水槽 ${aquarium.plants[def.id].inTank}株` })),
@@ -16380,10 +16426,10 @@ function renderPhoneAquarium() {
     <header class="phone-aquarium-heading"><div><small>連動ミニゲーム</small><h2>水槽</h2></div><strong>飼育負荷 ${aquarium.fishLoad.current} / ${aquarium.fishLoad.max}</strong></header>
     <section class="phone-aquarium-placeholder" aria-live="polite">
       <div class="phone-aquarium-water" aria-hidden="true"><span></span><span></span><span></span></div>
-      <p>水槽は1台です。入手したものだけが一覧に追加されます。</p>
+      <p>水槽は1台です。魚・水草は、入手後に実際に水槽へ入れた種類だけ一覧・詳細に表示されます。</p>
       <button type="button" class="primary-button full-button" data-action="open-aquarium">水槽を見る</button>
     </section>
-    ${rows.length ? `<section class="phone-aquarium-inventory"><h3>現在の水槽データ</h3>${rows.map((row) => `<article><div><strong>${esc(row.name)}</strong><small>${esc(row.kind)}</small></div><b>${esc(row.text)}</b></article>`).join('')}</section>` : '<div class="phone-empty compact">まだ一覧に表示できる所持品はありません。</div>'}
+    ${rows.length ? `<section class="phone-aquarium-inventory"><h3>現在の水槽データ</h3>${rows.map((row) => `<article><div><strong>${esc(row.name)}</strong><small>${esc(row.kind)}</small></div><b>${esc(row.text)}</b></article>`).join('')}</section>` : '<div class="phone-empty compact">まだ水槽内に表示できる魚・水草はありません。</div>'}
   </section>`;
 }
 

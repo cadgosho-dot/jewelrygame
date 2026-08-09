@@ -1,0 +1,11 @@
+{
+  "version": "0.10.619",
+  "base_version": "0.10.618",
+  "feature_update": {
+    "aquarium_phone_list_requires_in_tank": true,
+    "aquarium_detail_requires_in_tank": true,
+    "aquarium_hidden_unplaced_species_by_name_and_id": true,
+    "optional_display_items_require_installed": true,
+    "v0_10_618_ui_layout_preserved": true
+  }
+}

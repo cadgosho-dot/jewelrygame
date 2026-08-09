@@ -1,4 +1,4 @@
-export const VERSION = '0.10.618';
+export const VERSION = '0.10.619';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -4785,7 +4785,7 @@ export function migrateState(saved) {
   state.game.screen = 'main';
   state.aquarium = normalizeAquariumState(state.aquarium);
   state.events = isRecord(state.events) ? state.events : {};
-  // v0.10.618: v0.10.618で誤って既存映画館イベントへ上書きされた見習い職人イベントを分離して救済する。
+  // v0.10.618: v0.10.617で誤って既存映画館イベントへ上書きされた見習い職人イベントを分離して救済する。
   {
     const mixedCinema = isRecord(state.events.cinemaVisitEvent) ? state.events.cinemaVisitEvent : {};
     const mixedStage = String(mixedCinema.stage || '');

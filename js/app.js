@@ -1,19 +1,19 @@
 import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
-  PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
+  PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.619';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.624';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.619';
+} from './firebase-service.js?v=0.10.624';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -312,9 +312,12 @@ const RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR = 30;
 const RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID = 'soba';
 const RIDLEY_OKAZAKI_SOBA_EVENT_PRICE_MULTIPLIER = 2;
 const WRIST_FOUND_EVENT_CHANCE = 1 / 200;
+const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
+const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png';
+const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. カワハラ';
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
-  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide',
+  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'kawaharaKnowledgeEvent',
 ]);
 
 const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
@@ -325,6 +328,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   pandaMusicEvent: new Set(['intro1', 'intro2']),
   wristFoundEvent: new Set(['intro', 'report']),
+  kawaharaKnowledgeEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   tattooWomanAmberEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   mermaidEvent: new Set(['intro', 'reward']),
   sushiChefEvent: new Set(['intro1', 'intro2', 'playing', 'farewell']),
@@ -351,7 +355,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -372,6 +376,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
   wristFoundEvent: { eventKey: 'wristFoundEvent', fallback: 'okachimachi' },
+  kawaharaKnowledgeEvent: { eventKey: 'kawaharaKnowledgeEvent', fallback: 'glab' },
   sushiChefEvent: { eventKey: 'sushiChefEvent', fallback: 'main' },
   cyclopsEvent: { eventKey: 'cyclopsEvent', fallback: 'main' },
   ganeshaTuskEvent: { eventKey: 'ganeshaTuskEvent', fallback: 'main' },
@@ -595,6 +600,13 @@ function runEventEmergencySettlement(key, eventState) {
       eventState.selectedVideo = '';
       break;
 
+    case 'kawaharaKnowledgeEvent': {
+      const kawahara = kawaharaKnowledgeEventState();
+      if (['reward', 'farewell'].includes(String(kawahara?.stage || '')) && kawahara.knowledgeId) {
+        grantProcessingKnowledge(kawahara.knowledgeId, KAWAHARA_KNOWLEDGE_EVENT_SOURCE);
+      }
+      break;
+    }
     case 'storeTheftEvent':
       // 試着を断る前・断った後は盗難なし。了承後の段階だけ損失を確定する。
       if (['intro2', 'intro3', 'farewell', 'pause', 'theftNotice'].includes(stage) && !eventState.theftApplied) {
@@ -8308,6 +8320,126 @@ function advancePandaMusicEvent() {
   setScreen('okachimachi', {}, false);
 }
 
+function kawaharaKnowledgeEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.kawaharaKnowledgeEvent && typeof state.events.kawaharaKnowledgeEvent === 'object' && !Array.isArray(state.events.kawaharaKnowledgeEvent)
+    ? state.events.kawaharaKnowledgeEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  state.events.kawaharaKnowledgeEvent = {
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    knowledgeId: String(saved.knowledgeId || '').trim(),
+    granted: Boolean(saved.granted),
+  };
+  if (!state.events.kawaharaKnowledgeEvent.active && !['idle', 'completed'].includes(state.events.kawaharaKnowledgeEvent.stage)) {
+    state.events.kawaharaKnowledgeEvent.stage = 'completed';
+  }
+  return state.events.kawaharaKnowledgeEvent;
+}
+
+function nextPendingProcessingKnowledgeId() {
+  const acquired = new Set((Array.isArray(state?.workshop?.processingKnowledge) ? state.workshop.processingKnowledge : [])
+    .map((entry) => String(entry?.id || entry || '').trim())
+    .filter(Boolean));
+  for (const id of PROCESSING_KNOWLEDGE_SEQUENCE) {
+    const normalized = String(id || '').trim();
+    if (!normalized) continue;
+    if (!PROCESSING_KNOWLEDGE[normalized]) continue;
+    if (!acquired.has(normalized)) return normalized;
+  }
+  return '';
+}
+
+function resumeKawaharaKnowledgeEvent() {
+  const eventState = kawaharaKnowledgeEventState();
+  if (!eventState.active) return false;
+  if (!eventState.knowledgeId) {
+    eventState.knowledgeId = nextPendingProcessingKnowledgeId();
+    if (!eventState.knowledgeId) {
+      eventState.active = false;
+      eventState.stage = 'completed';
+      saveGame();
+      return false;
+    }
+  }
+  setScreen('kawaharaKnowledgeEvent', {}, false);
+  return true;
+}
+
+function maybeStartKawaharaKnowledgeEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = kawaharaKnowledgeEventState();
+  if (eventState.active) return resumeKawaharaKnowledgeEvent();
+  const knowledgeId = nextPendingProcessingKnowledgeId();
+  if (!knowledgeId) return false;
+  if (Math.random() >= KAWAHARA_KNOWLEDGE_EVENT_CHANCE) return false;
+  eventState.lastTriggeredDay = Math.max(1, Number(state?.game?.day) || 1);
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.knowledgeId = knowledgeId;
+  eventState.granted = false;
+  saveGame();
+  setScreen('kawaharaKnowledgeEvent', {}, false);
+  playSfx('decision', { gain: 0.8, rate: 0.94 });
+  return true;
+}
+
+function finishKawaharaKnowledgeEvent() {
+  const eventState = kawaharaKnowledgeEventState();
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.knowledgeId = '';
+  eventState.granted = false;
+  saveGame();
+  setScreen('glab', {}, false);
+  playSfx('decision', { gain: 0.72, rate: 1.04 });
+}
+
+function advanceKawaharaKnowledgeEvent() {
+  const eventState = kawaharaKnowledgeEventState();
+  if (!eventState.active) {
+    setScreen('glab', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    render();
+    playSfx('select', { gain: 0.72, rate: 0.96 });
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    render();
+    playSfx('select', { gain: 0.72, rate: 0.92 });
+    return;
+  }
+  if (eventState.stage === 'intro3') {
+    if (eventState.knowledgeId && !eventState.granted) {
+      grantProcessingKnowledge(eventState.knowledgeId, KAWAHARA_KNOWLEDGE_EVENT_SOURCE);
+      eventState.granted = true;
+    }
+    eventState.stage = 'reward';
+    saveGame();
+    render();
+    playSfx('success', { gain: 0.78, rate: 1.02 });
+    return;
+  }
+  if (eventState.stage === 'reward') {
+    eventState.stage = 'farewell';
+    saveGame();
+    render();
+    playSfx('select', { gain: 0.74, rate: 1.04 });
+    return;
+  }
+  finishKawaharaKnowledgeEvent();
+}
+
 function wristFoundEventState() {
   return simpleEventState('wristFoundEvent', ['idle', 'intro', 'report', 'completed']);
 }
@@ -8542,8 +8674,8 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
   };
@@ -9285,10 +9417,12 @@ function render() {
       workshopTool: renderWorkshopToolDetail,
       workshopToolGuide: renderWorkshopToolGuide,
       workshopStaff: renderWorkshopStaff,
+      processingKnowledgeDetail: renderProcessingKnowledgeDetail,
       metalInventoryDetail: renderMetalInventoryDetail,
       metalProfessionalGuide: renderMetalProfessionalGuide,
       glab: renderGlab,
       glabSns: renderGlabSns,
+      kawaharaKnowledgeEvent: renderKawaharaKnowledgeEvent,
       glabTool: renderGlabToolDetail,
       glabToolGuide: renderGlabToolGuide,
       store: renderStore,
@@ -12385,6 +12519,39 @@ function renderMiningResult() {
     </section>`, { main: false });
 }
 
+function renderKawaharaKnowledgeEvent() {
+  const eventState = kawaharaKnowledgeEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('glab', {}, false));
+    return renderGlab();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const document = PROCESSING_KNOWLEDGE[eventState.knowledgeId] || null;
+  const knowledgeLabel = esc(document?.shortTitle || document?.title || '新しい加工知識');
+  const dialogues = {
+    intro1: `${playerName}さん、こんにちは、いつもありがとうございます。`,
+    intro2: '加工について何か質問ありましたか？、、、',
+    intro3: 'ああ、、それは、、、、',
+    reward: `工房の加工知識に「${knowledgeLabel}」が追加されました`,
+    farewell: 'また来てくださいね、、、ありがとうございます、、、、',
+  };
+  const stage = String(eventState.stage || 'intro1');
+  const kicker = stage === 'reward' ? '加工知識追加' : 'カワハラ';
+  return `
+    <main class="main-screen kawahara-knowledge-event-screen" aria-live="polite">
+      <section class="visit-character-event kawahara-knowledge-event">
+        <div class="visit-character-area kawahara-knowledge-character-area" aria-hidden="true">
+          <img class="visit-character kawahara-knowledge-character" src="${KAWAHARA_KNOWLEDGE_EVENT_IMAGE}?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue kawahara-knowledge-dialogue glass-panel" data-action="kawahara-knowledge-event-next">
+          <small>${kicker}</small>
+          <strong>${dialogues[stage] || ''}</strong>
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
 function renderGlab() {
   const catalogTools = Object.values(WORKSHOP_TOOLS)
     .filter(workshopToolCatalogVisible)
@@ -13305,6 +13472,34 @@ function ownedEquipmentCount() {
   return Object.values(state?.tools?.items || {}).filter(Boolean).length;
 }
 
+function processingKnowledgeEntries() {
+  const records = Array.isArray(state?.workshop?.processingKnowledge) ? state.workshop.processingKnowledge : [];
+  return records.map((record) => ({ record, document: PROCESSING_KNOWLEDGE[String(record?.id || '')] }))
+    .filter((entry) => entry.document)
+    .sort((a, b) => (Number(b.record?.acquiredDay) || 0) - (Number(a.record?.acquiredDay) || 0));
+}
+
+function processingKnowledgeCount() {
+  return processingKnowledgeEntries().length;
+}
+
+// 今後のイベント実装では「加工知識へ追加」の共通入口としてこの関数を使う。
+// 文書本体は PROCESSING_KNOWLEDGE に置き、セーブにはID・入手日・入手元だけを記録する。
+function grantProcessingKnowledge(knowledgeId, source = 'イベント') {
+  const id = String(knowledgeId || '').trim();
+  const document = PROCESSING_KNOWLEDGE[id];
+  if (!id || !document) {
+    console.warn('加工知識の文書定義が見つかりません。', knowledgeId);
+    return false;
+  }
+  state.workshop = state.workshop && typeof state.workshop === 'object' ? state.workshop : {};
+  state.workshop.processingKnowledge = Array.isArray(state.workshop.processingKnowledge) ? state.workshop.processingKnowledge : [];
+  if (state.workshop.processingKnowledge.some((entry) => String(entry?.id || entry) === id)) return false;
+  state.workshop.processingKnowledge.push({ id, acquiredDay: Math.max(1, Number(state.game?.day) || 1), source: String(source || 'イベント').slice(0, 120) });
+  addNotification('加工知識へ追加', `「${document.title || id}」が工房の加工知識へ追加されました。`, 'special');
+  return true;
+}
+
 function renderWorkshop() {
   const workshopStatus = workshopUpgradeStatus();
   const roughTotal = Object.values(state.inventory.rough).reduce((a, b) => a + b, 0);
@@ -13312,6 +13507,7 @@ function renderWorkshop() {
   const metalTotal = roundedMetalWeight(Object.values(state.inventory.metals).reduce((a, b) => a + Number(b || 0), 0));
   const stored = state.inventory.jewelry.filter((item) => item.status !== 'sold').length;
   const equipmentTotal = ownedEquipmentCount();
+  const knowledgeTotal = processingKnowledgeCount();
   const activeOrders = activeOrderCount();
   return shell('工房', `
     <div class="split-layout">
@@ -13323,6 +13519,7 @@ function renderWorkshop() {
           <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="metals"><small>地金</small><strong>${metalWeightLabel(metalTotal)}g</strong></button>
           <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="finished"><small>完成品</small><strong>${stored}/${state.inventory.capacity}</strong></button>
           <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="equipment"><small>工具・設備</small><strong>${equipmentTotal}点</strong></button>
+          <button type="button" class="workshop-inventory-button" data-action="open-workshop-inventory" data-tab="knowledge"><small>加工知識</small><strong>${knowledgeTotal}件</strong></button>
         </div>
         ${workshopOperating() ? '' : `<section class="tool-break-alert"><strong>工房は作業停止中です</strong><span>未払いの工房維持費 ${yen(state.business.workshopUnpaid)}を収支画面から支払ってください。</span></section>`}
         <div class="button-stack workshop-menu">
@@ -13350,7 +13547,7 @@ function renderWorkshop() {
         </article>
         ${workshopLevel() >= 20 ? '' : `<button class="secondary-button full-button workshop-expansion-bottom-button" data-action="confirm-workshop-expansion" ${workshopStatus.complete ? '' : 'disabled'}>工房拡張</button>`}
       </section>
-    </div>`, { help: '工房ではジュエリー作成、受注中の商品を確認する注文書、原石研磨、職人スタッフを利用できます。工房レベルと工房拡張は画面の一番下に表示します。注文書は現在の注文がある場合だけ開けます。' });
+    </div>`, { help: '工房ではジュエリー作成、受注中の商品を確認する注文書、原石研磨、職人スタッフを利用できます。原石・ルース・地金・完成品・工具・設備に加え、イベントで得た加工知識の文書も確認できます。工房レベルと工房拡張は画面の一番下に表示します。注文書は現在の注文がある場合だけ開けます。' });
 }
 
 const WORKSHOP_STAFF_REQUIRED_TOOLS = Object.freeze(['jewelryBench', 'polishingMachine', 'rotaryTool', 'rollingMill', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock']);
@@ -13774,10 +13971,16 @@ function renderCompletion() {
 }
 
 function renderInventory() {
-  const tabs = ['rough', 'loose', 'metals', 'finished', 'equipment'];
+  const tabs = ['rough', 'loose', 'metals', 'finished', 'equipment', 'knowledge'];
   const tab = tabs.includes(screenData.tab) ? screenData.tab : 'finished';
-  const labels = { rough: '原石', loose: 'ルース', metals: '地金', finished: '完成品', equipment: '工具・設備' };
-  const content = tab === 'finished' ? renderFinishedItems() : tab === 'equipment' ? renderToolEquipmentInventory() : renderMaterialInventory(tab);
+  const labels = { rough: '原石', loose: 'ルース', metals: '地金', finished: '完成品', equipment: '工具・設備', knowledge: '加工知識' };
+  const content = tab === 'finished'
+    ? renderFinishedItems()
+    : tab === 'equipment'
+      ? renderToolEquipmentInventory()
+      : tab === 'knowledge'
+        ? renderProcessingKnowledgeInventory()
+        : renderMaterialInventory(tab);
   return shell(`${labels[tab]}一覧`, `
     <section class="wide-panel glass-panel">
       <div class="tab-row inventory-category-tabs">
@@ -13786,10 +13989,69 @@ function renderInventory() {
         <button class="${tab === 'metals' ? 'active' : ''}" data-action="inventory-tab" data-tab="metals">地金</button>
         <button class="${tab === 'finished' ? 'active' : ''}" data-action="inventory-tab" data-tab="finished">完成品</button>
         <button class="${tab === 'equipment' ? 'active' : ''}" data-action="inventory-tab" data-tab="equipment">工具・設備</button>
+        <button class="${tab === 'knowledge' ? 'active' : ''}" data-action="inventory-tab" data-tab="knowledge">加工知識</button>
       </div>
       ${content}
       ${tab === 'finished' ? '<div class="button-stack inventory-footer-actions"><button type="button" class="secondary-button full-button" data-action="nav" data-screen="workshop">工房へ戻る</button></div>' : ''}
-    </section>`, { help: '工房で所持している原石・ルース・地金・完成品・工具と設備を種類別に確認できます。' });
+    </section>`, { help: '工房で所持している原石・ルース・地金・完成品・工具と設備、イベントで得た加工知識の文書を種類別に確認できます。' });
+}
+
+function renderProcessingKnowledgeInventory() {
+  const entries = processingKnowledgeEntries();
+  if (!entries.length) return '<div class="empty-state"><strong>加工知識はまだありません。</strong><p>今後、イベントなどで加工に関する知識を得ると、詳細な文書がここへ追加されます。</p></div>';
+  return `<div class="equipment-list processing-knowledge-list">${entries.map(({ record, document }) => {
+    const category = String(document.category || '加工');
+    const summary = String(document.summary || document.overview || '加工に関する詳細資料です。');
+    const source = String(record.source || 'イベント');
+    return `<button type="button" class="equipment-row equipment-detail-button processing-knowledge-row" data-action="open-processing-knowledge" data-id="${esc(record.id)}">
+      <span class="equipment-icon" aria-hidden="true">文</span>
+      <span class="equipment-row-copy"><strong>${esc(document.title || record.id)}</strong><small>${esc(category)}・${esc(summary)}</small></span>
+      <span class="equipment-status available">${esc(source)}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+
+function renderProcessingKnowledgeDocument(document) {
+  const sections = Array.isArray(document?.sections) ? document.sections : [];
+  const references = Array.isArray(document?.references) ? document.references : [];
+  const opening = [document?.overview, document?.body].filter(Boolean).map((value) => String(value));
+  const wordCount = opening.join('').length + sections.reduce((total, section) => total
+    + (Array.isArray(section?.paragraphs) ? section.paragraphs.join('').length : String(section?.body || '').length)
+    + (Array.isArray(section?.points) ? section.points.join('').length : 0), 0);
+  return `<article class="tool-learning-guide processing-knowledge-document">
+    <div class="tool-guide-stats" aria-label="加工知識の収録範囲">
+      <strong>加工資料 全${Math.max(1, sections.length)}章</strong>
+      <span>本文約${wordCount.toLocaleString('ja-JP')}字</span>
+      ${references.length ? `<span>参考資料${references.length}件</span>` : ''}
+      ${document?.revision ? `<span>改訂 ${esc(document.revision)}</span>` : ''}
+    </div>
+    ${opening.map((paragraph, index) => `<p class="${index === 0 ? 'tool-guide-lead' : ''}">${esc(paragraph)}</p>`).join('')}
+    ${sections.length > 1 ? `<details class="tool-guide-toc"><summary>目次を開く</summary><ol>${sections.map((section, index) => `<li><a href="#processing-knowledge-section-${index + 1}">${esc(section.title || '')}</a></li>`).join('')}</ol></details>` : ''}
+    ${sections.map((section, index) => {
+      const paragraphs = Array.isArray(section?.paragraphs) ? section.paragraphs : (section?.body ? [section.body] : []);
+      const points = Array.isArray(section?.points) ? section.points : [];
+      return `<section class="tool-guide-section" id="processing-knowledge-section-${index + 1}">
+        <div class="tool-guide-chapter-number">${String(index + 1).padStart(2, '0')}</div>
+        <h3>${esc(section.title || '')}</h3>
+        ${paragraphs.map((paragraph) => `<p>${esc(paragraph)}</p>`).join('')}
+        ${points.length ? `<ul>${points.map((point) => `<li>${esc(point)}</li>`).join('')}</ul>` : ''}
+      </section>`;
+    }).join('')}
+    ${references.length ? `<section class="tool-guide-section tool-guide-references"><h3>参考資料</h3><ul>${references.map((reference) => `<li>${esc(reference)}</li>`).join('')}</ul></section>` : ''}
+  </article>`;
+}
+
+function renderProcessingKnowledgeDetail() {
+  const id = String(screenData.knowledgeId || '');
+  const entry = processingKnowledgeEntries().find(({ record }) => String(record.id) === id);
+  if (!entry) return shell('加工知識', '<div class="empty-state"><strong>加工知識が見つかりません。</strong><p>工房の加工知識一覧から文書を選択してください。</p></div>');
+  const { record, document } = entry;
+  return shell(document.title || '加工知識', `
+    <section class="glass-panel metal-professional-guide-page processing-knowledge-detail-page">
+      <div class="metal-guide-title"><span class="material-chip">${esc(document.category || '加工知識')}</span><div><h1>${esc(document.title || record.id)}</h1><p>入手元：${esc(record.source || 'イベント')}・${Math.max(1, Number(record.acquiredDay) || 1)}日目に追加</p></div></div>
+      ${renderProcessingKnowledgeDocument(document)}
+      <button type="button" class="primary-button full-button" data-action="back">加工知識一覧へ戻る</button>
+    </section>`, { main: false, help: 'イベントなどで得た加工方法・工程・注意点・判断基準などの詳細文書を確認できます。' });
 }
 
 function renderToolEquipmentInventory() {
@@ -19667,6 +19929,10 @@ root.addEventListener('click', async (event) => {
         }
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
+      if (target === 'glab') {
+        if (resumeKawaharaKnowledgeEvent()) break;
+        if (maybeStartKawaharaKnowledgeEvent()) break;
+      }
       setScreen(target, target === 'supplierMetals' ? { tab: button.dataset.tab || 'market' } : {});
       break;
     }
@@ -19716,6 +19982,7 @@ root.addEventListener('click', async (event) => {
       break;
     case 'title-back': screen = 'title'; screenData = {}; navigation = []; render(); break;
     case 'main': goMain(); break;
+    case 'kawahara-knowledge-event-next': advanceKawaharaKnowledgeEvent(); break;
     case 'acknowledge-robbery': acknowledgeRobberyReport(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'open-phone-item-image': showPhoneItemImage(button.dataset.kind, button.dataset.id); break;
@@ -19898,6 +20165,7 @@ root.addEventListener('click', async (event) => {
     case 'deliver-order-completion': deliverOrder(button.dataset.id, { immediateFromCompletion: true }); break;
     case 'remake-order-completion': remakeOrderFromCompletion(button.dataset.id, button.dataset.jewelry); break;
     case 'inventory-tab': screenData.tab = button.dataset.tab; render(); break;
+    case 'open-processing-knowledge': setScreen('processingKnowledgeDetail', { knowledgeId: button.dataset.id }); break;
     case 'open-showcase-empty': {
       const showcaseIndex = Number(button.dataset.showcase);
       const returnStoreShowcaseScroll = captureStoreShowcaseReturnPosition(showcaseIndex);

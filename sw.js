@@ -1,13 +1,13 @@
-const VERSION = '0.10.619';
+const VERSION = '0.10.624';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CORE_SHELL = [
   './', './index.html', './game.html', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/daily-gems-index.js?v=0.10.619',
+  './manifest.webmanifest', './js/app.js', './js/audio.js', './js/audio-scene-map.js', './js/game-data.js', './js/daily-gems-index.js?v=0.10.624',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js', './js/security-config.js', './js/firebase-service.js?v=0.10.619',
-  './assets/images/events/cinema-apprentice.png', './assets/images/events/emerald-captain.png', './assets/images/events/emerald-captain-loose-set.png',
+  './js/google-auth-bridge.js', './js/security-config.js', './js/firebase-service.js?v=0.10.624',
+  './assets/images/events/cinema-apprentice.png', './assets/images/events/emerald-captain.png', './assets/images/events/emerald-captain-loose-set.png', './assets/images/events/glab-kawahara.png',
 ];
 
 async function trimCache(cacheName, maxEntries = 320) {

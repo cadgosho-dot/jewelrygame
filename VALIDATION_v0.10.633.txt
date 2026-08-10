@@ -1,0 +1,6 @@
+Validation summary for v0.10.633
+- js/app.js syntax: OK
+- sw.js syntax: OK
+- ピアス完成品のルースは左右の丸い部分中心へ表示
+- ルース画像レイヤーはシルエット前面
+- 一覧表示・詳細表示の両方で共通関数を使用

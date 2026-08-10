@@ -4,16 +4,18 @@ import {
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
+
+const UI_BUILD_VERSION = '0.10.633';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.624';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.633';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.624';
+} from './firebase-service.js?v=0.10.633';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -312,12 +314,14 @@ const RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR = 30;
 const RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID = 'soba';
 const RIDLEY_OKAZAKI_SOBA_EVENT_PRICE_MULTIPLIER = 2;
 const WRIST_FOUND_EVENT_CHANCE = 1 / 200;
+const GLAB_VISIT_VIDEO_EVENT_CHANCE = 1 / 30;
+const GLAB_VISIT_VIDEO_EVENT_VIDEO = './assets/videos/events/glab-visit-random.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
 const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. カワハラ';
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
-  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'kawaharaKnowledgeEvent',
+  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
 ]);
 
 const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
@@ -328,6 +332,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   pandaMusicEvent: new Set(['intro1', 'intro2']),
   wristFoundEvent: new Set(['intro', 'report']),
+  glabVisitVideoEvent: new Set(['video']),
   kawaharaKnowledgeEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   tattooWomanAmberEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   mermaidEvent: new Set(['intro', 'reward']),
@@ -355,7 +360,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -376,6 +381,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
   wristFoundEvent: { eventKey: 'wristFoundEvent', fallback: 'okachimachi' },
+  glabVisitVideoEvent: { eventKey: 'glabVisitVideoEvent', fallback: 'glab' },
   kawaharaKnowledgeEvent: { eventKey: 'kawaharaKnowledgeEvent', fallback: 'glab' },
   sushiChefEvent: { eventKey: 'sushiChefEvent', fallback: 'main' },
   cyclopsEvent: { eventKey: 'cyclopsEvent', fallback: 'main' },
@@ -630,7 +636,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
   'gray-hood-aquarium-video-start', 'gray-hood-aquarium-next', 'gray-hood-aquarium-receive',
-  'okachimachi-quiz-video-start',
+  'glab-visit-video-start', 'okachimachi-quiz-video-start',
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
@@ -2284,6 +2290,10 @@ let displayCaseHoldTimeout = null;
 let displayCaseHoldInterval = null;
 let displayCaseHoldButton = null;
 let displayCaseHoldTriggered = false;
+let sellingPriceHoldTimeout = null;
+let sellingPriceHoldInterval = null;
+let sellingPriceHoldButton = null;
+let sellingPriceHoldTriggered = false;
 let phoneHomeImageDraft = '';
 
 function validPositivePrice(value) {
@@ -3758,7 +3768,8 @@ function storeStaffNextDefinition(employee) {
 
 function storeStaffSalesDescription(employee) {
   const definition = storeStaffDefinition(employee);
-  return `来店人数＋${definition.visitorBonus}人・来店抽選＋${Math.round(definition.customerVisitBonus * 100)}ポイント・接客購入率＋${Math.round(definition.purchaseBonus * 100)}ポイント・ショーケース販売率＋${Math.round(definition.saleBonus * 100)}ポイント`;
+  const visitorBonus = 2 + Math.max(0, Math.floor(Number(definition.visitorBonus) || 0));
+  return `配置中はショーケース基礎販売力が無人時の約4倍・来店人数＋${visitorBonus}人・来店抽選＋${10 + Math.round((Number(definition.customerVisitBonus) || 0) * 100)}ポイント相当・接客購入率＋${10 + Math.round((Number(definition.purchaseBonus) || 0) * 100)}ポイント・ショーケース販売率はLv成長でさらに＋${Math.round((Number(definition.saleBonus) || 0) * 100)}ポイント`;
 }
 
 function activeStoreStaff(branchOrNumber) {
@@ -3911,13 +3922,16 @@ function workshopStaffCraftOne(maxEffectiveMinutes, definition = workshopStaffDe
   if (draft.useLoose === true) adjustLooseInventory(draft.gem, draft.looseShape, -requirements.requiredLooseQuantity);
   state.inventory.metals[draft.metal] = roundedMetalWeight(requirements.ownedMetalWeight - requirements.requiredMetalWeight);
   const quality = workshopStaffQualityRoll(definition);
+  const staffArtisanLevel = Math.max(1, Math.min(20, 2 + (Math.max(1, Number(definition?.level) || 1) * 3)));
+  const craftsmanship = craftProductionProfile(draft, { artisanLevel: staffArtisanLevel });
   const jewelry = {
     id: uid(),
     ...draft,
     name: itemName(draft),
     quality,
     cost: productionCost(draft),
-    recommendedPrice: recommendedPrice({ ...draft, quality }),
+    recommendedPrice: craftsmanshipRecommendedPrice(draft, quality, craftsmanship),
+    ...craftsmanshipSnapshot(craftsmanship),
     xp: 0,
     status: 'stored',
     createdDay: state.game.day,
@@ -4620,10 +4634,24 @@ function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large
   if (!gem) return '';
   const looseClass = mode === 'small' ? 'small-jewelry-loose' : 'jewelry-loose-preview';
   const wrapperClass = mode === 'small' ? 'jewelry-loose-set small' : 'jewelry-loose-set';
-  const single = looseVisual(gemId, looseClass, '', shapeId);
+  const styleLooseMarkup = (markup, sizePercent = '100%') => {
+    if (typeof markup !== 'string' || !markup) return markup;
+    if (markup.startsWith('<img ')) {
+      return markup.replace('<img ', `<img style="display:block;width:${sizePercent};height:auto;max-width:none;object-fit:contain;position:relative;z-index:5;pointer-events:none;" `);
+    }
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${sizePercent};height:${sizePercent};position:relative;z-index:5;pointer-events:none;">${markup}</span>`;
+  };
+  const single = styleLooseMarkup(looseVisual(gemId, looseClass, '', shapeId), mode === 'small' ? '112%' : '120%');
   if (itemId === 'earrings') {
-    const pair = looseVisual(gemId, looseClass, '', shapeId);
-    return `<span class="${wrapperClass} item-earrings" aria-hidden="true"><span class="center-gem earring-left">${single}</span><span class="center-gem earring-right">${pair}</span></span>`;
+    const pair = styleLooseMarkup(looseVisual(gemId, looseClass, '', shapeId), mode === 'small' ? '112%' : '120%');
+    const slotWidth = mode === 'small' ? '21%' : '23%';
+    const slotTop = mode === 'small' ? '33%' : '31%';
+    const leftX = mode === 'small' ? '28.5%' : '29%';
+    const rightX = mode === 'small' ? '71.5%' : '71%';
+    return `<span class="${wrapperClass} item-earrings" aria-hidden="true" style="position:absolute;inset:0;display:block;pointer-events:none;z-index:3;overflow:visible;">
+      <span class="center-gem earring-left" style="position:absolute;left:${leftX};top:${slotTop};width:${slotWidth};display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${single}</span>
+      <span class="center-gem earring-right" style="position:absolute;left:${rightX};top:${slotTop};width:${slotWidth};display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${pair}</span>
+    </span>`;
   }
   return `<span class="${wrapperClass} item-${itemId}" aria-hidden="true"><span class="center-gem">${single}</span></span>`;
 }
@@ -4789,8 +4817,224 @@ function toolOwned(toolId) {
   return Boolean(workshopToolRecord(toolId));
 }
 
+
 function toolUsable(toolId) {
   return workshopToolRecord(toolId)?.status === 'available';
+}
+
+const CRAFTSMANSHIP_PROFILE_VERSION = 1;
+
+function craftRelevantToolWeights(draft = {}) {
+  const weights = new Map();
+  const add = (toolId, weight) => {
+    if (!WORKSHOP_TOOLS[toolId]) return;
+    const amount = Math.max(0, Number(weight) || 0);
+    if (!amount) return;
+    weights.set(toolId, (weights.get(toolId) || 0) + amount);
+  };
+
+  // 基本成形。彫金机は制作必須なので、価格評価の分母には含めない。
+  add('file', 3.0);
+  add('pliers', 1.5);
+  add('benchPeg', 1.5);
+  add('piercingSaw', 1.5);
+  add('nipper', 0.5);
+  add('hammer', 0.75);
+  add('woodBlock', 0.5);
+  add('rotaryTool', 2.5);
+  add('dividers', 1.5);
+  add('electronicScale', 1.0);
+  add('torch', 2.0);
+  add('rollingMill', 1.5);
+  add('loupe', 0.75);
+
+  if (draft.item === 'ring') {
+    add('rollingMill', 1.0);
+    add('hammer', 0.75);
+    add('dividers', 0.5);
+  } else if (draft.item === 'earrings') {
+    add('pliers', 0.75);
+    add('nipper', 0.5);
+    add('electronicScale', 0.5);
+  }
+
+  if (draft.useLoose !== false) {
+    add('graver', 3.0);
+    add('magnifier', 4.0);
+    add('loupe', 1.5);
+    add('engravingBlock', 2.5);
+    add('rotaryTool', 1.0);
+  }
+
+  const finishId = String(draft.finish || 'mirror');
+  if (finishId.includes('mirror')) {
+    add('buffer', 4.0);
+    add('ultrasonicCleaner', 2.0);
+    add('rotaryTool', 1.5);
+    add('loupe', 0.5);
+  } else if (finishId.includes('matte')) {
+    add('rotaryTool', 2.0);
+    add('ultrasonicCleaner', 1.0);
+    add('loupe', 0.5);
+  }
+
+  if (finishId.includes('Decorated') || finishId === 'decorated') {
+    add('graver', 2.5);
+    add('engravingBlock', 2.0);
+    add('milgrainTool', 2.0);
+    add('stamps', 1.5);
+    add('magnifier', 1.5);
+  }
+
+  if (draft.design === 'modern') {
+    add('computer', 1.0);
+    add('cadSoftware', 2.0);
+    add('printer3d', 2.0);
+  } else if (draft.design === 'classic') {
+    add('cadSoftware', 0.75);
+  }
+
+  return weights;
+}
+
+function processingKnowledgeKnownMatching(pattern) {
+  const records = Array.isArray(state?.workshop?.processingKnowledge) ? state.workshop.processingKnowledge : [];
+  return records.some((record) => {
+    const id = String(record?.id || record || '');
+    const document = PROCESSING_KNOWLEDGE[id];
+    if (!document) return false;
+    const haystack = [id, document.shortTitle, document.title, document.category].filter(Boolean).join(' ');
+    return pattern.test(haystack);
+  });
+}
+
+function craftKnowledgeSupport(draft = {}) {
+  const labels = [];
+  let scoreBonus = 0;
+  const hasSizing = processingKnowledgeKnownMatching(/サイズ直し/i);
+  const hasSoldering = processingKnowledgeKnownMatching(/ロー付け|ろう付け|solder/i);
+  const hasFinishing = processingKnowledgeKnownMatching(/仕上げ|finishing/i);
+  const hasSetting = processingKnowledgeKnownMatching(/石留め|stone\s*setting/i);
+
+  if (draft.item === 'ring' && hasSizing) {
+    labels.push('サイズ直し');
+    scoreBonus += 1.0;
+  }
+  if (hasSoldering) {
+    labels.push('ロー付け');
+    scoreBonus += toolUsable('torch') ? 3.0 : 1.0;
+  }
+  if (hasFinishing) {
+    labels.push('仕上げ');
+    scoreBonus += (toolUsable('buffer') || toolUsable('rotaryTool')) ? 3.0 : 1.0;
+  }
+  if (draft.useLoose !== false && hasSetting) {
+    labels.push('石留め');
+    scoreBonus += (toolUsable('graver') || toolUsable('magnifier')) ? 4.0 : 1.5;
+  }
+  return { labels: [...new Set(labels)], scoreBonus: Math.min(10, scoreBonus), hasSizing, hasSoldering, hasFinishing, hasSetting };
+}
+
+function craftProductionTags(draft = {}, knowledge = craftKnowledgeSupport(draft)) {
+  const tags = [];
+  const allUsable = (...toolIds) => toolIds.every((toolId) => toolUsable(toolId));
+  if (allUsable('file', 'rotaryTool', 'dividers')) tags.push('精密成形');
+  if (knowledge.hasSoldering && allUsable('torch', 'file')) tags.push('安定ロー付け');
+  if (draft.useLoose !== false && knowledge.hasSetting && allUsable('graver', 'magnifier', 'engravingBlock')) tags.push('精密石留め');
+  if (knowledge.hasFinishing && allUsable('rotaryTool', 'buffer', 'ultrasonicCleaner')) tags.push('プロ仕上げ');
+  if (allUsable('magnifier', 'loupe')) tags.push('高精度検品');
+  const finishId = String(draft.finish || '');
+  if ((finishId.includes('Decorated') || finishId === 'decorated') && allUsable('graver', 'engravingBlock', 'milgrainTool')) tags.push('意匠加工');
+  if (draft.design === 'modern' && allUsable('computer', 'cadSoftware', 'printer3d')) tags.push('CAD設計');
+  return tags;
+}
+
+function craftProductionProfile(draft = {}, options = {}) {
+  const toolWeights = craftRelevantToolWeights(draft);
+  const totalWeight = [...toolWeights.values()].reduce((total, weight) => total + weight, 0);
+  let usableWeight = 0;
+  let usableCount = 0;
+  let ownedCount = 0;
+  const missing = [];
+  for (const [toolId, weight] of toolWeights.entries()) {
+    if (toolOwned(toolId)) ownedCount += 1;
+    if (toolUsable(toolId)) {
+      usableWeight += weight;
+      usableCount += 1;
+    } else {
+      missing.push({ toolId, weight, name: WORKSHOP_TOOLS[toolId]?.name || toolId, owned: toolOwned(toolId) });
+    }
+  }
+  missing.sort((a, b) => b.weight - a.weight || a.name.localeCompare(b.name, 'ja'));
+  const toolRatio = totalWeight > 0 ? Math.max(0, Math.min(1, usableWeight / totalWeight)) : 1;
+  const knowledge = craftKnowledgeSupport(draft);
+  const tags = craftProductionTags(draft, knowledge);
+  const artisanLevel = Math.max(1, Math.min(20, Math.floor(Number(options.artisanLevel ?? state?.artisan?.level) || 1)));
+
+  // 工具の有無を価格へ強く反映。設備不足0.78倍～十分な設備1.25倍。
+  const equipmentMultiplier = 0.78 + (toolRatio * 0.47);
+  // 職人レベルは0.90～1.10倍。設備だけで熟練差を完全には埋められない。
+  const artisanMultiplier = 0.90 + ((artisanLevel - 1) / 19) * 0.20;
+  // 加工知識は該当工程で最大+10%。工具と組み合わさると評価が高くなる。
+  const knowledgeMultiplier = 1 + (knowledge.scoreBonus * 0.01);
+  // 工具セットが成立した場合は相乗効果。最大+7.5%。
+  const setMultiplier = 1 + Math.min(0.075, tags.length * 0.015);
+  const priceMultiplier = Math.max(0.72, Math.min(1.55, equipmentMultiplier * artisanMultiplier * knowledgeMultiplier * setMultiplier));
+
+  const craftsmanshipScore = Math.max(20, Math.min(100, Math.round(
+    28
+    + ((artisanLevel - 1) / 19) * 28
+    + toolRatio * 36
+    + Math.min(8, knowledge.scoreBonus)
+    + Math.min(5, tags.length)
+  )));
+  const tier = craftsmanshipScore >= 95 ? '最高級'
+    : craftsmanshipScore >= 85 ? '高精度'
+      : craftsmanshipScore >= 72 ? '良好'
+        : craftsmanshipScore >= 55 ? '標準'
+          : '設備不足';
+
+  return {
+    version: CRAFTSMANSHIP_PROFILE_VERSION,
+    artisanLevel,
+    craftsmanshipScore,
+    tier,
+    toolRatio,
+    usableToolCount: usableCount,
+    ownedToolCount: ownedCount,
+    relevantToolCount: toolWeights.size,
+    usableWeight,
+    totalWeight,
+    equipmentMultiplier,
+    artisanMultiplier,
+    knowledgeMultiplier,
+    setMultiplier,
+    priceMultiplier,
+    knowledgeLabels: knowledge.labels,
+    tags,
+    missingTools: missing.slice(0, 5),
+  };
+}
+
+function craftsmanshipRecommendedPrice(draft = {}, quality = 'standard', profile = craftProductionProfile(draft)) {
+  const basePrice = recommendedPrice({ ...draft, quality });
+  const cost = Math.max(0, Number(productionCost(draft)) || 0);
+  const adjusted = roundThousand(basePrice * Math.max(0.1, Number(profile?.priceMultiplier) || 1));
+  return Math.max(roundThousand(cost * 1.2), adjusted);
+}
+
+function craftsmanshipSnapshot(profile = {}) {
+  return {
+    craftsmanshipProfileVersion: Number(profile.version) || CRAFTSMANSHIP_PROFILE_VERSION,
+    craftsmanshipScore: Math.max(0, Math.round(Number(profile.craftsmanshipScore) || 0)),
+    craftsmanshipTier: String(profile.tier || ''),
+    craftsmanshipPriceMultiplier: Math.round((Number(profile.priceMultiplier) || 1) * 1000) / 1000,
+    craftsmanshipToolRatio: Math.round((Number(profile.toolRatio) || 0) * 1000) / 1000,
+    craftsmanshipUsableTools: Math.max(0, Math.floor(Number(profile.usableToolCount) || 0)),
+    craftsmanshipRelevantTools: Math.max(0, Math.floor(Number(profile.relevantToolCount) || 0)),
+    craftsmanshipTags: Array.isArray(profile.tags) ? profile.tags.slice(0, 12) : [],
+    craftsmanshipKnowledge: Array.isArray(profile.knowledgeLabels) ? profile.knowledgeLabels.slice(0, 12) : [],
+  };
 }
 
 function workshopToolUnlockConditionsMet(tool) {
@@ -8320,6 +8564,91 @@ function advancePandaMusicEvent() {
   setScreen('okachimachi', {}, false);
 }
 
+function glabVisitVideoEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.glabVisitVideoEvent && typeof state.events.glabVisitVideoEvent === 'object' && !Array.isArray(state.events.glabVisitVideoEvent)
+    ? state.events.glabVisitVideoEvent
+    : {};
+  const validStages = new Set(['idle', 'video', 'completed']);
+  state.events.glabVisitVideoEvent = {
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+  };
+  if (!state.events.glabVisitVideoEvent.active && state.events.glabVisitVideoEvent.stage === 'video') {
+    state.events.glabVisitVideoEvent.stage = 'completed';
+  }
+  return state.events.glabVisitVideoEvent;
+}
+
+function glabVisitVideoUrl() {
+  return `${GLAB_VISIT_VIDEO_EVENT_VIDEO}?v=${UI_BUILD_VERSION}`;
+}
+
+function resumeGlabVisitVideoEvent() {
+  const eventState = glabVisitVideoEventState();
+  if (!eventState.active || eventState.stage !== 'video') return false;
+  setScreen('glabVisitVideoEvent', {}, false);
+  return true;
+}
+
+function maybeStartGlabVisitVideoEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = glabVisitVideoEventState();
+  if (eventState.active) return resumeGlabVisitVideoEvent();
+  if (Math.random() >= GLAB_VISIT_VIDEO_EVENT_CHANCE) return false;
+  eventState.lastTriggeredDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'video';
+  saveGame();
+  setScreen('glabVisitVideoEvent', {}, false);
+  return true;
+}
+
+function startGlabVisitVideoPlayback() {
+  const eventState = glabVisitVideoEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  const video = root.querySelector('video[data-glab-visit-video]');
+  if (!(video instanceof HTMLVideoElement)) return;
+  const stage = video.closest('.glab-visit-video-stage');
+  stage?.classList.remove('needs-start', 'has-error');
+  // 元動画に音声トラックがあっても、イベントでは必ず無音で使用する。
+  video.defaultMuted = true;
+  video.muted = true;
+  video.volume = 0;
+  // 動画開始時点から通常の g-Lab. BGM・環境音を継続する。
+  void resumeAudio();
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise
+      .then(() => {
+        stage?.classList.add('is-playing');
+        stage?.classList.remove('needs-start', 'has-error');
+      })
+      .catch(() => stage?.classList.add('needs-start'));
+  }
+}
+
+function retryGlabVisitVideoPlayback() {
+  const stage = root.querySelector('.glab-visit-video-stage');
+  const video = root.querySelector('video[data-glab-visit-video]');
+  stage?.classList.remove('needs-start', 'has-error');
+  if (video instanceof HTMLVideoElement && video.error) video.load();
+  startGlabVisitVideoPlayback();
+}
+
+function completeGlabVisitVideoEvent() {
+  const eventState = glabVisitVideoEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  // 動画後は追加イベントを再抽選せず、そのまま通常の g-Lab. 画面へ戻す。
+  setScreen('glab', {}, false);
+}
+
 function kawaharaKnowledgeEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.kawaharaKnowledgeEvent && typeof state.events.kawaharaKnowledgeEvent === 'object' && !Array.isArray(state.events.kawaharaKnowledgeEvent)
@@ -8674,7 +9003,7 @@ function advanceOkachimachiQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -8758,7 +9087,10 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
-  return resolveAudioScene(['okachimachiTollEvent', 'pandaMusicEvent', 'apprenticeCinemaEvent'].includes(target) ? 'okachimachi' : target, {
+  const audioTarget = target === 'glabVisitVideoEvent'
+    ? 'glab'
+    : (['okachimachiTollEvent', 'pandaMusicEvent', 'apprenticeCinemaEvent'].includes(target) ? 'okachimachi' : target);
+  return resolveAudioScene(audioTarget, {
     alienAbducted: isAlienAbducted(),
     quizStage: okachimachiQuizSession?.stage || '',
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
@@ -8816,17 +9148,46 @@ function syncScreenContentTopOffset() {
     return;
   }
 
-  // 食事中はヘッダーと本文を専用グリッドの別行に置くため、透明スペーサーは使用しない。
+  // 食事中は専用レイアウトを使う。縦画面は従来位置を維持し、横画面だけ
+  // 実測した上部バー最下端 + 余白より食べ物パネルが上へ入らないよう補正する。
   if (shellEl.classList.contains('meal-eating-shell')) {
-    document.documentElement.style.setProperty('--jwj-content-top-offset', '0px');
     document.documentElement.style.removeProperty('--jwj-screen-header-reserved');
     if (spacerEl instanceof HTMLElement) {
       spacerEl.style.removeProperty('height');
       spacerEl.style.removeProperty('min-height');
       spacerEl.style.removeProperty('flex-basis');
     }
-    contentEl.style.setProperty('padding-top', '8px', 'important');
+
+    const landscapeMeal = window.innerWidth > window.innerHeight;
+    if (!landscapeMeal) {
+      document.documentElement.style.setProperty('--jwj-content-top-offset', '0px');
+      contentEl.style.setProperty('padding-top', '8px', 'important');
+      contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
+      return;
+    }
+
+    const mealGap = 16;
+    const headerBottom = visibleHeaderBottom(headerEl);
+    // 再計測のたびに前回値を加算しないよう、一度ゼロ基準へ戻してから算出する。
+    contentEl.style.setProperty('padding-top', '0px', 'important');
     contentEl.style.setProperty('scroll-padding-top', '0px', 'important');
+    const contentRect = contentEl.getBoundingClientRect();
+    let offset = Math.max(mealGap, Math.ceil(headerBottom + mealGap - contentRect.top));
+    contentEl.style.setProperty('padding-top', `${offset}px`, 'important');
+    contentEl.style.setProperty('scroll-padding-top', `${offset}px`, 'important');
+
+    // CSS側のmargin/transformが残っていても、食べ物の枠そのものを最終基準にして再確認する。
+    const mealPanel = contentEl.querySelector('.meal-eating-panel');
+    if (mealPanel instanceof HTMLElement) {
+      const panelRect = mealPanel.getBoundingClientRect();
+      const missing = Math.max(0, Math.ceil(headerBottom + mealGap - panelRect.top));
+      if (missing > 0) {
+        offset += missing;
+        contentEl.style.setProperty('padding-top', `${offset}px`, 'important');
+        contentEl.style.setProperty('scroll-padding-top', `${offset}px`, 'important');
+      }
+    }
+    document.documentElement.style.setProperty('--jwj-content-top-offset', `${offset}px`);
     return;
   }
 
@@ -9422,6 +9783,7 @@ function render() {
       metalProfessionalGuide: renderMetalProfessionalGuide,
       glab: renderGlab,
       glabSns: renderGlabSns,
+      glabVisitVideoEvent: renderGlabVisitVideoEvent,
       kawaharaKnowledgeEvent: renderKawaharaKnowledgeEvent,
       glabTool: renderGlabToolDetail,
       glabToolGuide: renderGlabToolGuide,
@@ -12519,6 +12881,23 @@ function renderMiningResult() {
     </section>`, { main: false });
 }
 
+function renderGlabVisitVideoEvent() {
+  const eventState = glabVisitVideoEventState();
+  if (!eventState.active || eventState.stage !== 'video') {
+    queueMicrotask(() => setScreen('glab', {}, false));
+    return renderGlab();
+  }
+  queueMicrotask(startGlabVisitVideoPlayback);
+  return `<main class="western-union-video-screen glab-visit-video-screen" aria-label="g-Lab.訪問イベント動画">
+    <section class="western-union-video-stage glab-visit-video-stage" aria-live="polite">
+      <video data-glab-visit-video src="${esc(glabVisitVideoUrl())}" autoplay muted playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="g-Lab.訪問イベント動画"></video>
+      <div class="western-union-video-loading">動画を読み込んでいます</div>
+      <button type="button" class="western-union-video-start" data-action="glab-visit-video-start">動画を再生する</button>
+      <div class="western-union-video-error" role="alert"><strong>動画を読み込めませんでした</strong><span>もう一度再生してください。</span></div>
+    </section>
+  </main>`;
+}
+
 function renderKawaharaKnowledgeEvent() {
   const eventState = kawaharaKnowledgeEventState();
   if (!eventState.active) {
@@ -13894,7 +14273,9 @@ function renderCraft() {
   const hours = productionHours(craftDraft);
   const cost = productionCost(craftDraft);
   const quality = expectedQuality();
-  const price = recommendedPrice({ ...craftDraft, quality });
+  const craftsmanship = craftProductionProfile(craftDraft);
+  const basePrice = recommendedPrice({ ...craftDraft, quality });
+  const price = craftsmanshipRecommendedPrice(craftDraft, quality, craftsmanship);
   const requirements = materialRequirementsFor(craftDraft);
   const looseModeSelected = typeof craftDraft.useLoose === 'boolean';
   const enoughGem = craftDraft.useLoose === false ? true : requirements.enoughLoose;
@@ -13922,8 +14303,15 @@ function renderCraft() {
             <div><dt>制作時間</dt><dd>${hours}時間</dd></div>
             <div><dt>原価</dt><dd>${yen(cost)}</dd></div>
             <div><dt>品質予想</dt><dd>${esc(QUALITIES[quality].name)}</dd></div>
+            <div><dt>加工品質</dt><dd>${craftsmanship.craftsmanshipScore} / 100（${esc(craftsmanship.tier)}）</dd></div>
+            <div><dt>有効な関連工具</dt><dd>${craftsmanship.usableToolCount} / ${craftsmanship.relevantToolCount}</dd></div>
+            <div><dt>工具・知識価格補正</dt><dd>×${craftsmanship.priceMultiplier.toFixed(2)}</dd></div>
+            <div><dt>基礎おすすめ価格</dt><dd>${yen(basePrice)}</dd></div>
             <div><dt>おすすめ価格</dt><dd>${yen(price)}</dd></div>
           </dl>
+          ${craftsmanship.tags.length ? `<p class="small-note">加工タグ：${craftsmanship.tags.map((tag) => esc(tag)).join('・')}</p>` : ''}
+          ${craftsmanship.knowledgeLabels.length ? `<p class="small-note">連携中の加工知識：${craftsmanship.knowledgeLabels.map((name) => esc(name)).join('・')}</p>` : ''}
+          ${craftsmanship.missingTools.length ? `<p class="small-note">価格に影響が大きい未使用工具：${craftsmanship.missingTools.slice(0, 4).map((entry) => esc(entry.name)).join('・')}</p>` : ''}
           ${enoughMetal ? '' : `<div class="craft-metal-shortage">
             <p>${esc(METALS[craftDraft.metal].name)}が${metalWeightLabel(requirements.missingMetalWeight)}g足りません。</p>
             <button type="button" class="secondary-button full-button" data-action="nav" data-screen="supplierMetals" data-tab="buy">地金屋へ</button>
@@ -13961,10 +14349,14 @@ function renderCompletion() {
       <h1>${esc(jewelry.name)}が完成しました。</h1>
       <div class="result-stats">
         <span>品質：${esc(QUALITIES[jewelry.quality].name)}</span>
+        ${Number(jewelry.craftsmanshipScore) > 0 ? `<span>加工品質：${Math.round(Number(jewelry.craftsmanshipScore))}/100（${esc(jewelry.craftsmanshipTier || '')}）</span>` : ''}
+        ${Number(jewelry.craftsmanshipPriceMultiplier) > 0 ? `<span>工具・知識補正：×${Number(jewelry.craftsmanshipPriceMultiplier).toFixed(2)}</span>` : ''}
         <span>原価：${yen(jewelry.cost)}</span>
         <span>おすすめ価格：${yen(jewelry.recommendedPrice)}</span>
         <span>経験値：＋${jewelry.xp}</span>
       </div>
+      ${Array.isArray(jewelry.craftsmanshipTags) && jewelry.craftsmanshipTags.length ? `<p class="small-note">加工タグ：${jewelry.craftsmanshipTags.map((tag) => esc(tag)).join('・')}</p>` : ''}
+      ${Array.isArray(jewelry.craftsmanshipKnowledge) && jewelry.craftsmanshipKnowledge.length ? `<p class="small-note">活用した加工知識：${jewelry.craftsmanshipKnowledge.map((name) => esc(name)).join('・')}</p>` : ''}
       ${screenData.toolFailure ? `<div class="tool-break-alert"><strong>${esc(screenData.toolFailure)}が壊れました</strong><span>${WORKSHOP_TOOLS[Object.keys(WORKSHOP_TOOLS).find((id) => WORKSHOP_TOOLS[id].name === screenData.toolFailure)]?.repairable ? 'g-Lab.で修理を依頼できます。' : '工房からなくなりました。g-Lab.で再購入できます。'}</span></div>` : ''}
       <div class="button-stack">${completionActions}</div>
     </section>`, isPendingOrderDelivery ? { back: false, main: false } : { main: true });
@@ -14356,7 +14748,7 @@ function renderFinishedItems() {
   if (!items.length) return '<div class="empty-state"><strong>完成品はありません。</strong><p>工房でジュエリーを作ると、ここに表示されます。</p></div>';
   return `<div class="jewelry-grid finished-item-grid">${items.map((item) => `<button type="button" class="jewelry-card finished-item-card" data-action="open-finished-item-detail" data-id="${esc(item.id)}" aria-label="${esc(item.name)}の商品詳細を開く">
       <div class="small-jewelry metal-${item.metal} item-${item.item}" style="--gem:${GEMS[item.gem]?.hue || '#ffffff'}">${jewelryItemVisual(item.item, 'jewelry-item-shape small', item.useLoose !== false)}${item.useLoose !== false ? `<i>${jewelryLooseSetVisual(item.item, item.gem, item.looseShape, 'small')}</i>` : ''}</div>
-      <div class="finished-item-summary"><h3>${esc(item.name)}</h3><p>原価 ${yen(item.cost)}</p><small>状態：${esc(finishedItemStatus(item))}</small></div>
+      <div class="finished-item-summary"><h3>${esc(item.name)}</h3><p>原価 ${yen(item.cost)}</p>${Number(item.craftsmanshipScore) > 0 ? `<small>加工品質 ${Math.round(Number(item.craftsmanshipScore))}/100・価格補正 ×${Number(item.craftsmanshipPriceMultiplier || 1).toFixed(2)}</small>` : ''}<small>状態：${esc(finishedItemStatus(item))}</small></div>
     </button>`).join('')}</div>`;
 }
 
@@ -14380,6 +14772,11 @@ function renderFinishedItemDetail() {
         <div><dt>地金</dt><dd>${esc(METALS[item.metal]?.name || '')}</dd></div>
         <div><dt>ルース</dt><dd>${esc(looseLabel)}</dd></div>
         <div><dt>品質</dt><dd>${esc(QUALITIES[item.quality]?.name || '')}</dd></div>
+        ${Number(item.craftsmanshipScore) > 0 ? `<div><dt>加工品質</dt><dd>${Math.round(Number(item.craftsmanshipScore))}/100（${esc(item.craftsmanshipTier || '')}）</dd></div>` : ''}
+        ${Number(item.craftsmanshipPriceMultiplier) > 0 ? `<div><dt>工具・知識価格補正</dt><dd>×${Number(item.craftsmanshipPriceMultiplier).toFixed(2)}</dd></div>` : ''}
+        ${Number(item.craftsmanshipRelevantTools) > 0 ? `<div><dt>有効な関連工具</dt><dd>${Math.max(0, Number(item.craftsmanshipUsableTools) || 0)} / ${Math.max(0, Number(item.craftsmanshipRelevantTools) || 0)}</dd></div>` : ''}
+        ${Array.isArray(item.craftsmanshipTags) && item.craftsmanshipTags.length ? `<div><dt>加工タグ</dt><dd>${item.craftsmanshipTags.map((tag) => esc(tag)).join('・')}</dd></div>` : ''}
+        ${Array.isArray(item.craftsmanshipKnowledge) && item.craftsmanshipKnowledge.length ? `<div><dt>加工知識</dt><dd>${item.craftsmanshipKnowledge.map((name) => esc(name)).join('・')}</dd></div>` : ''}
         <div><dt>原価</dt><dd>${yen(item.cost)}</dd></div>
         <div><dt>おすすめ価格</dt><dd>${yen(item.recommendedPrice)}</dd></div>
         ${sellingPrice === null ? '' : `<div><dt>販売価格</dt><dd>${yen(sellingPrice)}</dd></div><div><dt>予想利益</dt><dd>${yen(expectedProfit)}</dd></div>`}
@@ -14816,20 +15213,20 @@ function renderShowcaseItemDetail() {
       <div class="showcase-detail-price-field" aria-label="販売価格を1,000円単位で変更">
         <span>販売価格</span>
         <div class="showcase-price-stepper">
-          <button type="button" class="showcase-price-step-button showcase-price-step-up" data-action="selling-price-step" data-delta="1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円上げる">▲</button>
+          <button type="button" class="showcase-price-step-button showcase-price-step-up" data-action="selling-price-step" data-delta="1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円上げる。長押しで連続増加">▲</button>
           <div class="showcase-price-value-row">
             <strong class="showcase-price-value" data-showcase-price-value>${yen(price)}</strong>
             <button type="button" class="primary-button showcase-price-confirm-button" data-action="selling-price-confirm" data-showcase-price-confirm data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" ${priceChanged ? '' : 'disabled'}>決定</button>
           </div>
-          <button type="button" class="showcase-price-step-button showcase-price-step-down" data-action="selling-price-step" data-showcase-price-down data-delta="-1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円下げる" ${price <= 1000 ? 'disabled' : ''}>▼</button>
+          <button type="button" class="showcase-price-step-button showcase-price-step-down" data-action="selling-price-step" data-showcase-price-down data-delta="-1" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}" aria-label="販売価格を1,000円下げる。長押しで連続減少" ${price <= 1000 ? 'disabled' : ''}>▼</button>
         </div>
-        <small class="showcase-price-step-note">▲▼で価格を調整し、決定ボタンで反映</small>
+        <small class="showcase-price-step-note">▲▼で価格を調整（長押しで連続変更）し、決定ボタンで反映</small>
       </div>
       <div class="showcase-detail-actions">
         <button class="text-button" data-action="remove-showcase" data-branch="${esc(branch.id)}" data-showcase="${showcaseIndex}" data-slot="${slotIndex}">この商品の陳列をやめる</button>
         ${contractedStoreBranches().length > 1 ? `<button class="secondary-button" data-action="move-showcase-item" data-id="${item.id}">別店舗へ移動</button>` : ''}
       </div>
-    </section>`, { help: '商品の詳細を確認し、▲▼で販売価格を1,000円ずつ調整してから、決定ボタンで反映します。' });
+    </section>`, { help: '商品の詳細を確認し、▲▼で販売価格を1,000円ずつ調整します。▲▼は長押しで連続変更でき、決定ボタンで反映します。' });
 }
 
 function updateShowcaseDetailPricePreview(price, savedPrice, item) {
@@ -14854,6 +15251,69 @@ function updateShowcaseDetailPricePreview(price, savedPrice, item) {
   if (confirmButton instanceof HTMLButtonElement) confirmButton.disabled = normalizedPrice === normalizedSavedPrice;
   if (downButton instanceof HTMLButtonElement) downButton.disabled = normalizedPrice <= 1000;
   return Boolean(priceValue && expectedProfitValue && priceStatusValue && confirmButton && downButton);
+}
+
+function adjustShowcaseSellingPrice(button) {
+  if (!button || button.disabled || screen !== 'showcaseDetail') return false;
+  const branch = button.dataset.branch
+    ? state.store.branches?.find((entry) => entry.id === button.dataset.branch)
+    : currentStoreBranch();
+  const showcaseIndex = Number(button.dataset.showcase);
+  const slotIndex = Number(button.dataset.slot);
+  const slot = branchShowcases(branch)?.[showcaseIndex]?.slots?.[slotIndex];
+  if (!slot) return false;
+  const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
+  if (!item) return false;
+  const savedPrice = showcaseSellingPrice(slot, item);
+  const currentPrice = normalizeSellingPrice(
+    Number.isFinite(Number(screenData.pendingSellingPrice)) ? screenData.pendingSellingPrice : savedPrice,
+    item.recommendedPrice || savedPrice
+  );
+  const delta = Number(button.dataset.delta) < 0 ? -1000 : 1000;
+  const nextPrice = Math.max(1000, currentPrice + delta);
+  if (nextPrice === currentPrice) return false;
+  screenData.pendingSellingPrice = normalizeSellingPrice(nextPrice, item.recommendedPrice || 1000);
+  if (!updateShowcaseDetailPricePreview(screenData.pendingSellingPrice, savedPrice, item)) render();
+  return true;
+}
+
+function clearSellingPriceHold() {
+  if (sellingPriceHoldTimeout) window.clearTimeout(sellingPriceHoldTimeout);
+  if (sellingPriceHoldInterval) window.clearInterval(sellingPriceHoldInterval);
+  sellingPriceHoldTimeout = null;
+  sellingPriceHoldInterval = null;
+  sellingPriceHoldButton?.classList.remove('is-holding');
+  sellingPriceHoldButton = null;
+}
+
+function startSellingPriceHold(button) {
+  clearSellingPriceHold();
+  if (!button || button.disabled || screen !== 'showcaseDetail') return;
+  sellingPriceHoldButton = button;
+  sellingPriceHoldTriggered = false;
+  button.classList.add('is-holding');
+  sellingPriceHoldTimeout = window.setTimeout(() => {
+    if (sellingPriceHoldButton !== button || button.disabled || screen !== 'showcaseDetail') {
+      clearSellingPriceHold();
+      return;
+    }
+    sellingPriceHoldTriggered = true;
+    adjustShowcaseSellingPrice(button);
+    sellingPriceHoldInterval = window.setInterval(() => {
+      if (sellingPriceHoldButton !== button || button.disabled || screen !== 'showcaseDetail') {
+        clearSellingPriceHold();
+        return;
+      }
+      adjustShowcaseSellingPrice(button);
+    }, 110);
+  }, 420);
+}
+
+function finishSellingPriceHold(button) {
+  const held = sellingPriceHoldButton === button && sellingPriceHoldTriggered;
+  clearSellingPriceHold();
+  sellingPriceHoldTriggered = false;
+  if (held && button) button.dataset.skipNextClick = 'true';
 }
 
 function customerPreferenceLabel(request) {
@@ -14886,7 +15346,13 @@ function customerMatchResult(item, request, branchNumber = state?.store?.branchN
   const farOverBudget = price > budget * 1.25;
   const labels = ['ほとんど売れない', '売れにくい', '購入の可能性あり', 'かなり売れやすい'];
   const chances = [0.05, 0.20, 0.55, 0.90];
-  const baseChance = chances[matches] + storeProductSaleBonus(item, branchNumber) + storeStaffPurchaseBonus(branchNumber);
+  const salesStaff = activeStoreStaff(branchNumber);
+  // v0.10.628: 店舗スタッフの有無を接客購入率へ大きく反映する。
+  // 無人時は接客力不足で-10pt、配置中は基礎+10ptにスタッフLvの購入率ボーナスを加える。
+  const staffingPurchaseModifier = salesStaff
+    ? 0.10 + storeStaffPurchaseBonus(branchNumber)
+    : -0.10;
+  const baseChance = chances[matches] + storeProductSaleBonus(item, branchNumber) + staffingPurchaseModifier;
   return {
     matches,
     price,
@@ -14960,7 +15426,9 @@ function renderCustomer() {
           <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>
           <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>
         </div>
-        ${salesStaff ? `<p class="success-text">店舗スタッフ効果：購入率＋${Math.round(storeStaffPurchaseBonus(customerState.visitingBranchNumber) * 100)}ポイント</p>` : ''}
+        ${salesStaff
+          ? `<p class="success-text">店舗スタッフ効果：接客購入率＋${10 + Math.round(storeStaffPurchaseBonus(customerState.visitingBranchNumber) * 100)}ポイント</p>`
+          : '<p class="small-note">店舗スタッフ不在：接客購入率が10ポイント下がります。</p>'}
         ${customerState.wishesHeard && proposedIds.length >= 2 ? '<p class="small-note">店頭商品の提案は2点までです。</p>' : ''}
         ${customerState.wishesHeard && activeOrders >= activeOrderLimit ? `<p class="error-text">職人レベルにより、同時に受けられる注文は${activeOrderLimit}件までです。</p>` : ''}
         ${customerState.wishesHeard && !canSpendStoreMinutes(30) ? '<p class="small-note">本日の接客・注文受付を完了できる時間が残っていません。</p>' : ''}
@@ -15128,7 +15596,7 @@ function renderEmployee() {
         <h1>店舗スタッフを1人雇えます。</h1>
         <article class="candidate-card"><h2>${esc(employee.name)}</h2><p>${esc(STORE_EMPLOYEE_CANDIDATES[branch.number]?.profile || `${branchName}専属の店舗スタッフです。`)}</p><p class="success-text">販売力 Lv.1（見習い）</p><p>${esc(currentEffect)}</p><small>配置して働いた日数に応じて成長します。初日当：${yen(STORE_STAFF_GROWTH_LEVELS[0].dailyWage)}</small></article>
         <button class="primary-button full-button" data-action="hire-employee">雇う</button>`}
-    </section>`, { help: '店舗スタッフは店舗ごとに1人雇えます。担当選択はありません。雇った直後は販売力が低く、店舗に配置して働いた日数に応じて成長します。成長すると来店人数、来店抽選、接客購入率、ショーケース販売率が上がります。' });
+    </section>`, { help: '店舗スタッフは店舗ごとに1人雇えます。スタッフ不在でも営業できますが、ショーケース販売・来店人数・通常客の来店・接客購入率が大きく下がります。配置中は販売力が大幅に上がり、働いた日数による成長でさらに強化されます。' });
 }
 
 function renderMeal() {
@@ -16407,6 +16875,11 @@ function aiJewelryRows() {
     design: DESIGNS[jewelry.design]?.name || jewelry.design,
     finish: FINISHES[jewelry.finish]?.name || jewelry.finish,
     quality: QUALITIES[jewelry.quality]?.name || jewelry.quality,
+    craftsmanshipScore: Number(jewelry.craftsmanshipScore) || null,
+    craftsmanshipTier: jewelry.craftsmanshipTier || null,
+    craftsmanshipPriceMultiplier: Number(jewelry.craftsmanshipPriceMultiplier) || null,
+    craftsmanshipTags: Array.isArray(jewelry.craftsmanshipTags) ? jewelry.craftsmanshipTags : [],
+    craftsmanshipKnowledge: Array.isArray(jewelry.craftsmanshipKnowledge) ? jewelry.craftsmanshipKnowledge : [],
     status: jewelry.status,
     cost: Number(jewelry.cost) || 0,
     recommendedPrice: Number(jewelry.recommendedPrice) || 0,
@@ -16558,7 +17031,7 @@ function aiCurrentRules() {
       materialShop: '地金屋では地金を1g単位で購入・売却できる。地金は▲▼で1gずつ数量を選び、長押しすると連続で増減する。数字の直接入力はできない。全部売る場合は整数部分だけを売却して端数を残す。各手続きは1時間。g-Lab.以外の御徒町施設は土日祝休業で、全施設18:00まで利用できる。g-Lab.は12月31日から1月2日のみ休業。',
       looseShop: 'ルース屋には「ルースを買う」「ルースを売る」「原石を売る」がある。ルースは最初に石種を選び、次にカットを選ぶ。ルースは石種とカット形状ごとの別アイテム。販売価格は石種の基準価格×カット倍率を100円単位で丸め、売却価格は販売価格の55％。ルース購入は▲▼で1個ずつ個数を選び、長押しで連続増減できる。数字の直接入力はできない。複数個をまとめて購入しても手続きは1時間。ルース売却と原石売却は1個または売却可能数の全部売るを選べ、各手続きは1時間。',
       jewelryShop: 'ジュエリーショップでは、保管中の完成品を低めの買取価格で売却できる。また、入店ごとにランダムで変わる完成品を購入できる。購入品は工房の完成品へ入り、店舗で再販売できるが、仕入れ価格が高いため利益は小さい。売買手続きは1回1時間。',
-      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。店舗1は拡大前1台まで、拡大後は3台まで設置できる。店舗2と店舗3は3台まで設置できる。1台につき完成品5個を陳列でき、完成品の保管上限も5個増える。ディスプレイ用品は各店舗のショーケース設置数と同数まで設置できる。ケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは各店舗の累計営業日数、累計販売数、累計売上、接客成功数を満たし、改装費を支払うと上がる。店舗ごとの実績は独立して記録される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文の同時受注数は職人レベル帯に応じて1～6件まで増える。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。受注金額は材料原価・難易度別工賃・最低利益を下回らない。ショーケース一覧には商品画像・商品名・販売価格だけを表示し、商品を開いた詳細画面で▲▼を押して販売価格を1,000円ずつ調整し、価格の右にある決定ボタンで反映する。自店舗のおすすめ価格は、プラチナ・ゴールドが標準品質2.2倍、良品2.5倍、上質2.8倍、シルバーが標準品質2.5倍、良品2.8倍、上質3.1倍を基本とし、ルース付きは各倍率へ0.1を加え、1,000円単位に丸める。御徒町のジュエリーショップへの売却は卸販売扱いとし、制作原価に対する利益をごく少額にする。来店客の要望は来店ごとに商品種類・石・カット・地金・デザイン・予算を新しく抽選し、直前と同じ組み合わせを避ける。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
+      store: '店舗契約時にはショーケースがなく、ディスプレイ屋で購入して設置する。店舗1は拡大前1台まで、拡大後は3台まで設置できる。店舗2と店舗3は3台まで設置できる。1台につき完成品5個を陳列でき、完成品の保管上限も5個増える。ディスプレイ用品は各店舗のショーケース設置数と同数まで設置できる。ケースは店頭へ設置できる。ケースは最大50個で、商品が1点売れるごとに1個消費される。ケースがなくても販売可能。店舗レベルは各店舗の累計営業日数、累計販売数、累計売上、接客成功数を満たし、改装費を支払うと上がる。店舗ごとの実績は独立して記録される。店舗スタッフ不在でも営業は可能だが、ショーケース販売、来店人数、通常客の来店抽選、接客購入率が大きく下がる。スタッフ配置中は販売力が大幅に上がり、勤務日数による成長でさらに強化される。店舗1は幅広い一般客、店舗2は品質重視で良品・上質が少し売れやすく一般以上の注文が少し増える。店舗3は高予算客が中心で高額商品・上質品が少し売れやすく、高難度・特別注文が発生しやすい。操作と画面は全店舗共通。注文の同時受注数は職人レベル帯に応じて1～6件まで増える。受注前に職人レベル、必要設備、材料がゲーム内で入手可能かを確認する。納期は基本7日、一般10日、複雑14日、高難度・特別21日。受注金額は材料原価・難易度別工賃・最低利益を下回らない。ショーケース一覧には商品画像・商品名・販売価格だけを表示し、商品を開いた詳細画面で▲▼を押して販売価格を1,000円ずつ調整し、長押し中は連続増減する。価格の右にある決定ボタンで反映する。自店舗のおすすめ価格は、プラチナ・ゴールドが標準品質2.2倍、良品2.5倍、上質2.8倍、シルバーが標準品質2.5倍、良品2.8倍、上質3.1倍を基本とし、ルース付きは各倍率へ0.1を加え、1,000円単位に丸める。御徒町のジュエリーショップへの売却は卸販売扱いとし、制作原価に対する利益をごく少額にする。来店客の要望は来店ごとに商品種類・石・カット・地金・デザイン・予算を新しく抽選し、直前と同じ組み合わせを避ける。接客では商品種類・予算・優先する希望の3項目を確認し、店頭商品を最大2点まで提案できる。購入判定は3項目の一致数と、予算を大きく超えていないかだけで行う。',
     },
     facilities: Object.entries(facilityNames).map(([id, name]) => { const availability = okachimachiFacilityAvailability(id); return { id, name, status: availability.open ? '利用可能' : availability.status, reason: availability.reason || null }; }),
     smartphoneMenus: ['通知', 'プロフィール', 'カレンダー', '収支', 'アイテム', 'スマホゲーム', 'AI', '設定'],
@@ -16629,7 +17102,7 @@ function buildAIConsultationText() {
     `地金：${compactList(metals, (item) => `${item.name}${Number(item.owned).toFixed(1)}g`)}`,
     `工具・設備：${compactList(tools, (item) => `${item.name}（${item.status}）`, 12)}`,
     '',
-    `バージョン：${VERSION}`,
+    `バージョン：${UI_BUILD_VERSION}`,
     '【データ終端】',
   ].join('\n');
 }
@@ -16838,7 +17311,7 @@ function renderSettingsForm(titleMode, compact) {
       <div><strong>JEWELRY×JEWELRYをホーム画面へ追加</strong><small>${installStatusText()}</small></div>
       <button type="button" class="secondary-button full-button install-home-button" data-action="install-app" ${isStandaloneApp() ? 'disabled' : ''}>${isStandaloneApp() ? '追加済み' : 'ホーム画面に追加する'}</button>
     </section>` : ''}
-    <small>バージョン ${VERSION}</small>
+    <small>バージョン ${UI_BUILD_VERSION}</small>
     ${!titleMode ? `<div class="account-danger-actions" aria-label="アカウント操作">
       <button class="account-mini-button" data-action="logout">ログアウト</button>
       <button class="account-mini-button danger" data-action="delete-save">ゲームデータを削除</button>
@@ -17266,9 +17739,10 @@ function confirmCraft() {
   if (!craftDraft || typeof craftDraft.useLoose !== 'boolean') return showToast('ルースを使用するか選択してください。', 'error');
   const hours = productionHours(craftDraft);
   const requirements = materialRequirementsFor(craftDraft);
+  const craftsmanship = craftProductionProfile(craftDraft);
   showModal({
     title: 'この内容で制作しますか？',
-    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>工房レベル：${workshopLevel()}</p><p>${craftDraft.useLoose === true ? `${esc(looseDisplayLabel(craftDraft.gem, craftDraft.looseShape, { suffix: true }))}${requirements.requiredLooseQuantity}個・` : 'ルースは使用せず、'}${esc(METALS[craftDraft.metal].name)}${requirements.requiredMetalWeight}gを使用します。</p>`,
+    body: `<p><strong>${esc(itemName(craftDraft))}</strong></p><p>制作時間：${hours}時間</p><p>工房レベル：${workshopLevel()}</p><p>加工品質予想：${craftsmanship.craftsmanshipScore}/100（${esc(craftsmanship.tier)}）・価格補正 ×${craftsmanship.priceMultiplier.toFixed(2)}</p><p>${craftDraft.useLoose === true ? `${esc(looseDisplayLabel(craftDraft.gem, craftDraft.looseShape, { suffix: true }))}${requirements.requiredLooseQuantity}個・` : 'ルースは使用せず、'}${esc(METALS[craftDraft.metal].name)}${requirements.requiredMetalWeight}gを使用します。</p>`,
     confirm: '制作する', action: 'craft',
   });
 }
@@ -17288,6 +17762,7 @@ function craft() {
   spendHours(hours);
   addWorkshopActiveHours(hours);
   const quality = qualityRoll();
+  const craftsmanship = craftProductionProfile(craftDraft);
   const xp = artisanXpForCraft(craftDraft);
   const jewelry = {
     id: uid(),
@@ -17295,7 +17770,8 @@ function craft() {
     name: itemName(craftDraft),
     quality,
     cost: productionCost(craftDraft),
-    recommendedPrice: recommendedPrice({ ...craftDraft, quality }),
+    recommendedPrice: craftsmanshipRecommendedPrice(craftDraft, quality, craftsmanship),
+    ...craftsmanshipSnapshot(craftsmanship),
     xp,
     status: craftDraft.orderId ? 'order' : 'stored',
     createdDay: state.game.day,
@@ -18471,13 +18947,15 @@ function autopilotCraftJewelry(draft, summary) {
   state.inventory.metals[draft.metal] = roundedMetalWeight(requirements.ownedMetalWeight - requirements.requiredMetalWeight);
   spendHours(hours);
   const quality = qualityRoll();
+  const craftsmanship = craftProductionProfile(draft);
   const jewelry = {
     id: uid(),
     ...draft,
     name: itemName(draft),
     quality,
     cost: productionCost(draft),
-    recommendedPrice: recommendedPrice({ ...draft, quality }),
+    recommendedPrice: craftsmanshipRecommendedPrice(draft, quality, craftsmanship),
+    ...craftsmanshipSnapshot(craftsmanship),
     xp: 5,
     status: draft.orderId ? 'order' : 'stored',
     createdDay: state.game.day,
@@ -18848,7 +19326,10 @@ function settleDay({ showResult = true, save = true } = {}) {
     let branchVisitors = Math.floor(Math.random() * 4) + 1;
     if (Number(branch.number) === 1 && state.store.expanded) branchVisitors += Math.floor(Math.random() * 3) + 1;
     if (['雨', '雪'].includes(state.game.weather)) branchVisitors = Math.max(0, branchVisitors - 1);
-    branchVisitors += storeStaffVisitorBonus(activeEmployee);
+    // v0.10.628: 店舗スタッフの存在そのものを大きな集客差にする。
+    // 配置中は基礎+2人にLvボーナス、無人時は接客・呼び込み不足で-1人。
+    if (activeEmployee) branchVisitors += 2 + storeStaffVisitorBonus(activeEmployee);
+    else branchVisitors = Math.max(0, branchVisitors - 1);
     visitors += branchVisitors;
 
     const showcases = branchShowcases(branch);
@@ -18860,7 +19341,12 @@ function settleDay({ showResult = true, save = true } = {}) {
         const item = jewelryById.get(slot.jewelryId);
         if (!item) { showcase.slots[slotIndex] = null; continue; }
         const price = showcaseSellingPrice(slot, item);
-        const chance = 0.15;
+        // v0.10.628: 店舗スタッフの有無でショーケース販売力へ大差を付ける。
+        // 無人店は3.5%/日、スタッフ配置店は16%/日を基礎に、販売力LvのsaleBonusを上乗せする。
+        // スタッフが休止・給与未払いの場合は無人店扱い。
+        const chance = activeEmployee
+          ? clamp(0.16 + storeStaffSaleBonus(activeEmployee), 0.16, 0.30)
+          : 0.035;
         if (Math.random() < chance) {
           removeJewelry(item.id);
           jewelryById.delete(item.id);
@@ -19049,11 +19535,16 @@ function scheduleCustomerVisit() {
 
   // 通常客の来店抽選は1日1回・同時来店は最大1人のままにする。
   // 特別来店客は通常抽選から除外し、通常客だけをランダム抽選する。
-  const visitEmployee = storeEmployeeAvailable(visitBranch) ? storeBranchEmployee(visitBranch) : null;
+  const visitEmployee = activeStoreStaff(visitBranch);
   const employeeBonus = storeStaffCustomerVisitBonus(visitEmployee);
   const profileBonus = Number(visitBranch.number) === 2 ? 0.03 : Number(visitBranch.number) === 3 ? 0.05 : 0;
   const baseChance = hasMetCustomer ? CUSTOMER_REGULAR_VISIT_CHANCE : CUSTOMER_FIRST_VISIT_CHANCE;
-  if (Math.random() >= baseChance + employeeBonus + profileBonus) return;
+  // v0.10.628: 通常客の来店抽選も店舗スタッフの有無で大きく分ける。
+  // 無人時は基礎来店率を約半分、配置中は+10ptにスタッフLvの来店ボーナスを追加する。
+  const staffingVisitChance = visitEmployee
+    ? baseChance + 0.10 + employeeBonus + profileBonus
+    : (baseChance * 0.55) + (profileBonus * 0.5);
+  if (Math.random() >= clamp(staffingVisitChance, 0, 0.90)) return;
 
   const customerId = randomFrom(eligibleCustomers);
   if (!customerId || !startCustomerVisit(customerId, visitBranch.number)) return;
@@ -19452,7 +19943,12 @@ root.addEventListener('pointerdown', (event) => {
     return;
   }
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]');
-  if (caseButton && !caseButton.disabled) startDisplayCaseHold(caseButton);
+  if (caseButton && !caseButton.disabled) {
+    startDisplayCaseHold(caseButton);
+    return;
+  }
+  const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]');
+  if (sellingPriceButton && !sellingPriceButton.disabled) startSellingPriceHold(sellingPriceButton);
 });
 
 root.addEventListener('pointerup', (event) => {
@@ -19462,6 +19958,8 @@ root.addEventListener('pointerup', (event) => {
   if (looseButton) finishLooseQuantityHold(looseButton);
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]') || displayCaseHoldButton;
   if (caseButton) finishDisplayCaseHold(caseButton);
+  const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]') || sellingPriceHoldButton;
+  if (sellingPriceButton) finishSellingPriceHold(sellingPriceButton);
 });
 
 root.addEventListener('pointercancel', () => {
@@ -19471,10 +19969,12 @@ root.addEventListener('pointercancel', () => {
   looseQuantityHoldTriggered = false;
   clearDisplayCaseHold();
   displayCaseHoldTriggered = false;
+  clearSellingPriceHold();
+  sellingPriceHoldTriggered = false;
 });
 
 root.addEventListener('contextmenu', (event) => {
-  if (event.target.closest('[data-action="metal-qty-step"], [data-action="loose-qty-step"], [data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]')) event.preventDefault();
+  if (event.target.closest('[data-action="metal-qty-step"], [data-action="loose-qty-step"], [data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"], [data-action="selling-price-step"]')) event.preventDefault();
 });
 
 window.addEventListener('blur', () => {
@@ -19484,6 +19984,8 @@ window.addEventListener('blur', () => {
   looseQuantityHoldTriggered = false;
   clearDisplayCaseHold();
   displayCaseHoldTriggered = false;
+  clearSellingPriceHold();
+  sellingPriceHoldTriggered = false;
 });
 
 root.addEventListener('click', async (event) => {
@@ -19508,7 +20010,7 @@ root.addEventListener('click', async (event) => {
     }
     return;
   }
-  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'glab-visit-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
@@ -19881,6 +20383,9 @@ root.addEventListener('click', async (event) => {
     case 'store-theft-event-recover':
       recoverStoreTheftDisappearanceSequence();
       break;
+    case 'glab-visit-video-start':
+      retryGlabVisitVideoPlayback();
+      break;
     case 'okachimachi-quiz-video-start':
       retryOkachimachiQuizIntroPlayback();
       break;
@@ -19930,7 +20435,11 @@ root.addEventListener('click', async (event) => {
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {
+        // 進行中イベントは必ず先に復帰。新規訪問では 1/30 動画を先に抽選し、
+        // 当選した訪問ではカワハライベントを重ねない。
+        if (resumeGlabVisitVideoEvent()) break;
         if (resumeKawaharaKnowledgeEvent()) break;
+        if (maybeStartGlabVisitVideoEvent()) break;
         if (maybeStartKawaharaKnowledgeEvent()) break;
       }
       setScreen(target, target === 'supplierMetals' ? { tab: button.dataset.tab || 'market' } : {});
@@ -20175,27 +20684,19 @@ root.addEventListener('click', async (event) => {
     case 'place-item-in-slot': placeItemInShowcaseSlot(button.dataset.id, button.dataset.branch, Number(button.dataset.showcase), Number(button.dataset.slot)); break;
     case 'open-showcase-detail': setScreen('showcaseDetail', { branchId: button.dataset.branch, showcaseIndex: Number(button.dataset.showcase), slotIndex: Number(button.dataset.slot) }); break;
     case 'selling-price-step': {
-      const branch = button.dataset.branch
-        ? state.store.branches?.find((entry) => entry.id === button.dataset.branch)
-        : currentStoreBranch();
-      const showcaseIndex = Number(button.dataset.showcase);
-      const slotIndex = Number(button.dataset.slot);
-      const slot = branchShowcases(branch)?.[showcaseIndex]?.slots?.[slotIndex];
-      if (!slot) {
-        showToast('販売価格を変更する商品が見つかりません。', 'error');
+      if (button.dataset.skipNextClick === 'true') {
+        delete button.dataset.skipNextClick;
         break;
       }
-      const item = state.inventory.jewelry.find((entry) => entry.id === slot.jewelryId);
-      const savedPrice = showcaseSellingPrice(slot, item);
-      const currentPrice = normalizeSellingPrice(
-        Number.isFinite(Number(screenData.pendingSellingPrice)) ? screenData.pendingSellingPrice : savedPrice,
-        item?.recommendedPrice || savedPrice
-      );
-      const delta = Number(button.dataset.delta) < 0 ? -1000 : 1000;
-      const nextPrice = Math.max(1000, currentPrice + delta);
-      if (nextPrice === currentPrice) break;
-      screenData.pendingSellingPrice = normalizeSellingPrice(nextPrice, item?.recommendedPrice || 1000);
-      if (!updateShowcaseDetailPricePreview(screenData.pendingSellingPrice, savedPrice, item)) render();
+      if (!adjustShowcaseSellingPrice(button)) {
+        const branch = button.dataset.branch
+          ? state.store.branches?.find((entry) => entry.id === button.dataset.branch)
+          : currentStoreBranch();
+        const showcaseIndex = Number(button.dataset.showcase);
+        const slotIndex = Number(button.dataset.slot);
+        const slot = branchShowcases(branch)?.[showcaseIndex]?.slots?.[slotIndex];
+        if (!slot) showToast('販売価格を変更する商品が見つかりません。', 'error');
+      }
       break;
     }
     case 'selling-price-confirm': {
@@ -20805,6 +21306,7 @@ document.addEventListener('visibilitychange', () => {
   if ((screen === 'cinemaVisitEvent' && cinemaVisitEventState().stage === 'playing') || apprenticeCinemaPlaying || criticalEventVideoPlaying) suspendAudio();
   else resumeAudio();
   if (criticalEventVideoPlaying) queueMicrotask(startGrayHoodAquariumIntroPlayback);
+  if (screen === 'glabVisitVideoEvent' && glabVisitVideoEventState().active && glabVisitVideoEventState().stage === 'video') queueMicrotask(startGlabVisitVideoPlayback);
   if (screen === 'okachimachiQuiz' && okachimachiQuizSession?.stage === 'video') queueMicrotask(startOkachimachiQuizIntroPlayback);
   if (screen === 'pandaMusicEvent') playPandaMusicEventAudio();
   if (screen === 'whiteBunnyIceEvent') syncWhiteBunnyEventBgm();
@@ -20826,6 +21328,8 @@ window.addEventListener('freeze', () => flushAutosaveLocally('freeze'), { captur
 
 root.addEventListener('ended', (event) => {
   const target = event.target instanceof Element ? event.target : null;
+  const glabVisitVideo = target?.closest('video[data-glab-visit-video]');
+  if (glabVisitVideo) { completeGlabVisitVideoEvent(); return; }
   const quizVideo = target?.closest('video[data-okachimachi-quiz-intro-video]');
   if (quizVideo) { completeOkachimachiQuizIntroVideo(); return; }
   const westernVideo = target?.closest('video[data-western-union-intro-video]');
@@ -20846,6 +21350,17 @@ root.addEventListener('ended', (event) => {
 
 root.addEventListener('playing', (event) => {
   const target = event.target instanceof Element ? event.target : null;
+  const glabVisitVideo = target?.closest('video[data-glab-visit-video]');
+  if (glabVisitVideo) {
+    glabVisitVideo.defaultMuted = true;
+    glabVisitVideo.muted = true;
+    glabVisitVideo.volume = 0;
+    glabVisitVideo.closest('.glab-visit-video-stage')?.classList.add('is-playing');
+    glabVisitVideo.closest('.glab-visit-video-stage')?.classList.remove('needs-start', 'has-error');
+    // g-Lab. の BGM・環境音は動画開始時から継続する。
+    void resumeAudio();
+    return;
+  }
   const quizVideo = target?.closest('video[data-okachimachi-quiz-intro-video]');
   if (quizVideo) {
     quizVideo.closest('.okachimachi-quiz-video-stage')?.classList.add('is-playing');
@@ -20903,6 +21418,11 @@ root.addEventListener('playing', (event) => {
 
 root.addEventListener('error', (event) => {
   const target = event.target instanceof Element ? event.target : null;
+  const glabVisitVideo = target?.closest('video[data-glab-visit-video]');
+  if (glabVisitVideo) {
+    glabVisitVideo.closest('.glab-visit-video-stage')?.classList.add('has-error', 'needs-start');
+    return;
+  }
   const quizVideo = target?.closest('video[data-okachimachi-quiz-intro-video]');
   if (quizVideo) {
     quizVideo.closest('.okachimachi-quiz-video-stage')?.classList.add('has-error', 'needs-start');

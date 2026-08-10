@@ -15,7 +15,87 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=0.10.624">
+  <link rel="stylesheet" href="./styles.css?v=0.10.633">
+
+  <style id="event-video-contain-v633">
+    /* v0.10.632: Event movies must always show the complete source frame.
+       Landscape: maximize by available height. Portrait: maximize by available width. */
+    :is(
+      video[data-western-union-intro-video],
+      video[data-tattoo-woman-amber-intro-video],
+      video[data-cinema-event-video],
+      video[data-apprentice-cinema-video],
+      video[data-mystery-chinese-meal-intro-video],
+      video[data-gray-hood-aquarium-intro-video],
+      video[data-terry-california-intro-video],
+      video[data-okachimachi-quiz-intro-video],
+      video[data-glab-visit-video]
+    ) {
+      object-fit: contain !important;
+      object-position: center center !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      margin: auto !important;
+    }
+
+    @media (orientation: landscape) {
+      :is(
+        video[data-western-union-intro-video],
+        video[data-tattoo-woman-amber-intro-video],
+        video[data-cinema-event-video],
+        video[data-apprentice-cinema-video],
+        video[data-mystery-chinese-meal-intro-video],
+        video[data-gray-hood-aquarium-intro-video],
+        video[data-terry-california-intro-video],
+        video[data-okachimachi-quiz-intro-video],
+      video[data-glab-visit-video]
+      ) {
+        width: auto !important;
+        height: 100% !important;
+      }
+    }
+
+    @media (orientation: portrait) {
+      :is(
+        video[data-western-union-intro-video],
+        video[data-tattoo-woman-amber-intro-video],
+        video[data-cinema-event-video],
+        video[data-apprentice-cinema-video],
+        video[data-mystery-chinese-meal-intro-video],
+        video[data-gray-hood-aquarium-intro-video],
+        video[data-terry-california-intro-video],
+        video[data-okachimachi-quiz-intro-video],
+      video[data-glab-visit-video]
+      ) {
+        width: 100% !important;
+        height: auto !important;
+      }
+    }
+
+
+    /* g-Lab. 1/30 visit movie: preserve the whole frame and use pure black letterbox/pillarbox space. */
+    .glab-visit-video-screen,
+    .glab-visit-video-stage {
+      background: #000 !important;
+    }
+
+    .glab-visit-video-screen {
+      width: 100% !important;
+      min-height: 100dvh !important;
+      height: 100dvh !important;
+      overflow: hidden !important;
+    }
+
+    .glab-visit-video-stage {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+    }
+  </style>
 </head>
 <body>
   <div id="background-layer" aria-hidden="true"></div>
@@ -25,6 +105,6 @@
   <div id="modal-layer" class="hidden"></div>
   <div id="sleep-curtain" aria-hidden="true"></div>
   <div id="morning-brief" aria-live="polite"></div>
-  <script type="module" src="./js/app.js?v=0.10.624"></script>
+  <script type="module" src="./js/app.js?v=0.10.632"></script>
 </body>
 </html>

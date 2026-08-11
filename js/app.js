@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.633';
+const UI_BUILD_VERSION = '0.10.639';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.633';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.639';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.633';
+} from './firebase-service.js?v=0.10.639';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -198,6 +198,7 @@ let kaitenzushiSession = null;
 let kaitenzushiReadyTimer = null;
 let kaitenzushiLoadNonce = 0;
 let okachimachiQuizSession = null;
+let looseShopOriginalQuizSession = null;
 let okachimachiQuizQuestionsPromise = null;
 let cinemaEventVideosPromise = null;
 let storeTheftSequenceRunning = false;
@@ -207,6 +208,7 @@ let screenHeaderFontSyncPromise = null;
 let eventDialogueLayoutFrame = 0;
 let quizBottomLayoutFrame = 0;
 let pandaMusicEventAudio = null;
+let okachimachiInvasiveTurtlesEventAudio = null;
 
 const JEWELRY_SHOP_STOCK_SIZE = 5;
 const JEWELRY_SHOP_TRANSACTION_HOURS = 1;
@@ -217,8 +219,20 @@ const OKACHIMACHI_QUIZ_INTRO_VIDEO = './assets/videos/events/okachimachi-quiz-ki
 const CINEMA_EVENT_VIDEO_MANIFEST_URL = './data/cinema-event-videos.json';
 const OKACHIMACHI_QUIZ_TRIGGER_MIN = 26;
 const OKACHIMACHI_QUIZ_TRIGGER_MAX = 34;
+const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN = 26;
+const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX = 34;
+const LOOSE_SHOP_ORIGINAL_QUIZ_IMAGE = './assets/images/events/loose-shop-original-quiz.png';
+const LOOSE_SHOP_ORIGINAL_QUIZ_NAME = '怪異な鑑定士';
 const OKACHIMACHI_TOLL_EVENT_CHANCE = 1 / 60;
 const OKACHIMACHI_TOLL_EVENT_COST = 100000;
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_IMAGE = './assets/images/events/okachimachi-invasive-turtles.png';
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_INTRO_VIDEO = './assets/videos/events/okachimachi-invasive-turtles-intro.mp4';
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_AUDIO_URL = `./assets/audio/amb-okachimachi-invasive-turtles-boombox.ogg?v=${VERSION}`;
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_MIN_NEXT_DAYS = 320;
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_MAX_NEXT_DAYS = 420;
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_FIRST_TRIGGER_MIN_DAYS = 280;
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_FIRST_TRIGGER_MAX_DAYS = 380;
+const OKACHIMACHI_INVASIVE_TURTLES_EVENT_AUDIO_GAIN = 0.72;
 const WESTERN_UNION_EVENT_GEM_ID = 'antiqueDiamond';
 const WESTERN_UNION_EVENT_SHAPE_ID = 'antiqueCut';
 const WESTERN_UNION_INTRO_VIDEO = './assets/videos/events/western-union-antique-diamond-intro.mp4';
@@ -318,10 +332,11 @@ const GLAB_VISIT_VIDEO_EVENT_CHANCE = 1 / 30;
 const GLAB_VISIT_VIDEO_EVENT_VIDEO = './assets/videos/events/glab-visit-random.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
 const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png';
+const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. カワハラ';
 const OKACHIMACHI_AREA_SCREENS = new Set([
-  'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
-  'looseShop', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
+  'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
+  'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
 ]);
 
 const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
@@ -330,10 +345,12 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   miningPazupanEvent: new Set(['intro', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
+  okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
   pandaMusicEvent: new Set(['intro1', 'intro2']),
   wristFoundEvent: new Set(['intro', 'report']),
   glabVisitVideoEvent: new Set(['video']),
-  kawaharaKnowledgeEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
+  kawaharaKnowledgeEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
+  looseShopOriginalQuizEvent: new Set([]),
   tattooWomanAmberEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   mermaidEvent: new Set(['intro', 'reward']),
   sushiChefEvent: new Set(['intro1', 'intro2', 'playing', 'farewell']),
@@ -360,7 +377,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'okachimachiTollEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -379,6 +396,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
+  okachimachiInvasiveTurtlesEvent: { eventKey: 'okachimachiInvasiveTurtlesEvent', fallback: 'okachimachi' },
   pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
   wristFoundEvent: { eventKey: 'wristFoundEvent', fallback: 'okachimachi' },
   glabVisitVideoEvent: { eventKey: 'glabVisitVideoEvent', fallback: 'glab' },
@@ -397,6 +415,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   alienReturnEvent: { eventKey: 'alienAbductionEvent', fallback: 'main' },
   miningPazupanEvent: { eventKey: 'miningPazupanEvent', fallback: 'mining' },
   okachimachiQuiz: { eventKey: '', fallback: 'okachimachi' },
+  looseShopOriginalQuizEvent: { eventKey: '', fallback: 'looseShop' },
   robberyReport: { eventKey: '', fallback: 'main' },
   kaitenzushi: { eventKey: '', fallback: 'main', conditionalEventKey: 'sushiChefEvent' },
 });
@@ -422,7 +441,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
     'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent',
     'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent',
   ]),
-  sessionOnly: new Set(['okachimachiQuiz', 'robberyReport', 'kaitenzushi']),
+  sessionOnly: new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'robberyReport', 'kaitenzushi']),
 });
 
 function recoveryPolicyFor(screenName, eventKey = '') {
@@ -606,6 +625,9 @@ function runEventEmergencySettlement(key, eventState) {
       eventState.selectedVideo = '';
       break;
 
+    case 'okachimachiInvasiveTurtlesEvent':
+      break;
+
     case 'kawaharaKnowledgeEvent': {
       const kawahara = kawaharaKnowledgeEventState();
       if (['reward', 'farewell'].includes(String(kawahara?.stage || '')) && kawahara.knowledgeId) {
@@ -636,11 +658,11 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
   'gray-hood-aquarium-video-start', 'gray-hood-aquarium-next', 'gray-hood-aquarium-receive',
-  'glab-visit-video-start', 'okachimachi-quiz-video-start',
+  'glab-visit-video-start', 'kawahara-knowledge-video-start', 'okachimachi-quiz-video-start',
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
-  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'okachimachi-toll-event-next', 'panda-music-event-next', 'kaitenzushi-finish',
+  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'okachimachi-toll-event-next', 'okachimachi-invasive-turtles-video-start', 'okachimachi-invasive-turtles-event-next', 'panda-music-event-next', 'kaitenzushi-finish',
   'mystery-chinese-meal-video-start', 'event-movie-skip', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
@@ -716,6 +738,7 @@ function clearTransientEventRuntime({ releaseDayLocks = false } = {}) {
   storeTheftSequenceRunning = false;
   kaitenzushiSession = null;
   okachimachiQuizSession = null;
+  looseShopOriginalQuizSession = null;
   modalEl?.classList.add('hidden');
   if (modalEl) modalEl.innerHTML = '';
   sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
@@ -770,8 +793,9 @@ function suppressAllTransientEventsForIllness({ save = false } = {}) {
     robbery.pendingReport = null;
     repaired += 1;
   }
-  if (okachimachiQuizSession || kaitenzushiSession || ILLNESS_SUPPRESSED_EVENT_SCREENS.has(screen)) repaired += 1;
+  if (okachimachiQuizSession || looseShopOriginalQuizSession || kaitenzushiSession || ILLNESS_SUPPRESSED_EVENT_SCREENS.has(screen)) repaired += 1;
   okachimachiQuizSession = null;
+  looseShopOriginalQuizSession = null;
   kaitenzushiSession = null;
   mealTransitioning = false;
   storeTheftSequenceRunning = false;
@@ -815,6 +839,7 @@ function recoverCurrentEventDeadlock({ save = true, notify = true } = {}) {
     ? grantOkachimachiQuizReward({ renderAfter: false, saveAfter: false })
     : false;
   if (screen === 'okachimachiQuiz') okachimachiQuizSession = null;
+  if (screen === 'looseShopOriginalQuizEvent') looseShopOriginalQuizSession = null;
   if (screen === 'kaitenzushi') kaitenzushiSession = null;
   clearTransientEventRuntime({ releaseDayLocks: true });
   const fallback = illnessEventSuppressionActive() ? 'main' : (config?.fallback || 'main');
@@ -859,8 +884,8 @@ function installEventRecoveryControl() {
   const markup = `<button type="button" class="event-safety-recovery" data-action="event-emergency-recover" data-illness-readable="true" aria-label="イベントを終了して画面を復旧する" title="イベントを終了">イベント終了</button>`;
   // クイズ王画面は全画面イベント自身が独立した重なり順を持つため、
   // 復旧ボタンをイベント要素の内側へ直接置いて確実に表示する。
-  if (screen === 'okachimachiQuiz') {
-    const quizEvent = root.querySelector('.okachimachi-quiz-event');
+  if (screen === 'okachimachiQuiz' || screen === 'looseShopOriginalQuizEvent') {
+    const quizEvent = root.querySelector('.okachimachi-quiz-event, .loose-shop-original-quiz-event');
     if (quizEvent) {
       quizEvent.insertAdjacentHTML('afterbegin', markup);
       return;
@@ -1173,6 +1198,21 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
       oval: './assets/images/loose/benitoite/oval.png',
     },
   },
+  starrySapphire: { defaultShape: 'oval', shapes: { oval: './assets/images/loose/starry-sapphire/oval.png' } },
+  cubistRuby: { defaultShape: 'pear', shapes: { pear: './assets/images/loose/cubist-ruby/pear.png' } },
+  waterGardenEmerald: { defaultShape: 'emerald', shapes: { emerald: './assets/images/loose/water-garden-emerald/emerald.png' } },
+  meltingTopaz: { defaultShape: 'round', shapes: { round: './assets/images/loose/melting-topaz/round.png' } },
+  burstOpal: { defaultShape: 'oval', shapes: { oval: './assets/images/loose/burst-opal/oval.png' } },
+  marbleDiamond: { defaultShape: 'round', shapes: { round: './assets/images/loose/marble-diamond/round.png' } },
+  popDiamond: { defaultShape: 'round', shapes: { round: './assets/images/loose/pop-diamond/round.png' } },
+  arabesquePeridot: { defaultShape: 'oval', shapes: { oval: './assets/images/loose/arabesque-peridot/oval.png' } },
+  skyTourmaline: { defaultShape: 'emerald', shapes: { emerald: './assets/images/loose/sky-tourmaline/emerald.png' } },
+  outsideDiamond: { defaultShape: 'round', shapes: { round: './assets/images/loose/outside-diamond/round.png' } },
+  morningPearl: { defaultShape: 'pearl', shapes: { pearl: './assets/images/loose/morning-pearl/pearl.png' } },
+  waveAquamarine: { defaultShape: 'oval', shapes: { oval: './assets/images/loose/wave-aquamarine/oval.png' } },
+  atelierAmethyst: { defaultShape: 'oval', shapes: { oval: './assets/images/loose/atelier-amethyst/oval.png' } },
+  streetStone: { defaultShape: 'oval', shapes: { oval: './assets/images/loose/street-stone/oval.png' } },
+  biteMechaMoon: { defaultShape: 'oval', shapes: { oval: './assets/images/loose/bite-mecha-moon/oval.png' } },
 });
 
 function looseImagePath(gemId, shape = 'default') {
@@ -7194,7 +7234,7 @@ function ganeshaTuskEventState() {
   const saved = state.events.ganeshaTuskEvent && typeof state.events.ganeshaTuskEvent === 'object' && !Array.isArray(state.events.ganeshaTuskEvent)
     ? state.events.ganeshaTuskEvent
     : {};
-  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  const validStages = new Set(['idle', 'video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
   state.events.ganeshaTuskEvent = {
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
@@ -8299,6 +8339,80 @@ function okachimachiQuizEventState() {
   return state.events.okachimachiQuiz;
 }
 
+function nextLooseShopOriginalQuizTriggerAt() {
+  return LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN
+    + Math.floor(Math.random() * (LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX - LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN + 1));
+}
+
+function looseShopOriginalQuizEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.looseShopOriginalQuiz && typeof state.events.looseShopOriginalQuiz === 'object' && !Array.isArray(state.events.looseShopOriginalQuiz)
+    ? state.events.looseShopOriginalQuiz
+    : {};
+  state.events.looseShopOriginalQuiz = {
+    totalVisits: Math.max(0, Math.floor(Number(saved.totalVisits) || 0)),
+    visitsSinceLast: Math.max(0, Math.floor(Number(saved.visitsSinceLast) || 0)),
+    nextTriggerAt: Math.max(LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN, Math.min(LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX, Math.floor(Number(saved.nextTriggerAt) || 30))),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastQuestionIndex: Number.isFinite(Number(saved.lastQuestionIndex))
+      ? Math.max(-1, Math.floor(Number(saved.lastQuestionIndex)))
+      : -1,
+    lastRewardGemId: GEMS[String(saved.lastRewardGemId || '')] ? String(saved.lastRewardGemId) : '',
+  };
+  return state.events.looseShopOriginalQuiz;
+}
+
+function originalLooseRewardGemIds() {
+  return Object.values(GEMS).filter((gem) => gem.originalLoose).map((gem) => gem.id);
+}
+
+function pickOriginalLooseRewardGem(previousGemId = '') {
+  const ids = originalLooseRewardGemIds();
+  if (!ids.length) return '';
+  const candidates = ids.filter((id) => id !== previousGemId);
+  const pool = candidates.length ? candidates : ids;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+async function maybeEnterLooseShop() {
+  if (illnessEventSuppressionActive()) {
+    setScreen('looseShop', {});
+    return;
+  }
+  const eventState = looseShopOriginalQuizEventState();
+  eventState.totalVisits += 1;
+  eventState.visitsSinceLast += 1;
+  const shouldTrigger = eventState.visitsSinceLast >= eventState.nextTriggerAt;
+  saveGame();
+  if (!shouldTrigger) {
+    setScreen('looseShop', {});
+    return;
+  }
+  try {
+    const questions = await loadOkachimachiQuizQuestions();
+    const selected = chooseOkachimachiQuizQuestion(questions, eventState.lastQuestionIndex);
+    eventState.visitsSinceLast = 0;
+    eventState.nextTriggerAt = nextLooseShopOriginalQuizTriggerAt();
+    eventState.totalTriggered += 1;
+    eventState.lastQuestionIndex = selected.index;
+    looseShopOriginalQuizSession = {
+      stage: 'intro1',
+      questionIndex: selected.index,
+      question: selected.question,
+      selectedIndex: null,
+      rewardGemId: '',
+      returnData: { tab: 'buy' },
+    };
+    saveGame();
+    setScreen('looseShopOriginalQuizEvent', {});
+    vibrate([20, 28, 46]);
+  } catch (error) {
+    console.error(error);
+    showToast('クイズデータを読み込めなかったため、通常のルース屋へ移動しました。', 'error');
+    setScreen('looseShop', {});
+  }
+}
+
 function validOkachimachiQuizQuestion(row) {
   return Boolean(row
     && typeof row.question === 'string'
@@ -8564,6 +8678,187 @@ function advancePandaMusicEvent() {
   setScreen('okachimachi', {}, false);
 }
 
+function okachimachiInvasiveTurtlesEventAudioVolume() {
+  const settings = state?.settings || {};
+  if (settings.sfxMuted || settings.externalAudioPriority || document.hidden) return 0;
+  const configured = Math.max(0, Math.min(1, Number(settings.sfxVolume) || 0));
+  return Math.max(0, Math.min(1, configured * OKACHIMACHI_INVASIVE_TURTLES_EVENT_AUDIO_GAIN));
+}
+
+function stopOkachimachiInvasiveTurtlesEventAudio({ reset = true } = {}) {
+  if (!okachimachiInvasiveTurtlesEventAudio) return;
+  okachimachiInvasiveTurtlesEventAudio.pause();
+  if (reset) {
+    try { okachimachiInvasiveTurtlesEventAudio.currentTime = 0; } catch (_) {}
+    okachimachiInvasiveTurtlesEventAudio = null;
+  }
+}
+
+function playOkachimachiInvasiveTurtlesEventAudio({ restart = false } = {}) {
+  if (screen !== 'okachimachiInvasiveTurtlesEvent' || !state?.events?.okachimachiInvasiveTurtlesEvent?.active) return;
+  const volume = okachimachiInvasiveTurtlesEventAudioVolume();
+  if (volume <= 0) {
+    stopOkachimachiInvasiveTurtlesEventAudio({ reset: false });
+    return;
+  }
+  if (!okachimachiInvasiveTurtlesEventAudio) {
+    okachimachiInvasiveTurtlesEventAudio = new Audio(OKACHIMACHI_INVASIVE_TURTLES_EVENT_AUDIO_URL);
+    okachimachiInvasiveTurtlesEventAudio.loop = true;
+    okachimachiInvasiveTurtlesEventAudio.preload = 'auto';
+    okachimachiInvasiveTurtlesEventAudio.playsInline = true;
+  }
+  okachimachiInvasiveTurtlesEventAudio.volume = volume;
+  if (restart) {
+    try { okachimachiInvasiveTurtlesEventAudio.currentTime = 0; } catch (_) {}
+  }
+  if (okachimachiInvasiveTurtlesEventAudio.paused) okachimachiInvasiveTurtlesEventAudio.play().catch(() => {});
+}
+
+function nextOkachimachiInvasiveTurtlesTriggerDay(currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1)), first = false) {
+  const min = first ? OKACHIMACHI_INVASIVE_TURTLES_EVENT_FIRST_TRIGGER_MIN_DAYS : OKACHIMACHI_INVASIVE_TURTLES_EVENT_MIN_NEXT_DAYS;
+  const max = first ? OKACHIMACHI_INVASIVE_TURTLES_EVENT_FIRST_TRIGGER_MAX_DAYS : OKACHIMACHI_INVASIVE_TURTLES_EVENT_MAX_NEXT_DAYS;
+  const offset = min + Math.floor(Math.random() * (max - min + 1));
+  return first ? offset : currentDay + offset;
+}
+
+function okachimachiInvasiveTurtlesEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.okachimachiInvasiveTurtlesEvent && typeof state.events.okachimachiInvasiveTurtlesEvent === 'object' && !Array.isArray(state.events.okachimachiInvasiveTurtlesEvent)
+    ? state.events.okachimachiInvasiveTurtlesEvent
+    : {};
+  const validStages = new Set(['idle', 'video', 'intro1', 'intro2', 'intro3', 'completed']);
+  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  let nextTriggerDay = Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0));
+  if (nextTriggerDay <= 0) nextTriggerDay = nextOkachimachiInvasiveTurtlesTriggerDay(currentDay, true);
+  state.events.okachimachiInvasiveTurtlesEvent = {
+    lastAttemptDay: Math.max(0, Math.floor(Number(saved.lastAttemptDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    nextTriggerDay,
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    introVideoCompleted: Boolean(saved.introVideoCompleted),
+  };
+  if (!state.events.okachimachiInvasiveTurtlesEvent.active && !['idle', 'completed'].includes(state.events.okachimachiInvasiveTurtlesEvent.stage)) {
+    state.events.okachimachiInvasiveTurtlesEvent.stage = 'completed';
+  }
+  return state.events.okachimachiInvasiveTurtlesEvent;
+}
+
+function resumeOkachimachiInvasiveTurtlesEvent() {
+  const eventState = okachimachiInvasiveTurtlesEventState();
+  if (!eventState.active) return false;
+  setScreen('okachimachiInvasiveTurtlesEvent', {}, false);
+  playOkachimachiInvasiveTurtlesEventAudio();
+  return true;
+}
+
+function maybeStartOkachimachiInvasiveTurtlesEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = okachimachiInvasiveTurtlesEventState();
+  if (eventState.active) return resumeOkachimachiInvasiveTurtlesEvent();
+  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (eventState.lastAttemptDay === currentDay) return false;
+  eventState.lastAttemptDay = currentDay;
+  saveGame();
+  if (currentDay < eventState.nextTriggerDay) return false;
+  eventState.lastTriggeredDay = currentDay;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'video';
+  eventState.introVideoCompleted = false;
+  eventState.nextTriggerDay = nextOkachimachiInvasiveTurtlesTriggerDay(currentDay, false);
+  state.game.screen = 'okachimachiInvasiveTurtlesEvent';
+  saveGame();
+  setScreen('okachimachiInvasiveTurtlesEvent', {}, false);
+  playOkachimachiInvasiveTurtlesEventAudio({ restart: true });
+  vibrate([24, 40, 56]);
+  return true;
+}
+
+function okachimachiInvasiveTurtlesIntroVideoUrl() {
+  return `${OKACHIMACHI_INVASIVE_TURTLES_EVENT_INTRO_VIDEO}?v=${VERSION}`;
+}
+
+function startOkachimachiInvasiveTurtlesIntroPlayback() {
+  const eventState = okachimachiInvasiveTurtlesEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  const video = root.querySelector('video[data-okachimachi-invasive-turtles-intro-video]');
+  if (!(video instanceof HTMLVideoElement)) return;
+  const stage = video.closest('.okachimachi-invasive-turtles-video-stage');
+  stage?.classList.remove('needs-start', 'has-error');
+  video.defaultMuted = false;
+  video.muted = false;
+  video.volume = 1;
+  void resumeAudio();
+  playOkachimachiInvasiveTurtlesEventAudio();
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise
+      .then(() => {
+        stage?.classList.add('is-playing');
+        stage?.classList.remove('needs-start', 'has-error');
+      })
+      .catch(() => {
+        stage?.classList.remove('is-playing');
+        stage?.classList.add('needs-start');
+      });
+  } else {
+    stage?.classList.add('is-playing');
+  }
+}
+
+function retryOkachimachiInvasiveTurtlesIntroPlayback() {
+  const stage = root.querySelector('.okachimachi-invasive-turtles-video-stage');
+  const video = root.querySelector('video[data-okachimachi-invasive-turtles-intro-video]');
+  stage?.classList.remove('needs-start', 'has-error');
+  if (video instanceof HTMLVideoElement && video.error) video.load();
+  startOkachimachiInvasiveTurtlesIntroPlayback();
+}
+
+function completeOkachimachiInvasiveTurtlesIntroVideo() {
+  const eventState = okachimachiInvasiveTurtlesEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  eventState.introVideoCompleted = true;
+  eventState.stage = 'intro1';
+  saveGame();
+  render();
+  playSfx('impact', { gain: 0.38, rate: 0.9 });
+}
+
+function advanceOkachimachiInvasiveTurtlesEvent() {
+  const eventState = okachimachiInvasiveTurtlesEventState();
+  if (!eventState.active) {
+    setScreen('okachimachi', {}, false);
+    return;
+  }
+  if (eventState.stage === 'video') {
+    completeOkachimachiInvasiveTurtlesIntroVideo();
+    return;
+  }
+  if (eventState.stage === 'intro1') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playOkachimachiInvasiveTurtlesEventAudio();
+    render();
+    playSfx('impact', { gain: 0.28, rate: 0.92 });
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    playOkachimachiInvasiveTurtlesEventAudio();
+    render();
+    playSfx('impact', { gain: 0.28, rate: 0.92 });
+    return;
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  stopOkachimachiInvasiveTurtlesEventAudio();
+  saveGame();
+  setScreen('okachimachi', {}, false);
+}
+
 function glabVisitVideoEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.glabVisitVideoEvent && typeof state.events.glabVisitVideoEvent === 'object' && !Array.isArray(state.events.glabVisitVideoEvent)
@@ -8708,13 +9003,59 @@ function maybeStartKawaharaKnowledgeEvent() {
   eventState.lastTriggeredDay = Math.max(1, Number(state?.game?.day) || 1);
   eventState.totalTriggered += 1;
   eventState.active = true;
-  eventState.stage = 'intro1';
+  // v0.10.638: カワハラの加工知識イベントに当選した時だけ、会話前に専用動画を1回再生する。
+  eventState.stage = 'video';
   eventState.knowledgeId = knowledgeId;
   eventState.granted = false;
   saveGame();
   setScreen('kawaharaKnowledgeEvent', {}, false);
   playSfx('decision', { gain: 0.8, rate: 0.94 });
   return true;
+}
+
+function kawaharaKnowledgeIntroVideoUrl() {
+  return `${KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO}?v=${UI_BUILD_VERSION}`;
+}
+
+function startKawaharaKnowledgeIntroPlayback() {
+  const eventState = kawaharaKnowledgeEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  const video = root.querySelector('video[data-kawahara-knowledge-intro-video]');
+  if (!(video instanceof HTMLVideoElement)) return;
+  const stage = video.closest('.kawahara-knowledge-video-stage');
+  stage?.classList.remove('needs-start', 'has-error');
+  // この動画はカワハライベント専用。通常のg-Lab. 1/30動画には触れない。
+  video.defaultMuted = false;
+  video.muted = false;
+  video.volume = 1;
+  // カワハラはg-Lab.のイベント画面なので、通常のg-Lab. BGM/環境音設定は維持する。
+  void resumeAudio();
+  const playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise
+      .then(() => {
+        stage?.classList.add('is-playing');
+        stage?.classList.remove('needs-start', 'has-error');
+      })
+      .catch(() => stage?.classList.add('needs-start'));
+  }
+}
+
+function retryKawaharaKnowledgeIntroPlayback() {
+  const stage = root.querySelector('.kawahara-knowledge-video-stage');
+  const video = root.querySelector('video[data-kawahara-knowledge-intro-video]');
+  stage?.classList.remove('needs-start', 'has-error');
+  if (video instanceof HTMLVideoElement && video.error) video.load();
+  startKawaharaKnowledgeIntroPlayback();
+}
+
+function completeKawaharaKnowledgeIntroVideo() {
+  const eventState = kawaharaKnowledgeEventState();
+  if (!eventState.active || eventState.stage !== 'video') return;
+  eventState.stage = 'intro1';
+  saveGame();
+  render();
+  playSfx('decision', { gain: 0.68, rate: 0.96 });
 }
 
 function finishKawaharaKnowledgeEvent() {
@@ -8732,6 +9073,10 @@ function advanceKawaharaKnowledgeEvent() {
   const eventState = kawaharaKnowledgeEventState();
   if (!eventState.active) {
     setScreen('glab', {}, false);
+    return;
+  }
+  if (eventState.stage === 'video') {
+    completeKawaharaKnowledgeIntroVideo();
     return;
   }
   if (eventState.stage === 'intro1') {
@@ -8828,6 +9173,7 @@ async function enterOkachimachiFromOutside() {
     setScreen('okachimachi', {});
     return;
   }
+  if (resumeOkachimachiInvasiveTurtlesEvent()) return;
   if (resumePandaMusicEvent()) return;
   if (resumeWristFoundEvent()) return;
   if (resumeOkachimachiTollEvent()) return;
@@ -8843,6 +9189,7 @@ async function enterOkachimachiFromOutside() {
   }
   const shouldTrigger = eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1);
   saveGame();
+  if (maybeStartOkachimachiInvasiveTurtlesEvent()) return;
   if (maybeStartWristFoundEvent()) return;
   if (maybeStartPandaMusicEvent()) return;
   if (maybeStartOkachimachiTollEvent()) return;
@@ -9001,10 +9348,117 @@ function advanceOkachimachiQuizDialogue() {
   }
 }
 
+function looseShopOriginalQuizCharacterImage() {
+  return `${LOOSE_SHOP_ORIGINAL_QUIZ_IMAGE}?v=${VERSION}`;
+}
+
+function originalLooseDetailMeta(gemId) {
+  const gem = GEMS[gemId];
+  if (!gem?.originalLoose) return null;
+  const baseGemId = gem.originalLooseBaseGem || '';
+  const baseGem = GEMS[baseGemId];
+  const shapeId = gem.originalLooseBaseShape || defaultLooseShapeForGem(gemId);
+  return {
+    baseGemId,
+    baseGemName: gem.originalLooseStoneName || baseGem?.name || '宝石',
+    shapeId,
+    shapeName: shapeId === 'pearl' ? 'パール' : looseShapeLabel(shapeId),
+    style: gem.originalLooseStyle || '',
+  };
+}
+
+function looseGemShortDescription(gemId) {
+  const gem = GEMS[gemId];
+  if (gem?.originalLoose) return String(gem.originalLooseDescription || 'ルース屋で手に入れたオリジナルルースです。');
+  return GEM_LOOSE_DESCRIPTIONS[gemId] || `${gem?.name || 'この宝石'}のルースです。`;
+}
+
+function workshopLooseDisplayName(gem, shape) {
+  if (!gem) return 'ルース';
+  if (gem.originalLoose) return gem.name;
+  if (gem.id === 'pearl') return gem.name;
+  return `${gem.name}・${shape?.name || ''}`;
+}
+
+function renderOriginalLooseInfoCard(gemId) {
+  const gem = GEMS[gemId];
+  if (!gem?.originalLoose) return '';
+  return `<section class="loose-knowledge-card loose-original-card"><div><h2>オリジナルルース</h2><p>ルース屋で手に入れたオリジナルルース。ルース屋のクイズイベントに正解すると入手できます。参考価格は通常ルース相場を基準に1.5倍として扱い、ルース屋では売却できません。ジュエリー制作には使用できます。</p></div></section>`;
+}
+
+function answerLooseShopOriginalQuiz(index) {
+  const session = looseShopOriginalQuizSession;
+  if (!session || session.stage !== 'question') return;
+  const selectedIndex = Number(index);
+  if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex > 3) return;
+  session.selectedIndex = selectedIndex;
+  const correct = selectedIndex === session.question.answerIndex;
+  session.stage = correct ? 'correct' : 'incorrect';
+  render();
+  playSfx(correct ? 'quiz-correct' : 'quiz-incorrect', { gain: 1 });
+  vibrate(correct ? [35, 45, 80] : 110);
+}
+
+function grantLooseShopOriginalQuizReward({ renderAfter = true, saveAfter = true } = {}) {
+  const session = looseShopOriginalQuizSession;
+  if (!session || session.stage !== 'correct') return false;
+  const eventState = looseShopOriginalQuizEventState();
+  const gemId = pickOriginalLooseRewardGem(eventState.lastRewardGemId || '');
+  if (!gemId) return false;
+  const rewardGem = GEMS[gemId];
+  const rewardShape = rewardGem?.originalLooseBaseShape || defaultLooseShapeForGem(gemId);
+  adjustLooseInventory(gemId, rewardShape, 1);
+  eventState.lastRewardGemId = gemId;
+  session.rewardGemId = gemId;
+  session.stage = 'reward';
+  if (saveAfter) saveGame();
+  if (renderAfter) render();
+  playSfx('loose-sparkle', { gain: 1.06 });
+  vibrate([28, 35, 58]);
+  return true;
+}
+
+function finishLooseShopOriginalQuiz() {
+  looseShopOriginalQuizSession = null;
+  setScreen('looseShop', { tab: 'buy' }, false);
+}
+
+function advanceLooseShopOriginalQuizDialogue() {
+  const session = looseShopOriginalQuizSession;
+  if (!session) return finishLooseShopOriginalQuiz();
+  if (session.stage === 'intro1') {
+    session.stage = 'intro2';
+    render();
+    playSfx('select', { gain: .82 });
+    return;
+  }
+  if (session.stage === 'intro2') {
+    session.stage = 'question';
+    render();
+    playSfx('quiz-question', { gain: .96 });
+    vibrate(38);
+    return;
+  }
+  if (session.stage === 'correct') {
+    grantLooseShopOriginalQuizReward();
+    return;
+  }
+  if (session.stage === 'incorrect') {
+    session.stage = 'incorrectAnswer';
+    render();
+    playSfx('select', { gain: .82 });
+    return;
+  }
+  if (session.stage === 'incorrectAnswer' || session.stage === 'reward') {
+    playSfx('select', { gain: .82 });
+    finishLooseShopOriginalQuiz();
+  }
+}
+
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
   };
@@ -9041,7 +9495,7 @@ function backgroundAssetFor(target) {
   if (target === 'jewelryShop') return isPortraitLayout() ? 'jewelry-shop-portrait' : 'jewelry-shop';
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
-  if (target === 'clockTowerDonationEvent' || target === 'pandaMusicEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
+  if (target === 'clockTowerDonationEvent' || target === 'pandaMusicEvent' || target === 'okachimachiInvasiveTurtlesEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
   if (target === 'apprenticeCinemaEvent') {
     const stage = apprenticeCinemaEventState().stage;
     const movieArea = ['playing', 'outro1', 'outro2'].includes(stage);
@@ -9089,7 +9543,7 @@ function applyCurrentBackground() {
 function audioFor(target) {
   const audioTarget = target === 'glabVisitVideoEvent'
     ? 'glab'
-    : (['okachimachiTollEvent', 'pandaMusicEvent', 'apprenticeCinemaEvent'].includes(target) ? 'okachimachi' : target);
+    : (['okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'apprenticeCinemaEvent'].includes(target) ? 'okachimachi' : target);
   return resolveAudioScene(audioTarget, {
     alienAbducted: isAlienAbducted(),
     quizStage: okachimachiQuizSession?.stage || '',
@@ -9676,6 +10130,12 @@ function render() {
       document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
     }
     const currentAudioKey = audioFor(screen);
+    if (screen === 'okachimachiInvasiveTurtlesEvent') {
+      if (okachimachiInvasiveTurtlesEventAudio) okachimachiInvasiveTurtlesEventAudio.volume = okachimachiInvasiveTurtlesEventAudioVolume();
+      else playOkachimachiInvasiveTurtlesEventAudio();
+    } else {
+      stopOkachimachiInvasiveTurtlesEventAudio();
+    }
     if (screen === 'pandaMusicEvent') {
       if (pandaMusicEventAudio) pandaMusicEventAudio.volume = pandaMusicEventAudioVolume();
     } else {
@@ -9753,7 +10213,9 @@ function render() {
       miningResult: renderMiningResult,
       okachimachi: renderOkachimachi,
       okachimachiQuiz: renderOkachimachiQuiz,
+      looseShopOriginalQuizEvent: renderLooseShopOriginalQuizEvent,
       okachimachiTollEvent: renderOkachimachiTollEvent,
+      okachimachiInvasiveTurtlesEvent: renderOkachimachiInvasiveTurtlesEvent,
       pandaMusicEvent: renderPandaMusicEvent,
       wristFoundEvent: renderWristFoundEvent,
       supplier: renderSupplier,
@@ -11654,6 +12116,8 @@ async function skipCurrentEventIntroVideo() {
     'video[data-mystery-chinese-meal-intro-video]',
     'video[data-gray-hood-aquarium-intro-video]',
     'video[data-okachimachi-quiz-intro-video]',
+    'video[data-kawahara-knowledge-intro-video]',
+    'video[data-okachimachi-invasive-turtles-intro-video]',
     'video[data-terry-california-intro-video]',
   ].join(','));
   if (!(video instanceof HTMLVideoElement)) return;
@@ -11678,6 +12142,14 @@ async function skipCurrentEventIntroVideo() {
   }
   if (video.matches('video[data-okachimachi-quiz-intro-video]')) {
     completeOkachimachiQuizIntroVideo();
+    return;
+  }
+  if (video.matches('video[data-kawahara-knowledge-intro-video]')) {
+    completeKawaharaKnowledgeIntroVideo();
+    return;
+  }
+  if (video.matches('video[data-okachimachi-invasive-turtles-intro-video]')) {
+    completeOkachimachiInvasiveTurtlesIntroVideo();
     return;
   }
   if (video.matches('video[data-terry-california-intro-video]')) {
@@ -12904,6 +13376,18 @@ function renderKawaharaKnowledgeEvent() {
     queueMicrotask(() => setScreen('glab', {}, false));
     return renderGlab();
   }
+  if (eventState.stage === 'video') {
+    queueMicrotask(startKawaharaKnowledgeIntroPlayback);
+    return `<main class="western-union-video-screen kawahara-knowledge-video-screen" aria-label="カワハラ加工知識イベント導入動画">
+      <section class="western-union-video-stage kawahara-knowledge-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてカワハラの会話を開始">MOVIEスキップ</button>
+        <video data-kawahara-knowledge-intro-video src="${esc(kawaharaKnowledgeIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="カワハラ加工知識イベント導入動画"></video>
+        <div class="western-union-video-loading">動画を読み込んでいます</div>
+        <button type="button" class="western-union-video-start" data-action="kawahara-knowledge-video-start">動画を再生する</button>
+        <div class="western-union-video-error" role="alert"><strong>動画を読み込めませんでした</strong><span>もう一度再生するか、MOVIEスキップで会話へ進んでください。</span></div>
+      </section>
+    </main>`;
+  }
   const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
   const document = PROCESSING_KNOWLEDGE[eventState.knowledgeId] || null;
   const knowledgeLabel = esc(document?.shortTitle || document?.title || '新しい加工知識');
@@ -13227,6 +13711,58 @@ function renderOkachimachiQuiz() {
     </section>`, { back: false, main: false, hideHeader: true });
 }
 
+function renderLooseShopOriginalQuizEvent() {
+  const session = looseShopOriginalQuizSession;
+  if (!session) {
+    queueMicrotask(() => finishLooseShopOriginalQuiz());
+    return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, '<section class="center-card glass-panel"><p>ルース屋へ戻ります…</p></section>', { back: false, main: false, hideHeader: true });
+  }
+  if (session.stage === 'reward') {
+    const gem = GEMS[session.rewardGemId];
+    const shapeId = gem?.originalLooseBaseShape || defaultLooseShapeForGem(session.rewardGemId || '');
+    const description = gem ? looseGemShortDescription(gem.id) : '';
+    return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, `
+      <section class="loose-shop-original-quiz-event quiz-stage-reward" aria-live="polite">
+        <button type="button" class="quiz-reward-button" data-action="loose-shop-original-quiz-next" aria-label="ルース屋へ進む">
+          <span class="quiz-reward-glow" aria-hidden="true"></span>
+          ${looseVisual(gem?.id, 'quiz-reward-gem', '', shapeId)}
+          <strong>${esc(gem?.name || '')}を受け取りました</strong>
+          <small>${esc(description)}</small>
+          <small>タップしてルース屋へ進む</small>
+        </button>
+      </section>`, { back: false, main: false, hideHeader: true });
+  }
+
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const dialogueByStage = {
+    intro1: `${playerName}さん、石を見る目は育っていますか、、、`,
+    intro2: `では一問だけ。正解したら、私のオリジナルルースをひとつ差し上げましょう、、、`,
+    correct: '正解です、、、持っていきなさい、、、',
+    incorrect: '違います、、、まだ石の声が聞こえていませんね、、、',
+    incorrectAnswer: `正解は「${esc(session.question.choices[session.question.answerIndex] || '')}」でした、、、`,
+  };
+  const isQuestion = session.stage === 'question';
+  return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, `
+    <section class="okachimachi-quiz-event loose-shop-original-quiz-event ${isQuestion ? 'quiz-stage-question' : `quiz-stage-${esc(session.stage)}` }" aria-live="polite">
+      <div class="quiz-character-area" aria-hidden="true">
+        <img class="quiz-character-image" src="${esc(looseShopOriginalQuizCharacterImage())}" alt="" draggable="false">
+      </div>
+      ${isQuestion ? `
+        <section class="quiz-question-panel glass-panel">
+          <span class="quiz-question-kicker">4択クイズ</span>
+          <h2>${esc(session.question.question)}</h2>
+          <div class="quiz-answer-grid">
+            ${session.question.choices.map((choice, index) => `<button type="button" class="quiz-answer-button" data-action="loose-shop-original-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('')}
+          </div>
+        </section>` : `
+        <button type="button" class="quiz-dialogue-panel glass-panel" data-action="loose-shop-original-quiz-next">
+          <small>オリジナルルースイベント</small>
+          <strong>${dialogueByStage[session.stage] || ''}</strong>
+          <span>タップして進む</span>
+        </button>`}
+    </section>`, { back: false, main: false, hideHeader: true });
+}
+
 function renderOkachimachiTollEvent() {
   const eventState = okachimachiTollEventState();
   if (!eventState.active) {
@@ -13259,6 +13795,44 @@ function renderOkachimachiTollEvent() {
           <small>${isPaymentNotice ? '支払い' : 'キャベツ野郎'}</small>
           <strong>${dialogue}</strong>
           ${isPaymentNotice ? `<em>－${yen(OKACHIMACHI_TOLL_EVENT_COST)}</em>` : ''}
+          <span>タップして進む</span>
+        </button>
+      </section>
+    </main>`;
+}
+
+function renderOkachimachiInvasiveTurtlesEvent() {
+  const eventState = okachimachiInvasiveTurtlesEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  if (eventState.stage === 'video') {
+    queueMicrotask(startOkachimachiInvasiveTurtlesIntroPlayback);
+    return `<main class="okachimachi-invasive-turtles-video-screen okachimachi-quiz-video-screen" aria-label="御徒町の外来種イベント導入動画">
+      <section class="okachimachi-invasive-turtles-video-stage okachimachi-quiz-video-stage" aria-live="polite">
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
+        <video data-okachimachi-invasive-turtles-intro-video src="${esc(okachimachiInvasiveTurtlesIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="御徒町の外来種イベントの導入動画"></video>
+        <div class="okachimachi-invasive-turtles-video-loading okachimachi-quiz-video-loading">動画を読み込んでいます</div>
+        <button type="button" class="okachimachi-invasive-turtles-video-start okachimachi-quiz-video-start" data-action="okachimachi-invasive-turtles-video-start">動画を再生する</button>
+        <div class="okachimachi-invasive-turtles-video-error okachimachi-quiz-video-error" role="alert"><strong>動画を読み込めませんでした</strong><span>通信状態を確認して、もう一度再生してください。</span></div>
+      </section>
+    </main>`;
+  }
+  const dialogue = eventState.stage === 'intro1'
+    ? 'やべぇな、、、、、'
+    : eventState.stage === 'intro2'
+      ? '最近この辺は外来種が増えて問題になってるな、、、'
+      : '自分も熱帯魚とか、生き物を育ててるからしっかり気をつけて育てなきゃな、、、、';
+  return `
+    <main class="main-screen okachimachi-invasive-turtles-event-screen">
+      <section class="visit-character-event okachimachi-invasive-turtles-event" aria-live="polite">
+        <div class="visit-character-area okachimachi-invasive-turtles-character-area" aria-hidden="true">
+          <img class="visit-character okachimachi-invasive-turtles-character" src="${esc(OKACHIMACHI_INVASIVE_TURTLES_EVENT_IMAGE)}?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue okachimachi-invasive-turtles-dialogue glass-panel" data-action="okachimachi-invasive-turtles-event-next">
+          <small>心の声</small>
+          <strong>${dialogue}</strong>
           <span>タップして進む</span>
         </button>
       </section>
@@ -13439,7 +14013,10 @@ function renderLooseShop(forcedTab = '') {
   if (isRoughSelling) {
     shopContent = roughSaleContentMarkup();
   } else if (!selectedGem) {
-    const gems = Object.values(GEMS).filter((gem) => gem.eventOnly ? (isSelling && looseTotalForGem(gem.id) > 0) : (!isSelling || looseTotalForGem(gem.id) > 0));
+    const gems = Object.values(GEMS).filter((gem) => {
+      if (isSelling) return !gem.noLooseShopTrade && looseTotalForGem(gem.id) > 0;
+      return !gem.eventOnly;
+    });
     const gemChoices = gems.map((gem) => {
       const owned = looseTotalForGem(gem.id);
       const available = looseAvailableTotalForGem(gem.id);
@@ -13464,8 +14041,9 @@ function renderLooseShop(forcedTab = '') {
       const purchasePrice = loosePurchasePrice(selectedGem.id, shapeId);
       const salePrice = looseSalePrice(selectedGem.id, shapeId);
       const detailButton = `<button class="secondary-button" data-action="open-loose-detail" data-id="${selectedGem.id}" data-shape="${shapeId}">詳細</button>`;
+      const tradeLocked = Boolean(selectedGem.noLooseShopTrade);
       if (isSelling) {
-        const disabled = available < 1 || !canSpendHours(1);
+        const disabled = tradeLocked || available < 1 || !canSpendHours(1);
         return `<article class="product-row loose-shop-product-row">
           <div class="product-main">
             ${looseVisual(selectedGem.id, 'loose-inline', '', shapeId)}
@@ -14478,7 +15056,7 @@ function renderMaterialInventory(kind) {
   if (kind === 'loose') {
     const items = looseVariantRows({ ownedOnly: true });
     if (!items.length) return '<div class="empty-state"><strong>ルースはありません。</strong><p>原石を研磨するか、ルース屋で購入すると、石種とカットごとに表示されます。</p></div>';
-    return `<div class="inventory-single-list loose-inventory-list">${items.map(({ gem, shapeId, shape, owned, reserved, available }) => `<button type="button" class="material-row loose-inventory-row" data-action="open-loose-detail" data-id="${esc(gem.id)}" data-shape="${esc(shapeId)}"><span class="material-name">${looseVisual(gem.id, 'loose-mini', '', shapeId)}<span>${esc(gem.id === 'pearl' ? gem.name : `${gem.name}・${shape.name}`)}</span></span><span class="loose-row-counts"><strong>${owned}個</strong><small>注文予定 ${reserved}・使用可能 ${available}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>`;
+    return `<div class="inventory-single-list loose-inventory-list">${items.map(({ gem, shapeId, shape, owned, reserved, available }) => `<button type="button" class="material-row loose-inventory-row" data-action="open-loose-detail" data-id="${esc(gem.id)}" data-shape="${esc(shapeId)}"><span class="material-name">${looseVisual(gem.id, 'loose-mini', '', shapeId)}<span>${esc(workshopLooseDisplayName(gem, shape))}</span></span><span class="loose-row-counts"><strong>${owned}個</strong><small>注文予定 ${reserved}・使用可能 ${available}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>`;
   }
 
   const items = METAL_WORKSHOP_ORDER.map((id) => METALS[id]).filter(Boolean);
@@ -14494,21 +15072,24 @@ function renderLooseInventoryDetail() {
   const purchasePrice = loosePurchasePrice(gem.id, shapeId);
   const salePrice = looseSalePrice(gem.id, shapeId);
   const isPearl = gem.id === 'pearl';
-  return shell(gem.id === 'pearl' ? gem.name : `${gem.name}・${shape.name}`, `
+  const isOriginalLoose = Boolean(gem.originalLoose);
+  const gemGuideAvailable = Boolean(GEM_LOOSE_GUIDES[gem.id]);
+  return shell(isOriginalLoose ? gem.name : (gem.id === 'pearl' ? gem.name : `${gem.name}・${shape.name}`), `
     <section class="wide-panel glass-panel loose-inventory-detail-page">
       <header class="loose-detail-heading">
         <div class="loose-detail-image">${looseVisual(gem.id, 'loose-detail-main-image', '', shapeId)}</div>
-        <div><small>ルースの種類</small><h1>${esc(gem.name)}</h1>${isPearl ? '' : `<p>${esc(shape.name)}</p>`}</div>
+        <div><small>${isOriginalLoose ? 'オリジナルルース' : 'ルースの種類'}</small><h1>${esc(gem.name)}</h1>${isOriginalLoose || isPearl ? '' : `<p>${esc(shape.name)}</p>`}</div>
       </header>
       <div class="loose-detail-description-grid">
-        <section class="loose-knowledge-card"><div><h2>石種について</h2><p>${esc(GEM_LOOSE_DESCRIPTIONS[gem.id] || `${gem.name}のルースです。`)}</p></div><button type="button" class="secondary-button loose-knowledge-button" data-action="loose-gem-guide-open" data-id="${esc(gem.id)}">プロ向け宝石学詳細</button></section>
-        ${isPearl ? '' : `<section class="loose-knowledge-card"><div><h2>カットについて</h2><p>${esc(LOOSE_SHAPE_DESCRIPTIONS[shapeId] || `${shape.name}の形状です。`)}</p></div><button type="button" class="secondary-button loose-knowledge-button" data-action="loose-cut-guide-open" data-shape="${esc(shapeId)}">詳しい説明を見る</button></section>`}
+        <section class="loose-knowledge-card"><div><h2>${isOriginalLoose ? 'ルースについて' : '石種について'}</h2><p>${esc(looseGemShortDescription(gem.id))}</p></div>${!isOriginalLoose && gemGuideAvailable ? `<button type="button" class="secondary-button loose-knowledge-button" data-action="loose-gem-guide-open" data-id="${esc(gem.id)}">プロ向け宝石学詳細</button>` : ''}</section>
+        ${isOriginalLoose || isPearl ? '' : `<section class="loose-knowledge-card"><div><h2>カットについて</h2><p>${esc(LOOSE_SHAPE_DESCRIPTIONS[shapeId] || `${shape.name}の形状です。`)}</p></div><button type="button" class="secondary-button loose-knowledge-button" data-action="loose-cut-guide-open" data-shape="${esc(shapeId)}">詳しい説明を見る</button></section>`}
       </div>
+      ${isOriginalLoose ? renderOriginalLooseInfoCard(gem.id) : ''}
       <dl class="loose-inventory-metrics">
         <div><dt>所持数</dt><dd>${metrics.owned}個</dd></div>
         <div><dt>注文に使用予定の数</dt><dd>${metrics.reserved}個</dd></div>
-        <div><dt>ルース屋の販売価格</dt><dd>${yen(purchasePrice)}</dd></div>
-        <div><dt>ルース屋の売却価格</dt><dd>${yen(salePrice)}</dd></div>
+        <div><dt>${isOriginalLoose ? '参考価格' : 'ルース屋の販売価格'}</dt><dd>${yen(purchasePrice)}</dd></div>
+        <div><dt>ルース屋の売却価格</dt><dd>${isOriginalLoose ? '売却不可' : yen(salePrice)}</dd></div>
       </dl>
       ${metrics.shortage > 0 ? `<p class="loose-reservation-warning">受注中の注文に必要なルースが${metrics.shortage}個不足しています。</p>` : metrics.reserved > 0 ? '<p class="loose-reservation-note">注文に使用予定のルースは、通常制作と売却には使用できません。</p>' : ''}
       <div class="button-stack loose-detail-actions">
@@ -17546,6 +18127,7 @@ function purchase(kind, id, shapeId = '') {
   if (kind === 'metal') return buyMetal(id);
   const product = kind === 'loose' ? GEMS[id] : null;
   if (!product) return showToast('この商品は購入できません。', 'error');
+  if (product.noLooseShopTrade) return showToast('このオリジナルルースはルース屋では購入できません。イベントで入手してください。', 'error');
   const resolvedShape = normalizeLooseShape(id, shapeId);
   const quantity = loosePurchaseQuantity(id, resolvedShape);
   const unitPrice = loosePurchasePrice(id, resolvedShape);
@@ -17598,6 +18180,7 @@ function sellLoose(id, shapeId = '', sellAll = false) {
   const resolvedShape = normalizeLooseShape(id, shapeId);
   const available = Math.max(0, Math.floor(looseAvailableQuantity(id, resolvedShape)));
   if (!gem || available < 1) return showToast('使用可能なルースがありません。注文に使用予定のルースは売却できません。', 'error');
+  if (gem.noLooseShopTrade) return showToast('このオリジナルルースはルース屋では売却できません。', 'error');
   if (!canSpendHours(1)) return showToast('今日は売却手続きをする時間がありません。', 'error');
   const qty = sellAll ? available : 1;
   const unitPrice = looseSalePrice(id, resolvedShape);
@@ -20010,7 +20593,7 @@ root.addEventListener('click', async (event) => {
     }
     return;
   }
-  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'glab-visit-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'glab-visit-video-start', 'kawahara-knowledge-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
@@ -20386,6 +20969,9 @@ root.addEventListener('click', async (event) => {
     case 'glab-visit-video-start':
       retryGlabVisitVideoPlayback();
       break;
+    case 'kawahara-knowledge-video-start':
+      retryKawaharaKnowledgeIntroPlayback();
+      break;
     case 'okachimachi-quiz-video-start':
       retryOkachimachiQuizIntroPlayback();
       break;
@@ -20395,8 +20981,20 @@ root.addEventListener('click', async (event) => {
     case 'okachimachi-quiz-answer':
       answerOkachimachiQuiz(button.dataset.index);
       break;
+    case 'loose-shop-original-quiz-next':
+      advanceLooseShopOriginalQuizDialogue();
+      break;
+    case 'loose-shop-original-quiz-answer':
+      answerLooseShopOriginalQuiz(button.dataset.index);
+      break;
     case 'okachimachi-toll-event-next':
       advanceOkachimachiTollEvent();
+      break;
+    case 'okachimachi-invasive-turtles-video-start':
+      retryOkachimachiInvasiveTurtlesIntroPlayback();
+      break;
+    case 'okachimachi-invasive-turtles-event-next':
+      advanceOkachimachiInvasiveTurtlesEvent();
       break;
     case 'panda-music-event-next':
       advancePandaMusicEvent();
@@ -20432,6 +21030,12 @@ root.addEventListener('click', async (event) => {
           showToast(availability.reason, 'error');
           break;
         }
+      }
+      if (target === 'looseShop' && screen !== 'looseShop') {
+        button.disabled = true;
+        await maybeEnterLooseShop();
+        if (button.isConnected) button.disabled = false;
+        break;
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {
@@ -21294,6 +21898,7 @@ document.addEventListener('focusout', (event) => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     flushAutosaveLocally('visibility-hidden');
+    stopOkachimachiInvasiveTurtlesEventAudio({ reset: false });
     stopPandaMusicEventAudio({ reset: false });
     stopWhiteBunnyEventBgm({ reset: false });
     suspendAudio();
@@ -21307,6 +21912,11 @@ document.addEventListener('visibilitychange', () => {
   else resumeAudio();
   if (criticalEventVideoPlaying) queueMicrotask(startGrayHoodAquariumIntroPlayback);
   if (screen === 'glabVisitVideoEvent' && glabVisitVideoEventState().active && glabVisitVideoEventState().stage === 'video') queueMicrotask(startGlabVisitVideoPlayback);
+  if (screen === 'okachimachiInvasiveTurtlesEvent' && okachimachiInvasiveTurtlesEventState().active) {
+    playOkachimachiInvasiveTurtlesEventAudio();
+    if (okachimachiInvasiveTurtlesEventState().stage === 'video') queueMicrotask(startOkachimachiInvasiveTurtlesIntroPlayback);
+  }
+  if (screen === 'kawaharaKnowledgeEvent' && kawaharaKnowledgeEventState().active && kawaharaKnowledgeEventState().stage === 'video') queueMicrotask(startKawaharaKnowledgeIntroPlayback);
   if (screen === 'okachimachiQuiz' && okachimachiQuizSession?.stage === 'video') queueMicrotask(startOkachimachiQuizIntroPlayback);
   if (screen === 'pandaMusicEvent') playPandaMusicEventAudio();
   if (screen === 'whiteBunnyIceEvent') syncWhiteBunnyEventBgm();
@@ -21330,8 +21940,12 @@ root.addEventListener('ended', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const glabVisitVideo = target?.closest('video[data-glab-visit-video]');
   if (glabVisitVideo) { completeGlabVisitVideoEvent(); return; }
+  const kawaharaVideo = target?.closest('video[data-kawahara-knowledge-intro-video]');
+  if (kawaharaVideo) { completeKawaharaKnowledgeIntroVideo(); return; }
   const quizVideo = target?.closest('video[data-okachimachi-quiz-intro-video]');
   if (quizVideo) { completeOkachimachiQuizIntroVideo(); return; }
+  const invasiveTurtlesVideo = target?.closest('video[data-okachimachi-invasive-turtles-intro-video]');
+  if (invasiveTurtlesVideo) { completeOkachimachiInvasiveTurtlesIntroVideo(); return; }
   const westernVideo = target?.closest('video[data-western-union-intro-video]');
   if (westernVideo) { completeWesternUnionIntroVideo(); return; }
   const amberVideo = target?.closest('video[data-tattoo-woman-amber-intro-video]');
@@ -21361,11 +21975,26 @@ root.addEventListener('playing', (event) => {
     void resumeAudio();
     return;
   }
+  const kawaharaVideo = target?.closest('video[data-kawahara-knowledge-intro-video]');
+  if (kawaharaVideo) {
+    kawaharaVideo.closest('.kawahara-knowledge-video-stage')?.classList.add('is-playing');
+    kawaharaVideo.closest('.kawahara-knowledge-video-stage')?.classList.remove('needs-start', 'has-error');
+    void resumeAudio();
+    return;
+  }
   const quizVideo = target?.closest('video[data-okachimachi-quiz-intro-video]');
   if (quizVideo) {
     quizVideo.closest('.okachimachi-quiz-video-stage')?.classList.add('is-playing');
     quizVideo.closest('.okachimachi-quiz-video-stage')?.classList.remove('needs-start', 'has-error');
     // BGMはそのまま。動画再生を理由にsuspendAudio()しない。
+    return;
+  }
+  const invasiveTurtlesVideo = target?.closest('video[data-okachimachi-invasive-turtles-intro-video]');
+  if (invasiveTurtlesVideo) {
+    invasiveTurtlesVideo.closest('.okachimachi-invasive-turtles-video-stage')?.classList.add('is-playing');
+    invasiveTurtlesVideo.closest('.okachimachi-invasive-turtles-video-stage')?.classList.remove('needs-start', 'has-error');
+    void resumeAudio();
+    playOkachimachiInvasiveTurtlesEventAudio();
     return;
   }
   const westernVideo = target?.closest('video[data-western-union-intro-video]');
@@ -21423,9 +22052,19 @@ root.addEventListener('error', (event) => {
     glabVisitVideo.closest('.glab-visit-video-stage')?.classList.add('has-error', 'needs-start');
     return;
   }
+  const kawaharaVideo = target?.closest('video[data-kawahara-knowledge-intro-video]');
+  if (kawaharaVideo) {
+    kawaharaVideo.closest('.kawahara-knowledge-video-stage')?.classList.add('has-error', 'needs-start');
+    return;
+  }
   const quizVideo = target?.closest('video[data-okachimachi-quiz-intro-video]');
   if (quizVideo) {
     quizVideo.closest('.okachimachi-quiz-video-stage')?.classList.add('has-error', 'needs-start');
+    return;
+  }
+  const invasiveTurtlesVideo = target?.closest('video[data-okachimachi-invasive-turtles-intro-video]');
+  if (invasiveTurtlesVideo) {
+    invasiveTurtlesVideo.closest('.okachimachi-invasive-turtles-video-stage')?.classList.add('has-error', 'needs-start');
     return;
   }
   const westernVideo = target?.closest('video[data-western-union-intro-video]');

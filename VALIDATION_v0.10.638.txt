@@ -1,0 +1,18 @@
+JEWELRY×JEWELRY v0.10.638 validation
+
+PASS node --check js/app.js
+PASS node --check js/game-data.js
+PASS node --check sw.js
+PASS Kawahara dedicated video constant exists
+PASS new Kawahara event starts at video stage
+PASS Kawahara video ended handler advances to intro1
+PASS MOVIE skip supports Kawahara intro video
+PASS retry playback button supports Kawahara intro video
+PASS existing g-Lab. 1/30 random movie remains separate and muted
+PASS Kawahara video uses supplied movie audio
+PASS game.html contain selector includes Kawahara video
+PASS landscape = height 100% / width auto
+PASS portrait = width 100% / height auto
+PASS black letterbox/pillarbox background
+PASS version sync 0.10.638
+PASS supplied MP4: H.264 1826x1080 + AAC, duration approx. 5.04 sec

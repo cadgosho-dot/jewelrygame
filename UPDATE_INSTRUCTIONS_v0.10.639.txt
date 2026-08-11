@@ -1,0 +1,8 @@
+JEWELRY×JEWELRY v0.10.639
+
+Update to v0.10.639
+
+1. Replace the updated files/folders in the project.
+2. Deploy as usual.
+3. Hard refresh once after deployment so the new service worker and cache version are applied.
+4. Enter Okachimachi on a save whose in-game day has advanced enough to confirm the annual event trigger.

@@ -18845,3 +18845,11 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="c
   transform:translate(-50%,-50%)!important;
 }
 
+
+
+/* v0.10.647 完成画面: 縦画面は端末クラス判定に依存せず、完成品画像を第2上部バーから確実に離す */
+@media (orientation:portrait) and (max-width:820px){
+  body[data-screen="completion"] .result-card > .completion-jewelry-preview{
+    margin-top:76px!important;
+  }
+}

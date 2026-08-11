@@ -1,0 +1,5 @@
+JEWELRY×JEWELRY v0.10.647 source manifest
+Base: v0.10.646 update package
+Primary changes: styles.css, game.html, js/app.js, js/game-data.js, sw.js, CHANGELOG.md
+Preserved recovery assets: glab-kawahara.png, glab-visit-random.mp4, ridley-okazaki.png
+Preserved quiz data: data/jewelry_quiz_50_verified_2026-08-10.json

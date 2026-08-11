@@ -18800,3 +18800,12 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="a
     align-items:flex-end;
   }
 }
+
+
+/* v0.10.643 ピアス完成画面: ルース縮小 + 縦画面で全体を少し下へ */
+.completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem{width:48px!important;max-width:48px!important;min-width:0!important}
+.completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem>img.jewelry-loose-preview{display:block!important;width:48px!important;height:48px!important;max-width:48px!important;max-height:48px!important;object-fit:contain!important}
+html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem{width:42px!important;max-width:42px!important}
+html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem>img.jewelry-loose-preview{width:42px!important;height:42px!important;max-width:42px!important;max-height:42px!important}
+html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings,
+html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose{transform:translateY(16px)!important}

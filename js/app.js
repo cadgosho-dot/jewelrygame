@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.640';
+const UI_BUILD_VERSION = '0.10.643';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.640';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.643';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.640';
+} from './firebase-service.js?v=0.10.643';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -4674,28 +4674,39 @@ function jewelryItemVisual(itemId, className = 'jewelry-item-shape', useLoose = 
 function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large') {
   const gem = GEMS[gemId];
   if (!gem) return '';
-  const looseClass = mode === 'small' ? 'small-jewelry-loose' : 'jewelry-loose-preview';
-  const wrapperClass = mode === 'small' ? 'jewelry-loose-set small' : 'jewelry-loose-set';
+  const isSmall = mode === 'small';
+  const isCompletion = mode === 'completion';
+  const looseClass = isSmall ? 'small-jewelry-loose' : 'jewelry-loose-preview';
+  const wrapperClass = isSmall ? 'jewelry-loose-set small' : 'jewelry-loose-set';
+  const completionGemPx = itemId === 'pendant' ? 62 : itemId === 'ring' ? 72 : itemId === 'earrings' ? 48 : 76;
   const styleLooseMarkup = (markup, sizePercent = '100%') => {
     if (typeof markup !== 'string' || !markup) return markup;
     if (markup.startsWith('<img ')) {
-      return markup.replace('<img ', `<img style="display:block;width:${sizePercent};height:auto;max-width:none;object-fit:contain;position:relative;z-index:5;pointer-events:none;" `);
+      const completionStyle = isCompletion
+        ? `display:block;width:100%;height:auto;max-width:100%;max-height:${completionGemPx}px;object-fit:contain;position:relative;z-index:5;pointer-events:none;`
+        : `display:block;width:${sizePercent};height:auto;max-width:none;object-fit:contain;position:relative;z-index:5;pointer-events:none;`;
+      return markup.replace('<img ', `<img style="${completionStyle}" `);
     }
-    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${sizePercent};height:${sizePercent};position:relative;z-index:5;pointer-events:none;">${markup}</span>`;
+    const completionSize = isCompletion ? '100%' : sizePercent;
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${completionSize};height:${completionSize};position:relative;z-index:5;pointer-events:none;">${markup}</span>`;
   };
-  const single = styleLooseMarkup(looseVisual(gemId, looseClass, '', shapeId), mode === 'small' ? '112%' : '120%');
+  const looseSize = isSmall ? '112%' : isCompletion ? '100%' : '120%';
+  const single = styleLooseMarkup(looseVisual(gemId, looseClass, '', shapeId), looseSize);
   if (itemId === 'earrings') {
-    const pair = styleLooseMarkup(looseVisual(gemId, looseClass, '', shapeId), mode === 'small' ? '112%' : '120%');
-    const slotWidth = mode === 'small' ? '21%' : '23%';
-    const slotTop = mode === 'small' ? '33%' : '31%';
-    const leftX = mode === 'small' ? '28.5%' : '29%';
-    const rightX = mode === 'small' ? '71.5%' : '71%';
+    const pair = styleLooseMarkup(looseVisual(gemId, looseClass, '', shapeId), looseSize);
+    const slotWidth = isSmall ? '21%' : isCompletion ? `${completionGemPx}px` : '23%';
+    const slotTop = isSmall ? '33%' : '31%';
+    const leftX = isSmall ? '28.5%' : '29%';
+    const rightX = isSmall ? '71.5%' : '71%';
     return `<span class="${wrapperClass} item-earrings" aria-hidden="true" style="position:absolute;inset:0;display:block;pointer-events:none;z-index:3;overflow:visible;">
-      <span class="center-gem earring-left" style="position:absolute;left:${leftX};top:${slotTop};width:${slotWidth};display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${single}</span>
-      <span class="center-gem earring-right" style="position:absolute;left:${rightX};top:${slotTop};width:${slotWidth};display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${pair}</span>
+      <span class="center-gem earring-left" style="position:absolute;left:${leftX};top:${slotTop};width:${slotWidth};max-width:${completionGemPx}px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${single}</span>
+      <span class="center-gem earring-right" style="position:absolute;left:${rightX};top:${slotTop};width:${slotWidth};max-width:${completionGemPx}px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${pair}</span>
     </span>`;
   }
-  return `<span class="${wrapperClass} item-${itemId}" aria-hidden="true"><span class="center-gem">${single}</span></span>`;
+  const completionCenterStyle = isCompletion
+    ? ` style="width:${completionGemPx}px;max-width:${completionGemPx}px;min-width:0;"`
+    : '';
+  return `<span class="${wrapperClass} item-${itemId}" aria-hidden="true"><span class="center-gem"${completionCenterStyle}>${single}</span></span>`;
 }
 
 function equipmentVisual(itemOrId, className = 'equipment-item-image', alt = '') {
@@ -14965,9 +14976,9 @@ function renderCompletion() {
        <button class="secondary-button" data-action="nav" data-screen="workshop">工房へ戻る</button>`;
   return shell('完成', `
     <section class="center-card glass-panel result-card">
-      <div class="jewelry-preview large metal-${jewelry.metal} item-${jewelry.item}" style="--gem:${GEMS[jewelry.gem]?.hue || '#ffffff'}">
+      <div class="jewelry-preview large completion-jewelry-preview metal-${jewelry.metal} item-${jewelry.item}" style="--gem:${GEMS[jewelry.gem]?.hue || '#ffffff'}">
         ${jewelryItemVisual(jewelry.item, 'jewelry-item-shape large', usesLoose)}
-        ${usesLoose ? `<span class="jewelry-preview-loose">${jewelryLooseSetVisual(jewelry.item, jewelry.gem, jewelry.looseShape, 'large')}</span>` : ''}
+        ${usesLoose ? `<span class="jewelry-preview-loose">${jewelryLooseSetVisual(jewelry.item, jewelry.gem, jewelry.looseShape, 'completion')}</span>` : ''}
       </div>
       <h1>${esc(jewelry.name)}が完成しました。</h1>
       <div class="result-stats">

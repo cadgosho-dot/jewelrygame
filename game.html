@@ -15,7 +15,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=0.10.640">
+  <link rel="stylesheet" href="./styles.css?v=0.10.643">
 
   <style id="event-video-contain-v638">
     /* v0.10.632: Event movies must always show the complete source frame.
@@ -102,6 +102,74 @@
       justify-content: center !important;
       overflow: hidden !important;
     }
+
+
+    /* v0.10.642: Completion fallback caps; JS also emits direct completion sizing so ring/pendant silhouettes stay visible even with stale CSS. */
+    .completion-jewelry-preview:not(.item-earrings) .jewelry-loose-set .center-gem {
+      width: 84px !important;
+      max-width: 84px !important;
+    }
+    .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem {
+      width: 74px !important;
+      max-width: 74px !important;
+    }
+    .completion-jewelry-preview .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      display: block !important;
+      width: 100% !important;
+      height: auto !important;
+      max-width: 100% !important;
+      max-height: 84px !important;
+      object-fit: contain !important;
+    }
+    .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      max-height: 74px !important;
+    }
+    @media (max-width: 700px) {
+      .completion-jewelry-preview:not(.item-earrings) .jewelry-loose-set .center-gem {
+        width: 70px !important;
+        max-width: 70px !important;
+      }
+      .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem {
+        width: 62px !important;
+        max-width: 62px !important;
+      }
+      .completion-jewelry-preview .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+        max-height: 70px !important;
+      }
+      .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+        max-height: 62px !important;
+      }
+    }
+
+
+    /* v0.10.643: Completion earrings use smaller stones; on portrait phones move the whole earring artwork slightly down. */
+    .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem {
+      width: 48px !important;
+      max-width: 48px !important;
+      min-width: 0 !important;
+    }
+    .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      display: block !important;
+      width: 48px !important;
+      height: 48px !important;
+      max-width: 48px !important;
+      max-height: 48px !important;
+      object-fit: contain !important;
+    }
+    html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem {
+      width: 42px !important;
+      max-width: 42px !important;
+    }
+    html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      width: 42px !important;
+      height: 42px !important;
+      max-width: 42px !important;
+      max-height: 42px !important;
+    }
+    html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings,
+    html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose {
+      transform: translateY(16px) !important;
+    }
   </style>
 </head>
 <body>
@@ -112,6 +180,6 @@
   <div id="modal-layer" class="hidden"></div>
   <div id="sleep-curtain" aria-hidden="true"></div>
   <div id="morning-brief" aria-live="polite"></div>
-  <script type="module" src="./js/app.js?v=0.10.640"></script>
+  <script type="module" src="./js/app.js?v=0.10.643"></script>
 </body>
 </html>

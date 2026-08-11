@@ -15,7 +15,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=0.10.643">
+  <link rel="stylesheet" href="./styles.css?v=0.10.646">
 
   <style id="event-video-contain-v638">
     /* v0.10.632: Event movies must always show the complete source frame.
@@ -142,7 +142,7 @@
     }
 
 
-    /* v0.10.643: Completion earrings use smaller stones; on portrait phones move the whole earring artwork slightly down. */
+    /* v0.10.644: Completion earrings use smaller stones; on portrait phones move the whole earring artwork slightly down. */
     .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem {
       width: 48px !important;
       max-width: 48px !important;
@@ -170,6 +170,45 @@
     html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose {
       transform: translateY(16px) !important;
     }
+
+
+    /* v0.10.644: Portrait-phone pendant completion is moved below the second header bar. */
+    html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-pendant {
+      margin-top: 44px !important;
+    }
+
+
+    /* v0.10.645: Portrait-phone ring completion is moved below the second header bar. */
+    html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-ring {
+      margin-top: 44px !important;
+    }
+
+
+/* v0.10.646 ピアス完成画面: ルースを丸い玉の中心へ固定し、縦スマホでは全体を上部バーから離す */
+.completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+  inset:auto!important;
+  left:50%!important;
+  top:50%!important;
+  width:228px!important;
+  height:206px!important;
+  transform:translate(-50%,-50%)!important;
+}
+@media (max-width:700px){
+  .completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+    width:190px!important;
+    height:172px!important;
+  }
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings{
+  margin-top:44px!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings{
+  transform:none!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+  transform:translate(-50%,-50%)!important;
+}
+
   </style>
 </head>
 <body>
@@ -180,6 +219,6 @@
   <div id="modal-layer" class="hidden"></div>
   <div id="sleep-curtain" aria-hidden="true"></div>
   <div id="morning-brief" aria-live="polite"></div>
-  <script type="module" src="./js/app.js?v=0.10.643"></script>
+  <script type="module" src="./js/app.js?v=0.10.646"></script>
 </body>
 </html>

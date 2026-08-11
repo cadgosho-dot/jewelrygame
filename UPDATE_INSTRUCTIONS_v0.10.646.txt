@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.646 GitHub Desktop 更新手順
+
+1. GitHub Desktopで現在のJEWELRY×JEWELRYリポジトリを開きます。
+2. このZIPを展開します。
+3. 展開した中身をリポジトリのルートへ、フォルダ構造を保ったまま上書きコピーします。
+4. GitHub Desktopで変更内容を確認します。
+5. 推奨コミット名: Update to v0.10.646
+6. Commit → Push origin を行います。
+
+この更新はv0.10.640〜645の累積更新内容も含みます。

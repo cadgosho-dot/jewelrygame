@@ -18809,3 +18809,39 @@ html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewel
 html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem>img.jewelry-loose-preview{width:42px!important;height:42px!important;max-width:42px!important;max-height:42px!important}
 html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings,
 html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose{transform:translateY(16px)!important}
+
+/* v0.10.644 ペンダント完成画面: 縦スマホのみ上部バーとの重なりを避けて全体を下へ */
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-pendant{
+  margin-top:44px!important;
+}
+
+/* v0.10.645 リング完成画面: 縦スマホのみ上部バーとの重なりを避けて全体を下へ */
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-ring{
+  margin-top:44px!important;
+}
+
+/* v0.10.646 ピアス完成画面: ルースを丸い玉の中心へ固定し、縦スマホでは全体を上部バーから離す */
+.completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+  inset:auto!important;
+  left:50%!important;
+  top:50%!important;
+  width:228px!important;
+  height:206px!important;
+  transform:translate(-50%,-50%)!important;
+}
+@media (max-width:700px){
+  .completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+    width:190px!important;
+    height:172px!important;
+  }
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings{
+  margin-top:44px!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings{
+  transform:none!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+  transform:translate(-50%,-50%)!important;
+}
+

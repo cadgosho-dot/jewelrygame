@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.643';
+const UI_BUILD_VERSION = '0.10.646';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.643';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.646';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.643';
+} from './firebase-service.js?v=0.10.646';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -4695,9 +4695,11 @@ function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large
   if (itemId === 'earrings') {
     const pair = styleLooseMarkup(looseVisual(gemId, looseClass, '', shapeId), looseSize);
     const slotWidth = isSmall ? '21%' : isCompletion ? `${completionGemPx}px` : '23%';
-    const slotTop = isSmall ? '33%' : '31%';
-    const leftX = isSmall ? '28.5%' : '29%';
-    const rightX = isSmall ? '71.5%' : '71%';
+    // v0.10.646: completion earrings are positioned against the actual earring-art stage,
+    // so each loose sits on the center of the round top plate instead of the full preview width.
+    const slotTop = isSmall ? '33%' : isCompletion ? '20.5%' : '31%';
+    const leftX = isSmall ? '28.5%' : isCompletion ? '24.8%' : '29%';
+    const rightX = isSmall ? '71.5%' : isCompletion ? '74.7%' : '71%';
     return `<span class="${wrapperClass} item-earrings" aria-hidden="true" style="position:absolute;inset:0;display:block;pointer-events:none;z-index:3;overflow:visible;">
       <span class="center-gem earring-left" style="position:absolute;left:${leftX};top:${slotTop};width:${slotWidth};max-width:${completionGemPx}px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${single}</span>
       <span class="center-gem earring-right" style="position:absolute;left:${rightX};top:${slotTop};width:${slotWidth};max-width:${completionGemPx}px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${pair}</span>

@@ -1,0 +1,1160 @@
+{
+  "meta": {
+    "title": "宝石4択クイズ 50問・検証済み版",
+    "version": "1.0.0",
+    "language": "ja",
+    "verifiedDate": "2026-08-10",
+    "questionCount": 50,
+    "choiceCount": 4,
+    "answerIndexBase": 0,
+    "answerDistribution": {
+      "A": 13,
+      "B": 12,
+      "C": 13,
+      "D": 12
+    },
+    "birthstoneStandard": "日本の誕生石問題は一般社団法人日本ジュエリー協会（JJA）の現行リストを基準",
+    "factCheckPolicy": "JJAおよびGIAの公式情報・GIAの査読誌Gems & Gemologyを優先。曖昧な言い切りは避け、基準依存の設問は基準を問題文に明記。",
+    "gameIntegrationNote": "ゲーム表示には question / choices / answerIndex / explanation / difficultyLabel を使用できます。sourceIds と sources は監査用で、通常は非表示で構いません。"
+  },
+  "sources": {
+    "JJA_BIRTHSTONES": {
+      "title": "一般社団法人日本ジュエリー協会（JJA） 誕生石",
+      "url": "https://jja.ne.jp/aboutjewellery/aboutjewellery_inner04/"
+    },
+    "GIA_RUBY_DESC": {
+      "title": "GIA Ruby Description",
+      "url": "https://www.gia.edu/ruby-description"
+    },
+    "GIA_SAPPHIRE_DESC": {
+      "title": "GIA Sapphire Description",
+      "url": "https://www.gia.edu/sapphire-description"
+    },
+    "GIA_BERYL_PROJECT": {
+      "title": "GIA Gübelin Gem Project: Beryl",
+      "url": "https://www.gia.edu/gia-gem-project-beryl"
+    },
+    "GIA_AMETHYST": {
+      "title": "GIA Amethyst",
+      "url": "https://www.gia.edu/amethyst"
+    },
+    "GIA_CITRINE": {
+      "title": "GIA Citrine",
+      "url": "https://www.gia.edu/citrine"
+    },
+    "GIA_MOHS_DURABILITY": {
+      "title": "GIA 4Cs Blog: More than the Mohs Scale – Gem Durability",
+      "url": "https://4cs.gia.edu/en-us/blog/more-than-mohs-scale-gem-durability/"
+    },
+    "GIA_PERIDOT": {
+      "title": "GIA Peridot",
+      "url": "https://www.gia.edu/peridot"
+    },
+    "GIA_TANZANITE_DESC": {
+      "title": "GIA Tanzanite Description",
+      "url": "https://www.gia.edu/tanzanite-description"
+    },
+    "GIA_DECEMBER_BIRTHSTONES": {
+      "title": "GIA December Birthstones",
+      "url": "https://www.gia.edu/birthstones/december-birthstones"
+    },
+    "GIA_JUNE_BIRTHSTONES": {
+      "title": "GIA June Birthstones",
+      "url": "https://www.gia.edu/birthstones/june-birthstones"
+    },
+    "GIA_SAPPHIRE_CARE": {
+      "title": "GIA Sapphire Care and Cleaning Guide",
+      "url": "https://www.gia.edu/sapphire-care-cleaning"
+    },
+    "GIA_TOPAZ_CARE": {
+      "title": "GIA Topaz Care and Cleaning Guide",
+      "url": "https://www.gia.edu/topaz-care-cleaning"
+    },
+    "GIA_AMETHYST_VALUE": {
+      "title": "GIA FAQ: Does it matter where an amethyst is mined?",
+      "url": "https://www.gia.edu/FAQ/gia-faq-where-amethyst-mined"
+    },
+    "GIA_OPTICAL_CABOCHONS": {
+      "title": "GIA Optical Effects of Phenomenal Cabochons",
+      "url": "https://www.gia.edu/gia-news-research/optical-effects-phenomenal-cabochons"
+    },
+    "GIA_OPAL_DESC": {
+      "title": "GIA Opal Description",
+      "url": "https://www.gia.edu/opal-description"
+    },
+    "GIA_OPAL_COMMON": {
+      "title": "GIA On the Origin of Digit Patterns in Gem Opal",
+      "url": "https://www.gia.edu/gems-gemology/fa13-opal-digit-patterns-rondeau"
+    },
+    "GIA_TOURMALINE_QUALITY": {
+      "title": "GIA Tourmaline Quality Factors",
+      "url": "https://www.gia.edu/tourmaline-quality-factor"
+    },
+    "GIA_PARAIBA": {
+      "title": "GIA Geographic Origin Determination of Paraíba Tourmaline",
+      "url": "https://www.gia.edu/gems-gemology/winter-2019-paraiba-tourmaline-geographic-origin-determination"
+    },
+    "GIA_PEARL_JUNE": {
+      "title": "GIA June Birthstones – Pearl",
+      "url": "https://www.gia.edu/birthstones/june-birthstones"
+    },
+    "GIA_PEARL_7": {
+      "title": "GIA Pearl Classification: The GIA 7 Pearl Value Factors",
+      "url": "https://www.gia.edu/gems-gemology/summer-2021-pearl-classification-the-gia-7-pearl-value-factors"
+    },
+    "GIA_XRAY_PEARL": {
+      "title": "GIA Applications of X-Ray Radiography and X-Ray Computed Tomography in Pearl Testing",
+      "url": "https://www.gia.edu/gems-gemology/winter-2024-x-ray-imaging"
+    },
+    "GIA_GEM_TREATMENT": {
+      "title": "GIA An Introduction to Gem Treatments",
+      "url": "https://www.gia.edu/gem-treatment"
+    },
+    "GIA_ENHANCEMENTS": {
+      "title": "GIA Gemstone Enhancements and Detection in the 1990s",
+      "url": "https://www.gia.edu/gems-gemology/winter-2000-gemstone-enhancements-detection-1990s-mcclure"
+    },
+    "GIA_TOURMALINE_PROJECT": {
+      "title": "GIA Gübelin Gem Project: Tourmaline",
+      "url": "https://www.gia.edu/gia-gem-project-tourmaline"
+    },
+    "GIA_GARNET_PROJECT": {
+      "title": "GIA Gübelin Gem Project: Garnet",
+      "url": "https://www.gia.edu/gia-gem-project-garnet"
+    },
+    "GIA_GARNET_JANUARY": {
+      "title": "GIA January Birthstone – Garnet",
+      "url": "https://www.gia.edu/birthstones/january-birthstones"
+    },
+    "GIA_PALLASITIC_PERIDOT": {
+      "title": "GIA Large Faceted Pallasitic Peridot",
+      "url": "https://www.gia.edu/gems-gemology/winter-2022-lab-notes-large-faceted-pallasitic-peridot0"
+    },
+    "GIA_PERIDOT_CARE": {
+      "title": "GIA Peridot Care and Cleaning Guide",
+      "url": "https://www.gia.edu/peridot-care-cleaning"
+    },
+    "GIA_OPAL": {
+      "title": "GIA Opal",
+      "url": "https://www.gia.edu/opal"
+    },
+    "GIA_PHENOMENAL_2025": {
+      "title": "GIA A Review of Optical Effects in Phenomenal Gemstones and Their Underlying Nanostructures",
+      "url": "https://www.gia.edu/gems-gemology/summer-2025-phenomenal-gemstones"
+    },
+    "GIA_ZIRCON": {
+      "title": "GIA Zircon",
+      "url": "https://www.gia.edu/zircon"
+    },
+    "GIA_GEM_IMITATION": {
+      "title": "GIA An Introduction to Simulants or Imitation Gem Materials",
+      "url": "https://www.gia.edu/gem-imitation"
+    }
+  },
+  "questions": [
+    {
+      "id": 1,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "誕生石",
+      "question": "日本ジュエリー協会（JJA）の現行リストで、4月の誕生石の一つは？",
+      "choices": [
+        "エメラルド",
+        "ダイヤモンド",
+        "ルビー",
+        "アクアマリン"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "ダイヤモンド",
+      "explanation": "JJAの現行リストでは、4月の誕生石はダイヤモンドとモルガナイトです。",
+      "sourceIds": [
+        "JJA_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 2,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "鉱物学",
+      "question": "ルビーとサファイアは鉱物学的には同じ鉱物です。その鉱物名は？",
+      "choices": [
+        "コランダム",
+        "ベリル",
+        "スピネル",
+        "クォーツ"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "コランダム",
+      "explanation": "ルビーもサファイアもコランダムの宝石変種です。赤色のものをルビー、それ以外の宝石質コランダムをサファイアと呼びます。",
+      "sourceIds": [
+        "GIA_RUBY_DESC",
+        "GIA_SAPPHIRE_DESC"
+      ]
+    },
+    {
+      "id": 3,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "鉱物学",
+      "question": "エメラルド、アクアマリン、モルガナイトに共通する鉱物は？",
+      "choices": [
+        "コランダム",
+        "トパーズ",
+        "ガーネット",
+        "ベリル"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "ベリル",
+      "explanation": "エメラルド、アクアマリン、モルガナイトはいずれもベリルの色変種です。",
+      "sourceIds": [
+        "GIA_BERYL_PROJECT"
+      ]
+    },
+    {
+      "id": 4,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "鉱物学",
+      "question": "アメシストは何という鉱物の紫色変種？",
+      "choices": [
+        "ベリル",
+        "ジルコン",
+        "スピネル",
+        "クォーツ"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "クォーツ",
+      "explanation": "アメシストは紫色のクォーツ（水晶）です。",
+      "sourceIds": [
+        "GIA_AMETHYST"
+      ]
+    },
+    {
+      "id": 5,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "硬度・耐久性",
+      "question": "モース硬度10の宝石は？",
+      "choices": [
+        "サファイア",
+        "ダイヤモンド",
+        "トパーズ",
+        "スピネル"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "ダイヤモンド",
+      "explanation": "ダイヤモンドはモース硬度10。なお、モース硬度は等間隔の尺度ではありません。",
+      "sourceIds": [
+        "GIA_MOHS_DURABILITY"
+      ]
+    },
+    {
+      "id": 6,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "誕生石",
+      "question": "日本ジュエリー協会（JJA）の現行リストで、1月の誕生石は？",
+      "choices": [
+        "トパーズ",
+        "ペリドット",
+        "サファイア",
+        "ガーネット"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "ガーネット",
+      "explanation": "JJAの現行リストでは、1月の誕生石はガーネットです。",
+      "sourceIds": [
+        "JJA_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 7,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "誕生石",
+      "question": "日本ジュエリー協会（JJA）の現行リストで、10月の誕生石の組み合わせは？",
+      "choices": [
+        "ルビー＆スピネル",
+        "トパーズ＆シトリン",
+        "オパール＆トルマリン",
+        "パール＆ムーンストーン"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "オパール＆トルマリン",
+      "explanation": "JJAでは10月の誕生石をオパールとトルマリンとしています。",
+      "sourceIds": [
+        "JJA_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 8,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "誕生石",
+      "question": "日本ジュエリー協会（JJA）の現行リストで、6月の誕生石3種として正しい組み合わせは？",
+      "choices": [
+        "真珠・ムーンストーン・アレキサンドライト",
+        "真珠・オパール・トパーズ",
+        "ムーンストーン・ターコイズ・ジルコン",
+        "真珠・アクアマリン・サファイア"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "真珠・ムーンストーン・アレキサンドライト",
+      "explanation": "JJAでは6月の誕生石を真珠、ムーンストーン、アレキサンドライトとしています。",
+      "sourceIds": [
+        "JJA_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 9,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "誕生石",
+      "question": "日本ジュエリー協会（JJA）の現行リストで、12月の誕生石4種として正しい組み合わせは？",
+      "choices": [
+        "ターコイズ／ブルートパーズ／タンザナイト／サファイア",
+        "ラピス・ラズリ／アクアマリン／ジルコン／サファイア",
+        "ターコイズ／ムーンストーン／タンザナイト／ジルコン",
+        "ターコイズ／ラピス・ラズリ／タンザナイト／ジルコン"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "ターコイズ／ラピス・ラズリ／タンザナイト／ジルコン",
+      "explanation": "日本では2021年の改訂後、12月はトルコ石（ターコイズ）、ラピス・ラズリ、タンザナイト、ジルコンの4種です。",
+      "sourceIds": [
+        "JJA_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 10,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "誕生石",
+      "question": "日本ジュエリー協会（JJA）の現行リストで、8月の誕生石3種として正しい組み合わせは？",
+      "choices": [
+        "ペリドット・ルビー・スピネル",
+        "サードオニックス・シトリン・トパーズ",
+        "ペリドット・サードオニックス・スピネル",
+        "ペリドット・エメラルド・サードオニックス"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "ペリドット・サードオニックス・スピネル",
+      "explanation": "JJAでは8月の誕生石をペリドット、サードオニックス、スピネルとしています。",
+      "sourceIds": [
+        "JJA_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 11,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "発色原因",
+      "question": "ルビーの赤色に大きく関係する微量元素は？",
+      "choices": [
+        "銅",
+        "鉄",
+        "マンガン",
+        "クロム"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "クロム",
+      "explanation": "GIAは、ルビーの赤色を生む代表的な微量元素をクロムと説明しています。",
+      "sourceIds": [
+        "GIA_RUBY_DESC"
+      ]
+    },
+    {
+      "id": 12,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "発色原因",
+      "question": "一般的なブルーサファイアの青色に大きく関係する微量元素の組み合わせは？",
+      "choices": [
+        "クロム＋銅",
+        "鉄＋チタン",
+        "銅＋ニッケル",
+        "マンガン＋コバルト"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "鉄＋チタン",
+      "explanation": "GIAはブルーサファイアの青色について、鉄とチタンが重要な発色要因と説明しています。",
+      "sourceIds": [
+        "GIA_SAPPHIRE_DESC"
+      ]
+    },
+    {
+      "id": 13,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "発色原因",
+      "question": "エメラルドの緑色に主に関係する元素は？",
+      "choices": [
+        "クロムやバナジウム",
+        "鉄とチタン",
+        "銅とマンガン",
+        "コバルトやニッケル"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "クロムやバナジウム",
+      "explanation": "エメラルドはベリルの一種で、主にクロムまたはバナジウムによって緑色になります。",
+      "sourceIds": [
+        "GIA_BERYL_PROJECT"
+      ]
+    },
+    {
+      "id": 14,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "発色原因",
+      "question": "モルガナイトのピンク色に主に関係する元素は？",
+      "choices": [
+        "鉄",
+        "銅",
+        "マンガン",
+        "チタン"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "マンガン",
+      "explanation": "GIAはピンク色のモルガナイトの発色元素としてマンガンを挙げています。",
+      "sourceIds": [
+        "GIA_BERYL_PROJECT"
+      ]
+    },
+    {
+      "id": 15,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "発色原因",
+      "question": "黄色系ベリルのヘリオドールの発色に関係する代表的な元素は？",
+      "choices": [
+        "クロム",
+        "銅",
+        "鉄",
+        "コバルト"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "鉄",
+      "explanation": "GIAはアクアマリンとヘリオドールの発色に鉄が関係すると説明しています。",
+      "sourceIds": [
+        "GIA_BERYL_PROJECT"
+      ]
+    },
+    {
+      "id": 16,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "鉱物学",
+      "question": "ペリドットは何という鉱物の宝石変種？",
+      "choices": [
+        "ベリル",
+        "オリビン",
+        "コランダム",
+        "クリソベリル"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "オリビン",
+      "explanation": "ペリドットは鉱物オリビンの宝石質変種です。",
+      "sourceIds": [
+        "GIA_PERIDOT"
+      ]
+    },
+    {
+      "id": 17,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "鉱物学",
+      "question": "タンザナイトの鉱物名は？",
+      "choices": [
+        "ベリル",
+        "スピネル",
+        "ゾイサイト",
+        "ジルコン"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "ゾイサイト",
+      "explanation": "タンザナイトは青～紫色を示すゾイサイトの宝石変種です。",
+      "sourceIds": [
+        "GIA_TANZANITE_DESC"
+      ]
+    },
+    {
+      "id": 18,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "鉱物学",
+      "question": "アレキサンドライトは何という鉱物の変種？",
+      "choices": [
+        "コランダム",
+        "クリソベリル",
+        "ベリル",
+        "トルマリン"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "クリソベリル",
+      "explanation": "アレキサンドライトは変色効果で有名なクリソベリルの希少変種です。",
+      "sourceIds": [
+        "GIA_JUNE_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 19,
+      "difficulty": 1,
+      "difficultyLabel": "初級",
+      "category": "鉱物学",
+      "question": "アメシストとシトリンに共通する鉱物は？",
+      "choices": [
+        "クォーツ",
+        "コランダム",
+        "ベリル",
+        "長石"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "クォーツ",
+      "explanation": "アメシストは紫色、シトリンは黄色～橙色系のクォーツ変種です。",
+      "sourceIds": [
+        "GIA_AMETHYST",
+        "GIA_CITRINE"
+      ]
+    },
+    {
+      "id": 20,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "産地",
+      "question": "GIAが「世界で唯一、タンザナイトが商業的に採掘される場所」としているのは？",
+      "choices": [
+        "タンザニア北部のメレラニ・ヒルズ",
+        "ブラジルのミナスジェライス",
+        "スリランカのラトゥナプラ",
+        "ミャンマーのモゴック"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "タンザニア北部のメレラニ・ヒルズ",
+      "explanation": "GIAの現行12月誕生石ページでは、メレラニ・ヒルズを世界で唯一タンザナイトが商業的に採掘される場所としています。",
+      "sourceIds": [
+        "GIA_DECEMBER_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 21,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "硬度・耐久性",
+      "question": "ルビーとサファイアのモース硬度は？",
+      "choices": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "9",
+      "explanation": "ルビーとサファイアはいずれもコランダムで、モース硬度は9です。",
+      "sourceIds": [
+        "GIA_SAPPHIRE_CARE"
+      ]
+    },
+    {
+      "id": 22,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "硬度・耐久性",
+      "question": "トパーズのモース硬度は？",
+      "choices": [
+        "6.5",
+        "7",
+        "8",
+        "9"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "8",
+      "explanation": "トパーズはモース硬度8ですが、劈開のため衝撃には注意が必要です。",
+      "sourceIds": [
+        "GIA_TOPAZ_CARE"
+      ]
+    },
+    {
+      "id": 23,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "硬度・耐久性",
+      "question": "モース硬度について正しい説明は？",
+      "choices": [
+        "硬度10は硬度5のちょうど2倍硬い",
+        "数字の間隔は等間隔ではない",
+        "宝石の割れにくさだけを表す",
+        "数字が1違うごとに硬さも同じ量だけ増える"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "数字の間隔は等間隔ではない",
+      "explanation": "モース硬度は引っかき硬さの相対順位で、数字の間隔は等間隔ではありません。",
+      "sourceIds": [
+        "GIA_MOHS_DURABILITY"
+      ]
+    },
+    {
+      "id": 24,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "硬度・耐久性",
+      "question": "サファイアが日常使いのリングにも比較的適している理由として最も正しいものは？",
+      "choices": [
+        "非常に柔らかく衝撃を吸収するから",
+        "水分を多く含むから",
+        "硬度9で靱性に優れ、劈開がないから",
+        "金属のように塑性変形するから"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "硬度9で靱性に優れ、劈開がないから",
+      "explanation": "GIAはコランダムについて、硬度9、優れた靱性、劈開なしという特徴から日常使いのリングにも適すると説明しています。",
+      "sourceIds": [
+        "GIA_SAPPHIRE_CARE"
+      ]
+    },
+    {
+      "id": 25,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "品質評価",
+      "question": "アメシストの価値評価で、GIAが最も重要な価値要素として挙げるものは？",
+      "choices": [
+        "産地だけ",
+        "磁力",
+        "原石の形だけ",
+        "色"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "色",
+      "explanation": "GIAはアメシストについて、産地にかかわらず色が最も重要な価値要素だと説明しています。",
+      "sourceIds": [
+        "GIA_AMETHYST_VALUE"
+      ]
+    },
+    {
+      "id": 26,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "光学効果",
+      "question": "宝石に猫の目のような一本の光帯が現れる現象は？",
+      "choices": [
+        "アステリズム",
+        "遊色効果",
+        "アデュラレッセンス",
+        "シャトヤンシー"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "シャトヤンシー",
+      "explanation": "シャトヤンシーはキャッツアイ効果とも呼ばれ、平行に配列した微細構造などによって一本の光帯が見えます。",
+      "sourceIds": [
+        "GIA_OPTICAL_CABOCHONS"
+      ]
+    },
+    {
+      "id": 27,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "光学効果",
+      "question": "スターサファイアなどに見られる星状の光学効果は？",
+      "choices": [
+        "シラー",
+        "アステリズム",
+        "シャトヤンシー",
+        "蛍光"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "アステリズム",
+      "explanation": "複数方向の光帯が交差して星状に見える現象をアステリズムと呼びます。",
+      "sourceIds": [
+        "GIA_OPTICAL_CABOCHONS"
+      ]
+    },
+    {
+      "id": 28,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "光学効果",
+      "question": "プレシャスオパールの遊色効果の主な原因は？",
+      "choices": [
+        "内部の金属粉による反射",
+        "紫外線による蛍光",
+        "規則的に配列した微細なシリカ球状粒子による光の回折",
+        "内部気泡だけによる全反射"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "規則的に配列した微細なシリカ球状粒子による光の回折",
+      "explanation": "プレシャスオパールでは、規則的に配列した微小なシリカ球状粒子の構造が可視光を回折し、遊色効果を生みます。",
+      "sourceIds": [
+        "GIA_OPAL_DESC"
+      ]
+    },
+    {
+      "id": 29,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "光学効果",
+      "question": "コモンオパールが通常、プレシャスオパールのような遊色効果を示さない主な理由は？",
+      "choices": [
+        "シリカ球状粒子の配列が十分に規則的でないことが多いから",
+        "水を全く含まないから",
+        "必ず黒色だから",
+        "鉄を全く含まないから"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "シリカ球状粒子の配列が十分に規則的でないことが多いから",
+      "explanation": "GIAの研究では、コモンオパールは通常、シリカ球状粒子が規則正しく並んでいないため遊色を示さないと説明されています。",
+      "sourceIds": [
+        "GIA_OPAL_COMMON"
+      ]
+    },
+    {
+      "id": 30,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "光学効果",
+      "question": "ムーンストーンを代表する、柔らかな光が内部を漂うように見える効果は？",
+      "choices": [
+        "遊色効果",
+        "アステリズム",
+        "ディスパージョン",
+        "アデュラレッセンス"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "アデュラレッセンス",
+      "explanation": "ムーンストーンは長石グループの宝石で、アデュラレッセンスが代表的な光学効果です。",
+      "sourceIds": [
+        "GIA_JUNE_BIRTHSTONES"
+      ]
+    },
+    {
+      "id": 31,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "光学効果",
+      "question": "グリーントルマリンで強く見られることがある、見る方向によって色が異なって見える性質は？",
+      "choices": [
+        "多色性（プレオクロイズム）",
+        "遊色効果",
+        "蛍光",
+        "アステリズム"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "多色性（プレオクロイズム）",
+      "explanation": "GIAは多くのグリーントルマリンが強い多色性を示すと説明しています。",
+      "sourceIds": [
+        "GIA_TOURMALINE_QUALITY"
+      ]
+    },
+    {
+      "id": 32,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "発色原因",
+      "question": "パライバ・トルマリンの鮮やかな青～緑色に重要な元素として特に有名なのは？",
+      "choices": [
+        "銅",
+        "クロム",
+        "コバルト",
+        "鉄"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "銅",
+      "explanation": "パライバおよびパライバタイプのトルマリンは、銅を含む鮮やかな青～緑色のトルマリンとして知られます。",
+      "sourceIds": [
+        "GIA_PARAIBA"
+      ]
+    },
+    {
+      "id": 33,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "真珠",
+      "question": "養殖真珠の作り方として最も正しい説明は？",
+      "choices": [
+        "天然真珠を加熱して大きくする",
+        "貝殻を球形に削ったものをそのまま真珠として使う",
+        "人為的に外套膜片を移植したり、ビーズ核と外套膜片を移植したりして、貝に真珠質を形成させる",
+        "海水中でシリカを結晶化させる"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "人為的に外套膜片を移植したり、ビーズ核と外套膜片を移植したりして、貝に真珠質を形成させる",
+      "explanation": "養殖法には外套膜片のみを使う方法や、ビーズ核と外套膜片を使う方法があります。いずれも生きた貝が真珠質を形成します。",
+      "sourceIds": [
+        "GIA_PEARL_JUNE"
+      ]
+    },
+    {
+      "id": 34,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "真珠",
+      "question": "次のうち、GIAの「7つの真珠価値要素」に含まれないものは？",
+      "choices": [
+        "光沢",
+        "透明度",
+        "表面",
+        "真珠層"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "透明度",
+      "explanation": "GIAの7要素は、サイズ・形・色・光沢・表面・真珠層・マッチングです。",
+      "sourceIds": [
+        "GIA_PEARL_7"
+      ]
+    },
+    {
+      "id": 35,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "真珠",
+      "question": "天然真珠と養殖真珠などを内部構造から判別する際、宝石学ラボで特に重要な検査は？",
+      "choices": [
+        "X線撮影・X線CT",
+        "磁石検査",
+        "炎色反応",
+        "モース硬度検査"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "X線撮影・X線CT",
+      "explanation": "X線透過撮影やX線CTは、真珠の内部構造を非破壊で確認し、天然・養殖の識別に重要です。",
+      "sourceIds": [
+        "GIA_XRAY_PEARL"
+      ]
+    },
+    {
+      "id": 36,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "処理",
+      "question": "エメラルドで広く知られる透明度改善処理は？",
+      "choices": [
+        "表面を焼いて硬化させる",
+        "表面に達するフラクチャーへオイルや樹脂などを含浸・充填する",
+        "磁化処理",
+        "凍結処理"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "表面に達するフラクチャーへオイルや樹脂などを含浸・充填する",
+      "explanation": "エメラルドでは、表面に達するフラクチャーをオイル、ワックス、樹脂などで充填し、見かけの透明度を改善する処理があります。",
+      "sourceIds": [
+        "GIA_GEM_TREATMENT"
+      ]
+    },
+    {
+      "id": 37,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "処理",
+      "question": "ルビーやサファイアで広く知られる宝石処理は？",
+      "choices": [
+        "冷凍処理",
+        "加熱処理",
+        "塩水処理",
+        "真空乾燥処理"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "加熱処理",
+      "explanation": "ルビーやサファイアでは、色や透明度の改善などを目的とした加熱処理が広く知られています。",
+      "sourceIds": [
+        "GIA_ENHANCEMENTS"
+      ]
+    },
+    {
+      "id": 38,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "処理",
+      "question": "ダイヤモンドに実際に行われることがある透明度改善処理は？",
+      "choices": [
+        "フラクチャーフィリング",
+        "真珠層形成",
+        "オパール化",
+        "キャッツアイ化"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "フラクチャーフィリング",
+      "explanation": "ダイヤモンドにはフラクチャーフィリングやレーザードリリングなどの透明度改善処理が存在します。",
+      "sourceIds": [
+        "GIA_ENHANCEMENTS"
+      ]
+    },
+    {
+      "id": 39,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "鉱物学",
+      "question": "トルマリンについて正しい説明は？",
+      "choices": [
+        "すべて同じ単一鉱物種で色もほぼ一色",
+        "コランダムの別名",
+        "必ず赤色だけを示す",
+        "十数種以上の鉱物種を含む複雑なグループで、多彩な色を示す"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "十数種以上の鉱物種を含む複雑なグループで、多彩な色を示す",
+      "explanation": "GIAはトルマリンを複雑な化学組成を持つ鉱物グループとし、十数種以上の鉱物種と幅広い色が知られるとしています。",
+      "sourceIds": [
+        "GIA_TOURMALINE_PROJECT"
+      ]
+    },
+    {
+      "id": 40,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "ガーネット",
+      "question": "「デマントイド」は何の仲間？",
+      "choices": [
+        "エメラルド",
+        "トルマリン",
+        "スピネル",
+        "ガーネット"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "ガーネット",
+      "explanation": "デマントイドは緑色のアンドラダイト・ガーネットの宝石変種です。",
+      "sourceIds": [
+        "GIA_GARNET_PROJECT",
+        "GIA_GARNET_JANUARY"
+      ]
+    },
+    {
+      "id": 41,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "ガーネット",
+      "question": "ツァボライトで特に有名な色は？",
+      "choices": [
+        "緑",
+        "青",
+        "紫",
+        "黒"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "緑",
+      "explanation": "ツァボライトは鮮やかな緑色で知られるグロッシュラー・ガーネットの変種です。",
+      "sourceIds": [
+        "GIA_GARNET_JANUARY"
+      ]
+    },
+    {
+      "id": 42,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "ガーネット",
+      "question": "スペサルティン（スペサルタイト）ガーネットで特に有名な色は？",
+      "choices": [
+        "青",
+        "無色",
+        "オレンジ～黄色",
+        "青紫"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "オレンジ～黄色",
+      "explanation": "GIAはスペサルティンについて、印象的なオレンジや黄色で知られると説明しています。",
+      "sourceIds": [
+        "GIA_GARNET_JANUARY"
+      ]
+    },
+    {
+      "id": 43,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "ガーネット",
+      "question": "GIAが「一般的なガーネット鉱物」として挙げるものは何種類？",
+      "choices": [
+        "3種類",
+        "4種類",
+        "5種類",
+        "6種類"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "6種類",
+      "explanation": "アルマンディン、アンドラダイト、グロッシュラー、パイロープ、スペサルティン、ウバロバイトの6種です。",
+      "sourceIds": [
+        "GIA_GARNET_PROJECT"
+      ]
+    },
+    {
+      "id": 44,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "産地・生成",
+      "question": "宝石質のものがパラサイト隕石からも見つかることで知られる宝石は？",
+      "choices": [
+        "エメラルド",
+        "ターコイズ",
+        "ペリドット",
+        "パール"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "ペリドット",
+      "explanation": "パラサイト隕石には結晶質オリビンが含まれることがあり、宝石質のものはパラサイト由来ペリドットとして知られます。",
+      "sourceIds": [
+        "GIA_PALLASITIC_PERIDOT"
+      ]
+    },
+    {
+      "id": 45,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "硬度・耐久性",
+      "question": "宝石の「硬度」と「靱性」の違いとして正しいものは？",
+      "choices": [
+        "硬度は色の濃さ、靱性は透明度",
+        "どちらも全く同じ意味",
+        "硬度は屈折率、靱性は比重",
+        "硬度は主に傷への抵抗、靱性は欠け・割れへの抵抗"
+      ],
+      "answerIndex": 3,
+      "answerLetter": "D",
+      "answer": "硬度は主に傷への抵抗、靱性は欠け・割れへの抵抗",
+      "explanation": "宝石の耐久性は硬度だけでは決まりません。硬度は傷への抵抗、靱性は破損への抵抗を表す別の性質です。",
+      "sourceIds": [
+        "GIA_MOHS_DURABILITY"
+      ]
+    },
+    {
+      "id": 46,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "硬度・耐久性",
+      "question": "次の選択肢のうち、サファイアよりモース硬度が高い宝石は？",
+      "choices": [
+        "アメシスト",
+        "ペリドット",
+        "ダイヤモンド",
+        "オパール"
+      ],
+      "answerIndex": 2,
+      "answerLetter": "C",
+      "answer": "ダイヤモンド",
+      "explanation": "サファイアはモース硬度9、ダイヤモンドは10です。モース尺度ではダイヤモンドがサファイアより上位です。",
+      "sourceIds": [
+        "GIA_MOHS_DURABILITY"
+      ]
+    },
+    {
+      "id": 47,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "取扱い",
+      "question": "GIAが超音波洗浄機とスチームクリーナーの使用を推奨していない宝石は？",
+      "choices": [
+        "ペリドット",
+        "無処理サファイア",
+        "無処理スピネル",
+        "一般的な無処理ダイヤモンド"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "ペリドット",
+      "explanation": "GIAはペリドットについて、温かい石けん水を推奨し、超音波・スチーム洗浄は推奨していません。",
+      "sourceIds": [
+        "GIA_PERIDOT_CARE"
+      ]
+    },
+    {
+      "id": 48,
+      "difficulty": 3,
+      "difficultyLabel": "上級",
+      "category": "性質",
+      "question": "内部構造に最大約20％の水を含むことがある宝石は？",
+      "choices": [
+        "ルビー",
+        "オパール",
+        "ダイヤモンド",
+        "スピネル"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "オパール",
+      "explanation": "GIAはオパールについて、水和シリカであり、構造中に最大約20％の水を含むと説明しています。",
+      "sourceIds": [
+        "GIA_OPAL"
+      ]
+    },
+    {
+      "id": 49,
+      "difficulty": 4,
+      "difficultyLabel": "かなり難しい",
+      "category": "光学効果",
+      "question": "ムーンストーンに、通常のアデュラレッセンス以外で現れることがある現象は？",
+      "choices": [
+        "キャッツアイ効果や4条スター",
+        "必ず6条スターのみ",
+        "必ず変色効果",
+        "必ず遊色効果"
+      ],
+      "answerIndex": 0,
+      "answerLetter": "A",
+      "answer": "キャッツアイ効果や4条スター",
+      "explanation": "GIAの2025年レビューでは、キャッツアイ・ムーンストーンや4条スター・ムーンストーンの実例が示されています。",
+      "sourceIds": [
+        "GIA_PHENOMENAL_2025"
+      ]
+    },
+    {
+      "id": 50,
+      "difficulty": 2,
+      "difficultyLabel": "中級",
+      "category": "鑑別・類似石",
+      "question": "天然ジルコンとキュービックジルコニア（CZ）の関係として正しいのは？",
+      "choices": [
+        "同じ物質で、天然か合成かだけが違う",
+        "名前は似ているが別の物質",
+        "どちらも天然ダイヤモンド",
+        "ジルコンを加熱すると必ずCZになる"
+      ],
+      "answerIndex": 1,
+      "answerLetter": "B",
+      "answer": "名前は似ているが別の物質",
+      "explanation": "ジルコンは天然に産する宝石鉱物です。一方、宝飾用CZは人工のキュービックジルコニアで、ジルコンとは別物です。",
+      "sourceIds": [
+        "GIA_ZIRCON",
+        "GIA_GEM_IMITATION"
+      ]
+    }
+  ]
+}

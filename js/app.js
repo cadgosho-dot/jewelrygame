@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.639';
+const UI_BUILD_VERSION = '0.10.640';
 import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
 import { resolveAudioScene } from './audio-scene-map.js';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.639';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.640';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.639';
+} from './firebase-service.js?v=0.10.640';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -200,6 +200,7 @@ let kaitenzushiLoadNonce = 0;
 let okachimachiQuizSession = null;
 let looseShopOriginalQuizSession = null;
 let okachimachiQuizQuestionsPromise = null;
+let looseShopOriginalQuizQuestionsPromise = null;
 let cinemaEventVideosPromise = null;
 let storeTheftSequenceRunning = false;
 let appInstalled = window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -215,6 +216,7 @@ const JEWELRY_SHOP_TRANSACTION_HOURS = 1;
 const ROBBERY_DAILY_CHANCE = 1 / 100;
 const ROBBERY_HISTORY_LIMIT = 20;
 const OKACHIMACHI_QUIZ_DATA_URL = './data/jewelry_okachimachi_quiz_200_game_format.json';
+const LOOSE_SHOP_ORIGINAL_QUIZ_DATA_URL = './data/jewelry_quiz_50_verified_2026-08-10.json';
 const OKACHIMACHI_QUIZ_INTRO_VIDEO = './assets/videos/events/okachimachi-quiz-king-intro.mp4';
 const CINEMA_EVENT_VIDEO_MANIFEST_URL = './data/cinema-event-videos.json';
 const OKACHIMACHI_QUIZ_TRIGGER_MIN = 26;
@@ -222,7 +224,7 @@ const OKACHIMACHI_QUIZ_TRIGGER_MAX = 34;
 const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN = 26;
 const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX = 34;
 const LOOSE_SHOP_ORIGINAL_QUIZ_IMAGE = './assets/images/events/loose-shop-original-quiz.png';
-const LOOSE_SHOP_ORIGINAL_QUIZ_NAME = '怪異な鑑定士';
+const LOOSE_SHOP_ORIGINAL_QUIZ_NAME = '3Dメガネ';
 const OKACHIMACHI_TOLL_EVENT_CHANCE = 1 / 60;
 const OKACHIMACHI_TOLL_EVENT_COST = 100000;
 const OKACHIMACHI_INVASIVE_TURTLES_EVENT_IMAGE = './assets/images/events/okachimachi-invasive-turtles.png';
@@ -8389,7 +8391,7 @@ async function maybeEnterLooseShop() {
     return;
   }
   try {
-    const questions = await loadOkachimachiQuizQuestions();
+    const questions = await loadLooseShopOriginalQuizQuestions();
     const selected = chooseOkachimachiQuizQuestion(questions, eventState.lastQuestionIndex);
     eventState.visitsSinceLast = 0;
     eventState.nextTriggerAt = nextLooseShopOriginalQuizTriggerAt();
@@ -8446,6 +8448,30 @@ async function loadOkachimachiQuizQuestions() {
     })();
   }
   return okachimachiQuizQuestionsPromise;
+}
+
+async function loadLooseShopOriginalQuizQuestions() {
+  if (!looseShopOriginalQuizQuestionsPromise) {
+    looseShopOriginalQuizQuestionsPromise = (async () => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 5000);
+      try {
+        const response = await fetch(LOOSE_SHOP_ORIGINAL_QUIZ_DATA_URL, { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error(`ルース屋クイズデータを読み込めませんでした（${response.status}）`);
+        const payload = await response.json();
+        const rows = Array.isArray(payload) ? payload : (Array.isArray(payload?.questions) ? payload.questions : []);
+        const questions = rows.filter(validOkachimachiQuizQuestion);
+        if (questions.length !== 50) throw new Error(`ルース屋クイズは50問必要です（有効問題数: ${questions.length}）`);
+        return questions;
+      } catch (error) {
+        looseShopOriginalQuizQuestionsPromise = null;
+        throw error;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    })();
+  }
+  return looseShopOriginalQuizQuestionsPromise;
 }
 
 function chooseOkachimachiQuizQuestion(questions, previousIndex = -1) {
@@ -9433,6 +9459,18 @@ function advanceLooseShopOriginalQuizDialogue() {
     return;
   }
   if (session.stage === 'intro2') {
+    session.stage = 'intro3';
+    render();
+    playSfx('select', { gain: .82 });
+    return;
+  }
+  if (session.stage === 'intro3') {
+    session.stage = 'intro4';
+    render();
+    playSfx('select', { gain: .82 });
+    return;
+  }
+  if (session.stage === 'intro4') {
     session.stage = 'question';
     render();
     playSfx('quiz-question', { gain: .96 });
@@ -9449,7 +9487,13 @@ function advanceLooseShopOriginalQuizDialogue() {
     playSfx('select', { gain: .82 });
     return;
   }
-  if (session.stage === 'incorrectAnswer' || session.stage === 'reward') {
+  if (session.stage === 'reward') {
+    session.stage = 'farewell';
+    render();
+    playSfx('select', { gain: .82 });
+    return;
+  }
+  if (session.stage === 'incorrectAnswer' || session.stage === 'farewell') {
     playSfx('select', { gain: .82 });
     finishLooseShopOriginalQuiz();
   }
@@ -13720,26 +13764,27 @@ function renderLooseShopOriginalQuizEvent() {
   if (session.stage === 'reward') {
     const gem = GEMS[session.rewardGemId];
     const shapeId = gem?.originalLooseBaseShape || defaultLooseShapeForGem(session.rewardGemId || '');
-    const description = gem ? looseGemShortDescription(gem.id) : '';
     return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, `
       <section class="loose-shop-original-quiz-event quiz-stage-reward" aria-live="polite">
-        <button type="button" class="quiz-reward-button" data-action="loose-shop-original-quiz-next" aria-label="ルース屋へ進む">
+        <button type="button" class="quiz-reward-button" data-action="loose-shop-original-quiz-next" aria-label="次へ進む">
           <span class="quiz-reward-glow" aria-hidden="true"></span>
           ${looseVisual(gem?.id, 'quiz-reward-gem', '', shapeId)}
-          <strong>${esc(gem?.name || '')}を受け取りました</strong>
-          <small>${esc(description)}</small>
-          <small>タップしてルース屋へ進む</small>
+          <strong>${esc(gem?.name || '')}をもらいました</strong>
+          <small>タップして進む</small>
         </button>
       </section>`, { back: false, main: false, hideHeader: true });
   }
 
   const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
   const dialogueByStage = {
-    intro1: `${playerName}さん、石を見る目は育っていますか、、、`,
-    intro2: `では一問だけ。正解したら、私のオリジナルルースをひとつ差し上げましょう、、、`,
-    correct: '正解です、、、持っていきなさい、、、',
-    incorrect: '違います、、、まだ石の声が聞こえていませんね、、、',
-    incorrectAnswer: `正解は「${esc(session.question.choices[session.question.answerIndex] || '')}」でした、、、`,
+    intro1: `おう、${playerName}、お疲れさん、、、、`,
+    intro2: `どう思う、このルース、、、とても良く出来てるだろ？！、、、美しいとはこの煌めきのために生まれた言葉だ！、、、`,
+    intro3: `地球は素晴らしい！、、、こうなりたい、、、、`,
+    intro4: `私も今、宝石を作ってみてるんだ！、、、そうだ、、、クイズに正解したら${playerName}にあげようか、、、`,
+    correct: `嬉しいよ${playerName}！、、、君の結晶化は既に始まっている！、、楽しみだ！、、、これをあげよう、使ってくれ！、、、`,
+    incorrect: `残念っ！そんなんじゃルースになれないぞ！、、、もっと勉強しなきゃな、${playerName}`,
+    incorrectAnswer: `正解は${esc(session.question.choices[session.question.answerIndex] || '')}でした`,
+    farewell: `試作品はまだまだあるんだ！また来てくれよ、、、`,
   };
   const isQuestion = session.stage === 'question';
   return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, `

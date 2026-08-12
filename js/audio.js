@@ -17,6 +17,9 @@ const pendingStopTimers = new Map();
 let ambientDuckFactor = 1;
 let ambientDuckTimer = null;
 let transitionSerial = 0;
+// v0.10.668: keep startup BGM/ambient dormant until the player actually enters the game.
+// switchAudio() may still record the destination scene, but no loop media is created/fetched while held.
+let startupAudioHeld = true;
 let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .75, bgmMuted: false, ambientMuted: false, sfxMuted: false, externalAudioPriority: false });
 
 let weatherEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear', audioKey: 'main' };
@@ -137,6 +140,15 @@ function loopAudio(kind, key) {
 export function configureAudio(provider) {
   settingsProvider = provider;
   applyAudioSettings();
+}
+
+export function releaseStartupAudioHold() {
+  if (!startupAudioHeld) return false;
+  startupAudioHeld = false;
+  if (initialized && !suspended && currentKey && !settingsProvider().externalAudioPriority) {
+    startCurrentAudio().catch(() => {});
+  }
+  return true;
 }
 
 export async function unlockAudio() {
@@ -272,7 +284,7 @@ async function startLoop(audio, target, duration = 550, isCurrent = () => true) 
 }
 
 async function startCurrentAudio() {
-  if (!currentKey || suspended) return;
+  if (startupAudioHeld || !currentKey || suspended) return;
   const sceneKey = currentKey;
   const serial = transitionSerial;
   const isCurrent = () => currentKey === sceneKey
@@ -377,7 +389,7 @@ export async function switchAudio(key) {
 
 
 async function restartWeatherAmbient(key) {
-  if (!key || currentKey !== key || suspended) return;
+  if (startupAudioHeld || !key || currentKey !== key || suspended) return;
   const ambient = loopAudio('ambient', key);
   const supplemental = loopSupplementalAmbients(key);
   const settings = settingsProvider();

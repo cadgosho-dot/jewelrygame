@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.667';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.667';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.667';
+const UI_BUILD_VERSION = '0.10.668';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.668';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.668';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.667';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.668';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.667';
+} from './firebase-service.js?v=0.10.668';
 
 const STARTUP_DIAGNOSTICS_STORAGE_KEY = 'jxj-startup-diagnostics-v1';
 const startupDiagnostics = (() => {
@@ -191,6 +191,7 @@ const STARTUP_MARKER_LABELS = Object.freeze({
   start_autopilot_started: '自動操縦確認開始',
   start_autopilot_finished: '自動操縦確認完了',
   main_rendered: 'メイン画面描画',
+  startup_audio_released: '起動時音声の解放',
   window_load: 'window load',
   service_worker_register_started: 'Service Worker登録開始',
   service_worker_register_finished: 'Service Worker登録完了',
@@ -21234,11 +21235,13 @@ root.addEventListener('click', async (event) => {
         startupMark('start_autopilot_finished');
         setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
         startupMark(state.playerName ? 'main_rendered' : 'name_setup_rendered');
+        releaseStartupAudioAfterGameEntry();
         persistStartupDiagnostics(state.playerName ? 'main' : 'name-setup');
         if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
       } else {
         startNewGame();
         startupMark('name_setup_rendered');
+        releaseStartupAudioAfterGameEntry();
         persistStartupDiagnostics('name-setup');
       }
       break;
@@ -22159,6 +22162,10 @@ root.addEventListener('input', (event) => {
   applyAudioSettings();
 });
 
+function releaseStartupAudioAfterGameEntry() {
+  if (releaseStartupAudioHold()) startupMark('startup_audio_released');
+}
+
 function startNewGame() {
   localStorage.removeItem(freshStartFlagKey());
   state = initialState();
@@ -22174,6 +22181,7 @@ async function enterGameAfterLogin() {
   startupMark('auth_entry_enter_game_started');
   if (!hasSave()) {
     startNewGame();
+    releaseStartupAudioAfterGameEntry();
     return;
   }
   startupMark('auth_entry_load_game_started');
@@ -22202,6 +22210,7 @@ async function enterGameAfterLogin() {
   const restoredQuizScreen = restorePersistedQuizSessionsAfterLoad();
   if (restoredQuizScreen) {
     setScreen(restoredQuizScreen, {}, false);
+    releaseStartupAudioAfterGameEntry();
     if (saveRecoveryNotice) {
       showToast(saveRecoveryNotice, 'info', false);
       saveRecoveryNotice = null;
@@ -22214,6 +22223,7 @@ async function enterGameAfterLogin() {
   startupMark('auth_entry_autopilot_finished');
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
   startupMark(state.playerName ? 'main_rendered' : 'name_setup_rendered');
+  releaseStartupAudioAfterGameEntry();
   persistStartupDiagnostics(state.playerName ? 'main-auth-entry' : 'name-setup-auth-entry');
   if (saveRecoveryNotice) {
     showToast(saveRecoveryNotice, 'info', false);
@@ -22252,9 +22262,12 @@ if ('serviceWorker' in navigator) {
         const runUpdateCheck = () => registration.update()
           .then(() => startupMark('service_worker_update_finished'))
           .catch(() => {});
-        // v0.10.666: avoid competing with Auth/Firestore during the critical launch path.
-        if ('requestIdleCallback' in window) requestIdleCallback(runUpdateCheck, { timeout: 8000 });
-        else window.setTimeout(runUpdateCheck, 6000);
+        // v0.10.668: requestIdleCallback can run almost immediately while Firebase is still
+        // on the critical launch path. Enforce a minimum 10-second delay, then use idle time.
+        window.setTimeout(() => {
+          if ('requestIdleCallback' in window) requestIdleCallback(runUpdateCheck, { timeout: 10000 });
+          else runUpdateCheck();
+        }, 10000);
       })
       .catch(() => {});
   });
@@ -22364,6 +22377,7 @@ async function boot() {
             state.game.screen = 'phone';
             clearPhoneGameReturnRequest();
             render();
+            releaseStartupAudioAfterGameEntry();
             return;
           }
           clearPhoneGameReturnRequest();
@@ -22377,6 +22391,7 @@ async function boot() {
             state.game.screen = 'glab';
             clearGlabAboutReturnRequest();
             render();
+            releaseStartupAudioAfterGameEntry();
             return;
           }
           clearGlabAboutReturnRequest();
@@ -22390,6 +22405,7 @@ async function boot() {
             state.game.screen = 'glabSns';
             clearGlabSnsReturnRequest();
             render();
+            releaseStartupAudioAfterGameEntry();
             return;
           }
           clearGlabSnsReturnRequest();
@@ -22403,6 +22419,7 @@ async function boot() {
             state.game.screen = 'okachimachi';
             clearOkachimachiExternalReturnRequest();
             render();
+            releaseStartupAudioAfterGameEntry();
             return;
           }
           clearOkachimachiExternalReturnRequest();

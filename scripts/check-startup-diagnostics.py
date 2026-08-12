@@ -29,10 +29,10 @@ def ordered(label, haystack, needles, start=0):
 
 require('HTML probe uses CSP nonce', 'nonce="jxj-kaitenzushi"' in html and "'nonce-jxj-kaitenzushi'" in html)
 require('HTML probe precedes hosting origin guard', html.find('__JXJ_BOOT_DIAGNOSTICS') < html.find('hosting-origin-guard.js'))
-require('HTML/CSS/app cache version 0.10.665', 'styles.css?v=0.10.665' in html and 'app.js?v=0.10.665' in html)
-require('game-data VERSION 0.10.665', "VERSION = '0.10.665'" in game_data)
-require('app UI_BUILD_VERSION 0.10.665', "UI_BUILD_VERSION = '0.10.665'" in app)
-require('service worker VERSION 0.10.665', "VERSION = '0.10.665'" in sw)
+require('HTML/CSS/app cache version 0.10.666', 'styles.css?v=0.10.666' in html and 'app.js?v=0.10.666' in html)
+require('game-data VERSION 0.10.666', "VERSION = '0.10.666'" in game_data)
+require('app UI_BUILD_VERSION 0.10.666', "UI_BUILD_VERSION = '0.10.666'" in app)
+require('service worker VERSION 0.10.666', "VERSION = '0.10.666'" in sw)
 require('diagnostic storage key present', "STARTUP_DIAGNOSTICS_STORAGE_KEY = 'jxj-startup-diagnostics-v1'" in app)
 require('settings diagnostic panel present', 'renderStartupDiagnosticsPanel()' in app and '診断結果をコピー' in app)
 require('copy action always allowed even at hunger lock', "'copy-startup-diagnostics'" in app[app.find('const HUNGER_ALLOWED_ACTIONS'):app.find('function eventRecord')])
@@ -48,14 +48,14 @@ ordered('Firebase boot order unchanged while instrumented', app, [
     "startupMark('firebase_init_finished')",
     'observeAuth(async (user) =>',
 ], boot)
-ordered('signed-in cloud/session order unchanged while instrumented', app, [
+ordered('signed-in cloud/session startup remains measured', app, [
     "startupMark('cloud_load_started')",
+    "startupMark('session_claim_started')",
+    'const sessionClaimPromise = claimSession(user.uid, sessionId)',
     'cloudSave = await loadState(user.uid);',
     "startupMark('cloud_load_finished')",
     'const preferredAtBoot = preferredSavedState();',
-    "startupMark('session_claim_started')",
-    'await claimSession(user.uid, sessionId);',
-    "startupMark('session_claim_finished')",
+    'await sessionClaimPromise;',
 ], boot)
 ordered('title completion is measured after render', app, [
     "screen = 'title';",
@@ -80,9 +80,10 @@ ordered('start-to-main measurement preserves load/autopilot/render order', app, 
 require('no synchronous diagnostic persistence before start load', "persistStartupDiagnostics('start-clicked')" not in app)
 
 sw_block = app.find("if ('serviceWorker' in navigator)")
-ordered('Service Worker register/update order unchanged', app, [
+ordered('Service Worker update is deferred after registration', app, [
     "navigator.serviceWorker.register('./sw.js')",
-    "return registration.update();",
+    'const runUpdateCheck = () => registration.update()',
+    'requestIdleCallback(runUpdateCheck, { timeout: 8000 })',
 ], sw_block)
 
 markers = [

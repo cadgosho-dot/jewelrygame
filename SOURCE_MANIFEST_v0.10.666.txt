@@ -1,0 +1,30 @@
+JEWELRY×JEWELRY v0.10.666 update manifest
+
+Source basis:
+- Full project: user supplied jewelrygame-main (3).zip
+- Applied cumulative update: JEWELRYxJEWELRY_v0_10_665_GitHubDesktop_update_WindowsSafe.zip
+- v0.10.665 real-device startup diagnostics supplied by user on 2026-08-12
+
+v0.10.666 changed/runtime files:
+- js/app.js
+- js/game-data.js
+- js/firebase-service.js
+- game.html
+- sw.js
+- CHANGELOG.md
+
+v0.10.666 validation/documentation files:
+- scripts/check-startup-optimization-v666.py
+- scripts/check-startup-diagnostics.py
+- IMPLEMENTATION_NOTES_v0.10.666.md
+- UPDATE_INSTRUCTIONS_v0.10.666.txt
+- SOURCE_MANIFEST_v0.10.666.txt
+- VALIDATION_v0.10.666.txt
+
+Startup optimization summary:
+- Firebase popup/redirect resolver removed from normal initialization; retained explicitly for Google reauthentication when deleting an account.
+- Cloud save load and session claim begin in parallel.
+- Boot-time metals.json request removed; existing supplier-screen lazy load retained.
+- Explicit Service Worker update check moved to idle/delayed time.
+- Large event images + quiz JSON removed from CORE_SHELL; night backgrounds remain precached to preserve prior offline/night-background requirement.
+- CORE_SHELL local payload reduced to about 3.77 MB; about 19.96 MB removed from install precache.

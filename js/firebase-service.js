@@ -135,7 +135,9 @@ export async function initializeFirebase() {
 
   auth = initializeAuth(app, {
     persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
-    popupRedirectResolver: browserPopupRedirectResolver,
+    // v0.10.666: the main game signs Google users in via credential handoff, not popup/redirect.
+    // Do not initialize the popup/redirect resolver during every launch; it creates the auth iframe.
+    popupRedirectResolver: undefined,
   });
   auth.languageCode = 'ja';
   // 初回の認証状態が確定してから、専用ログインページがsessionStorageへ渡した
@@ -289,7 +291,7 @@ export async function deleteAccountCompletely(password = '') {
   if (providerKind === 'google') {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    await reauthenticateWithPopup(user, provider);
+    await reauthenticateWithPopup(user, provider, browserPopupRedirectResolver);
   } else if (providerKind === 'password') {
     if (!password) {
       const error = new Error('ゲーム用パスワードを入力してください。');

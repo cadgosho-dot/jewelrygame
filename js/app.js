@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.665';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.665';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.665';
+const UI_BUILD_VERSION = '0.10.666';
+import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.666';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.666';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.665';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.666';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.665';
+} from './firebase-service.js?v=0.10.666';
 
 const STARTUP_DIAGNOSTICS_STORAGE_KEY = 'jxj-startup-diagnostics-v1';
 const startupDiagnostics = (() => {
@@ -22249,10 +22249,12 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then((registration) => {
         startupMark('service_worker_register_finished');
-        return registration.update();
-      })
-      .then(() => {
-        startupMark('service_worker_update_finished');
+        const runUpdateCheck = () => registration.update()
+          .then(() => startupMark('service_worker_update_finished'))
+          .catch(() => {});
+        // v0.10.666: avoid competing with Auth/Firestore during the critical launch path.
+        if ('requestIdleCallback' in window) requestIdleCallback(runUpdateCheck, { timeout: 8000 });
+        else window.setTimeout(runUpdateCheck, 6000);
       })
       .catch(() => {});
   });
@@ -22262,11 +22264,6 @@ async function boot() {
   startupMark('boot_started');
   render();
   startupMark('loading_rendered');
-  startupMark('metal_market_started');
-  loadMetalMarket().then(() => {
-    startupMark('metal_market_finished');
-    if ((screen === 'supplier' || screen === 'supplierMetals' || screen === 'supplierMetalHistory' || screen === 'pureMetalProfessionalGuide') && state) render();
-  });
   try {
     startupMark('firebase_init_started');
     await initializeFirebase();
@@ -22306,6 +22303,11 @@ async function boot() {
       startupMark('signed_in_loading_rendered');
       try {
         startupMark('cloud_load_started');
+        startupMark('session_claim_started');
+        let sessionClaimError = null;
+        const sessionClaimPromise = claimSession(user.uid, sessionId)
+          .then(() => startupMark('session_claim_finished'))
+          .catch((error) => { sessionClaimError = error; startupMark('session_claim_finished', 'error'); });
         cloudSave = await loadState(user.uid);
         startupMark('cloud_load_finished');
         const preferredAtBoot = preferredSavedState();
@@ -22316,9 +22318,8 @@ async function boot() {
         } else if (localWasNewer) {
           cloudSave = structuredClone(preferredAtBoot.state);
         }
-        startupMark('session_claim_started');
-        await claimSession(user.uid, sessionId);
-        startupMark('session_claim_finished');
+        await sessionClaimPromise;
+        if (sessionClaimError) throw sessionClaimError;
         // 端末側が新しい場合は、古いクラウドで上書きせず現在状態をクラウドへ戻す。
         if (localWasNewer) {
           const migratedLocal = migrateState(preferredAtBoot.state);

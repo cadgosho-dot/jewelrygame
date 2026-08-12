@@ -1,0 +1,27 @@
+JEWELRY×JEWELRY v0.10.664 VALIDATION
+Date: 2026-08-12
+
+[Requested change]
+PASS target is store/showcase finished-product visuals only
+PASS showcase slot and showcase selection use reduced showcaseSmall gem rendering
+PASS showcase item detail uses the same completion artwork structure as the workshop completion screen
+PASS ring / pendant stone overlap is reduced by item-specific fixed gem pixel limits
+PASS workshop completion screen is not modified by this change
+PASS crafting preview / inventory / sales logic are not targeted by the new rule
+PASS PASS showcase jewelry visual audit
+
+[Version sync]
+PASS js/game-data.js VERSION = 0.10.664
+PASS js/app.js UI_BUILD_VERSION = 0.10.664
+PASS js/app.js lazy/module cache queries = 0.10.664
+PASS game.html styles.css/app.js query = 0.10.664
+PASS sw.js VERSION/cache queries = 0.10.664
+
+[Syntax]
+PASS node --check js/app.js
+PASS node --check js/game-data.js
+PASS node --check sw.js
+
+[Packaging]
+PASS WindowsSafe ZIP integrity
+PASS SHA256 generated

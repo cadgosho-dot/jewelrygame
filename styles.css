@@ -18900,3 +18900,37 @@ html body[data-screen] .game-header.game-header.game-header .jwj-status-time.gam
   color:#ff666b!important;
 }
 
+
+
+/* v0.10.662 見習い職人と映画を見る上映画面：縦横とも動画ステージを画面中央へ固定 */
+body[data-screen="apprenticeCinemaEvent"] .apprentice-cinema-event-screen.cinema-playing-screen{
+  width:100%!important;
+  min-height:100dvh!important;
+  height:100dvh!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+}
+body[data-screen="apprenticeCinemaEvent"] .apprentice-cinema-event-screen.cinema-playing-screen .cinema-video-stage{
+  align-self:center!important;
+  justify-self:center!important;
+  margin:auto!important;
+}
+body[data-screen="apprenticeCinemaEvent"] .apprentice-cinema-event-screen.cinema-playing-screen video[data-apprentice-cinema-video]{
+  object-position:center center!important;
+  margin:auto!important;
+}
+
+
+/* v0.10.663 完成画面: 縦画面で完成品画像が2段上部バーへ潜り込まないよう、完成画面本文だけヘッダー実寸を予約 */
+@media (orientation:portrait), (max-aspect-ratio:1/1){
+  body[data-screen="completion"] .screen-shell:not(.event-shell-no-header) > .screen-content{
+    box-sizing:border-box!important;
+    padding-top:max(196px,calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap,7px) + var(--jwj-bar-one-height,112px) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height,58px) + 12px))!important;
+    scroll-padding-top:max(196px,calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap,7px) + var(--jwj-bar-one-height,112px) + var(--jwj-header-gap,6px) + var(--jwj-bar-two-height,58px) + 12px))!important;
+  }
+  body[data-screen="completion"] .screen-shell:not(.event-shell-no-header) > .screen-content > .result-card{
+    margin-top:0!important;
+  }
+}

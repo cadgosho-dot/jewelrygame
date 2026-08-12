@@ -5,308 +5,19 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.669';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.669';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.669';
+const UI_BUILD_VERSION = '0.10.672';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.672';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.672';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.669';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.672';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.669';
+} from './firebase-service.js?v=0.10.672';
 
-const STARTUP_DIAGNOSTICS_STORAGE_KEY = 'jxj-startup-diagnostics-v1';
-const startupDiagnostics = (() => {
-  const seed = globalThis.__JXJ_BOOT_DIAGNOSTICS && typeof globalThis.__JXJ_BOOT_DIAGNOSTICS === 'object'
-    ? globalThis.__JXJ_BOOT_DIAGNOSTICS
-    : {};
-  const startedAt = Number(seed.startedAt);
-  return {
-    schema: 1,
-    version: UI_BUILD_VERSION,
-    startedAt: Number.isFinite(startedAt) ? startedAt : performance.now(),
-    timeOrigin: Number(seed.timeOrigin || performance.timeOrigin || Date.now()),
-    startedWallClock: String(seed.startedWallClock || new Date().toISOString()),
-    markers: { ...(seed.markers || {}) },
-    notes: {},
-    status: 'module',
-  };
-})();
-globalThis.__JXJ_BOOT_DIAGNOSTICS = startupDiagnostics;
 
-function startupMark(name, note = '') {
-  if (!name) return performance.now();
-  const now = performance.now();
-  startupDiagnostics.markers[name] = now;
-  if (note) startupDiagnostics.notes[name] = String(note);
-  return now;
-}
-
-function startupElapsed(name) {
-  const value = Number(startupDiagnostics.markers?.[name]);
-  if (!Number.isFinite(value)) return null;
-  return Math.max(0, value - Number(startupDiagnostics.startedAt || 0));
-}
-
-function startupSpan(startName, endName) {
-  const start = Number(startupDiagnostics.markers?.[startName]);
-  const end = Number(startupDiagnostics.markers?.[endName]);
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  return Math.max(0, end - start);
-}
-
-function startupMsLabel(value) {
-  if (!Number.isFinite(Number(value))) return '—';
-  const ms = Math.max(0, Number(value));
-  return ms >= 1000 ? `${(ms / 1000).toFixed(ms >= 10000 ? 1 : 2)}秒` : `${Math.round(ms)}ms`;
-}
-
-function startupConnectionInfo() {
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  if (!connection) return null;
-  return {
-    effectiveType: String(connection.effectiveType || ''),
-    downlink: Number.isFinite(Number(connection.downlink)) ? Number(connection.downlink) : null,
-    rtt: Number.isFinite(Number(connection.rtt)) ? Number(connection.rtt) : null,
-    saveData: Boolean(connection.saveData),
-  };
-}
-
-function startupNavigationTiming() {
-  const nav = performance.getEntriesByType?.('navigation')?.[0];
-  if (!nav) return null;
-  const fields = ['responseStart', 'responseEnd', 'domInteractive', 'domContentLoadedEventEnd', 'loadEventEnd'];
-  const output = {};
-  for (const key of fields) {
-    const value = Number(nav[key]);
-    output[key] = Number.isFinite(value) ? Math.max(0, value) : null;
-  }
-  output.transferSize = Number.isFinite(Number(nav.transferSize)) ? Number(nav.transferSize) : null;
-  output.encodedBodySize = Number.isFinite(Number(nav.encodedBodySize)) ? Number(nav.encodedBodySize) : null;
-  output.decodedBodySize = Number.isFinite(Number(nav.decodedBodySize)) ? Number(nav.decodedBodySize) : null;
-  output.type = String(nav.type || '');
-  return output;
-}
-
-function startupResourceLabel(rawName) {
-  try {
-    const url = new URL(rawName, location.href);
-    const path = url.pathname.split('/').filter(Boolean);
-    const tail = path.slice(-3).join('/');
-    return url.origin === location.origin ? tail : `${url.hostname}/${tail}`;
-  } catch (_) {
-    return String(rawName || '').slice(-100);
-  }
-}
-
-function startupResourceTimings(limit = 12) {
-  const cutoff = Number(
-    startupDiagnostics.markers.startup_save_ready
-    || startupDiagnostics.markers.title_rendered
-    || startupDiagnostics.markers.login_rendered
-    || startupDiagnostics.markers.email_verification_rendered
-    || startupDiagnostics.markers.main_rendered
-    || performance.now()
-  );
-  const entries = performance.getEntriesByType?.('resource') || [];
-  return entries
-    .filter((entry) => Number(entry.startTime) <= cutoff + 30)
-    .map((entry) => ({
-      name: startupResourceLabel(entry.name),
-      initiatorType: String(entry.initiatorType || ''),
-      startTime: Math.max(0, Number(entry.startTime) || 0),
-      duration: Math.max(0, Number(entry.duration) || 0),
-      transferSize: Number.isFinite(Number(entry.transferSize)) ? Number(entry.transferSize) : null,
-      encodedBodySize: Number.isFinite(Number(entry.encodedBodySize)) ? Number(entry.encodedBodySize) : null,
-    }))
-    .sort((a, b) => b.duration - a.duration)
-    .slice(0, Math.max(1, limit));
-}
-
-function startupDiagnosticsSnapshot(status = startupDiagnostics.status || 'running') {
-  return {
-    schema: 1,
-    version: UI_BUILD_VERSION,
-    status,
-    recordedAt: new Date().toISOString(),
-    startedWallClock: startupDiagnostics.startedWallClock,
-    markers: { ...startupDiagnostics.markers },
-    notes: { ...startupDiagnostics.notes },
-    navigation: startupNavigationTiming(),
-    resources: startupResourceTimings(12),
-    environment: {
-      standalone: isStandaloneApp(),
-      viewport: `${Math.round(window.innerWidth || 0)}x${Math.round(window.innerHeight || 0)}`,
-      devicePixelRatio: Number(window.devicePixelRatio || 1),
-      hardwareConcurrency: Number.isFinite(Number(navigator.hardwareConcurrency)) ? Number(navigator.hardwareConcurrency) : null,
-      deviceMemory: Number.isFinite(Number(navigator.deviceMemory)) ? Number(navigator.deviceMemory) : null,
-      connection: startupConnectionInfo(),
-      userAgent: String(navigator.userAgent || ''),
-    },
-  };
-}
-
-function persistStartupDiagnostics(status) {
-  startupDiagnostics.status = String(status || startupDiagnostics.status || 'running');
-  try {
-    localStorage.setItem(STARTUP_DIAGNOSTICS_STORAGE_KEY, JSON.stringify(startupDiagnosticsSnapshot(startupDiagnostics.status)));
-  } catch (_) {}
-}
-
-function latestStartupDiagnosticsSnapshot() {
-  const current = startupDiagnosticsSnapshot(startupDiagnostics.status);
-  if (Object.keys(current.markers || {}).length > 1) return current;
-  try {
-    const saved = JSON.parse(localStorage.getItem(STARTUP_DIAGNOSTICS_STORAGE_KEY) || 'null');
-    if (saved && typeof saved === 'object') return saved;
-  } catch (_) {}
-  return current;
-}
-
-const STARTUP_MARKER_LABELS = Object.freeze({
-  html_probe: 'HTML計測開始',
-  app_module_started: 'app.js実行開始',
-  boot_started: 'boot開始',
-  loading_rendered: '最初のLoading描画',
-  metal_market_started: '地金相場取得開始',
-  metal_market_finished: '地金相場取得完了',
-  firebase_init_started: 'Firebase初期化開始',
-  firebase_init_finished: 'Firebase初期化完了',
-  auth_observer_registered: '認証監視登録',
-  auth_callback_started: '認証状態確定',
-  cloud_load_started: 'クラウドセーブ取得開始',
-  cloud_load_finished: 'クラウドセーブ取得完了',
-  preferred_save_selected: '端末/クラウド比較完了',
-  session_claim_started: 'セッション取得開始',
-  session_claim_finished: 'セッション取得完了',
-  local_cloud_sync_started: '端末セーブ同期開始',
-  local_cloud_sync_finished: '端末セーブ同期完了',
-  title_rendered: '先行タイトル描画',
-  startup_save_ready: 'スタート有効化（セーブ確認完了）',
-  login_rendered: 'ログイン画面描画',
-  email_verification_rendered: 'メール確認画面描画',
-  start_button_clicked: 'スタート押下',
-  start_load_game_started: 'ローカルセーブ展開開始',
-  start_load_game_finished: 'ローカルセーブ展開完了',
-  start_autopilot_started: '自動操縦確認開始',
-  start_autopilot_finished: '自動操縦確認完了',
-  main_rendered: 'メイン画面描画',
-  startup_audio_released: '起動時音声の解放',
-  window_load: 'window load',
-  service_worker_register_started: 'Service Worker登録開始',
-  service_worker_register_finished: 'Service Worker登録完了',
-  service_worker_update_finished: 'Service Worker更新確認完了',
-});
-
-function startupDiagnosticsText(snapshot = latestStartupDiagnosticsSnapshot()) {
-  const markers = snapshot?.markers || {};
-  const origin = Number(markers.html_probe ?? startupDiagnostics.startedAt ?? 0);
-  const lines = [
-    `JEWELRY×JEWELRY 起動診断 v${snapshot?.version || UI_BUILD_VERSION}`,
-    `状態: ${snapshot?.status || 'unknown'}`,
-    `記録: ${snapshot?.recordedAt || ''}`,
-    `PWA: ${snapshot?.environment?.standalone ? 'はい' : 'いいえ'}`,
-    `画面: ${snapshot?.environment?.viewport || '不明'} / DPR ${snapshot?.environment?.devicePixelRatio ?? '不明'}`,
-    `CPU論理コア: ${snapshot?.environment?.hardwareConcurrency ?? '不明'} / メモリ目安: ${snapshot?.environment?.deviceMemory ?? '不明'}GB`,
-  ];
-  const connection = snapshot?.environment?.connection;
-  if (connection) lines.push(`通信: ${connection.effectiveType || '不明'} / downlink ${connection.downlink ?? '不明'}Mbps / RTT ${connection.rtt ?? '不明'}ms / saveData ${connection.saveData ? 'on' : 'off'}`);
-  lines.push('', '[起動マーカー]');
-  for (const [key, label] of Object.entries(STARTUP_MARKER_LABELS)) {
-    const value = Number(markers[key]);
-    if (!Number.isFinite(value)) continue;
-    lines.push(`${label}: ${startupMsLabel(Math.max(0, value - origin))}`);
-  }
-  lines.push('', '[主要区間]');
-  const spans = [
-    ['Firebase初期化', 'firebase_init_started', 'firebase_init_finished'],
-    ['クラウドセーブ取得', 'cloud_load_started', 'cloud_load_finished'],
-    ['セッション取得', 'session_claim_started', 'session_claim_finished'],
-    ['端末セーブ→クラウド同期', 'local_cloud_sync_started', 'local_cloud_sync_finished'],
-    ['先行タイトル→スタート有効化', 'title_rendered', 'startup_save_ready'],
-    ['ローカルセーブ展開', 'start_load_game_started', 'start_load_game_finished'],
-    ['自動操縦確認', 'start_autopilot_started', 'start_autopilot_finished'],
-    ['スタート→メイン', 'start_button_clicked', 'main_rendered'],
-  ];
-  for (const [label, a, b] of spans) {
-    const start = Number(markers[a]);
-    const end = Number(markers[b]);
-    if (Number.isFinite(start) && Number.isFinite(end)) lines.push(`${label}: ${startupMsLabel(Math.max(0, end - start))}`);
-  }
-  const title = Number(markers.title_rendered);
-  if (Number.isFinite(title)) lines.push(`HTML計測開始→先行タイトル: ${startupMsLabel(Math.max(0, title - origin))}`);
-  const saveReady = Number(markers.startup_save_ready);
-  if (Number.isFinite(saveReady)) lines.push(`HTML計測開始→スタート有効化: ${startupMsLabel(Math.max(0, saveReady - origin))}`);
-  const nav = snapshot?.navigation;
-  if (nav) {
-    lines.push('', '[Navigation Timing]');
-    lines.push(`responseStart: ${startupMsLabel(nav.responseStart)}`);
-    lines.push(`responseEnd: ${startupMsLabel(nav.responseEnd)}`);
-    lines.push(`DOM interactive: ${startupMsLabel(nav.domInteractive)}`);
-    lines.push(`DOMContentLoaded: ${startupMsLabel(nav.domContentLoadedEventEnd)}`);
-    lines.push(`load: ${startupMsLabel(nav.loadEventEnd)}`);
-    if (Number.isFinite(nav.transferSize)) lines.push(`HTML transfer: ${Math.round(nav.transferSize / 1024)}KB`);
-  }
-  if (Array.isArray(snapshot?.resources) && snapshot.resources.length) {
-    lines.push('', '[起動時に時間の長かったリソース]');
-    snapshot.resources.forEach((entry, index) => {
-      const size = Number.isFinite(entry.transferSize) && entry.transferSize > 0 ? ` / ${Math.round(entry.transferSize / 1024)}KB` : '';
-      lines.push(`${index + 1}. ${entry.name} : ${startupMsLabel(entry.duration)}${size}`);
-    });
-  }
-  lines.push('', '[User Agent]', snapshot?.environment?.userAgent || '不明');
-  return lines.join('\n');
-}
-
-function renderStartupDiagnosticsPanel() {
-  const snapshot = latestStartupDiagnosticsSnapshot();
-  const markers = snapshot?.markers || {};
-  const origin = Number(markers.html_probe ?? startupDiagnostics.startedAt ?? 0);
-  const titleMs = Number.isFinite(Number(markers.title_rendered)) ? Math.max(0, Number(markers.title_rendered) - origin) : null;
-  const saveReadyMs = Number.isFinite(Number(markers.startup_save_ready)) ? Math.max(0, Number(markers.startup_save_ready) - origin) : null;
-  const firebaseMs = Number.isFinite(Number(markers.firebase_init_started)) && Number.isFinite(Number(markers.firebase_init_finished))
-    ? Math.max(0, Number(markers.firebase_init_finished) - Number(markers.firebase_init_started)) : null;
-  const cloudMs = Number.isFinite(Number(markers.cloud_load_started)) && Number.isFinite(Number(markers.cloud_load_finished))
-    ? Math.max(0, Number(markers.cloud_load_finished) - Number(markers.cloud_load_started)) : null;
-  const sessionMs = Number.isFinite(Number(markers.session_claim_started)) && Number.isFinite(Number(markers.session_claim_finished))
-    ? Math.max(0, Number(markers.session_claim_finished) - Number(markers.session_claim_started)) : null;
-  const startToMainMs = Number.isFinite(Number(markers.start_button_clicked)) && Number.isFinite(Number(markers.main_rendered))
-    ? Math.max(0, Number(markers.main_rendered) - Number(markers.start_button_clicked)) : null;
-  const rows = [
-    ['先行タイトル表示まで', titleMs],
-    ['スタート有効化まで', saveReadyMs],
-    ['Firebase初期化', firebaseMs],
-    ['クラウドセーブ取得', cloudMs],
-    ['セッション取得', sessionMs],
-    ['スタート→メイン', startToMainMs],
-  ].filter(([, value]) => Number.isFinite(value));
-  return `<section class="startup-diagnostics-setting">
-    <div class="startup-diagnostics-heading"><div><strong>起動診断</strong><small>実機でタイトル表示、セーブ確認、ゲーム開始までの時間を計測します。</small></div><button type="button" class="secondary-button startup-diagnostics-copy" data-action="copy-startup-diagnostics">診断結果をコピー</button></div>
-    ${rows.length ? `<dl class="startup-diagnostics-summary">${rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(startupMsLabel(value))}</dd></div>`).join('')}</dl>` : '<p class="small-note">この起動ではまだ測定結果が揃っていません。</p>'}
-    <details class="startup-diagnostics-details"><summary>詳しい計測結果を見る</summary><pre>${esc(startupDiagnosticsText(snapshot))}</pre></details>
-  </section>`;
-}
-
-async function copyStartupDiagnostics() {
-  persistStartupDiagnostics(startupDiagnostics.status || 'settings');
-  const text = startupDiagnosticsText(latestStartupDiagnosticsSnapshot());
-  let copied = false;
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      copied = true;
-    }
-  } catch (_) {
-    copied = false;
-  }
-  if (!copied) copied = fallbackCopyText(text);
-  if (!copied) return showToast('起動診断をコピーできませんでした。', 'error');
-  showToast('起動診断をコピーしました。', 'info', false);
-}
-
-startupMark('app_module_started');
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -965,7 +676,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
   'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'hit-rock',
-  'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'cancel-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi', 'ridley-okazaki-soba-event-next', 'copy-startup-diagnostics',
+  'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'cancel-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi', 'ridley-okazaki-soba-event-next',
   ...EVENT_PROGRESS_ACTIONS,
 ]);
 
@@ -5004,14 +4715,23 @@ function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large
     const slotWidth = isSmall ? '21%' : (isCompletion || isShowcaseSmall) ? `${resolvedGemPx}px` : '23%';
     // v0.10.646: completion earrings are positioned against the actual earring-art stage,
     // so each loose sits on the center of the round top plate instead of the full preview width.
-    const slotTop = isSmall ? '33%' : isCompletion ? '20.5%' : isShowcaseSmall ? '31%' : '31%';
-    const leftX = isSmall ? '28.5%' : isCompletion ? '24.8%' : isShowcaseSmall ? '29%' : '29%';
-    const rightX = isSmall ? '71.5%' : isCompletion ? '74.7%' : isShowcaseSmall ? '71%' : '71%';
+    // v0.10.672: showcaseSmall ring/pendant now use centered small-artwork stages so their stone placement matches Workshop completion proportions.
+    // v0.10.671: store showcase earrings use the same round-top-plate centers as Workshop completion.
+    // The mask is scaled with contain inside the earring artwork, so these stage-relative centers remain valid at showcase size.
+    const slotTop = isSmall ? '33%' : (isCompletion || isShowcaseSmall) ? '20.5%' : '31%';
+    const leftX = isSmall ? '28.5%' : (isCompletion || isShowcaseSmall) ? '24.8%' : '29%';
+    const rightX = isSmall ? '71.5%' : (isCompletion || isShowcaseSmall) ? '74.7%' : '71%';
     const maxWidthPx = isShowcaseSmall ? showcaseSmallGemPx : completionGemPx;
     return `<span class="${wrapperClass} item-earrings" aria-hidden="true" style="position:absolute;inset:0;display:block;pointer-events:none;z-index:3;overflow:visible;">
       <span class="center-gem earring-left" style="position:absolute;left:${leftX};top:${slotTop};width:${slotWidth};max-width:${maxWidthPx}px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${single}</span>
       <span class="center-gem earring-right" style="position:absolute;left:${rightX};top:${slotTop};width:${slotWidth};max-width:${maxWidthPx}px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${pair}</span>
     </span>`;
+  }
+  if (isShowcaseSmall && (itemId === 'ring' || itemId === 'pendant')) {
+    const stageWidth = itemId === 'pendant' ? 40 : 54;
+    const stageHeight = itemId === 'pendant' ? 58 : 54;
+    const centerTop = itemId === 'pendant' ? '66%' : '57%';
+    return `<span class="${wrapperClass} item-${itemId}" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:${stageWidth}px;height:${stageHeight}px;display:block;pointer-events:none;z-index:3;overflow:visible;transform:translate(-50%,-50%);"><span class="center-gem" style="position:absolute;left:50%;top:${centerTop};width:${resolvedGemPx}px;max-width:${resolvedGemPx}px;min-width:0;display:grid;place-items:center;transform:translate(-50%,-50%);z-index:5;pointer-events:none;">${single}</span></span>`;
   }
   const centerStyle = (isCompletion || isShowcaseSmall)
     ? ` style="width:${resolvedGemPx}px;max-width:${resolvedGemPx}px;min-width:0;"`
@@ -18391,7 +18111,6 @@ function renderSettingsForm(titleMode, compact) {
       <div><strong>JEWELRY×JEWELRYをホーム画面へ追加</strong><small>${installStatusText()}</small></div>
       <button type="button" class="secondary-button full-button install-home-button" data-action="install-app" ${isStandaloneApp() ? 'disabled' : ''}>${isStandaloneApp() ? '追加済み' : 'ホーム画面に追加する'}</button>
     </section>` : ''}
-    ${renderStartupDiagnosticsPanel()}
     <small>バージョン ${UI_BUILD_VERSION}</small>
     ${!titleMode ? `<div class="account-danger-actions" aria-label="アカウント操作">
       <button class="account-mini-button" data-action="logout">ログアウト</button>
@@ -21223,38 +20942,26 @@ root.addEventListener('click', async (event) => {
         action: 'logout-name-check',
       });
       break;
-    case 'copy-startup-diagnostics':
-      await copyStartupDiagnostics();
-      break;
     case 'start':
       if (!startupSaveReady) {
         showToast('セーブデータを確認しています。少しお待ちください。', 'info');
         break;
       }
-      startupMark('start_button_clicked');
       if (hasSave()) {
-        startupMark('start_load_game_started');
         state = loadGame();
-        startupMark('start_load_game_finished');
         if (!state) return showToast('セーブデータを読み込めませんでした。', 'error');
         navigation = [];
         phoneTab = validPhoneTab(state.game?.phoneTab);
         repairIllnessBirthdayDeadlock();
         repairChildhoodFriendEventDeadlock();
         repairMorningOverlapDeadlockV475();
-        startupMark('start_autopilot_started');
         const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
-        startupMark('start_autopilot_finished');
         setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
-        startupMark(state.playerName ? 'main_rendered' : 'name_setup_rendered');
         releaseStartupAudioAfterGameEntry();
-        persistStartupDiagnostics(state.playerName ? 'main' : 'name-setup');
         if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
       } else {
         startNewGame();
-        startupMark('name_setup_rendered');
         releaseStartupAudioAfterGameEntry();
-        persistStartupDiagnostics('name-setup');
       }
       break;
     case 'confirm-player-name': {
@@ -22175,7 +21882,7 @@ root.addEventListener('input', (event) => {
 });
 
 function releaseStartupAudioAfterGameEntry() {
-  if (releaseStartupAudioHold()) startupMark('startup_audio_released');
+  releaseStartupAudioHold();
 }
 
 function startNewGame() {
@@ -22190,15 +21897,12 @@ function startNewGame() {
 }
 
 async function enterGameAfterLogin() {
-  startupMark('auth_entry_enter_game_started');
   if (!hasSave()) {
     startNewGame();
     releaseStartupAudioAfterGameEntry();
     return;
   }
-  startupMark('auth_entry_load_game_started');
   state = loadGame();
-  startupMark('auth_entry_load_game_finished');
   if (!state) {
     screen = 'title';
     render();
@@ -22230,13 +21934,9 @@ async function enterGameAfterLogin() {
     }
     return;
   }
-  startupMark('auth_entry_autopilot_started');
   const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
-  startupMark('auth_entry_autopilot_finished');
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
-  startupMark(state.playerName ? 'main_rendered' : 'name_setup_rendered');
   releaseStartupAudioAfterGameEntry();
-  persistStartupDiagnostics(state.playerName ? 'main-auth-entry' : 'name-setup-auth-entry');
   if (saveRecoveryNotice) {
     showToast(saveRecoveryNotice, 'info', false);
     saveRecoveryNotice = null;
@@ -22262,20 +21962,12 @@ window.addEventListener('pageshow', () => {
   if (okachimachiExternalReturnRequested() && screen === 'okachimachi') clearOkachimachiExternalReturnRequest();
   processAutopilotIfDue().catch((error) => console.error(error));
 });
-window.addEventListener('load', () => {
-  startupMark('window_load');
-});
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    startupMark('service_worker_register_started');
     navigator.serviceWorker.register('./sw.js')
       .then((registration) => {
-        startupMark('service_worker_register_finished');
-        const runUpdateCheck = () => registration.update()
-          .then(() => startupMark('service_worker_update_finished'))
-          .catch(() => {});
-        // v0.10.669: requestIdleCallback can run almost immediately while Firebase is still
-        // on the critical launch path. Enforce a minimum 10-second delay, then use idle time.
+        const runUpdateCheck = () => registration.update().catch(() => {});
+        // 起動直後のFirebase通信と競合させず、10秒後のアイドル時間に更新確認する。
         window.setTimeout(() => {
           if ('requestIdleCallback' in window) requestIdleCallback(runUpdateCheck, { timeout: 10000 });
           else runUpdateCheck();
@@ -22286,20 +21978,15 @@ if ('serviceWorker' in navigator) {
 }
 
 async function boot() {
-  startupMark('boot_started');
-  // v0.10.669: show the real title shell immediately. The start button stays disabled
+  // v0.10.670: show the real title shell immediately. The start button stays disabled
   // until authentication and local/cloud save selection are complete.
   startupSaveReady = false;
   screen = 'title';
   render();
-  startupMark('title_rendered', 'early-shell');
   try {
-    startupMark('firebase_init_started');
     await initializeFirebase();
-    startupMark('firebase_init_finished');
     authEntryRequested = googleLoginRedirectRequested();
     observeAuth(async (user) => {
-      startupMark('auth_callback_started', user ? 'signed-in' : 'signed-out');
       authReady = true;
       currentUser = user;
       state = null;
@@ -22315,8 +22002,6 @@ async function boot() {
         cloudSave = null;
         screen = 'login';
         render();
-        startupMark('login_rendered');
-        persistStartupDiagnostics('login');
         if (googleLoginError) queueMicrotask(() => showToast(googleLoginError, 'error'));
         return;
       }
@@ -22325,8 +22010,6 @@ async function boot() {
         cloudSave = null;
         screen = 'emailVerification';
         render();
-        startupMark('email_verification_rendered');
-        persistStartupDiagnostics('email-verification');
         return;
       }
       // Keep the already-visible title shell while the signed-in save is checked.
@@ -22334,21 +22017,15 @@ async function boot() {
       screen = 'title';
       render();
       try {
-        startupMark('cloud_load_started');
-        startupMark('session_claim_started');
         // v0.10.667: session claim is important for multi-device takeover detection, but the
         // Firestore write acknowledgement must not block the title screen. The watcher is
         // installed immediately and the claim continues in the background.
         void claimSession(user.uid, sessionId)
-          .then(() => startupMark('session_claim_finished'))
           .catch((error) => {
             console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
-            startupMark('session_claim_finished', 'error-background');
           });
         cloudSave = await loadState(user.uid);
-        startupMark('cloud_load_finished');
         const preferredAtBoot = preferredSavedState();
-        startupMark('preferred_save_selected', preferredAtBoot.source || 'none');
         const localWasNewer = preferredAtBoot.source === 'local' && Boolean(preferredAtBoot.state);
         if (preferredAtBoot.source === 'cloud' && preferredAtBoot.state) {
           localStorage.setItem(localSaveKey(), JSON.stringify(preferredAtBoot.state));
@@ -22363,14 +22040,11 @@ async function boot() {
           const migratedLocal = migrateState(preferredAtBoot.state);
           migratedLocal.updatedAt = String(preferredAtBoot.state.updatedAt || new Date().toISOString());
           const bootSyncSnapshot = structuredClone(migratedLocal);
-          startupMark('local_cloud_sync_started');
           saveQueue = saveQueue
             .catch(() => {})
             .then(() => saveState(user.uid, bootSyncSnapshot))
-            .then(() => startupMark('local_cloud_sync_finished', 'background'))
             .catch((error) => {
               console.warn('新しい端末セーブのバックグラウンド同期に失敗しました。端末保存は完了しています。', error);
-              startupMark('local_cloud_sync_finished', 'error-background');
             });
           cloudSave = structuredClone(migratedLocal);
           localStorage.setItem(localSaveKey(), JSON.stringify(migratedLocal));
@@ -22452,8 +22126,6 @@ async function boot() {
         }
         screen = 'title';
         render();
-        startupMark('startup_save_ready', preferredAtBoot.source || 'none');
-        persistStartupDiagnostics('title-ready');
       } catch (error) {
         console.error(error);
         startupSaveReady = false;
@@ -22461,12 +22133,9 @@ async function boot() {
         authEntryRequested = false;
         screen = 'login';
         render();
-        startupMark('login_rendered', 'cloud-load-error');
-        persistStartupDiagnostics('cloud-load-error');
         showToast('クラウドデータを読み込めませんでした。', 'error');
       }
     });
-    startupMark('auth_observer_registered');
   } catch (error) {
     console.error(error);
     startupSaveReady = false;
@@ -22475,8 +22144,6 @@ async function boot() {
     authEntryRequested = false;
     screen = 'login';
     render();
-    startupMark('login_rendered', 'firebase-init-error');
-    persistStartupDiagnostics('firebase-init-error');
     showToast('ログイン機能を初期化できませんでした。', 'error');
   }
 }

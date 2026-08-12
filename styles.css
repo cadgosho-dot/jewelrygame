@@ -18934,3 +18934,18 @@ body[data-screen="apprenticeCinemaEvent"] .apprentice-cinema-event-screen.cinema
     margin-top:0!important;
   }
 }
+
+
+/* v0.10.665 起動診断：表示のみ。ゲームレイアウト・起動順には影響させない */
+.startup-diagnostics-setting{display:grid;gap:.7rem;margin-top:.6rem;padding:.85rem;border:1px solid rgba(231,190,104,.28);border-radius:12px;background:rgba(0,0,0,.18)}
+.startup-diagnostics-heading{display:flex;align-items:center;justify-content:space-between;gap:.7rem}
+.startup-diagnostics-heading>div{display:grid;gap:.15rem;min-width:0}
+.startup-diagnostics-heading small{color:var(--muted);line-height:1.45}
+.startup-diagnostics-copy{width:auto!important;min-width:max-content!important;padding:.55rem .7rem!important}
+.startup-diagnostics-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.45rem;margin:0}
+.startup-diagnostics-summary>div{display:grid;gap:.12rem;padding:.55rem .65rem;border-radius:9px;background:rgba(255,255,255,.045)}
+.startup-diagnostics-summary dt{font-size:.78rem;color:var(--muted)}
+.startup-diagnostics-summary dd{margin:0;font-weight:800;font-variant-numeric:tabular-nums}
+.startup-diagnostics-details summary{cursor:pointer;font-weight:700;color:var(--gold-light)}
+.startup-diagnostics-details pre{max-height:42vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:.6rem 0 0;padding:.7rem;border-radius:9px;background:rgba(0,0,0,.32);font:600 .72rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--text);text-align:left}
+@media (max-width:700px){.startup-diagnostics-heading{align-items:stretch;flex-direction:column}.startup-diagnostics-copy{width:100%!important}.startup-diagnostics-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}

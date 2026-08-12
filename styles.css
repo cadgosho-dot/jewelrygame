@@ -18950,16 +18950,14 @@ body[data-screen="apprenticeCinemaEvent"] .apprentice-cinema-event-screen.cinema
 .startup-diagnostics-details pre{max-height:42vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:.6rem 0 0;padding:.7rem;border-radius:9px;background:rgba(0,0,0,.32);font:600 .72rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--text);text-align:left}
 @media (max-width:700px){.startup-diagnostics-heading{align-items:stretch;flex-direction:column}.startup-diagnostics-copy{width:100%!important}.startup-diagnostics-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* v0.10.673 横画面メイン上部バーの曇りを除去
-   実DOMではメインヘッダーが #root 直下にあるため、縦画面だけにあった透明化ガードを横画面にも限定適用する。 */
+/* v0.10.674 横画面メイン上部バーの曇り除去を維持し、元の枠線を保持
+   v0.10.673で誤って消していた border / box-shadow は上書きせず、既存デザインをそのまま使う。 */
 @media (orientation:landscape), (min-aspect-ratio:1/1){
   html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="main"]
   #root > .game-header.game-header.game-header.main-header{
     background:transparent!important;
     background-color:transparent!important;
     background-image:none!important;
-    border:0!important;
-    box-shadow:none!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;
     filter:none!important;

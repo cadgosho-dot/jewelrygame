@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.647';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js';
-import { resolveAudioScene } from './audio-scene-map.js';
+const UI_BUILD_VERSION = '0.10.661';
+import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.661';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.661';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.647';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.661';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.647';
+} from './firebase-service.js?v=0.10.661';
 
 const root = document.querySelector('#root');
 const toastEl = document.querySelector('#toast');
@@ -366,6 +366,8 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   alienAbductionEvent: new Set(['intro1', 'intro2', 'abducted', 'returnPending']),
   diamondPolishingLapEvent: new Set(['intro1', 'intro2', 'reward', 'outro']),
   cinemaVisitEvent: new Set(['invitation', 'playing']),
+  apprenticeCinemaEvent: new Set(['intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2']),
+  whiteBunnyIceEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'choice', 'rudeReply', 'kindReply1', 'kindReply2']),
   clockTowerDonationEvent: new Set(['intro1', 'intro2', 'intro3']),
   mysteryChineseMealEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward']),
   ridleyOkazakiSobaEvent: new Set(['intro1', 'intro2', 'intro3']),
@@ -376,7 +378,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
-  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
+  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
@@ -393,6 +395,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   clockTowerDonationEvent: { eventKey: 'clockTowerDonationEvent', fallback: 'okachimachi' },
   cinemaVisitEvent: { eventKey: 'cinemaVisitEvent', fallback: 'okachimachi' },
   apprenticeCinemaEvent: { eventKey: 'apprenticeCinemaEvent', fallback: 'okachimachi' },
+  whiteBunnyIceEvent: { eventKey: 'whiteBunnyIceEvent', fallback: 'meal' },
   mysteryChineseMealEvent: { eventKey: 'mysteryChineseMealEvent', fallback: 'main' },
   ridleyOkazakiSobaEvent: { eventKey: 'ridleyOkazakiSobaEvent', fallback: 'meal' },
   emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
@@ -440,7 +443,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   ]),
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
-    'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent',
+    'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent', 'whiteBunnyIceEvent',
     'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent',
   ]),
   sessionOnly: new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'robberyReport', 'kaitenzushi']),
@@ -660,7 +663,8 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
   'gray-hood-aquarium-video-start', 'gray-hood-aquarium-next', 'gray-hood-aquarium-receive',
-  'glab-visit-video-start', 'kawahara-knowledge-video-start', 'okachimachi-quiz-video-start',
+  'glab-visit-video-start', 'kawahara-knowledge-video-start', 'kawahara-knowledge-event-next', 'okachimachi-quiz-video-start',
+  'terry-california-video-start', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline',
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
@@ -669,7 +673,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
   'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'hit-rock',
-  'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi', 'ridley-okazaki-soba-event-next',
+  'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'cancel-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi', 'ridley-okazaki-soba-event-next',
   ...EVENT_PROGRESS_ACTIONS,
 ]);
 
@@ -741,6 +745,10 @@ function clearTransientEventRuntime({ releaseDayLocks = false } = {}) {
   kaitenzushiSession = null;
   okachimachiQuizSession = null;
   looseShopOriginalQuizSession = null;
+  if (state?.events) {
+    state.events.okachimachiQuizSession = null;
+    state.events.looseShopOriginalQuizSession = null;
+  }
   modalEl?.classList.add('hidden');
   if (modalEl) modalEl.innerHTML = '';
   sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
@@ -798,6 +806,10 @@ function suppressAllTransientEventsForIllness({ save = false } = {}) {
   if (okachimachiQuizSession || looseShopOriginalQuizSession || kaitenzushiSession || ILLNESS_SUPPRESSED_EVENT_SCREENS.has(screen)) repaired += 1;
   okachimachiQuizSession = null;
   looseShopOriginalQuizSession = null;
+  if (state?.events) {
+    state.events.okachimachiQuizSession = null;
+    state.events.looseShopOriginalQuizSession = null;
+  }
   kaitenzushiSession = null;
   mealTransitioning = false;
   storeTheftSequenceRunning = false;
@@ -4678,7 +4690,7 @@ function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large
   const isCompletion = mode === 'completion';
   const looseClass = isSmall ? 'small-jewelry-loose' : 'jewelry-loose-preview';
   const wrapperClass = isSmall ? 'jewelry-loose-set small' : 'jewelry-loose-set';
-  const completionGemPx = itemId === 'pendant' ? 62 : itemId === 'ring' ? 72 : itemId === 'earrings' ? 48 : 76;
+  const completionGemPx = itemId === 'pendant' ? 62 : itemId === 'ring' ? 72 : itemId === 'earrings' ? 58 : 76;
   const styleLooseMarkup = (markup, sizePercent = '100%') => {
     if (typeof markup !== 'string' || !markup) return markup;
     if (markup.startsWith('<img ')) {
@@ -7249,14 +7261,23 @@ function ganeshaTuskEventState() {
   const saved = state.events.ganeshaTuskEvent && typeof state.events.ganeshaTuskEvent === 'object' && !Array.isArray(state.events.ganeshaTuskEvent)
     ? state.events.ganeshaTuskEvent
     : {};
-  const validStages = new Set(['idle', 'video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  const legacyVideoStage = String(saved.stage || '') === 'video';
+  const active = Boolean(saved.active);
+  const normalizedStage = legacyVideoStage
+    ? (active ? 'intro1' : 'completed')
+    : (validStages.has(saved.stage) ? saved.stage : 'idle');
   state.events.ganeshaTuskEvent = {
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
-    active: Boolean(saved.active),
-    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    active,
+    stage: normalizedStage,
     rewardGranted: Boolean(saved.rewardGranted),
   };
+  if (legacyVideoStage) {
+    state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
+    state.migrations.ganeshaLegacyVideoStageV651 = true;
+  }
   if (!state.events.ganeshaTuskEvent.active && !['idle', 'completed'].includes(state.events.ganeshaTuskEvent.stage)) state.events.ganeshaTuskEvent.stage = 'completed';
   return state.events.ganeshaTuskEvent;
 }
@@ -7757,14 +7778,14 @@ function ridleyOkazakiSobaEventState() {
 function maybeStartRidleyOkazakiSobaEvent() {
   if (illnessEventSuppressionActive()) return false;
   const mealId = RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID;
-  const meal = MEALS[mealId];
-  const eventCost = ridleyOkazakiSobaEventCost();
-  if (!meal || eventCost <= 0 || state.game.money < eventCost) return false;
   const eventState = ridleyOkazakiSobaEventState();
   if (eventState.active) {
     setScreen('ridleyOkazakiSobaEvent', { mealId }, false);
     return true;
   }
+  const meal = MEALS[mealId];
+  const eventCost = ridleyOkazakiSobaEventCost();
+  if (!meal || eventCost <= 0 || state.game.money < eventCost) return false;
   if (Math.floor(Math.random() * RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
   eventState.active = true;
   eventState.stage = 'intro1';
@@ -7836,12 +7857,12 @@ function whiteBunnyIceEventState() {
 
 function maybeStartWhiteBunnyIceEvent() {
   if (illnessEventSuppressionActive()) return false;
-  if (!state?.store?.rented || !anyInstalledShowcaseExists()) return false;
   const eventState = whiteBunnyIceEventState();
   if (eventState.active) {
     setScreen('whiteBunnyIceEvent', { mealId: 'ice' }, false);
     return true;
   }
+  if (!state?.store?.rented || !anyInstalledShowcaseExists()) return false;
   if (Math.floor(Math.random() * WHITE_BUNNY_ICE_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
   eventState.active = true;
   eventState.stage = 'intro1';
@@ -8354,6 +8375,40 @@ function okachimachiQuizEventState() {
   return state.events.okachimachiQuiz;
 }
 
+// v0.10.654: 低確率クイズの問題・選択・結果段階をセーブへ同期する。
+function persistQuizSession(kind, { save = false } = {}) {
+  if (!state) return;
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  if (kind === 'okachimachi') state.events.okachimachiQuizSession = okachimachiQuizSession;
+  else if (kind === 'looseShop') state.events.looseShopOriginalQuizSession = looseShopOriginalQuizSession;
+  if (save) saveGame();
+}
+
+function clearPersistedQuizSession(kind, { save = false } = {}) {
+  if (!state) return;
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  if (kind === 'okachimachi') {
+    okachimachiQuizSession = null;
+    state.events.okachimachiQuizSession = null;
+  } else if (kind === 'looseShop') {
+    looseShopOriginalQuizSession = null;
+    state.events.looseShopOriginalQuizSession = null;
+  }
+  if (save) saveGame();
+}
+
+function restorePersistedQuizSessionsAfterLoad() {
+  okachimachiQuizSession = state?.events?.okachimachiQuizSession || null;
+  looseShopOriginalQuizSession = state?.events?.looseShopOriginalQuizSession || null;
+  if (okachimachiQuizSession) {
+    looseShopOriginalQuizSession = null;
+    if (state?.events) state.events.looseShopOriginalQuizSession = null;
+    return 'okachimachiQuiz';
+  }
+  if (looseShopOriginalQuizSession) return 'looseShopOriginalQuizEvent';
+  return '';
+}
+
 function nextLooseShopOriginalQuizTriggerAt() {
   return LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN
     + Math.floor(Math.random() * (LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX - LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN + 1));
@@ -8418,6 +8473,7 @@ async function maybeEnterLooseShop() {
       rewardGemId: '',
       returnData: { tab: 'buy' },
     };
+    persistQuizSession('looseShop');
     saveGame();
     setScreen('looseShopOriginalQuizEvent', {});
     vibrate([20, 28, 46]);
@@ -8988,7 +9044,7 @@ function kawaharaKnowledgeEventState() {
   const saved = state.events.kawaharaKnowledgeEvent && typeof state.events.kawaharaKnowledgeEvent === 'object' && !Array.isArray(state.events.kawaharaKnowledgeEvent)
     ? state.events.kawaharaKnowledgeEvent
     : {};
-  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  const validStages = new Set(['idle', 'video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
   state.events.kawaharaKnowledgeEvent = {
     lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
@@ -9255,6 +9311,7 @@ async function enterOkachimachiFromOutside() {
       selectedIndex: null,
       rewardGemId: '',
     };
+    persistQuizSession('okachimachi');
     saveGame();
     setScreen('okachimachiQuiz', {});
     vibrate([20, 28, 46]);
@@ -9307,6 +9364,7 @@ function completeOkachimachiQuizIntroVideo() {
   const session = okachimachiQuizSession;
   if (!session || session.stage !== 'video') return;
   session.stage = 'intro1';
+  persistQuizSession('okachimachi', { save: true });
   render();
   scheduleOkachimachiQuizBottomLayoutSync();
   playSfx('quiz-intro', { gain: .96 });
@@ -9327,6 +9385,7 @@ function answerOkachimachiQuiz(index) {
   session.selectedIndex = selectedIndex;
   const correct = selectedIndex === session.question.answerIndex;
   session.stage = correct ? 'correct' : 'incorrect';
+  persistQuizSession('okachimachi', { save: true });
   render();
   playSfx(correct ? 'quiz-correct' : 'quiz-incorrect', { gain: 1 });
   vibrate(correct ? [35, 45, 80] : 110);
@@ -9343,6 +9402,7 @@ function grantOkachimachiQuizReward({ renderAfter = true, saveAfter = true } = {
   state.inventory.rough[gemId] = Math.max(0, Math.floor(Number(state.inventory.rough[gemId]) || 0)) + 1;
   session.rewardGemId = gemId;
   session.stage = 'reward';
+  persistQuizSession('okachimachi');
   if (saveAfter) saveGame();
   if (renderAfter) render();
   playSfx('loose-sparkle', { gain: 1.06 });
@@ -9351,21 +9411,24 @@ function grantOkachimachiQuizReward({ renderAfter = true, saveAfter = true } = {
 }
 
 function finishOkachimachiQuiz() {
-  okachimachiQuizSession = null;
+  clearPersistedQuizSession('okachimachi', { save: true });
   setScreen('okachimachi', {}, false);
 }
+
 
 function advanceOkachimachiQuizDialogue() {
   const session = okachimachiQuizSession;
   if (!session) return finishOkachimachiQuiz();
   if (session.stage === 'intro1') {
     session.stage = 'intro2';
+    persistQuizSession('okachimachi', { save: true });
     render();
     playSfx('select', { gain: .82 });
     return;
   }
   if (session.stage === 'intro2') {
     session.stage = 'question';
+    persistQuizSession('okachimachi', { save: true });
     render();
     playSfx('quiz-question', { gain: .96 });
     vibrate(38);
@@ -9377,6 +9440,7 @@ function advanceOkachimachiQuizDialogue() {
   }
   if (session.stage === 'incorrect') {
     session.stage = 'incorrectAnswer';
+    persistQuizSession('okachimachi', { save: true });
     render();
     playSfx('select', { gain: .82 });
     return;
@@ -9433,6 +9497,7 @@ function answerLooseShopOriginalQuiz(index) {
   session.selectedIndex = selectedIndex;
   const correct = selectedIndex === session.question.answerIndex;
   session.stage = correct ? 'correct' : 'incorrect';
+  persistQuizSession('looseShop', { save: true });
   render();
   playSfx(correct ? 'quiz-correct' : 'quiz-incorrect', { gain: 1 });
   vibrate(correct ? [35, 45, 80] : 110);
@@ -9450,6 +9515,7 @@ function grantLooseShopOriginalQuizReward({ renderAfter = true, saveAfter = true
   eventState.lastRewardGemId = gemId;
   session.rewardGemId = gemId;
   session.stage = 'reward';
+  persistQuizSession('looseShop');
   if (saveAfter) saveGame();
   if (renderAfter) render();
   playSfx('loose-sparkle', { gain: 1.06 });
@@ -9458,33 +9524,38 @@ function grantLooseShopOriginalQuizReward({ renderAfter = true, saveAfter = true
 }
 
 function finishLooseShopOriginalQuiz() {
-  looseShopOriginalQuizSession = null;
+  clearPersistedQuizSession('looseShop', { save: true });
   setScreen('looseShop', { tab: 'buy' }, false);
 }
+
 
 function advanceLooseShopOriginalQuizDialogue() {
   const session = looseShopOriginalQuizSession;
   if (!session) return finishLooseShopOriginalQuiz();
   if (session.stage === 'intro1') {
     session.stage = 'intro2';
+    persistQuizSession('looseShop', { save: true });
     render();
     playSfx('select', { gain: .82 });
     return;
   }
   if (session.stage === 'intro2') {
     session.stage = 'intro3';
+    persistQuizSession('looseShop', { save: true });
     render();
     playSfx('select', { gain: .82 });
     return;
   }
   if (session.stage === 'intro3') {
     session.stage = 'intro4';
+    persistQuizSession('looseShop', { save: true });
     render();
     playSfx('select', { gain: .82 });
     return;
   }
   if (session.stage === 'intro4') {
     session.stage = 'question';
+    persistQuizSession('looseShop', { save: true });
     render();
     playSfx('quiz-question', { gain: .96 });
     vibrate(38);
@@ -9496,12 +9567,14 @@ function advanceLooseShopOriginalQuizDialogue() {
   }
   if (session.stage === 'incorrect') {
     session.stage = 'incorrectAnswer';
+    persistQuizSession('looseShop', { save: true });
     render();
     playSfx('select', { gain: .82 });
     return;
   }
   if (session.stage === 'reward') {
     session.stage = 'farewell';
+    persistQuizSession('looseShop', { save: true });
     render();
     playSfx('select', { gain: .82 });
     return;
@@ -9532,6 +9605,12 @@ const STANDARD_PORTRAIT_BACKGROUND_BASES = new Set([
   'metalshop',
 ]);
 
+function okachimachiBackgroundAssetName(portrait = isPortraitLayout()) {
+  const minutes = Number(state?.game?.minutes);
+  const night = Number.isFinite(minutes) && minutes >= OKACHIMACHI_CLOSE_MINUTES;
+  return `okachimachi${night ? '-night' : ''}${portrait ? '-portrait' : ''}`;
+}
+
 function backgroundAssetFor(target) {
   if (isAlienAbducted() && target !== 'alienReturnEvent') return isPortraitLayout() ? 'space-portrait' : 'space';
   if (target === 'main') return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
@@ -9560,7 +9639,7 @@ function backgroundAssetFor(target) {
   }
   if (target === 'cinemaVisitEvent') {
     const stage = cinemaVisitEventState().stage;
-    return stage === 'playing' ? (isPortraitLayout() ? 'cinema-event-portrait' : 'cinema-event') : (isPortraitLayout() ? 'okachimachi-portrait' : 'okachimachi');
+    return stage === 'playing' ? (isPortraitLayout() ? 'cinema-event-portrait' : 'cinema-event') : okachimachiBackgroundAssetName();
   }
   const base = backgroundFor(target);
   const portrait = isPortraitLayout();
@@ -9570,7 +9649,7 @@ function backgroundAssetFor(target) {
     return portrait ? 'meal-menu-portrait' : 'meal-menu';
   }
   if (portrait && base === 'main') return 'main-portrait';
-  if (portrait && base === 'okachimachi') return 'okachimachi-portrait';
+  if (base === 'okachimachi') return okachimachiBackgroundAssetName(portrait);
   if (portrait && STANDARD_PORTRAIT_BACKGROUND_BASES.has(base)) return `${base}-portrait`;
   return base;
 }
@@ -9973,6 +10052,7 @@ function timeRemainingLabel(minutes) {
 
 function gameTimePanel() {
   const minutes = Math.max(DAY_START_MINUTES, Number(state?.game?.minutes) || DAY_START_MINUTES);
+  const clockTone = minutes >= 19 * 60 ? 'time-red' : minutes >= 17 * 60 ? 'time-yellow' : 'time-default';
   let tone = 'normal';
   let note = '';
   if (minutes >= DAY_END_MINUTES) {
@@ -9985,7 +10065,7 @@ function gameTimePanel() {
     tone = 'okachimachi-warning';
     note = `御徒町終了まで ${timeRemainingLabel(OKACHIMACHI_CLOSE_MINUTES - minutes)}`;
   }
-  return `<span class="jwj-status-item jwj-status-time game-time-panel ${tone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}" ${note ? `title="${esc(note)}"` : ''}>${clock(minutes)}</span>`;
+  return `<span class="jwj-status-item jwj-status-time game-time-panel ${tone} ${clockTone}" role="status" aria-label="現在時刻 ${clock(minutes)}${note ? `、${esc(note)}` : ''}" ${note ? `title="${esc(note)}"` : ''}>${clock(minutes)}</span>`;
 }
 
 // v0.10.561: メイン画面は上部バー1だけ、それ以外は上部バー1（情報）と
@@ -12930,15 +13010,15 @@ function emeraldCaptainKebabEventState() {
 function maybeStartEmeraldCaptainKebabEvent() {
   if (illnessEventSuppressionActive()) return false;
   const mealId = EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID;
-  const meal = MEALS[mealId];
-  const gemCost = emeraldCaptainKebabEventTotalCost();
-  const totalRequired = gemCost + Math.max(0, Math.floor(Number(meal?.price) || 0));
-  if (!meal || gemCost <= 0 || Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < totalRequired) return false;
   const eventState = emeraldCaptainKebabEventState();
   if (eventState.active) {
     setScreen('emeraldCaptainKebabEvent', { mealId }, false);
     return true;
   }
+  const meal = MEALS[mealId];
+  const gemCost = emeraldCaptainKebabEventTotalCost();
+  const totalRequired = gemCost + Math.max(0, Math.floor(Number(meal?.price) || 0));
+  if (!meal || gemCost <= 0 || Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < totalRequired) return false;
   if (Math.floor(Math.random() * EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
   eventState.active = true;
   eventState.stage = 'intro1';
@@ -14979,8 +15059,10 @@ function renderCompletion() {
   return shell('完成', `
     <section class="center-card glass-panel result-card">
       <div class="jewelry-preview large completion-jewelry-preview metal-${jewelry.metal} item-${jewelry.item}" style="--gem:${GEMS[jewelry.gem]?.hue || '#ffffff'}">
-        ${jewelryItemVisual(jewelry.item, 'jewelry-item-shape large', usesLoose)}
-        ${usesLoose ? `<span class="jewelry-preview-loose">${jewelryLooseSetVisual(jewelry.item, jewelry.gem, jewelry.looseShape, 'completion')}</span>` : ''}
+        <span class="completion-jewelry-artwork item-${jewelry.item}">
+          ${jewelryItemVisual(jewelry.item, 'jewelry-item-shape large', usesLoose)}
+          ${usesLoose ? `<span class="jewelry-preview-loose">${jewelryLooseSetVisual(jewelry.item, jewelry.gem, jewelry.looseShape, 'completion')}</span>` : ''}
+        </span>
       </div>
       <h1>${esc(jewelry.name)}が完成しました。</h1>
       <div class="result-stats">
@@ -16464,6 +16546,27 @@ function bindKaitenzushiFrame() {
 }
 
 function startKaitenzushi({ skipEventCheck = false, free = false } = {}) {
+  // v0.10.654: 大将イベントの途中復帰は、満腹・同一食事・所持金・時間制限より先に扱う。
+  // PWA再読込後でも、既に発生済みの無料イベントを新規食事条件で失わない。
+  const savedSushiEvent = sushiChefEventState();
+  if (!skipEventCheck && savedSushiEvent.active && !['idle', 'completed'].includes(savedSushiEvent.stage)) {
+    if (savedSushiEvent.stage === 'playing') {
+      kaitenzushiSession = {
+        budget: Number.MAX_SAFE_INTEGER,
+        total: 0,
+        plates: 0,
+        settled: false,
+        free: true,
+        ready: false,
+        loadError: false,
+      };
+      setScreen('kaitenzushi', {}, true);
+    } else {
+      setScreen('sushiChefEvent', {}, false);
+    }
+    return;
+  }
+
   const current = hungerLevel();
   if (current >= (state.wellbeing.maxHunger || 7)) return showToast('空腹度は満タンです。', 'error');
   if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === 'kaitenzushi') return showToast('栄養が片寄るので違うものを食べましょう', 'error');
@@ -16650,9 +16753,37 @@ function finishMealEatingEarly() {
   return Boolean(mealEatingCompletionController?.finish?.('manual'));
 }
 
+// v0.10.654: 食事イベント途中の再読込では、新規発生条件より既存イベント復帰を優先する。
+function resumeActiveMealEvent(mealId) {
+  const routes = {
+    convenience: [['cyclopsEvent', 'cyclopsEvent']],
+    ice: [['whiteBunnyIceEvent', 'whiteBunnyIceEvent']],
+    kebab: [['emeraldCaptainKebabEvent', 'emeraldCaptainKebabEvent']],
+    hamburger: [['touristWoodSwordEvent', 'touristWoodSwordEvent'], ['terryCaliforniaEvent', 'terryCaliforniaEvent']],
+    indian: [['diamondPolishingLapEvent', 'diamondPolishingLapEvent'], ['ganeshaTuskEvent', 'ganeshaTuskEvent']],
+    ramen: [['childhoodFriendEvent', 'childhoodFriendEvent']],
+    soba: [['ridleyOkazakiSobaEvent', 'ridleyOkazakiSobaEvent']],
+    chinese: [['mysteryChineseMealEvent', 'mysteryChineseMealEvent']],
+    korean: [['grayHoodAquariumEvent', 'grayHoodAquariumEvent']],
+  };
+  for (const [eventKey, targetScreen] of routes[String(mealId || '')] || []) {
+    const eventState = state?.events?.[eventKey];
+    const stage = String(eventState?.stage || 'idle');
+    if (eventState?.active && !['idle', 'completed'].includes(stage)) {
+      setScreen(targetScreen, { mealId }, false);
+      return true;
+    }
+  }
+  return false;
+}
+
 async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } = {}) {
   const meal = MEALS[mealId];
   if (!meal || mealTransitioning) return;
+
+  // v0.10.654: 途中イベントの復帰は、満腹・同一食事・所持金・時間制限より先に判定する。
+  if (!skipEventCheck && resumeActiveMealEvent(mealId)) return;
+
   const before = hungerLevel();
   if (before >= 7) return showToast('空腹度は満タンです。', 'error');
   if (mealId !== 'ice' && state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === mealId) return showToast('栄養が片寄るので違うものを食べましょう', 'error');
@@ -16673,31 +16804,30 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
 
   mealTransitioning = true;
   const stateBeforeMeal = structuredClone(state);
+  let mealCommitted = false;
   try {
     selectedMeal = mealId;
     if (mealId === 'ice') startIceMealAudio();
     else stopIceMealAudio();
     await preloadMealAssets(mealId);
 
-    // 店を決定して食事画面へ移る瞬間に支払いを確定する。
+    // v0.10.654: 支払い・時間・空腹回復・履歴を一括確定してから食事演出へ入る。
+    // 演出中にPWAを閉じても「代金だけ支払い済み」の中間セーブを作らない。
     state.game.money -= actualPrice;
     addFinance(`${meal.name}で食事`, 0, actualPrice);
-    startMoneyFeedback(-actualPrice, 1200);
-    saveGame();
-    setScreen('meal', { mealId, eating: true }, false);
-
-    // 読み込み済みの店内と料理を表示する。タップ時は即終了し、
-    // 操作しない場合は従来どおり合計2.5秒で自動終了する。
-    const eatingCompletion = waitForMealEatingCompletion();
-    await waitForNextPaintWithTimeout();
-    await eatingCompletion;
-
     spendMealTime();
     state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
     state.wellbeing.lastMeal = mealId;
     state.wellbeing.mealsEaten += 1;
     state.daily.meals.push({ id: mealId, name: meal.name, price: actualPrice, recovery: state.wellbeing.hunger - before });
     saveGame();
+    mealCommitted = true;
+    startMoneyFeedback(-actualPrice, 1200);
+
+    setScreen('meal', { mealId, eating: true }, false);
+    const eatingCompletion = waitForMealEatingCompletion();
+    await waitForNextPaintWithTimeout();
+    await eatingCompletion;
 
     hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
     clearTimeout(hungerFeedbackTimer);
@@ -16711,19 +16841,32 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
   } catch (error) {
     console.error('食事処理エラー', error);
     stopIceMealAudio();
-    state = stateBeforeMeal;
-    screen = 'main';
-    screenData = {};
-    navigation = [];
-    pendingDayMoneyDelta = 0;
-    saveGame();
-    render();
-    try { showToast('食事処理を中断し、直前の状態へ戻しました。', 'error'); } catch (_) {}
+    if (!mealCommitted) {
+      state = stateBeforeMeal;
+      screen = 'main';
+      screenData = {};
+      navigation = [];
+      pendingDayMoneyDelta = 0;
+      saveGame();
+      render();
+      try { showToast('食事処理を中断し、直前の状態へ戻しました。', 'error'); } catch (_) {}
+    } else {
+      // ゲーム上の食事は確定済み。演出だけ失敗した時は二重返金せず画面のみ復旧する。
+      screen = 'main';
+      screenData = {};
+      navigation = [];
+      pendingDayMoneyDelta = 0;
+      if (state?.game) state.game.screen = 'main';
+      saveGame();
+      render();
+      try { showToast('食事は完了しています。画面を復旧しました。', 'warning'); } catch (_) {}
+    }
   } finally {
     mealEatingCompletionController = null;
     mealTransitioning = false;
   }
 }
+
 
 
 function ensureGiftState(gameState = state) {
@@ -20974,6 +21117,15 @@ root.addEventListener('click', async (event) => {
     case 'terry-california-video-start':
       retryTerryCaliforniaIntroPlayback();
       break;
+    case 'terry-california-event-next':
+      advanceTerryCaliforniaEvent();
+      break;
+    case 'terry-california-event-buy':
+      buyTerryCaliforniaBenitoite();
+      break;
+    case 'terry-california-event-decline':
+      declineTerryCaliforniaOffer();
+      break;
     case 'event-movie-skip':
       await skipCurrentEventIntroVideo();
       break;
@@ -21742,6 +21894,16 @@ async function enterGameAfterLogin() {
   repairIllnessPaymentBirthdayOverlapV481();
   repairChildhoodFriendEventDeadlock();
   repairMorningOverlapDeadlockV475();
+  const restoredQuizScreen = restorePersistedQuizSessionsAfterLoad();
+  if (restoredQuizScreen) {
+    setScreen(restoredQuizScreen, {}, false);
+    if (saveRecoveryNotice) {
+      showToast(saveRecoveryNotice, 'info', false);
+      saveRecoveryNotice = null;
+      saveRecoveryDetails = null;
+    }
+    return;
+  }
   const advancedDays = await processAutopilotIfDue({ renderAfter: false, showNotice: false });
   setScreen(state.playerName ? 'main' : 'nameSetup', {}, false);
   if (saveRecoveryNotice) {

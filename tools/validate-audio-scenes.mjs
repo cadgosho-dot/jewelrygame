@@ -15,13 +15,15 @@ const appSource = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
 const rendererMatch = appSource.match(/const renderers = \{([\s\S]*?)\n    \};/);
 if (!rendererMatch) throw new Error('renderers一覧を取得できません。');
 const rendererScreens = [...rendererMatch[1].matchAll(/^\s*([A-Za-z0-9_]+)\s*:/gm)].map((match) => match[1]);
-const declaredScreens = new Set([...Object.keys(SCREEN_AUDIO_SCENES), ...DYNAMIC_AUDIO_SCREENS]);
+const MANUAL_AUDIO_SCREENS = new Set(['whiteBunnyIceEvent']);
+const declaredScreens = new Set([...Object.keys(SCREEN_AUDIO_SCENES), ...DYNAMIC_AUDIO_SCREENS, ...MANUAL_AUDIO_SCREENS]);
 const missingScreens = rendererScreens.filter((screen) => !declaredScreens.has(screen));
 const extraScreens = [...declaredScreens].filter((screen) => !rendererScreens.includes(screen));
 if (missingScreens.length) throw new Error(`音割り当て未登録画面: ${missingScreens.join(', ')}`);
 if (extraScreens.length) throw new Error(`存在しない画面の音割り当て: ${extraScreens.join(', ')}`);
 
 for (const screen of rendererScreens) {
+  if (MANUAL_AUDIO_SCREENS.has(screen)) continue;
   const contexts = screen === 'meal'
     ? [{ mealId: '' }, { mealId: 'convenience' }, { mealId: 'soba' }, { mealId: 'ramen' }, { mealId: 'hamburger' }, { mealId: 'indian' }, { mealId: 'korean' }, { mealId: 'chinese' }, { mealId: 'kebab' }]
     : screen === 'cinemaVisitEvent'
@@ -36,6 +38,21 @@ for (const screen of rendererScreens) {
 }
 
 if (resolveAudioScene('phone') !== 'main') throw new Error('スマートフォンはメイン画面と同じ音場でなければなりません。');
+if (!appSource.includes("screen === 'whiteBunnyIceEvent'") || !appSource.includes('playWhiteBunnyEventBgm()')) throw new Error('ホワイトバニーの専用BGM配線が見つかりません。');
+
+const expectedEventScenes = {
+  ridleyOkazakiSobaEvent: 'meal-soba',
+  emeraldCaptainKebabEvent: 'meal-kebab',
+  grayHoodAquariumEvent: 'meal-korean',
+  terryCaliforniaEvent: 'meal-hamburger',
+  looseShopOriginalQuizEvent: 'looseShop',
+  wristFoundEvent: 'okachimachi',
+  kawaharaKnowledgeEvent: 'glab',
+};
+for (const [screen, expected] of Object.entries(expectedEventScenes)) {
+  const actual = resolveAudioScene(screen);
+  if (actual !== expected) throw new Error(`${screen} の音場は ${expected} である必要があります（現在: ${actual}）。`);
+}
 
 const mealSceneKeys = ['meal', 'meal-convenience', 'meal-soba', 'meal-ramen', 'meal-hamburger', 'meal-indian', 'meal-korean', 'meal-chinese', 'meal-kebab'];
 for (const key of mealSceneKeys) {
@@ -61,13 +78,16 @@ for (const relativeUrl of audioSceneAuditFiles()) {
 if (missingFiles.length) throw new Error(`音源ファイル不足: ${missingFiles.join(', ')}`);
 
 const swSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-if (!swSource.includes("'./js/audio-scene-map.js'")) throw new Error('audio-scene-map.js がPWAキャッシュ対象にありません。');
-const missingCacheFiles = audioSceneAuditFiles().filter((file) => !swSource.includes(`'${file}'`));
-if (missingCacheFiles.length) throw new Error(`PWAキャッシュ未登録の音源: ${missingCacheFiles.join(', ')}`);
+if (!/['\"]\.\/js\/audio-scene-map\.js(?:\?v=[^'\"]+)?['\"]/.test(swSource)) throw new Error('audio-scene-map.js がPWAキャッシュ対象にありません。');
+// v0.10.652: 音源はCORE_SHELLへ全列挙せず、Service Workerのassets/audio runtime cacheで扱う。
+// 全音源を列挙する旧検査は現行SW設計と矛盾するため、audio/assetsのキャッシュ経路そのものを検査する。
+if (!swSource.includes("['image', 'audio', 'font'].includes(destination)") || !swSource.includes("url.pathname.includes('/assets/')") || !swSource.includes('staleWhileRevalidate(event.request)')) {
+  throw new Error('Service Workerの音声/asset runtime cache経路が見つかりません。');
+}
 if (swSource.includes("'./assets/audio/bgm-phone.ogg'") || swSource.includes("'./assets/audio/amb-phone.ogg'")) throw new Error('未使用のスマートフォン専用音源がPWAキャッシュへ戻っています。');
 
 const missingScaleScenes = AUDIO_SCENE_KEYS.filter((key) => !AUDIO_SCENE_DEFINITIONS[key]);
 if (missingScaleScenes.length) throw new Error(`音場定義不足: ${missingScaleScenes.join(', ')}`);
 
 console.log(`音場定義 ${AUDIO_SCENE_KEYS.length}件、画面割り当て ${rendererScreens.length}件、音源 ${audioSceneAuditFiles().length}件: OK`);
-console.log('スマートフォン=メイン、食事4層、映画上映=無音、工房BGM共有、回転寿司4層: OK');
+console.log('スマートフォン=メイン、食事4層、映画上映=無音、工房BGM共有、回転寿司4層、イベント7件の場所別音場: OK');

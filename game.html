@@ -15,7 +15,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="./styles.css?v=0.10.647">
+  <link rel="stylesheet" href="./styles.css?v=0.10.661">
 
   <style id="event-video-contain-v638">
     /* v0.10.632: Event movies must always show the complete source frame.
@@ -142,29 +142,29 @@
     }
 
 
-    /* v0.10.644: Completion earrings use smaller stones; on portrait phones move the whole earring artwork slightly down. */
+    /* v0.10.649: Completion earrings only — enlarge stones to about 120% while retaining plate-center positioning. */
     .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem {
-      width: 48px !important;
-      max-width: 48px !important;
+      width: 58px !important;
+      max-width: 58px !important;
       min-width: 0 !important;
     }
     .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
       display: block !important;
-      width: 48px !important;
-      height: 48px !important;
-      max-width: 48px !important;
-      max-height: 48px !important;
+      width: 58px !important;
+      height: 58px !important;
+      max-width: 58px !important;
+      max-height: 58px !important;
       object-fit: contain !important;
     }
     html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem {
-      width: 42px !important;
-      max-width: 42px !important;
+      width: 50px !important;
+      max-width: 50px !important;
     }
     html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
-      width: 42px !important;
-      height: 42px !important;
-      max-width: 42px !important;
-      max-height: 42px !important;
+      width: 50px !important;
+      height: 50px !important;
+      max-width: 50px !important;
+      max-height: 50px !important;
     }
     html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings,
     html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose {
@@ -217,7 +217,62 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="c
       }
     }
 
-  </style>
+  
+
+    /* v0.10.648: Completion artwork is an explicit stage.
+       Portrait no longer relies on outer margins: the artwork itself starts well below the second header bar. */
+    .completion-jewelry-artwork {
+      position: relative !important;
+      display: grid !important;
+      place-items: center !important;
+      flex: 0 0 auto !important;
+      width: 210px !important;
+      height: 210px !important;
+      overflow: visible !important;
+    }
+    .completion-jewelry-artwork.item-pendant { width: 165px !important; height: 226px !important; }
+    .completion-jewelry-artwork.item-earrings { width: 228px !important; height: 206px !important; }
+    .completion-jewelry-artwork > .jewelry-item-shape.large {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      transform: none !important;
+    }
+    .completion-jewelry-artwork > .jewelry-preview-loose {
+      position: absolute !important;
+      inset: 0 !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      transform: none !important;
+      overflow: visible !important;
+    }
+    @media (max-width: 700px) {
+      .completion-jewelry-artwork { width: 184px !important; height: 184px !important; }
+      .completion-jewelry-artwork.item-pendant { width: 142px !important; height: 195px !important; }
+      .completion-jewelry-artwork.item-earrings { width: 190px !important; height: 172px !important; }
+    }
+    @media (orientation: portrait) and (max-width: 820px) {
+      body[data-screen="completion"] .result-card > .completion-jewelry-preview {
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 330px !important;
+        min-height: 330px !important;
+        margin-top: 0 !important;
+        padding: 72px 0 0 !important;
+        overflow: hidden !important;
+      }
+      body[data-screen="completion"] .completion-jewelry-artwork {
+        margin: 0 !important;
+        transform: none !important;
+      }
+    }
+</style>
 </head>
 <body>
   <div id="background-layer" aria-hidden="true"></div>
@@ -227,6 +282,6 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="c
   <div id="modal-layer" class="hidden"></div>
   <div id="sleep-curtain" aria-hidden="true"></div>
   <div id="morning-brief" aria-live="polite"></div>
-  <script type="module" src="./js/app.js?v=0.10.647"></script>
+  <script type="module" src="./js/app.js?v=0.10.661"></script>
 </body>
 </html>

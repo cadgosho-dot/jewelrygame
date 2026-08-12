@@ -1,0 +1,6 @@
+JEWELRY×JEWELRY v0.10.661 更新手順
+
+1. GitHub DesktopのJEWELRY×JEWELRYプロジェクトを開きます。
+2. この更新ZIPの内容をプロジェクト直下へ上書きします。
+3. GitHub Desktopで変更内容を確認してコミット/Pushしてください。
+4. PWAで古い御徒町背景が残る場合は一度再読み込みしてください。Service Workerのバージョンは0.10.661へ更新済みです。

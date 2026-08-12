@@ -1,0 +1,27 @@
+JEWELRY×JEWELRY v0.10.661 update manifest
+
+Source basis:
+- User supplied landscape night background: 1000020361.png (1536x768)
+- User supplied portrait night background: 1000020362.png (1024x1536)
+- Source landscape SHA256: 10f9c5336198f52fc4f00d13569aa2edf1a9b1affe6289ee586bbe5f20c4359c
+- Source portrait SHA256: d65fc515bd72f2a5d4725339617ec1914e80c26c4d817943980b8006ed669b19
+
+Updated files:
+- js/app.js
+- js/game-data.js
+- game.html
+- sw.js
+- CHANGELOG.md
+- assets/images/okachimachi-night.webp
+- assets/images/okachimachi-night-portrait.webp
+- scripts/check-okachimachi-night-background.py
+- IMPLEMENTATION_NOTES_v0.10.661.md
+- UPDATE_INSTRUCTIONS_v0.10.661.txt
+- SOURCE_MANIFEST_v0.10.661.txt
+- VALIDATION_v0.10.661.txt
+
+Generated background SHA256:
+- okachimachi-night.webp: b926ee089a26f6c180e650b4dc6d10e504ec5ca9ba322df0322ad572066a2f56
+- okachimachi-night-portrait.webp: 10292b3f85930a4bff01bdf68399fc87a863fcf2a50c75b62082ed9579d9def6
+
+Source PNG files are not redistributed in the update ZIP; converted WebP assets are included.

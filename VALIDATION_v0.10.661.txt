@@ -1,0 +1,60 @@
+JEWELRY×JEWELRY v0.10.661 VALIDATION
+Date: 2026-08-12
+
+[Syntax]
+PASS node --check all js/*.js
+PASS node --check sw.js
+
+[Okachimachi night background]
+PASS 17:59 = existing daytime background
+PASS 18:00 = night background
+PASS 22:00 = night background
+PASS landscape night asset: 1536x768 WEBP
+PASS portrait night asset: 1024x1536 WEBP
+PASS base okachimachi background route uses time-aware helper
+PASS cinema exterior okachimachi route uses time-aware helper
+PASS portrait asset name ends in -portrait and therefore preserves existing portrait cover layout
+PASS Service Worker core shell contains both night assets
+
+[Processing knowledge]
+PASS sequence: サイズ直し -> ロー付け -> 仕上げ -> 石留め -> 宝石研磨
+PASS existing processing knowledge audit unchanged
+
+[Events / recovery]
+EVENT INTEGRITY AUDIT: PASS
+OK: data-action coverage: 223 static actions handled
+OK: event stage validators parsed: 30 / active maps: 32
+OK: event audio routes guarded: 7
+OK: static asset refs checked: 251
+OK: loose-shop quiz: 50 questions / 4 choices contract checked
+OK: event save/migration round-trip: 135 active stages checked
+OK: meal/quiz crash-and-reload recovery: PASS (18 quiz stages)
+EVENT SAVE ROUNDTRIP AUDIT: PASS
+OK: 135 active event stages survived JSON save + migrateState()
+MEAL / QUIZ RECOVERY AUDIT: PASS
+OK: quiz session JSON+migrateState round-trip: 18 stages checked
+
+[Audio]
+PASS audio scene definitions: 27
+PASS screen mappings: 88
+PASS audio sources: 47
+
+[Data]
+PASS JSON parse: 54 files
+
+[Version sync]
+PASS js/game-data.js export const VERSION = '0.10.661'
+PASS js/app.js const UI_BUILD_VERSION = '0.10.661'
+PASS sw.js const VERSION = '0.10.661'
+PASS game.html styles.css?v=0.10.661
+PASS game.html app.js?v=0.10.661
+PASS lazy/module import cache query = v0.10.661
+
+[Source images]
+PASS source landscape SHA256 10f9c5336198f52fc4f00d13569aa2edf1a9b1affe6289ee586bbe5f20c4359c
+PASS source portrait SHA256 d65fc515bd72f2a5d4725339617ec1914e80c26c4d817943980b8006ed669b19
+
+[Real overwrite test]
+PASS v0.10.660 full applied tree + v0.10.661 update ZIP overwrite
+PASS post-overwrite syntax / okachimachi-night / processing knowledge / event integrity / event save roundtrip / meal-quiz recovery / audio validation
+PASS staged update files match validated v0.10.661 work tree

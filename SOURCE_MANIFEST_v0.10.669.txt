@@ -1,0 +1,24 @@
+JEWELRY×JEWELRY v0.10.669 update manifest
+
+Source basis:
+- User supplied full project: jewelrygame-main (3).zip
+- Applied cumulative updates through v0.10.668
+- Previous WindowsSafe update: JEWELRYxJEWELRY_v0_10_668_GitHubDesktop_update_WindowsSafe.zip
+
+v0.10.669 changed/runtime files:
+- js/app.js
+- js/game-data.js
+- game.html
+- sw.js
+- CHANGELOG.md
+
+v0.10.669 validation/documentation files:
+- scripts/check-startup-diagnostics.py
+- scripts/check-startup-optimization-v669.py
+- IMPLEMENTATION_NOTES_v0.10.669.md
+- UPDATE_INSTRUCTIONS_v0.10.669.txt
+- SOURCE_MANIFEST_v0.10.669.txt
+- VALIDATION_v0.10.669.txt
+
+Previous v0.10.668 cumulative runtime/assets/scripts are retained in the WindowsSafe update so recent fixes and assets are not dropped.
+No new image/video/audio asset was added in v0.10.669.

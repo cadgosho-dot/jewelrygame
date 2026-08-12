@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.668';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.668';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.668';
+const UI_BUILD_VERSION = '0.10.669';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.669';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.669';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.668';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.669';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.668';
+} from './firebase-service.js?v=0.10.669';
 
 const STARTUP_DIAGNOSTICS_STORAGE_KEY = 'jxj-startup-diagnostics-v1';
 const startupDiagnostics = (() => {
@@ -103,7 +103,8 @@ function startupResourceLabel(rawName) {
 
 function startupResourceTimings(limit = 12) {
   const cutoff = Number(
-    startupDiagnostics.markers.title_rendered
+    startupDiagnostics.markers.startup_save_ready
+    || startupDiagnostics.markers.title_rendered
     || startupDiagnostics.markers.login_rendered
     || startupDiagnostics.markers.email_verification_rendered
     || startupDiagnostics.markers.main_rendered
@@ -182,7 +183,8 @@ const STARTUP_MARKER_LABELS = Object.freeze({
   session_claim_finished: 'セッション取得完了',
   local_cloud_sync_started: '端末セーブ同期開始',
   local_cloud_sync_finished: '端末セーブ同期完了',
-  title_rendered: 'タイトル描画',
+  title_rendered: '先行タイトル描画',
+  startup_save_ready: 'スタート有効化（セーブ確認完了）',
   login_rendered: 'ログイン画面描画',
   email_verification_rendered: 'メール確認画面描画',
   start_button_clicked: 'スタート押下',
@@ -223,6 +225,7 @@ function startupDiagnosticsText(snapshot = latestStartupDiagnosticsSnapshot()) {
     ['クラウドセーブ取得', 'cloud_load_started', 'cloud_load_finished'],
     ['セッション取得', 'session_claim_started', 'session_claim_finished'],
     ['端末セーブ→クラウド同期', 'local_cloud_sync_started', 'local_cloud_sync_finished'],
+    ['先行タイトル→スタート有効化', 'title_rendered', 'startup_save_ready'],
     ['ローカルセーブ展開', 'start_load_game_started', 'start_load_game_finished'],
     ['自動操縦確認', 'start_autopilot_started', 'start_autopilot_finished'],
     ['スタート→メイン', 'start_button_clicked', 'main_rendered'],
@@ -233,7 +236,9 @@ function startupDiagnosticsText(snapshot = latestStartupDiagnosticsSnapshot()) {
     if (Number.isFinite(start) && Number.isFinite(end)) lines.push(`${label}: ${startupMsLabel(Math.max(0, end - start))}`);
   }
   const title = Number(markers.title_rendered);
-  if (Number.isFinite(title)) lines.push(`HTML計測開始→タイトル: ${startupMsLabel(Math.max(0, title - origin))}`);
+  if (Number.isFinite(title)) lines.push(`HTML計測開始→先行タイトル: ${startupMsLabel(Math.max(0, title - origin))}`);
+  const saveReady = Number(markers.startup_save_ready);
+  if (Number.isFinite(saveReady)) lines.push(`HTML計測開始→スタート有効化: ${startupMsLabel(Math.max(0, saveReady - origin))}`);
   const nav = snapshot?.navigation;
   if (nav) {
     lines.push('', '[Navigation Timing]');
@@ -260,6 +265,7 @@ function renderStartupDiagnosticsPanel() {
   const markers = snapshot?.markers || {};
   const origin = Number(markers.html_probe ?? startupDiagnostics.startedAt ?? 0);
   const titleMs = Number.isFinite(Number(markers.title_rendered)) ? Math.max(0, Number(markers.title_rendered) - origin) : null;
+  const saveReadyMs = Number.isFinite(Number(markers.startup_save_ready)) ? Math.max(0, Number(markers.startup_save_ready) - origin) : null;
   const firebaseMs = Number.isFinite(Number(markers.firebase_init_started)) && Number.isFinite(Number(markers.firebase_init_finished))
     ? Math.max(0, Number(markers.firebase_init_finished) - Number(markers.firebase_init_started)) : null;
   const cloudMs = Number.isFinite(Number(markers.cloud_load_started)) && Number.isFinite(Number(markers.cloud_load_finished))
@@ -269,14 +275,15 @@ function renderStartupDiagnosticsPanel() {
   const startToMainMs = Number.isFinite(Number(markers.start_button_clicked)) && Number.isFinite(Number(markers.main_rendered))
     ? Math.max(0, Number(markers.main_rendered) - Number(markers.start_button_clicked)) : null;
   const rows = [
-    ['タイトル表示まで', titleMs],
+    ['先行タイトル表示まで', titleMs],
+    ['スタート有効化まで', saveReadyMs],
     ['Firebase初期化', firebaseMs],
     ['クラウドセーブ取得', cloudMs],
     ['セッション取得', sessionMs],
     ['スタート→メイン', startToMainMs],
   ].filter(([, value]) => Number.isFinite(value));
   return `<section class="startup-diagnostics-setting">
-    <div class="startup-diagnostics-heading"><div><strong>起動診断</strong><small>起動処理は変更せず、実機で時間だけを計測します。</small></div><button type="button" class="secondary-button startup-diagnostics-copy" data-action="copy-startup-diagnostics">診断結果をコピー</button></div>
+    <div class="startup-diagnostics-heading"><div><strong>起動診断</strong><small>実機でタイトル表示、セーブ確認、ゲーム開始までの時間を計測します。</small></div><button type="button" class="secondary-button startup-diagnostics-copy" data-action="copy-startup-diagnostics">診断結果をコピー</button></div>
     ${rows.length ? `<dl class="startup-diagnostics-summary">${rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(startupMsLabel(value))}</dd></div>`).join('')}</dl>` : '<p class="small-note">この起動ではまだ測定結果が揃っていません。</p>'}
     <details class="startup-diagnostics-details"><summary>詳しい計測結果を見る</summary><pre>${esc(startupDiagnosticsText(snapshot))}</pre></details>
   </section>`;
@@ -441,6 +448,7 @@ let titleSettings = loadTitleSettings();
 let currentUser = null;
 let cloudSave = null;
 let authReady = false;
+let startupSaveReady = false;
 let authEntryRequested = false;
 const GOOGLE_LOGIN_REDIRECT_KEY = 'jxj-google-login-redirect';
 const GOOGLE_LOGIN_ERROR_KEY = 'jxj-google-login-error';
@@ -10863,11 +10871,11 @@ function renderEmailVerification() {
 }
 
 function renderTitle() {
-  const label = freshStartRequested() ? 'はじめから' : 'スタート';
+  const label = startupSaveReady ? (freshStartRequested() ? 'はじめから' : 'スタート') : 'セーブ確認中…';
   return `
     <main class="title-screen">
       <section class="title-actions glass-panel start-only-panel">
-        <button class="primary-button large-button start-button" data-action="start">${label}</button>
+        <button class="primary-button large-button start-button" data-action="start" ${startupSaveReady ? '' : 'disabled aria-disabled="true" aria-busy="true"'}>${label}</button>
         <p class="title-orientation-note">このゲームは横画面でのプレイをおすすめしています。</p>
       </section>
     </main>`;
@@ -21219,6 +21227,10 @@ root.addEventListener('click', async (event) => {
       await copyStartupDiagnostics();
       break;
     case 'start':
+      if (!startupSaveReady) {
+        showToast('セーブデータを確認しています。少しお待ちください。', 'info');
+        break;
+      }
       startupMark('start_button_clicked');
       if (hasSave()) {
         startupMark('start_load_game_started');
@@ -22262,7 +22274,7 @@ if ('serviceWorker' in navigator) {
         const runUpdateCheck = () => registration.update()
           .then(() => startupMark('service_worker_update_finished'))
           .catch(() => {});
-        // v0.10.668: requestIdleCallback can run almost immediately while Firebase is still
+        // v0.10.669: requestIdleCallback can run almost immediately while Firebase is still
         // on the critical launch path. Enforce a minimum 10-second delay, then use idle time.
         window.setTimeout(() => {
           if ('requestIdleCallback' in window) requestIdleCallback(runUpdateCheck, { timeout: 10000 });
@@ -22275,8 +22287,12 @@ if ('serviceWorker' in navigator) {
 
 async function boot() {
   startupMark('boot_started');
+  // v0.10.669: show the real title shell immediately. The start button stays disabled
+  // until authentication and local/cloud save selection are complete.
+  startupSaveReady = false;
+  screen = 'title';
   render();
-  startupMark('loading_rendered');
+  startupMark('title_rendered', 'early-shell');
   try {
     startupMark('firebase_init_started');
     await initializeFirebase();
@@ -22292,6 +22308,7 @@ async function boot() {
       if (stopSessionWatch) stopSessionWatch();
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (!user) {
+        startupSaveReady = false;
         const googleLoginError = takeGoogleLoginError();
         clearGoogleLoginRedirect();
         authEntryRequested = false;
@@ -22304,6 +22321,7 @@ async function boot() {
         return;
       }
       if (needsEmailVerification(user)) {
+        startupSaveReady = false;
         cloudSave = null;
         screen = 'emailVerification';
         render();
@@ -22311,9 +22329,10 @@ async function boot() {
         persistStartupDiagnostics('email-verification');
         return;
       }
-      screen = 'loading';
+      // Keep the already-visible title shell while the signed-in save is checked.
+      // No loading-screen swap is needed here; the disabled start button is the gate.
+      screen = 'title';
       render();
-      startupMark('signed_in_loading_rendered');
       try {
         startupMark('cloud_load_started');
         startupMark('session_claim_started');
@@ -22367,6 +22386,7 @@ async function boot() {
           });
         });
         heartbeatTimer = setInterval(() => heartbeat(user.uid, sessionId), 300000);
+        startupSaveReady = true;
         if (phoneGameReturnRequested()) {
           state = loadGame();
           if (state) {
@@ -22432,10 +22452,11 @@ async function boot() {
         }
         screen = 'title';
         render();
-        startupMark('title_rendered');
-        persistStartupDiagnostics('title');
+        startupMark('startup_save_ready', preferredAtBoot.source || 'none');
+        persistStartupDiagnostics('title-ready');
       } catch (error) {
         console.error(error);
+        startupSaveReady = false;
         clearGoogleLoginRedirect();
         authEntryRequested = false;
         screen = 'login';
@@ -22448,6 +22469,7 @@ async function boot() {
     startupMark('auth_observer_registered');
   } catch (error) {
     console.error(error);
+    startupSaveReady = false;
     clearGoogleLoginRedirect();
     authReady = true;
     authEntryRequested = false;

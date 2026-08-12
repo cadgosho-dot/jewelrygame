@@ -1,0 +1,52 @@
+JEWELRY×JEWELRY v0.10.669 VALIDATION
+Date: 2026-08-12
+
+[Requested startup change]
+PASS title shell is rendered before Firebase initialization
+PASS startup button displays セーブ確認中… before save selection is ready
+PASS startup button is disabled + aria-disabled + aria-busy while gated
+PASS start action has a second programmatic guard
+PASS cloud save load remains awaited before gate opens
+PASS local/cloud preferred-save comparison remains before gate opens
+PASS session claim remains background/non-blocking
+PASS newer local save background sync remains on saveQueue
+PASS normal title is rerendered only after startupSaveReady=true
+PASS diagnostics separately report early title and save-ready/start-enabled timing
+
+[v0.10.668 optimizations retained]
+PASS Firebase preconnects retained
+PASS startup BGM/ambient hold retained until actual game entry
+PASS Service Worker update still delayed by minimum 10 seconds + idle scheduling
+
+[Version sync]
+PASS js/game-data.js VERSION = 0.10.669
+PASS js/app.js UI_BUILD_VERSION = 0.10.669
+PASS app module cache queries = 0.10.669
+PASS game.html styles.css/app.js query = 0.10.669
+PASS sw.js VERSION/cache queries = 0.10.669
+
+[Syntax]
+PASS node --check js/app.js
+PASS node --check js/game-data.js
+PASS node --check js/audio.js
+PASS node --check js/audio-scene-map.js
+PASS node --check sw.js
+
+[Regression on complete project]
+PASS STARTUP DIAGNOSTICS AUDIT
+PASS STARTUP OPTIMIZATION v0.10.669 AUDIT
+PASS apprentice cinema weekend-only + centered video audit
+PASS portrait completion header-clearance audit
+PASS showcase jewelry visual audit
+PASS Okachimachi 18:00 night-background audit
+PASS processing knowledge/professional guide audit
+PASS meal/quiz crash-and-reload recovery
+PASS event save/migration round-trip: 135 active stages
+PASS event integrity: 251 static asset refs checked
+PASS loose-shop quiz: 50-question / 4-choice contract
+PASS audio scenes: 27 definitions / 88 screen mappings / 47 sources
+
+[Packaging]
+PASS WindowsSafe ZIP integrity
+PASS SHA256 generated
+PASS real overwrite test: complete v0.10.668 state + final v0.10.669 WindowsSafe ZIP

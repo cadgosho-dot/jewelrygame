@@ -7,11 +7,13 @@ html = (root / 'game.html').read_text(encoding='utf-8')
 sw = (root / 'sw.js').read_text(encoding='utf-8')
 game_data = (root / 'js/game-data.js').read_text(encoding='utf-8')
 
+
 def require(label, condition):
     if not condition:
         print('FAIL', label)
         sys.exit(1)
     print('PASS', label)
+
 
 def ordered(label, haystack, needles, start=0):
     pos = start
@@ -25,24 +27,28 @@ def ordered(label, haystack, needles, start=0):
 
 require('HTML probe uses CSP nonce', 'nonce="jxj-kaitenzushi"' in html and "'nonce-jxj-kaitenzushi'" in html)
 require('HTML probe precedes hosting origin guard', html.find('__JXJ_BOOT_DIAGNOSTICS') < html.find('hosting-origin-guard.js'))
-require('HTML/CSS/app cache version 0.10.668', 'styles.css?v=0.10.668' in html and 'app.js?v=0.10.668' in html)
-require('game-data VERSION 0.10.668', "VERSION = '0.10.668'" in game_data)
-require('app UI_BUILD_VERSION 0.10.668', "UI_BUILD_VERSION = '0.10.668'" in app)
-require('service worker VERSION 0.10.668', "VERSION = '0.10.668'" in sw)
+require('HTML/CSS/app cache version 0.10.669', 'styles.css?v=0.10.669' in html and 'app.js?v=0.10.669' in html)
+require('game-data VERSION 0.10.669', "VERSION = '0.10.669'" in game_data)
+require('app UI_BUILD_VERSION 0.10.669', "UI_BUILD_VERSION = '0.10.669'" in app)
+require('service worker VERSION 0.10.669', "VERSION = '0.10.669'" in sw)
 require('diagnostic storage key present', "STARTUP_DIAGNOSTICS_STORAGE_KEY = 'jxj-startup-diagnostics-v1'" in app)
 require('settings diagnostic panel present', 'renderStartupDiagnosticsPanel()' in app and '診断結果をコピー' in app)
 require('resource timing diagnostics present', "performance.getEntriesByType?.('resource')" in app)
 require('navigation timing diagnostics present', "performance.getEntriesByType?.('navigation')" in app)
 require('device/network diagnostics present', 'hardwareConcurrency' in app and 'navigator.deviceMemory' in app and 'effectiveType' in app)
 require('startup audio release marker present', "startup_audio_released: '起動時音声の解放'" in app)
+require('early title marker present', "title_rendered: '先行タイトル描画'" in app)
+require('save-ready marker present', "startup_save_ready: 'スタート有効化（セーブ確認完了）'" in app)
 
 boot = app.find('async function boot()')
 require('boot function found', boot >= 0)
-ordered('Firebase boot instrumentation retained', app, [
+ordered('early title precedes Firebase initialization', app, [
+    "screen = 'title';",
+    'render();',
+    "startupMark('title_rendered', 'early-shell')",
     "startupMark('firebase_init_started')",
     'await initializeFirebase();',
     "startupMark('firebase_init_finished')",
-    'observeAuth(async (user) =>',
 ], boot)
 ordered('signed-in cloud read remains measured', app, [
     "startupMark('cloud_load_started')",
@@ -51,17 +57,21 @@ ordered('signed-in cloud read remains measured', app, [
     'cloudSave = await loadState(user.uid);',
     "startupMark('cloud_load_finished')",
     'const preferredAtBoot = preferredSavedState();',
+    "startupMark('preferred_save_selected'",
 ], boot)
-ordered('title completion is measured after render', app, [
+ordered('save-ready title occurs after cloud comparison', app, [
+    "startupMark('cloud_load_finished')",
+    "startupMark('preferred_save_selected'",
+    'startupSaveReady = true;',
     "screen = 'title';",
     'render();',
-    "startupMark('title_rendered')",
-    "persistStartupDiagnostics('title')",
+    "startupMark('startup_save_ready'",
 ], boot)
 
 click = app.find("case 'start':")
 require('start action found', click >= 0)
-ordered('start-to-main measurement and audio release order', app, [
+ordered('start gate and start-to-main measurement order', app, [
+    'if (!startupSaveReady)',
     "startupMark('start_button_clicked')",
     "startupMark('start_load_game_started')",
     'state = loadGame();',
@@ -84,11 +94,11 @@ ordered('Service Worker update has minimum-delay then idle scheduling', app, [
 ], sw_block)
 
 markers = [
-    'app_module_started', 'boot_started', 'loading_rendered', 'firebase_init_started', 'firebase_init_finished',
+    'app_module_started', 'boot_started', 'firebase_init_started', 'firebase_init_finished',
     'auth_callback_started', 'cloud_load_started', 'cloud_load_finished', 'session_claim_started',
-    'session_claim_finished', 'title_rendered', 'start_button_clicked', 'start_load_game_started',
-    'start_load_game_finished', 'start_autopilot_started', 'start_autopilot_finished', 'main_rendered',
-    'startup_audio_released'
+    'session_claim_finished', 'title_rendered', 'startup_save_ready', 'start_button_clicked',
+    'start_load_game_started', 'start_load_game_finished', 'start_autopilot_started',
+    'start_autopilot_finished', 'main_rendered', 'startup_audio_released'
 ]
 for marker in markers:
     require(f'marker {marker}', marker in app)

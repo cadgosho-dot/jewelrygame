@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-08-12T10:22:12.593Z",
-  "updatedAt": "2026-08-12T10:23:05Z",
+  "marketTimestamp": "2026-08-12T10:33:15.784Z",
+  "updatedAt": "2026-08-12T10:34:40Z",
   "marketDateJst": "2026-08-12",
   "previousMarketDateJst": "2026-08-11",
   "spotPerGram": {
-    "gold": 22619.597,
-    "silver": 339.8528,
-    "platinum": 9058.8527
+    "gold": 22609.9713,
+    "silver": 339.4213,
+    "platinum": 9051.2917
   },
   "previousSpotPerGram": {
     "gold": 22392.8697,
@@ -22,9 +22,9 @@
     "platinum": 9073.9757
   },
   "changeFromPreviousDayPerGram": {
-    "gold": 226.7273,
-    "silver": 7.4656,
-    "platinum": -15.123
+    "gold": 217.1016,
+    "silver": 7.0341,
+    "platinum": -22.684
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -239,24 +239,24 @@
     {
       "date": "2026-08-12",
       "spotPerGram": {
-        "gold": 22619.597,
-        "silver": 339.8528,
-        "platinum": 9058.8527
+        "gold": 22609.9713,
+        "silver": 339.4213,
+        "platinum": 9051.2917
       }
     }
   ],
   "gamePricesPerGram": {
-    "K18": 19510,
-    "Pt900": 9380,
-    "SV925": 409
+    "K18": 19500,
+    "Pt900": 9370,
+    "SV925": 408
   },
   "gamePurchasePricesPerGram": {
-    "K18": 19510,
-    "Pt900": 9380,
-    "SV925": 409
+    "K18": 19500,
+    "Pt900": 9370,
+    "SV925": 408
   },
   "gameSellPricesPerGram": {
-    "K18": 16630,
+    "K18": 16620,
     "Pt900": 7660,
     "SV925": 283
   },
@@ -264,24 +264,24 @@
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 19510
+      "price": 19500
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 9380
+      "price": 9370
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 409
+      "price": 408
     }
   },
   "gameSellPrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 16630
+      "price": 16620
     },
     "platinum": {
       "alloy": "Pt900",

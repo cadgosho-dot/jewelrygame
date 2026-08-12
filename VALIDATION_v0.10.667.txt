@@ -1,0 +1,59 @@
+JEWELRY×JEWELRY v0.10.667 VALIDATION
+Date: 2026-08-12
+
+[Observed v0.10.666 Android PWA diagnostic supplied by user]
+- HTML start -> title: 34.9s
+- Firebase initialization: 2.77s
+- cloud save load: 4.37s
+- session claim acknowledgement: 6.65s
+- local newer save -> cloud write acknowledgement: 24.9s
+- start button -> main: 140ms
+- longest resource: Firestore Write channel 24.3s
+
+[v0.10.667 requested optimization]
+PASS session claim still starts, but its Firestore acknowledgement is no longer awaited by boot
+PASS session watcher remains enabled
+PASS heartbeat remains enabled
+PASS cloud save read remains awaited before local/cloud save selection
+PASS local newer save is adopted immediately
+PASS local newer -> cloud upload is queued in saveQueue and is not awaited by title render
+PASS later normal cloud saves are serialized behind startup cloud sync to prevent stale startup snapshot overwrite
+PASS startup diagnostics retained
+
+[Version sync]
+PASS js/game-data.js VERSION = 0.10.667
+PASS js/app.js UI_BUILD_VERSION = 0.10.667
+PASS app.js module cache queries = 0.10.667
+PASS game.html styles.css/app.js query = 0.10.667
+PASS sw.js VERSION/cache queries = 0.10.667
+
+[Syntax]
+PASS node --check js/app.js
+PASS node --check js/game-data.js
+PASS node --check sw.js
+PASS node --check js/audio.js
+PASS node --check js/audio-scene-map.js
+
+[Regression - validated on full 358MB project]
+PASS startup optimization v0.10.667 audit
+PASS showcase jewelry visual audit
+PASS apprentice cinema Saturday/Sunday-only condition and centered playback
+PASS portrait completion header clearance
+PASS EVENT INTEGRITY AUDIT / 224 static actions / 251 static assets
+PASS EVENT SAVE ROUNDTRIP / 135 active stages
+PASS MEAL / QUIZ RECOVERY / 18 quiz stages
+PASS Okachimachi 18:00 night background
+PASS processing knowledge sequence and professional guides
+PASS audio scenes: 27 definitions / 88 screen mappings / 47 audio sources
+
+[Real overwrite test]
+PASS user-supplied full project + v0.10.666 cumulative update + staged v0.10.667 update
+PASS all staged v0.10.667 files match validated overwrite tree
+PASS staged file count checked: 31
+
+[Expected critical-path effect]
+The v0.10.666 24.9s startup cloud-write acknowledgement and 6.65s session-write acknowledgement are removed from the title-render await chain. Cloud read remains intentionally on the critical path for cross-device save freshness safety.
+
+[Packaging]
+PASS WindowsSafe ZIP integrity
+PASS SHA256 generated

@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.666';
-import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.666';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.666';
+const UI_BUILD_VERSION = '0.10.667';
+import { configureAudio, unlockAudio, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.667';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.667';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.666';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.667';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.666';
+} from './firebase-service.js?v=0.10.667';
 
 const STARTUP_DIAGNOSTICS_STORAGE_KEY = 'jxj-startup-diagnostics-v1';
 const startupDiagnostics = (() => {
@@ -22304,10 +22304,15 @@ async function boot() {
       try {
         startupMark('cloud_load_started');
         startupMark('session_claim_started');
-        let sessionClaimError = null;
-        const sessionClaimPromise = claimSession(user.uid, sessionId)
+        // v0.10.667: session claim is important for multi-device takeover detection, but the
+        // Firestore write acknowledgement must not block the title screen. The watcher is
+        // installed immediately and the claim continues in the background.
+        void claimSession(user.uid, sessionId)
           .then(() => startupMark('session_claim_finished'))
-          .catch((error) => { sessionClaimError = error; startupMark('session_claim_finished', 'error'); });
+          .catch((error) => {
+            console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
+            startupMark('session_claim_finished', 'error-background');
+          });
         cloudSave = await loadState(user.uid);
         startupMark('cloud_load_finished');
         const preferredAtBoot = preferredSavedState();
@@ -22318,15 +22323,23 @@ async function boot() {
         } else if (localWasNewer) {
           cloudSave = structuredClone(preferredAtBoot.state);
         }
-        await sessionClaimPromise;
-        if (sessionClaimError) throw sessionClaimError;
-        // 端末側が新しい場合は、古いクラウドで上書きせず現在状態をクラウドへ戻す。
+        // 端末側が新しい場合は端末データを即採用し、クラウドへの書き戻しだけを
+        // 保存キューへ積む。通信が遅くてもタイトル表示やゲーム開始は待たせない。
+        // 同一クライアント内の後続クラウド保存はこのキューの後ろへ並ぶため、
+        // 古い起動時スナップショットが新しいプレイ内容を後から上書きしない。
         if (localWasNewer) {
           const migratedLocal = migrateState(preferredAtBoot.state);
           migratedLocal.updatedAt = String(preferredAtBoot.state.updatedAt || new Date().toISOString());
+          const bootSyncSnapshot = structuredClone(migratedLocal);
           startupMark('local_cloud_sync_started');
-          await saveState(user.uid, migratedLocal).catch((error) => console.error('新しい端末セーブのクラウド同期に失敗しました', error));
-          startupMark('local_cloud_sync_finished');
+          saveQueue = saveQueue
+            .catch(() => {})
+            .then(() => saveState(user.uid, bootSyncSnapshot))
+            .then(() => startupMark('local_cloud_sync_finished', 'background'))
+            .catch((error) => {
+              console.warn('新しい端末セーブのバックグラウンド同期に失敗しました。端末保存は完了しています。', error);
+              startupMark('local_cloud_sync_finished', 'error-background');
+            });
           cloudSave = structuredClone(migratedLocal);
           localStorage.setItem(localSaveKey(), JSON.stringify(migratedLocal));
         }

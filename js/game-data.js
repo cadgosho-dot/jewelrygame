@@ -1,4 +1,4 @@
-export const VERSION = '0.10.674';
+export const VERSION = '0.10.692';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -7697,7 +7697,7 @@ export function migrateState(saved) {
     }
   }
   const grayHoodAquariumEvent = isRecord(state.events.grayHoodAquariumEvent) ? state.events.grayHoodAquariumEvent : {};
-  const grayHoodStages = new Set(['idle', 'video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed']);
+  const grayHoodStages = new Set(['idle', 'video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage', 'completed']);
   grayHoodAquariumEvent.active = Boolean(grayHoodAquariumEvent.active);
   grayHoodAquariumEvent.completed = Boolean(grayHoodAquariumEvent.completed);
   grayHoodAquariumEvent.stage = grayHoodStages.has(grayHoodAquariumEvent.stage) ? grayHoodAquariumEvent.stage : 'idle';

@@ -284,7 +284,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   kaitenzushi: 'kaitenzushi',
 });
 
-export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['cinemaVisitEvent', 'okachimachiQuiz', 'meal']);
+export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['cinemaVisitEvent', 'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'meal']);
 
 const MEAL_SCENES = Object.freeze({
   convenience: 'meal-convenience',
@@ -302,6 +302,7 @@ export function resolveAudioScene(target, context = {}) {
   if (context.alienAbducted && screen !== 'alienReturnEvent') return 'space';
   if (screen === 'cinemaVisitEvent') return context.cinemaStage === 'playing' ? 'silent' : 'okachimachi';
   if (screen === 'okachimachiQuiz') return context.quizStage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
+  if (screen === 'looseShopOriginalQuizEvent') return context.quizStage === 'question' ? 'okachimachiQuiz' : 'looseShop';
   if (screen === 'meal') return MEAL_SCENES[String(context.mealId || '')] || 'meal';
   return SCREEN_AUDIO_SCENES[screen] || 'main';
 }

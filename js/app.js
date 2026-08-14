@@ -5,17 +5,17 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.674';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.674';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.674';
+const UI_BUILD_VERSION = '0.10.692';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.691';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.691';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.674';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.674';
+} from './firebase-service.js?v=0.10.691';
 
 
 
@@ -363,7 +363,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   ganeshaTuskEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   hauntingEvent: new Set(['intro1', 'intro2', 'processing']),
   childhoodFriendEvent: new Set(['intro1', 'intro2', 'intro3', 'eating', 'postMeal']),
-  grayHoodAquariumEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
+  grayHoodAquariumEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage']),
   touristWoodSwordEvent: new Set(['intro1', 'route', 'reward', 'farewell']),
   terryCaliforniaEvent: new Set(['video', 'intro1', 'intro2', 'offer', 'insufficientFunds', 'declined', 'purchased']),
   alienAbductionEvent: new Set(['intro1', 'intro2', 'abducted', 'returnPending']),
@@ -372,7 +372,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   apprenticeCinemaEvent: new Set(['intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2']),
   whiteBunnyIceEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'choice', 'rudeReply', 'kindReply1', 'kindReply2']),
   clockTowerDonationEvent: new Set(['intro1', 'intro2', 'intro3']),
-  mysteryChineseMealEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward']),
+  mysteryChineseMealEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'eating', 'postMeal']),
   ridleyOkazakiSobaEvent: new Set(['intro1', 'intro2', 'intro3']),
   emeraldCaptainKebabEvent: new Set(['intro1', 'intro2', 'showcase', 'purchase', 'eating', 'farewell']),
   storeTheftEvent: new Set(['intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice']),
@@ -494,6 +494,7 @@ function settleMysteryChineseMealEmergency(eventState) {
   if (!meal) return false;
   const before = hungerLevel();
   eventState.mealApplied = true;
+  eventState.hungerBefore = before;
   eventState.lastDish = eventState.selectedDish;
   state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - MYSTERY_CHINESE_MEAL_EVENT_COST);
   addFinance('謎の中華料理', 0, MYSTERY_CHINESE_MEAL_EVENT_COST);
@@ -501,6 +502,7 @@ function settleMysteryChineseMealEmergency(eventState) {
   state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
   state.wellbeing.lastMeal = meal.id;
   state.wellbeing.mealsEaten = Math.max(0, Math.floor(Number(state.wellbeing.mealsEaten) || 0)) + 1;
+  eventState.hungerAfter = state.wellbeing.hunger;
   state.daily.meals = Array.isArray(state.daily.meals) ? state.daily.meals : [];
   state.daily.meals.push({
     id: meal.id,
@@ -9604,7 +9606,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 function backgroundFor(target) {
   const map = {
     loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
-    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'okachimachi', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
+    craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
   };
@@ -9643,7 +9645,7 @@ function backgroundAssetFor(target) {
   if (target === 'whiteBunnyIceEvent') return `meal-ice${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'todayGem') return isPortraitLayout() ? 'today-gem-portrait' : 'today-gem';
   if (target === 'craft' || target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';
-  if (target === 'looseShop' || target === 'supplierRough') return isPortraitLayout() ? 'loose-shop-portrait-v385' : 'loose-shop-v385';
+  if (target === 'looseShop' || target === 'supplierRough' || target === 'looseShopOriginalQuizEvent') return isPortraitLayout() ? 'loose-shop-portrait-v385' : 'loose-shop-v385';
   if (target === 'jewelryShop') return isPortraitLayout() ? 'jewelry-shop-portrait' : 'jewelry-shop';
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
@@ -9698,7 +9700,9 @@ function audioFor(target) {
     : (['okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'apprenticeCinemaEvent'].includes(target) ? 'okachimachi' : target);
   return resolveAudioScene(audioTarget, {
     alienAbducted: isAlienAbducted(),
-    quizStage: okachimachiQuizSession?.stage || '',
+    quizStage: target === 'looseShopOriginalQuizEvent'
+      ? (looseShopOriginalQuizSession?.stage || '')
+      : (okachimachiQuizSession?.stage || ''),
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
     mealId: target === 'meal' ? screenData?.mealId || '' : '',
   });
@@ -9963,7 +9967,7 @@ function scheduleEventDialogueBottomLayoutSync() {
 }
 
 function okachimachiQuizBottomLayoutParts() {
-  if (screen !== 'okachimachiQuiz') return null;
+  if (screen !== 'okachimachiQuiz' && screen !== 'looseShopOriginalQuizEvent') return null;
   const eventRoot = root.querySelector('.okachimachi-quiz-event:not(.quiz-stage-reward)');
   if (!(eventRoot instanceof HTMLElement)) return null;
   const panel = eventRoot.querySelector('.quiz-question-panel, .quiz-dialogue-panel');
@@ -10421,6 +10425,7 @@ function render() {
     root.innerHTML = currentFacilityAvailability && !currentFacilityAvailability.open
       ? renderClosedOkachimachiFacility(currentFacilityId, currentFacilityAvailability)
       : (renderers[screen] || renderMain)();
+    applyEventTapHintStyling();
     installEventRecoveryControl();
     scheduleScreenContentTopOffsetSync();
     scheduleEventDialogueBottomLayoutSync();
@@ -10455,6 +10460,18 @@ function render() {
     clearMorningBrief();
     root.innerHTML = `<main class="title-screen"><section class="title-actions glass-panel login-panel"><strong>画面の表示を復旧しました</strong><p class="small-note">この画面の表示に問題が発生しました。セーブデータは削除せず、安全にメイン画面へ戻れます。</p>${state ? '<button class="primary-button full-button" data-action="event-emergency-recover" data-illness-readable="true">メイン画面へ戻る</button>' : ''}<button class="secondary-button full-button" data-action="reload-page">再読み込みする</button></section></main>`;
   }
+}
+
+
+// v0.10.678 全イベント共通：「タップして進む」はセリフ本文より小さい補助表示にする。
+// 文言が完全一致する要素だけへクラスを付け、その他の案内文や選択肢には影響させない。
+function applyEventTapHintStyling() {
+  if (!(String(screen || '').endsWith('Event') || screen === 'okachimachiQuiz')) return;
+  root.querySelectorAll('span, small').forEach((element) => {
+    if (String(element.textContent || '').trim() === 'タップして進む') {
+      element.classList.add('event-tap-hint');
+    }
+  });
 }
 
 function renderLoading() {
@@ -11668,6 +11685,9 @@ function renderMiningPazupanEvent() {
     </main>`;
 }
 
+// v0.10.686 APPROVED LAYOUT LOCK: タトゥーの女・琥珀イベント
+// 固定仕様: 横画面ではキャラクターを大きめに表示し、セリフ枠より後ろのレイヤーで
+// 少しだけ枠へ重ねることを許可する。変更は body[data-screen="tattooWomanAmberEvent"] に限定。
 function renderTattooWomanAmberEvent() {
   const eventState = tattooWomanAmberEventState();
   if (!eventState.active) {
@@ -12253,7 +12273,7 @@ function retryMysteryChineseMealIntroPlayback() {
 function completeMysteryChineseMealIntroVideo() {
   const eventState = mysteryChineseMealEventState();
   if (!eventState.active || eventState.stage !== 'video') return;
-  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward']);
+  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'eating', 'postMeal']);
   eventState.introVideoCompleted = true;
   eventState.stage = dialogueStages.has(eventState.stageAfterVideo) ? eventState.stageAfterVideo : 'intro1';
   eventState.stageAfterVideo = '';
@@ -12315,7 +12335,7 @@ function mysteryChineseMealEventState() {
   const saved = state.events.mysteryChineseMealEvent && typeof state.events.mysteryChineseMealEvent === 'object' && !Array.isArray(state.events.mysteryChineseMealEvent)
     ? state.events.mysteryChineseMealEvent
     : {};
-  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward']);
+  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'eating', 'postMeal']);
   const validStages = new Set(['idle', 'video', ...dialogueStages, 'completed']);
   state.events.mysteryChineseMealEvent = {
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
@@ -12326,6 +12346,8 @@ function mysteryChineseMealEventState() {
     selectedDish: normalizeMysteryChineseMealImageName(saved.selectedDish),
     lastDish: normalizeMysteryChineseMealImageName(saved.lastDish),
     mealApplied: Boolean(saved.mealApplied),
+    hungerBefore: Math.max(0, Math.min(7, Math.floor(Number(saved.hungerBefore) || 0))),
+    hungerAfter: Math.max(0, Math.min(7, Math.floor(Number(saved.hungerAfter) || 0))),
     introVideoCompleted: Boolean(saved.introVideoCompleted),
     stageAfterVideo: dialogueStages.has(saved.stageAfterVideo) ? saved.stageAfterVideo : '',
   };
@@ -12368,49 +12390,107 @@ function maybeStartMysteryChineseMealEvent() {
   eventState.introVideoCompleted = false;
   eventState.selectedDish = chooseMysteryChineseMealImage(eventState.lastDish);
   eventState.mealApplied = false;
+  eventState.hungerBefore = hungerLevel();
+  eventState.hungerAfter = hungerLevel();
   saveGame();
   setScreen('mysteryChineseMealEvent', { mealId: 'chinese' }, false);
   vibrate([22, 28, 48]);
   return true;
 }
 
-function finishMysteryChineseMealEvent() {
+function applyMysteryChineseMeal() {
   const eventState = mysteryChineseMealEventState();
   const meal = MEALS.chinese;
-  const before = hungerLevel();
-  if (!eventState.mealApplied && meal) {
-    eventState.mealApplied = true;
-    eventState.lastDish = eventState.selectedDish;
-    state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - MYSTERY_CHINESE_MEAL_EVENT_COST);
-    addFinance('謎の中華料理', 0, MYSTERY_CHINESE_MEAL_EVENT_COST);
-    startMoneyFeedback(-MYSTERY_CHINESE_MEAL_EVENT_COST, 1200);
-    spendMealTime();
-    state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
-    state.wellbeing.lastMeal = meal.id;
-    state.wellbeing.mealsEaten += 1;
-    state.daily.meals.push({ id: meal.id, name: '謎の中華料理', price: MYSTERY_CHINESE_MEAL_EVENT_COST, recovery: state.wellbeing.hunger - before });
-    hungerFeedback = { before, after: state.wellbeing.hunger, mealName: '謎の中華料理' };
-    clearTimeout(hungerFeedbackTimer);
-    hungerFeedbackTimer = setTimeout(() => {
-      hungerFeedback = null;
-      if (screen === 'main') render();
-    }, 1550);
-    addNotification('謎の中華料理を食べた', `${yen(MYSTERY_CHINESE_MEAL_EVENT_COST)}を支払い、空腹度が回復しました。`, 'special');
+  if (!eventState.active || !meal) return false;
+  if (eventState.mealApplied) return true;
+  if (Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < MYSTERY_CHINESE_MEAL_EVENT_COST) {
+    showToast('所持金が足りません。', 'warning');
+    return false;
   }
+  const before = hungerLevel();
+  eventState.mealApplied = true;
+  eventState.hungerBefore = before;
+  eventState.lastDish = eventState.selectedDish;
+  state.game.money = Math.max(0, Math.floor(Number(state.game.money) || 0) - MYSTERY_CHINESE_MEAL_EVENT_COST);
+  addFinance('謎の中華料理', 0, MYSTERY_CHINESE_MEAL_EVENT_COST);
+  startMoneyFeedback(-MYSTERY_CHINESE_MEAL_EVENT_COST, 1200);
+  spendMealTime();
+  state.wellbeing.hunger = Math.min(7, hungerLevel() + meal.recovery);
+  state.wellbeing.lastMeal = meal.id;
+  state.wellbeing.mealsEaten = Math.max(0, Math.floor(Number(state.wellbeing.mealsEaten) || 0)) + 1;
+  eventState.hungerAfter = state.wellbeing.hunger;
+  state.daily.meals = Array.isArray(state.daily.meals) ? state.daily.meals : [];
+  state.daily.meals.push({ id: meal.id, name: '謎の中華料理', price: MYSTERY_CHINESE_MEAL_EVENT_COST, recovery: state.wellbeing.hunger - before });
+  addNotification('謎の中華料理を食べた', `${yen(MYSTERY_CHINESE_MEAL_EVENT_COST)}を支払い、空腹度が回復しました。`, 'special');
+  saveGame();
+  return true;
+}
+
+async function startMysteryChineseMealEating() {
+  const eventState = mysteryChineseMealEventState();
+  if (!eventState.active || !['reward', 'eating'].includes(eventState.stage) || mealTransitioning) return;
+  mealTransitioning = true;
+  try {
+    if (!applyMysteryChineseMeal()) {
+      mealTransitioning = false;
+      return;
+    }
+    eventState.stage = 'eating';
+    state.game.screen = 'mysteryChineseMealEvent';
+    saveGame();
+    render();
+    await waitForNextPaintWithTimeout();
+    await wait(180);
+    if (!eventState.active || mysteryChineseMealEventState().stage !== 'eating') return;
+    playSfx('eat');
+    vibrate([18, 24, 42]);
+    // sfx-eat.ogg は約1.15秒。食事SEが終わってから食後の会話へ移る。
+    await wait(1220);
+    const latest = mysteryChineseMealEventState();
+    if (!latest.active || latest.stage !== 'eating') return;
+    latest.stage = 'postMeal';
+    saveGame();
+    render();
+  } catch (error) {
+    console.error('謎の中華料理イベント食事処理エラー', error);
+    const latest = mysteryChineseMealEventState();
+    if (latest.active && latest.mealApplied) {
+      latest.stage = 'postMeal';
+      saveGame();
+      render();
+    }
+  } finally {
+    mealTransitioning = false;
+  }
+}
+
+function finishMysteryChineseMealEvent() {
+  const eventState = mysteryChineseMealEventState();
+  if (!eventState.active) {
+    goMain();
+    return;
+  }
+  // 復旧経路などで食事適用前にここへ来ても、料金・食事効果を一度だけ確定する。
+  if (!eventState.mealApplied) settleMysteryChineseMealEmergency(eventState);
+  const before = Math.max(0, Math.min(7, Math.floor(Number(eventState.hungerBefore) || 0)));
+  const after = Math.max(0, Math.min(7, Math.floor(Number(eventState.hungerAfter) || hungerLevel())));
   eventState.active = false;
   eventState.stage = 'completed';
   eventState.introVideoCompleted = true;
   eventState.stageAfterVideo = '';
   eventState.selectedDish = '';
   saveGame();
-  playSfx('eat');
-  setTimeout(() => playSfx('levelup', { gain: 0.96 }), 180);
-  vibrate([18, 24, 42]);
+  hungerFeedback = { before, after, mealName: '謎の中華料理' };
+  clearTimeout(hungerFeedbackTimer);
   setScreen('main', {}, false);
+  hungerFeedbackTimer = setTimeout(() => {
+    hungerFeedback = null;
+    if (screen === 'main') render();
+  }, 1550);
   showToast('ごちそうさまでした', 'meal-complete', false);
 }
 
-function advanceMysteryChineseMealEvent() {
+async function advanceMysteryChineseMealEvent() {
   const eventState = mysteryChineseMealEventState();
   if (!eventState.active) {
     goMain();
@@ -12438,6 +12518,14 @@ function advanceMysteryChineseMealEvent() {
     render();
     return;
   }
+  if (eventState.stage === 'reward' || eventState.stage === 'eating') {
+    await startMysteryChineseMealEating();
+    return;
+  }
+  if (eventState.stage === 'postMeal') {
+    finishMysteryChineseMealEvent();
+    return;
+  }
   finishMysteryChineseMealEvent();
 }
 
@@ -12459,26 +12547,35 @@ function renderMysteryChineseMealEvent() {
       </section>
     </main>`;
   }
+  if (eventState.stage === 'eating') {
+    queueMicrotask(startMysteryChineseMealEating);
+  }
   const playerName = esc(String(state?.playerName || 'お前').trim() || 'お前');
-  const reward = eventState.stage === 'reward';
+  const reward = ['reward', 'eating'].includes(eventState.stage);
   const dialogue = eventState.stage === 'intro1'
     ? `おう、${playerName}！新しいメニュー出来たから食ってってくれよ！`
     : eventState.stage === 'intro2'
       ? '食えるだろ？食えねえ豚はただのデブだぜ？！'
-      : 'ほっぺた落ちたらくれよ、食えるか試す';
+      : eventState.stage === 'intro3'
+        ? 'ほっぺた落ちたらくれよ、食えるか試す'
+        : 'また来いよ！オマエ美味そうだからな、、、、';
   const foodUrl = mysteryChineseMealEventImageUrl(eventState.selectedDish || MYSTERY_CHINESE_MEAL_EVENT_IMAGES[0] || '');
+  const foodMarkup = `<img src="${esc(foodUrl)}" alt="謎の中華料理" draggable="false"><strong>謎の中華料理</strong><em class="mystery-chinese-meal-price">${yen(MYSTERY_CHINESE_MEAL_EVENT_COST)}</em>`;
   return `
     <main class="main-screen mystery-chinese-meal-event-screen">
-      <section class="visit-character-event mystery-chinese-meal-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+      <section class="visit-character-event mystery-chinese-meal-event ${reward ? 'is-reward' : ''} ${eventState.stage === 'eating' ? 'is-eating' : ''}" aria-live="polite">
         <div class="visit-character-area" aria-hidden="true">
           <img class="visit-character mystery-chinese-chef-character" src="./assets/images/events/mystery-chinese-chef.png?v=${VERSION}" alt="" draggable="false">
         </div>
-        ${reward
-          ? `<button type="button" class="ganesha-tusk-reward-button mystery-chinese-meal-reward-button" data-action="mystery-chinese-meal-event-next" aria-label="謎の中華料理を食べる"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="${esc(foodUrl)}" alt="謎の中華料理" draggable="false"><strong>謎の中華料理</strong><small>${yen(MYSTERY_CHINESE_MEAL_EVENT_COST)}　タップして食べる</small></button>`
-          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="mystery-chinese-meal-event-next"><small>料理人</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+        ${eventState.stage === 'reward'
+          ? `<button type="button" class="ganesha-tusk-reward-button mystery-chinese-meal-reward-button" data-action="mystery-chinese-meal-event-next" aria-label="謎の中華料理を食べる">${foodMarkup}<small class="mystery-chinese-meal-eat-tap">タップして食べる</small></button>`
+          : eventState.stage === 'eating'
+            ? `<div class="ganesha-tusk-reward-button mystery-chinese-meal-reward-button is-eating" role="status">${foodMarkup}<small class="mystery-chinese-meal-eating-label">食事中…</small></div>`
+            : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="mystery-chinese-meal-event-next"><small>料理人</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
       </section>
     </main>`;
 }
+
 function renderMermaidEvent() {
   const eventState = mermaidEventState();
   if (!eventState.active) {
@@ -12611,7 +12708,7 @@ function grayHoodAquariumEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.grayHoodAquariumEvent && typeof state.events.grayHoodAquariumEvent === 'object' && !Array.isArray(state.events.grayHoodAquariumEvent)
     ? state.events.grayHoodAquariumEvent : {};
-  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']);
+  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage']);
   const validStages = new Set(['idle', 'video', ...dialogueStages, 'completed']);
   const rawStage = validStages.has(saved.stage) ? saved.stage : 'idle';
   const rawResumeStage = dialogueStages.has(saved.stageAfterVideo) ? saved.stageAfterVideo : '';
@@ -12675,7 +12772,7 @@ function retryGrayHoodAquariumIntroPlayback() {
 async function completeGrayHoodAquariumIntroVideo() {
   const e = grayHoodAquariumEventState();
   if (!e.active || e.stage !== 'video') return;
-  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']);
+  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage']);
   e.introVideoCompleted = true;
   e.stage = dialogueStages.has(e.stageAfterVideo) ? e.stageAfterVideo : 'intro1';
   e.stageAfterVideo = '';
@@ -12715,7 +12812,8 @@ async function advanceGrayHoodAquariumEvent({ receive = false } = {}) {
   if (e.stage === 'intro1') e.stage = 'intro2';
   else if (e.stage === 'intro2') e.stage = 'intro3';
   else if (e.stage === 'intro3') e.stage = 'reward';
-  else if (e.stage === 'farewell') {
+  else if (e.stage === 'farewell') e.stage = 'unlockMessage';
+  else if (e.stage === 'unlockMessage') {
     e.active = false; e.completed = true; e.stage = 'completed';
     e.introVideoCompleted = true; e.stageAfterVideo = '';
     saveGame();
@@ -12742,6 +12840,7 @@ function renderGrayHoodAquariumEvent() {
   }
   const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
   if (e.stage === 'reward') return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event is-reward" aria-live="polite"><button type="button" class="gray-hood-aquarium-reward" data-action="gray-hood-aquarium-receive"><img src="./assets/images/events/aquarium-tank.png?v=${VERSION}" alt="水槽" draggable="false"><strong>水槽</strong><span>水槽をもらった</span></button></section></main>`;
+  if (e.stage === 'unlockMessage') return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event is-unlock-message" aria-live="polite"><button type="button" class="gray-hood-aquarium-unlock-message" data-action="gray-hood-aquarium-next"><strong>スマートフォンのメニューへ「水槽」が追加されました</strong></button></section></main>`;
   const dialogue = e.stage === 'intro1'
     ? `あ、${playerName}、久しぶり、最後に会えるなんて、私達やっぱり何かあるんだね、、`
     : e.stage === 'intro2'
@@ -13334,7 +13433,7 @@ function renderDiamondPolishingLapEvent() {
           <img class="visit-character indian-restaurant-manager-character" src="./assets/images/events/indian-restaurant-manager.png?v=${VERSION}" alt="" draggable="false">
         </div>
         ${reward
-          ? `<button type="button" class="diamond-polishing-lap-reward-button" data-action="diamond-polishing-lap-event-next" aria-label="ダイヤモンド研磨用平面研磨盤を受け取る"><span class="diamond-polishing-lap-glow" aria-hidden="true"></span><img src="./assets/images/tools/diamond-polishing-lap.png?v=${VERSION}" alt="ダイヤモンド研磨用平面研磨盤" draggable="false"><strong>ダイヤモンド研磨用平面研磨盤</strong><small>タップして受け取る</small></button>`
+          ? `<button type="button" class="diamond-polishing-lap-reward-button" data-action="diamond-polishing-lap-event-next" aria-label="ダイヤモンド研磨用平面研磨盤を受け取る"><span class="diamond-polishing-lap-glow" aria-hidden="true"></span><img src="./assets/images/events/diamond-polishing-lap-reward.png?v=${VERSION}" alt="ダイヤモンド研磨用平面研磨盤" draggable="false"><strong>ダイヤモンド研磨用平面研磨盤</strong><small>タップして受け取る</small></button>`
           : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="diamond-polishing-lap-event-next"><small>インド料理屋店長</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
       </section>
     </main>`;
@@ -13828,6 +13927,7 @@ function renderOkachimachiQuiz() {
       <section class="okachimachi-quiz-event quiz-stage-reward" aria-live="polite">
         <button type="button" class="quiz-reward-button" data-action="okachimachi-quiz-next" aria-label="御徒町へ進む">
           <span class="quiz-reward-glow" aria-hidden="true"></span>
+          <span class="quiz-event-name-label">通りすがりのクイズ王</span>
           ${roughVisual(gem?.id, 'quiz-reward-gem')}
           <strong>${esc(gem?.name || '')}原石をもらいました</strong>
           <small>タップして御徒町へ進む</small>
@@ -13842,6 +13942,8 @@ function renderOkachimachiQuiz() {
     incorrect: '違いますよ、、まぁ、そのレベルか、、、自分の価値って考えたことあります？ではまた、',
     incorrectAnswer: `正解は「${esc(session.question.choices[session.question.answerIndex] || '')}」でした`,
   };
+  // v0.10.679 APPROVED LAYOUT LOCK: 通りすがりのクイズ王
+  // 通常会話=下詰め / 横4択のみ左人物・右クイズ / 正解・不正解で人物差替え / 正解表示のみ緑。
   const isQuestion = session.stage === 'question';
   const character = okachimachiQuizCharacterImage(session.stage);
   return shell('通りすがりのクイズ王', `
@@ -13851,19 +13953,23 @@ function renderOkachimachiQuiz() {
       </div>
       ${isQuestion ? `
         <section class="quiz-question-panel glass-panel">
+          <span class="quiz-event-name-label">通りすがりのクイズ王</span>
           <span class="quiz-question-kicker">4択クイズ</span>
           <h2>${esc(session.question.question)}</h2>
           <div class="quiz-answer-grid">
             ${session.question.choices.map((choice, index) => `<button type="button" class="quiz-answer-button" data-action="okachimachi-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('')}
           </div>
         </section>` : `
-        <button type="button" class="quiz-dialogue-panel glass-panel" data-action="okachimachi-quiz-next">
+        <button type="button" class="quiz-dialogue-panel glass-panel ${session.stage === 'incorrectAnswer' ? 'quiz-answer-reveal-panel' : ''}" data-action="okachimachi-quiz-next">
+          <span class="quiz-event-name-label">通りすがりのクイズ王</span>
           <strong>${dialogueByStage[session.stage] || ''}</strong>
-          <small>タップして進む</small>
+          <small class="approved-event-tap-guide">タップして進む</small>
         </button>`}
     </section>`, { back: false, main: false, hideHeader: true });
 }
 
+// v0.10.686 APPROVED LAYOUT LOCK: オリジナルルースイベント
+// ユーザー実機確認済み。明示指示があるまで表示・背景・音・配置仕様を変更しない。
 function renderLooseShopOriginalQuizEvent() {
   const session = looseShopOriginalQuizSession;
   if (!session) {
@@ -13909,10 +14015,10 @@ function renderLooseShopOriginalQuizEvent() {
             ${session.question.choices.map((choice, index) => `<button type="button" class="quiz-answer-button" data-action="loose-shop-original-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('')}
           </div>
         </section>` : `
-        <button type="button" class="quiz-dialogue-panel glass-panel" data-action="loose-shop-original-quiz-next">
-          <small>オリジナルルースイベント</small>
+        <button type="button" class="quiz-dialogue-panel glass-panel ${session.stage === 'incorrectAnswer' ? 'original-loose-answer-reveal-panel' : ''}" data-action="loose-shop-original-quiz-next">
+          <span class="original-loose-character-name">${esc(LOOSE_SHOP_ORIGINAL_QUIZ_NAME)}</span>
           <strong>${dialogueByStage[session.stage] || ''}</strong>
-          <span>タップして進む</span>
+          <span class="approved-event-tap-guide">タップして進む</span>
         </button>`}
     </section>`, { back: false, main: false, hideHeader: true });
 }
@@ -21154,7 +21260,7 @@ root.addEventListener('click', async (event) => {
       await skipCurrentEventIntroVideo();
       break;
     case 'mystery-chinese-meal-event-next':
-      advanceMysteryChineseMealEvent();
+      await advanceMysteryChineseMealEvent();
       break;
     case 'ganesha-tusk-event-next':
       advanceGaneshaTuskEvent();

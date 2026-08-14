@@ -1,0 +1,12 @@
+JEWELRY×JEWELRY v0.10.692 累積更新
+対象: v0.10.674 → v0.10.692
+
+GitHub Desktopの現在のゲームがv0.10.674の場合、このZIPだけで更新できます。
+675〜691の個別ZIPを順番に適用する必要はありません。
+
+1. ZIPを展開
+2. 中身を、GitHub Desktopのリポジトリで game.html があるルートへ相対パスを保って上書き
+3. GitHub DesktopのChangesを確認
+4. Commit / Push
+
+エメラルド班班長／ケバブイベントの確認版は未実装のため含みません。

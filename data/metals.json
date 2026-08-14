@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-08-14T03:34:04.015Z",
-  "updatedAt": "2026-08-14T03:35:17Z",
+  "marketTimestamp": "2026-08-14T06:41:04.192Z",
+  "updatedAt": "2026-08-14T06:41:28Z",
   "marketDateJst": "2026-08-14",
   "previousMarketDateJst": "2026-08-13",
   "spotPerGram": {
-    "gold": 22168.7133,
-    "silver": 328.6766,
-    "platinum": 8781.2636
+    "gold": 22169.7376,
+    "silver": 328.8045,
+    "platinum": 8798.8418
   },
   "previousSpotPerGram": {
     "gold": 22422.7677,
@@ -22,9 +22,9 @@
     "platinum": 8904.6915
   },
   "changeFromPreviousDayPerGram": {
-    "gold": -254.0544,
-    "silver": -3.213,
-    "platinum": -123.4279
+    "gold": -253.0301,
+    "silver": -3.0851,
+    "platinum": -105.8497
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -255,25 +255,25 @@
     {
       "date": "2026-08-14",
       "spotPerGram": {
-        "gold": 22168.7133,
-        "silver": 328.6766,
-        "platinum": 8781.2636
+        "gold": 22169.7376,
+        "silver": 328.8045,
+        "platinum": 8798.8418
       }
     }
   ],
   "gamePricesPerGram": {
     "K18": 19120,
-    "Pt900": 9090,
+    "Pt900": 9110,
     "SV925": 395
   },
   "gamePurchasePricesPerGram": {
     "K18": 19120,
-    "Pt900": 9090,
+    "Pt900": 9110,
     "SV925": 395
   },
   "gameSellPricesPerGram": {
     "K18": 16290,
-    "Pt900": 7430,
+    "Pt900": 7440,
     "SV925": 274
   },
   "gamePurchasePrices": {
@@ -285,7 +285,7 @@
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 9090
+      "price": 9110
     },
     "silver": {
       "alloy": "SV925",
@@ -302,7 +302,7 @@
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 7430
+      "price": 7440
     },
     "silver": {
       "alloy": "SV925",

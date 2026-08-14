@@ -1,0 +1,12 @@
+JEWELRY×JEWELRY v0.10.694 LIGHT PATCH
+
+対象: v0.10.693 適用済みプロジェクト
+
+1. このZIPを展開してください。
+2. GitHub Desktopで管理しているJEWELRY×JEWELRYのプロジェクトルートへ、中身を相対パスのまま上書きしてください。
+3. GitHub Desktopで変更内容を確認してください。
+4. 問題がなければCommit → Pushしてください。
+
+注意:
+- ZIP自体をリポジトリへ入れず、中身を上書きしてください。
+- unrelated filesは削除しないでください。

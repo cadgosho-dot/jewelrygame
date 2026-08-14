@@ -1,4 +1,4 @@
-export const VERSION = '0.10.692';
+export const VERSION = '0.10.693';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -2846,7 +2846,7 @@ export const WORKSHOP_LEVEL_REQUIREMENTS = Object.freeze([
   Object.freeze({ level: 5, hours: 140, quality: 11, cost: 250000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner'] }),
   Object.freeze({ level: 6, hours: 210, quality: 14, cost: 400000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock', 'stamps', 'milgrainTool'] }),
   Object.freeze({ level: 7, hours: 300, quality: 17, cost: 600000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock', 'stamps', 'milgrainTool', 'polishingMachine', 'rollingMill'] }),
-  Object.freeze({ level: 8, hours: 420, quality: 20, cost: 850000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock', 'stamps', 'milgrainTool', 'polishingMachine', 'rollingMill', 'computer', 'cadSoftware', 'printer3d'] }),
+  Object.freeze({ level: 8, hours: 420, quality: 20, cost: 850000, requiredTools: ['jewelryBench', 'benchPeg', 'piercingSaw', 'file', 'pliers', 'nipper', 'hammer', 'torch', 'graver', 'dividers', 'rotaryTool', 'buffer', 'ultrasonicCleaner', 'electronicScale', 'magnifier', 'engravingBlock', 'stamps', 'milgrainTool', 'polishingMachine', 'rollingMill'] }),
   Object.freeze({ level: 9, hours: 560, quality: 23, cost: 1200000, requiredTools: [] }),
   Object.freeze({ level: 10, hours: 730, quality: 26, cost: 1600000, requiredTools: [] }),
   Object.freeze({ level: 11, hours: 930, quality: 30, cost: 2100000, requiredTools: [] }),

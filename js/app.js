@@ -5,7 +5,7 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.692';
+const UI_BUILD_VERSION = '0.10.693';
 import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.691';
 import { resolveAudioScene } from './audio-scene-map.js?v=0.10.691';
 import { japaneseHolidayName } from './japan-holidays.js';

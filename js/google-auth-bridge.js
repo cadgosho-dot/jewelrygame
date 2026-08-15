@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  indexedDBLocalPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
   browserPopupRedirectResolver,
@@ -20,7 +21,6 @@ const DIAGNOSTIC_KEY = 'jxj-google-login-diagnostic-v1';
 const REDIRECT_PENDING_KEY = 'jxj-google-redirect-pending-v2';
 const LOGIN_TIMEOUT_MS = 45000;
 const CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
-const AUTH_STORAGE_RECOVERY_KEY = 'jxj-auth-storage-recovery-v706';
 
 const button = document.querySelector('#google-popup-login');
 const recheckButton = document.querySelector('#auth-recheck');
@@ -67,48 +67,6 @@ function storageSet(type, key, value) {
 
 function storageRemove(type, key) {
   try { safeStorage(type)?.removeItem(key); } catch (_) {}
-}
-
-function clearStaleFirebaseAuthStorage() {
-  for (const type of ['local', 'session']) {
-    const storage = safeStorage(type);
-    if (!storage) continue;
-    const keys = [];
-    try {
-      for (let index = 0; index < storage.length; index += 1) {
-        const key = storage.key(index);
-        if (key && /^firebase:(?:authUser|redirectUser|authEvent|pendingRedirect|redirectEventId):/.test(key)) keys.push(key);
-      }
-      keys.forEach((key) => storage.removeItem(key));
-    } catch (_) {}
-  }
-  storageRemove('session', REDIRECT_PENDING_KEY);
-  storageRemove('session', CREDENTIAL_HANDOFF_KEY);
-}
-
-function recoverableAuthStorageError(error) {
-  const code = String(error?.code || '');
-  const detailText = `${error?.name || ''} ${error?.message || ''}`;
-  return [
-    'auth/internal-error',
-    'auth/web-storage-unsupported',
-    'auth/operation-not-supported-in-this-environment',
-  ].includes(code) || /indexeddb|web.?storage|local.?storage|initial state|invalidstateerror/i.test(detailText);
-}
-
-function scheduleAuthStorageRecovery(error, stage) {
-  const session = safeStorage('session');
-  if (!recoverableAuthStorageError(error) || session?.getItem(AUTH_STORAGE_RECOVERY_KEY) === '1') return false;
-  try { session?.setItem(AUTH_STORAGE_RECOVERY_KEY, '1'); } catch (_) {}
-  clearStaleFirebaseAuthStorage();
-  setStatus('このブラウザに残っていた古いログイン情報を修復しています…');
-  writeDiagnostic({ stage: `${stage}-storage-recovery`, code: error?.code || '', message: error?.message || '' });
-  window.setTimeout(() => {
-    const recoveryUrl = new URL(location.href);
-    recoveryUrl.searchParams.set('auth-recovery', '1');
-    location.replace(recoveryUrl.href);
-  }, 120);
-  return true;
 }
 
 function isStandaloneMode() {
@@ -273,7 +231,6 @@ async function returnToGame(user, result = null) {
     storageSet('local', COMPLETE_KEY, new Date().toISOString());
     storageRemove('local', ERROR_KEY);
     storageRemove('session', REDIRECT_PENDING_KEY);
-    storageRemove('session', AUTH_STORAGE_RECOVERY_KEY);
     writeDiagnostic({ stage: 'login-complete', uid: user.uid });
   } catch (error) {
     returning = false;
@@ -299,7 +256,6 @@ async function recheckAuthState() {
     }
   } catch (error) {
     console.error('[Google Auth] recheck', error);
-    if (scheduleAuthStorageRecovery(error, 'recheck')) return true;
     writeDiagnostic({ stage: 'recheck-error', code: error?.code || '', message: error?.message || '' });
   }
   return false;
@@ -326,7 +282,6 @@ async function beginGoogleLogin() {
       await signInWithRedirect(auth, provider);
       return;
     } catch (error) {
-      if (scheduleAuthStorageRecovery(error, 'redirect-start')) return;
       const message = errorMessage(error);
       rememberError(message);
       setStatus(message, diagnosticText(error, 'redirect-start'));
@@ -354,7 +309,6 @@ async function beginGoogleLogin() {
     await returnToGame(result.user, result);
   } catch (error) {
     console.error('[Google Auth] popup', error);
-    if (scheduleAuthStorageRecovery(error, 'popup')) return;
     const message = errorMessage(error);
     rememberError(message);
     setStatus(message, diagnosticText(error, 'popup'));
@@ -398,9 +352,9 @@ async function start() {
   try {
     const app = initializeApp(effectiveFirebaseConfig());
     auth = initializeAuth(app, {
-      // v0.10.706: localStorage is shared with the game page and is not affected
-      // by a stale Firebase IndexedDB entry left in only one browser profile.
-      persistence: [browserLocalPersistence, browserSessionPersistence],
+      // v0.10.707: read the existing IndexedDB login first so returning users
+      // keep their session and resume the same cloud save.
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
       popupRedirectResolver: browserPopupRedirectResolver,
     });
     persistenceKind = 'auto';
@@ -417,7 +371,6 @@ async function start() {
         return;
       }
     } catch (error) {
-      if (scheduleAuthStorageRecovery(error, 'redirect-result')) return;
       const message = errorMessage(error);
       rememberError(message);
       storageRemove('session', REDIRECT_PENDING_KEY);
@@ -472,7 +425,6 @@ async function start() {
     });
   } catch (error) {
     console.error('[Google Auth] initialize', error);
-    if (scheduleAuthStorageRecovery(error, 'initialize')) return;
     const message = errorMessage(error);
     rememberError(message);
     setStatus(message, diagnosticText(error, 'initialize'));

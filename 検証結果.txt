@@ -1,0 +1,11 @@
+JEWELRY×JEWELRY v0.10.707 検証結果
+
+[PASS] Firebase Authの元の保存順を復元
+[PASS] IndexedDBの既存ログイン状態を最優先で読み込み
+[PASS] localStorage・sessionStorageは代替手段として維持
+[PASS] 認証情報の自動削除処理を完全に削除
+[PASS] Service Worker更新処理はログイン情報・セーブ情報に触れない
+[PASS] JavaScript構文確認
+[PASS] v0.10.706からのapp.js変更はバージョン参照のみ
+[PASS] パズーパンを含む既存イベント保存段階を維持
+

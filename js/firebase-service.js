@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   EmailAuthProvider,
   onAuthStateChanged,
+  indexedDBLocalPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
   browserPopupRedirectResolver,
@@ -44,7 +45,6 @@ let firebaseInitialized = false;
 
 const GOOGLE_CREDENTIAL_HANDOFF_KEY = 'jxj-google-credential-handoff-v1';
 const GOOGLE_CREDENTIAL_MAX_AGE_MS = 5 * 60 * 1000;
-const AUTH_STORAGE_RECOVERY_KEY = 'jxj-auth-storage-recovery-v706';
 
 function effectiveFirebaseConfig() {
   const sameFirebaseHosting = location.hostname === firebaseConfig.authDomain
@@ -55,44 +55,6 @@ function effectiveFirebaseConfig() {
 
 function safeSessionStorage() {
   try { return window.sessionStorage; } catch (_) { return null; }
-}
-
-function safeLocalStorage() {
-  try { return window.localStorage; } catch (_) { return null; }
-}
-
-function clearStaleFirebaseAuthStorage() {
-  for (const storage of [safeLocalStorage(), safeSessionStorage()]) {
-    if (!storage) continue;
-    const keys = [];
-    try {
-      for (let index = 0; index < storage.length; index += 1) {
-        const key = storage.key(index);
-        if (key && /^firebase:(?:authUser|redirectUser|authEvent|pendingRedirect|redirectEventId):/.test(key)) keys.push(key);
-      }
-      keys.forEach((key) => storage.removeItem(key));
-    } catch (_) {}
-  }
-  try { safeSessionStorage()?.removeItem(GOOGLE_CREDENTIAL_HANDOFF_KEY); } catch (_) {}
-}
-
-function recoverableAuthStorageError(error) {
-  const code = String(error?.code || '');
-  const detail = `${error?.name || ''} ${error?.message || ''}`;
-  return [
-    'auth/internal-error',
-    'auth/web-storage-unsupported',
-    'auth/operation-not-supported-in-this-environment',
-  ].includes(code) || /indexeddb|web.?storage|local.?storage|initial state|invalidstateerror/i.test(detail);
-}
-
-function scheduleAuthStorageRecovery(error) {
-  const session = safeSessionStorage();
-  if (!recoverableAuthStorageError(error) || session?.getItem(AUTH_STORAGE_RECOVERY_KEY) === '1') return false;
-  try { session?.setItem(AUTH_STORAGE_RECOVERY_KEY, '1'); } catch (_) {}
-  clearStaleFirebaseAuthStorage();
-  window.setTimeout(() => location.reload(), 80);
-  return true;
 }
 
 async function consumeGoogleCredentialHandoff() {
@@ -172,9 +134,9 @@ export async function initializeFirebase() {
   }
 
   auth = initializeAuth(app, {
-    // v0.10.706: use origin-wide localStorage first. This is shared by auth.html
-    // and the game, and avoids a stale IndexedDB auth record breaking only one browser.
-    persistence: [browserLocalPersistence, browserSessionPersistence],
+    // v0.10.707: restore the original persistence order so existing users are
+    // read from IndexedDB and can continue from their saved game without logging in again.
+    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
     // v0.10.666: the main game signs Google users in via credential handoff, not popup/redirect.
     // Do not initialize the popup/redirect resolver during every launch; it creates the auth iframe.
     popupRedirectResolver: undefined,
@@ -182,16 +144,8 @@ export async function initializeFirebase() {
   auth.languageCode = 'ja';
   // 初回の認証状態が確定してから、専用ログインページがsessionStorageへ渡した
   // Google資格情報を必要な場合だけ再交換する。永続化反映が遅いブラウザでもログインを引き継げる。
-  try {
-    await auth.authStateReady();
-  } catch (error) {
-    scheduleAuthStorageRecovery(error);
-    throw error;
-  }
+  await auth.authStateReady();
   if (!auth.currentUser) await consumeGoogleCredentialHandoff();
-  if (auth.currentUser) {
-    try { safeSessionStorage()?.removeItem(AUTH_STORAGE_RECOVERY_KEY); } catch (_) {}
-  }
   db = getFirestore(app);
   firebaseInitialized = true;
   return { previewMode: false, configured: true, appCheckConfigured };

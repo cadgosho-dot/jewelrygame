@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.693';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.691';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.691';
+const UI_BUILD_VERSION = '0.10.705';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.705';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.705';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -347,7 +347,7 @@ const OKACHIMACHI_AREA_SCREENS = new Set([
 const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   winterColdEvent: new Set(['intro', 'sick']),
   westernUnionEvent: new Set(['video', 'choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3']),
-  miningPazupanEvent: new Set(['intro', 'reward']),
+  miningPazupanEvent: new Set(['intro', 'intro2', 'intro3', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
@@ -2199,7 +2199,7 @@ function mealBackgroundAssetName(mealId, portrait = isPortraitLayout()) {
 }
 
 function childhoodFriendBackgroundAssetName(portrait = isPortraitLayout()) {
-  return portrait ? 'meal-ramen-reunion-portrait-v387' : 'meal-ramen-reunion-v387';
+  return portrait ? 'meal-ramen-reunion-portrait-v696' : 'meal-ramen-reunion-v387';
 }
 
 function childhoodFriendBackgroundImage(portrait = isPortraitLayout()) {
@@ -6706,7 +6706,7 @@ function simpleEventState(key, validStages, defaults = {}) {
 }
 
 function miningPazupanEventState() {
-  return simpleEventState('miningPazupanEvent', ['idle', 'intro', 'reward', 'completed'], { rewardGranted: false });
+  return simpleEventState('miningPazupanEvent', ['idle', 'intro', 'intro2', 'intro3', 'reward', 'completed'], { rewardGranted: false });
 }
 
 function ensureMiningPazupanSchedule(eventState = miningPazupanEventState()) {
@@ -6777,6 +6777,20 @@ function advanceMiningPazupanEvent() {
     return;
   }
   if (eventState.stage === 'intro') {
+    eventState.stage = 'intro2';
+    saveGame();
+    playSfx('select', { gain: .72 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro2') {
+    eventState.stage = 'intro3';
+    saveGame();
+    playSfx('select', { gain: .72 });
+    render();
+    return;
+  }
+  if (eventState.stage === 'intro3') {
     eventState.stage = 'reward';
     grantPazupan(eventState);
     saveGame();
@@ -9022,12 +9036,12 @@ function startGlabVisitVideoPlayback() {
   if (!(video instanceof HTMLVideoElement)) return;
   const stage = video.closest('.glab-visit-video-stage');
   stage?.classList.remove('needs-start', 'has-error');
-  // 元動画に音声トラックがあっても、イベントでは必ず無音で使用する。
-  video.defaultMuted = true;
-  video.muted = true;
-  video.volume = 0;
-  // 動画開始時点から通常の g-Lab. BGM・環境音を継続する。
-  void resumeAudio();
+  // v0.10.705: g-Lab. BGMと環境音を合成した承認済み動画を、その音声込みで再生する。
+  // 別トラックの場面音は重ねず、二重再生を防ぐ。
+  suspendAudio();
+  video.defaultMuted = false;
+  video.muted = false;
+  video.volume = 1;
   const playPromise = video.play();
   if (playPromise && typeof playPromise.catch === 'function') {
     playPromise
@@ -9055,6 +9069,7 @@ function completeGlabVisitVideoEvent() {
   saveGame();
   // 動画後は追加イベントを再抽選せず、そのまま通常の g-Lab. 画面へ戻す。
   setScreen('glab', {}, false);
+  void resumeAudio();
 }
 
 function kawaharaKnowledgeEventState() {
@@ -9137,12 +9152,12 @@ function startKawaharaKnowledgeIntroPlayback() {
   if (!(video instanceof HTMLVideoElement)) return;
   const stage = video.closest('.kawahara-knowledge-video-stage');
   stage?.classList.remove('needs-start', 'has-error');
-  // この動画はカワハライベント専用。通常のg-Lab. 1/30動画には触れない。
+  // v0.10.705: 正式動画音声とg-Lab. BGM・環境音を合成した承認済み動画を再生する。
+  // 別トラックの場面音は重ねず、二重再生を防ぐ。
+  suspendAudio();
   video.defaultMuted = false;
   video.muted = false;
   video.volume = 1;
-  // カワハラはg-Lab.のイベント画面なので、通常のg-Lab. BGM/環境音設定は維持する。
-  void resumeAudio();
   const playPromise = video.play();
   if (playPromise && typeof playPromise.catch === 'function') {
     playPromise
@@ -9168,6 +9183,7 @@ function completeKawaharaKnowledgeIntroVideo() {
   eventState.stage = 'intro1';
   saveGame();
   render();
+  void resumeAudio();
   playSfx('decision', { gain: 0.68, rate: 0.96 });
 }
 
@@ -9249,8 +9265,7 @@ function maybeStartWristFoundEvent() {
   eventState.stage = 'intro';
   saveGame();
   setScreen('wristFoundEvent', {}, false);
-  playSfx('impact', { gain: 0.86, rate: 0.72 });
-  setTimeout(() => playSfx('haunting-whisper', { gain: 0.64, rate: 1.14 }), 90);
+  playSfx('haunting-appear', { gain: 0.72 });
   vibrate([18, 30, 48]);
   return true;
 }
@@ -9275,7 +9290,7 @@ function advanceWristFoundEvent() {
     eventState.stage = 'report';
     saveGame();
     render();
-    playSfx('impact', { gain: 0.48, rate: 0.88 });
+    playSfx('police-siren', { gain: 0.34 });
     return;
   }
   finishWristFoundEvent();
@@ -9697,13 +9712,14 @@ function applyCurrentBackground() {
 function audioFor(target) {
   const audioTarget = target === 'glabVisitVideoEvent'
     ? 'glab'
-    : (['okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'apprenticeCinemaEvent'].includes(target) ? 'okachimachi' : target);
+    : (['okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent'].includes(target) ? 'okachimachi' : target);
   return resolveAudioScene(audioTarget, {
     alienAbducted: isAlienAbducted(),
     quizStage: target === 'looseShopOriginalQuizEvent'
       ? (looseShopOriginalQuizSession?.stage || '')
       : (okachimachiQuizSession?.stage || ''),
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
+    apprenticeCinemaStage: target === 'apprenticeCinemaEvent' ? apprenticeCinemaEventState().stage : '',
     mealId: target === 'meal' ? screenData?.mealId || '' : '',
   });
 }
@@ -10017,6 +10033,7 @@ function scheduleOkachimachiQuizBottomLayoutSync() {
 
 function setScreen(target, data = {}, push = true) {
   if (target !== 'pandaMusicEvent') stopPandaMusicEventAudio();
+  if (target !== 'wristFoundEvent') stopWristFoundDarkDrone();
   if (target !== 'kaitenzushi') clearKaitenzushiLoadWatch();
   if (state && illnessEventSuppressionActive() && ILLNESS_SUPPRESSED_EVENT_SCREENS.has(target)) {
     target = 'main';
@@ -10287,6 +10304,8 @@ function render() {
       document.body.dataset.timeperiod = hour < 11 ? 'morning' : hour < 17 ? 'day' : hour < 20 ? 'evening' : 'night';
     }
     const currentAudioKey = audioFor(screen);
+    if (screen === 'wristFoundEvent') startWristFoundDarkDrone();
+    else stopWristFoundDarkDrone();
     if (screen === 'okachimachiInvasiveTurtlesEvent') {
       if (okachimachiInvasiveTurtlesEventAudio) okachimachiInvasiveTurtlesEventAudio.volume = okachimachiInvasiveTurtlesEventAudioVolume();
       else playOkachimachiInvasiveTurtlesEventAudio();
@@ -11592,6 +11611,7 @@ function renderWinterColdEvent() {
     <main class="main-screen winter-cold-event-screen" data-illness-readable="true">
       <button type="button" class="winter-cold-event-message" data-action="winter-cold-event-next" data-illness-readable="true">
         <strong>体調が悪い、風邪かな</strong>
+        <span>タップして進む</span>
       </button>
     </main>`;
 }
@@ -11670,6 +11690,14 @@ function renderMiningPazupanEvent() {
     return renderMining();
   }
   const reward = eventState.stage === 'reward';
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const dialogue = eventState.stage === 'intro'
+    ? '小鬼、、、小鬼がおる、、、、'
+    : eventState.stage === 'intro2'
+      ? `${playerName}によく似た小鬼だ、、、、`
+      : eventState.stage === 'intro3'
+        ? '力のある宝石は人を幸せにもするが、、不幸を招くこともあるからな、、、覚えとけ、、'
+        : 'パズーパンを手に入れました';
   return `
     <main class="main-screen pazupan-event-screen">
       <section class="pazupan-event" aria-live="polite">
@@ -11678,7 +11706,7 @@ function renderMiningPazupanEvent() {
         </div>
         ${reward ? `<div class="special-item-reveal pazupan-reveal" role="status"><span class="special-item-glow" aria-hidden="true"></span><img src="./assets/images/events/pazupan.png?v=${VERSION}" alt="パズーパン" draggable="false"><strong>パズーパンを手に入れました</strong></div>` : ''}
         <button type="button" class="event-dialogue-card glass-panel" data-action="pazupan-event-next">
-          <strong>${reward ? 'パズーパンを手に入れました' : '小鬼だ。小鬼がおる'}</strong>
+          <strong>${dialogue}</strong>
           <span>タップして進む</span>
         </button>
       </section>
@@ -11892,18 +11920,18 @@ function renderCinemaVisitEvent() {
     return `
       <main class="main-screen cinema-visit-event-screen cinema-playing-screen">
         <section class="cinema-video-stage" aria-live="polite">
+          <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="映画をスキップして御徒町へ戻る">MOVIEスキップ</button>
           <video data-cinema-event-video src="${esc(videoUrl)}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1"></video>
           <div class="cinema-video-loading">上映中</div>
           <button type="button" class="cinema-video-start-button" data-action="cinema-video-start">動画を再生する</button>
-          <div class="cinema-video-error-message">動画を読み込めませんでした。再生をやり直すか、上映を終了してください。</div>
-          <button type="button" class="cinema-video-finish-button" data-action="cinema-video-finish">上映を終了して御徒町へ戻る</button>
+          <div class="cinema-video-error-message">動画を読み込めませんでした。再生をやり直すか、MOVIEスキップで御徒町へ戻ってください。</div>
         </section>
       </main>`;
   }
   return `
     <main class="main-screen cinema-visit-event-screen cinema-invitation-screen">
       <button type="button" class="cinema-invitation-message" data-action="cinema-visit-event-start">
-        <strong>そうだ　映画館、行こう</strong>
+        <strong>そうだ　映画、行こう</strong>
         <span>タップして進む</span>
       </button>
     </main>`;
@@ -12072,17 +12100,16 @@ function renderApprenticeCinemaEvent() {
     return `
       <main class="main-screen apprentice-cinema-event-screen cinema-playing-screen">
         <section class="cinema-video-stage" aria-live="polite">
+          <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="映画をスキップして会話へ戻る">MOVIEスキップ</button>
           <video data-apprentice-cinema-video src="${esc(videoUrl)}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1"></video>
           <div class="cinema-video-loading">上映中</div>
           <button type="button" class="cinema-video-start-button" data-action="apprentice-cinema-video-start">動画を再生する</button>
-          <div class="cinema-video-error-message">動画を読み込めませんでした。再生をやり直すか、上映を終了してください。</div>
-          <button type="button" class="cinema-video-finish-button" data-action="apprentice-cinema-video-finish">上映を終了して会話へ戻る</button>
+          <div class="cinema-video-error-message">動画を読み込めませんでした。再生をやり直すか、MOVIEスキップで会話へ戻ってください。</div>
         </section>
       </main>`;
   }
   const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
   const characterPath = `./assets/images/events/cinema-apprentice.png?v=${VERSION}`;
-  let location = eventState.stage === 'outro1' || eventState.stage === 'outro2' ? '映画館' : '御徒町・パンダ広場';
   let dialogue = `あ、、${playerName}さん、、土日も御徒町にいるんですか？！、、、やばぁ、、、`;
   let hint = 'タップして進む';
   if (eventState.stage === 'intro2') {
@@ -12103,7 +12130,7 @@ function renderApprenticeCinemaEvent() {
           <img class="visit-character cinema-apprentice-character" src="${characterPath}" alt="" draggable="false">
         </div>
         <button type="button" class="event-dialogue-card visit-event-dialogue cinema-apprentice-dialogue glass-panel" data-action="apprentice-cinema-event-next">
-          <small>${location} ／ 見習い職人</small>
+          <small>見習い職人</small>
           <strong>${dialogue}</strong>
           <span>${hint}</span>
         </button>
@@ -12175,7 +12202,8 @@ function advanceClockTowerDonationEvent() {
       eventState.donationApplied = true;
       addFinance('時計台募金', 0, 100000);
       startMoneyFeedback(-100000, 1800);
-      showToast('時計台募金　−100,000円', 'money-spent', false);
+      showToast('時計台募金　−100,000円', 'clock-tower-donation', false);
+      toastEl.innerHTML = '<strong>時計台募金　−100,000円</strong><small>御徒町パンダ広場の時計台建設へ寄付しました。</small>';
       addNotification('時計台募金で100,000円を支払いました', '御徒町パンダ広場の時計台建設へ寄付しました。', 'special');
     }
     eventState.active = false;
@@ -12284,6 +12312,9 @@ function completeMysteryChineseMealIntroVideo() {
 
 async function skipCurrentEventIntroVideo() {
   const video = root.querySelector([
+    'video[data-cinema-event-video]',
+    'video[data-apprentice-cinema-video]',
+    'video[data-glab-visit-video]',
     'video[data-western-union-intro-video]',
     'video[data-tattoo-woman-amber-intro-video]',
     'video[data-mystery-chinese-meal-intro-video]',
@@ -12297,6 +12328,18 @@ async function skipCurrentEventIntroVideo() {
   video.pause();
   video.removeAttribute('autoplay');
 
+  if (video.matches('video[data-cinema-event-video]')) {
+    await completeCinemaVisitEvent();
+    return;
+  }
+  if (video.matches('video[data-apprentice-cinema-video]')) {
+    await completeApprenticeCinemaPlayback();
+    return;
+  }
+  if (video.matches('video[data-glab-visit-video]')) {
+    completeGlabVisitVideoEvent();
+    return;
+  }
   if (video.matches('video[data-western-union-intro-video]')) {
     completeWesternUnionIntroVideo();
     return;
@@ -12883,12 +12926,12 @@ function renderChildhoodFriendEvent() {
   }
   const postMeal = eventState.stage === 'postMeal';
   const dialogue = eventState.stage === 'intro1'
-    ? '（カウンターの男、知ってるかもしれない、）'
+    ? '（カウンターの男、知ってるかもしれない、、、、、、）'
     : eventState.stage === 'intro2'
-      ? '（子供の頃よく遊んでた、思い出した、、野球中継に夢中でこちらに気づいてないようだ）'
+      ? '（子供の頃よく遊んでた、、、思い出した、、、、、野球中継に夢中でこちらに気づいてないようだ、、、）'
       : eventState.stage === 'intro3'
         ? '「おっちゃん、ラーメンひとつ、、」'
-        : 'すぐに食べ終えて、店を後にした、、';
+        : 'すぐに食べ終えて、、彼より先に店を後にした、、、、';
   return `
     <main class="main-screen childhood-friend-event-screen ${postMeal ? 'is-post-meal' : ''}">
       <section class="childhood-friend-event" aria-live="polite">
@@ -13328,6 +13371,7 @@ function renderEmeraldCaptainKebabEvent() {
   const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
   const characterPath = `./assets/images/events/emerald-captain.png?v=${VERSION}`;
   const emeraldSetPath = `./assets/images/events/emerald-captain-loose-set.png?v=${VERSION}`;
+  const emeraldTotalLabel = `${Math.max(0, Math.floor(Number(eventState.gemTotalPrice) || 0)).toLocaleString('ja-JP')}円`;
   if (eventState.stage === 'eating') {
     const foodImage = mealFoodImage('kebab');
     return `
@@ -13347,9 +13391,9 @@ function renderEmeraldCaptainKebabEvent() {
   } else if (eventState.stage === 'intro2') {
     panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>${playerName}くんが本当に欲しいのは...こっち...</strong><span>タップして進む</span></button>`;
   } else if (eventState.stage === 'showcase') {
-    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel is-showcase" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><img class="emerald-captain-loose-set" src="${emeraldSetPath}" alt="エメラルドのルース一式" draggable="false"><strong>${playerName}くん.....贅沢ってやつはね........小出しはダメなの........</strong><span>タップして進む</span></button>`;
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel is-showcase" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><img class="emerald-captain-loose-set" src="${emeraldSetPath}" alt="エメラルドのルース一式" draggable="false"><div class="emerald-captain-loose-total">合計 ${emeraldTotalLabel}</div><strong>${playerName}くん.....贅沢ってやつはね........小出しはダメなの........</strong><span>タップして進む</span></button>`;
   } else if (eventState.stage === 'purchase') {
-    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel emerald-captain-purchase-dialogue" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>エメラルドを購入した</strong><span>これでケバブも美味しいわ....（タップすると通常のケバブ画面へ）</span></button>`;
+    panel = `<div class="emerald-captain-purchase-result" role="status">エメラルドを購入した</div><button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel emerald-captain-purchase-dialogue" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>これでケバブも美味しいわ....</strong><span>タップすると通常のケバブ画面へ</span></button>`;
   } else {
     panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel emerald-captain-farewell-dialogue" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>今日をがんばった者..........今日もがんばり始めた者にのみ......明日が来るの......!じゃあね...</strong><span>タップするとメイン画面へ戻る</span></button>`;
   }
@@ -13614,7 +13658,8 @@ function renderGlabVisitVideoEvent() {
   queueMicrotask(startGlabVisitVideoPlayback);
   return `<main class="western-union-video-screen glab-visit-video-screen" aria-label="g-Lab.訪問イベント動画">
     <section class="western-union-video-stage glab-visit-video-stage" aria-live="polite">
-      <video data-glab-visit-video src="${esc(glabVisitVideoUrl())}" autoplay muted playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="g-Lab.訪問イベント動画"></video>
+      <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてg-Lab.へ戻る">MOVIEスキップ</button>
+      <video data-glab-visit-video src="${esc(glabVisitVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="g-Lab.訪問イベント動画"></video>
       <div class="western-union-video-loading">動画を読み込んでいます</div>
       <button type="button" class="western-union-video-start" data-action="glab-visit-video-start">動画を再生する</button>
       <div class="western-union-video-error" role="alert"><strong>動画を読み込めませんでした</strong><span>もう一度再生してください。</span></div>
@@ -13652,13 +13697,14 @@ function renderKawaharaKnowledgeEvent() {
   };
   const stage = String(eventState.stage || 'intro1');
   const kicker = stage === 'reward' ? '加工知識追加' : 'カワハラ';
+  const rewardClass = stage === 'reward' ? ' is-reward-center' : '';
   return `
     <main class="main-screen kawahara-knowledge-event-screen" aria-live="polite">
       <section class="visit-character-event kawahara-knowledge-event">
         <div class="visit-character-area kawahara-knowledge-character-area" aria-hidden="true">
           <img class="visit-character kawahara-knowledge-character" src="${KAWAHARA_KNOWLEDGE_EVENT_IMAGE}?v=${VERSION}" alt="" draggable="false">
         </div>
-        <button type="button" class="event-dialogue-card visit-event-dialogue kawahara-knowledge-dialogue glass-panel" data-action="kawahara-knowledge-event-next">
+        <button type="button" class="event-dialogue-card visit-event-dialogue kawahara-knowledge-dialogue glass-panel${rewardClass}" data-action="kawahara-knowledge-event-next">
           <small>${kicker}</small>
           <strong>${dialogues[stage] || ''}</strong>
           <span>タップして進む</span>
@@ -14051,10 +14097,10 @@ function renderOkachimachiTollEvent() {
         ${isJadeReward
           ? `<div class="okachimachi-toll-jade-reveal" role="status"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/gems/jade.png?v=${VERSION}" alt="翡翠原石" draggable="false"><strong>翡翠原石を受け取った</strong></div>`
           : `<div class="visit-character-area okachimachi-toll-character-area" aria-hidden="true"><img class="visit-character okachimachi-toll-character" src="./assets/images/events/okachimachi-toll-frog.png?v=${VERSION}" alt="" draggable="false"></div>`}
+        ${isPaymentNotice ? `<div class="okachimachi-toll-payment-popup" role="status">－${yen(OKACHIMACHI_TOLL_EVENT_COST)}</div>` : ''}
         <button type="button" class="event-dialogue-card visit-event-dialogue okachimachi-toll-dialogue glass-panel" data-action="okachimachi-toll-event-next">
           <small>${isPaymentNotice ? '支払い' : 'キャベツ野郎'}</small>
           <strong>${dialogue}</strong>
-          ${isPaymentNotice ? `<em>－${yen(OKACHIMACHI_TOLL_EVENT_COST)}</em>` : ''}
           <span>タップして進む</span>
         </button>
       </section>
@@ -22361,20 +22407,24 @@ root.addEventListener('playing', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const glabVisitVideo = target?.closest('video[data-glab-visit-video]');
   if (glabVisitVideo) {
-    glabVisitVideo.defaultMuted = true;
-    glabVisitVideo.muted = true;
-    glabVisitVideo.volume = 0;
+    glabVisitVideo.defaultMuted = false;
+    glabVisitVideo.muted = false;
+    glabVisitVideo.volume = 1;
     glabVisitVideo.closest('.glab-visit-video-stage')?.classList.add('is-playing');
     glabVisitVideo.closest('.glab-visit-video-stage')?.classList.remove('needs-start', 'has-error');
-    // g-Lab. の BGM・環境音は動画開始時から継続する。
-    void resumeAudio();
+    // 承認済み動画へ合成済みのg-Lab. BGM・環境音を再生し、別トラックは重ねない。
+    suspendAudio();
     return;
   }
   const kawaharaVideo = target?.closest('video[data-kawahara-knowledge-intro-video]');
   if (kawaharaVideo) {
+    kawaharaVideo.defaultMuted = false;
+    kawaharaVideo.muted = false;
+    kawaharaVideo.volume = 1;
     kawaharaVideo.closest('.kawahara-knowledge-video-stage')?.classList.add('is-playing');
     kawaharaVideo.closest('.kawahara-knowledge-video-stage')?.classList.remove('needs-start', 'has-error');
-    void resumeAudio();
+    // 正式動画音声とg-Lab. BGM・環境音は動画側へ合成済み。
+    suspendAudio();
     return;
   }
   const quizVideo = target?.closest('video[data-okachimachi-quiz-intro-video]');

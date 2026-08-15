@@ -85,6 +85,16 @@ export const AUDIO_SCENE_DEFINITIONS = Object.freeze({
     bgmScale: 0.98, ambientScale: 1,
     supplemental: [{ type: 'weather', name: 'weather', scale: 0.58 }],
   }),
+  cinemaDialogue: frozenScene({
+    bgm: `${AUDIO_DIR}/bgm-okachimachi.ogg`,
+    bgmScale: 0.98,
+    ambientScale: 0,
+  }),
+  wristFound: frozenScene({
+    bgm: `${AUDIO_DIR}/bgm-wrist-found-dark.ogg`,
+    ambient: { type: 'file', url: `${AUDIO_DIR}/amb-wrist-found-dark.ogg` },
+    bgmScale: 0.57, ambientScale: 1.13,
+  }),
   okachimachiQuiz: frozenScene({
     bgm: `${AUDIO_DIR}/quiz_show_thinking_bgm_60s_loop.mp3`,
     bgmScale: 0.94, ambientScale: 0,
@@ -250,7 +260,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   okachimachiTollEvent: 'okachimachi',
   okachimachiInvasiveTurtlesEvent: 'okachimachi',
   pandaMusicEvent: 'okachimachi',
-  wristFoundEvent: 'okachimachi',
+  wristFoundEvent: 'wristFound',
 
   supplier: 'materialShop',
   supplierMetals: 'materialShop',
@@ -284,7 +294,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   kaitenzushi: 'kaitenzushi',
 });
 
-export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['cinemaVisitEvent', 'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'meal']);
+export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['cinemaVisitEvent', 'apprenticeCinemaEvent', 'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'meal']);
 
 const MEAL_SCENES = Object.freeze({
   convenience: 'meal-convenience',
@@ -301,6 +311,11 @@ export function resolveAudioScene(target, context = {}) {
   const screen = String(target || 'main');
   if (context.alienAbducted && screen !== 'alienReturnEvent') return 'space';
   if (screen === 'cinemaVisitEvent') return context.cinemaStage === 'playing' ? 'silent' : 'okachimachi';
+  if (screen === 'apprenticeCinemaEvent') {
+    if (context.apprenticeCinemaStage === 'playing') return 'silent';
+    if (['outro1', 'outro2'].includes(context.apprenticeCinemaStage)) return 'cinemaDialogue';
+    return 'okachimachi';
+  }
   if (screen === 'okachimachiQuiz') return context.quizStage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
   if (screen === 'looseShopOriginalQuizEvent') return context.quizStage === 'question' ? 'okachimachiQuiz' : 'looseShop';
   if (screen === 'meal') return MEAL_SCENES[String(context.mealId || '')] || 'meal';

@@ -1,0 +1,46 @@
+JEWELRY×JEWELRY v0.10.705 累積更新データ
+適用元: v0.10.692
+
+【適用方法】
+1. 現在のv0.10.692プロジェクトをバックアップしてください。
+2. このZIPを展開し、展開先フォルダの「中身」をプロジェクト直下へコピーしてください。
+3. 同名ファイルはすべて上書きしてください。既存の他ファイルは削除しないでください。
+4. GitHub DesktopのChangesで、意図しない削除がないことを確認してください。
+5. CommitしてPushしてください。
+6. 配信後はブラウザーを完全に再読み込みしてください。旧表示が残る場合は、サイトのキャッシュ／Service Workerを更新してから再読み込みしてください。
+
+【このZIPだけで反映される範囲】
+- v0.10.692 → v0.10.693 の工房Lv.8必須工具判定修正
+- v0.10.694〜v0.10.702の正式累積更新
+- このチャットで承認された全イベント共通仕様と個別修正
+- 正式バージョン v0.10.705
+
+【更新される実行ファイル】
+- index.html
+- game.html
+- styles.css
+- sw.js
+- js/app.js
+- js/audio.js
+- js/audio-scene-map.js
+- js/game-data.js
+
+【追加・置換される素材】
+- assets/audio/amb-wrist-found-dark.ogg
+- assets/audio/bgm-wrist-found-dark.ogg
+- assets/images/events/emerald-captain-loose-set.png
+- assets/images/events/haunting-ghost.png
+- assets/images/events/okachimachi-invasive-turtles.png
+- assets/images/events/panda-music-band-alien.png
+- assets/images/events/panda-music-band-cats.png
+- assets/images/events/panda-music-band-horror.png
+- assets/images/meal-ramen-reunion-portrait-v696.webp
+- assets/videos/events/glab-visit-random.mp4
+- assets/videos/events/glab-kawahara-intro.mp4
+
+【重要】
+- v0.10.693〜v0.10.702の個別更新ZIPを先に適用する必要はありません。
+- セーブデータの初期化は不要です。
+- 「店舗盗難」イベントは現在の表示・進行を維持します。
+- ファイルの同一性は SHA256_MANIFEST_v0.10.705.txt で確認できます。
+

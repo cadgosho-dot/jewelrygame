@@ -1,4 +1,4 @@
-export const VERSION = '0.10.693';
+export const VERSION = '0.10.705';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -7783,7 +7783,7 @@ export function migrateState(saved) {
     const activeStages = {
       birthdaySleepEvent: ['phone', 'greeting', 'congratulations', 'thanks'],
       westernUnionEvent: ['choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3'],
-      miningPazupanEvent: ['intro', 'reward'],
+      miningPazupanEvent: ['intro', 'intro2', 'intro3', 'reward'],
       kappaJadeEvent: ['intro1', 'intro2', 'reward', 'farewell'],
       tattooWomanAmberEvent: ['intro1', 'intro2', 'intro3', 'reward', 'farewell'],
       mermaidEvent: ['intro', 'reward'],
@@ -8518,7 +8518,7 @@ export function migrateState(saved) {
     };
     if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
   };
-  normalizeSimpleEvent('miningPazupanEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+  normalizeSimpleEvent('miningPazupanEvent', ['idle', 'intro', 'intro2', 'intro3', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
   normalizeSimpleEvent('mermaidEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
   normalizeSimpleEvent('kappaJadeEvent', ['idle', 'intro1', 'intro2', 'reward', 'farewell', 'completed'], (saved) => ({
     rewardGranted: Boolean(saved.rewardGranted),

@@ -1,10 +1,10 @@
-const VERSION = '0.10.693';
+const VERSION = '0.10.705';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CORE_SHELL = [
   './', './index.html', './game.html', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.691', './js/audio-scene-map.js?v=0.10.691', './js/game-data.js', './js/daily-gems-index.js?v=0.10.691',
+  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.705', './js/audio-scene-map.js?v=0.10.705', './js/game-data.js', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
   './js/google-auth-bridge.js', './js/security-config.js', './js/firebase-service.js?v=0.10.691',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',

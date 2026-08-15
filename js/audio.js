@@ -1,4 +1,4 @@
-import { AUDIO_SCENE_DEFINITIONS, AUDIO_SCENE_KEYS, audioSceneDefinition, audioSceneUsesWeather } from './audio-scene-map.js?v=0.10.654';
+import { AUDIO_SCENE_DEFINITIONS, AUDIO_SCENE_KEYS, audioSceneDefinition, audioSceneUsesWeather } from './audio-scene-map.js?v=0.10.702';
 
 const AUDIO_DIR = './assets/audio';
 
@@ -17,6 +17,10 @@ const pendingStopTimers = new Map();
 let ambientDuckFactor = 1;
 let ambientDuckTimer = null;
 let transitionSerial = 0;
+let wristFoundDroneRequested = false;
+let wristFoundDroneContext = null;
+let wristFoundDroneMaster = null;
+const wristFoundDroneNodes = [];
 // v0.10.668: keep startup BGM/ambient dormant until the player actually enters the game.
 // switchAudio() may still record the destination scene, but no loop media is created/fetched while held.
 let startupAudioHeld = true;
@@ -25,7 +29,108 @@ let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .
 let weatherEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear', audioKey: 'main' };
 
 const validKeys = new Set(AUDIO_SCENE_KEYS);
-const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'ganesha-appear', 'ganesha-gift', 'kappa-appear', 'jade-gift', 'haunting-appear', 'haunting-whisper', 'old-lady-appear', 'shoplift-steal', 'quiz-correct', 'quiz-incorrect']);
+const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'ganesha-appear', 'ganesha-gift', 'kappa-appear', 'jade-gift', 'haunting-appear', 'haunting-whisper', 'old-lady-appear', 'shoplift-steal', 'police-siren', 'quiz-correct', 'quiz-incorrect']);
+
+function wristFoundDroneTargetVolume(settings = settingsProvider()) {
+  if (!wristFoundDroneRequested || suspended || settings.externalAudioPriority || settings.bgmMuted) return 0;
+  const configured = Math.max(0, Math.min(1, Number(settings.bgmVolume) || 0));
+  return Math.min(0.38, configured * (0.13 / 0.35));
+}
+
+function setWristFoundDroneGain(target, duration = 240) {
+  if (!wristFoundDroneContext || !wristFoundDroneMaster) return;
+  const boundedTarget = Math.max(0, Math.min(0.38, Number(target) || 0));
+  const now = wristFoundDroneContext.currentTime;
+  const gain = wristFoundDroneMaster.gain;
+  gain.cancelScheduledValues(now);
+  gain.setValueAtTime(gain.value, now);
+  gain.linearRampToValueAtTime(boundedTarget, now + Math.max(0.01, duration / 1000));
+}
+
+function silenceWristFoundDrone() {
+  if (!wristFoundDroneContext || !wristFoundDroneMaster) return;
+  const now = wristFoundDroneContext.currentTime;
+  wristFoundDroneMaster.gain.cancelScheduledValues(now);
+  wristFoundDroneMaster.gain.setValueAtTime(0, now);
+}
+
+function ensureWristFoundDarkDrone() {
+  if (wristFoundDroneContext) return true;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return false;
+  wristFoundDroneContext = new AudioContextClass();
+  wristFoundDroneMaster = wristFoundDroneContext.createGain();
+  wristFoundDroneMaster.gain.value = 0;
+
+  const lowpass = wristFoundDroneContext.createBiquadFilter();
+  lowpass.type = 'lowpass';
+  lowpass.frequency.value = 430;
+  lowpass.Q.value = 0.9;
+  const rumble = wristFoundDroneContext.createBiquadFilter();
+  rumble.type = 'lowpass';
+  rumble.frequency.value = 115;
+  rumble.Q.value = 0.55;
+  const droneBus = wristFoundDroneContext.createGain();
+  droneBus.gain.value = 0.86;
+  const subBus = wristFoundDroneContext.createGain();
+  subBus.gain.value = 0.55;
+
+  [
+    { type: 'sine', frequency: 32.70, gain: 0.070, bus: subBus },
+    { type: 'triangle', frequency: 43.65, gain: 0.052, bus: droneBus },
+    { type: 'sine', frequency: 46.25, gain: 0.033, bus: droneBus },
+    { type: 'sawtooth', frequency: 61.74, gain: 0.010, bus: droneBus },
+    { type: 'sine', frequency: 65.41, gain: 0.020, bus: droneBus },
+  ].forEach((config, index) => {
+    const oscillator = wristFoundDroneContext.createOscillator();
+    const gain = wristFoundDroneContext.createGain();
+    oscillator.type = config.type;
+    oscillator.frequency.value = config.frequency;
+    oscillator.detune.value = index % 2 ? -5 : 3;
+    gain.gain.value = config.gain;
+    oscillator.connect(gain).connect(config.bus);
+    oscillator.start();
+    wristFoundDroneNodes.push(oscillator, gain);
+  });
+
+  subBus.connect(rumble).connect(lowpass);
+  droneBus.connect(lowpass);
+
+  const pulse = wristFoundDroneContext.createOscillator();
+  const pulseGain = wristFoundDroneContext.createGain();
+  pulse.type = 'sine';
+  pulse.frequency.value = 0.075;
+  pulseGain.gain.value = 0.018;
+  pulse.connect(pulseGain).connect(droneBus.gain);
+  pulse.start();
+  wristFoundDroneNodes.push(pulse, pulseGain);
+
+  const sweep = wristFoundDroneContext.createOscillator();
+  const sweepGain = wristFoundDroneContext.createGain();
+  sweep.type = 'sine';
+  sweep.frequency.value = 0.035;
+  sweepGain.gain.value = 85;
+  sweep.connect(sweepGain).connect(lowpass.frequency);
+  sweep.start();
+  wristFoundDroneNodes.push(sweep, sweepGain);
+
+  lowpass.connect(wristFoundDroneMaster).connect(wristFoundDroneContext.destination);
+  return true;
+}
+
+export async function startWristFoundDarkDrone() {
+  wristFoundDroneRequested = true;
+  if (!ensureWristFoundDarkDrone()) return;
+  try {
+    if (wristFoundDroneContext.state !== 'running') await wristFoundDroneContext.resume();
+  } catch (_) {}
+  setWristFoundDroneGain(wristFoundDroneTargetVolume(), 1200);
+}
+
+export function stopWristFoundDarkDrone() {
+  wristFoundDroneRequested = false;
+  setWristFoundDroneGain(0, 240);
+}
 
 function createAudio(url, loop = false) {
   const audio = new Audio(url);
@@ -191,6 +296,7 @@ export function applyAudioSettings() {
   const settings = settingsProvider();
   const wasExternalPriority = externalPriorityActive;
   externalPriorityActive = Boolean(settings.externalAudioPriority);
+  setWristFoundDroneGain(wristFoundDroneTargetVolume(settings), 180);
   if (externalPriorityActive) {
     transitionSerial += 1;
     tracks.forEach((audio) => audio.pause());
@@ -530,13 +636,19 @@ export function suspendAudio() {
   if (suspended) return;
   transitionSerial += 1;
   suspended = true;
+  silenceWristFoundDrone();
   if (currentKey) stopLoopPair(currentKey, false);
   policeSiren?.pause();
+  wristFoundDroneContext?.suspend().catch(() => {});
 }
 
 export async function resumeAudio() {
   if (!suspended) return;
   suspended = false;
+  if (wristFoundDroneRequested && wristFoundDroneContext) {
+    try { await wristFoundDroneContext.resume(); } catch (_) {}
+    setWristFoundDroneGain(wristFoundDroneTargetVolume(), 420);
+  }
   await startCurrentAudio();
   if (policeSirenRequested) await startPoliceSiren();
 }
@@ -550,6 +662,9 @@ export function stopAllAudio() {
   ambients.forEach((audio) => { audio.pause(); audio.currentTime = 0; });
   supplementalAmbients.forEach((audio) => { audio.pause(); audio.currentTime = 0; });
   stopPoliceSiren();
+  wristFoundDroneRequested = false;
+  silenceWristFoundDrone();
+  wristFoundDroneContext?.suspend().catch(() => {});
   weatherEnvironment.active = false;
   bgmSuspended = false;
   currentKey = null;

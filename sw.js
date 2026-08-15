@@ -1,12 +1,12 @@
-const VERSION = '0.10.705';
+const VERSION = '0.10.706';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CORE_SHELL = [
-  './', './index.html', './game.html', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.705', './js/audio-scene-map.js?v=0.10.705', './js/game-data.js', './js/daily-gems-index.js?v=0.10.691',
+  './', './index.html', './game.html', './auth.html', './auth-cache-recovery-v706.js', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
+  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.706', './js/audio-scene-map.js?v=0.10.706', './js/game-data.js', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js', './js/security-config.js', './js/firebase-service.js?v=0.10.691',
+  './js/google-auth-bridge.js?v=0.10.706', './js/security-config.js', './js/firebase-service.js?v=0.10.706',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   // v0.10.666: large event images and quiz data are runtime-cached on first use instead of being downloaded during every SW install.
 ];
@@ -76,6 +76,24 @@ async function cacheFirst(request, cacheName = APP_CACHE) {
   const response = await fetch(request);
   if (response.ok) cache.put(request, response.clone()).catch(() => {});
   return response;
+}
+
+// v0.10.706: scripts and styles must not be served from an older cache merely
+// because their query string differs. Online loads fetch the current bytes;
+// exact-version cache and the unversioned app shell are offline fallbacks only.
+async function versionedResourceNetworkFirst(request) {
+  const runtimeCache = await caches.open(RUNTIME_CACHE);
+  const appCache = await caches.open(APP_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok) runtimeCache.put(request, response.clone()).catch(() => {});
+    return response;
+  } catch (_) {
+    return (await runtimeCache.match(request))
+      || (await appCache.match(request))
+      || (await appCache.match(request, { ignoreSearch: true }))
+      || Response.error();
+  }
 }
 
 function parseByteRange(rangeHeader, totalLength) {
@@ -159,7 +177,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (['script', 'style'].includes(destination) || url.pathname.includes('/js/')) {
-    event.respondWith(cacheFirst(event.request));
+    event.respondWith(versionedResourceNetworkFirst(event.request));
     return;
   }
   if (['image', 'audio', 'font'].includes(destination) || url.pathname.includes('/assets/')) {

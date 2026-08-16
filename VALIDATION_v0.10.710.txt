@@ -1,0 +1,42 @@
+JEWELRY×JEWELRY v0.10.710 検証結果
+
+対象:
+- v0.10.709 の jewelrygame-main を基準に v0.10.710 を実装
+- ブルースマン第1〜3弾の携帯セリフ枠下端固定
+
+[OK] JavaScript 構文
+- js/app.js
+- js/audio.js
+- js/audio-scene-map.js
+- js/game-data.js
+- sw.js
+
+[OK] バージョン整合
+- Service Worker: 0.10.710
+- UI_BUILD_VERSION: 0.10.710
+- GAME DATA VERSION: 0.10.710
+- game.html / index.html / auth.html のキャッシュバスター: 0.10.710
+
+[OK] ブルース酒場下端固定
+- 既存の applyDeviceViewportProfile() が visualViewport.height を計測
+- --jwj-layout-height に実測高を反映
+- visualViewport resize 時に端末プロファイルを再同期
+- bluesJukeEvent 画面の height / min-height / max-height を --jwj-layout-height に統一
+- 携帯の .blues-juke-dialogue を safe-area + edge-gap(標準6px) の下端へ固定
+- 第1弾・第2弾・第3弾が同一の blues-juke 共通レイアウトを使用することを確認
+
+[OK] 既存携帯表示基準チェック
+- scripts/check_phone_layout_baseline.py
+- 320×568 ～ 932×430 の縦横14サイズ: PASS
+
+[OK] 見習い職人・映画館イベント専用チェック
+- scripts/check-apprentice-cinema-center.py
+- APPRENTICE CINEMA CENTER AUDIT: PASS
+
+[OK] 変更範囲
+- ゲーム進行、発生条件、発生率、報酬、セーブスキーマには変更なし
+- js/app.js の機能差分はバージョン/キャッシュバスターのみ
+- 本修正の機能差分は styles.css のブルース酒場専用レイアウト追加のみ
+
+[OK] 更新ZIP再現性
+- v0.10.709 の新規コピーへ更新ZIPを上書きし、更新対象ファイルをSHA-256で作業ソースと照合

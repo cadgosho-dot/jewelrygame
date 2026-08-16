@@ -21441,3 +21441,26 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="a
     position:absolute!important;
   }
 }
+
+/* v0.10.710 ブルース酒場：携帯の実画面下端へセリフ枠を固定
+   visualViewport.height から同期済みの --jwj-layout-height をイベント全体へ適用し、
+   ブラウザUI等で layout viewport と実表示領域が異なる端末でも下部余白を作らない。 */
+body[data-screen="bluesJukeEvent"] .blues-juke-event-screen{
+  height:var(--jwj-layout-height,100dvh)!important;
+  min-height:var(--jwj-layout-height,100dvh)!important;
+  max-height:var(--jwj-layout-height,100dvh)!important;
+}
+body[data-screen="bluesJukeEvent"] .blues-juke-event{
+  height:100%!important;
+  min-height:100%!important;
+  max-height:100%!important;
+}
+html[data-device-class="phone"] body[data-screen="bluesJukeEvent"] .blues-juke-dialogue{
+  position:absolute!important;
+  left:var(--jwj-edge-gap,6px)!important;
+  right:var(--jwj-edge-gap,6px)!important;
+  bottom:calc(var(--safe-bottom,0px) + var(--jwj-edge-gap,6px))!important;
+  width:auto!important;
+  transform:none!important;
+}
+

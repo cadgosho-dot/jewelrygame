@@ -1,0 +1,35 @@
+JEWELRY×JEWELRY v0.10.708 検証結果
+
+基準ソース: v0.10.707
+更新内容: ブルース酒場 第1弾・第2弾・第3弾 / 第3弾反復 / ブラックダイヤ
+
+[OK] js/app.js 構文チェック (node --check)
+[OK] js/game-data.js 構文チェック (node --check)
+[OK] js/audio.js 構文チェック (node --check)
+[OK] js/audio-scene-map.js 構文チェック (node --check)
+[OK] VERSION / UI_BUILD_VERSION / Service Worker = 0.10.708
+[OK] 既存セーブを想定した migrateState() で bluesJukeEvent と blackDiamond.round=0 を自動補完
+[OK] ブラックダイヤは eventOnly / round のみ
+[OK] 外観BGM = bluesJukeOutside / bgmScale 0.18
+[OK] 店内BGM = bluesJukeInside / bgmScale 0.98
+[OK] 外観・店内は同一BGM URLを使用し、音場切替時に再生位置を継承
+[OK] 「歌った」用 sfx-blues-juke-cheer.wav を追加
+[OK] 「歌った」タップ後は次の人物を先出しせず、店内背景のみ1秒表示
+[OK] 横・縦の外観／店内背景4点を追加
+[OK] 第1〜3弾のキャラクターPNGを共通1100×1500キャンバスへ正規化、透明アルファ確認済み
+[OK] ブラックダイヤ報酬PNGの透明アルファ確認済み
+[OK] 第1弾: 101〜130日目に初回ランダム発生
+[OK] 第2弾: 第1弾完了から150〜210日後
+[OK] 第3弾: 第2弾完了から150〜210日後
+[OK] 第3弾以降: 150〜210日ごとに同一内容を反復
+[OK] 第3弾報酬は1イベントにつきブラックダイヤ1石、rewardGrantedで二重取得防止
+[OK] ブラックダイヤ解説は初回取得で永続解放し、所持0でも工房から再確認可能
+[OK] 全段階でイベント終了の共通復旧導線に対応
+[OK] 下部セリフ枠は枠線あり・背景透明
+[OK] キャラクター表示寸法は第1〜3弾で共通（縦・横とも同一CSS）
+
+[OK] v0.10.707フルソースへ更新ZIPを新規展開・上書きし、4本のJavaScript構文チェックを再実行
+[OK] 更新ZIP内23ファイルがv0.10.708作業ソースとSHA-256単位で一致
+[OK] 更新適用後ソースで旧セーブ相当データのmigrateState()を実行し、自動移行を再確認
+
+SAVE_SCHEMA_VERSIONは変更していません。既存セーブデータの削除は不要です。

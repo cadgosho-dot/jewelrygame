@@ -1,4 +1,4 @@
-export const VERSION = '0.10.707';
+export const VERSION = '0.10.708';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -3174,6 +3174,7 @@ export const GEMS = {
   amethyst: { id: 'amethyst', name: 'アメシスト', roughPrice: 3000, price: 4000, looseRank: 'D', hue: '#8e62c7' },
   aquamarine: { id: 'aquamarine', name: 'アクアマリン', roughPrice: 5000, price: 7000, looseRank: 'C', hue: '#78cddd' },
   diamond: { id: 'diamond', name: 'ダイヤモンド', roughPrice: 20000, price: 35000, looseRank: 'S', hue: '#dcecf2' },
+  blackDiamond: { id: 'blackDiamond', name: 'ブラックダイヤ', roughPrice: 0, price: 35000, looseRank: 'S', hue: '#20242c', eventOnly: true },
   antiqueDiamond: { id: 'antiqueDiamond', name: 'アンティークダイヤ', roughPrice: 30000, price: 52500, looseRank: 'S', hue: '#e8eef2', eventOnly: true },
   pearl: { id: 'pearl', name: 'パール', roughPrice: 0, price: 9000, looseRank: 'B', hue: '#f2ede7', eventOnly: true },
   ivory: { id: 'ivory', name: '象牙', roughName: 'ガネーシャの牙', roughPrice: 9000, price: 18000, looseRank: 'A', hue: '#f4e4bd', eventOnly: true },
@@ -3235,7 +3236,7 @@ export const LOOSE_SHAPES = {
 
 const STANDARD_LOOSE_SHAPE_IDS = ['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon'];
 const CABOCHON_ONLY_GEMS = new Set(['opal', 'turquoise', 'lapislazuli']);
-const SPECIAL_LOOSE_SHAPES = Object.freeze({ antiqueDiamond: ['antiqueCut'], pearl: ['pearl'], ivory: ['roundCabochon', 'ovalCabochon'], jade: ['roundCabochon', 'ovalCabochon'], amber: ['amber'], starrySapphire: ['oval'], cubistRuby: ['pear'], waterGardenEmerald: ['emerald'], meltingTopaz: ['round'], burstOpal: ['oval'], marbleDiamond: ['round'], popDiamond: ['round'], arabesquePeridot: ['oval'], skyTourmaline: ['emerald'], outsideDiamond: ['round'], morningPearl: ['pearl'], waveAquamarine: ['oval'], atelierAmethyst: ['oval'], streetStone: ['oval'], biteMechaMoon: ['oval'] });
+const SPECIAL_LOOSE_SHAPES = Object.freeze({ blackDiamond: ['round'], antiqueDiamond: ['antiqueCut'], pearl: ['pearl'], ivory: ['roundCabochon', 'ovalCabochon'], jade: ['roundCabochon', 'ovalCabochon'], amber: ['amber'], starrySapphire: ['oval'], cubistRuby: ['pear'], waterGardenEmerald: ['emerald'], meltingTopaz: ['round'], burstOpal: ['oval'], marbleDiamond: ['round'], popDiamond: ['round'], arabesquePeridot: ['oval'], skyTourmaline: ['emerald'], outsideDiamond: ['round'], morningPearl: ['pearl'], waveAquamarine: ['oval'], atelierAmethyst: ['oval'], streetStone: ['oval'], biteMechaMoon: ['oval'] });
 
 export const LOOSE_CUT_PRICE_MULTIPLIERS = Object.freeze({
   round: 1.00,
@@ -7240,6 +7241,17 @@ export function initialState() {
     orders: [],
     employee: storeEmployeeDefaults(1),
     events: {
+      bluesJukeEvent: {
+        nextTriggerDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        active: false,
+        stage: 'idle',
+        episode: 1,
+        step: 0,
+        rewardGranted: false,
+        knowledgeUnlocked: false,
+      },
       grayHoodAquariumEvent: { active: false, completed: false, stage: 'idle', triggeredDay: 0, introVideoCompleted: false, stageAfterVideo: '' },
       robbery: {
         lastTriggeredDay: 0,

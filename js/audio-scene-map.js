@@ -14,6 +14,14 @@ function frozenScene(definition) {
 // 場面音の唯一の定義表です。BGM・環境音の変更は必ずここだけで行います。
 export const AUDIO_SCENE_DEFINITIONS = Object.freeze({
   silent: frozenScene({ bgmScale: 0, ambientScale: 0 }),
+  bluesJukeOutside: frozenScene({
+    bgm: `${AUDIO_DIR}/bgm-blues-juke.mp3`,
+    bgmScale: 0.18, ambientScale: 0,
+  }),
+  bluesJukeInside: frozenScene({
+    bgm: `${AUDIO_DIR}/bgm-blues-juke.mp3`,
+    bgmScale: 0.98, ambientScale: 0,
+  }),
   main: frozenScene({
     bgm: `${AUDIO_DIR}/bgm-main.ogg`,
     ambient: { type: 'weather' },
@@ -208,6 +216,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   settingsTitle: 'main',
   main: 'main',
   aquarium: 'main',
+  bluesJukeEvent: 'bluesJukeOutside',
   winterColdEvent: 'main',
   westernUnionEvent: 'main',
   mermaidEvent: 'main',
@@ -294,7 +303,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   kaitenzushi: 'kaitenzushi',
 });
 
-export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['cinemaVisitEvent', 'apprenticeCinemaEvent', 'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'meal']);
+export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['bluesJukeEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'meal']);
 
 const MEAL_SCENES = Object.freeze({
   convenience: 'meal-convenience',
@@ -310,6 +319,7 @@ const MEAL_SCENES = Object.freeze({
 export function resolveAudioScene(target, context = {}) {
   const screen = String(target || 'main');
   if (context.alienAbducted && screen !== 'alienReturnEvent') return 'space';
+  if (screen === 'bluesJukeEvent') return context.bluesJukePlace === 'inside' ? 'bluesJukeInside' : 'bluesJukeOutside';
   if (screen === 'cinemaVisitEvent') return context.cinemaStage === 'playing' ? 'silent' : 'okachimachi';
   if (screen === 'apprenticeCinemaEvent') {
     if (context.apprenticeCinemaStage === 'playing') return 'silent';

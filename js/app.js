@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.707';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.707';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.707';
+const UI_BUILD_VERSION = '0.10.708';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.708';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.708';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.707';
+} from './firebase-service.js?v=0.10.708';
 
 
 
@@ -248,6 +248,13 @@ const MERMAID_EVENT_TRIGGER_MIN = 58;
 const MERMAID_EVENT_TRIGGER_MAX = 82;
 const MERMAID_EVENT_GEM_ID = 'pearl';
 const MERMAID_EVENT_SHAPE_ID = 'pearl';
+const BLUES_JUKE_EVENT_FIRST_TRIGGER_MIN = 101;
+const BLUES_JUKE_EVENT_FIRST_TRIGGER_MAX = 130;
+const BLUES_JUKE_EVENT_REPEAT_MIN_DAYS = 150;
+const BLUES_JUKE_EVENT_REPEAT_MAX_DAYS = 210;
+const BLUES_JUKE_EVENT_GEM_ID = 'blackDiamond';
+const BLUES_JUKE_EVENT_GEM_SHAPE_ID = 'round';
+const BLUES_JUKE_EVENT_CHEER_SFX = 'blues-juke-cheer';
 // v0.10.586: 「1/30」は30回に1回程度の分数確率として統一する。
 const MEAL_RANDOM_EVENT_CHANCE = 1 / 30;
 const SUSHI_CHEF_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
@@ -345,6 +352,7 @@ const OKACHIMACHI_AREA_SCREENS = new Set([
 ]);
 
 const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
+  bluesJukeEvent: new Set(['playing']),
   winterColdEvent: new Set(['intro', 'sick']),
   westernUnionEvent: new Set(['video', 'choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3']),
   miningPazupanEvent: new Set(['intro', 'intro2', 'intro3', 'reward']),
@@ -380,7 +388,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 });
 
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
-  'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
+  'bluesJukeEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
@@ -390,6 +398,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
 // 保存途中・画像読込停止・イベント状態不整合のどれが起きても、セーブ削除なしで操作へ戻れるようにする。
 const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
+  bluesJukeEvent: { eventKey: 'bluesJukeEvent', fallback: 'main' },
   winterColdEvent: { eventKey: 'winterColdEvent', fallback: 'main' },
   birthdaySleepEvent: { eventKey: 'birthdaySleepEvent', fallback: 'main' },
   westernUnionEvent: { eventKey: 'westernUnionEvent', fallback: 'main' },
@@ -446,7 +455,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   ]),
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
-    'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent', 'whiteBunnyIceEvent',
+    'bluesJukeEvent', 'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent', 'whiteBunnyIceEvent',
     'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent',
   ]),
   sessionOnly: new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'robberyReport', 'kaitenzushi']),
@@ -660,7 +669,7 @@ function runEventEmergencySettlement(key, eventState) {
 }
 const TRANSIENT_EVENT_KEYS = Object.freeze(Object.keys(EVENT_ACTIVE_STAGE_MAP).filter((key) => key !== 'winterColdEvent'));
 const EVENT_PROGRESS_ACTIONS = new Set([
-  'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
+  'blues-juke-event-next', 'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
   'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-video-start', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
   'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'apprentice-cinema-event-next', 'apprentice-cinema-video-start', 'apprentice-cinema-video-finish', 'cinema-video-finish',
   'kappa-jade-event-next', 'kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
@@ -732,6 +741,10 @@ function completeTransientEventSafely(key, { preserveLongRunning = true, force =
       Math.floor(Number(eventState.nextTriggerDay) || 0),
       Math.floor(Number(state?.game?.day) || 1) + 30,
     );
+  }
+  if (key === 'bluesJukeEvent') {
+    finalizeBluesJukeEventState(eventState);
+    return wasInProgress;
   }
   if (key === 'birthdaySleepEvent') {
     const completionYear = Math.max(0, Math.floor(Number(eventState.eventYear) || gameDate().getFullYear()));
@@ -886,6 +899,7 @@ function recoverCurrentEventDeadlock({ save = true, notify = true } = {}) {
   };
   if (save) void saveGame();
   render();
+  if (stuckScreen === 'bluesJukeEvent') queueMicrotask(() => maybeResumeMorningSequence());
   if (notify) showToast(
     emergencyFeatureResult.aquariumWasUnlocked
       ? '水槽機能を解放し、イベントを安全に終了しました。'
@@ -1026,6 +1040,12 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
       trilliant: './assets/images/loose/diamond/trilliant.png',
       roundCabochon: './assets/images/loose/diamond/round-cabochon.png',
       ovalCabochon: './assets/images/loose/diamond/oval-cabochon.png',
+    },
+  },
+  blackDiamond: {
+    defaultShape: 'round',
+    shapes: {
+      round: './assets/images/loose/blackDiamond/round.png',
     },
   },
   antiqueDiamond: {
@@ -1276,6 +1296,7 @@ const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
   amethyst: '紫色のクォーツで、淡い紫から濃い紫まで幅のある色調が特徴です。',
   aquamarine: 'ベリルの一種で、澄んだ水色から青色の色調が特徴です。',
   diamond: '強い輝きと高い硬度を持つ宝石で、ファセットの状態が見た目へ大きく影響します。',
+  blackDiamond: '黒〜暗灰色の外観を持つダイヤモンドです。天然の黒色は微細な黒色包有物などに由来することが多く、流通品には照射・加熱などで黒色化した処理石もあるため、色の由来と処理の確認が重要です。',
   antiqueDiamond: '雨の日の特別イベントでのみ入手できる、アンティークカットの特別なダイヤモンドです。ゲーム内では通常のダイヤモンド・ラウンドルースの1.5倍の価値として扱います。',
   pearl: 'パールは貝の体内で形成される有機質の宝石です。炭酸カルシウムの微細な結晶と有機質が重なった真珠層に光が入り、表面反射と内部干渉が重なることで、柔らかな光沢、奥行き、オリエントと呼ばれる色のゆらぎが生まれます。品質は主にテリ、巻き、表面状態、形、色、サイズで評価し、連で使う場合は色・大きさ・光沢・形の揃い方も重要です。真円だけでなく、セミラウンド、オーバル、ドロップ、ボタン、サークル、バロックなどの形があります。汗、皮脂、化粧品、香水、酸、熱、乾燥、摩擦に弱いため、着用後は柔らかい布で拭き、他の宝石と接触しないよう保管します。ジュエリー加工では穴あけ、片穴・両穴、芯立て、接着、糸組み、ノット、クラスプ交換など、真珠の構造と孔の状態に合わせた作業を行います。',
   ivory: 'インド料理屋で出会うガネーシャから受け取った牙を研磨して作る、イベント限定の象牙ルースです。',
@@ -1304,6 +1325,7 @@ const LOOSE_GEM_PROFILE_IDS = Object.freeze({
   amethyst: 'amethyst',
   aquamarine: 'aquamarine',
   diamond: 'diamond',
+  blackDiamond: 'diamond',
   antiqueDiamond: 'diamond',
   pearl: 'pearl',
   jade: 'jadeite',
@@ -1581,6 +1603,19 @@ const GEM_LOOSE_GUIDES = Object.freeze({
       { title: '耐久性とモース硬度', body: 'モース硬度は10で、傷への抵抗は非常に高い宝石です。ただし硬度と靭性は別で、劈開方向への衝撃、極端に薄いガードル、尖ったコーナーは欠けの原因になります。ダイヤモンド同士は互いを傷付けるため個別保管します。' },
       { title: '処理・合成・類似石', body: '高温高圧処理、照射、レーザードリル、亀裂充填などの処理石があり、HPHT法やCVD法による合成ダイヤモンドも流通します。外観だけで判別できないため、専門機器と検査手順が必要です。' },
       { title: '加工・石留め・手入れ', body: '石留め前に欠け、フェザー、ガードル厚、劈開方向を確認します。油膜で輝きが鈍りやすいため洗浄は有効ですが、充填処理石は熱・超音波・薬品に注意します。修理時は処理情報を確認してから加熱します。' },
+    ],
+  },
+  blackDiamond: {
+    hardness: '10', mineral: 'ダイヤモンド（炭素）',
+    overview: 'ブラックダイヤモンドは、黒から暗灰色に見えるダイヤモンドです。ダイヤモンドとしての高い硬度を持つ一方、黒色の原因となる内包物や亀裂の状態によっては欠けやすさが増すため、外観だけで通常の無色ダイヤモンドと同じ扱いをしないことが重要です。',
+    sections: [
+      { title: '黒色が見える理由', body: '天然のブラックダイヤモンドでは、黒色鉱物などの微細な包有物が多数分布し、光を吸収・散乱して黒く見えるものがあります。石によっては暗灰色や不均一な黒色を示し、表面まで達する内包物や亀裂が見えることがあります。' },
+      { title: '処理されたブラックダイヤ', body: '市場には、もともと灰色や褐色などのダイヤモンドへ照射や加熱などを行い、黒色の外観にした処理石も流通します。天然の黒色と処理による黒色は外観だけで確実に区別できない場合があるため、取引時は鑑別結果や処理情報を確認します。' },
+      { title: '品質の見方', body: '一般的な無色ダイヤモンドのように透明度の高さだけを評価軸にせず、黒色の均一さ、表面状態、欠け、研磨、輪郭、ファセットの整い方、耐久性へ影響する亀裂や包有物を確認します。黒色でも表面の研磨状態によって光沢は大きく変わります。' },
+      { title: '耐久性と石留め', body: 'モース硬度は10ですが、硬度は傷への強さを示す尺度で、欠けにくさそのものではありません。内包物や亀裂が多い個体では局所的に弱い部分があるため、爪や覆輪の圧力を一点へ集中させず、ガードル周辺の状態を拡大して確認してから留めます。' },
+      { title: '加工・修理時の注意', body: '黒色の原因や処理履歴が不明な石は、強い加熱、急冷、強い超音波洗浄を安易に行いません。既存の亀裂や表面到達包有物を確認し、必要に応じて石を外してから地金加工を行います。処理石では修理工程が外観へ影響する可能性も考慮します。' },
+      { title: '鑑別と説明', body: 'ブラックダイヤモンドという名称だけでは、天然色か処理色か、天然ダイヤモンドか合成ダイヤモンドかまでは確定できません。高額品や由来が重要な品では、信頼できる鑑別機関の検査結果を確認し、処理や合成の情報を適切に説明します。' },
+      { title: '日常の手入れ', body: '柔らかいブラシと中性洗剤を使った穏やかな洗浄を基本にし、欠けや亀裂がある石は超音波やスチームを避けます。ダイヤモンド同士は互いを傷付けるため、他のダイヤモンドやジュエリーとぶつからないよう個別に保管します。' },
     ],
   },
   antiqueDiamond: {
@@ -6307,7 +6342,6 @@ async function maybeResumeMorningSequence() {
   if (cancelWinterColdDuringBlackout({ save: true })) {
     completeMorningTransition({ save: true });
   }
-  if (resumeWinterColdEvent()) return;
   if (illnessEventSuppressionActive()) {
     clearMorningBrief();
     clearCustomerVisitsForIllness();
@@ -6316,6 +6350,9 @@ async function maybeResumeMorningSequence() {
     if (screen !== 'main') goMain();
     return;
   }
+  if (resumeBluesJukeEvent()) return;
+  if (resumeWinterColdEvent()) return;
+  if (dayTransitionState().phase === 'morningPending' && maybeStartBluesJukeEvent()) return;
   if (maybeStartWinterColdEvent()) return;
   if (resumeAlienReturnEvent()) return;
   if (resumeAlienAbductionEvent()) return;
@@ -6425,6 +6462,7 @@ async function beginNextDay() {
       const stillSick = illnessEventSuppressionActive();
       const returningFromSpace = alienAbductionEventState().active && alienAbductionEventState().stage === 'returnPending';
       let coldStarted = false;
+      let bluesJukeStarted = false;
       if (returningFromSpace) {
         grantAlienBodyChip();
         setScreen('alienReturnEvent', {}, false);
@@ -6434,13 +6472,16 @@ async function beginNextDay() {
         completeMorningTransition({ save: true });
         goMain();
       } else {
-        coldStarted = maybeStartWinterColdEvent();
-        if (!coldStarted) goMain();
+        bluesJukeStarted = maybeStartBluesJukeEvent();
+        if (!bluesJukeStarted) {
+          coldStarted = maybeStartWinterColdEvent();
+          if (!coldStarted) goMain();
+        }
       }
       await wait(40);
       sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
-      playSfx(returningFromSpace ? 'success' : coldStarted ? 'impact' : stillSick ? 'sleep' : 'alarm', { gain: .92 });
-      if (!returningFromSpace && !coldStarted && !stillSick) await showMorningBrief();
+      if (!bluesJukeStarted) playSfx(returningFromSpace ? 'success' : coldStarted ? 'impact' : stillSick ? 'sleep' : 'alarm', { gain: .92 });
+      if (!returningFromSpace && !coldStarted && !stillSick && !bluesJukeStarted) await showMorningBrief();
     } catch (error) {
       console.error('翌日表示復帰エラー', error);
       clearMorningBrief();
@@ -6703,6 +6744,241 @@ function simpleEventState(key, validStages, defaults = {}) {
   };
   if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
   return state.events[key];
+}
+
+const BLUES_JUKE_EVENT_SCENES = Object.freeze({
+  1: Object.freeze([
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: '眠れなくて、外を歩いてた、、、ある店に辿り着いた、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', line: 'ここは、、御徒町じゃないな、、、どこまで来たんだろう、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', line: 'おい、お前どこから入ってきた？、、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'stage1', line: '命が惜しくないのか？、、、ここにはお前が飲めるようなミルクは無いぜ、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'stage1', line: 'さっさと出ていけ、、二度と来るなよ、、、' }),
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: '店から追い出された、、、' }),
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: 'どう歩いたか、覚えていない、、、でもいつもの部屋に戻ってきていた、、疲れた、、', last: true }),
+  ]),
+  2: Object.freeze([
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: '眠れなくて、外を歩いてた、、、またあの店に辿り着いた、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', line: 'ここの音楽とにおい、好きだなあ、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', line: 'おい、また来たのか、、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'serious', line: '二度と来るなと言ったろ？、、、死にてえのか？、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'serious', line: 'さっさと出ていけ、、？、、ん？、なんだおまえ、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'serious', line: '歌いたい？、、命がいらないんだな、ハハッ、おもしれえ、、、、ステージにあがれっ！' }),
+    Object.freeze({ place: 'inside', kind: 'center', line: '自分でも、、なんでそんな事言ったのかわからないけれど、、、' }),
+    Object.freeze({ place: 'inside', kind: 'center', line: '歌った', big: true, cheer: true, pauseAfterMs: 1000 }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: 'なんだおまえ！！すげぇじゃねえか！、、、なんだあのブルースは？！、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: '四畳半？？なんだそりゃ？？？、、しかしすげえよ、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: '気に入ったっ！、、また歌いに来いよ、、、絶対だぞ！、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: 'ここではオレが誰もオマエに手ぇ出せねえようにしといてやるよ、、、じゃあな、、、' }),
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: '気持ちのいい夜のにおい、、、、' }),
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: 'どう歩いたか、覚えていない、、、でもいつもの部屋に戻ってきていた、、疲れた、、', last: true }),
+  ]),
+  3: Object.freeze([
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: '眠れなくて、外を歩いてた、、、あの店だ、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', line: 'ここの音楽とにおい、好きだなあ、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', line: 'おい、また来たのか、、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: '久しぶりじゃねえか待ってたぜ兄弟！！、、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: '今日も聴かせてくれるんだろ？！、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: 'おいっ！お前らどけ！どけっ！！、こいつをステージにあげてくれ、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: '耳かっぽじったかよ？！、、最高のブルースが聴けるぜ！！、、、' }),
+    Object.freeze({ place: 'inside', kind: 'center', line: '楽しいなあ' }),
+    Object.freeze({ place: 'inside', kind: 'center', line: '歌った', big: true, cheer: true, pauseAfterMs: 1000 }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: '今日もすげぇじゃねえか！、、、最高だぜ！、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: 'ほら、持ってってくれ、、歌代だ、、、' }),
+    Object.freeze({ place: 'inside', kind: 'reward', reward: 'blackDiamond', line: 'ブラックダイヤをもらった' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: 'また歌いに来いよ、、、絶対だぞ！、、、' }),
+    Object.freeze({ place: 'inside', kind: 'dialogue', speaker: 'ブルースマン', character: 'smile', line: 'ここはオマエをいつでも待ってるぜ！！、、、じゃあまたな、、、' }),
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: '気持ちのいい夜のにおい、、、、' }),
+    Object.freeze({ place: 'outside', kind: 'dialogue', line: 'どう歩いたか、覚えていない、、、でもいつもの部屋に戻ってきていた、、疲れた、、', last: true }),
+  ]),
+});
+
+let bluesJukeTransitioning = false;
+
+function bluesJukeEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.bluesJukeEvent && typeof state.events.bluesJukeEvent === 'object' && !Array.isArray(state.events.bluesJukeEvent)
+    ? state.events.bluesJukeEvent
+    : {};
+  const episode = Math.max(1, Math.min(3, Math.floor(Number(saved.episode) || 1)));
+  const scenes = BLUES_JUKE_EVENT_SCENES[episode];
+  const step = Math.max(0, Math.min(Math.max(0, scenes.length - 1), Math.floor(Number(saved.step) || 0)));
+  const stage = ['idle', 'playing', 'completed'].includes(saved.stage) ? saved.stage : (saved.active ? 'playing' : 'idle');
+  state.events.bluesJukeEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage,
+    episode,
+    step,
+    rewardGranted: Boolean(saved.rewardGranted),
+    knowledgeUnlocked: Boolean(saved.knowledgeUnlocked),
+  };
+  if (!state.events.bluesJukeEvent.active && state.events.bluesJukeEvent.stage === 'playing') state.events.bluesJukeEvent.stage = 'completed';
+  return state.events.bluesJukeEvent;
+}
+
+function bluesJukeScenes(eventState = bluesJukeEventState()) {
+  return BLUES_JUKE_EVENT_SCENES[Math.max(1, Math.min(3, Number(eventState.episode) || 1))] || BLUES_JUKE_EVENT_SCENES[1];
+}
+
+function bluesJukeCurrentScene(eventState = bluesJukeEventState()) {
+  const scenes = bluesJukeScenes(eventState);
+  const index = Math.max(0, Math.min(scenes.length - 1, Math.floor(Number(eventState.step) || 0)));
+  return scenes[index] || scenes[0];
+}
+
+function ensureBluesJukeSchedule(eventState = bluesJukeEventState()) {
+  if (eventState.nextTriggerDay > 0) return false;
+  if (eventState.totalTriggered <= 0 && eventState.episode === 1) {
+    eventState.nextTriggerDay = BLUES_JUKE_EVENT_FIRST_TRIGGER_MIN
+      + Math.floor(Math.random() * (BLUES_JUKE_EVENT_FIRST_TRIGGER_MAX - BLUES_JUKE_EVENT_FIRST_TRIGGER_MIN + 1));
+  } else {
+    eventState.nextTriggerDay = randomEventTriggerDay(BLUES_JUKE_EVENT_REPEAT_MIN_DAYS, BLUES_JUKE_EVENT_REPEAT_MAX_DAYS);
+  }
+  return true;
+}
+
+function scheduleNextBluesJukeEvent(eventState = bluesJukeEventState()) {
+  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  eventState.nextTriggerDay = randomEventTriggerDay(BLUES_JUKE_EVENT_REPEAT_MIN_DAYS, BLUES_JUKE_EVENT_REPEAT_MAX_DAYS, currentDay);
+  return eventState.nextTriggerDay;
+}
+
+function resumeBluesJukeEvent() {
+  const eventState = bluesJukeEventState();
+  if (!eventState.active || eventState.stage !== 'playing') return false;
+  setScreen('bluesJukeEvent', {}, false);
+  return true;
+}
+
+function maybeStartBluesJukeEvent() {
+  if (!state || illnessEventSuppressionActive() || isAlienAbducted()) return false;
+  const eventState = bluesJukeEventState();
+  const scheduleChanged = ensureBluesJukeSchedule(eventState);
+  if (eventState.active) {
+    if (scheduleChanged) saveGame();
+    return resumeBluesJukeEvent();
+  }
+  const day = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  if (day < eventState.nextTriggerDay) {
+    if (scheduleChanged) saveGame();
+    return false;
+  }
+  eventState.active = true;
+  eventState.stage = 'playing';
+  eventState.step = 0;
+  eventState.rewardGranted = false;
+  eventState.lastTriggeredDay = day;
+  eventState.totalTriggered += 1;
+  saveGame();
+  setScreen('bluesJukeEvent', {}, false);
+  playSfx('impact', { gain: .72 });
+  return true;
+}
+
+function finalizeBluesJukeEventState(eventState = bluesJukeEventState()) {
+  const episode = Math.max(1, Math.min(3, Math.floor(Number(eventState.episode) || 1)));
+  eventState.episode = episode < 3 ? episode + 1 : 3;
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.step = 0;
+  eventState.rewardGranted = false;
+  scheduleNextBluesJukeEvent(eventState);
+  return eventState;
+}
+
+function grantBluesJukeBlackDiamond(eventState = bluesJukeEventState()) {
+  if (eventState.episode !== 3 || eventState.rewardGranted) return false;
+  adjustLooseInventory(BLUES_JUKE_EVENT_GEM_ID, BLUES_JUKE_EVENT_GEM_SHAPE_ID, 1);
+  const knowledgeJustUnlocked = !eventState.knowledgeUnlocked;
+  eventState.rewardGranted = true;
+  eventState.knowledgeUnlocked = true;
+  addNotification(
+    'ブラックダイヤを手に入れました',
+    knowledgeJustUnlocked
+      ? '工房のルースへ追加され、ブラックダイヤの詳しい宝石学解説が解放されました。'
+      : '工房のルースへブラックダイヤを1石追加しました。',
+    'special',
+  );
+  saveGame();
+  playSfx('loose-sparkle', { gain: 1.08 });
+  vibrate([28, 24, 58]);
+  return true;
+}
+
+function completeBluesJukeEvent() {
+  const eventState = bluesJukeEventState();
+  if (!eventState.active) {
+    setScreen('main', {}, false);
+    queueMicrotask(() => maybeResumeMorningSequence());
+    return;
+  }
+  finalizeBluesJukeEventState(eventState);
+  saveGame();
+  setScreen('main', {}, false);
+  queueMicrotask(() => maybeResumeMorningSequence());
+}
+
+function bluesJukeStepSfx(scene, previousScene) {
+  if (scene?.cheer) {
+    playSfx(BLUES_JUKE_EVENT_CHEER_SFX, { gain: 1.35 });
+    vibrate([35, 25, 45, 25, 70]);
+    return;
+  }
+  if (scene?.kind === 'reward') return;
+  if (previousScene?.place !== scene?.place) {
+    playSfx('impact', { gain: .62, rate: .84 });
+    return;
+  }
+  if (!previousScene?.character && scene?.character) {
+    playSfx('impact', { gain: .72 });
+    return;
+  }
+  if (previousScene?.character && !scene?.character) {
+    playSfx('select', { gain: .62 });
+    return;
+  }
+  playSfx('select', { gain: .58 });
+}
+
+async function advanceBluesJukeEvent() {
+  if (bluesJukeTransitioning) return;
+  const eventState = bluesJukeEventState();
+  if (!eventState.active || eventState.stage !== 'playing') {
+    completeBluesJukeEvent();
+    return;
+  }
+  const scenes = bluesJukeScenes(eventState);
+  const previousScene = bluesJukeCurrentScene(eventState);
+  if (eventState.step >= scenes.length - 1) {
+    completeBluesJukeEvent();
+    return;
+  }
+  bluesJukeTransitioning = true;
+  try {
+    eventState.step += 1;
+    const scene = bluesJukeCurrentScene(eventState);
+    if (scene.kind === 'reward') grantBluesJukeBlackDiamond(eventState);
+    saveGame();
+    if (previousScene.pauseAfterMs) {
+      // 「歌った」をタップした直後は、次の人物を一瞬も先出しせず店内背景だけを表示する。
+      screenData = { ...screenData, bluesJukePause: true };
+      render();
+      playSfx('select', { gain: .48 });
+      await wait(previousScene.pauseAfterMs);
+      if (screen !== 'bluesJukeEvent' || !bluesJukeEventState().active) return;
+      screenData = { ...screenData, bluesJukePause: false };
+      render();
+      bluesJukeStepSfx(scene, previousScene);
+      playSfx('success', { gain: .72 });
+    } else {
+      render();
+      bluesJukeStepSfx(scene, previousScene);
+    }
+  } finally {
+    bluesJukeTransitioning = false;
+  }
 }
 
 function miningPazupanEventState() {
@@ -9620,7 +9896,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -9646,6 +9922,10 @@ function okachimachiBackgroundAssetName(portrait = isPortraitLayout()) {
 
 function backgroundAssetFor(target) {
   if (isAlienAbducted() && target !== 'alienReturnEvent') return isPortraitLayout() ? 'space-portrait' : 'space';
+  if (target === 'bluesJukeEvent') {
+    const place = bluesJukeCurrentScene()?.place === 'inside' ? 'interior' : 'exterior';
+    return `blues-juke-${place}${isPortraitLayout() ? '-portrait' : ''}`;
+  }
   if (target === 'main') return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
   if (target === 'sushiChefEvent') return 'meal-kaitenzushi-event';
   if (target === 'cyclopsEvent') return `meal-convenience${isPortraitLayout() ? '-portrait' : ''}`;
@@ -9720,6 +10000,7 @@ function audioFor(target) {
       : (okachimachiQuizSession?.stage || ''),
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
     apprenticeCinemaStage: target === 'apprenticeCinemaEvent' ? apprenticeCinemaEventState().stage : '',
+    bluesJukePlace: target === 'bluesJukeEvent' ? (bluesJukeCurrentScene()?.place || 'outside') : '',
     mealId: target === 'meal' ? screenData?.mealId || '' : '',
   });
 }
@@ -10357,6 +10638,7 @@ function render() {
       nameSetup: renderNameSetup,
       settingsTitle: () => renderSettings(true),
       main: renderMain,
+      bluesJukeEvent: renderBluesJukeEvent,
       winterColdEvent: renderWinterColdEvent,
       birthdaySleepEvent: renderBirthdaySleepEvent,
       westernUnionEvent: renderWesternUnionEvent,
@@ -11681,6 +11963,51 @@ function renderWesternUnionEvent() {
         </section>
       </section>
     </main>`;
+}
+
+function bluesJukeCharacterSrc(character) {
+  if (character === 'stage1') return `./assets/images/events/blues-juke/bluesman-stage1.png?v=${VERSION}`;
+  if (character === 'serious') return `./assets/images/events/blues-juke/bluesman-serious.png?v=${VERSION}`;
+  return `./assets/images/events/blues-juke/bluesman-smile.png?v=${VERSION}`;
+}
+
+function renderBluesJukeEvent() {
+  const eventState = bluesJukeEventState();
+  if (!eventState.active || eventState.stage !== 'playing') {
+    queueMicrotask(() => {
+      setScreen('main', {}, false);
+      queueMicrotask(() => maybeResumeMorningSequence());
+    });
+    return renderMain();
+  }
+  const scene = bluesJukeCurrentScene(eventState);
+  const paused = Boolean(screenData?.bluesJukePause);
+  const character = !paused && scene.character
+    ? `<div class="blues-juke-character-wrap" aria-hidden="true"><img class="blues-juke-character" src="${bluesJukeCharacterSrc(scene.character)}" alt="" draggable="false"></div>`
+    : '';
+  let content = '';
+  if (!paused && scene.kind === 'dialogue') {
+    content = `<button type="button" class="blues-juke-dialogue" data-action="blues-juke-event-next">
+      ${scene.speaker ? `<span class="blues-juke-speaker">${esc(scene.speaker)}</span>` : ''}
+      <strong class="blues-juke-line">${esc(scene.line)}</strong>
+      <span class="blues-juke-hint">${scene.last ? 'タップすると翌朝になる' : 'タップして進む'}</span>
+    </button>`;
+  } else if (!paused && scene.kind === 'center') {
+    content = `<button type="button" class="blues-juke-center${scene.big ? ' blues-juke-center-big' : ''}" data-action="blues-juke-event-next">
+      <strong>${esc(scene.line)}</strong><span>タップして進む</span>
+    </button>`;
+  } else if (!paused && scene.kind === 'reward') {
+    content = `<button type="button" class="blues-juke-reward" data-action="blues-juke-event-next">
+      <strong>ブラックダイヤをもらった</strong>
+      <img src="./assets/images/loose/blackDiamond/round.png?v=${VERSION}" alt="ブラックダイヤ" draggable="false">
+      <span>タップして進む</span>
+    </button>`;
+  }
+  return `<main class="main-screen blues-juke-event-screen">
+    <section class="blues-juke-event blues-juke-episode-${eventState.episode} blues-juke-place-${esc(scene.place)}" aria-live="polite">
+      ${character}${content}
+    </section>
+  </main>`;
 }
 
 function renderMiningPazupanEvent() {
@@ -15363,8 +15690,14 @@ function renderMaterialInventory(kind) {
 
   if (kind === 'loose') {
     const items = looseVariantRows({ ownedOnly: true });
+    const blackDiamondKnowledgeUnlocked = Boolean(state?.events?.bluesJukeEvent?.knowledgeUnlocked);
+    if (blackDiamondKnowledgeUnlocked && !items.some((entry) => entry.gem.id === BLUES_JUKE_EVENT_GEM_ID)) {
+      const shapeId = BLUES_JUKE_EVENT_GEM_SHAPE_ID;
+      const metrics = looseInventoryMetrics(BLUES_JUKE_EVENT_GEM_ID, shapeId);
+      items.push({ gem: GEMS[BLUES_JUKE_EVENT_GEM_ID], shapeId, shape: LOOSE_SHAPES[shapeId], ...metrics });
+    }
     if (!items.length) return '<div class="empty-state"><strong>ルースはありません。</strong><p>原石を研磨するか、ルース屋で購入すると、石種とカットごとに表示されます。</p></div>';
-    return `<div class="inventory-single-list loose-inventory-list">${items.map(({ gem, shapeId, shape, owned, reserved, available }) => `<button type="button" class="material-row loose-inventory-row" data-action="open-loose-detail" data-id="${esc(gem.id)}" data-shape="${esc(shapeId)}"><span class="material-name">${looseVisual(gem.id, 'loose-mini', '', shapeId)}<span>${esc(workshopLooseDisplayName(gem, shape))}</span></span><span class="loose-row-counts"><strong>${owned}個</strong><small>注文予定 ${reserved}・使用可能 ${available}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>`;
+    return `<div class="inventory-single-list loose-inventory-list">${items.map(({ gem, shapeId, shape, owned, reserved, available }) => `<button type="button" class="material-row loose-inventory-row" data-action="open-loose-detail" data-id="${esc(gem.id)}" data-shape="${esc(shapeId)}"><span class="material-name">${looseVisual(gem.id, 'loose-mini', '', shapeId)}<span>${esc(workshopLooseDisplayName(gem, shape))}</span></span><span class="loose-row-counts"><strong>${owned}個</strong><small>${gem.id === BLUES_JUKE_EVENT_GEM_ID && owned === 0 && blackDiamondKnowledgeUnlocked ? '宝石学解説 解放済み' : `注文予定 ${reserved}・使用可能 ${available}`}</small></span><i aria-hidden="true">›</i></button>`).join('')}</div>`;
   }
 
   const items = METAL_WORKSHOP_ORDER.map((id) => METALS[id]).filter(Boolean);
@@ -20964,7 +21297,7 @@ root.addEventListener('click', async (event) => {
     }
     return;
   }
-  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'glab-visit-video-start', 'kawahara-knowledge-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
+  if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'blues-juke-event-next', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'glab-visit-video-start', 'kawahara-knowledge-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
   switch (action) {
     case 'google-login': {
@@ -21202,6 +21535,9 @@ root.addEventListener('click', async (event) => {
       break;
     case 'event-emergency-recover':
       recoverCurrentEventDeadlock({ save: true, notify: true });
+      break;
+    case 'blues-juke-event-next':
+      await advanceBluesJukeEvent();
       break;
     case 'winter-cold-event-next':
       advanceWinterColdEvent();

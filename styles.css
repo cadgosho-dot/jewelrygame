@@ -21001,7 +21001,8 @@ body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(
   .winter-cold-event-message,
   .birthday-sleep-event-message
 ){
-  position:relative!important;
+  /* v0.10.709: 共通ルールでは position を変更しない。
+     各イベント固有の absolute / fixed / relative 配置を必ず優先する。 */
   z-index:18!important;
 }
 body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(
@@ -21415,4 +21416,28 @@ body[data-screen="bluesJukeEvent"] #background-layer{
   background-size:cover!important;
   background-position:center center!important;
   background-repeat:no-repeat!important;
+}
+
+
+/* v0.10.709 EVENT POSITION SAFETY LOCK
+   v0.10.705 の共通 event-dialogue-card 規則が個別イベントの
+   absolute 配置を上書きしていた問題を根本修正。
+   以下は既存承認済みの特殊配置をファイル末尾でも明示し、
+   縦横・端末差で上部へ飛ぶ回帰を防止する。 */
+body[data-screen="wristFoundEvent"] .wrist-found-dialogue{
+  position:absolute!important;
+}
+body[data-screen="touristWoodSwordEvent"] .tourist-event.is-reward .visit-event-dialogue{
+  position:absolute!important;
+}
+body[data-screen="kawaharaKnowledgeEvent"] .kawahara-knowledge-dialogue.is-reward-center{
+  position:absolute!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="apprenticeCinemaEvent"] .cinema-apprentice-dialogue{
+  position:absolute!important;
+}
+@media (orientation:portrait){
+  body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-dialogue.is-showcase{
+    position:absolute!important;
+  }
 }

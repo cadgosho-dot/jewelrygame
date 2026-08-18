@@ -21825,7 +21825,7 @@ body[data-screen="tropicalFishShop"] .tropical-fish-shop-content{
 }
 
 
-/* v0.10.717 完成画面: 携帯確認用HTMLで承認された安全領域へ統一。
+/* v0.10.718 完成画面: 携帯確認用HTMLで承認された安全領域へ統一。
    完成品の上端が2段ヘッダーへ潜り込む／プレビュー上端で切れる症状を防ぐ。 */
 @media (orientation:portrait) and (max-width:820px){
   body[data-screen="completion"][data-header-mode="two-bar"] .screen-shell:not(.event-shell-no-header)>.screen-content{
@@ -21841,7 +21841,7 @@ body[data-screen="tropicalFishShop"] .tropical-fish-shop-content{
     height:334px!important;
     min-height:334px!important;
     margin-top:0!important;
-    padding:104px 0 18px!important;
+    padding:124px 0 18px!important;
     overflow:visible!important;
   }
   body[data-screen="completion"] .completion-jewelry-artwork{

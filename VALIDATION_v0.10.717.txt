@@ -1,0 +1,31 @@
+JEWELRY×JEWELRY v0.10.717 VALIDATION
+2026-08-18
+
+[PASS] JavaScript syntax
+- js/app.js: node --check PASS
+- js/game-data.js: node --check PASS
+- sw.js: node --check PASS
+
+[PASS] Version alignment
+- UI_BUILD_VERSION = 0.10.717
+- GAME DATA VERSION = 0.10.717
+- Service Worker VERSION = 0.10.717
+- game.html cache-busting = 0.10.717
+- index.html cache-busting = 0.10.717
+- auth.html cache-busting = 0.10.717
+
+[PASS] Save compatibility
+- SAVE_SCHEMA_VERSION = 1 (unchanged)
+- No state schema changes
+- No completion price/quality/XP/order logic changes
+
+[PASS] Completion fix presence
+- Portrait completion screen reserves two-bar header + 18px safety gap
+- Portrait completion preview: height 334px / top padding 104px
+- Portrait artwork sizes: ring 168x168 / pendant 132x182 / earrings 178x161
+- Landscape completion preview: height 280px / top padding 48px
+- styles.css and game.html inline fallback both contain the same completion safety rule
+
+[NOTE]
+- Layout values are the values approved in the standalone mobile confirmation HTML.
+- This package does not change unrelated event specifications or save schema.

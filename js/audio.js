@@ -1,4 +1,4 @@
-import { AUDIO_SCENE_DEFINITIONS, AUDIO_SCENE_KEYS, audioSceneDefinition, audioSceneUsesWeather } from './audio-scene-map.js?v=0.10.710';
+import { AUDIO_SCENE_DEFINITIONS, AUDIO_SCENE_KEYS, audioSceneDefinition, audioSceneUsesWeather } from './audio-scene-map.js?v=0.10.716';
 
 const AUDIO_DIR = './assets/audio';
 
@@ -29,7 +29,7 @@ let settingsProvider = () => ({ bgmVolume: .35, ambientVolume: .60, sfxVolume: .
 let weatherEnvironment = { active: false, weather: '晴れ', minutes: 9 * 60, key: 'clear', audioKey: 'main' };
 
 const validKeys = new Set(AUDIO_SCENE_KEYS);
-const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'ganesha-appear', 'ganesha-gift', 'kappa-appear', 'jade-gift', 'haunting-appear', 'haunting-whisper', 'old-lady-appear', 'shoplift-steal', 'police-siren', 'quiz-correct', 'quiz-incorrect', 'blues-juke-cheer']);
+const validSfx = new Set(['select', 'impact', 'success', 'error', 'explosion', 'dig', 'earth-dig', 'mining-win', 'mining-miss', 'sale', 'coin', 'eat', 'levelup', 'alarm', 'sleep', 'jewelry-complete', 'loose-sparkle', 'barcode-beeps', 'bomb-jii-appear', 'mermaid-splash', 'quiz-intro', 'quiz-question', 'western-union-arrival', 'western-union-handover', 'ganesha-appear', 'ganesha-gift', 'kappa-appear', 'jade-gift', 'haunting-appear', 'haunting-whisper', 'old-lady-appear', 'shoplift-steal', 'police-siren', 'quiz-correct', 'quiz-incorrect', 'blues-juke-cheer', 'pyuu']);
 
 function wristFoundDroneTargetVolume(settings = settingsProvider()) {
   if (!wristFoundDroneRequested || suspended || settings.externalAudioPriority || settings.bgmMuted) return 0;
@@ -585,6 +585,7 @@ export function playSfx(name, options = {}) {
     'kappa-appear': `${AUDIO_DIR}/sfx-kappa-appear.wav`,
     'jade-gift': `${AUDIO_DIR}/sfx-jade-gift.wav`,
     'blues-juke-cheer': `${AUDIO_DIR}/sfx-blues-juke-cheer.wav`,
+    'pyuu': `${AUDIO_DIR}/sfx-pyuu.wav`,
   };
   const audio = createAudio(customUrls[name] || `${AUDIO_DIR}/sfx-${name}.ogg`);
   audio.volume = Math.max(0, Math.min(1, Number(settings.sfxVolume) * (options.gain || 1)));
@@ -599,6 +600,13 @@ export async function startPoliceSiren() {
   policeSiren.volume = Math.max(0, Math.min(1, Number(settings.sfxVolume) * .92));
   if (suspended || settings.externalAudioPriority || settings.sfxMuted) return;
   try { await policeSiren.play(); } catch (_) {}
+}
+
+
+export function setPoliceSirenGain(scale = 1) {
+  if (!policeSiren) return;
+  const settings = settingsProvider();
+  policeSiren.volume = Math.max(0, Math.min(1, Number(settings.sfxVolume) * .92 * Math.max(0, Number(scale) || 0)));
 }
 
 export function stopPoliceSiren() {

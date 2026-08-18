@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "featureId": "aquarium_minigame",
   "tankLimit": 1,
   "capacity": {
@@ -100,7 +100,7 @@
     {
       "id": "anacharis",
       "name": "アナカリス",
-      "speciesMax": 6,
+      "speciesMax": 15,
       "initialOwned": 0,
       "initialInTank": 0,
       "naturalPropagation": false
@@ -108,7 +108,7 @@
     {
       "id": "amazon_sword",
       "name": "アマゾンソード",
-      "speciesMax": 3,
+      "speciesMax": 15,
       "initialOwned": 0,
       "initialInTank": 0,
       "naturalPropagation": false
@@ -116,7 +116,7 @@
     {
       "id": "microsorum",
       "name": "ミクロソリウム",
-      "speciesMax": 4,
+      "speciesMax": 15,
       "initialOwned": 0,
       "initialInTank": 0,
       "naturalPropagation": false
@@ -124,7 +124,7 @@
     {
       "id": "anubias_nana",
       "name": "アヌビアス・ナナ",
-      "speciesMax": 5,
+      "speciesMax": 15,
       "initialOwned": 0,
       "initialInTank": 0,
       "naturalPropagation": false
@@ -132,7 +132,47 @@
     {
       "id": "willow_moss",
       "name": "ウィローモス",
-      "speciesMax": 4,
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "vallisneria",
+      "name": "バリスネリア",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "cabomba",
+      "name": "カボンバ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "hygrophila",
+      "name": "ハイグロフィラ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "amazon_pennywort",
+      "name": "アマゾンチドメグサ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "cryptocoryne",
+      "name": "クリプトコリネ",
+      "speciesMax": 15,
       "initialOwned": 0,
       "initialInTank": 0,
       "naturalPropagation": false
@@ -151,7 +191,7 @@
     },
     {
       "id": "hang_on_filter",
-      "name": "フィルター（壁掛け）",
+      "name": "フィルター",
       "ownedMax": 1,
       "installedMax": 1,
       "required": true,
@@ -181,7 +221,7 @@
     },
     {
       "id": "soil",
-      "name": "底床（ソイル）",
+      "name": "床砂",
       "ownedMax": 1,
       "installedMax": 1,
       "required": true,
@@ -190,24 +230,169 @@
       "installationSelectable": false
     },
     {
-      "id": "driftwood",
-      "name": "流木",
+      "id": "wood_large_a",
+      "name": "流木 大 A",
       "ownedMax": 3,
       "installedMax": 3,
       "required": false,
       "initialOwned": 0,
       "initialInstalled": 0,
-      "installationSelectable": true
+      "installationSelectable": true,
+      "family": "driftwood"
     },
     {
-      "id": "layout_stone",
-      "name": "レイアウトストーン",
+      "id": "wood_large_b",
+      "name": "流木 大 B",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_medium_a",
+      "name": "流木 中 A",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_medium_b",
+      "name": "流木 中 B",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_small_a",
+      "name": "流木 小 A",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_small_b",
+      "name": "流木 小 B",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "stone_a_large",
+      "name": "Stone type A 大",
       "ownedMax": 5,
       "installedMax": 5,
       "required": false,
       "initialOwned": 0,
       "initialInstalled": 0,
-      "installationSelectable": true
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_a_medium",
+      "name": "Stone type A 中",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_a_small",
+      "name": "Stone type A 小",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_b_large",
+      "name": "Stone type B 大",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_b_medium",
+      "name": "Stone type B 中",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_b_small",
+      "name": "Stone type B 小",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_c_large",
+      "name": "Stone type C 大",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_c_medium",
+      "name": "Stone type C 中",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_c_small",
+      "name": "Stone type C 小",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
     }
   ],
   "rules": {

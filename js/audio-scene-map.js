@@ -93,6 +93,11 @@ export const AUDIO_SCENE_DEFINITIONS = Object.freeze({
     bgmScale: 0.98, ambientScale: 1,
     supplemental: [{ type: 'weather', name: 'weather', scale: 0.58 }],
   }),
+  tropicalFishShop: frozenScene({
+    bgm: `${AUDIO_DIR}/bgm-tropical-fish-shop.wav`,
+    ambient: { type: 'file', url: `${AUDIO_DIR}/amb-tropical-fish-shop.wav` },
+    bgmScale: 0.72, ambientScale: 0.42,
+  }),
   cinemaDialogue: frozenScene({
     bgm: `${AUDIO_DIR}/bgm-okachimachi.ogg`,
     bgmScale: 0.98,
@@ -264,6 +269,10 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   storeTheftEvent: 'store',
 
   okachimachi: 'okachimachi',
+  tropicalFishShop: 'tropicalFishShop',
+  oyatsuDaisukiEvent: 'okachimachi',
+  speedStarEvent: 'okachimachi',
+  storytellerEvent: 'okachimachi',
   clockTowerDonationEvent: 'okachimachi',
   apprenticeCinemaEvent: 'okachimachi',
   okachimachiTollEvent: 'okachimachi',

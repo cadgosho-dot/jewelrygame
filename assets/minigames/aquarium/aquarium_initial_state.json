@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "featureId": "aquarium_minigame",
   "tankId": "tank_01",
   "fishLoad": {
@@ -83,6 +83,26 @@
     "willow_moss": {
       "owned": 0,
       "inTank": 0
+    },
+    "vallisneria": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "cabomba": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "hygrophila": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "amazon_pennywort": {
+      "owned": 0,
+      "inTank": 0
+    },
+    "cryptocoryne": {
+      "owned": 0,
+      "inTank": 0
     }
   },
   "displayItems": {
@@ -106,13 +126,70 @@
       "owned": 1,
       "installed": 1
     },
-    "driftwood": {
+    "wood_large_a": {
       "owned": 0,
       "installed": 0
     },
-    "layout_stone": {
+    "wood_large_b": {
+      "owned": 0,
+      "installed": 0
+    },
+    "wood_medium_a": {
+      "owned": 0,
+      "installed": 0
+    },
+    "wood_medium_b": {
+      "owned": 0,
+      "installed": 0
+    },
+    "wood_small_a": {
+      "owned": 0,
+      "installed": 0
+    },
+    "wood_small_b": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_a_large": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_a_medium": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_a_small": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_b_large": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_b_medium": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_b_small": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_c_large": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_c_medium": {
+      "owned": 0,
+      "installed": 0
+    },
+    "stone_c_small": {
       "owned": 0,
       "installed": 0
     }
-  }
+  },
+  "unlocked": false,
+  "unlockedDay": 0,
+  "unlockSource": "",
+  "dataVersion": 3,
+  "lastSyncRevision": 0
 }

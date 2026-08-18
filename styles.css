@@ -21464,3 +21464,362 @@ html[data-device-class="phone"] body[data-screen="bluesJukeEvent"] .blues-juke-d
   transform:none!important;
 }
 
+
+/* v0.10.716 — 御徒町ランダムイベント / 熱帯魚屋 */
+.jxj-new-event-screen{
+  position:relative;
+  width:100%;
+  height:var(--jwj-layout-height,100dvh);
+  min-height:var(--jwj-layout-height,100dvh);
+  overflow:hidden;
+  background:transparent;
+}
+body[data-screen="oyatsuDaisukiEvent"] .visit-character-event,
+body[data-screen="speedStarEvent"] .visit-character-event,
+body[data-screen="storytellerEvent"] .visit-character-event{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+}
+body[data-screen="oyatsuDaisukiEvent"] .jxj-new-event-character-area,
+body[data-screen="speedStarEvent"] .jxj-new-event-character-area,
+body[data-screen="storytellerEvent"] .jxj-new-event-character-area{
+  top:0;
+  bottom:clamp(116px,23vh,192px);
+  padding-top:2px;
+}
+.jxj-new-event-character{
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:min(92vw,900px);
+  max-height:100%;
+  object-fit:contain;
+  object-position:center top;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.58));
+}
+body[data-screen="storytellerEvent"] .storyteller-character{
+  max-width:min(92vw,760px);
+}
+/* 枠線は残し、セリフ枠の中だけ完全透明にする。 */
+body[data-screen="oyatsuDaisukiEvent"] .jxj-transparent-dialogue,
+body[data-screen="speedStarEvent"] .jxj-transparent-dialogue,
+body[data-screen="storytellerEvent"] .jxj-transparent-dialogue{
+  position:absolute!important;
+  left:var(--jwj-edge-gap,6px)!important;
+  right:var(--jwj-edge-gap,6px)!important;
+  bottom:calc(var(--safe-bottom,0px) + var(--jwj-edge-gap,6px))!important;
+  width:auto!important;
+  margin:0!important;
+  transform:none!important;
+  border:1px solid rgba(255,255,255,.58)!important;
+  border-radius:14px!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  color:#fff!important;
+  text-shadow:0 2px 5px #000,0 0 10px rgba(0,0,0,.94);
+  z-index:20;
+}
+.event-center-choices{
+  position:absolute;
+  z-index:24;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  display:flex;
+  gap:12px;
+  width:min(86vw,620px);
+  justify-content:center;
+}
+.event-center-choices button{
+  min-width:min(38vw,230px);
+  padding:14px 18px;
+  border:1px solid rgba(255,255,255,.62);
+  border-radius:14px;
+  background:rgba(0,0,0,.42);
+  color:#fff;
+  font-weight:900;
+  font-size:clamp(17px,4.4vw,25px);
+  text-shadow:0 2px 5px #000;
+}
+.jxj-event-blackout{
+  position:fixed;
+  inset:0;
+  z-index:80;
+  background:#000;
+}
+
+/* おやつ大好き：熱帯魚屋へ入る前の動画。共通 MOVIEスキップ位置を使用。 */
+.oyatsu-video-screen,.oyatsu-video-stage{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:var(--jwj-layout-height,100dvh);
+  background:#000;
+  overflow:hidden;
+}
+.oyatsu-video-stage video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000;
+}
+.oyatsu-video-start{
+  position:absolute;
+  z-index:12;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  padding:12px 18px;
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:12px;
+  background:rgba(0,0,0,.64);
+  color:#fff;
+  font-weight:900;
+  display:none;
+}
+.oyatsu-video-stage.needs-start .oyatsu-video-start,
+.oyatsu-video-stage.has-error .oyatsu-video-start{display:block}
+
+/* スピード・スター */
+.speed-star-don,
+.speed-star-wallet{
+  position:absolute;
+  z-index:26;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border:0;
+  background:transparent;
+  color:#fff;
+  text-align:center;
+  text-shadow:0 4px 14px #000;
+}
+.speed-star-don{
+  font-size:clamp(48px,15vw,104px);
+  font-weight:1000;
+  letter-spacing:.02em;
+  line-height:1;
+  white-space:nowrap;
+  padding:0;
+}
+.speed-star-don>span{
+  position:absolute;
+  left:50%;
+  top:calc(100% + 14px);
+  transform:translateX(-50%);
+  white-space:nowrap;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+}
+.speed-star-wallet{
+  width:min(90vw,720px);
+  border:1px solid rgba(255,255,255,.54);
+  border-radius:14px;
+  padding:18px 16px 14px;
+}
+.speed-star-wallet strong{display:block;font-size:clamp(22px,5.8vw,38px);line-height:1.4}
+.speed-star-wallet small{display:block;margin-top:8px;font-size:12px;font-weight:800}
+.speed-star-loss{display:block;margin-top:10px;color:#ff3b3b;font-size:clamp(18px,4.5vw,28px);font-weight:1000;text-shadow:0 2px 6px rgba(0,0,0,.95)}
+.speed-star-running{
+  animation:speed-star-run-away 1.05s cubic-bezier(.25,.6,.55,1) forwards;
+}
+@keyframes speed-star-run-away{
+  0%{transform:translateX(-50%)}
+  18%{transform:translateX(-36%) rotate(1deg)}
+  100%{transform:translateX(120vw) rotate(5deg)}
+}
+
+/* ストーリーテラー */
+.storyteller-ittomo{
+  position:absolute;
+  z-index:26;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border:0;
+  background:transparent;
+  color:#fff;
+  font-size:clamp(44px,14vw,90px);
+  font-weight:1000;
+  line-height:1;
+  white-space:nowrap;
+  text-shadow:0 4px 16px #000;
+  padding:0;
+}
+.storyteller-ittomo>span{
+  position:absolute;
+  left:50%;
+  top:calc(100% + 14px);
+  transform:translateX(-50%);
+  font-size:12px;
+  white-space:nowrap;
+}
+body[data-screen="storytellerEvent"] .storyteller-quiz-event{
+  width:100%;
+  height:100%;
+}
+body[data-screen="storytellerEvent"] .storyteller-quiz-character{
+  object-fit:contain;
+}
+/* 報酬画面は背景を暗く覆わず、ステッカーと文字だけを見せる。 */
+.storyteller-reward-screen,
+.storyteller-reward-screen .visit-character-event{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.storyteller-reward{
+  position:absolute;
+  z-index:26;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(88vw,520px);
+  max-height:calc(var(--jwj-layout-height,100dvh) - 96px);
+  overflow:visible;
+  padding:10px 12px 8px;
+  border:0;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  color:#fff;
+  text-align:center;
+  text-shadow:0 3px 12px #000;
+}
+.storyteller-reward img{
+  display:block;
+  width:min(42vw,190px);
+  max-width:190px;
+  max-height:min(25dvh,190px);
+  height:auto;
+  object-fit:contain;
+  margin:0 auto 12px;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.48));
+  animation:storyteller-reward-float 1.6s ease-in-out infinite;
+}
+.storyteller-reward strong{display:block;font-size:clamp(21px,5vw,34px);line-height:1.25}
+.storyteller-reward>span{display:block;margin-top:8px;font-size:clamp(16px,3.8vw,23px);font-weight:900}
+.storyteller-reward>small{display:block;margin-top:9px;font-size:12px;font-weight:800}
+@keyframes storyteller-reward-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* 熱帯魚屋 */
+.tropical-fish-shop-screen{
+  position:fixed;
+  inset:0;
+  height:var(--jwj-layout-height,100dvh);
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding:calc(var(--safe-top,0px) + 6px) calc(var(--safe-right,0px) + 8px) calc(var(--safe-bottom,0px) + 16px) calc(var(--safe-left,0px) + 8px);
+  background:transparent;
+  color:#fff;
+  text-shadow:0 2px 5px rgba(0,0,0,.9);
+}
+.tropical-shop-header{
+  position:sticky;
+  top:0;
+  z-index:14;
+  min-height:60px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:8px;
+  padding:7px 8px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:14px;
+  background:rgba(0,0,0,.34);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+.tropical-shop-header>div{text-align:center;min-width:0}
+.tropical-shop-header small{display:block;font-size:11px;font-weight:800;opacity:.88}
+.tropical-shop-header h1{margin:0;font-size:clamp(18px,4.6vw,24px);line-height:1.2}
+.tropical-shop-header button{
+  min-height:38px;padding:7px 10px;border:1px solid rgba(255,255,255,.35);border-radius:10px;background:rgba(0,0,0,.38);color:#fff;font-size:12px;font-weight:900
+}
+.tropical-shop-status{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 12px;
+  margin:7px 0;padding:7px 10px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.14);font-size:12px;font-weight:800
+}
+.tropical-shop-status b{font-size:17px}
+.tropical-shop-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.tropical-shop-tabs button{padding:9px 8px;border:1px solid rgba(255,255,255,.34);border-radius:10px;background:rgba(0,0,0,.32);color:#fff;font-weight:900}
+.tropical-shop-tabs button.active{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.72)}
+.tropical-product-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-bottom:10px}
+.tropical-product-card{
+  min-width:0;padding:8px;border:1px solid rgba(255,255,255,.24);border-radius:14px;background:rgba(0,0,0,.27);display:grid;grid-template-columns:80px minmax(0,1fr);gap:8px;align-items:center
+}
+.tropical-product-card>img{width:80px;height:74px;object-fit:contain;border-radius:9px;background:rgba(0,0,0,.12)}
+.tropical-product-card>div{min-width:0;display:grid;gap:3px}
+.tropical-product-card strong{font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+.tropical-product-card b{font-size:14px}
+.tropical-product-card small{font-size:10px;line-height:1.3;opacity:.9}
+.tropical-product-card>button{grid-column:1/-1;min-height:38px;border:1px solid rgba(255,255,255,.34);border-radius:9px;background:rgba(0,0,0,.45);color:#fff;font-size:11px;font-weight:900}
+.tropical-product-card.limit{opacity:.62}.tropical-product-card button:disabled{opacity:.62}
+.tropical-modal-backdrop{
+  position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.56);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:grid;place-items:center;padding:18px
+}
+.tropical-modal{
+  position:relative;width:min(92vw,430px);max-height:calc(var(--jwj-layout-height,100dvh) - 32px);overflow:auto;padding:16px;border:1px solid rgba(255,255,255,.35);border-radius:18px;background:transparent;box-shadow:0 20px 50px rgba(0,0,0,.50);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);color:#fff;text-align:center
+}
+.tropical-modal-close{position:absolute;right:8px;top:8px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:20px;z-index:2}
+.tropical-modal-imgbox{height:min(31dvh,210px);display:grid;place-items:center;margin-bottom:8px;border-radius:12px;background:rgba(0,0,0,.12)}
+.tropical-modal-imgbox img{max-width:94%;max-height:94%;object-fit:contain}
+.tropical-modal h2{margin:4px 0 7px;font-size:clamp(20px,5vw,28px)}
+.tropical-modal-total{display:block;margin:3px 0 10px;font-size:clamp(16px,4.2vw,21px)}
+.tropical-qty-control{display:grid;grid-template-columns:62px 1fr 62px;align-items:center;gap:8px;margin:10px auto;width:min(92%,300px)}
+.tropical-qty-control button{height:48px;border:1px solid rgba(255,255,255,.44);border-radius:12px;background:rgba(0,0,0,.44);color:#fff;font-size:24px;font-weight:1000;touch-action:none}
+.tropical-qty-control output{font-size:28px;font-weight:1000}
+.tropical-modal>small{display:block;margin-bottom:10px;font-weight:800}
+
+@media (orientation:portrait){
+  body[data-screen="oyatsuDaisukiEvent"] .jxj-new-event-character-area,
+  body[data-screen="speedStarEvent"] .jxj-new-event-character-area,
+  body[data-screen="storytellerEvent"] .jxj-new-event-character-area{bottom:clamp(124px,25vh,188px);align-items:center}
+  .jxj-new-event-character{max-width:96vw;max-height:100%}
+  body[data-screen="storytellerEvent"] .storyteller-character{max-width:94vw}
+  .storyteller-reward img{width:min(46vw,190px);max-height:min(24dvh,190px)}
+}
+@media (orientation:landscape){
+  .tropical-fish-shop-screen{padding-top:calc(var(--safe-top,0px) + 3px)}
+  .tropical-shop-header{min-height:54px}
+  .tropical-product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tropical-product-card{grid-template-columns:72px minmax(0,1fr)}
+  .tropical-product-card>img{width:72px;height:64px}
+  .storyteller-reward img{width:min(19vw,160px);max-width:160px;max-height:min(27dvh,160px)}
+  .storyteller-reward strong{font-size:clamp(18px,2.8vw,30px)}
+  .storyteller-reward>span{font-size:clamp(14px,2.2vw,20px)}
+}
+@media (orientation:landscape) and (max-height:560px){
+  body[data-screen="oyatsuDaisukiEvent"] .jxj-new-event-character-area,
+  body[data-screen="speedStarEvent"] .jxj-new-event-character-area,
+  body[data-screen="storytellerEvent"] .jxj-new-event-character-area{bottom:104px;padding-top:0;align-items:flex-start}
+  .jxj-new-event-character{max-width:64vw;max-height:78vh}
+  body[data-screen="storytellerEvent"] .storyteller-character{max-width:48vw;max-height:80vh}
+  .speed-star-don{font-size:clamp(42px,8vw,76px)}
+  .event-center-choices button{font-size:16px;padding:10px 14px}
+  .storyteller-reward{max-height:calc(100dvh - 48px)}
+  .storyteller-reward img{width:min(18vw,145px);max-width:145px;max-height:min(27dvh,145px);margin-bottom:7px}
+  .tropical-product-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .tropical-shop-status{margin:4px 0;padding:4px 8px}
+  .tropical-shop-tabs{margin-bottom:5px}
+}
+
+/* v0.10.716 熱帯魚屋：承認済みの共通2段ヘッダーを使用 */
+body[data-screen="tropicalFishShop"] .screen-shell,
+body[data-screen="tropicalFishShop"] .screen-content,
+body[data-screen="tropicalFishShop"] .tropical-fish-shop-content{
+  background:transparent!important;
+}
+.tropical-fish-shop-content{
+  color:#fff;
+  text-shadow:0 2px 5px rgba(0,0,0,.9);
+  padding-left:max(8px,var(--safe-left,0px))!important;
+  padding-right:max(8px,var(--safe-right,0px))!important;
+  padding-bottom:calc(var(--safe-bottom,0px) + 16px)!important;
+}

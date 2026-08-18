@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.710';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.710';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.710';
+const UI_BUILD_VERSION = '0.10.716';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.716';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.716';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.710';
+} from './firebase-service.js?v=0.10.716';
 
 
 
@@ -152,6 +152,14 @@ let iceMealBgmAudio = null;
 let iceMealAmbientAudio = null;
 let whiteBunnyEventBgmAudio = null;
 let mealEatingCompletionController = null;
+let storytellerQuizQuestions = null;
+let storytellerQuizLoadPromise = null;
+let oyatsuMovieBound = false;
+let oyatsuFadeTimer = null;
+let speedStarRunTimer = null;
+let tropicalShopQuantityHoldTimer = null;
+let tropicalShopQuantityHoldInterval = null;
+let tropicalShopQuantityHoldTriggered = false;
 let childhoodFriendMealWatchdogTimer = null;
 let hungerFeedback = null;
 let hungerFeedbackTimer = null;
@@ -340,6 +348,25 @@ const RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR = 30;
 const RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID = 'soba';
 const RIDLEY_OKAZAKI_SOBA_EVENT_PRICE_MULTIPLIER = 2;
 const WRIST_FOUND_EVENT_CHANCE = 1 / 200;
+const OYATSU_DAISUKI_EVENT_CHANCE = 1 / 30;
+const OYATSU_DAISUKI_EVENT_LATEST_MINUTES = 18 * 60;
+const OYATSU_TROPICAL_SHOP_INTRO_VIDEO = './assets/videos/events/oyatsu-tropical-shop-intro.mp4';
+const SPEED_STAR_EVENT_CHANCE = 1 / 100;
+const STORYTELLER_EVENT_CHANCE = 1 / 30;
+const STORYTELLER_EVENT_EARLIEST_MINUTES = 18 * 60;
+const STORYTELLER_QUIZ_URL = './assets/data/storyteller-okachimachi-quiz.json';
+const TROPICAL_FISH_SHOP_PRODUCTS = Object.freeze({
+  fish: Object.freeze([
+    ['neon_tetra','ネオンテトラ',1000,'fish-neon-tetra.webp'],['rummy_nose_tetra','ラミーノーズテトラ',2000,'fish-rummy-nose-tetra.webp'],['red_phantom_tetra','レッドファントムテトラ',4000,'fish-red-phantom-tetra.webp'],['african_lampeye','アフリカンランプアイ',1000,'fish-african-lampeye.png'],['platy','プラティ',2000,'fish-platy.webp'],['black_molly','ブラックモーリー',2000,'fish-black-molly.png'],['corydoras','コリドラス',3000,'fish-corydoras.webp'],['dwarf_gourami','ドワーフグラミー',6000,'fish-dwarf-gourami.png'],['altum_angelfish','アルタムエンゼルフィッシュ',25000,'fish-altum-angelfish.png'],['discus_blue_diamond','ディスカス・ブルーダイヤモンド',50000,'fish-discus-blue-diamond.webp'],['discus_red_map','ディスカス・レッドマップ',80000,'fish-discus-red-map.webp'],
+  ]),
+  plant: Object.freeze([
+    ['anacharis','アナカリス',6000,'plant-anacharis.webp'],['amazon_sword','アマゾンソード',8000,'plant-amazon-sword.webp'],['microsorum','ミクロソリウム',10000,'plant-microsorum.webp'],['anubias_nana','アヌビアス・ナナ',10000,'plant-anubias-nana.webp'],['willow_moss','ウィローモス',10000,'plant-willow-moss.webp'],['vallisneria','バリスネリア',8000,'plant-vallisneria.png'],['cabomba','カボンバ',6000,'plant-cabomba.png'],['hygrophila','ハイグロフィラ',8000,'plant-hygrophila.png'],['amazon_pennywort','アマゾンチドメグサ',10000,'plant-amazon-pennywort.png'],['cryptocoryne','クリプトコリネ',12000,'plant-cryptocoryne.png'],
+  ]),
+  display: Object.freeze([
+    ['wood_large_a','流木 大 A',30000,'wood_large_a.png','driftwood'],['wood_large_b','流木 大 B',30000,'wood_large_b.png','driftwood'],['wood_medium_a','流木 中 A',30000,'wood_medium_a.png','driftwood'],['wood_medium_b','流木 中 B',30000,'wood_medium_b.png','driftwood'],['wood_small_a','流木 小 A',30000,'wood_small_a.png','driftwood'],['wood_small_b','流木 小 B',30000,'wood_small_b.png','driftwood'],
+    ['stone_a_large','Stone type A 大',30000,'stone_a.png','stone'],['stone_a_medium','Stone type A 中',30000,'stone_a.png','stone'],['stone_a_small','Stone type A 小',30000,'stone_a.png','stone'],['stone_b_large','Stone type B 大',30000,'stone_b.png','stone'],['stone_b_medium','Stone type B 中',30000,'stone_b.png','stone'],['stone_b_small','Stone type B 小',30000,'stone_b.png','stone'],['stone_c_large','Stone type C 大',30000,'stone_c.png','stone'],['stone_c_medium','Stone type C 中',30000,'stone_c.png','stone'],['stone_c_small','Stone type C 小',30000,'stone_c.png','stone'],
+  ]),
+});
 const GLAB_VISIT_VIDEO_EVENT_CHANCE = 1 / 30;
 const GLAB_VISIT_VIDEO_EVENT_VIDEO = './assets/videos/events/glab-visit-random.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
@@ -347,7 +374,7 @@ const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. カワハラ';
 const OKACHIMACHI_AREA_SCREENS = new Set([
-  'okachimachi', 'okachimachiQuiz', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
+  'okachimachi', 'okachimachiQuiz', 'oyatsuDaisukiEvent', 'tropicalFishShop', 'speedStarEvent', 'storytellerEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
 ]);
 
@@ -360,6 +387,9 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
   pandaMusicEvent: new Set(['intro1', 'intro2']),
+  oyatsuDaisukiEvent: new Set(['intro1','intro2','choice','iceLead','iceEating','iceFade','iceFarewell','shopLead','shopVideo','shop','shopConfirm','shopFade','shopFarewell']),
+  speedStarEvent: new Set(['chase','impact','character','run','thought1','thought2','wallet','angry']),
+  storytellerEvent: new Set(['intro1','intro2','ittomo','question','correct','reward','correctFarewell','incorrect','incorrectAnswer','incorrectFarewell']),
   wristFoundEvent: new Set(['intro', 'report']),
   glabVisitVideoEvent: new Set(['video']),
   kawaharaKnowledgeEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
@@ -392,7 +422,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -415,6 +445,10 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   okachimachiInvasiveTurtlesEvent: { eventKey: 'okachimachiInvasiveTurtlesEvent', fallback: 'okachimachi' },
   pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
+  oyatsuDaisukiEvent: { eventKey: 'oyatsuDaisukiEvent', fallback: 'okachimachi' },
+  speedStarEvent: { eventKey: 'speedStarEvent', fallback: 'okachimachi' },
+  storytellerEvent: { eventKey: 'storytellerEvent', fallback: 'okachimachi' },
+  tropicalFishShop: { eventKey: '', fallback: 'okachimachi' },
   wristFoundEvent: { eventKey: 'wristFoundEvent', fallback: 'okachimachi' },
   glabVisitVideoEvent: { eventKey: 'glabVisitVideoEvent', fallback: 'glab' },
   kawaharaKnowledgeEvent: { eventKey: 'kawaharaKnowledgeEvent', fallback: 'glab' },
@@ -440,7 +474,7 @@ const EVENT_RECOVERY_SCREENS = new Set(Object.keys(EVENT_SCREEN_RECOVERY_CONFIG)
 
 // v0.10.514: 水槽はスマートフォン内の通常機能であり、イベントではない。
 // 将来、水槽ミニゲームを独立画面へ分離しても「イベント終了」を誤表示しないよう明示的に除外する。
-const NON_EVENT_RECOVERY_SCREENS = new Set(['phone', 'aquarium']);
+const NON_EVENT_RECOVERY_SCREENS = new Set(['phone', 'aquarium', 'tropicalFishShop']);
 
 // v0.10.514: 全イベントの緊急終了方針を明示する。
 // 報酬・支払い・損失はイベント段階と冪等フラグを確認し、通常進行と二重反映しない。
@@ -682,7 +716,8 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
-  'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'okachimachi-toll-event-next', 'okachimachi-invasive-turtles-video-start', 'okachimachi-invasive-turtles-event-next', 'panda-music-event-next', 'kaitenzushi-finish',
+  'oyatsu-event-next', 'oyatsu-event-choice', 'oyatsu-shop-confirm-choice', 'oyatsu-movie-skip', 'oyatsu-video-start', 'speed-star-event-next', 'storyteller-event-next', 'storyteller-quiz-answer', 'storyteller-reward-next',
+    'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'okachimachi-toll-event-next', 'okachimachi-invasive-turtles-video-start', 'okachimachi-invasive-turtles-event-next', 'panda-music-event-next', 'kaitenzushi-finish',
   'mystery-chinese-meal-video-start', 'event-movie-skip', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
@@ -9572,6 +9607,380 @@ function advanceWristFoundEvent() {
   finishWristFoundEvent();
 }
 
+
+function normalizeOkachimachiDailyEventState(key, validStages, defaults = {}) {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events[key] && typeof state.events[key] === 'object' && !Array.isArray(state.events[key]) ? state.events[key] : {};
+  const next = {
+    lastAttemptDay: Math.max(0, Math.floor(Number(saved.lastAttemptDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    active: Boolean(saved.active),
+    stage: validStages.includes(saved.stage) ? saved.stage : 'idle',
+    ...defaults,
+  };
+  for (const [name, value] of Object.entries(defaults)) {
+    if (typeof value === 'boolean') next[name] = Boolean(saved[name]);
+    else if (typeof value === 'number') next[name] = Number.isFinite(Number(saved[name])) ? Number(saved[name]) : value;
+    else if (typeof value === 'string') next[name] = typeof saved[name] === 'string' ? saved[name] : value;
+  }
+  if (!next.active && !['idle', 'completed'].includes(next.stage)) next.stage = 'completed';
+  state.events[key] = next;
+  return next;
+}
+
+function oyatsuDaisukiEventState() {
+  const e = normalizeOkachimachiDailyEventState('oyatsuDaisukiEvent', ['idle','intro1','intro2','choice','iceLead','iceEating','iceFade','iceFarewell','shopLead','shopVideo','shop','shopConfirm','shopFade','shopFarewell','completed'], { route: '', movieCompleted: false });
+  e.route = ['ice','shop'].includes(e.route) ? e.route : '';
+  return e;
+}
+
+function speedStarEventState() {
+  const e = normalizeOkachimachiDailyEventState('speedStarEvent', ['idle','chase','impact','character','run','thought1','thought2','wallet','angry','completed'], { lossApplied: false, lossAmount: 0 });
+  e.lossAmount = Math.max(0, Math.floor(Number(e.lossAmount) || 0));
+  return e;
+}
+
+function storytellerEventState() {
+  const e = normalizeOkachimachiDailyEventState('storytellerEvent', ['idle','intro1','intro2','ittomo','question','correct','reward','correctFarewell','incorrect','incorrectAnswer','incorrectFarewell','completed'], { questionId: 0, selectedKey: '', correct: false, rewardGranted: false });
+  e.questionId = Math.max(0, Math.floor(Number(e.questionId) || 0));
+  e.selectedKey = ['A','B','C','D'].includes(e.selectedKey) ? e.selectedKey : '';
+  return e;
+}
+
+function resumeOyatsuDaisukiEvent() {
+  const e = oyatsuDaisukiEventState();
+  if (!e.active) return false;
+  if (e.stage === 'shop') setScreen('tropicalFishShop', { fromOyatsu: true }, false);
+  else if (e.stage === 'iceEating') setScreen('meal', { mealId: 'ice', eating: true }, false);
+  else setScreen('oyatsuDaisukiEvent', {}, false);
+  return true;
+}
+function resumeSpeedStarEvent() {
+  const e = speedStarEventState();
+  if (!e.active) return false;
+  setScreen('speedStarEvent', {}, false); return true;
+}
+function resumeStorytellerEvent() {
+  const e = storytellerEventState();
+  if (!e.active) return false;
+  setScreen('storytellerEvent', {}, false); return true;
+}
+
+function maybeStartOyatsuDaisukiEvent() {
+  if (illnessEventSuppressionActive() || !aquariumUnlocked() || Number(state.game.minutes) > OYATSU_DAISUKI_EVENT_LATEST_MINUTES) return false;
+  const e = oyatsuDaisukiEventState();
+  if (e.active) return resumeOyatsuDaisukiEvent();
+  if (e.lastAttemptDay === state.game.day) return false;
+  e.lastAttemptDay = state.game.day;
+  if (Math.random() >= OYATSU_DAISUKI_EVENT_CHANCE) { saveGame(); return false; }
+  e.lastTriggeredDay = state.game.day; e.totalTriggered += 1; e.active = true; e.stage = 'intro1'; e.route = ''; e.movieCompleted = false;
+  saveGame(); setScreen('oyatsuDaisukiEvent', {}, false); playSfx('success', { gain: .48, rate: 1.2 }); vibrate([18,24,34]); return true;
+}
+
+function maybeStartSpeedStarEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const e = speedStarEventState();
+  if (e.active) return resumeSpeedStarEvent();
+  if (e.lastAttemptDay === state.game.day) return false;
+  e.lastAttemptDay = state.game.day;
+  if (Math.random() >= SPEED_STAR_EVENT_CHANCE) { saveGame(); return false; }
+  e.lastTriggeredDay = state.game.day; e.totalTriggered += 1; e.active = true; e.stage = 'chase'; e.lossApplied = false; e.lossAmount = 0;
+  saveGame(); setScreen('speedStarEvent', {}, false); playSfx('haunting-appear', { gain: .48, rate: 1.25 }); return true;
+}
+
+async function loadStorytellerQuestions() {
+  if (Array.isArray(storytellerQuizQuestions) && storytellerQuizQuestions.length) return storytellerQuizQuestions;
+  if (!storytellerQuizLoadPromise) {
+    storytellerQuizLoadPromise = fetch(`${STORYTELLER_QUIZ_URL}?v=${VERSION}`, { cache: 'no-store' })
+      .then((response) => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
+      .then((payload) => {
+        const rows = Array.isArray(payload?.questions) ? payload.questions : [];
+        storytellerQuizQuestions = rows.filter((row) => row && row.question && row.choices && ['A','B','C','D'].every((key) => String(row.choices[key] || '').trim()) && ['A','B','C','D'].includes(row.correct));
+        return storytellerQuizQuestions;
+      }).finally(() => { storytellerQuizLoadPromise = null; });
+  }
+  return storytellerQuizLoadPromise;
+}
+function storytellerCurrentQuestion() {
+  const id = storytellerEventState().questionId;
+  return (storytellerQuizQuestions || []).find((row) => Number(row.id) === id) || null;
+}
+async function maybeStartStorytellerEvent() {
+  if (illnessEventSuppressionActive() || Number(state.game.minutes) < STORYTELLER_EVENT_EARLIEST_MINUTES) return false;
+  const e = storytellerEventState();
+  if (e.active) return resumeStorytellerEvent();
+  if (e.lastAttemptDay === state.game.day) return false;
+  e.lastAttemptDay = state.game.day;
+  if (Math.random() >= STORYTELLER_EVENT_CHANCE) { saveGame(); return false; }
+  const questions = await loadStorytellerQuestions();
+  if (!questions.length) { saveGame(); return false; }
+  const question = questions[Math.floor(Math.random() * questions.length)];
+  e.lastTriggeredDay = state.game.day; e.totalTriggered += 1; e.active = true; e.stage = 'intro1'; e.questionId = Math.max(1, Number(question.id) || 1); e.selectedKey = ''; e.correct = false; e.rewardGranted = false;
+  saveGame(); setScreen('storytellerEvent', {}, false); playSfx('quiz-intro', { gain: .82 }); vibrate([20,25,45]); return true;
+}
+
+function finishOyatsuDaisukiEvent() {
+  const e = oyatsuDaisukiEventState(); e.active = false; e.stage = 'completed'; e.route = ''; saveGame(); setScreen('okachimachi', {}, false); playSfx('decision', { gain: .72 });
+}
+function finishSpeedStarEvent() {
+  const e = speedStarEventState(); e.active = false; e.stage = 'completed'; saveGame(); stopPoliceSiren(); setScreen('okachimachi', {}, false); playSfx('decision', { gain: .72 });
+}
+function finishStorytellerEvent() {
+  const e = storytellerEventState(); e.active = false; e.stage = 'completed'; saveGame(); setScreen('okachimachi', {}, false); playSfx('decision', { gain: .72 });
+}
+
+function oyatsuPlayerName() { return String(state?.playerName || 'あなた').trim() || 'あなた'; }
+
+function advanceOyatsuDaisukiEvent() {
+  const e = oyatsuDaisukiEventState();
+  if (!e.active) return finishOyatsuDaisukiEvent();
+  if (e.stage === 'intro1') e.stage = 'intro2';
+  else if (e.stage === 'intro2') e.stage = 'choice';
+  else if (e.stage === 'iceLead') {
+    e.stage = 'iceEating'; saveGame(); setScreen('meal', {}, false); queueMicrotask(() => eatMeal('ice', { skipEventCheck: true })); return;
+  } else if (e.stage === 'iceFarewell' || e.stage === 'shopFarewell') return finishOyatsuDaisukiEvent();
+  else if (e.stage === 'shopLead') { e.stage = 'shopVideo'; e.movieCompleted = false; }
+  saveGame(); render(); playSfx('select', { gain: .7 });
+}
+
+function chooseOyatsuDaisukiRoute(route) {
+  const e = oyatsuDaisukiEventState(); if (!e.active || e.stage !== 'choice') return;
+  if (route === 'ice') { e.route = 'ice'; e.stage = 'iceLead'; }
+  else if (route === 'shop') { e.route = 'shop'; e.stage = 'shopLead'; }
+  else return;
+  saveGame(); render(); playSfx('decision', { gain: .78 }); vibrate(24);
+}
+function completeOyatsuShopVideo() {
+  const e = oyatsuDaisukiEventState(); if (!e.active || e.stage !== 'shopVideo') return;
+  e.movieCompleted = true; e.stage = 'shop'; saveGame(); setScreen('tropicalFishShop', { fromOyatsu: true }, false); playSfx('decision', { gain: .72 });
+}
+function bindOyatsuShopVideo() {
+  const video = root.querySelector('video[data-oyatsu-shop-video]'); if (!(video instanceof HTMLVideoElement)) return;
+  video.addEventListener('ended', completeOyatsuShopVideo, { once: true });
+  video.addEventListener('error', () => root.querySelector('.oyatsu-video-stage')?.classList.add('has-error'), { once: true });
+  video.volume = 1; video.muted = false; video.play().catch(() => root.querySelector('.oyatsu-video-stage')?.classList.add('needs-start'));
+}
+function showOyatsuShopExitConfirm() {
+  const e = oyatsuDaisukiEventState();
+  if (e.active && e.stage === 'shop') { e.stage = 'shopConfirm'; saveGame(); setScreen('oyatsuDaisukiEvent', {}, false); return true; }
+  return false;
+}
+function chooseOyatsuShopConfirm(answer) {
+  const e = oyatsuDaisukiEventState(); if (!e.active || e.stage !== 'shopConfirm') return;
+  if (answer === 'no') { e.stage = 'shop'; saveGame(); setScreen('tropicalFishShop', { fromOyatsu: true }, false); playSfx('select', { gain:.7 }); return; }
+  if (answer !== 'yes') return;
+  if (!canSpendHours(3)) { showToast('今日はこれ以上3時間過ごせません。', 'error'); return; }
+  spendHours(3); e.stage = 'shopFade'; saveGame(); setScreen('oyatsuDaisukiEvent', {}, false); playSfx('decision', { gain:.76 });
+}
+function scheduleOyatsuFade(nextStage) {
+  if (oyatsuFadeTimer) clearTimeout(oyatsuFadeTimer);
+  oyatsuFadeTimer = setTimeout(() => {
+    if (screen !== 'oyatsuDaisukiEvent') return;
+    const e = oyatsuDaisukiEventState(); if (!e.active) return;
+    e.stage = nextStage; saveGame(); render(); playSfx('select', { gain:.48, rate:.9 });
+  }, 1500);
+}
+function startOyatsuIceReturnAfterMeal() {
+  const e = oyatsuDaisukiEventState();
+  if (!e.active || e.stage !== 'iceEating') return false;
+  e.stage = 'iceFade'; saveGame(); setScreen('oyatsuDaisukiEvent', {}, false); return true;
+}
+
+function applySpeedStarWalletLoss() {
+  const e = speedStarEventState(); if (e.lossApplied) return e.lossAmount;
+  const loss = Math.floor(Math.max(0, Number(state.game.money) || 0) / 3);
+  e.lossApplied = true; e.lossAmount = loss;
+  if (loss > 0) { state.game.money = Math.max(0, state.game.money - loss); addFinance('スピード・スターに財布を盗まれた', 0, loss); startMoneyFeedback(-loss, 1600); }
+  addNotification('財布を持っていかれました', `${yen(loss)}を失いました。`, 'warning'); saveGame(); return loss;
+}
+function advanceSpeedStarEvent() {
+  const e = speedStarEventState(); if (!e.active) return finishSpeedStarEvent();
+  if (e.stage === 'chase') { e.stage = 'impact'; playSfx('impact', { gain: 1.05 }); vibrate([40,30,80]); }
+  else if (e.stage === 'impact') { e.stage = 'character'; startPoliceSiren(); setPoliceSirenGain(1); playSfx('haunting-appear', { gain:.78 }); }
+  else if (e.stage === 'character') { e.stage = 'run'; playSfx('pyuu', { gain: 1.12 }); }
+  else if (e.stage === 'thought1') e.stage = 'thought2';
+  else if (e.stage === 'thought2') { e.stage = 'wallet'; applySpeedStarWalletLoss(); playSfx('error', { gain:.82, rate:.78 }); }
+  else if (e.stage === 'wallet') e.stage = 'angry';
+  else if (e.stage === 'angry') return finishSpeedStarEvent();
+  saveGame(); render();
+}
+function scheduleSpeedStarRunAway() {
+  if (speedStarRunTimer) clearTimeout(speedStarRunTimer);
+  setPoliceSirenGain(1);
+  speedStarRunTimer = setTimeout(() => {
+    if (screen !== 'speedStarEvent') return;
+    const e = speedStarEventState(); if (!e.active || e.stage !== 'run') return;
+    setPoliceSirenGain(.22); e.stage = 'thought1'; saveGame(); render();
+  }, 1050);
+}
+
+function grantStorytellerReward() {
+  const e = storytellerEventState(); if (e.rewardGranted) return false;
+  state.inventory.items = state.inventory.items || {};
+  state.inventory.items.burariOkachimachiSticker = Math.max(0, Math.floor(Number(state.inventory.items.burariOkachimachiSticker) || 0)) + 1;
+  e.rewardGranted = true; addNotification('ブラり御徒町 ステッカーを手に入れました', 'ストーリーテラーから街ブラロケの記念ステッカーを受け取りました。', 'special'); saveGame(); playSfx('success', { gain:1.05 }); vibrate([28,24,55]); return true;
+}
+function advanceStorytellerEvent() {
+  const e = storytellerEventState(); if (!e.active) return finishStorytellerEvent();
+  if (e.stage === 'intro1') e.stage='intro2';
+  else if (e.stage === 'intro2') { e.stage='ittomo'; playSfx('quiz-intro',{gain:.9,rate:1.08}); }
+  else if (e.stage === 'ittomo') { e.stage='question'; playSfx('quiz-question',{gain:.88}); }
+  else if (e.stage === 'correct') { grantStorytellerReward(); e.stage='reward'; }
+  else if (e.stage === 'reward') e.stage='correctFarewell';
+  else if (e.stage === 'correctFarewell' || e.stage === 'incorrectFarewell') return finishStorytellerEvent();
+  else if (e.stage === 'incorrect') e.stage='incorrectAnswer';
+  else if (e.stage === 'incorrectAnswer') e.stage='incorrectFarewell';
+  saveGame(); render();
+}
+function answerStorytellerQuiz(key) {
+  const e = storytellerEventState(); const q = storytellerCurrentQuestion(); if (!e.active || e.stage !== 'question' || !q || !['A','B','C','D'].includes(key)) return;
+  e.selectedKey = key; e.correct = key === q.correct; e.stage = e.correct ? 'correct' : 'incorrect'; saveGame(); playSfx(e.correct ? 'quiz-correct' : 'quiz-incorrect', { gain:.96 }); vibrate(e.correct ? [20,20,40] : [65]); render();
+}
+
+function tropicalShopProducts(category = 'fish') {
+  const source = TROPICAL_FISH_SHOP_PRODUCTS[category] || TROPICAL_FISH_SHOP_PRODUCTS.fish;
+  return source.map(([id,name,price,image,family='']) => ({ id,name,price,image,family,category }));
+}
+function tropicalShopFamilyCount(family) {
+  return AQUARIUM_CONFIG.displayItems.filter((def) => def.family === family).reduce((sum, def) => sum + Math.max(0, Number(aquariumState().displayItems?.[def.id]?.owned) || 0), 0);
+}
+function tropicalShopMaxQuantity(product) {
+  const aquarium = aquariumState();
+  let cap = 0;
+  if (product.category === 'fish') {
+    const def = aquariumFishDefinition(product.id), row = aquarium.fish?.[product.id]; if (!def || !row) return 0;
+    const speciesRemain = Math.max(0, def.speciesMax - row.inTank);
+    const loadRemain = Math.max(0, AQUARIUM_CONFIG.capacity.fishLoadMax - aquariumFishLoad(aquarium));
+    cap = Math.min(speciesRemain, Math.floor(loadRemain / def.loadPoint));
+  } else if (product.category === 'plant') {
+    cap = Math.max(0, AQUARIUM_CONFIG.capacity.plantTotalMax - aquariumPlantTotal(aquarium));
+  } else {
+    const familyMax = product.family === 'driftwood' ? 3 : 5;
+    cap = Math.max(0, familyMax - tropicalShopFamilyCount(product.family));
+  }
+  const affordable = Math.floor(Math.max(0, Number(state.game.money) || 0) / product.price);
+  return Math.max(0, Math.min(cap, affordable));
+}
+function tropicalShopFindProduct(category,id) { return tropicalShopProducts(category).find((row)=>row.id===id) || null; }
+function openTropicalShopQuantity(category,id) {
+  const product=tropicalShopFindProduct(category,id); if(!product) return;
+  const max=tropicalShopMaxQuantity(product); if(max<1){showToast('購入上限または所持金を確認してください。','error');return;}
+  screenData={...screenData,tropicalCategory:category,tropicalModal:{category,id,qty:1}}; render();
+}
+function syncTropicalShopQuantityModal() {
+  const modal = screenData?.tropicalModal; if (!modal) return;
+  const product = tropicalShopFindProduct(modal.category, modal.id); if (!product) return;
+  const max = tropicalShopMaxQuantity(product);
+  const qty = Math.max(1, Math.min(max, Math.floor(Number(modal.qty) || 1)));
+  modal.qty = qty;
+  const output = root.querySelector('.tropical-qty-control output');
+  if (output) output.textContent = String(qty);
+  const down = root.querySelector('[data-action="tropical-shop-qty"][data-delta="-1"]');
+  const up = root.querySelector('[data-action="tropical-shop-qty"][data-delta="1"]');
+  if (down) down.disabled = qty <= 1;
+  if (up) up.disabled = qty >= max;
+  const total = root.querySelector('.tropical-modal-total');
+  if (total) total.textContent = `${yen(product.price)} × ${qty} = ${yen(product.price * qty)}`;
+}
+function changeTropicalShopQuantity(delta) {
+  const modal=screenData?.tropicalModal; if(!modal)return;
+  const product=tropicalShopFindProduct(modal.category,modal.id); if(!product)return;
+  const max=tropicalShopMaxQuantity(product); modal.qty=Math.max(1,Math.min(max,Math.floor(Number(modal.qty)||1)+Math.sign(Number(delta)||0))); syncTropicalShopQuantityModal();
+}
+function clearTropicalShopQuantityHold() {
+  if (tropicalShopQuantityHoldTimer) window.clearTimeout(tropicalShopQuantityHoldTimer);
+  if (tropicalShopQuantityHoldInterval) window.clearInterval(tropicalShopQuantityHoldInterval);
+  tropicalShopQuantityHoldTimer = null;
+  tropicalShopQuantityHoldInterval = null;
+}
+function startTropicalShopQuantityHold(button) {
+  clearTropicalShopQuantityHold();
+  if (!button || button.disabled) return;
+  tropicalShopQuantityHoldTriggered = false;
+  const delta = Number(button.dataset.delta) || 0;
+  tropicalShopQuantityHoldTimer = window.setTimeout(() => {
+    tropicalShopQuantityHoldTriggered = true;
+    changeTropicalShopQuantity(delta);
+    tropicalShopQuantityHoldInterval = window.setInterval(() => changeTropicalShopQuantity(delta), 95);
+  }, 360);
+}
+function finishTropicalShopQuantityHold(button) {
+  const held = tropicalShopQuantityHoldTriggered;
+  clearTropicalShopQuantityHold();
+  tropicalShopQuantityHoldTriggered = false;
+  if (held && button) button.dataset.skipNextClick = 'true';
+}
+function closeTropicalShopQuantity(){ if(screenData?.tropicalModal){clearTropicalShopQuantityHold();delete screenData.tropicalModal;render();} }
+function purchaseTropicalShopItem(){
+  const modal=screenData?.tropicalModal; if(!modal)return; const product=tropicalShopFindProduct(modal.category,modal.id); if(!product)return;
+  const max=tropicalShopMaxQuantity(product); const qty=Math.max(0,Math.min(max,Math.floor(Number(modal.qty)||0))); if(qty<1)return showToast('購入できません。','error');
+  const total=product.price*qty; if(state.game.money<total)return showToast('所持金が足りません。','error');
+  const aquarium=aquariumState();
+  if(product.category==='fish'){const row=aquarium.fish[product.id];row.owned+=qty;row.inTank+=qty;refreshAquariumLoad(aquarium);}
+  else if(product.category==='plant'){const row=aquarium.plants[product.id];row.owned+=qty;row.inTank+=qty;}
+  else {const row=aquarium.displayItems[product.id];row.owned+=qty;row.installed+=qty;}
+  aquarium.lastSyncRevision+=1; state.game.money-=total; addFinance(`熱帯魚屋 ${product.name}`,0,total); addNotification(`${product.name}を購入しました`, product.category==='fish'?`${qty}匹を水槽へ入れました。`:product.category==='plant'?`${qty}株を水槽へ入れました。`:`${qty}個を水槽へ設置しました。`,'special');
+  delete screenData.tropicalModal; saveGame(); startMoneyFeedback(-total,1200); playSfx('coin',{gain:.86}); vibrate(28); render();
+}
+
+function renderOyatsuDaisukiEvent() {
+  const e=oyatsuDaisukiEventState(), name=esc(oyatsuPlayerName());
+  if(!e.active){queueMicrotask(()=>setScreen('okachimachi',{},false));return renderOkachimachi();}
+  if(e.stage==='iceFade'||e.stage==='shopFade'){queueMicrotask(()=>scheduleOyatsuFade(e.stage==='iceFade'?'iceFarewell':'shopFarewell'));return `<main class="jxj-event-blackout" aria-label="移動中"></main>`;}
+  if(e.stage==='shopVideo') return `<main class="oyatsu-video-screen"><section class="oyatsu-video-stage"><button type="button" class="event-movie-skip" data-action="oyatsu-movie-skip">MOVIEスキップ</button><video data-oyatsu-shop-video src="${OYATSU_TROPICAL_SHOP_INTRO_VIDEO}?v=${VERSION}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen"></video><button type="button" class="oyatsu-video-start" data-action="oyatsu-video-start">動画を再生する</button></section></main>`;
+  const lines={intro1:`Hey，ヘイ、${name}！　ハイホー！、、、`,intro2:'どこ行くの？遊ぼうよ、、、',iceLead:'いいね！！、、おしっ！上野まで歩こうか！、、、',iceFarewell:`${name}またね！ばいびー！、、、`,shopLead:'おっ、いいねいいねー、お供しますぜ、、、',shopConfirm:'もう満足した？',shopFarewell:'御徒町到着！、、、楽しかった！また行こうね！　ばいびー！、、、、'};
+  const choices=e.stage==='choice'?`<div class="event-center-choices"><button data-action="oyatsu-event-choice" data-route="ice">アイス</button><button data-action="oyatsu-event-choice" data-route="shop">熱帯魚屋</button></div>`:e.stage==='shopConfirm'?`<div class="event-center-choices"><button data-action="oyatsu-shop-confirm-choice" data-answer="no">いいえ</button><button data-action="oyatsu-shop-confirm-choice" data-answer="yes">はい</button></div>`:'';
+  const dialogue=lines[e.stage]?`<button type="button" class="event-dialogue-card jxj-transparent-dialogue" data-action="oyatsu-event-next"><small>おやつ大好き</small><strong>${lines[e.stage]}</strong><span>タップして進む</span></button>`:'';
+  return `<main class="main-screen jxj-new-event-screen oyatsu-event-screen"><section class="visit-character-event"><div class="visit-character-area jxj-new-event-character-area"><img class="visit-character jxj-new-event-character" src="./assets/images/events/oyatsu-daisuki.png?v=${VERSION}" alt="おやつ大好き"></div>${choices}${dialogue}</section></main>`;
+}
+
+function renderSpeedStarEvent(){
+  const e=speedStarEventState(); if(!e.active){queueMicrotask(()=>setScreen('okachimachi',{},false));return renderOkachimachi();}
+  if(e.stage==='run') queueMicrotask(scheduleSpeedStarRunAway);
+  const charStages=['character','run']; const showChar=charStages.includes(e.stage);
+  let center=''; let dialogue='';
+  if(e.stage==='impact') center=`<button class="speed-star-don" data-action="speed-star-event-next">ドンッ！！<span>タップして進む</span></button>`;
+  else if(e.stage==='wallet') center=`<button class="speed-star-wallet" data-action="speed-star-event-next"><strong>財布を持っていかれた、、、</strong><span class="speed-star-loss">−${yen(e.lossAmount||applySpeedStarWalletLoss())}</span><small>タップして進む</small></button>`;
+  else { const map={chase:['','待て待てーーー！！！、、待てー！、、、'],character:['スピード・スター','どいて！どいて！どいてー！、、、'],thought1:['','なんだ、、ありゃ、、、、'],thought2:['','、、、ん？、、、、ん？ん？、、、'],angry:['','マジか、、あいつ、、、、、']}; const row=map[e.stage]; if(row) dialogue=`<button type="button" class="event-dialogue-card jxj-transparent-dialogue" data-action="speed-star-event-next"><small>${row[0]}</small><strong>${row[1]}</strong><span>タップして進む</span></button>`; }
+  return `<main class="main-screen jxj-new-event-screen speed-star-event-screen"><section class="visit-character-event">${showChar?`<div class="visit-character-area jxj-new-event-character-area ${e.stage==='run'?'speed-star-running':''}"><img class="visit-character jxj-new-event-character" src="./assets/images/events/speed-star.png?v=${VERSION}" alt="スピード・スター"></div>`:''}${center}${dialogue}</section></main>`;
+}
+
+function renderStorytellerEvent(){
+  const e=storytellerEventState(); if(!e.active){queueMicrotask(()=>setScreen('okachimachi',{},false));return renderOkachimachi();}
+  const q=storytellerCurrentQuestion();
+  if(e.questionId && !q && !storytellerQuizLoadPromise){queueMicrotask(()=>loadStorytellerQuestions().then(()=>{if(screen==='storytellerEvent')render();}).catch(console.error));}
+  const character=`<div class="visit-character-area jxj-new-event-character-area"><img class="visit-character jxj-new-event-character storyteller-character" src="./assets/images/events/storyteller.png?v=${VERSION}" alt="ストーリーテラー"></div>`;
+  if(e.stage==='ittomo') return `<main class="main-screen jxj-new-event-screen storyteller-event-screen"><section class="visit-character-event">${character}<button class="storyteller-ittomo" data-action="storyteller-event-next">いいとも！<span>タップして進む</span></button></section></main>`;
+  if(e.stage==='question'){
+    if(!q)return `<main class="main-screen jxj-new-event-screen storyteller-event-screen"><section class="storyteller-loading">クイズを読み込んでいます…</section></main>`;
+    return `<main class="main-screen storyteller-quiz-screen"><section class="okachimachi-quiz-event quiz-stage-question storyteller-quiz-event" aria-live="polite"><div class="quiz-character-area" aria-hidden="true"><img class="quiz-character-image storyteller-quiz-character" src="./assets/images/events/storyteller.png?v=${VERSION}" alt="" draggable="false"></div><section class="quiz-question-panel glass-panel"><span class="quiz-event-name-label">ストーリーテラー</span><span class="quiz-question-kicker">4択クイズ</span><h2>${esc(q.question)}</h2><div class="quiz-answer-grid">${['A','B','C','D'].map(k=>`<button type="button" class="quiz-answer-button" data-action="storyteller-quiz-answer" data-key="${k}"><span>${k}</span><strong>${esc(q.choices[k])}</strong></button>`).join('')}</div></section></section></main>`;
+  }
+  if(e.stage==='reward') return `<main class="main-screen jxj-new-event-screen storyteller-event-screen storyteller-reward-screen"><section class="visit-character-event"><button class="storyteller-reward" data-action="storyteller-event-next"><img src="./assets/images/items/burari-okachimachi-sticker.png?v=${VERSION}" alt="ブラり御徒町 ステッカー"><strong>ブラり御徒町 ステッカー</strong><span>ステッカーをもらった！</span><small>タップして進む</small></button></section></main>`;
+  const answerText=q?.answer_text||q?.choices?.[q?.correct]||'';
+  const lineMap={intro1:'すいません、今テレビの街ブラロケしてます、、、、あなた御徒町詳しそうですね、、、、',intro2:'どうです？クイズやってみますか？、、、、',correct:'おっと、、流石ですねえ、こちら差し上げます！、、、',correctFarewell:'放送したら観てくださいね！、、ではでは、、、、',incorrect:'ありゃありゃ、、、残念、、、、',incorrectAnswer:`正解は${esc(answerText)}でした、、、`,incorrectFarewell:'放送したら観てくださいね！、、ではでは、、、'};
+  return `<main class="main-screen jxj-new-event-screen storyteller-event-screen"><section class="visit-character-event">${character}<button type="button" class="event-dialogue-card jxj-transparent-dialogue" data-action="storyteller-event-next"><small>ストーリーテラー</small><strong>${lineMap[e.stage]||''}</strong><span>タップして進む</span></button></section></main>`;
+}
+
+function renderTropicalFishShop(){
+  const category=['fish','plant','display'].includes(screenData?.tropicalCategory)?screenData.tropicalCategory:'fish';
+  const aquarium=aquariumState(); refreshAquariumLoad(aquarium);
+  const label={fish:'魚',plant:'水草',display:'ディスプレイ'}[category];
+  const rows=tropicalShopProducts(category).map(product=>{
+    const max=tropicalShopMaxQuantity(product); let status='';
+    if(category==='fish'){const def=aquariumFishDefinition(product.id),row=aquarium.fish[product.id];status=`水槽 ${row.inTank}/${def.speciesMax}匹・負荷 ${def.loadPoint}`;}
+    else if(category==='plant'){status=`水草合計 ${aquariumPlantTotal(aquarium)}/${AQUARIUM_CONFIG.capacity.plantTotalMax}株`;}
+    else status=`${product.family==='driftwood'?'流木':'石'}合計 ${tropicalShopFamilyCount(product.family)}/${product.family==='driftwood'?3:5}個`;
+    return `<article class="tropical-product-card ${max<1?'limit':''}"><img src="./assets/images/tropical-shop/${product.image}?v=${VERSION}" alt="${esc(product.name)}"><div><strong>${esc(product.name)}</strong><b>${yen(product.price)}</b><small>${esc(status)}</small></div><button data-action="tropical-shop-open-qty" data-category="${category}" data-id="${product.id}" ${max<1?'disabled':''}>${max<1?'購入上限':category==='fish'?'匹数を選択して購入':category==='plant'?'株数を選択して購入':'個数を選択して購入'}</button></article>`;
+  }).join('');
+  const modal=screenData?.tropicalModal; let modalHtml='';
+  if(modal){const product=tropicalShopFindProduct(modal.category,modal.id); if(product){const max=tropicalShopMaxQuantity(product);const qty=Math.max(1,Math.min(max,Math.floor(Number(modal.qty)||1)));modal.qty=qty;modalHtml=`<div class="tropical-modal-backdrop"><section class="tropical-modal"><button class="tropical-modal-close" data-action="tropical-shop-close-qty">×</button><div class="tropical-modal-imgbox"><img src="./assets/images/tropical-shop/${product.image}?v=${VERSION}" alt="${esc(product.name)}"></div><h2>${esc(product.name)}</h2><strong class="tropical-modal-total">${yen(product.price)} × ${qty} = ${yen(product.price*qty)}</strong><div class="tropical-qty-control"><button data-action="tropical-shop-qty" data-delta="-1" ${qty<=1?'disabled':''}>▼</button><output>${qty}</output><button data-action="tropical-shop-qty" data-delta="1" ${qty>=max?'disabled':''}>▲</button></div><small>購入可能：最大 ${max}${modal.category==='fish'?'匹':modal.category==='plant'?'株':'個'}</small><button class="primary-button full-button" data-action="tropical-shop-purchase">購入する</button></section></div>`;}}
+  return shell('熱帯魚屋', `<section class="tropical-shop-status"><b>${yen(state.game.money)}</b><span>魚の飼育負荷 ${aquarium.fishLoad.current}/${aquarium.fishLoad.max}</span><span>水草 ${aquariumPlantTotal(aquarium)}/15株</span></section><nav class="tropical-shop-tabs">${[['fish','魚'],['plant','水草'],['display','ディスプレイ']].map(([id,n])=>`<button data-action="tropical-shop-tab" data-category="${id}" class="${category===id?'active':''}">${n}</button>`).join('')}</nav><section class="tropical-product-grid" aria-label="${label}">${rows}</section>${modalHtml}`, {
+    help: '熱帯魚・水草・ディスプレイを選び、数量を決めて購入できます。購入品は水槽へ自動で入ります。',
+    contentClass: 'tropical-fish-shop-content',
+  });
+}
+
 async function enterOkachimachiFromOutside() {
   if (illnessEventSuppressionActive()) {
     setScreen('okachimachi', {});
@@ -9584,6 +9993,9 @@ async function enterOkachimachiFromOutside() {
   if (resumeApprenticeCinemaEvent()) return;
   if (resumeCinemaVisitEvent()) return;
   if (resumeClockTowerDonationEvent()) return;
+  if (resumeOyatsuDaisukiEvent()) return;
+  if (resumeSpeedStarEvent()) return;
+  if (resumeStorytellerEvent()) return;
   const eventState = okachimachiQuizEventState();
   const todayKey = dateKey(gameDate());
   if (eventState.lastCountedDate !== todayKey) {
@@ -9600,6 +10012,9 @@ async function enterOkachimachiFromOutside() {
   if (await maybeStartApprenticeCinemaEvent()) return;
   if (await maybeStartCinemaVisitEvent()) return;
   if (maybeStartClockTowerDonationEvent()) return;
+  if (maybeStartOyatsuDaisukiEvent()) return;
+  if (maybeStartSpeedStarEvent()) return;
+  if (await maybeStartStorytellerEvent()) return;
   if (!shouldTrigger) {
     setScreen('okachimachi', {});
     return;
@@ -9896,7 +10311,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -9944,6 +10359,8 @@ function backgroundAssetFor(target) {
   if (target === 'jewelryShop') return isPortraitLayout() ? 'jewelry-shop-portrait' : 'jewelry-shop';
   if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
+  if (target === 'tropicalFishShop') return isPortraitLayout() ? 'tropical-fish-shop-portrait' : 'tropical-fish-shop';
+  if (['oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent'].includes(target)) return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
   if (target === 'clockTowerDonationEvent' || target === 'pandaMusicEvent' || target === 'okachimachiInvasiveTurtlesEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
   if (target === 'apprenticeCinemaEvent') {
     const stage = apprenticeCinemaEventState().stage;
@@ -9990,14 +10407,16 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
+  if (target === 'oyatsuDaisukiEvent' && oyatsuDaisukiEventState().stage === 'shopVideo') return 'silent';
   const audioTarget = target === 'glabVisitVideoEvent'
     ? 'glab'
-    : (['okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent'].includes(target) ? 'okachimachi' : target);
+    : (['okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'oyatsuDaisukiEvent', 'speedStarEvent'].includes(target) ? 'okachimachi'
+      : (target === 'storytellerEvent' && storytellerEventState().stage === 'question' ? 'okachimachiQuiz' : (target === 'storytellerEvent' ? 'okachimachi' : target)));
   return resolveAudioScene(audioTarget, {
     alienAbducted: isAlienAbducted(),
     quizStage: target === 'looseShopOriginalQuizEvent'
       ? (looseShopOriginalQuizSession?.stage || '')
-      : (okachimachiQuizSession?.stage || ''),
+      : (target === 'storytellerEvent' ? storytellerEventState().stage : (okachimachiQuizSession?.stage || '')),
     cinemaStage: target === 'cinemaVisitEvent' ? cinemaVisitEventState().stage : '',
     apprenticeCinemaStage: target === 'apprenticeCinemaEvent' ? apprenticeCinemaEventState().stage : '',
     bluesJukePlace: target === 'bluesJukeEvent' ? (bluesJukeCurrentScene()?.place || 'outside') : '',
@@ -10571,7 +10990,7 @@ function render() {
   giftControlScrollSnapshot = null;
   const giftSendScrollState = pendingGiftScrollState || captureGiftSendScrollState();
   try {
-    if (screen !== 'robberyReport') stopPoliceSiren();
+    if (!['robberyReport', 'speedStarEvent'].includes(screen)) stopPoliceSiren();
     document.body.dataset.screen = screen;
     if (usesTwoBarHeader(screen)) document.body.dataset.headerMode = 'two-bar';
     else delete document.body.dataset.headerMode;
@@ -10638,6 +11057,10 @@ function render() {
       nameSetup: renderNameSetup,
       settingsTitle: () => renderSettings(true),
       main: renderMain,
+      oyatsuDaisukiEvent: renderOyatsuDaisukiEvent,
+      speedStarEvent: renderSpeedStarEvent,
+      storytellerEvent: renderStorytellerEvent,
+      tropicalFishShop: renderTropicalFishShop,
       bluesJukeEvent: renderBluesJukeEvent,
       winterColdEvent: renderWinterColdEvent,
       birthdaySleepEvent: renderBirthdaySleepEvent,
@@ -10752,6 +11175,16 @@ function render() {
     restoreGiftSendScrollState(giftSendScrollState);
     applyAudioSettings();
     if (screen === 'robberyReport' && pendingRobberyReport()) queueMicrotask(() => startPoliceSiren());
+    if (screen === 'speedStarEvent') {
+      const speedEvent = speedStarEventState();
+      if (speedEvent.active && ['character','run','thought1','thought2','wallet','angry'].includes(speedEvent.stage)) {
+        queueMicrotask(() => {
+          startPoliceSiren();
+          setPoliceSirenGain(['character','run'].includes(speedEvent.stage) ? 1 : .22);
+        });
+      }
+    }
+    if (screen === 'oyatsuDaisukiEvent' && oyatsuDaisukiEventState().stage === 'shopVideo') queueMicrotask(bindOyatsuShopVideo);
     if (screen === 'main') queueMicrotask(() => maybeResumeMorningSequence());
     queueMicrotask(() => maybeShowGameClearModal());
     scheduleWinterColdTextEffect();
@@ -11416,6 +11849,15 @@ function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine =
     const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
     if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
   }
+  // v0.10.716: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
+  for (const definition of AQUARIUM_CONFIG.displayItems) {
+    const installed = Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0));
+    if (!definition.required && installed <= 0) continue;
+    names.add(normalizeAquariumObservationName(definition.name));
+    const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_LAYOUT_ALIASES);
+    if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
+  }
+  names.delete('');
   return names;
 }
 
@@ -11561,14 +12003,9 @@ function filterAquariumObservationDocument(frame) {
     const engine = frame.contentWindow?.aquariumEngine || null;
     const allowedNames = aquariumCurrentObservationNames(aquariumSnapshot(), engine);
     documentRef.querySelectorAll('.empty').forEach((empty) => {
-      if (String(empty.textContent || '').includes('観察')) empty.textContent = '現在、水槽の中には観察できる魚・水草がありません。';
+      if (String(empty.textContent || '').includes('観察')) empty.textContent = '現在の水槽設備と、水槽内にいる魚・水草・設置品を確認できます。';
     });
     documentRef.querySelectorAll('.section').forEach((section) => {
-      const title = String(section.querySelector('.section-title')?.textContent || '');
-      if (title.includes('レイアウト')) {
-        section.remove();
-        return;
-      }
       section.querySelectorAll('.item-card').forEach((card) => {
         const name = normalizeAquariumObservationName(card.querySelector('.item-name')?.textContent);
         if (!name || !allowedNames.has(name)) card.remove();
@@ -14510,6 +14947,7 @@ function renderOkachimachi() {
           ${facilityButton({ id: 'settingShop', label: 'GOSHO（卸専門）', screen: 'settingShop' })}
           ${facilityButton({ id: 'castingShop', label: 'キャスト屋', screen: 'castingShop' })}
           ${facilityButton({ id: 'displayShop', label: 'ディスプレイ屋', screen: 'displayShop' })}
+          ${aquariumUnlocked() ? '<button type="button" class="secondary-button full-button" data-action="open-tropical-fish-shop">熱帯魚屋</button>' : ''}
           ${facilityButton({ id: 'realEstate', label: '不動産屋', screen: 'realEstate' })}
           ${facilityButton({ id: 'recruitment', label: '人材紹介', screen: 'recruitment' })}
         </div>
@@ -17334,6 +17772,12 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
 
     hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
     clearTimeout(hungerFeedbackTimer);
+    if (mealId === 'ice' && startOyatsuIceReturnAfterMeal()) {
+      showToast('ごちそうさまでした', 'meal-complete', false);
+      playSfx('levelup');
+      hungerFeedbackTimer = setTimeout(() => { hungerFeedback = null; }, 1550);
+      return;
+    }
     setScreen('main', {}, false);
     showToast('ごちそうさまでした', 'meal-complete', false);
     playSfx('levelup');
@@ -21234,6 +21678,11 @@ root.addEventListener('pointerdown', (event) => {
     startDisplayCaseHold(caseButton);
     return;
   }
+  const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
+  if (tropicalButton && !tropicalButton.disabled) {
+    startTropicalShopQuantityHold(tropicalButton);
+    return;
+  }
   const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]');
   if (sellingPriceButton && !sellingPriceButton.disabled) startSellingPriceHold(sellingPriceButton);
 });
@@ -21245,6 +21694,8 @@ root.addEventListener('pointerup', (event) => {
   if (looseButton) finishLooseQuantityHold(looseButton);
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]') || displayCaseHoldButton;
   if (caseButton) finishDisplayCaseHold(caseButton);
+  const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
+  if (tropicalButton) finishTropicalShopQuantityHold(tropicalButton);
   const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]') || sellingPriceHoldButton;
   if (sellingPriceButton) finishSellingPriceHold(sellingPriceButton);
 });
@@ -21258,10 +21709,12 @@ root.addEventListener('pointercancel', () => {
   displayCaseHoldTriggered = false;
   clearSellingPriceHold();
   sellingPriceHoldTriggered = false;
+  clearTropicalShopQuantityHold();
+  tropicalShopQuantityHoldTriggered = false;
 });
 
 root.addEventListener('contextmenu', (event) => {
-  if (event.target.closest('[data-action="metal-qty-step"], [data-action="loose-qty-step"], [data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"], [data-action="selling-price-step"]')) event.preventDefault();
+  if (event.target.closest('[data-action="metal-qty-step"], [data-action="loose-qty-step"], [data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"], [data-action="selling-price-step"], [data-action="tropical-shop-qty"]')) event.preventDefault();
 });
 
 window.addEventListener('blur', () => {
@@ -21273,6 +21726,8 @@ window.addEventListener('blur', () => {
   displayCaseHoldTriggered = false;
   clearSellingPriceHold();
   sellingPriceHoldTriggered = false;
+  clearTropicalShopQuantityHold();
+  tropicalShopQuantityHoldTriggered = false;
 });
 
 root.addEventListener('click', async (event) => {
@@ -21557,6 +22012,36 @@ root.addEventListener('click', async (event) => {
     case 'pazupan-event-next':
       advanceMiningPazupanEvent();
       break;
+    case 'oyatsu-event-next':
+      advanceOyatsuDaisukiEvent();
+      break;
+    case 'oyatsu-event-choice':
+      chooseOyatsuDaisukiRoute(button.dataset.route);
+      break;
+    case 'oyatsu-shop-confirm-choice':
+      chooseOyatsuShopConfirm(button.dataset.answer);
+      break;
+    case 'oyatsu-movie-skip':
+      completeOyatsuShopVideo();
+      break;
+    case 'oyatsu-video-start': {
+      const video = root.querySelector('video[data-oyatsu-shop-video]');
+      if (video instanceof HTMLVideoElement) {
+        video.muted = false;
+        video.volume = 1;
+        video.play().then(() => video.closest('.oyatsu-video-stage')?.classList.remove('needs-start')).catch(() => video.closest('.oyatsu-video-stage')?.classList.add('needs-start'));
+      }
+      break;
+    }
+    case 'speed-star-event-next':
+      advanceSpeedStarEvent();
+      break;
+    case 'storyteller-event-next':
+      advanceStorytellerEvent();
+      break;
+    case 'storyteller-quiz-answer':
+      answerStorytellerQuiz(String(button.dataset.key || ''));
+      break;
     case 'mermaid-event-next':
       advanceMermaidEvent();
       break;
@@ -21808,6 +22293,7 @@ root.addEventListener('click', async (event) => {
       break;
     }
     case 'back':
+      if (screen === 'tropicalFishShop' && showOyatsuShopExitConfirm()) break;
       if (screen === 'store') {
         if (screenData?.branchId) setScreen('store', {}, false);
         else goMain();
@@ -21816,7 +22302,10 @@ root.addEventListener('click', async (event) => {
       }
       break;
     case 'title-back': screen = 'title'; screenData = {}; navigation = []; render(); break;
-    case 'main': goMain(); break;
+    case 'main':
+      if (screen === 'tropicalFishShop' && showOyatsuShopExitConfirm()) break;
+      goMain();
+      break;
     case 'kawahara-knowledge-event-next': advanceKawaharaKnowledgeEvent(); break;
     case 'acknowledge-robbery': acknowledgeRobberyReport(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
@@ -22177,6 +22666,34 @@ root.addEventListener('click', async (event) => {
       itemUseFeedback = null;
       setScreen('phone');
       saveGame();
+      break;
+    case 'open-tropical-fish-shop':
+      if (!aquariumUnlocked()) showToast('水槽を手に入れると熱帯魚屋を利用できます。', 'info');
+      else setScreen('tropicalFishShop', { tropicalCategory: 'fish' });
+      break;
+    case 'tropical-shop-tab':
+      screenData = { ...screenData, tropicalCategory: button.dataset.category || 'fish' };
+      delete screenData.tropicalModal;
+      render();
+      break;
+    case 'tropical-shop-open-qty':
+      openTropicalShopQuantity(button.dataset.category, button.dataset.id);
+      break;
+    case 'tropical-shop-qty':
+      if (button.dataset.skipNextClick === 'true') delete button.dataset.skipNextClick;
+      else changeTropicalShopQuantity(button.dataset.delta);
+      break;
+    case 'tropical-shop-close-qty':
+      closeTropicalShopQuantity();
+      break;
+    case 'tropical-shop-purchase':
+      purchaseTropicalShopItem();
+      break;
+    case 'tropical-shop-back':
+      if (!showOyatsuShopExitConfirm()) setScreen('okachimachi', {}, false);
+      break;
+    case 'tropical-shop-main':
+      if (!showOyatsuShopExitConfirm()) goMain();
       break;
     case 'open-aquarium': setScreen('aquarium', {}, false); saveGame(); break;
     case 'close-aquarium': phoneTab = 'notifications'; setScreen('phone', {}, false); saveGame(); break;

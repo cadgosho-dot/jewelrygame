@@ -1,0 +1,775 @@
+{
+  "title": "御徒町4択クイズ50問",
+  "version": "1.0",
+  "created_date": "2026-08-18",
+  "format": "4択・正解1つ",
+  "question_count": 50,
+  "constraints": [
+    "宝飾・ジュエリー関連の問題は含めない",
+    "2k540関連の問題は含めない",
+    "御徒町・アメ横・駅・歴史・商店街・地下鉄・周辺スポットを中心とする"
+  ],
+  "sources_checked": [
+    "https://www.jreast.co.jp/estation/station/info.aspx?StationCd=355",
+    "https://www.ameyoko.net/",
+    "https://www.ameyoko.net/access/",
+    "https://www.city.taito.lg.jp/kurashi/kyodo/tyoukai/11tiku/taketyou/index.html",
+    "https://t-navi.city.taito.lg.jp/spot/1100",
+    "https://www.city.taito.lg.jp/kenchiku/jutaku/oshirase/okachimachipandahiro.html",
+    "https://www.tokyometro.jp/station/line_hibiya/index.html",
+    "https://www.tokyometro.jp/station/line_ginza/index.html",
+    "https://www.kotsu.metro.tokyo.jp/subway/oedo/index.html"
+  ],
+  "questions": [
+    {
+      "id": 1,
+      "category": "御徒町・基本",
+      "difficulty": 1,
+      "question": "「御徒町」の正しい読み方は？",
+      "choices": {
+        "A": "ごとちょう",
+        "B": "おかちまち",
+        "C": "おとまち",
+        "D": "みとちょう"
+      },
+      "correct": "B",
+      "answer_text": "おかちまち",
+      "explanation": "御徒町は「おかちまち」と読みます。"
+    },
+    {
+      "id": 2,
+      "category": "JR御徒町駅",
+      "difficulty": 1,
+      "question": "JR御徒町駅がある東京都の区は？",
+      "choices": {
+        "A": "千代田区",
+        "B": "文京区",
+        "C": "台東区",
+        "D": "荒川区"
+      },
+      "correct": "C",
+      "answer_text": "台東区",
+      "explanation": "JR御徒町駅は東京都台東区にあります。"
+    },
+    {
+      "id": 3,
+      "category": "JR御徒町駅",
+      "difficulty": 2,
+      "question": "JR御徒町駅の住所として正しいものは？",
+      "choices": {
+        "A": "台東区上野5丁目",
+        "B": "台東区浅草1丁目",
+        "C": "千代田区外神田1丁目",
+        "D": "文京区湯島1丁目"
+      },
+      "correct": "A",
+      "answer_text": "台東区上野5丁目",
+      "explanation": "JR東日本の駅情報では、御徒町駅の住所は東京都台東区上野5丁目です。"
+    },
+    {
+      "id": 4,
+      "category": "JR御徒町駅",
+      "difficulty": 3,
+      "question": "JR御徒町駅が開業した日は？",
+      "choices": {
+        "A": "1912年4月1日",
+        "B": "1925年11月1日",
+        "C": "1935年11月1日",
+        "D": "1945年8月15日"
+      },
+      "correct": "B",
+      "answer_text": "1925年11月1日",
+      "explanation": "御徒町駅は1925年（大正14年）11月1日に開業しました。"
+    },
+    {
+      "id": 5,
+      "category": "JR御徒町駅",
+      "difficulty": 2,
+      "question": "御徒町駅が開業した1925年は何時代？",
+      "choices": {
+        "A": "明治",
+        "B": "大正",
+        "C": "昭和",
+        "D": "平成"
+      },
+      "correct": "B",
+      "answer_text": "大正",
+      "explanation": "1925年は大正14年です。昭和元年は翌1926年です。"
+    },
+    {
+      "id": 6,
+      "category": "JR御徒町駅",
+      "difficulty": 1,
+      "question": "JR御徒町駅に停車する路線の組み合わせは？",
+      "choices": {
+        "A": "山手線・京浜東北線",
+        "B": "中央線・総武線",
+        "C": "常磐線・総武線",
+        "D": "埼京線・中央線"
+      },
+      "correct": "A",
+      "answer_text": "山手線・京浜東北線",
+      "explanation": "御徒町駅には山手線と京浜東北線が停車します。"
+    },
+    {
+      "id": 7,
+      "category": "JR御徒町駅",
+      "difficulty": 3,
+      "question": "御徒町駅の山手線の駅ナンバリングは？",
+      "choices": {
+        "A": "JY02",
+        "B": "JY03",
+        "C": "JY04",
+        "D": "JY05"
+      },
+      "correct": "C",
+      "answer_text": "JY04",
+      "explanation": "御徒町駅の山手線駅ナンバリングはJY04です。"
+    },
+    {
+      "id": 8,
+      "category": "JR御徒町駅",
+      "difficulty": 3,
+      "question": "御徒町駅の京浜東北線の駅ナンバリングは？",
+      "choices": {
+        "A": "JK27",
+        "B": "JK28",
+        "C": "JK29",
+        "D": "JK30"
+      },
+      "correct": "C",
+      "answer_text": "JK29",
+      "explanation": "御徒町駅の京浜東北線駅ナンバリングはJK29です。"
+    },
+    {
+      "id": 9,
+      "category": "JR御徒町駅",
+      "difficulty": 1,
+      "question": "山手線で御徒町駅の上野方面の隣駅は？",
+      "choices": {
+        "A": "日暮里",
+        "B": "鶯谷",
+        "C": "上野",
+        "D": "秋葉原"
+      },
+      "correct": "C",
+      "answer_text": "上野",
+      "explanation": "御徒町駅の上野方面の隣駅は上野駅です。"
+    },
+    {
+      "id": 10,
+      "category": "JR御徒町駅",
+      "difficulty": 1,
+      "question": "山手線で御徒町駅の東京方面の隣駅は？",
+      "choices": {
+        "A": "神田",
+        "B": "秋葉原",
+        "C": "東京",
+        "D": "有楽町"
+      },
+      "correct": "B",
+      "answer_text": "秋葉原",
+      "explanation": "御徒町駅の東京方面の隣駅は秋葉原駅です。"
+    },
+    {
+      "id": 11,
+      "category": "JR御徒町駅",
+      "difficulty": 2,
+      "question": "JR御徒町駅の改札口の組み合わせは？",
+      "choices": {
+        "A": "北口・南口",
+        "B": "東口・西口",
+        "C": "中央口・公園口",
+        "D": "昭和通り口・中央通り口"
+      },
+      "correct": "A",
+      "answer_text": "北口・南口",
+      "explanation": "御徒町駅には北口と南口があります。"
+    },
+    {
+      "id": 12,
+      "category": "JR御徒町駅",
+      "difficulty": 2,
+      "question": "JR御徒町駅に新幹線改札機はある？",
+      "choices": {
+        "A": "北口だけにある",
+        "B": "南口だけにある",
+        "C": "両方にある",
+        "D": "ない"
+      },
+      "correct": "D",
+      "answer_text": "ない",
+      "explanation": "JR東日本の駅情報では御徒町駅に新幹線改札機はありません。"
+    },
+    {
+      "id": 13,
+      "category": "JR御徒町駅",
+      "difficulty": 3,
+      "question": "御徒町駅が開業した1925年に、山手線では何が完成した？",
+      "choices": {
+        "A": "全線地下化",
+        "B": "環状運転の基礎となる都心部の環状線完成",
+        "C": "新幹線への直通運転",
+        "D": "羽田空港への延伸"
+      },
+      "correct": "B",
+      "answer_text": "環状運転の基礎となる都心部の環状線完成",
+      "explanation": "1925年、上野〜東京間の高架線が完成し、山手線が都心を一周する形につながりました。"
+    },
+    {
+      "id": 14,
+      "category": "アメ横",
+      "difficulty": 1,
+      "question": "アメ横は主にどの2つのJR駅の間にある？",
+      "choices": {
+        "A": "東京駅と神田駅",
+        "B": "秋葉原駅と神田駅",
+        "C": "上野駅と御徒町駅",
+        "D": "日暮里駅と上野駅"
+      },
+      "correct": "C",
+      "answer_text": "上野駅と御徒町駅",
+      "explanation": "アメ横は上野駅と御徒町駅の間に位置する商店街です。"
+    },
+    {
+      "id": 15,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "アメ横の長さは公式サイトでおよそ何mと紹介されている？",
+      "choices": {
+        "A": "約100m",
+        "B": "約500m",
+        "C": "約1,500m",
+        "D": "約3,000m"
+      },
+      "correct": "B",
+      "answer_text": "約500m",
+      "explanation": "アメ横公式サイトでは約500mと紹介されています。"
+    },
+    {
+      "id": 16,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "アメ横には公式サイト上、およそ何店舗以上が並ぶ？",
+      "choices": {
+        "A": "50店舗以上",
+        "B": "100店舗以上",
+        "C": "200店舗以上",
+        "D": "400店舗以上"
+      },
+      "correct": "D",
+      "answer_text": "400店舗以上",
+      "explanation": "約500mの中に400店舗以上の商店が並ぶと紹介されています。"
+    },
+    {
+      "id": 17,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "「アメ横」という名前の由来として紹介される説の一つは？",
+      "choices": {
+        "A": "雨が多かったから",
+        "B": "飴屋が多く、飴屋横丁と呼ばれたから",
+        "C": "網屋が並んでいたから",
+        "D": "甘味処が1軒だけあったから"
+      },
+      "correct": "B",
+      "answer_text": "飴屋が多く、飴屋横丁と呼ばれたから",
+      "explanation": "「飴屋横丁」がアメ横になったという説があります。"
+    },
+    {
+      "id": 18,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "アメ横の名前のもう一つの由来説は？",
+      "choices": {
+        "A": "アメリカからの舶来品が多かったため",
+        "B": "アメリカ大使館があったため",
+        "C": "アメジストを売っていたため",
+        "D": "雨宿りする人が多かったため"
+      },
+      "correct": "A",
+      "answer_text": "アメリカからの舶来品が多かったため",
+      "explanation": "戦後にアメリカからの舶来品が多く扱われ、「アメリカ横丁」が由来になったという説があります。"
+    },
+    {
+      "id": 19,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "第二次世界大戦直後のアメ横の発展と深く関係するものは？",
+      "choices": {
+        "A": "闇市",
+        "B": "武家屋敷",
+        "C": "競馬場",
+        "D": "外国人居留地"
+      },
+      "correct": "A",
+      "answer_text": "闇市",
+      "explanation": "アメ横は戦後の闇市の発展形として残る商店街の一つです。"
+    },
+    {
+      "id": 20,
+      "category": "アメ横",
+      "difficulty": 3,
+      "question": "戦後のアメ横で、出店の統制に関わった共同体として公式サイトが紹介しているのは？",
+      "choices": {
+        "A": "満州からの復員兵",
+        "B": "外国人観光客",
+        "C": "江戸幕府の旗本",
+        "D": "鉄道員"
+      },
+      "correct": "A",
+      "answer_text": "満州からの復員兵",
+      "explanation": "公式サイトでは、満州からの復員兵約400人が共同体となり出店を統制したと紹介されています。"
+    },
+    {
+      "id": 21,
+      "category": "アメ横",
+      "difficulty": 1,
+      "question": "JR御徒町駅からアメ横へ行く際、公式アクセスで「すぐ」と案内されている出口は？",
+      "choices": {
+        "A": "北口",
+        "B": "南口",
+        "C": "東口",
+        "D": "西口"
+      },
+      "correct": "A",
+      "answer_text": "北口",
+      "explanation": "アメ横公式サイトではJR御徒町駅北口すぐと案内されています。"
+    },
+    {
+      "id": 22,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "JR上野駅からアメ横へ行く際、公式アクセスで「すぐ」と案内されている出口は？",
+      "choices": {
+        "A": "入谷口",
+        "B": "公園口",
+        "C": "不忍口",
+        "D": "浅草口"
+      },
+      "correct": "C",
+      "answer_text": "不忍口",
+      "explanation": "アメ横公式サイトではJR上野駅不忍口すぐと案内されています。"
+    },
+    {
+      "id": 23,
+      "category": "アメ横",
+      "difficulty": 3,
+      "question": "東京メトロ上野駅からアメ横へ行く際、公式アクセスで案内されている出口は？",
+      "choices": {
+        "A": "1番出口",
+        "B": "3番出口",
+        "C": "5番出口",
+        "D": "7番出口"
+      },
+      "correct": "D",
+      "answer_text": "7番出口",
+      "explanation": "東京メトロ上野駅7番出口から徒歩約2分と案内されています。"
+    },
+    {
+      "id": 24,
+      "category": "アメ横",
+      "difficulty": 3,
+      "question": "上野広小路駅からアメ横へ行く際に案内されている出口の組み合わせは？",
+      "choices": {
+        "A": "A1・A3・A4",
+        "B": "A2・A5・A7",
+        "C": "B1・B2・B3",
+        "D": "C1・C2・C3"
+      },
+      "correct": "B",
+      "answer_text": "A2・A5・A7",
+      "explanation": "アメ横公式アクセスでは上野広小路駅A2・A5・A7出口すぐと案内されています。"
+    },
+    {
+      "id": 25,
+      "category": "アメ横",
+      "difficulty": 3,
+      "question": "仲御徒町駅からアメ横へ行く際に案内されている出口の組み合わせは？",
+      "choices": {
+        "A": "A2・A5・A7",
+        "B": "A1・A3・A4",
+        "C": "B2・B4・B6",
+        "D": "C1・C3・C5"
+      },
+      "correct": "A",
+      "answer_text": "A2・A5・A7",
+      "explanation": "アメ横公式アクセスでは仲御徒町駅A2・A5・A7出口すぐと案内されています。"
+    },
+    {
+      "id": 26,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "アメ横へのアクセス駅として案内されている京成線の駅は？",
+      "choices": {
+        "A": "京成日暮里駅",
+        "B": "京成上野駅",
+        "C": "青砥駅",
+        "D": "京成立石駅"
+      },
+      "correct": "B",
+      "answer_text": "京成上野駅",
+      "explanation": "京成上野駅正面口からすぐと案内されています。"
+    },
+    {
+      "id": 27,
+      "category": "アメ横",
+      "difficulty": 2,
+      "question": "アメ横の中に公式の案内上、駐車場はある？",
+      "choices": {
+        "A": "大型駐車場がある",
+        "B": "地下駐車場がある",
+        "C": "アメ横内にはない",
+        "D": "店舗ごとに必ずある"
+      },
+      "correct": "C",
+      "answer_text": "アメ横内にはない",
+      "explanation": "公式サイトではアメ横内に駐車場はなく、近隣駐車場の利用が案内されています。"
+    },
+    {
+      "id": 28,
+      "category": "佐竹商店街",
+      "difficulty": 2,
+      "question": "佐竹商店街の全長は約何m？",
+      "choices": {
+        "A": "約100m",
+        "B": "約330m",
+        "C": "約800m",
+        "D": "約1,500m"
+      },
+      "correct": "B",
+      "answer_text": "約330m",
+      "explanation": "佐竹商店街は全長約330mです。"
+    },
+    {
+      "id": 29,
+      "category": "佐竹商店街",
+      "difficulty": 2,
+      "question": "佐竹商店街の特徴として正しいものは？",
+      "choices": {
+        "A": "地下商店街",
+        "B": "全蓋式アーケード",
+        "C": "水上商店街",
+        "D": "駅ビル内の商店街"
+      },
+      "correct": "B",
+      "answer_text": "全蓋式アーケード",
+      "explanation": "佐竹商店街は全蓋式のアーケード商店街です。"
+    },
+    {
+      "id": 30,
+      "category": "佐竹商店街",
+      "difficulty": 3,
+      "question": "佐竹商店街は一般に日本で何番目に古い商店街といわれている？",
+      "choices": {
+        "A": "1番目",
+        "B": "2番目",
+        "C": "5番目",
+        "D": "10番目"
+      },
+      "correct": "B",
+      "answer_text": "2番目",
+      "explanation": "台東区公式観光情報では日本で2番目に古い商店街と紹介されています。"
+    },
+    {
+      "id": 31,
+      "category": "佐竹商店街",
+      "difficulty": 3,
+      "question": "佐竹商店街の始まりは主にどの時代とされている？",
+      "choices": {
+        "A": "江戸時代初期",
+        "B": "明治時代初期",
+        "C": "昭和時代後期",
+        "D": "平成時代"
+      },
+      "correct": "B",
+      "answer_text": "明治時代初期",
+      "explanation": "明治初年ごろ、屋敷跡に見世物小屋や寄席、飲食の屋台などが並び始めました。"
+    },
+    {
+      "id": 32,
+      "category": "佐竹商店街",
+      "difficulty": 3,
+      "question": "佐竹商店街一帯には江戸時代、何があった？",
+      "choices": {
+        "A": "佐竹家の上屋敷",
+        "B": "江戸城本丸",
+        "C": "外国人居留地",
+        "D": "競馬場"
+      },
+      "correct": "A",
+      "answer_text": "佐竹家の上屋敷",
+      "explanation": "この一帯には久保田藩主・佐竹家の上屋敷がありました。"
+    },
+    {
+      "id": 33,
+      "category": "御徒町周辺の歴史",
+      "difficulty": 3,
+      "question": "竹町地区に跡が残る、江戸歌舞伎で有名な劇場は？",
+      "choices": {
+        "A": "歌舞伎座",
+        "B": "市村座",
+        "C": "帝国劇場",
+        "D": "明治座"
+      },
+      "correct": "B",
+      "answer_text": "市村座",
+      "explanation": "台東区の竹町地区には市村座の跡があります。"
+    },
+    {
+      "id": 34,
+      "category": "御徒町周辺の歴史",
+      "difficulty": 3,
+      "question": "御徒町公園にある珍しい木として台東区が紹介しているものは？",
+      "choices": {
+        "A": "バオバブ",
+        "B": "ナンジャモンジャの木",
+        "C": "セコイア",
+        "D": "オリーブ"
+      },
+      "correct": "B",
+      "answer_text": "ナンジャモンジャの木",
+      "explanation": "竹町地区の紹介では、御徒町公園の「ナンジャモンジャの木」が紹介されています。"
+    },
+    {
+      "id": 35,
+      "category": "御徒町周辺の歴史",
+      "difficulty": 2,
+      "question": "竹町地区は台東区のどのあたりに位置する？",
+      "choices": {
+        "A": "北部",
+        "B": "南部",
+        "C": "西端の山間部",
+        "D": "島しょ部"
+      },
+      "correct": "B",
+      "answer_text": "南部",
+      "explanation": "竹町地区は台東区の南部に位置します。"
+    },
+    {
+      "id": 36,
+      "category": "御徒町周辺の歴史",
+      "difficulty": 3,
+      "question": "竹町地区の北側を通る大きな通りは？",
+      "choices": {
+        "A": "春日通り",
+        "B": "明治通り",
+        "C": "靖国通り",
+        "D": "青梅街道"
+      },
+      "correct": "A",
+      "answer_text": "春日通り",
+      "explanation": "台東区の紹介では竹町地区の北側は春日通りに囲まれています。"
+    },
+    {
+      "id": 37,
+      "category": "御徒町周辺の歴史",
+      "difficulty": 3,
+      "question": "竹町地区の東側を通る大きな通りは？",
+      "choices": {
+        "A": "清洲橋通り",
+        "B": "中央通り",
+        "C": "昭和通り",
+        "D": "言問通り"
+      },
+      "correct": "A",
+      "answer_text": "清洲橋通り",
+      "explanation": "台東区の紹介では竹町地区の東側は清洲橋通りに囲まれています。"
+    },
+    {
+      "id": 38,
+      "category": "御徒町周辺の歴史",
+      "difficulty": 4,
+      "question": "「竹町」という名前の由来の説として台東区が紹介しているものは？",
+      "choices": {
+        "A": "佐竹家の西門の扉に竹を用いていたため",
+        "B": "竹林しかなかったため",
+        "C": "竹細工職人しか住めなかったため",
+        "D": "竹という大名が住んでいたため"
+      },
+      "correct": "A",
+      "answer_text": "佐竹家の西門の扉に竹を用いていたため",
+      "explanation": "台東区は、佐竹家の西門の扉に竹を用いていたためという説など、複数の由来説を紹介しています。"
+    },
+    {
+      "id": 39,
+      "category": "御徒町の地名",
+      "difficulty": 3,
+      "question": "「御徒町」の名の由来となった「御徒」は、江戸時代の何？",
+      "choices": {
+        "A": "武士の役職・身分に関係する呼び名",
+        "B": "魚市場の商人",
+        "C": "寺院の僧侶",
+        "D": "農民の組合"
+      },
+      "correct": "A",
+      "answer_text": "武士の役職・身分に関係する呼び名",
+      "explanation": "御徒町周辺には江戸時代、御徒組・御徒衆と呼ばれた武士の屋敷があり、地名の由来になりました。"
+    },
+    {
+      "id": 40,
+      "category": "パンダ広場",
+      "difficulty": 1,
+      "question": "「おかちまちパンダ広場」があるのは御徒町駅のどちら側？",
+      "choices": {
+        "A": "北口前",
+        "B": "南口前",
+        "C": "ホーム上",
+        "D": "地下"
+      },
+      "correct": "B",
+      "answer_text": "南口前",
+      "explanation": "おかちまちパンダ広場はJR御徒町駅南口前にあります。"
+    },
+    {
+      "id": 41,
+      "category": "パンダ広場",
+      "difficulty": 2,
+      "question": "「おかちまちパンダ広場」の正式な名称は？",
+      "choices": {
+        "A": "御徒町中央公園",
+        "B": "上野南広場",
+        "C": "御徒町南口駅前広場",
+        "D": "御徒町パンダ公園"
+      },
+      "correct": "C",
+      "answer_text": "御徒町南口駅前広場",
+      "explanation": "正式名称は「御徒町南口駅前広場」です。"
+    },
+    {
+      "id": 42,
+      "category": "パンダ広場",
+      "difficulty": 3,
+      "question": "おかちまちパンダ広場の所在地として正しいものは？",
+      "choices": {
+        "A": "台東区上野3丁目26番地",
+        "B": "台東区浅草2丁目",
+        "C": "千代田区外神田1丁目",
+        "D": "文京区湯島4丁目"
+      },
+      "correct": "A",
+      "answer_text": "台東区上野3丁目26番地",
+      "explanation": "台東区公式案内では所在地は東京都台東区上野3丁目26番地です。"
+    },
+    {
+      "id": 43,
+      "category": "パンダ広場",
+      "difficulty": 2,
+      "question": "おかちまちパンダ広場の目的として台東区が挙げているものは？",
+      "choices": {
+        "A": "歩行者のための場や賑わいの創出",
+        "B": "自動車専用道路の整備",
+        "C": "貨物列車の積み替え",
+        "D": "空港ターミナルの建設"
+      },
+      "correct": "A",
+      "answer_text": "歩行者のための場や賑わいの創出",
+      "explanation": "歩行者のための場を確保し、くつろぎと賑わいを創出することなどが目的です。"
+    },
+    {
+      "id": 44,
+      "category": "地下鉄",
+      "difficulty": 2,
+      "question": "東京メトロ仲御徒町駅は何線？",
+      "choices": {
+        "A": "銀座線",
+        "B": "日比谷線",
+        "C": "東西線",
+        "D": "千代田線"
+      },
+      "correct": "B",
+      "answer_text": "日比谷線",
+      "explanation": "仲御徒町駅は東京メトロ日比谷線の駅です。"
+    },
+    {
+      "id": 45,
+      "category": "地下鉄",
+      "difficulty": 3,
+      "question": "仲御徒町駅の駅ナンバリングは？",
+      "choices": {
+        "A": "H16",
+        "B": "H17",
+        "C": "H18",
+        "D": "G17"
+      },
+      "correct": "B",
+      "answer_text": "H17",
+      "explanation": "仲御徒町駅はH17です。"
+    },
+    {
+      "id": 46,
+      "category": "地下鉄",
+      "difficulty": 2,
+      "question": "上野広小路駅は東京メトロの何線？",
+      "choices": {
+        "A": "銀座線",
+        "B": "日比谷線",
+        "C": "丸ノ内線",
+        "D": "有楽町線"
+      },
+      "correct": "A",
+      "answer_text": "銀座線",
+      "explanation": "上野広小路駅は東京メトロ銀座線の駅です。"
+    },
+    {
+      "id": 47,
+      "category": "地下鉄",
+      "difficulty": 3,
+      "question": "上野広小路駅の駅ナンバリングは？",
+      "choices": {
+        "A": "G14",
+        "B": "G15",
+        "C": "G16",
+        "D": "H15"
+      },
+      "correct": "B",
+      "answer_text": "G15",
+      "explanation": "上野広小路駅はG15です。"
+    },
+    {
+      "id": 48,
+      "category": "地下鉄",
+      "difficulty": 2,
+      "question": "上野御徒町駅は何線？",
+      "choices": {
+        "A": "都営浅草線",
+        "B": "都営三田線",
+        "C": "都営大江戸線",
+        "D": "都営新宿線"
+      },
+      "correct": "C",
+      "answer_text": "都営大江戸線",
+      "explanation": "上野御徒町駅は都営大江戸線の駅です。"
+    },
+    {
+      "id": 49,
+      "category": "地下鉄",
+      "difficulty": 3,
+      "question": "上野御徒町駅の駅ナンバリングは？",
+      "choices": {
+        "A": "E08",
+        "B": "E09",
+        "C": "E10",
+        "D": "E19"
+      },
+      "correct": "B",
+      "answer_text": "E09",
+      "explanation": "上野御徒町駅はE09です。"
+    },
+    {
+      "id": 50,
+      "category": "地下鉄",
+      "difficulty": 3,
+      "question": "大江戸線の新御徒町駅で乗り換えられる路線は？",
+      "choices": {
+        "A": "ゆりかもめ",
+        "B": "つくばエクスプレス",
+        "C": "東武東上線",
+        "D": "西武池袋線"
+      },
+      "correct": "B",
+      "answer_text": "つくばエクスプレス",
+      "explanation": "新御徒町駅ではつくばエクスプレスに乗り換えられます。"
+    }
+  ]
+}

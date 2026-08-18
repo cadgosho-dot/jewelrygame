@@ -1,4 +1,4 @@
-export const VERSION = '0.10.710';
+export const VERSION = '0.10.716';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -3308,6 +3308,10 @@ export const GENERAL_ITEMS = {
   bokuto: {
     id: 'bokuto', name: '木刀', category: '護身アイテム', symbol: '木', usable: false,
     image: './assets/images/items/bokuto.png', description: '観光客からもらった木刀です。持っていると強盗の発生率が半分になります。',
+  },
+  burariOkachimachiSticker: {
+    id: 'burariOkachimachiSticker', name: 'ブラり御徒町 ステッカー', category: '記念アイテム', symbol: '◎', usable: false,
+    image: './assets/images/items/burari-okachimachi-sticker.png', description: '街ブラロケのストーリーテラーからもらった「ブラり御徒町」の記念ステッカーです。',
   },
   bodyChip: {
     id: 'bodyChip', name: '身体の中のチップ', category: '謎のアイテム', symbol: '▣', usable: false,
@@ -7123,8 +7127,8 @@ function normalizeStoreEmployee(value, branchNumber = 1, legacyFallback = null) 
 
 
 
-export const AQUARIUM_CONFIG = Object.freeze({"schemaVersion":1,"featureId":"aquarium_minigame","tankLimit":1,"capacity":{"fishLoadMax":40,"plantTotalMax":15},"fish":[{"id":"neon_tetra","name":"ネオンテトラ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"rummy_nose_tetra","name":"ラミーノーズテトラ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"red_phantom_tetra","name":"レッドファントムテトラ","speciesMax":18,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"african_lampeye","name":"アフリカンランプアイ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"platy","name":"プラティ","speciesMax":10,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"black_molly","name":"ブラックモーリー","speciesMax":10,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"corydoras","name":"コリドラス","speciesMax":8,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"dwarf_gourami","name":"ドワーフグラミー","speciesMax":4,"loadPoint":3,"initialOwned":0,"initialInTank":0},{"id":"altum_angelfish","name":"アルタムエンゼルフィッシュ","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0},{"id":"discus_blue_diamond","name":"ディスカス・ブルーダイヤモンド","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0},{"id":"discus_red_map","name":"ディスカス・レッドマップ","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0}],"plants":[{"id":"anacharis","name":"アナカリス","speciesMax":6,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"amazon_sword","name":"アマゾンソード","speciesMax":3,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"microsorum","name":"ミクロソリウム","speciesMax":4,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"anubias_nana","name":"アヌビアス・ナナ","speciesMax":5,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"willow_moss","name":"ウィローモス","speciesMax":4,"initialOwned":0,"initialInTank":0,"naturalPropagation":false}],"displayItems":[{"id":"tank","name":"水槽","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"hang_on_filter","name":"フィルター（壁掛け）","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"heater","name":"ヒーター","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"light","name":"ライト","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"soil","name":"底床（ソイル）","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"driftwood","name":"流木","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true},{"id":"layout_stone","name":"レイアウトストーン","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true}],"rules":{"releaseCapacityImmediatelyOnDeathSaleOrRemoval":true,"fishBreeding":{"juvenilesCanMatureUntilLimits":true,"noBirthWhenAnyApplicableLimitReached":true,"deleteExistingOnOverLimit":false},"plantPropagation":false,"purchaseAndRewardBlockedAtLimit":true,"overLimitExistingItemsAreNotDeleted":true,"messages":{"fishSpeciesLimit":"この魚種の飼育数上限です","fishLoadLimit":"水槽の飼育負荷上限です","plantSpeciesLimit":"水草の飼育数上限です","plantTotalLimit":"水草全体の飼育数上限です","displayLimit":"この用品の所持数上限です"}}});
-export const AQUARIUM_INITIAL_STATE = Object.freeze({"schemaVersion":1,"featureId":"aquarium_minigame","tankId":"tank_01","fishLoad":{"current":0,"max":40},"fish":{"neon_tetra":{"owned":0,"inTank":0,"juveniles":0},"rummy_nose_tetra":{"owned":0,"inTank":0,"juveniles":0},"red_phantom_tetra":{"owned":0,"inTank":0,"juveniles":0},"african_lampeye":{"owned":0,"inTank":0,"juveniles":0},"platy":{"owned":0,"inTank":0,"juveniles":0},"black_molly":{"owned":0,"inTank":0,"juveniles":0},"corydoras":{"owned":0,"inTank":0,"juveniles":0},"dwarf_gourami":{"owned":0,"inTank":0,"juveniles":0},"altum_angelfish":{"owned":0,"inTank":0,"juveniles":0},"discus_blue_diamond":{"owned":0,"inTank":0,"juveniles":0},"discus_red_map":{"owned":0,"inTank":0,"juveniles":0}},"plants":{"anacharis":{"owned":0,"inTank":0},"amazon_sword":{"owned":0,"inTank":0},"microsorum":{"owned":0,"inTank":0},"anubias_nana":{"owned":0,"inTank":0},"willow_moss":{"owned":0,"inTank":0}},"displayItems":{"tank":{"owned":1,"installed":1},"hang_on_filter":{"owned":1,"installed":1},"heater":{"owned":1,"installed":1},"light":{"owned":1,"installed":1},"soil":{"owned":1,"installed":1},"driftwood":{"owned":0,"installed":0},"layout_stone":{"owned":0,"installed":0}}});
+export const AQUARIUM_CONFIG = Object.freeze({"schemaVersion":2,"featureId":"aquarium_minigame","tankLimit":1,"capacity":{"fishLoadMax":40,"plantTotalMax":15},"fish":[{"id":"neon_tetra","name":"ネオンテトラ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"rummy_nose_tetra","name":"ラミーノーズテトラ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"red_phantom_tetra","name":"レッドファントムテトラ","speciesMax":18,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"african_lampeye","name":"アフリカンランプアイ","speciesMax":20,"loadPoint":1,"initialOwned":0,"initialInTank":0},{"id":"platy","name":"プラティ","speciesMax":10,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"black_molly","name":"ブラックモーリー","speciesMax":10,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"corydoras","name":"コリドラス","speciesMax":8,"loadPoint":2,"initialOwned":0,"initialInTank":0},{"id":"dwarf_gourami","name":"ドワーフグラミー","speciesMax":4,"loadPoint":3,"initialOwned":0,"initialInTank":0},{"id":"altum_angelfish","name":"アルタムエンゼルフィッシュ","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0},{"id":"discus_blue_diamond","name":"ディスカス・ブルーダイヤモンド","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0},{"id":"discus_red_map","name":"ディスカス・レッドマップ","speciesMax":4,"loadPoint":6,"initialOwned":0,"initialInTank":0}],"plants":[{"id":"anacharis","name":"アナカリス","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"amazon_sword","name":"アマゾンソード","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"microsorum","name":"ミクロソリウム","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"anubias_nana","name":"アヌビアス・ナナ","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"willow_moss","name":"ウィローモス","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"vallisneria","name":"バリスネリア","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"cabomba","name":"カボンバ","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"hygrophila","name":"ハイグロフィラ","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"amazon_pennywort","name":"アマゾンチドメグサ","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false},{"id":"cryptocoryne","name":"クリプトコリネ","speciesMax":15,"initialOwned":0,"initialInTank":0,"naturalPropagation":false}],"displayItems":[{"id":"tank","name":"水槽","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"hang_on_filter","name":"フィルター","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"heater","name":"ヒーター","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"light","name":"ライト","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"soil","name":"床砂","ownedMax":1,"installedMax":1,"required":true,"initialOwned":1,"initialInstalled":1,"installationSelectable":false},{"id":"wood_large_a","name":"流木 大 A","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"driftwood"},{"id":"wood_large_b","name":"流木 大 B","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"driftwood"},{"id":"wood_medium_a","name":"流木 中 A","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"driftwood"},{"id":"wood_medium_b","name":"流木 中 B","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"driftwood"},{"id":"wood_small_a","name":"流木 小 A","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"driftwood"},{"id":"wood_small_b","name":"流木 小 B","ownedMax":3,"installedMax":3,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"driftwood"},{"id":"stone_a_large","name":"Stone type A 大","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_a_medium","name":"Stone type A 中","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_a_small","name":"Stone type A 小","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_b_large","name":"Stone type B 大","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_b_medium","name":"Stone type B 中","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_b_small","name":"Stone type B 小","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_c_large","name":"Stone type C 大","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_c_medium","name":"Stone type C 中","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"},{"id":"stone_c_small","name":"Stone type C 小","ownedMax":5,"installedMax":5,"required":false,"initialOwned":0,"initialInstalled":0,"installationSelectable":true,"family":"stone"}],"rules":{"releaseCapacityImmediatelyOnDeathSaleOrRemoval":true,"fishBreeding":{"juvenilesCanMatureUntilLimits":true,"noBirthWhenAnyApplicableLimitReached":true,"deleteExistingOnOverLimit":false},"plantPropagation":false,"purchaseAndRewardBlockedAtLimit":true,"overLimitExistingItemsAreNotDeleted":true,"messages":{"fishSpeciesLimit":"この魚種の飼育数上限です","fishLoadLimit":"水槽の飼育負荷上限です","plantSpeciesLimit":"水草の飼育数上限です","plantTotalLimit":"水草全体の飼育数上限です","displayLimit":"この用品の所持数上限です"}}});
+export const AQUARIUM_INITIAL_STATE = Object.freeze({"schemaVersion":2,"featureId":"aquarium_minigame","tankId":"tank_01","fishLoad":{"current":0,"max":40},"fish":{"neon_tetra":{"owned":0,"inTank":0,"juveniles":0},"rummy_nose_tetra":{"owned":0,"inTank":0,"juveniles":0},"red_phantom_tetra":{"owned":0,"inTank":0,"juveniles":0},"african_lampeye":{"owned":0,"inTank":0,"juveniles":0},"platy":{"owned":0,"inTank":0,"juveniles":0},"black_molly":{"owned":0,"inTank":0,"juveniles":0},"corydoras":{"owned":0,"inTank":0,"juveniles":0},"dwarf_gourami":{"owned":0,"inTank":0,"juveniles":0},"altum_angelfish":{"owned":0,"inTank":0,"juveniles":0},"discus_blue_diamond":{"owned":0,"inTank":0,"juveniles":0},"discus_red_map":{"owned":0,"inTank":0,"juveniles":0}},"plants":{"anacharis":{"owned":0,"inTank":0},"amazon_sword":{"owned":0,"inTank":0},"microsorum":{"owned":0,"inTank":0},"anubias_nana":{"owned":0,"inTank":0},"willow_moss":{"owned":0,"inTank":0},"vallisneria":{"owned":0,"inTank":0},"cabomba":{"owned":0,"inTank":0},"hygrophila":{"owned":0,"inTank":0},"amazon_pennywort":{"owned":0,"inTank":0},"cryptocoryne":{"owned":0,"inTank":0}},"displayItems":{"tank":{"owned":1,"installed":1},"hang_on_filter":{"owned":1,"installed":1},"heater":{"owned":1,"installed":1},"light":{"owned":1,"installed":1},"soil":{"owned":1,"installed":1},"wood_large_a":{"owned":0,"installed":0},"wood_large_b":{"owned":0,"installed":0},"wood_medium_a":{"owned":0,"installed":0},"wood_medium_b":{"owned":0,"installed":0},"wood_small_a":{"owned":0,"installed":0},"wood_small_b":{"owned":0,"installed":0},"stone_a_large":{"owned":0,"installed":0},"stone_a_medium":{"owned":0,"installed":0},"stone_a_small":{"owned":0,"installed":0},"stone_b_large":{"owned":0,"installed":0},"stone_b_medium":{"owned":0,"installed":0},"stone_b_small":{"owned":0,"installed":0},"stone_c_large":{"owned":0,"installed":0},"stone_c_medium":{"owned":0,"installed":0},"stone_c_small":{"owned":0,"installed":0}}});
 export function createInitialAquariumState(metadata = {}) {
   const base = structuredClone(AQUARIUM_INITIAL_STATE);
   return {
@@ -7132,7 +7136,7 @@ export function createInitialAquariumState(metadata = {}) {
     unlocked: Boolean(metadata.unlocked),
     unlockedDay: Math.max(0, Math.floor(Number(metadata.unlockedDay) || 0)),
     unlockSource: String(metadata.unlockSource || '').slice(0, 80),
-    dataVersion: 2,
+    dataVersion: 3,
     lastSyncRevision: Math.max(0, Math.floor(Number(metadata.lastSyncRevision) || 0)),
   };
 }
@@ -7285,6 +7289,9 @@ export function initialState() {
         active: false,
         stage: 'idle',
       },
+      oyatsuDaisukiEvent: { lastAttemptDay: 0, lastTriggeredDay: 0, totalTriggered: 0, active: false, stage: 'idle', route: '', movieCompleted: false },
+      speedStarEvent: { lastAttemptDay: 0, lastTriggeredDay: 0, totalTriggered: 0, active: false, stage: 'idle', lossApplied: false, lossAmount: 0 },
+      storytellerEvent: { lastAttemptDay: 0, lastTriggeredDay: 0, totalTriggered: 0, active: false, stage: 'idle', questionId: 0, selectedKey: '', correct: false, rewardGranted: false },
       pandaMusicEvent: {
         lastAttemptDay: 0,
         lastTriggeredDay: 0,
@@ -7497,13 +7504,13 @@ export function normalizeAquariumState(saved) {
     unlockSource: source.unlockSource,
     lastSyncRevision: source.lastSyncRevision,
   }), source);
-  next.schemaVersion = 1;
+  next.schemaVersion = 2;
   next.featureId = 'aquarium_minigame';
   next.tankId = 'tank_01';
   next.unlocked = Boolean(source.unlocked);
   next.unlockedDay = Math.max(0, Math.floor(Number(source.unlockedDay) || 0));
   next.unlockSource = String(source.unlockSource || '').slice(0, 80);
-  next.dataVersion = 2;
+  next.dataVersion = 3;
   next.lastSyncRevision = Math.max(0, Math.floor(Number(source.lastSyncRevision) || 0));
   next.fish = isRecord(next.fish) ? next.fish : {};
   for (const def of AQUARIUM_CONFIG.fish) {
@@ -7523,6 +7530,26 @@ export function normalizeAquariumState(saved) {
     };
   }
   next.displayItems = isRecord(next.displayItems) ? next.displayItems : {};
+  // v0.10.716: 旧水槽データの汎用「流木」「レイアウトストーン」を、新しい商品バリエーションへ一度だけ移行する。
+  const legacyDisplayItems = isRecord(source.displayItems) ? source.displayItems : {};
+  const newWoodIds = AQUARIUM_CONFIG.displayItems.filter((def) => def.family === 'driftwood').map((def) => def.id);
+  const newStoneIds = AQUARIUM_CONFIG.displayItems.filter((def) => def.family === 'stone').map((def) => def.id);
+  const hasNewWood = newWoodIds.some((id) => Math.max(0, Number(legacyDisplayItems?.[id]?.owned) || 0) > 0 || Math.max(0, Number(legacyDisplayItems?.[id]?.installed) || 0) > 0);
+  const hasNewStone = newStoneIds.some((id) => Math.max(0, Number(legacyDisplayItems?.[id]?.owned) || 0) > 0 || Math.max(0, Number(legacyDisplayItems?.[id]?.installed) || 0) > 0);
+  if (!hasNewWood && isRecord(legacyDisplayItems.driftwood)) {
+    next.displayItems.wood_large_a = {
+      owned: Math.max(0, Math.floor(Number(legacyDisplayItems.driftwood.owned) || 0)),
+      installed: Math.max(0, Math.floor(Number(legacyDisplayItems.driftwood.installed) || 0)),
+    };
+  }
+  if (!hasNewStone && isRecord(legacyDisplayItems.layout_stone)) {
+    next.displayItems.stone_a_large = {
+      owned: Math.max(0, Math.floor(Number(legacyDisplayItems.layout_stone.owned) || 0)),
+      installed: Math.max(0, Math.floor(Number(legacyDisplayItems.layout_stone.installed) || 0)),
+    };
+  }
+  delete next.displayItems.driftwood;
+  delete next.displayItems.layout_stone;
   for (const def of AQUARIUM_CONFIG.displayItems) {
     const row = isRecord(next.displayItems[def.id]) ? next.displayItems[def.id] : {};
     const minimum = def.required ? 1 : 0;
@@ -8498,6 +8525,29 @@ export function migrateState(saved) {
   if (!state.events.wristFoundEvent.active && !['idle', 'completed'].includes(state.events.wristFoundEvent.stage)) {
     state.events.wristFoundEvent.stage = 'completed';
   }
+
+
+  const normalizeOkachimachiDailyRandomEvent = (key, validStages, extra = {}) => {
+    const saved = isRecord(state.events[key]) ? state.events[key] : {};
+    state.events[key] = {
+      lastAttemptDay: Math.max(0, Math.floor(Number(saved.lastAttemptDay) || 0)),
+      lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+      totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+      active: Boolean(saved.active),
+      stage: validStages.includes(saved.stage) ? saved.stage : 'idle',
+      ...extra(saved),
+    };
+    if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
+  };
+  normalizeOkachimachiDailyRandomEvent('oyatsuDaisukiEvent', ['idle','intro1','intro2','choice','iceLead','iceEating','iceFade','iceFarewell','shopLead','shopVideo','shop','shopConfirm','shopFade','shopFarewell','completed'], (saved) => ({
+    route: ['ice','shop'].includes(saved.route) ? saved.route : '', movieCompleted: Boolean(saved.movieCompleted),
+  }));
+  normalizeOkachimachiDailyRandomEvent('speedStarEvent', ['idle','chase','impact','character','run','thought1','thought2','wallet','angry','completed'], (saved) => ({
+    lossApplied: Boolean(saved.lossApplied), lossAmount: Math.max(0, Math.floor(Number(saved.lossAmount) || 0)),
+  }));
+  normalizeOkachimachiDailyRandomEvent('storytellerEvent', ['idle','intro1','intro2','ittomo','question','correct','reward','correctFarewell','incorrect','incorrectAnswer','incorrectFarewell','completed'], (saved) => ({
+    questionId: Math.max(0, Math.floor(Number(saved.questionId) || 0)), selectedKey: ['A','B','C','D'].includes(saved.selectedKey) ? saved.selectedKey : '', correct: Boolean(saved.correct), rewardGranted: Boolean(saved.rewardGranted),
+  }));
 
   const savedWesternUnionEvent = isRecord(state.events.westernUnionEvent) ? state.events.westernUnionEvent : {};
   const validWesternUnionStage = ['idle', 'video', 'choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3', 'completed'];

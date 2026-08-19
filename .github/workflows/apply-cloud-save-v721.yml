@@ -1,0 +1,45 @@
+name: Apply cloud save v721
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply_cloud_save_v721.py'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v0.10.721 hotfix
+        run: python3 scripts/apply_cloud_save_v721.py
+
+      - name: Validate JavaScript syntax
+        run: |
+          node --check js/firebase-service.js
+          node --check js/app.js
+          node --check js/game-data.js
+
+      - name: Validate release markers
+        run: |
+          grep -q "0.10.721" js/game-data.js
+          grep -q "0.10.721" js/app.js
+          grep -q "0.10.721" sw.js
+          grep -q "isCloudDocumentSizeError" js/firebase-service.js
+          grep -q "previousMetadata?.mode !== 'chunked'" js/firebase-service.js
+
+      - name: Commit hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "721 cloud save size fallback fix"
+          git push origin main

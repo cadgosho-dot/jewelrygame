@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/runner/work/jewelrygame/jewelrygame/scripts/apply_tropical_fish_v724.py", line 69, in <module>
+    app = replace_once(
+          ^^^^^^^^^^^^^
+  File "/home/runner/work/jewelrygame/jewelrygame/scripts/apply_tropical_fish_v724.py", line 19, in replace_once
+    raise RuntimeError(f'{label}: expected exactly one match, found {count}')
+RuntimeError: syncAquariumRuntime options: expected exactly one match, found 0
+exit_status=1

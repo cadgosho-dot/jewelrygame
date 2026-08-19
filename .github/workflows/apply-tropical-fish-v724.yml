@@ -1,0 +1,42 @@
+name: Apply tropical fish v724
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply_tropical_fish_v724.py'
+      - '.github/workflows/apply-tropical-fish-v724.yml'
+      - 'TRIGGER_V724.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply v0.10.724
+        run: python3 scripts/apply_tropical_fish_v724.py
+      - name: Validate JavaScript
+        run: |
+          node --check js/app.js
+          node --check js/game-data.js
+          node --check js/firebase-service.js
+      - name: Validate markers
+        run: |
+          grep -q "0.10.724" js/game-data.js
+          grep -q "tropicalFishShopEventAccessAllowed" js/app.js
+          grep -q "forceFreshSyncs" js/app.js
+          grep -q "0.10.724" sw.js
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "724 tropical fish event and aquarium sync fix"
+          git push origin main

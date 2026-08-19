@@ -235,9 +235,10 @@ export async function logout() {
   await signOut(auth);
 }
 
-// v0.10.721: JSON byte数だけではFirestore実文書サイズを正確に予測できないため安全幅を広げる。
-const CLOUD_INLINE_SAFE_BYTES = 384 * 1024;
-const CLOUD_CHUNK_RAW_BYTES = 480 * 1024;
+// v0.10.722: 現在セーブは常にサブコレクションへ分割保存する。
+// users/{uid} 直下は旧セーブ互換の読み取り専用とし、1文書上限の影響を完全に避ける。
+const CLOUD_INLINE_SAFE_BYTES = 0;
+const CLOUD_CHUNK_RAW_BYTES = 384 * 1024;
 const CLOUD_CHUNK_MAX_COUNT = 64;
 const cloudStorageMetaByUid = new Map();
 
@@ -404,30 +405,51 @@ async function readChunkedGameState(uid, metadata) {
   }
 }
 
+function cloudSaveMetaRef(uid) {
+  return doc(db, 'users', uid, 'saveMeta', 'current');
+}
+
+async function readCurrentCloudMetadata(uid) {
+  const metaSnapshot = await getDoc(cloudSaveMetaRef(uid));
+  return metaSnapshot.exists() ? (metaSnapshot.data() || null) : null;
+}
+
 export async function loadState(uid) {
   if (previewMode) {
     const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
     return saved ? JSON.parse(saved) : null;
   }
+
+  // v0.10.722: 新方式の小さなメタ文書を最優先で確認する。
+  // users/{uid} 直下が旧gameStateで上限ぎりぎりでも、読み込み・保存を継続できる。
+  const currentMetadata = await readCurrentCloudMetadata(uid);
+  if (currentMetadata?.mode === 'chunked') {
+    const loaded = await readChunkedGameState(uid, currentMetadata);
+    cloudStorageMetaByUid.set(uid, currentMetadata);
+    return loaded;
+  }
+
+  // 旧方式との互換読み込み。新方式で一度保存されるまでは従来データを利用する。
   const snapshot = await getDoc(doc(db, 'users', uid));
   if (!snapshot.exists()) {
     cloudStorageMetaByUid.delete(uid);
     return null;
   }
   const data = snapshot.data() || {};
-  const metadata = data.gameStateStorage || null;
-  if (metadata?.mode === 'chunked') {
-    const loaded = await readChunkedGameState(uid, metadata);
-    cloudStorageMetaByUid.set(uid, metadata);
+  const legacyMetadata = data.gameStateStorage || null;
+  if (legacyMetadata?.mode === 'chunked') {
+    const loaded = await readChunkedGameState(uid, legacyMetadata);
+    cloudStorageMetaByUid.set(uid, legacyMetadata);
     return loaded;
   }
-  cloudStorageMetaByUid.set(uid, metadata || { mode: 'inline' });
+  cloudStorageMetaByUid.set(uid, legacyMetadata || { mode: 'inline-legacy' });
   return data.gameState || null;
 }
 
 export async function saveState(uid, state) {
-  // v0.10.720: 端末保存スナップショットをそのまま利用し、Firestore 1文書上限に
-  // 近づいた場合は users/{uid}/saveChunks へ世代付きで分割する。
+  // v0.10.722: Firestoreの1文書上限を根本回避するため、セーブは常に
+  // users/{uid}/saveChunks + users/{uid}/saveMeta/current へ保存する。
+  // 旧 users/{uid}.gameState は触らない。これにより旧文書が上限直前でも保存可能。
   const clean = { ...state, updatedAt: new Date().toISOString() };
   if (previewMode) {
     localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(clean));
@@ -436,36 +458,11 @@ export async function saveState(uid, state) {
 
   const raw = JSON.stringify(clean);
   const encoded = encodeCloudChunks(raw);
-  const previousMetadata = cloudStorageMetaByUid.get(uid) || null;
-
-  if (encoded.bytes <= CLOUD_INLINE_SAFE_BYTES && previousMetadata?.mode !== 'chunked') {
-    const metadata = {
-      mode: 'inline',
-      version: 1,
-      bytes: encoded.bytes,
-      saveRevision: Math.max(0, Math.floor(Number(clean.saveRevision) || 0)),
-      updatedAt: clean.updatedAt,
-    };
-    try {
-      await runCloudSaveWithRetry(() => mergeUserRoot(uid, {
-        gameState: clean,
-        gameStateStorage: metadata,
-        updatedAt: serverTimestamp(),
-      }));
-      cloudStorageMetaByUid.set(uid, metadata);
-      return;
-    } catch (error) {
-      if (!isCloudDocumentSizeError(error)) throw error;
-      console.warn('[Cloud Save] Firestore document too large; switching to chunked storage.', {
-        bytes: encoded.bytes, code: error?.code || '', message: error?.message || '',
-      });
-    }
-  }
-
+  const previousMetadata = await readCurrentCloudMetadata(uid).catch(() => cloudStorageMetaByUid.get(uid) || null);
   const generation = `${Math.max(0, Math.floor(Number(clean.saveRevision) || 0))}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const metadata = {
     mode: 'chunked',
-    version: 1,
+    version: 2,
     encoding: 'base64-utf8-v1',
     generation,
     count: encoded.chunks.length,
@@ -488,15 +485,10 @@ export async function saveState(uid, state) {
         });
         writtenChunkRefs[index] = chunkRef;
       }
-      // すべてのチャンク書き込み成功後にだけルートの参照先を切り替える。
-      await mergeUserRoot(uid, {
-        gameState: null,
-        gameStateStorage: metadata,
-        updatedAt: serverTimestamp(),
-      });
+      // 全チャンク成功後、小さなメタ文書だけを切り替える。ルート文書は更新しない。
+      await setDoc(cloudSaveMetaRef(uid), metadata);
     });
   } catch (error) {
-    // 参照先を切り替える前の失敗なら、孤立チャンクだけを後片付けする。
     void Promise.allSettled(writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
     throw error;
   }
@@ -552,14 +544,16 @@ export async function deleteAccountCompletely(password = '') {
   await deleteUser(user);
 }
 
+function sessionDocRef(uid) {
+  return doc(db, 'users', uid, 'session', 'current');
+}
+
 export async function claimSession(uid, sessionId) {
   if (previewMode) return;
-  await setDoc(doc(db, 'users', uid), {
-    activeSession: {
-      id: sessionId,
-      startedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
+  await setDoc(sessionDocRef(uid), {
+    id: sessionId,
+    startedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }, { merge: true });
 }
 
@@ -567,9 +561,9 @@ export function watchSession(uid, sessionId, onTakenOver) {
   if (previewMode || !db) return () => {};
   if (unsubscribeSession) unsubscribeSession();
   let initialized = false;
-  unsubscribeSession = onSnapshot(doc(db, 'users', uid), (snapshot) => {
+  unsubscribeSession = onSnapshot(sessionDocRef(uid), (snapshot) => {
     if (!snapshot.exists()) return;
-    const active = snapshot.data().activeSession;
+    const active = snapshot.data();
     if (!initialized) {
       initialized = true;
       return;
@@ -582,10 +576,10 @@ export function watchSession(uid, sessionId, onTakenOver) {
 export async function heartbeat(uid, sessionId) {
   if (previewMode || !db) return;
   try {
-    await updateDoc(doc(db, 'users', uid), {
-      'activeSession.id': sessionId,
-      'activeSession.updatedAt': new Date().toISOString(),
-    });
+    await setDoc(sessionDocRef(uid), {
+      id: sessionId,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
   } catch (error) {
     console.warn('Heartbeat failed:', error);
   }
@@ -865,6 +859,7 @@ export function firebaseErrorMessage(error, context = '') {
       'network-request-failed': '通信できないためクラウド保存できません。端末には保存済みです。',
       'permission-denied': 'クラウド保存の認証または権限を確認できません。端末には保存済みです。',
       'resource-exhausted': 'クラウド側の利用制限に達しています。端末には保存済みです。',
+      'invalid-argument': 'クラウド保存形式を切り替えています。端末には保存済みです。',
       'unauthenticated': 'ログイン情報を確認できないためクラウド保存できません。端末には保存済みです。',
       'unavailable': 'クラウドサービスへ接続できません。端末には保存済みです。',
       'jxj/cloud-save-too-large': 'セーブデータが非常に大きく、クラウドへ保存できません。端末には保存済みです。',

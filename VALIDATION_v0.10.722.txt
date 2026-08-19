@@ -1,0 +1,8 @@
+JEWELRY×JEWELRY v0.10.722 VALIDATION
+1. node --check js/firebase-service.js js/app.js js/game-data.js が成功すること。
+2. saveState が users/{uid} 直下へ gameState を書かないこと。
+3. saveChunks と saveMeta/current だけで現在セーブが保存・復元できること。
+4. 旧 users/{uid}.gameState は新metaが無い時だけ互換読み込みされること。
+5. claimSession/watchSession/heartbeat が session/current を使うこと。
+6. SAVE_SCHEMA_VERSION=1 を維持すること。
+7. HTML/Service Worker/import query が0.10.722へ更新されること。

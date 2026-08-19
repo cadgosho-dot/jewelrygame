@@ -1,4 +1,4 @@
-export const VERSION = '0.10.721';
+export const VERSION = '0.10.722';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -7530,7 +7530,7 @@ export function normalizeAquariumState(saved) {
     };
   }
   next.displayItems = isRecord(next.displayItems) ? next.displayItems : {};
-  // v0.10.721: 旧水槽データの汎用「流木」「レイアウトストーン」を、新しい商品バリエーションへ一度だけ移行する。
+  // v0.10.722: 旧水槽データの汎用「流木」「レイアウトストーン」を、新しい商品バリエーションへ一度だけ移行する。
   const legacyDisplayItems = isRecord(source.displayItems) ? source.displayItems : {};
   const newWoodIds = AQUARIUM_CONFIG.displayItems.filter((def) => def.family === 'driftwood').map((def) => def.id);
   const newStoneIds = AQUARIUM_CONFIG.displayItems.filter((def) => def.family === 'stone').map((def) => def.id);

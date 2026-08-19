@@ -1,3 +1,10 @@
+# v0.10.722 - 2026-08-19
+
+- クラウドセーブを常に `users/{uid}/saveChunks` と `saveMeta/current` に分離し、ルートユーザー文書の1MB上限から完全に切り離しました。
+- 旧 `users/{uid}.gameState` は互換読み込み専用とし、上限ぎりぎりの旧文書へ新しいセーブを書き戻しません。
+- セッション管理も `users/{uid}/session/current` へ移動し、旧gameStateのサイズがログイン継続判定へ影響しないようにしました。
+- SAVE_SCHEMA_VERSIONは1のままです。端末セーブ形式は変更していません。
+
 # v0.10.721 - 2026-08-19
 
 - 実機でFirestoreの1文書上限超過を確認（1,050,664 bytes > 1,048,576 bytes）。

@@ -289,6 +289,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   looseShopOriginalQuizEvent: 'looseShop',
   jewelryShop: 'jewelryShop',
   displayShop: 'displayShop',
+  pearlHumanEvent: 'displayShop',
   realEstate: 'realEstate',
   tattooWomanAmberEvent: 'realEstate',
   glab: 'glab',

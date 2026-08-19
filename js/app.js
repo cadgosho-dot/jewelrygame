@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.725';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.725';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.725';
+const UI_BUILD_VERSION = '0.10.726';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.726';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.726';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.725';
+} from './firebase-service.js?v=0.10.726';
 
 
 
@@ -376,7 +376,7 @@ const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. カワハラ';
 const OKACHIMACHI_AREA_SCREENS = new Set([
-  'okachimachi', 'okachimachiQuiz', 'oyatsuDaisukiEvent', 'tropicalFishShop', 'speedStarEvent', 'storytellerEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
+  'okachimachi', 'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'tropicalFishShop', 'speedStarEvent', 'storytellerEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
 ]);
 
@@ -392,6 +392,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   oyatsuDaisukiEvent: new Set(['intro1','intro2','choice','iceLead','iceEating','iceFade','iceFarewell','shopLead','shopVideo','shop','shopConfirm','shopFade','shopFarewell']),
   speedStarEvent: new Set(['chase','impact','character','run','thought1','thought2','wallet','angry']),
   storytellerEvent: new Set(['intro1','intro2','ittomo','question','correct','reward','correctFarewell','incorrect','incorrectAnswer','incorrectFarewell']),
+  pearlHumanEvent: new Set(['intro1','intro2','intro3','effect']),
   wristFoundEvent: new Set(['intro', 'report']),
   glabVisitVideoEvent: new Set(['video']),
   kawaharaKnowledgeEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
@@ -424,7 +425,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -450,6 +451,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   oyatsuDaisukiEvent: { eventKey: 'oyatsuDaisukiEvent', fallback: 'okachimachi' },
   speedStarEvent: { eventKey: 'speedStarEvent', fallback: 'okachimachi' },
   storytellerEvent: { eventKey: 'storytellerEvent', fallback: 'okachimachi' },
+  pearlHumanEvent: { eventKey: 'pearlHumanEvent', fallback: 'displayShop' },
   tropicalFishShop: { eventKey: '', fallback: 'okachimachi' },
   wristFoundEvent: { eventKey: 'wristFoundEvent', fallback: 'okachimachi' },
   glabVisitVideoEvent: { eventKey: 'glabVisitVideoEvent', fallback: 'glab' },
@@ -718,7 +720,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
   'store-theft-event-next', 'store-theft-event-choice', 'store-theft-event-recover',
-  'oyatsu-event-next', 'oyatsu-event-choice', 'oyatsu-shop-confirm-choice', 'oyatsu-movie-skip', 'oyatsu-video-start', 'speed-star-event-next', 'storyteller-event-next', 'storyteller-quiz-answer', 'storyteller-reward-next',
+  'pearl-human-event-next', 'oyatsu-event-next', 'oyatsu-event-choice', 'oyatsu-shop-confirm-choice', 'oyatsu-movie-skip', 'oyatsu-video-start', 'speed-star-event-next', 'storyteller-event-next', 'storyteller-quiz-answer', 'storyteller-reward-next',
     'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'okachimachi-toll-event-next', 'okachimachi-invasive-turtles-video-start', 'okachimachi-invasive-turtles-event-next', 'panda-music-event-next', 'kaitenzushi-finish',
   'mystery-chinese-meal-video-start', 'event-movie-skip', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
 ]);
@@ -9672,6 +9674,110 @@ function normalizeOkachimachiDailyEventState(key, validStages, defaults = {}) {
   return next;
 }
 
+let pearlHumanFinishTimer = null;
+
+function pearlHumanEventState() {
+  const saved = state?.events?.pearlHumanEvent || {};
+  const allowedStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'effect', 'completed']);
+  const next = {
+    ...saved,
+    active: Boolean(saved.active),
+    stage: allowedStages.has(String(saved.stage || '')) ? String(saved.stage) : 'idle',
+    effectStartDay: Math.max(0, Math.floor(Number(saved.effectStartDay) || 0)),
+    effectEndDay: Math.max(0, Math.floor(Number(saved.effectEndDay) || 0)),
+    lastGuaranteedCustomerDay: Math.max(0, Math.floor(Number(saved.lastGuaranteedCustomerDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+  };
+  if (!next.active && !['idle', 'completed'].includes(next.stage)) next.stage = 'completed';
+  state.events = state.events || {};
+  state.events.pearlHumanEvent = next;
+  return next;
+}
+
+function pearlHumanEffectActive(day = state?.game?.day) {
+  const e = pearlHumanEventState();
+  const currentDay = Math.max(0, Math.floor(Number(day) || 0));
+  return e.effectStartDay > 0 && currentDay >= e.effectStartDay && currentDay <= e.effectEndDay;
+}
+
+function playerHasInstalledShowcaseForPearlHumanEvent() {
+  return contractedStoreBranches().some((branch) => installedShowcaseCount(branch) > 0);
+}
+
+function normalCustomerIdsForPearlHumanEvent() {
+  return Object.keys(CUSTOMERS).filter((id) => !CUSTOMERS[id]?.specialOnly && state.customers?.[id]);
+}
+
+function schedulePearlHumanGuaranteedCustomer({ preserveExistingToday = false } = {}) {
+  if (!pearlHumanEffectActive()) return false;
+  const e = pearlHumanEventState();
+  const currentDay = Math.max(0, Math.floor(Number(state.game.day) || 0));
+  if (e.lastGuaranteedCustomerDay === currentDay) return true;
+  if (!storeBusinessOpen()) return false;
+
+  const normalIds = normalCustomerIdsForPearlHumanEvent();
+  if (!normalIds.length) return false;
+
+  if (preserveExistingToday) {
+    const alreadyVisitedToday = normalIds.some((id) => {
+      const customer = state.customers[id];
+      return Boolean(customer?.visiting) || Number(customer?.lastVisitDay) === currentDay;
+    });
+    if (alreadyVisitedToday) {
+      e.lastGuaranteedCustomerDay = currentDay;
+      return true;
+    }
+  }
+
+  Object.values(state.customers || {}).forEach((customer) => {
+    customer.visiting = false;
+    customer.visitingBranchNumber = null;
+  });
+
+  const branches = contractedStoreBranches().filter((branch) => storeBranchOperating(branch));
+  if (!branches.length) return false;
+  const branch = randomFrom(branches);
+
+  let eligible = normalIds.filter((id) => {
+    const customer = state.customers[id];
+    if (!customer.met) return currentDay >= 2;
+    return currentDay - (customer.lastVisitDay || 0) >= CUSTOMER_REPEAT_COOLDOWN_DAYS;
+  });
+  if (!eligible.length) eligible = normalIds.slice();
+  const customerId = randomFrom(eligible);
+  if (!customerId || !branch || !startCustomerVisit(customerId, branch.number)) return false;
+
+  e.lastGuaranteedCustomerDay = currentDay;
+  addNotification('お客様が来店しています', `${CUSTOMERS[customerId].name}さんが${storeBranchLabel(branch.number)}に来ています。`, 'special');
+  return true;
+}
+
+function maybeStartPearlHumanEvent() {
+  const e = pearlHumanEventState();
+  if (e.active) return true;
+  if (pearlHumanEffectActive()) return false;
+  if (illnessEventSuppressionActive()) return false;
+  if (!playerHasInstalledShowcaseForPearlHumanEvent()) return false;
+  if (Math.floor(Math.random() * 30) !== 0) return false;
+
+  const currentDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  e.active = true;
+  e.stage = 'intro1';
+  e.effectStartDay = currentDay;
+  e.effectEndDay = currentDay + 2;
+  e.lastGuaranteedCustomerDay = 0;
+  e.totalTriggered += 1;
+  saveGame();
+  return true;
+}
+
+function resumePearlHumanEvent() {
+  const e = pearlHumanEventState();
+  if (!e.active) return false;
+  setScreen('pearlHumanEvent', {}, false);
+  return true;
+}
+
 function oyatsuDaisukiEventState() {
   const e = normalizeOkachimachiDailyEventState('oyatsuDaisukiEvent', ['idle','intro1','intro2','choice','iceLead','iceEating','iceFade','iceFarewell','shopLead','shopVideo','shop','shopConfirm','shopFade','shopFarewell','completed'], { route: '', movieCompleted: false });
   e.route = ['ice','shop'].includes(e.route) ? e.route : '';
@@ -9967,6 +10073,58 @@ function purchaseTropicalShopItem(){
   delete screenData.tropicalModal; saveGame(); startMoneyFeedback(-total,1200); playSfx('coin',{gain:.86}); vibrate(28); render();
 }
 
+function pearlHumanPlayerName() {
+  return String(state?.playerName || 'あなた').trim() || 'あなた';
+}
+
+function schedulePearlHumanFinish() {
+  if (pearlHumanFinishTimer !== null) return;
+  pearlHumanFinishTimer = window.setTimeout(() => {
+    pearlHumanFinishTimer = null;
+    const e = pearlHumanEventState();
+    if (!e.active || e.stage !== 'effect') return;
+    e.active = false;
+    e.stage = 'completed';
+    saveGame();
+    if (screen === 'pearlHumanEvent') setScreen('displayShop', {}, false);
+  }, 4000);
+}
+
+function renderPearlHumanEvent() {
+  const e = pearlHumanEventState();
+  if (!e.active) {
+    queueMicrotask(() => setScreen('displayShop', {}, false));
+    return renderDisplayShop();
+  }
+  const name = esc(pearlHumanPlayerName());
+  const lines = {
+    intro1: `あっ！${name}！、、いらっしゃい！、、、`,
+    intro2: '最近頑張ってるわよねえ、、、素敵な商品も多いし、、、',
+    intro3: 'ネットで紹介しとくね、、、これからも良い商品作ってね！、、、、',
+  };
+  const character = `<div class="visit-character-area pearl-human-character-area" aria-hidden="true"><img class="visit-character pearl-human-character" src="./assets/images/events/pearl-human.png?v=${VERSION}" alt="" draggable="false"></div>`;
+  if (e.stage === 'effect') {
+    queueMicrotask(schedulePearlHumanFinish);
+    return `<main class="main-screen jxj-new-event-screen pearl-human-event-screen"><section class="visit-character-event pearl-human-event" aria-live="polite">${character}<div class="pearl-human-effect-message" role="status">3日間、店舗で売れる確率が2倍になりました。<br>この3日間は毎日どこかの店舗に1名来店します。</div></section></main>`;
+  }
+  return `<main class="main-screen jxj-new-event-screen pearl-human-event-screen"><section class="visit-character-event pearl-human-event" aria-live="polite">${character}<button type="button" class="event-dialogue-card jxj-transparent-dialogue pearl-human-dialogue" data-action="pearl-human-event-next"><small>パール人間</small><strong>${lines[e.stage] || ''}</strong><span>タップして進む</span></button></section></main>`;
+}
+
+function advancePearlHumanEvent() {
+  const e = pearlHumanEventState();
+  if (!e.active) return;
+  if (e.stage === 'intro1') e.stage = 'intro2';
+  else if (e.stage === 'intro2') e.stage = 'intro3';
+  else if (e.stage === 'intro3') {
+    e.stage = 'effect';
+    schedulePearlHumanGuaranteedCustomer({ preserveExistingToday: true });
+    playSfx('success', { gain: 0.90 });
+    vibrate([22, 18, 36]);
+  } else return;
+  saveGame();
+  render();
+}
+
 function renderOyatsuDaisukiEvent() {
   const e=oyatsuDaisukiEventState(), name=esc(oyatsuPlayerName());
   if(!e.active){queueMicrotask(()=>setScreen('okachimachi',{},false));return renderOkachimachi();}
@@ -10051,6 +10209,7 @@ async function enterOkachimachiFromOutside() {
   if (resumeApprenticeCinemaEvent()) return;
   if (resumeCinemaVisitEvent()) return;
   if (resumeClockTowerDonationEvent()) return;
+  if (resumePearlHumanEvent()) return;
   if (resumeOyatsuDaisukiEvent()) return;
   if (resumeSpeedStarEvent()) return;
   if (resumeStorytellerEvent()) return;
@@ -10415,7 +10574,7 @@ function backgroundAssetFor(target) {
   if (target === 'craft' || target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';
   if (target === 'looseShop' || target === 'supplierRough' || target === 'looseShopOriginalQuizEvent') return isPortraitLayout() ? 'loose-shop-portrait-v385' : 'loose-shop-v385';
   if (target === 'jewelryShop') return isPortraitLayout() ? 'jewelry-shop-portrait' : 'jewelry-shop';
-  if (target === 'displayShop') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
+  if (target === 'displayShop' || target === 'pearlHumanEvent') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
   if (target === 'tropicalFishShop') return isPortraitLayout() ? 'tropical-fish-shop-portrait' : 'tropical-fish-shop';
   if (['oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent'].includes(target)) return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
@@ -10790,6 +10949,7 @@ function scheduleOkachimachiQuizBottomLayoutSync() {
 }
 
 function setScreen(target, data = {}, push = true) {
+  if (target === 'displayShop' && state && maybeStartPearlHumanEvent()) target = 'pearlHumanEvent';
   if (target !== 'pandaMusicEvent') stopPandaMusicEventAudio();
   if (target !== 'wristFoundEvent') stopWristFoundDarkDrone();
   if (target !== 'kaitenzushi') clearKaitenzushiLoadWatch();
@@ -11168,6 +11328,7 @@ function render() {
       looseGemGuide: renderLooseGemGuide,
       looseCutGuide: renderLooseCutGuide,
       displayShop: renderDisplayShop,
+      pearlHumanEvent: renderPearlHumanEvent,
       realEstate: renderRealEstate,
       workshop: renderWorkshop,
       craft: renderCraft,
@@ -11907,7 +12068,7 @@ function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine =
     const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
     if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
   }
-  // v0.10.725: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
+  // v0.10.726: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
   for (const definition of AQUARIUM_CONFIG.displayItems) {
     const installed = Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0));
     if (!definition.required && installed <= 0) continue;
@@ -21143,9 +21304,10 @@ function settleDay({ showResult = true, save = true } = {}) {
         // v0.10.628: 店舗スタッフの有無でショーケース販売力へ大差を付ける。
         // 無人店は3.5%/日、スタッフ配置店は16%/日を基礎に、販売力LvのsaleBonusを上乗せする。
         // スタッフが休止・給与未払いの場合は無人店扱い。
-        const chance = activeEmployee
+        const normalChance = activeEmployee
           ? clamp(0.16 + storeStaffSaleBonus(activeEmployee), 0.16, 0.30)
           : 0.035;
+        const chance = clamp(normalChance * (pearlHumanEffectActive() ? 2 : 1), 0, 1);
         if (Math.random() < chance) {
           removeJewelry(item.id);
           jewelryById.delete(item.id);
@@ -21295,6 +21457,10 @@ function clearCustomerVisitsForIllness() {
 function scheduleCustomerVisit() {
   if (illnessEventSuppressionActive()) {
     clearCustomerVisitsForIllness();
+    return;
+  }
+  if (pearlHumanEffectActive()) {
+    schedulePearlHumanGuaranteedCustomer({ preserveExistingToday: false });
     return;
   }
   const whiteBunnyEvent = whiteBunnyIceEventState();
@@ -22079,6 +22245,9 @@ root.addEventListener('click', async (event) => {
       break;
     case 'pazupan-event-next':
       advanceMiningPazupanEvent();
+      break;
+    case 'pearl-human-event-next':
+      advancePearlHumanEvent();
       break;
     case 'oyatsu-event-next':
       advanceOyatsuDaisukiEvent();

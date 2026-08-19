@@ -22007,3 +22007,68 @@ body[data-screen="storytellerEvent"] .storyteller-quiz-event.quiz-stage-question
     margin-top:28px!important;
   }
 }
+
+
+/* v0.10.726 パール人間イベント — 携帯確認 v9 承認仕様 */
+body[data-screen="pearlHumanEvent"] .visit-character-event{
+  min-height:100dvh;
+  height:100dvh;
+  overflow:hidden;
+}
+body[data-screen="pearlHumanEvent"] .pearl-human-dialogue,
+body[data-screen="pearlHumanEvent"] .pearl-human-dialogue>small,
+body[data-screen="pearlHumanEvent"] .pearl-human-dialogue>strong{
+  text-align:left!important;
+}
+body[data-screen="pearlHumanEvent"] .pearl-human-character-area{
+  pointer-events:none;
+}
+body[data-screen="pearlHumanEvent"] .pearl-human-character{
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:min(79vw,780px);
+  max-height:100%;
+  object-fit:contain;
+  object-position:center center;
+  filter:drop-shadow(0 24px 34px rgba(0,0,0,.82));
+  user-select:none;
+}
+body[data-screen="pearlHumanEvent"] .pearl-human-effect-message{
+  position:absolute;
+  z-index:16;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(88vw,680px);
+  padding:16px 18px;
+  border:1px solid rgba(238,198,104,.55);
+  border-radius:18px;
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  color:#ffe5a0;
+  font-size:clamp(1rem,4.2vw,1.28rem);
+  font-weight:900;
+  line-height:1.75;
+  text-align:center;
+  text-shadow:0 3px 8px #000,0 0 16px #000,0 0 24px #000;
+  pointer-events:none;
+}
+@media (orientation:portrait){
+  body[data-screen="pearlHumanEvent"] .pearl-human-character{
+    transform:translateY(108px);
+  }
+}
+@media (orientation:landscape){
+  html[data-device-class="phone"][data-orientation="landscape"] body[data-screen="pearlHumanEvent"] .pearl-human-character{
+    transform:none!important;
+    max-width:min(50vw,720px)!important;
+    max-height:calc(100dvh - 78px)!important;
+  }
+  body[data-screen="pearlHumanEvent"] .pearl-human-effect-message{
+    font-size:clamp(.80rem,2.15vw,1rem);
+  }
+}

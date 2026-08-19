@@ -24,6 +24,7 @@ jobs:
         shell: bash
         run: |
           set +e
+          grep -n -C 5 "syncAquariumRuntime\|bindAquariumFrameSync\|__jxjMainGameFingerprint" js/app.js > PATCH_SOURCE_V724.txt || true
           python3 scripts/apply_tropical_fish_v724.py > PATCH_LOG_V724.txt 2>&1
           status=$?
           echo "exit_status=$status" >> PATCH_LOG_V724.txt

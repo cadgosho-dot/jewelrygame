@@ -65,69 +65,48 @@ new_handler = '''    case 'open-tropical-fish-shop':
 '''
 app = replace_once(app, old_handler, new_handler, 'guard direct tropical shop route')
 
-# 3) スマホ水槽: iframe自身のlocalStorage復元が本体同期後に走っても、本体状態を再適用する。
+# 3) スマホ水槽: iframe側の古いlocalStorage復元後でも、本体ゲームの状態を再適用できるようforceを追加。
 app = replace_once(
     app,
-    'function syncAquariumRuntime(frame, snapshot) {\n',
-    'function syncAquariumRuntime(frame, snapshot, options = {}) {\n  const force = Boolean(options.force);\n',
+    "function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-frame')) {\n",
+    "function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-frame'), options = {}) {\n  const force = Boolean(options.force);\n",
     'syncAquariumRuntime options',
 )
 app = replace_once(
     app,
-    '  if (aquariumWindow.__jxjMainGameFingerprint === fingerprint) return true;\n',
-    '  if (!force && aquariumWindow.__jxjMainGameFingerprint === fingerprint) return true;\n',
+    '    if (engine.__jxjMainGameFingerprint !== fingerprint) {\n',
+    '    if (force || engine.__jxjMainGameFingerprint !== fingerprint) {\n',
     'aquarium fingerprint force bypass',
 )
 
-old_bind = '''function bindAquariumFrameSync(frame) {
-  if (!(frame instanceof HTMLIFrameElement)) return;
-  let attempts = 0;
-  const sync = () => {
-    attempts += 1;
-    const ok = syncAquariumRuntime(frame, aquariumSnapshot());
-    if (!ok && attempts < 16 && frame.isConnected && screen === 'phone' && phoneTab === 'aquarium') {
-      window.setTimeout(sync, Math.min(900, 90 + (attempts * 70)));
-    }
+old_sync_closure = '''  const sync = () => {
+    postAquariumSnapshot(frame);
+    installAquariumPortraitCentering(frame);
+    syncAquariumRuntime(frame);
   };
-  frame.addEventListener('load', () => {
-    attempts = 0;
-    window.setTimeout(sync, 80);
-  }, { once: true });
-  window.setTimeout(sync, 0);
-}
 '''
-new_bind = '''function bindAquariumFrameSync(frame) {
-  if (!(frame instanceof HTMLIFrameElement)) return;
-  let attempts = 0;
-
-  const sync = (force = false) => {
-    attempts += 1;
-    const ok = syncAquariumRuntime(frame, aquariumSnapshot(), { force });
-    if (!ok && attempts < 16 && frame.isConnected && screen === 'phone' && phoneTab === 'aquarium') {
-      window.setTimeout(() => sync(force), Math.min(900, 90 + (attempts * 70)));
-    }
-  };
-
-  const forceFreshSyncs = () => {
+new_sync_closure = '''  const forceFreshSyncs = () => {
     for (const delay of [120, 450, 1000, 1800]) {
       window.setTimeout(() => {
-        if (!frame.isConnected || screen !== 'phone' || phoneTab !== 'aquarium') return;
-        syncAquariumRuntime(frame, aquariumSnapshot(), { force: true });
+        if (!frame.isConnected) return;
+        postAquariumSnapshot(frame);
+        syncAquariumRuntime(frame, { force: true });
       }, delay);
     }
   };
-
-  frame.addEventListener('load', () => {
-    attempts = 0;
-    window.setTimeout(() => sync(false), 80);
+  const sync = () => {
+    postAquariumSnapshot(frame);
+    installAquariumPortraitCentering(frame);
+    syncAquariumRuntime(frame);
     forceFreshSyncs();
-  }, { once: true });
-
-  window.setTimeout(() => sync(false), 0);
-  forceFreshSyncs();
-}
+  };
 '''
-app = replace_once(app, old_bind, new_bind, 'bindAquariumFrameSync startup resync')
+app = replace_once(app, old_sync_closure, new_sync_closure, 'bindAquariumFrameSync startup resync')
+
+# iframeからready/request-stateが来た後も最終的に本体状態を優先する。
+old_ready_sync = "    [0, 80, 260].forEach((delay) => window.setTimeout(() => syncAquariumRuntime(frame), delay));\n"
+new_ready_sync = "    [0, 80, 260, 600, 1200].forEach((delay) => window.setTimeout(() => syncAquariumRuntime(frame, { force: delay >= 260 }), delay));\n"
+app = replace_once(app, old_ready_sync, new_ready_sync, 'aquarium ready forced resync')
 
 write(app_path, app)
 
@@ -160,7 +139,7 @@ validation = '''JEWELRY×JEWELRY v0.10.724 VALIDATION
 2. 旧画面・旧キャッシュから open-tropical-fish-shop を直接呼んでも「おやつ大好き」イベント外では入店できない。
 3. 「おやつ大好き」イベントで route=shop / stage=shop または shopConfirm の間は熱帯魚屋へ入店できる。
 4. 熱帯魚購入時は既存どおり aquarium.fish[id].owned / inTank を加算し、lastSyncRevision更新とsaveGameを行う。
-5. スマホ水槽iframeは起動直後に本体ゲーム側のaquariumSnapshotを複数回強制再同期し、iframe側localStorageの旧表示で上書きされた場合も本体状態へ戻す。
+5. スマホ水槽iframeは起動直後とready/request-state後に本体ゲーム側のaquariumSnapshotを強制再同期し、iframe側localStorageの旧表示で上書きされた場合も本体状態へ戻す。
 6. js/app.js / js/game-data.js / js/firebase-service.js は node --check 合格。
 7. HTML / Service Worker / import query を v0.10.724 へ更新する。
 8. v0.10.722のクラウド保存ロジックは変更しない。
@@ -168,11 +147,13 @@ validation = '''JEWELRY×JEWELRY v0.10.724 VALIDATION
 '''
 write('VALIDATION_v0.10.724.txt', validation)
 
-# one-shot filesを本番mainに残さない。
+# one-shot/診断ファイルを本番mainに残さない。
 for path in [
     ROOT / '.github/workflows/apply-tropical-fish-v724.yml',
     ROOT / 'scripts/apply_tropical_fish_v724.py',
     ROOT / 'TRIGGER_V724.txt',
+    ROOT / 'PATCH_LOG_V724.txt',
+    ROOT / 'PATCH_SOURCE_V724.txt',
 ]:
     try:
         path.unlink()

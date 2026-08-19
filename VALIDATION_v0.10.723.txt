@@ -1,0 +1,8 @@
+JEWELRY×JEWELRY v0.10.723 VALIDATION
+1. storytellerEvent question: portraitで人物が上段内に収まり、問題パネルへはみ出さない。
+2. 4択ボタンはz-index/pointer-events/touch-actionを明示し、タップ可能。
+3. landscapeでは人物左・問題右の2カラム。
+4. js/app.js / js/game-data.js / js/firebase-service.js は node --check 合格。
+5. v0.10.723へキャッシュ更新。
+6. クラウド保存v0.10.722ロジックは変更しない。
+7. SAVE_SCHEMA_VERSION=1を維持。

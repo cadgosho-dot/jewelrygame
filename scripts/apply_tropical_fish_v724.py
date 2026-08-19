@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,16 +24,9 @@ app_path = 'js/app.js'
 app = read(app_path)
 
 # 1) 熱帯魚屋は通常の御徒町メニューには常設しない。
-aquarium_shop_pattern = re.compile(
-    r"\n\s*const aquariumShop\s*=\s*aquariumUnlocked\(\)\s*\?\s*`<button class=\"okachimachi-icon-button\" data-action=\"open-tropical-fish-shop\">.*?<strong>熱帯魚屋</strong>.*?</button>`\s*:\s*'';\n",
-    re.S,
-)
-app, count = aquarium_shop_pattern.subn('\n', app, count=1)
-if count != 1:
-    raise RuntimeError(f'remove permanent aquariumShop: expected 1 match, found {count}')
-if app.count('${aquariumShop}') != 1:
-    raise RuntimeError(f'remove aquariumShop insertion: expected 1, found {app.count("${aquariumShop}")}')
-app = app.replace('${aquariumShop}', '', 1)
+old_permanent_shop = '''          ${aquariumUnlocked() ? '<button type="button" class="secondary-button full-button" data-action="open-tropical-fish-shop">熱帯魚屋</button>' : ''}
+'''
+app = replace_once(app, old_permanent_shop, '', 'remove permanent Okachimachi tropical shop')
 
 # 2) イベント中だけ入店可能。旧キャッシュ等からの直接ルートも弾く。
 render_shop_needle = 'function renderTropicalFishShop(){\n'
@@ -58,12 +50,13 @@ function renderTropicalFishShop(){
 app = replace_once(app, render_shop_needle, render_shop_replacement, 'guard tropicalFishShop render')
 
 old_handler = '''    case 'open-tropical-fish-shop':
-      setScreen('tropicalFishShop', {}, false);
+      if (!aquariumUnlocked()) showToast('水槽を手に入れると熱帯魚屋を利用できます。', 'info');
+      else setScreen('tropicalFishShop', { tropicalCategory: 'fish' });
       break;
 '''
 new_handler = '''    case 'open-tropical-fish-shop':
       if (tropicalFishShopEventAccessAllowed()) {
-        setScreen('tropicalFishShop', {}, false);
+        setScreen('tropicalFishShop', { tropicalCategory: 'fish', fromOyatsu: true });
       } else {
         showToast('熱帯魚屋は「おやつ大好き」イベント中のみ行けます。', 'info');
         setScreen('okachimachi', {}, false);

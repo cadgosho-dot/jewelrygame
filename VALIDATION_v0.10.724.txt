@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.724 VALIDATION
+1. 通常の御徒町メニューに「熱帯魚屋」が表示されない。
+2. 旧画面・旧キャッシュから open-tropical-fish-shop を直接呼んでも「おやつ大好き」イベント外では入店できない。
+3. 「おやつ大好き」イベントで route=shop / stage=shop または shopConfirm の間は熱帯魚屋へ入店できる。
+4. 熱帯魚購入時は既存どおり aquarium.fish[id].owned / inTank を加算し、lastSyncRevision更新とsaveGameを行う。
+5. スマホ水槽iframeは起動直後とready/request-state後に本体ゲーム側のaquariumSnapshotを強制再同期し、iframe側localStorageの旧表示で上書きされた場合も本体状態へ戻す。
+6. js/app.js / js/game-data.js / js/firebase-service.js は node --check 合格。
+7. HTML / Service Worker / import query を v0.10.724 へ更新する。
+8. v0.10.722のクラウド保存ロジックは変更しない。
+9. SAVE_SCHEMA_VERSION=1を維持する。

@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.723';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.723';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.723';
+const UI_BUILD_VERSION = '0.10.724';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.724';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.724';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.723';
+} from './firebase-service.js?v=0.10.724';
 
 
 
@@ -9973,7 +9973,22 @@ function renderStorytellerEvent(){
   return `<main class="main-screen jxj-new-event-screen storyteller-event-screen"><section class="visit-character-event">${character}<button type="button" class="event-dialogue-card jxj-transparent-dialogue" data-action="storyteller-event-next"><small>ストーリーテラー</small><strong>${lineMap[e.stage]||''}</strong><span>タップして進む</span></button></section></main>`;
 }
 
+function tropicalFishShopEventAccessAllowed() {
+  const e = oyatsuDaisukiEventState();
+  return Boolean(
+    e.active
+    && e.route === 'shop'
+    && ['shop', 'shopConfirm'].includes(e.stage)
+  );
+}
+
 function renderTropicalFishShop(){
+  if (!tropicalFishShopEventAccessAllowed()) {
+    queueMicrotask(() => {
+      if (screen === 'tropicalFishShop') setScreen('okachimachi', {}, false);
+    });
+    return `<main class="main-screen"></main>`;
+  }
   const category=['fish','plant','display'].includes(screenData?.tropicalCategory)?screenData.tropicalCategory:'fish';
   const aquarium=aquariumState(); refreshAquariumLoad(aquarium);
   const label={fish:'魚',plant:'水草',display:'ディスプレイ'}[category];
@@ -11860,7 +11875,7 @@ function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine =
     const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
     if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
   }
-  // v0.10.723: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
+  // v0.10.724: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
   for (const definition of AQUARIUM_CONFIG.displayItems) {
     const installed = Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0));
     if (!definition.required && installed <= 0) continue;
@@ -12072,7 +12087,8 @@ function installAquariumPortraitCentering(frame) {
   }
 }
 
-function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-frame')) {
+function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-frame'), options = {}) {
+  const force = Boolean(options.force);
   if (!frame?.contentWindow) return false;
   try {
     const aquariumWindow = frame.contentWindow;
@@ -12094,7 +12110,7 @@ function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-fram
 
     const snapshot = aquariumSnapshot();
     const fingerprint = aquariumRuntimeFingerprint(snapshot);
-    if (engine.__jxjMainGameFingerprint !== fingerprint) {
+    if (force || engine.__jxjMainGameFingerprint !== fingerprint) {
       const fishRegistry = engine.config?.speciesProfiles || {};
       const decorationRegistry = engine.config?.decorationProfiles || {};
       const allowedObservationKeys = new Set();
@@ -12153,10 +12169,20 @@ function postAquariumSnapshot(frame = document.querySelector('.aquarium-game-fra
 function bindAquariumFrameSync() {
   const frame = document.querySelector('.aquarium-game-frame');
   if (!(frame instanceof HTMLIFrameElement)) return;
+  const forceFreshSyncs = () => {
+    for (const delay of [120, 450, 1000, 1800]) {
+      window.setTimeout(() => {
+        if (!frame.isConnected) return;
+        postAquariumSnapshot(frame);
+        syncAquariumRuntime(frame, { force: true });
+      }, delay);
+    }
+  };
   const sync = () => {
     postAquariumSnapshot(frame);
     installAquariumPortraitCentering(frame);
     syncAquariumRuntime(frame);
+    forceFreshSyncs();
   };
   if (frame.dataset.jxjSyncBound !== '1') {
     frame.dataset.jxjSyncBound = '1';
@@ -14958,7 +14984,6 @@ function renderOkachimachi() {
           ${facilityButton({ id: 'settingShop', label: 'GOSHO（卸専門）', screen: 'settingShop' })}
           ${facilityButton({ id: 'castingShop', label: 'キャスト屋', screen: 'castingShop' })}
           ${facilityButton({ id: 'displayShop', label: 'ディスプレイ屋', screen: 'displayShop' })}
-          ${aquariumUnlocked() ? '<button type="button" class="secondary-button full-button" data-action="open-tropical-fish-shop">熱帯魚屋</button>' : ''}
           ${facilityButton({ id: 'realEstate', label: '不動産屋', screen: 'realEstate' })}
           ${facilityButton({ id: 'recruitment', label: '人材紹介', screen: 'recruitment' })}
         </div>
@@ -17662,7 +17687,7 @@ function handleAquariumFrameMessage(event) {
   if (data.source !== 'jxj-aquarium') return;
   if (data.type === 'ready' || data.type === 'request-state') {
     postAquariumSnapshot(frame);
-    [0, 80, 260].forEach((delay) => window.setTimeout(() => syncAquariumRuntime(frame), delay));
+    [0, 80, 260, 600, 1200].forEach((delay) => window.setTimeout(() => syncAquariumRuntime(frame, { force: delay >= 260 }), delay));
     return;
   }
   if (data.type === 'display-install') {
@@ -22679,8 +22704,12 @@ root.addEventListener('click', async (event) => {
       saveGame();
       break;
     case 'open-tropical-fish-shop':
-      if (!aquariumUnlocked()) showToast('水槽を手に入れると熱帯魚屋を利用できます。', 'info');
-      else setScreen('tropicalFishShop', { tropicalCategory: 'fish' });
+      if (tropicalFishShopEventAccessAllowed()) {
+        setScreen('tropicalFishShop', { tropicalCategory: 'fish', fromOyatsu: true });
+      } else {
+        showToast('熱帯魚屋は「おやつ大好き」イベント中のみ行けます。', 'info');
+        setScreen('okachimachi', {}, false);
+      }
       break;
     case 'tropical-shop-tab':
       screenData = { ...screenData, tropicalCategory: button.dataset.category || 'fish' };

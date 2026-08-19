@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
 
+# trigger: v0.10.722
 jobs:
   apply:
     if: github.actor != 'github-actions[bot]'

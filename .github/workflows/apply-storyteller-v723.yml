@@ -1,0 +1,42 @@
+name: Apply storyteller v723
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply_storyteller_v723.py'
+      - '.github/workflows/apply-storyteller-v723.yml'
+      - 'V723_TRIGGER.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply v0.10.723
+        run: python3 scripts/apply_storyteller_v723.py
+      - name: Validate JavaScript
+        run: |
+          node --check js/app.js
+          node --check js/game-data.js
+          node --check js/firebase-service.js
+      - name: Validate storyteller fix
+        run: |
+          grep -q "0.10.723" js/game-data.js
+          grep -q "v0.10.723 STORYTELLER QUIZ MOBILE FIX" styles.css
+          grep -q "storyteller-quiz-event.*quiz-answer-button" styles.css
+          grep -q "0.10.723" sw.js
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "723 storyteller quiz mobile fix"
+          git push origin main

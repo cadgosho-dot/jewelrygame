@@ -1,0 +1,83 @@
+12070-  } catch (_) {
+12071-    return false;
+12072-  }
+12073-}
+12074-
+12075:function syncAquariumRuntime(frame = document.querySelector('.aquarium-game-frame')) {
+12076-  if (!frame?.contentWindow) return false;
+12077-  try {
+12078-    const aquariumWindow = frame.contentWindow;
+12079-    const engine = aquariumWindow.aquariumEngine;
+12080-    if (!engine || typeof engine.getObservationEntries !== 'function') return false;
+--
+12092-      engine.__jxjObservationFilterInstalled = true;
+12093-    }
+12094-
+12095-    const snapshot = aquariumSnapshot();
+12096-    const fingerprint = aquariumRuntimeFingerprint(snapshot);
+12097:    if (engine.__jxjMainGameFingerprint !== fingerprint) {
+12098-      const fishRegistry = engine.config?.speciesProfiles || {};
+12099-      const decorationRegistry = engine.config?.decorationProfiles || {};
+12100-      const allowedObservationKeys = new Set();
+12101-      const wasRunning = Boolean(engine.running);
+12102-      engine.stop?.();
+--
+12127-        if (!engineId) continue;
+12128-        for (let index = 0; index < count; index += 1) engine.addDecoration?.({ itemId: engineId, category: 'layout' });
+12129-      }
+12130-
+12131-      engine.__jxjAllowedObservationKeys = allowedObservationKeys;
+12132:      engine.__jxjMainGameFingerprint = fingerprint;
+12133-      if (wasRunning || engine.options?.autoStart !== false) engine.start?.();
+12134-    }
+12135-
+12136-    installAquariumObservationGuard(frame);
+12137-    filterAquariumObservationDocument(frame);
+--
+12148-  const targetOrigin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : '*';
+12149-  frame.contentWindow.postMessage({ source: 'jxj-main-game', type: 'aquarium-state', state: aquariumSnapshot() }, targetOrigin);
+12150-  return true;
+12151-}
+12152-
+12153:function bindAquariumFrameSync() {
+12154-  const frame = document.querySelector('.aquarium-game-frame');
+12155-  if (!(frame instanceof HTMLIFrameElement)) return;
+12156-  const sync = () => {
+12157-    postAquariumSnapshot(frame);
+12158-    installAquariumPortraitCentering(frame);
+12159:    syncAquariumRuntime(frame);
+12160-  };
+12161-  if (frame.dataset.jxjSyncBound !== '1') {
+12162-    frame.dataset.jxjSyncBound = '1';
+12163-    frame.addEventListener('load', () => {
+12164-      sync();
+--
+13669-  return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event" aria-live="polite"><div class="gray-hood-character-area"><img src="./assets/images/events/gray-hood-aquarium.png?v=${VERSION}" alt="灰色パーカー" draggable="false"></div><button type="button" class="event-dialogue-card gray-hood-dialogue glass-panel" data-action="gray-hood-aquarium-next"><small>灰色パーカー</small><strong>${dialogue}</strong><span>タップして進む</span></button></section></main>`;
+13670-}
+13671-
+13672-function renderAquariumGame() {
+13673-  if (!aquariumUnlocked()) { queueMicrotask(() => setScreen('phone', {}, false)); return renderPhone(); }
+13674:  queueMicrotask(bindAquariumFrameSync);
+13675-  return `<main class="aquarium-game-screen"><button type="button" class="aquarium-game-close" data-action="close-aquarium">スマートフォンへ戻る</button><iframe class="aquarium-game-frame" src="./assets/minigames/aquarium/index.html?v=${VERSION}" title="水槽ミニゲーム" allow="fullscreen" loading="eager"></iframe></main>`;
+13676-}
+13677-
+13678-function renderChildhoodFriendEvent() {
+13679-  const eventState = childhoodFriendEventState();
+--
+17660-  if (!frame?.contentWindow || event.source !== frame.contentWindow) return;
+17661-  const data = event.data || {};
+17662-  if (data.source !== 'jxj-aquarium') return;
+17663-  if (data.type === 'ready' || data.type === 'request-state') {
+17664-    postAquariumSnapshot(frame);
+17665:    [0, 80, 260].forEach((delay) => window.setTimeout(() => syncAquariumRuntime(frame), delay));
+17666-    return;
+17667-  }
+17668-  if (data.type === 'display-install') {
+17669-    const result = setAquariumDisplayInstalled(String(data.id || ''), data.target);
+17670-    if (!result.ok && result.message) showToast(result.message);
+17671:    saveGame(); postAquariumSnapshot(frame); syncAquariumRuntime(frame);
+17672-    if (screen === 'phone' && phoneTab === 'aquarium') render();
+17673-  }
+17674-}
+17675-window.addEventListener('message', handleAquariumFrameMessage);
+17676-

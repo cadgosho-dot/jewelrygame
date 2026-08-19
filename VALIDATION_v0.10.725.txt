@@ -1,0 +1,10 @@
+JEWELRY×JEWELRY v0.10.725 VALIDATION
+1. 縦画面の完成画面でリング・ペンダント・ピアスの上端が第2上部バーに被らない。
+2. 縦画面の店舗ショーケース、完成品一覧、陳列商品選択、商品詳細の先頭が上部バーに被らない。
+3. 購入数量▲▼の通常タップは1ずつ変化。
+4. 長押しは320ms後に開始し、65ms間隔で連続変化。
+5. 数量100以上では長押し1回ごとに10ずつ増減。
+6. 地金、ルース、ケース、熱帯魚屋の数量長押しに同ルールを適用。
+7. js/app.js / js/game-data.js / js/firebase-service.js は node --check 合格。
+8. HTML / Service Worker / import query は v0.10.725。
+9. SAVE_SCHEMA_VERSION=1を維持。

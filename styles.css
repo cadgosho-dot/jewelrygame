@@ -21991,3 +21991,19 @@ body[data-screen="storytellerEvent"] .storyteller-quiz-event.quiz-stage-question
   }
 }
 
+
+
+/* v0.10.725: portrait completion/store safe spacing */
+@media (orientation:portrait) and (max-width:820px){
+  body[data-screen="completion"] .result-card>.completion-jewelry-preview{
+    height:374px!important;
+    min-height:374px!important;
+    padding-top:116px!important;
+  }
+  body[data-screen="store"] .store-panel,
+  body[data-screen="inventory"] .wide-panel,
+  body[data-screen="showcaseSelect"] .showcase-selection-panel,
+  body[data-screen="showcaseDetail"] .showcase-detail-panel{
+    margin-top:28px!important;
+  }
+}

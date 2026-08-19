@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.724';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.724';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.724';
+const UI_BUILD_VERSION = '0.10.725';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.725';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.725';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.724';
+} from './firebase-service.js?v=0.10.725';
 
 
 
@@ -2907,6 +2907,38 @@ function syncMetalTradeCard(mode, id) {
   if (submit) submit.disabled = quantity < 1 || !canSpendHours(1);
 }
 
+function longPressQuantityDelta(current, delta) {
+  const direction = Number(delta) < 0 ? -1 : 1;
+  const value = Math.max(0, Math.floor(Number(current) || 0));
+  const step = value >= 100 ? 10 : 1;
+  return direction * step;
+}
+
+function adjustMetalTradeQuantityLongPress(button) {
+  const mode = button?.dataset?.mode || 'buy';
+  const id = button?.dataset?.id || '';
+  adjustMetalTradeQuantity(mode, id, longPressQuantityDelta(metalTradeQuantity(mode, id), button?.dataset?.delta));
+}
+
+function adjustLoosePurchaseQuantityLongPress(button) {
+  const id = button?.dataset?.id || '';
+  const shape = normalizeLooseShape(id, button?.dataset?.shape);
+  adjustLoosePurchaseQuantity(id, shape, longPressQuantityDelta(loosePurchaseQuantity(id, shape), button?.dataset?.delta));
+}
+
+function adjustDisplayCaseQuantityLongPress(button) {
+  const installing = button?.dataset?.action === 'store-case-install-qty-step';
+  const current = installing ? displayCaseInstallQuantity() : displayCasePurchaseQuantity();
+  const delta = longPressQuantityDelta(current, button?.dataset?.delta);
+  if (installing) adjustDisplayCaseInstallQuantity(delta);
+  else adjustDisplayCasePurchaseQuantity(delta);
+}
+
+function changeTropicalShopQuantityLongPress(delta) {
+  const current = Math.max(0, Math.floor(Number(screenData?.tropicalModal?.qty) || 0));
+  changeTropicalShopQuantity(longPressQuantityDelta(current, delta));
+}
+
 function adjustMetalTradeQuantity(mode, id, delta) {
   const current = metalTradeQuantity(mode, id);
   setMetalTradeQuantity(mode, id, current + Number(delta || 0));
@@ -2930,11 +2962,11 @@ function startMetalQuantityHold(button) {
   button.classList.add('is-holding');
   metalQuantityHoldTimeout = window.setTimeout(() => {
     metalQuantityHoldTriggered = true;
-    adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
+    adjustMetalTradeQuantityLongPress(button);
     metalQuantityHoldInterval = window.setInterval(() => {
-      adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
-    }, 110);
-  }, 420);
+      adjustMetalTradeQuantityLongPress(button);
+    }, 65);
+  }, 320);
 }
 
 function finishMetalQuantityHold(button) {
@@ -3057,11 +3089,11 @@ function startLooseQuantityHold(button) {
   button.classList.add('is-holding');
   looseQuantityHoldTimeout = window.setTimeout(() => {
     looseQuantityHoldTriggered = true;
-    adjustLoosePurchaseQuantity(button.dataset.id, button.dataset.shape, button.dataset.delta);
+    adjustLoosePurchaseQuantityLongPress(button);
     looseQuantityHoldInterval = window.setInterval(() => {
-      adjustLoosePurchaseQuantity(button.dataset.id, button.dataset.shape, button.dataset.delta);
-    }, 110);
-  }, 420);
+      adjustLoosePurchaseQuantityLongPress(button);
+    }, 65);
+  }, 320);
 }
 
 function finishLooseQuantityHold(button) {
@@ -3181,11 +3213,11 @@ function startDisplayCaseHold(button) {
   button.classList.add('is-holding');
   displayCaseHoldTimeout = window.setTimeout(() => {
     displayCaseHoldTriggered = true;
-    adjustDisplayCaseQuantityFromButton(button);
+    adjustDisplayCaseQuantityLongPress(button);
     displayCaseHoldInterval = window.setInterval(() => {
-      adjustDisplayCaseQuantityFromButton(button);
-    }, 110);
-  }, 420);
+      adjustDisplayCaseQuantityLongPress(button);
+    }, 65);
+  }, 320);
 }
 
 function finishDisplayCaseHold(button) {
@@ -9912,9 +9944,9 @@ function startTropicalShopQuantityHold(button) {
   const delta = Number(button.dataset.delta) || 0;
   tropicalShopQuantityHoldTimer = window.setTimeout(() => {
     tropicalShopQuantityHoldTriggered = true;
-    changeTropicalShopQuantity(delta);
-    tropicalShopQuantityHoldInterval = window.setInterval(() => changeTropicalShopQuantity(delta), 95);
-  }, 360);
+    changeTropicalShopQuantityLongPress(delta);
+    tropicalShopQuantityHoldInterval = window.setInterval(() => changeTropicalShopQuantityLongPress(delta), 65);
+  }, 320);
 }
 function finishTropicalShopQuantityHold(button) {
   const held = tropicalShopQuantityHoldTriggered;
@@ -10551,7 +10583,7 @@ function syncScreenContentTopOffset() {
     return;
   }
 
-  const desiredGap = screen === 'polishing' ? 16 : (screen === 'meal' ? 14 : 8);
+  const desiredGap = screen === 'polishing' ? 16 : (screen === 'meal' ? 14 : (['store', 'inventory', 'showcaseSelect', 'showcaseDetail'].includes(screen) ? 36 : (screen === 'completion' ? 20 : 8)));
   const headerBottom = visibleHeaderBottom(headerEl);
   const phoneTwoBar = document.documentElement.dataset.deviceClass === 'phone'
     && document.body.dataset.headerMode === 'two-bar';
@@ -11875,7 +11907,7 @@ function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine =
     const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
     if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
   }
-  // v0.10.724: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
+  // v0.10.725: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
   for (const definition of AQUARIUM_CONFIG.displayItems) {
     const installed = Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0));
     if (!definition.required && installed <= 0) continue;

@@ -21825,80 +21825,19 @@ body[data-screen="tropicalFishShop"] .tropical-fish-shop-content{
 }
 
 
-/* v0.10.718 完成画面: 携帯確認用HTMLで承認された安全領域へ統一。
-   完成品の上端が2段ヘッダーへ潜り込む／プレビュー上端で切れる症状を防ぐ。 */
-@media (orientation:portrait) and (max-width:820px){
-  body[data-screen="completion"][data-header-mode="two-bar"] .screen-shell:not(.event-shell-no-header)>.screen-content{
-    padding-top:calc(var(--safe-top) + var(--jwj-edge-gap,7px) * 2 + var(--jwj-two-bar-total-height,140px) + 18px)!important;
-    scroll-padding-top:calc(var(--safe-top) + var(--jwj-edge-gap,7px) * 2 + var(--jwj-two-bar-total-height,140px) + 18px)!important;
-  }
-  body[data-screen="completion"] .result-card>.completion-jewelry-preview{
-    box-sizing:border-box!important;
-    display:flex!important;
-    align-items:flex-start!important;
-    justify-content:center!important;
-    width:100%!important;
-    height:334px!important;
-    min-height:334px!important;
-    margin-top:0!important;
-    padding:124px 0 18px!important;
-    overflow:visible!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-artwork{
-    width:168px!important;
-    height:168px!important;
-    margin:0!important;
-    transform:none!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-artwork.item-pendant{
-    width:132px!important;
-    height:182px!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-artwork.item-earrings{
-    width:178px!important;
-    height:161px!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-preview.item-ring .jewelry-loose-set .center-gem{
-    width:76px!important;
-    max-width:76px!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-preview.item-ring .jewelry-loose-set .center-gem>img.jewelry-loose-preview{
-    max-height:76px!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem{
-    width:68px!important;
-    max-width:68px!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem>img.jewelry-loose-preview{
-    max-height:68px!important;
-  }
+/* v0.10.719 APPROVED FIX — ルース屋3Dメガネイベント
+   川原さん実機確認の最終仕様
+   - キャラクター画像は新しい輪郭トリミング済みPNGを使用
+   - セリフ枠・4択枠・報酬枠は、枠線を残して内部を透明にする */
+body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event .quiz-dialogue-panel,
+body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event .quiz-question-panel,
+body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event .quiz-reward-button{
+  background:transparent!important;
+  background-image:none!important;
 }
-
-@media (orientation:landscape), (min-aspect-ratio:1/1){
-  body[data-screen="completion"] .result-card>.completion-jewelry-preview{
-    box-sizing:border-box!important;
-    display:flex!important;
-    align-items:flex-start!important;
-    justify-content:center!important;
-    width:100%!important;
-    height:280px!important;
-    min-height:280px!important;
-    margin-top:0!important;
-    padding:48px 0 16px!important;
-    overflow:visible!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-artwork{
-    width:186px!important;
-    height:186px!important;
-    margin:0!important;
-    transform:none!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-artwork.item-pendant{
-    width:148px!important;
-    height:204px!important;
-  }
-  body[data-screen="completion"] .completion-jewelry-artwork.item-earrings{
-    width:198px!important;
-    height:178px!important;
-  }
+body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event .quiz-dialogue-panel::before,
+body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event .quiz-question-panel::before,
+body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event .quiz-reward-button::before{
+  background:transparent!important;
+  background-image:none!important;
 }

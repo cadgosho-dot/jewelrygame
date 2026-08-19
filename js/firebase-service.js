@@ -235,36 +235,261 @@ export async function logout() {
   await signOut(auth);
 }
 
+const CLOUD_INLINE_SAFE_BYTES = 640 * 1024;
+const CLOUD_CHUNK_RAW_BYTES = 480 * 1024;
+const CLOUD_CHUNK_MAX_COUNT = 64;
+const cloudStorageMetaByUid = new Map();
+
+function cloudSaveError(code, message, detail = null) {
+  const error = new Error(message);
+  error.code = code;
+  if (detail) error.detail = detail;
+  return error;
+}
+
+function normalizeCloudCode(error) {
+  return String(error?.code || '').replace(/^firestore\//, '');
+}
+
+function cloudUtf8Bytes(text) {
+  return new TextEncoder().encode(String(text || ''));
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  const step = 0x8000;
+  for (let index = 0; index < bytes.length; index += step) {
+    binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + step, bytes.length)));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(String(value || ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+function encodeCloudChunks(raw) {
+  const bytes = cloudUtf8Bytes(raw);
+  const count = Math.ceil(bytes.length / CLOUD_CHUNK_RAW_BYTES);
+  if (count > CLOUD_CHUNK_MAX_COUNT) {
+    throw cloudSaveError(
+      'jxj/cloud-save-too-large',
+      'セーブデータがクラウド保存の上限を超えています。端末には保存済みです。',
+      { bytes: bytes.length, chunks: count },
+    );
+  }
+  const chunks = [];
+  for (let index = 0; index < count; index += 1) {
+    const start = index * CLOUD_CHUNK_RAW_BYTES;
+    const end = Math.min(start + CLOUD_CHUNK_RAW_BYTES, bytes.length);
+    chunks.push(bytesToBase64(bytes.subarray(start, end)));
+  }
+  return { bytes: bytes.length, chunks };
+}
+
+function decodeCloudChunks(encodedChunks) {
+  const parts = encodedChunks.map((chunk) => base64ToBytes(chunk));
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const joined = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    joined.set(part, offset);
+    offset += part.length;
+  }
+  return new TextDecoder().decode(joined);
+}
+
+function cloudChunkDocId(generation, index) {
+  return `${generation}-${String(index).padStart(3, '0')}`;
+}
+
+async function mergeUserRoot(uid, payload) {
+  const userRef = doc(db, 'users', uid);
+  try {
+    await updateDoc(userRef, payload);
+  } catch (error) {
+    if (normalizeCloudCode(error) !== 'not-found') throw error;
+    await setDoc(userRef, payload, { merge: true });
+  }
+}
+
+async function cleanupChunkGeneration(uid, metadata) {
+  if (!metadata || metadata.mode !== 'chunked') return;
+  const generation = String(metadata.generation || '');
+  const count = Math.max(0, Math.floor(Number(metadata.count) || 0));
+  if (!generation || !count) return;
+  await Promise.allSettled(Array.from({ length: count }, (_, index) => (
+    deleteDoc(doc(db, 'users', uid, 'saveChunks', cloudChunkDocId(generation, index)))
+  )));
+}
+
+function shouldRetryCloudSave(error, attempt) {
+  if (attempt >= 2) return false;
+  const code = normalizeCloudCode(error);
+  return [
+    'aborted',
+    'cancelled',
+    'deadline-exceeded',
+    'internal',
+    'network-request-failed',
+    'permission-denied',
+    'resource-exhausted',
+    'unauthenticated',
+    'unavailable',
+    'unknown',
+  ].includes(code);
+}
+
+async function refreshCloudAuthIfUseful(error) {
+  const code = normalizeCloudCode(error);
+  if (!['permission-denied', 'unauthenticated'].includes(code)) return;
+  try {
+    await auth?.currentUser?.getIdToken?.(true);
+  } catch (_) {}
+}
+
+async function runCloudSaveWithRetry(operation) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!shouldRetryCloudSave(error, attempt)) throw error;
+      if (attempt === 0) await refreshCloudAuthIfUseful(error);
+      await new Promise((resolve) => setTimeout(resolve, 350 * (2 ** attempt)));
+    }
+  }
+  throw lastError;
+}
+
+async function readChunkedGameState(uid, metadata) {
+  const generation = String(metadata?.generation || '');
+  const count = Math.max(0, Math.floor(Number(metadata?.count) || 0));
+  if (!generation || !count || count > CLOUD_CHUNK_MAX_COUNT) {
+    throw cloudSaveError('jxj/cloud-save-invalid-metadata', 'クラウドセーブの管理情報を確認できません。');
+  }
+  const snapshots = await Promise.all(Array.from({ length: count }, (_, index) => (
+    getDoc(doc(db, 'users', uid, 'saveChunks', cloudChunkDocId(generation, index)))
+  )));
+  const encodedChunks = snapshots.map((snapshot, index) => {
+    if (!snapshot.exists()) {
+      throw cloudSaveError(
+        'jxj/cloud-save-chunk-missing',
+        'クラウドセーブの一部を読み込めませんでした。端末保存がある場合はそちらを優先します。',
+        { generation, index },
+      );
+    }
+    return String(snapshot.data()?.data || '');
+  });
+  try {
+    return JSON.parse(decodeCloudChunks(encodedChunks));
+  } catch (error) {
+    throw cloudSaveError(
+      'jxj/cloud-save-decode-failed',
+      'クラウドセーブを復元できませんでした。端末保存がある場合はそちらを優先します。',
+      { cause: String(error?.message || error) },
+    );
+  }
+}
+
 export async function loadState(uid) {
   if (previewMode) {
     const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
     return saved ? JSON.parse(saved) : null;
   }
   const snapshot = await getDoc(doc(db, 'users', uid));
-  return snapshot.exists() ? snapshot.data().gameState || null : null;
+  if (!snapshot.exists()) {
+    cloudStorageMetaByUid.delete(uid);
+    return null;
+  }
+  const data = snapshot.data() || {};
+  const metadata = data.gameStateStorage || null;
+  if (metadata?.mode === 'chunked') {
+    const loaded = await readChunkedGameState(uid, metadata);
+    cloudStorageMetaByUid.set(uid, metadata);
+    return loaded;
+  }
+  cloudStorageMetaByUid.set(uid, metadata || { mode: 'inline' });
+  return data.gameState || null;
 }
 
 export async function saveState(uid, state) {
-  // v0.10.611: 呼び出し元から渡される保存専用スナップショットは既にstateから切り離されている。
-  // ここで再度structuredCloneせず、トップレベルだけ複製して保存時刻を更新する。
+  // v0.10.720: 端末保存スナップショットをそのまま利用し、Firestore 1文書上限に
+  // 近づいた場合は users/{uid}/saveChunks へ世代付きで分割する。
   const clean = { ...state, updatedAt: new Date().toISOString() };
   if (previewMode) {
     localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(clean));
     return;
   }
-  const userRef = doc(db, 'users', uid);
-  try {
-    // gameStateフィールド全体を置き換え、旧版のinventory.general / inventory.gemsなどをクラウドに残さない。
-    await updateDoc(userRef, {
+
+  const raw = JSON.stringify(clean);
+  const encoded = encodeCloudChunks(raw);
+  const previousMetadata = cloudStorageMetaByUid.get(uid) || null;
+
+  if (encoded.bytes <= CLOUD_INLINE_SAFE_BYTES) {
+    const metadata = {
+      mode: 'inline',
+      version: 1,
+      bytes: encoded.bytes,
+      saveRevision: Math.max(0, Math.floor(Number(clean.saveRevision) || 0)),
+      updatedAt: clean.updatedAt,
+    };
+    await runCloudSaveWithRetry(() => mergeUserRoot(uid, {
       gameState: clean,
+      gameStateStorage: metadata,
       updatedAt: serverTimestamp(),
+    }));
+    cloudStorageMetaByUid.set(uid, metadata);
+    if (previousMetadata?.mode === 'chunked') void cleanupChunkGeneration(uid, previousMetadata);
+    return;
+  }
+
+  const generation = `${Math.max(0, Math.floor(Number(clean.saveRevision) || 0))}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const metadata = {
+    mode: 'chunked',
+    version: 1,
+    encoding: 'base64-utf8-v1',
+    generation,
+    count: encoded.chunks.length,
+    bytes: encoded.bytes,
+    saveRevision: Math.max(0, Math.floor(Number(clean.saveRevision) || 0)),
+    updatedAt: clean.updatedAt,
+  };
+
+  const writtenChunkRefs = [];
+  try {
+    await runCloudSaveWithRetry(async () => {
+      for (let index = 0; index < encoded.chunks.length; index += 1) {
+        const chunkRef = doc(db, 'users', uid, 'saveChunks', cloudChunkDocId(generation, index));
+        await setDoc(chunkRef, {
+          generation,
+          index,
+          count: encoded.chunks.length,
+          data: encoded.chunks[index],
+          updatedAt: serverTimestamp(),
+        });
+        writtenChunkRefs[index] = chunkRef;
+      }
+      // すべてのチャンク書き込み成功後にだけルートの参照先を切り替える。
+      await mergeUserRoot(uid, {
+        gameState: null,
+        gameStateStorage: metadata,
+        updatedAt: serverTimestamp(),
+      });
     });
   } catch (error) {
-    if (error?.code !== 'not-found') throw error;
-    await setDoc(userRef, {
-      gameState: clean,
-      updatedAt: serverTimestamp(),
-    }, { merge: true });
+    // 参照先を切り替える前の失敗なら、孤立チャンクだけを後片付けする。
+    void Promise.allSettled(writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
+    throw error;
+  }
+
+  cloudStorageMetaByUid.set(uid, metadata);
+  if (previousMetadata?.mode === 'chunked' && previousMetadata.generation !== generation) {
+    void cleanupChunkGeneration(uid, previousMetadata);
   }
 }
 
@@ -615,6 +840,25 @@ export function giftErrorMessage(error) {
 
 export function firebaseErrorMessage(error, context = '') {
   const code = error?.code || '';
+  if (context === 'cloud-save') {
+    const normalized = String(code || '').replace(/^firestore\//, '');
+    const cloudMessages = {
+      'aborted': 'クラウド保存が一時的に中断されました。端末には保存済みです。',
+      'cancelled': 'クラウド保存が中断されました。端末には保存済みです。',
+      'deadline-exceeded': 'クラウド保存がタイムアウトしました。端末には保存済みです。',
+      'internal': 'クラウド側で一時的なエラーが発生しました。端末には保存済みです。',
+      'network-request-failed': '通信できないためクラウド保存できません。端末には保存済みです。',
+      'permission-denied': 'クラウド保存の認証または権限を確認できません。端末には保存済みです。',
+      'resource-exhausted': 'クラウド側の利用制限に達しています。端末には保存済みです。',
+      'unauthenticated': 'ログイン情報を確認できないためクラウド保存できません。端末には保存済みです。',
+      'unavailable': 'クラウドサービスへ接続できません。端末には保存済みです。',
+      'jxj/cloud-save-too-large': 'セーブデータが非常に大きく、クラウドへ保存できません。端末には保存済みです。',
+      'jxj/cloud-save-invalid-metadata': 'クラウドセーブの管理情報を確認できません。端末保存は保持されています。',
+      'jxj/cloud-save-chunk-missing': 'クラウドセーブの一部を確認できません。端末保存は保持されています。',
+      'jxj/cloud-save-decode-failed': 'クラウドセーブを復元できません。端末保存は保持されています。',
+    };
+    return cloudMessages[normalized] || cloudMessages[code] || error?.message || 'クラウド保存に失敗しました。端末には保存済みです。';
+  }
   const messages = {
     'auth/invalid-email': 'メールアドレスの形式を確認してください。',
     'auth/missing-email': 'メールアドレスを入力してください。',

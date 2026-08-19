@@ -1,0 +1,12 @@
+JEWELRY×JEWELRY v0.10.720 VALIDATION
+
+1. js/app.js / js/firebase-service.js が構文エラーなく読み込めること。
+2. 通常サイズのセーブは users/{uid}.gameState へインライン保存されること。
+3. 大きいセーブは users/{uid}/saveChunks へ分割され、全チャンク成功後にルート参照が切り替わること。
+4. 分割保存を loadState が再結合して JSON 復元できること。
+5. クラウド保存失敗時も localStorage の端末保存が残ること。
+6. クラウド失敗時、中央の大きな重複トーストを出さず、下部保存ステータスに理由が表示されること。
+7. 一度失敗した後にクラウド保存が成功すると「クラウド保存を復旧しました」が一時表示されること。
+8. SAVE_SCHEMA_VERSION は 1 のままであること。
+9. firestore.rules の users/{userId}/{document=**} により saveChunks が本人のみ読み書き可能であること。
+10. Service Worker / HTML / import query が v0.10.720 へ更新され、PWAの旧キャッシュが置換されること。

@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.719';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.719';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.719';
+const UI_BUILD_VERSION = '0.10.720';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.720';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.720';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.719';
+} from './firebase-service.js?v=0.10.720';
 
 
 
@@ -177,6 +177,8 @@ let autosavePending = false;
 let autosaveLastReason = '';
 let autosaveStatusHideTimer = null;
 let lastSavedFingerprint = '';
+let lastCloudSavedFingerprint = '';
+let cloudSaveFailureActive = false;
 let lastSuccessfulSaveAt = '';
 const AUTOSAVE_DELAY_MS = 450;
 const AUTOSAVE_STATUS_HIDE_MS = 2200;
@@ -3708,7 +3710,7 @@ function saveGame(message = false) {
   }
   autosavePending = false;
   const fingerprint = saveStateFingerprint(state);
-  if (fingerprint && fingerprint === lastSavedFingerprint) {
+  if (fingerprint && fingerprint === lastSavedFingerprint && fingerprint === lastCloudSavedFingerprint) {
     return saveQueue;
   }
   const localResult = saveLocalBackup({ fingerprint, createCloudSnapshot: true, updateFingerprint: true });
@@ -3719,14 +3721,23 @@ function saveGame(message = false) {
   // v0.10.611: 端末保存時に作成した切り離し済みスナップショットをクラウド保存にも再利用する。
   const snapshot = localResult.snapshot;
   const userId = currentUser.uid;
+  const cloudFingerprint = fingerprint || saveStateFingerprint(snapshot);
   saveQueue = saveQueue
     .catch(() => {})
     .then(() => saveState(userId, snapshot))
-    .then(() => {})
+    .then(() => {
+      lastCloudSavedFingerprint = cloudFingerprint;
+      if (cloudSaveFailureActive) {
+        cloudSaveFailureActive = false;
+        showAutosaveStatus('saved', 'クラウド保存を復旧しました');
+      }
+    })
     .catch((error) => {
-      console.error(error);
-      showAutosaveStatus('error', '端末には保存済み／クラウド保存に失敗', { persistent: true });
-      showToast('クラウド保存に失敗しました。通信を確認してください。', 'error');
+      cloudSaveFailureActive = true;
+      const message = firebaseErrorMessage(error, 'cloud-save');
+      console.error('[Cloud Save]', { code: error?.code || '', message: error?.message || '', detail: error?.detail || null }, error);
+      // 端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
+      showAutosaveStatus('error', `端末保存済み／${message}`, { persistent: true });
     });
   return saveQueue;
 }
@@ -11849,7 +11860,7 @@ function aquariumCurrentObservationNames(snapshot = aquariumSnapshot(), engine =
     const engineId = aquariumEngineCompatibleId(decorationRegistry, definition.id, AQUARIUM_ENGINE_PLANT_ALIASES);
     if (engineId) names.add(normalizeAquariumObservationName(decorationRegistry[engineId]?.displayName));
   }
-  // v0.10.719: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
+  // v0.10.720: 観察画面は固定5項目を常時表示し、任意レイアウト品は実際に設置中のみ表示する。
   for (const definition of AQUARIUM_CONFIG.displayItems) {
     const installed = Math.max(0, Math.floor(Number(snapshot.displayItems?.[definition.id]?.installed) || 0));
     if (!definition.required && installed <= 0) continue;

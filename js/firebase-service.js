@@ -235,7 +235,8 @@ export async function logout() {
   await signOut(auth);
 }
 
-const CLOUD_INLINE_SAFE_BYTES = 640 * 1024;
+// v0.10.721: JSON byte数だけではFirestore実文書サイズを正確に予測できないため安全幅を広げる。
+const CLOUD_INLINE_SAFE_BYTES = 384 * 1024;
 const CLOUD_CHUNK_RAW_BYTES = 480 * 1024;
 const CLOUD_CHUNK_MAX_COUNT = 64;
 const cloudStorageMetaByUid = new Map();
@@ -249,6 +250,13 @@ function cloudSaveError(code, message, detail = null) {
 
 function normalizeCloudCode(error) {
   return String(error?.code || '').replace(/^firestore\//, '');
+}
+
+function isCloudDocumentSizeError(error) {
+  const code = normalizeCloudCode(error);
+  const message = String(error?.message || '');
+  return code === 'invalid-argument'
+    && /cannot be written because its size|exceeds the maximum allowed size|maximum allowed size/i.test(message);
 }
 
 function cloudUtf8Bytes(text) {
@@ -430,7 +438,7 @@ export async function saveState(uid, state) {
   const encoded = encodeCloudChunks(raw);
   const previousMetadata = cloudStorageMetaByUid.get(uid) || null;
 
-  if (encoded.bytes <= CLOUD_INLINE_SAFE_BYTES) {
+  if (encoded.bytes <= CLOUD_INLINE_SAFE_BYTES && previousMetadata?.mode !== 'chunked') {
     const metadata = {
       mode: 'inline',
       version: 1,
@@ -438,14 +446,20 @@ export async function saveState(uid, state) {
       saveRevision: Math.max(0, Math.floor(Number(clean.saveRevision) || 0)),
       updatedAt: clean.updatedAt,
     };
-    await runCloudSaveWithRetry(() => mergeUserRoot(uid, {
-      gameState: clean,
-      gameStateStorage: metadata,
-      updatedAt: serverTimestamp(),
-    }));
-    cloudStorageMetaByUid.set(uid, metadata);
-    if (previousMetadata?.mode === 'chunked') void cleanupChunkGeneration(uid, previousMetadata);
-    return;
+    try {
+      await runCloudSaveWithRetry(() => mergeUserRoot(uid, {
+        gameState: clean,
+        gameStateStorage: metadata,
+        updatedAt: serverTimestamp(),
+      }));
+      cloudStorageMetaByUid.set(uid, metadata);
+      return;
+    } catch (error) {
+      if (!isCloudDocumentSizeError(error)) throw error;
+      console.warn('[Cloud Save] Firestore document too large; switching to chunked storage.', {
+        bytes: encoded.bytes, code: error?.code || '', message: error?.message || '',
+      });
+    }
   }
 
   const generation = `${Math.max(0, Math.floor(Number(clean.saveRevision) || 0))}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -847,6 +861,7 @@ export function firebaseErrorMessage(error, context = '') {
       'cancelled': 'クラウド保存が中断されました。端末には保存済みです。',
       'deadline-exceeded': 'クラウド保存がタイムアウトしました。端末には保存済みです。',
       'internal': 'クラウド側で一時的なエラーが発生しました。端末には保存済みです。',
+      'invalid-argument': 'クラウド保存データが1件の容量上限を超えました。端末には保存済みです。',
       'network-request-failed': '通信できないためクラウド保存できません。端末には保存済みです。',
       'permission-denied': 'クラウド保存の認証または権限を確認できません。端末には保存済みです。',
       'resource-exhausted': 'クラウド側の利用制限に達しています。端末には保存済みです。',

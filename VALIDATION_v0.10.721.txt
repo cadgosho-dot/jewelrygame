@@ -1,0 +1,7 @@
+JEWELRY×JEWELRY v0.10.721 VALIDATION
+1. Firestore size invalid-argument を同一saveState内でchunkedへフォールバック。
+2. chunked移行後はインラインへ戻さない。
+3. 端末保存はクラウドより先に完了。
+4. node --check: firebase-service.js / app.js / game-data.js。
+5. v0.10.721へキャッシュ更新。
+6. SAVE_SCHEMA_VERSION=1を維持。

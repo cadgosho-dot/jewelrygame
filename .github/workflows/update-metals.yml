@@ -74,28 +74,6 @@ jobs:
               print('現在の相場JSONをそのまま更新基準にします。')
           PY
 
-      - name: v0.10.730へ正式更新
-        if: github.event_name == 'push'
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          replacements = {
-              'js/game-data.js': [("export const VERSION = '0.10.729';", "export const VERSION = '0.10.730';")],
-              'js/app.js': [("const UI_BUILD_VERSION = '0.10.729';", "const UI_BUILD_VERSION = '0.10.730';")],
-              'sw.js': [('0.10.729', '0.10.730')],
-              'game.html': [('0.10.729', '0.10.730')],
-              'index.html': [('0.10.729', '0.10.730')],
-              'auth.html': [('0.10.729', '0.10.730')],
-          }
-          for filename, pairs in replacements.items():
-              path = Path(filename)
-              text = path.read_text(encoding='utf-8')
-              for old, new in pairs:
-                  text = text.replace(old, new)
-              path.write_text(text, encoding='utf-8')
-          PY
-
       - name: Metals.Devから価格を取得して計算
         env:
           METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
@@ -130,14 +108,14 @@ jobs:
 
       - name: 更新結果をコミット
         run: |
-          if git diff --quiet -- data/metals.json js/game-data.js js/app.js sw.js game.html index.html auth.html; then
-            echo "更新対象ファイルに変更はありません。"
+          if git diff --quiet -- data/metals.json; then
+            echo "価格ファイルに変更はありません。"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/metals.json js/game-data.js js/app.js sw.js game.html index.html auth.html
-          git commit -m "v0.10.730へ正式更新"
+          git add data/metals.json
+          git commit -m "地金相場を自動更新"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 

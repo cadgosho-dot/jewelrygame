@@ -1,17 +1,12 @@
-name: v0.10.731 完成画面修正とGitHub Pages公開
+name: v0.10.731 更新後に通常ワークフローへ復帰
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
-
-concurrency:
-  group: jewelrygame-pages-and-metals
-  cancel-in-progress: false
 
 jobs:
-  apply-v731:
+  restore-workflow:
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -21,131 +16,18 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: v0.10.731を適用
+      - name: 通常ワークフローへ戻す
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          version_file = Path('js/game-data.js')
-          current = version_file.read_text(encoding='utf-8')
-          if "VERSION = '0.10.731'" in current:
-              print('すでにv0.10.731です。')
-              raise SystemExit(0)
-          if "VERSION = '0.10.730'" not in current:
-              raise SystemExit('想定しているv0.10.730ではないため停止します。')
-
-          for name in ('game.html', 'index.html', 'auth.html', 'js/app.js', 'js/game-data.js', 'sw.js'):
-              path = Path(name)
-              text = path.read_text(encoding='utf-8')
-              text = text.replace('0.10.730', '0.10.731')
-              path.write_text(text, encoding='utf-8')
-
-          game = Path('game.html')
-          text = game.read_text(encoding='utf-8')
-          marker = 'completion-safety-v731'
-          if marker not in text:
-              css = r'''
-          <style id="completion-safety-v731">
-          /* v0.10.731: 縦画面の完成品イラスト上切れ防止。画像を少し縮小し、上側に安全余白を確保する。 */
-          @media (orientation: portrait) and (max-width: 820px) {
-            body[data-screen="completion"] .result-card > .completion-jewelry-preview {
-              box-sizing: border-box !important;
-              display: flex !important;
-              align-items: flex-start !important;
-              justify-content: center !important;
-              width: 100% !important;
-              height: auto !important;
-              min-height: 0 !important;
-              margin: 0 0 2px !important;
-              padding: 10px 0 0 !important;
-              overflow: visible !important;
-            }
-            body[data-screen="completion"] .completion-jewelry-artwork {
-              width: 170px !important;
-              height: 170px !important;
-              margin: 0 auto !important;
-              transform: none !important;
-            }
-            body[data-screen="completion"] .completion-jewelry-artwork.item-pendant {
-              width: 132px !important;
-              height: 181px !important;
-            }
-            body[data-screen="completion"] .completion-jewelry-artwork.item-earrings {
-              width: 176px !important;
-              height: 159px !important;
-            }
-            body[data-screen="completion"] .result-card > h1 {
-              margin: 0.1rem 0 0.55rem !important;
-            }
-          }
-          </style>
-          '''
-              text = text.replace('</head>', css + '\n</head>', 1)
-              game.write_text(text, encoding='utf-8')
-          PY
-
-      - name: 更新をコミット
-        run: |
-          if git diff --quiet; then
-            echo "変更はありません。"
-            exit 0
-          fi
+          git show 0d5adffe4edf407cbd531aca225e0e87c6ac2a47:.github/workflows/update-metals.yml > .github/workflows/update-metals.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add game.html index.html auth.html js/app.js js/game-data.js sw.js
-          git commit -m "v0.10.731 完成品イラスト上切れ防止"
+          git add .github/workflows/update-metals.yml
+          if git diff --cached --quiet; then
+            echo "すでに通常ワークフローです。"
+            exit 0
+          fi
+          git commit -m "v0.10.731更新後に通常ワークフローへ復帰"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
-
-  build-pages:
-    permissions:
-      contents: read
-      pages: read
-    needs:
-      - apply-v731
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: 公開する最新版を取得
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 1
-
-      - name: GitHub Pagesを設定
-        uses: actions/configure-pages@v5
-
-      - name: 公開用フォルダを作成
-        run: |
-          mkdir -p _site
-          rsync -a ./ _site/ \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='_site/' \
-            --exclude='scripts/' \
-            --exclude='*.md' \
-            --exclude='firestore.rules'
-
-      - name: GitHub Pages用ファイルをアップロード
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: _site
-
-  deploy-pages:
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    needs:
-      - build-pages
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: GitHub Pagesへ公開
-        id: deployment
-        uses: actions/deploy-pages@v4

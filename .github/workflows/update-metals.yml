@@ -74,22 +74,22 @@ jobs:
               print('現在の相場JSONをそのまま更新基準にします。')
           PY
 
-      - name: APIキーを確認
-        env:
-          METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
-        run: |
-          if [ -z "$METALS_DEV_API_KEY" ]; then
-            echo "GitHub Secret『METALS_DEV_API_KEY』を設定してください。" >&2
-            exit 1
-          fi
-          echo "::add-mask::$METALS_DEV_API_KEY"
-
       - name: Metals.Devから価格を取得して計算
         env:
           METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
-        run: python3 scripts/update-metals.py
+        run: |
+          cp data/metals.json /tmp/metals-before-api.json
+          if [ -z "$METALS_DEV_API_KEY" ]; then
+            echo "::warning::METALS_DEV_API_KEYが未設定です。既存の正常な地金相場を使ってPages公開を続行します。"
+            exit 0
+          fi
+          echo "::add-mask::$METALS_DEV_API_KEY"
+          if ! python3 scripts/update-metals.py; then
+            echo "::warning::Metals.Devから地金相場を取得できませんでした。既存の正常な地金相場へ戻してPages公開を続行します。"
+            cp /tmp/metals-before-api.json data/metals.json
+          fi
 
-      - name: 生成JSONを検証
+      - name: 公開に使う地金相場JSONを検証
         run: |
           python3 -m json.tool data/metals.json > /dev/null
           python3 - <<'PY'
@@ -98,12 +98,12 @@ jobs:
 
           data = json.loads(Path('data/metals.json').read_text(encoding='utf-8'))
           if data.get('status') != 'live':
-              raise SystemExit('地金相場がlive状態ではないため公開を中止します。')
+              raise SystemExit('既存の地金相場もlive状態ではないため、安全のため公開を中止します。')
           spot = data.get('spotPerGram') or {}
           for metal in ('gold', 'silver', 'platinum'):
               value = spot.get(metal)
               if not isinstance(value, (int, float)) or value <= 0:
-                  raise SystemExit(f'{metal}の地金相場が不正なため公開を中止します。')
+                  raise SystemExit(f'{metal}の地金相場が不正なため、安全のため公開を中止します。')
           PY
 
       - name: 更新結果をコミット

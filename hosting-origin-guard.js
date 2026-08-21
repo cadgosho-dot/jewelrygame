@@ -1,10 +1,9 @@
 (() => {
   'use strict';
   // v0.10.542: Firebase Hosting の公開確認前に GitHub Pages から転送しない。
-  // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも
-  // 転送が発生しないよう互換目的で残している。
+  // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも転送が発生しないよう互換目的で残している。
 
-  // v0.10.731 hotfix: iPhone Safari等で宇宙画面だけタップ不能になるケースを復旧する。
+  // v0.10.732: iPhone Safari等で宇宙画面だけタップ不能になるケースを復旧する。
   const STYLE_ID = 'alien-space-input-hotfix';
   const installStyle = () => {
     if (document.getElementById(STYLE_ID)) return;
@@ -15,12 +14,20 @@
       body[data-screen="main"] .alien-space-main-screen>.alien-space-status{pointer-events:none!important}
       body[data-screen="main"] .alien-space-main-screen>.alien-space-menu,
       body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
-        z-index:110!important;pointer-events:auto!important;touch-action:manipulation!important;
+        z-index:220!important;pointer-events:auto!important;touch-action:manipulation!important;
         -webkit-user-select:none!important;user-select:none!important
+      }
+      body[data-screen="main"] .alien-space-main-screen>.alien-space-exit-button{
+        position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 112px)!important;right:18px!important;
+        z-index:240!important;pointer-events:auto!important;touch-action:manipulation!important;
+        border:1px solid rgba(255,235,188,.72)!important;border-radius:12px!important;
+        background:rgba(12,8,18,.84)!important;color:#fff0d3!important;padding:10px 14px!important;
+        font:700 15px/1.15 system-ui,-apple-system,sans-serif!important;box-shadow:0 4px 18px rgba(0,0,0,.34)!important;
+        -webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important
       }
       body[data-screen="main"] .alien-space-main-screen>.alien-space-menu>button,
       body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
-        position:relative!important;z-index:111!important;pointer-events:auto!important;
+        position:relative!important;z-index:221!important;pointer-events:auto!important;
         touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important
       }`;
     document.head?.appendChild(style);
@@ -28,10 +35,23 @@
 
   const isAlienSpace = () => document.body?.dataset?.screen === 'main' && !!document.querySelector('.alien-space-main-screen');
 
+  const ensureEmergencyExit = () => {
+    if (!isAlienSpace()) return;
+    const screen = document.querySelector('.alien-space-main-screen');
+    if (!screen || screen.querySelector('.alien-space-exit-button')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'alien-space-exit-button';
+    button.dataset.action = 'alien-force-exit-proxy';
+    button.setAttribute('aria-label', '宇宙イベントを終了して地球へ帰還');
+    button.textContent = 'イベント終了';
+    screen.prepend(button);
+  };
+
   const repairInvisibleBlockers = () => {
     installStyle();
     if (!isAlienSpace()) return;
-
+    ensureEmergencyExit();
     const curtain = document.querySelector('#sleep-curtain');
     if (curtain?.classList.contains('active')) {
       const css = getComputedStyle(curtain);
@@ -40,7 +60,6 @@
         curtain.style.pointerEvents = 'none';
       }
     }
-
     const morning = document.querySelector('#morning-brief');
     if (morning?.classList.contains('active')) {
       const css = getComputedStyle(morning);
@@ -50,7 +69,6 @@
         morning.style.pointerEvents = 'none';
       }
     }
-
     const modal = document.querySelector('#modal-layer');
     if (modal && !modal.classList.contains('hidden') && !modal.querySelector('.modal-card')) {
       modal.classList.add('hidden');
@@ -59,11 +77,23 @@
     }
   };
 
-  // Safariでclick合成が落ちた場合の予備入力経路。
+  document.addEventListener('click', (event) => {
+    if (!isAlienSpace()) return;
+    const button = event.target instanceof Element ? event.target.closest('.alien-space-exit-button') : null;
+    if (!(button instanceof HTMLButtonElement) || button.dataset.forceExitConfirmed === '1') return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const accepted = window.confirm('宇宙イベントを終了して地球へ帰還しますか？\n非常脱出では通常帰還時の報酬は追加されません。');
+    if (!accepted) return;
+    button.dataset.forceExitConfirmed = '1';
+    button.dataset.action = 'alien-return-next';
+    button.click();
+  }, true);
+
   document.addEventListener('touchend', (event) => {
     if (!isAlienSpace()) return;
     const target = event.target instanceof Element
-      ? event.target.closest('.alien-space-menu button[data-action]:not(:disabled), .alien-hunger-emergency-card[data-action]:not(:disabled)')
+      ? event.target.closest('.alien-space-menu button[data-action]:not(:disabled), .alien-hunger-emergency-card[data-action]:not(:disabled), .alien-space-exit-button[data-action]:not(:disabled)')
       : null;
     if (!(target instanceof HTMLButtonElement)) return;
     event.preventDefault();
@@ -72,10 +102,7 @@
 
   const scheduleRepair = () => requestAnimationFrame(() => requestAnimationFrame(repairInvisibleBlockers));
   new MutationObserver(scheduleRepair).observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'data-screen'],
+    childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-screen'],
   });
   window.addEventListener('pageshow', scheduleRepair);
   window.addEventListener('focus', scheduleRepair);

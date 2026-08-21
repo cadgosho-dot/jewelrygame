@@ -1,13 +1,9 @@
-name: 地金相場更新とGitHub Pages公開
+name: v0.10.731 完成画面修正とGitHub Pages公開
 
 on:
   push:
     branches:
       - main
-  schedule:
-    # GitHub ActionsのcronはUTC。日本時間の平日9:43と14:17。
-    - cron: '43 0 * * 1-5'
-    - cron: '17 5 * * 1-5'
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  update-metals:
+  apply-v731:
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -27,95 +23,79 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
 
-      - name: Push前の正常な相場履歴を引き継ぐ
-        if: github.event_name == 'push'
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
-          GH_TOKEN: ${{ github.token }}
+      - name: v0.10.731を適用
         run: |
-          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            echo "比較できるPush前コミットがないため、履歴引き継ぎを省略します。"
-            exit 0
-          fi
-          if ! curl --fail --silent --show-error --location --retry 3 \
-            -H "Accept: application/vnd.github.raw+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/data/metals.json?ref=${BEFORE_SHA}" \
-            --output /tmp/metals-before-push.json; then
-            echo "Push前の地金相場ファイルを取得できなかったため、履歴引き継ぎを省略します。"
-            exit 0
-          fi
           python3 - <<'PY'
-          import json
           from pathlib import Path
 
-          current_path = Path('data/metals.json')
-          previous_path = Path('/tmp/metals-before-push.json')
-          try:
-              current = json.loads(current_path.read_text(encoding='utf-8'))
-              previous = json.loads(previous_path.read_text(encoding='utf-8'))
-          except (OSError, json.JSONDecodeError):
-              print('履歴引き継ぎ用JSONを読み取れなかったため省略します。')
+          version_file = Path('js/game-data.js')
+          current = version_file.read_text(encoding='utf-8')
+          if "VERSION = '0.10.731'" in current:
+              print('すでにv0.10.731です。')
               raise SystemExit(0)
+          if "VERSION = '0.10.730'" not in current:
+              raise SystemExit('想定しているv0.10.730ではないため停止します。')
 
-          previous_spot = previous.get('spotPerGram') or {}
-          previous_is_live = (
-              previous.get('status') == 'live'
-              and all(isinstance(previous_spot.get(key), (int, float)) and previous_spot[key] > 0
-                      for key in ('gold', 'silver', 'platinum'))
-          )
-          if current.get('status') != 'live' and previous_is_live:
-              current_path.write_text(
-                  json.dumps(previous, ensure_ascii=False, indent=2) + '\n',
-                  encoding='utf-8',
-              )
-              print('Push前の正常な相場・前日比・履歴を引き継ぎました。')
-          else:
-              print('現在の相場JSONをそのまま更新基準にします。')
+          for name in ('game.html', 'index.html', 'auth.html', 'js/app.js', 'js/game-data.js', 'sw.js'):
+              path = Path(name)
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('0.10.730', '0.10.731')
+              path.write_text(text, encoding='utf-8')
+
+          game = Path('game.html')
+          text = game.read_text(encoding='utf-8')
+          marker = 'completion-safety-v731'
+          if marker not in text:
+              css = r'''
+          <style id="completion-safety-v731">
+          /* v0.10.731: 縦画面の完成品イラスト上切れ防止。画像を少し縮小し、上側に安全余白を確保する。 */
+          @media (orientation: portrait) and (max-width: 820px) {
+            body[data-screen="completion"] .result-card > .completion-jewelry-preview {
+              box-sizing: border-box !important;
+              display: flex !important;
+              align-items: flex-start !important;
+              justify-content: center !important;
+              width: 100% !important;
+              height: auto !important;
+              min-height: 0 !important;
+              margin: 0 0 2px !important;
+              padding: 10px 0 0 !important;
+              overflow: visible !important;
+            }
+            body[data-screen="completion"] .completion-jewelry-artwork {
+              width: 170px !important;
+              height: 170px !important;
+              margin: 0 auto !important;
+              transform: none !important;
+            }
+            body[data-screen="completion"] .completion-jewelry-artwork.item-pendant {
+              width: 132px !important;
+              height: 181px !important;
+            }
+            body[data-screen="completion"] .completion-jewelry-artwork.item-earrings {
+              width: 176px !important;
+              height: 159px !important;
+            }
+            body[data-screen="completion"] .result-card > h1 {
+              margin: 0.1rem 0 0.55rem !important;
+            }
+          }
+          </style>
+          '''
+              text = text.replace('</head>', css + '\n</head>', 1)
+              game.write_text(text, encoding='utf-8')
           PY
 
-      - name: Metals.Devから価格を取得して計算
-        env:
-          METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
+      - name: 更新をコミット
         run: |
-          cp data/metals.json /tmp/metals-before-api.json
-          if [ -z "$METALS_DEV_API_KEY" ]; then
-            echo "::warning::METALS_DEV_API_KEYが未設定です。既存の正常な地金相場を使ってPages公開を続行します。"
-            exit 0
-          fi
-          echo "::add-mask::$METALS_DEV_API_KEY"
-          if ! python3 scripts/update-metals.py; then
-            echo "::warning::Metals.Devから地金相場を取得できませんでした。既存の正常な地金相場へ戻してPages公開を続行します。"
-            cp /tmp/metals-before-api.json data/metals.json
-          fi
-
-      - name: 公開に使う地金相場JSONを検証
-        run: |
-          python3 -m json.tool data/metals.json > /dev/null
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          data = json.loads(Path('data/metals.json').read_text(encoding='utf-8'))
-          if data.get('status') != 'live':
-              raise SystemExit('既存の地金相場もlive状態ではないため、安全のため公開を中止します。')
-          spot = data.get('spotPerGram') or {}
-          for metal in ('gold', 'silver', 'platinum'):
-              value = spot.get(metal)
-              if not isinstance(value, (int, float)) or value <= 0:
-                  raise SystemExit(f'{metal}の地金相場が不正なため、安全のため公開を中止します。')
-          PY
-
-      - name: 更新結果をコミット
-        run: |
-          if git diff --quiet -- data/metals.json; then
-            echo "価格ファイルに変更はありません。"
+          if git diff --quiet; then
+            echo "変更はありません。"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/metals.json
-          git commit -m "地金相場を自動更新"
+          git add game.html index.html auth.html js/app.js js/game-data.js sw.js
+          git commit -m "v0.10.731 完成品イラスト上切れ防止"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
@@ -123,9 +103,8 @@ jobs:
     permissions:
       contents: read
       pages: read
-    if: needs.update-metals.result == 'success'
     needs:
-      - update-metals
+      - apply-v731
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -159,7 +138,6 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    if: always() && needs.build-pages.result == 'success'
     needs:
       - build-pages
     runs-on: ubuntu-latest

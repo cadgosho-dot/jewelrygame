@@ -2,6 +2,7 @@
   'use strict';
   // v0.10.542: Firebase Hosting の公開確認前に GitHub Pages から転送しない。
   // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも転送が発生しないよう互換目的で残している。
+  // v0.10.732 formal-release trigger.
 
   // v0.10.732: iPhone Safari等で宇宙画面だけタップ不能になるケースを復旧する。
   const STYLE_ID = 'alien-space-input-hotfix';

@@ -1,4 +1,4 @@
-export const VERSION = '0.10.726';
+export const VERSION = '0.10.728';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -2948,7 +2948,7 @@ export function finishedJewelryCapacity(gameState) {
 
 export const METALS = {
   silver: {
-    id: 'silver', name: 'SV925', shortName: 'SV925', alloy: 'SV925', price: 600, unitWeight: 1, storageLimit: 1000,
+    id: 'silver', name: 'SV925', shortName: 'SV925', alloy: 'SV925', price: 389, unitWeight: 1, storageLimit: 1000,
     composition: '銀を質量比92.5％以上含むスターリングシルバー系合金。残部は銅が一般的ですが、脱酸・耐変色・時効硬化を目的とする独自添加元素を含む製品もあります。',
     summary: '純銀の白色と展延性を保ちながら、実用品として必要な硬さを得る代表的な銀合金です。熱伝導が大きく、硫黄化合物による変色、銅を含む合金での酸化・火むら、溶解時の酸素管理が重要です。',
     guide: {
@@ -2988,7 +2988,7 @@ export const METALS = {
     },
   },
   gold: {
-    id: 'gold', name: 'K18YG', shortName: 'K18YG', alloy: 'K18YG', price: 2400, unitWeight: 1, storageLimit: 100,
+    id: 'gold', name: 'K18YG', shortName: 'K18YG', alloy: 'K18YG', price: 19250, unitWeight: 1, storageLimit: 100,
     composition: '金を質量比75.0％含むイエローゴールド。残部25.0％は銀・銅を主体とすることが多く、亜鉛その他の微量元素を含む製品もあります。',
     summary: 'K18YGは金の耐食性と色調を保ちながら、純金より高い硬さと実用強度を得た合金です。同じK18YGでも銀・銅・亜鉛比、脱酸材、結晶粒微細化材、鋳造用／加工用の違いで物性が変わります。',
     guide: {
@@ -3030,7 +3030,7 @@ export const METALS = {
     },
   },
   platinum: {
-    id: 'platinum', name: 'Pt900', shortName: 'Pt900', alloy: 'Pt900', price: 3600, unitWeight: 1, storageLimit: 100,
+    id: 'platinum', name: 'Pt900', shortName: 'Pt900', alloy: 'Pt900', price: 9160, unitWeight: 1, storageLimit: 100,
     composition: 'プラチナを質量比90.0％含む合金。パラジウムを主な割金とするPt–Pd系が広く用いられ、硬さ、耐摩耗性、形状保持性、鋳造・加工特性を調整するため、ルテニウムを2～3％程度加え、残部を主にパラジウムとする配合もあります。',
     summary: 'Pt900は高比重・白色・耐食性を持つジュエリー地金ですが、「Pt900」だけでは割金を特定できません。高温設備、清浄な専用工具、合金系に合った焼鈍・鋳造・溶接条件が必要です。',
     guide: {
@@ -7329,6 +7329,15 @@ export function initialState() {
         stage: 'idle',
         rewardGranted: false,
       },
+      workshopKappaJadeEvent: {
+        nextTriggerDay: 0,
+        lastTriggeredDay: 0,
+        totalTriggered: 0,
+        lastCheckedDate: '',
+        active: false,
+        stage: 'idle',
+        rewardGranted: false,
+      },
       mermaidEvent: {
         nextTriggerDay: 0,
         lastTriggeredDay: 0,
@@ -7814,7 +7823,7 @@ export function migrateState(saved) {
     const legacyScreen = String(legacy.game?.screen || '');
     const recoveryScreens = new Set([
       'winterColdEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent',
-      'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'sushiChefEvent',
+      'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'sushiChefEvent',
       'cyclopsEvent', 'ganeshaTuskEvent', 'childhoodFriendEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
       'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
       'wristFoundEvent', 'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
@@ -7824,6 +7833,7 @@ export function migrateState(saved) {
       westernUnionEvent: ['choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3'],
       miningPazupanEvent: ['intro', 'intro2', 'intro3', 'reward'],
       kappaJadeEvent: ['intro1', 'intro2', 'reward', 'farewell'],
+      workshopKappaJadeEvent: ['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell'],
       tattooWomanAmberEvent: ['intro1', 'intro2', 'intro3', 'reward', 'farewell'],
       mermaidEvent: ['intro', 'reward'],
       sushiChefEvent: ['intro1', 'intro2', 'playing', 'farewell'],
@@ -8583,6 +8593,10 @@ export function migrateState(saved) {
   normalizeSimpleEvent('miningPazupanEvent', ['idle', 'intro', 'intro2', 'intro3', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
   normalizeSimpleEvent('mermaidEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
   normalizeSimpleEvent('kappaJadeEvent', ['idle', 'intro1', 'intro2', 'reward', 'farewell', 'completed'], (saved) => ({
+    rewardGranted: Boolean(saved.rewardGranted),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+  }));
+  normalizeSimpleEvent('workshopKappaJadeEvent', ['idle', 'rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell', 'completed'], (saved) => ({
     rewardGranted: Boolean(saved.rewardGranted),
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
   }));

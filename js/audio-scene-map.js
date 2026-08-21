@@ -243,6 +243,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   miningResult: 'mining',
 
   workshop: 'workshop',
+  workshopKappaJadeEvent: 'workshop',
   inventory: 'workshop',
   finishedItemDetail: 'workshop',
   workshopTool: 'workshop',

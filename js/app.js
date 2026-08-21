@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.726';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.726';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.726';
+const UI_BUILD_VERSION = '0.10.728';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.728';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.728';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.726';
+} from './firebase-service.js?v=0.10.728';
 
 
 
@@ -386,6 +386,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   westernUnionEvent: new Set(['video', 'choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3']),
   miningPazupanEvent: new Set(['intro', 'intro2', 'intro3', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
+  workshopKappaJadeEvent: new Set(['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
   pandaMusicEvent: new Set(['intro1', 'intro2']),
@@ -415,14 +416,14 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   clockTowerDonationEvent: new Set(['intro1', 'intro2', 'intro3']),
   mysteryChineseMealEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'eating', 'postMeal']),
   ridleyOkazakiSobaEvent: new Set(['intro1', 'intro2', 'intro3']),
-  emeraldCaptainKebabEvent: new Set(['intro1', 'intro2', 'showcase', 'purchase', 'eating', 'farewell']),
+  emeraldCaptainKebabEvent: new Set(['intro1', 'intro2', 'showcase', 'purchaseResult', 'purchase', 'eating', 'farewell']),
   storeTheftEvent: new Set(['intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice']),
   birthdaySleepEvent: new Set(['phone', 'greeting', 'congratulations', 'thanks']),
 });
 
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'bluesJukeEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
-  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
+  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
@@ -445,6 +446,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   ridleyOkazakiSobaEvent: { eventKey: 'ridleyOkazakiSobaEvent', fallback: 'meal' },
   emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
+  workshopKappaJadeEvent: { eventKey: 'workshopKappaJadeEvent', fallback: 'workshop' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   okachimachiInvasiveTurtlesEvent: { eventKey: 'okachimachiInvasiveTurtlesEvent', fallback: 'okachimachi' },
   pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
@@ -475,6 +477,10 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   kaitenzushi: { eventKey: '', fallback: 'main', conditionalEventKey: 'sushiChefEvent' },
 });
 const EVENT_RECOVERY_SCREENS = new Set(Object.keys(EVENT_SCREEN_RECOVERY_CONFIG));
+
+// Canonical event-layout split: these three events use the dedicated quiz layout system.
+// Keep them out of the normal character/dialogue auto-layout so legacy event CSS cannot mix in.
+const QUIZ_LAYOUT_V2_SCREENS = new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'storytellerEvent']);
 
 // v0.10.514: 水槽はスマートフォン内の通常機能であり、イベントではない。
 // 将来、水槽ミニゲームを独立画面へ分離しても「イベント終了」を誤表示しないよう明示的に除外する。
@@ -596,6 +602,10 @@ function runEventEmergencySettlement(key, eventState) {
       changed = grantEmergencyRough(eventState, 'jade', '翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。') || changed;
       break;
 
+    case 'workshopKappaJadeEvent':
+      changed = grantEmergencyRough(eventState, 'jade', '翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。') || changed;
+      break;
+
     case 'okachimachiTollEvent': {
       const rewardStages = ['jadeReward', 'paymentDemand', 'paymentNotice', 'farewell'];
       if (rewardStages.includes(stage) && !eventState.rewardGranted) {
@@ -710,7 +720,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'blues-juke-event-next', 'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
   'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-video-start', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
   'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'apprentice-cinema-event-next', 'apprentice-cinema-video-start', 'apprentice-cinema-video-finish', 'cinema-video-finish',
-  'kappa-jade-event-next', 'kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
+  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
@@ -954,10 +964,10 @@ function installEventRecoveryControl() {
   const criticalAquariumIntro = Boolean(state) && screen === 'grayHoodAquariumEvent' && grayHoodAquariumEventState().active && grayHoodAquariumEventState().stage === 'video';
   if (!state || criticalAquariumIntro || NON_EVENT_RECOVERY_SCREENS.has(screen) || !EVENT_RECOVERY_SCREENS.has(screen) || root.querySelector('[data-action="event-emergency-recover"]')) return;
   const markup = `<button type="button" class="event-safety-recovery" data-action="event-emergency-recover" data-illness-readable="true" aria-label="イベントを終了して画面を復旧する" title="イベントを終了">イベント終了</button>`;
-  // クイズ王画面は全画面イベント自身が独立した重なり順を持つため、
-  // 復旧ボタンをイベント要素の内側へ直接置いて確実に表示する。
-  if (screen === 'okachimachiQuiz' || screen === 'looseShopOriginalQuizEvent') {
-    const quizEvent = root.querySelector('.okachimachi-quiz-event, .loose-shop-original-quiz-event');
+  // Dedicated quiz-layout events own their whole viewport and stacking context.
+  // Put the emergency exit inside the canonical quiz root so it stays left/top and above every stage.
+  if (QUIZ_LAYOUT_V2_SCREENS.has(screen)) {
+    const quizEvent = root.querySelector('.jxj-quiz-event-v2');
     if (quizEvent) {
       quizEvent.insertAdjacentHTML('afterbegin', markup);
       return;
@@ -2267,7 +2277,19 @@ function mealFoodImage(mealId) {
   return versionedAsset(MEAL_FOOD_IMAGES[mealId] || '');
 }
 
+const MEAL_AFTER18_BACKGROUND_START_MINUTES = 18 * 60;
+
+function mealAfter18BackgroundActive() {
+  const minutes = Number(state?.game?.minutes);
+  return Number.isFinite(minutes) && minutes >= MEAL_AFTER18_BACKGROUND_START_MINUTES;
+}
+
+function mealAfter18BackgroundAssetName(portrait = isPortraitLayout()) {
+  return portrait ? 'meal-after18-portrait-v727' : 'meal-after18-v727';
+}
+
 function mealBackgroundAssetName(mealId, portrait = isPortraitLayout()) {
+  if (mealAfter18BackgroundActive()) return mealAfter18BackgroundAssetName(portrait);
   if (mealId === 'ramen') return portrait ? 'meal-ramen-portrait-v386' : 'meal-ramen-v386';
   return `meal-${mealId}${portrait ? '-portrait' : ''}`;
 }
@@ -2373,9 +2395,13 @@ async function preparePhoneHomeImage(file) {
 }
 
 
+const METAL_MARKET_CACHE_KEY = `${SAVE_KEY}-metal-market-v2`;
+const METAL_MARKET_FETCH_TIMEOUT_MS = 15000;
+const METAL_MARKET_TRADE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 const METAL_MARKET_FALLBACK = Object.freeze({
-  status: 'fallback',
-  sourceName: 'ゲーム内基準価格',
+  status: 'unavailable',
+  sourceName: '地金相場未取得',
   updatedAt: null,
   marketTimestamp: null,
   marketDateJst: null,
@@ -2391,9 +2417,9 @@ const METAL_MARKET_FALLBACK = Object.freeze({
     platinum: Math.round(METALS.platinum.price / METALS.platinum.unitWeight),
   }),
   sellPerGramByMetalId: Object.freeze({
-    silver: 415,
-    gold: 2050,
-    platinum: 2940,
+    silver: 269,
+    gold: 16400,
+    platinum: 7490,
   }),
 });
 let metalMarket = {
@@ -2432,6 +2458,51 @@ let phoneHomeImageDraft = '';
 function validPositivePrice(value) {
   const price = Number(value);
   return Number.isFinite(price) && price > 0 && price < 100000000;
+}
+
+function metalMarketTimestampMs() {
+  const date = new Date(metalMarket.updatedAt || metalMarket.marketTimestamp || '');
+  return Number.isFinite(date.getTime()) ? date.getTime() : 0;
+}
+
+function metalMarketTradeReady() {
+  if (!['live', 'cached'].includes(metalMarket.status)) return false;
+  const purchase = metalMarket.purchasePerGramByMetalId || {};
+  const sell = metalMarket.sellPerGramByMetalId || {};
+  if (!['silver', 'gold', 'platinum'].every((id) => validPositivePrice(purchase[id]) && validPositivePrice(sell[id]))) return false;
+  const timestamp = metalMarketTimestampMs();
+  if (!timestamp) return false;
+  return Date.now() - timestamp <= METAL_MARKET_TRADE_MAX_AGE_MS;
+}
+
+function cachedMetalMarketPayload() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(METAL_MARKET_CACHE_KEY) || 'null');
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveMetalMarketCache(data) {
+  try {
+    localStorage.setItem(METAL_MARKET_CACHE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data }));
+  } catch (_) {}
+}
+
+function restoreCachedMetalMarket() {
+  const cached = cachedMetalMarketPayload();
+  if (!cached?.data) return false;
+  const cachedTimestamp = new Date(cached.data.updatedAt || cached.data.marketTimestamp || cached.savedAt || '').getTime();
+  if (!Number.isFinite(cachedTimestamp) || Date.now() - cachedTimestamp > METAL_MARKET_TRADE_MAX_AGE_MS) return false;
+  try {
+    applyMetalMarketData(cached.data, { statusOverride: 'cached' });
+    return true;
+  } catch (error) {
+    console.warn('保存済み地金相場を復元できませんでした。', error);
+    try { localStorage.removeItem(METAL_MARKET_CACHE_KEY); } catch (_) {}
+    return false;
+  }
 }
 
 function metalPriceDateLabel(value) {
@@ -2503,7 +2574,7 @@ function metalHistoryReferenceParts() {
   return realJstDateParts();
 }
 
-function applyMetalMarketData(data) {
+function applyMetalMarketData(data, options = {}) {
   const purchasePacks = data?.gamePurchasePrices || {};
   const sellPacks = data?.gameSellPrices || {};
   const purchasePerGram = data?.gamePurchasePricesPerGram || data?.gamePricesPerGram || {};
@@ -2561,7 +2632,7 @@ function applyMetalMarketData(data) {
   }));
 
   metalMarket = {
-    status: data.status === 'live' ? 'live' : 'fallback',
+    status: options.statusOverride || (data.status === 'live' ? 'live' : 'cached'),
     sourceName: String(data?.source?.name || 'Metals.Dev'),
     updatedAt: data.updatedAt || null,
     marketTimestamp: data.marketTimestamp || null,
@@ -2578,36 +2649,52 @@ function applyMetalMarketData(data) {
 }
 
 async function loadMetalMarket() {
+  const hadUsableMarket = metalMarketTradeReady() || restoreCachedMetalMarket();
+  if (!hadUsableMarket && !['live', 'cached'].includes(metalMarket.status)) metalMarket.status = 'loading';
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 5000);
+  const timeout = window.setTimeout(() => controller.abort(), METAL_MARKET_FETCH_TIMEOUT_MS);
   try {
     const response = await fetch('./data/metals.json', { cache: 'no-store', signal: controller.signal });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    applyMetalMarketData(await response.json());
+    const data = await response.json();
+    applyMetalMarketData(data);
+    saveMetalMarketCache(data);
   } catch (error) {
-    console.warn('地金相場を読み込めないため、ゲーム内基準価格を使用します。', error);
-    metalMarket = {
-      ...METAL_MARKET_FALLBACK,
-      spotPerGramByBaseId: { ...METAL_MARKET_FALLBACK.spotPerGramByBaseId },
-      previousSpotPerGramByBaseId: { ...METAL_MARKET_FALLBACK.previousSpotPerGramByBaseId },
-      changePerGramByBaseId: { ...METAL_MARKET_FALLBACK.changePerGramByBaseId },
-      historyRetentionYears: METAL_MARKET_FALLBACK.historyRetentionYears,
-      historyDaily: [],
-      purchasePerGramByMetalId: { ...METAL_MARKET_FALLBACK.purchasePerGramByMetalId },
-      sellPerGramByMetalId: { ...METAL_MARKET_FALLBACK.sellPerGramByMetalId },
-    };
+    console.warn('地金相場を読み込めませんでした。正常な前回価格があれば継続使用し、なければ売買を停止します。', error);
+    const restored = metalMarket.status === 'cached' || restoreCachedMetalMarket();
+    if (!restored && metalMarket.status !== 'live') {
+      metalMarket = {
+        ...METAL_MARKET_FALLBACK,
+        spotPerGramByBaseId: { ...METAL_MARKET_FALLBACK.spotPerGramByBaseId },
+        previousSpotPerGramByBaseId: { ...METAL_MARKET_FALLBACK.previousSpotPerGramByBaseId },
+        changePerGramByBaseId: { ...METAL_MARKET_FALLBACK.changePerGramByBaseId },
+        historyRetentionYears: METAL_MARKET_FALLBACK.historyRetentionYears,
+        historyDaily: [],
+        purchasePerGramByMetalId: { ...METAL_MARKET_FALLBACK.purchasePerGramByMetalId },
+        sellPerGramByMetalId: { ...METAL_MARKET_FALLBACK.sellPerGramByMetalId },
+      };
+    }
   } finally {
     window.clearTimeout(timeout);
   }
 }
 
+// Restore the last validated real-world market synchronously before the first supplier render.
+restoreCachedMetalMarket();
+
 function metalMarketSummary() {
-  if (metalMarket.status !== 'live') {
-    return `<div class="metal-market-summary fallback"><strong>地金相場を更新待ち</strong><small>初回の自動更新まではゲーム内基準価格を使用します。</small></div>`;
-  }
   const timestamp = metalPriceDateLabel(metalMarket.updatedAt || metalMarket.marketTimestamp);
+  if (metalMarket.status === 'loading') {
+    return `<div class="metal-market-summary fallback"><strong>地金相場を取得中</strong><small>価格確認が完了するまで地金の売買はできません。</small></div>`;
+  }
+  if (!['live', 'cached'].includes(metalMarket.status)) {
+    return `<div class="metal-market-summary fallback"><strong>地金相場を取得できません</strong><small>誤った価格での売買を防ぐため、地金の売買を停止しています。</small></div>`;
+  }
   const stale = metalMarketIsStale();
-  return `<div class="metal-market-summary ${stale ? 'stale' : ''}"><strong>${stale ? '前回取得した地金相場' : '現実の地金相場と連動してます'}</strong><small>最終更新：${esc(timestamp)}　取得元：${esc(metalMarket.sourceName)}</small></div>`;
+  const tradeReady = metalMarketTradeReady();
+  const title = metalMarket.status === 'cached' || stale ? '前回取得した地金相場' : '現実の地金相場と連動してます';
+  const caution = tradeReady ? '' : '　価格が古いため売買停止中';
+  return `<div class="metal-market-summary ${stale || !tradeReady ? 'stale' : ''}"><strong>${title}</strong><small>最終更新：${esc(timestamp)}　取得元：${esc(metalMarket.sourceName)}${caution}</small></div>`;
 }
 
 function metalSpotDifferenceMarkup(id) {
@@ -2629,7 +2716,7 @@ function metalSpotMarketMarkup() {
     || metalPriceDateLabel(metalMarket.updatedAt || metalMarket.marketTimestamp).split(' ')[0]
     || '本日';
   const previousDate = metalMarketDateLabel(metalMarket.previousMarketDateJst, false);
-  const isLive = metalMarket.status === 'live' && rows.every((row) => validSpotPrice(metalMarket.spotPerGramByBaseId?.[row.id]));
+  const isLive = ['live', 'cached'].includes(metalMarket.status) && rows.every((row) => validSpotPrice(metalMarket.spotPerGramByBaseId?.[row.id]));
   return `<section class="metal-spot-panel ${isLive ? '' : 'fallback'}" aria-label="本日の純金属相場">
     <div class="metal-spot-heading">
       <div><strong>${esc(marketDate)}の地金相場</strong><small>1gあたり・日本円</small></div>
@@ -2647,6 +2734,7 @@ function metalSpotMarketMarkup() {
       }).join('')}
     </div>
     ${metalMarketSummary()}
+    ${metalMarketTradeReady() ? '' : '<button type="button" class="secondary-button full-button metal-market-reload-button" data-action="metal-market-reload">相場を再取得</button>'}
   </section>`;
 }
 
@@ -2854,14 +2942,14 @@ function metalRemainingCapacity(id) {
 }
 
 function metalTradePricePerGram(mode, id) {
+  if (!metalMarketTradeReady()) return 0;
   const table = mode === 'sell' ? metalMarket.sellPerGramByMetalId : metalMarket.purchasePerGramByMetalId;
-  const fallback = mode === 'sell'
-    ? METAL_MARKET_FALLBACK.sellPerGramByMetalId[id]
-    : Number(METALS[id]?.price);
-  return Math.max(1, Math.round(Number(table?.[id]) || Number(fallback) || 1));
+  const price = Number(table?.[id]);
+  return validPositivePrice(price) ? Math.round(price) : 0;
 }
 
 function metalTradeMaximum(mode, id) {
+  if (!metalMarketTradeReady()) return 0;
   const owned = metalOwnedWeight(id);
   if (mode === 'sell') return Math.max(0, Math.floor(metalAvailableWeight(id) + 1e-9));
   const capacityRemaining = Math.max(0, metalStorageLimit(id) - owned);
@@ -2906,7 +2994,7 @@ function syncMetalTradeCard(mode, id) {
   const preview = card.querySelector('[data-metal-trade-preview]');
   if (preview) preview.innerHTML = metalTradePreviewMarkup(mode, id, quantity);
   const submit = card.querySelector(`[data-action="${mode === 'buy' ? 'buy-metal' : 'sell-metal'}"]`);
-  if (submit) submit.disabled = quantity < 1 || !canSpendHours(1);
+  if (submit) submit.disabled = !metalMarketTradeReady() || quantity < 1 || !canSpendHours(1);
 }
 
 function longPressQuantityDelta(current, delta) {
@@ -7246,6 +7334,102 @@ function advanceKappaJadeEvent() {
   render();
 }
 
+function workshopKappaJadeEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.workshopKappaJadeEvent && typeof state.events.workshopKappaJadeEvent === 'object' && !Array.isArray(state.events.workshopKappaJadeEvent)
+    ? state.events.workshopKappaJadeEvent
+    : {};
+  const validStages = new Set(['idle', 'rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell', 'completed']);
+  state.events.workshopKappaJadeEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (!state.events.workshopKappaJadeEvent.active && !['idle', 'completed'].includes(state.events.workshopKappaJadeEvent.stage)) state.events.workshopKappaJadeEvent.stage = 'completed';
+  return state.events.workshopKappaJadeEvent;
+}
+
+function resumeWorkshopKappaJadeEvent() {
+  const eventState = workshopKappaJadeEventState();
+  if (!eventState.active) return false;
+  setScreen('workshopKappaJadeEvent', {}, false);
+  return true;
+}
+
+function maybeStartWorkshopKappaJadeEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = workshopKappaJadeEventState();
+  if (eventState.active) return resumeWorkshopKappaJadeEvent();
+  const riverKappa = kappaJadeEventState();
+  if (Math.max(0, Number(riverKappa.totalTriggered) || 0) < 1) return false;
+  // 工房の河童イベントは、河原の河童イベントを一度以上経験した後だけ発生する。
+  if (kappaJadeEventState().totalTriggered < 1) return false;
+  if (state.game.day < Math.max(0, Number(eventState.nextTriggerDay) || 0)) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= (1 / 30)) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'rustle';
+  eventState.rewardGranted = false;
+  eventState.nextTriggerDay = state.game.day + 150;
+  saveGame();
+  setScreen('workshopKappaJadeEvent', {}, false);
+  playSfx('earth-dig', { gain: 0.42, rate: 1.12 });
+  vibrate([18, 22, 28]);
+  return true;
+}
+
+function receiveWorkshopKappaJadeReward() {
+  const eventState = workshopKappaJadeEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.rough.jade = Math.max(0, Math.floor(Number(state.inventory.rough?.jade) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。', 'special');
+  }
+  eventState.stage = 'admire';
+  saveGame();
+  playSfx('jade-gift', { gain: 1.02, rate: 1.02 });
+  vibrate([30, 24, 56]);
+  render();
+}
+
+function advanceWorkshopKappaJadeEvent() {
+  const eventState = workshopKappaJadeEventState();
+  if (!eventState.active) {
+    setScreen('workshop', {}, false);
+    return;
+  }
+  const order = ['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell'];
+  const index = order.indexOf(eventState.stage);
+  if (eventState.stage === 'reward') return;
+  if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.82 });
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (index >= 0 && index < order.length - 1) {
+    eventState.stage = order[index + 1];
+    saveGame();
+    if (eventState.stage === 'greet') playSfx('kappa-appear', { gain: 0.92, rate: 1.0 });
+    else if (eventState.stage === 'reward') playSfx('success', { gain: 0.84, rate: 1.04 });
+    else playSfx('select', { gain: 0.82 });
+    render();
+    return;
+  }
+}
+
 function tattooWomanAmberEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.tattooWomanAmberEvent && typeof state.events.tattooWomanAmberEvent === 'object' && !Array.isArray(state.events.tattooWomanAmberEvent)
@@ -9970,10 +10154,28 @@ function grantStorytellerReward() {
   state.inventory.items.burariOkachimachiSticker = Math.max(0, Math.floor(Number(state.inventory.items.burariOkachimachiSticker) || 0)) + 1;
   e.rewardGranted = true; addNotification('ブラり御徒町 ステッカーを手に入れました', 'ストーリーテラーから街ブラロケの記念ステッカーを受け取りました。', 'special'); saveGame(); playSfx('success', { gain:1.05 }); vibrate([28,24,55]); return true;
 }
+function activateStorytellerIttomoOverlay() {
+  if (screen !== 'storytellerEvent') return false;
+  const host = root.querySelector('.jxj-quiz-storyteller-v2.jxj-quiz-stage-dialogue-v2');
+  if (!(host instanceof HTMLElement)) return false;
+  const panel = host.querySelector('.jxj-quiz-dialogue-panel-v2');
+  const overlay = host.querySelector('.storyteller-ittomo-overlay-v12');
+  if (!(overlay instanceof HTMLElement)) return false;
+  if (panel instanceof HTMLElement) panel.classList.add('is-storyteller-ittomo-hidden');
+  overlay.classList.add('is-active');
+  return true;
+}
 function advanceStorytellerEvent() {
   const e = storytellerEventState(); if (!e.active) return finishStorytellerEvent();
   if (e.stage === 'intro1') e.stage='intro2';
-  else if (e.stage === 'intro2') { e.stage='ittomo'; playSfx('quiz-intro',{gain:.9,rate:1.08}); }
+  else if (e.stage === 'intro2') {
+    e.stage='ittomo';
+    saveGame();
+    playSfx('quiz-intro',{gain:.9,rate:1.08});
+    // Keep the exact same character DOM/geometry. Only overlay 「いいとも！」.
+    if (!activateStorytellerIttomoOverlay()) render();
+    return;
+  }
   else if (e.stage === 'ittomo') { e.stage='question'; playSfx('quiz-question',{gain:.88}); }
   else if (e.stage === 'correct') { grantStorytellerReward(); e.stage='reward'; }
   else if (e.stage === 'reward') e.stage='correctFarewell';
@@ -10147,22 +10349,79 @@ function renderSpeedStarEvent(){
   return `<main class="main-screen jxj-new-event-screen speed-star-event-screen"><section class="visit-character-event">${showChar?`<div class="visit-character-area jxj-new-event-character-area ${e.stage==='run'?'speed-star-running':''}"><img class="visit-character jxj-new-event-character" src="./assets/images/events/speed-star.png?v=${VERSION}" alt="スピード・スター"></div>`:''}${center}${dialogue}</section></main>`;
 }
 
+// v2 quiz layout system: structurally isolated from the legacy .quiz-* layout selectors.
+// The three quiz events share these primitives while keeping their own background/content/reward assets.
+function renderQuizLayoutV2Question({ name, characterSrc, question, choicesMarkup, eventClass = '' }) {
+  return `<section class="jxj-quiz-event-v2 jxj-quiz-stage-question-v2 ${eventClass}" aria-live="polite">
+    <div class="jxj-quiz-character-area-v2" aria-hidden="true">
+      <img class="jxj-quiz-character-v2" src="${characterSrc}" alt="" draggable="false">
+    </div>
+    <section class="jxj-quiz-question-panel-v2">
+      ${name ? `<span class="jxj-quiz-name-v2">${name}</span>` : ''}
+      <span class="jxj-quiz-kicker-v2">4択クイズ</span>
+      <h2>${question}</h2>
+      <div class="jxj-quiz-answer-grid-v2">${choicesMarkup}</div>
+    </section>
+  </section>`;
+}
+
+function renderQuizLayoutV2Dialogue({ name, characterSrc, dialogue, nextAction, eventClass = '', answerReveal = false, afterMarkup = '' }) {
+  return `<section class="jxj-quiz-event-v2 jxj-quiz-stage-dialogue-v2 ${eventClass}" aria-live="polite">
+    <div class="jxj-quiz-character-area-v2" aria-hidden="true">
+      <img class="jxj-quiz-character-v2" src="${characterSrc}" alt="" draggable="false">
+    </div>
+    <button type="button" class="jxj-quiz-dialogue-panel-v2 ${answerReveal ? 'is-answer-reveal' : ''}" data-action="${nextAction}">
+      ${name ? `<span class="jxj-quiz-name-v2">${name}</span>` : ''}
+      <strong>${dialogue}</strong>
+      <small class="jxj-quiz-tap-v2">タップして進む</small>
+    </button>
+    ${afterMarkup}
+  </section>`;
+}
+
+function renderQuizLayoutV2Reward({ visualMarkup, title, subtitle = '', nextAction, eventClass = '' }) {
+  // Approved quiz UI lock: reward frames never show event/character names.
+  return `<section class="jxj-quiz-event-v2 jxj-quiz-stage-reward-v2 ${eventClass}" aria-live="polite">
+    <button type="button" class="jxj-quiz-reward-panel-v2" data-action="${nextAction}">
+      <span class="jxj-quiz-reward-visual-v2">${visualMarkup}</span>
+      <strong>${title}</strong>
+      ${subtitle ? `<span class="jxj-quiz-reward-subtitle-v2">${subtitle}</span>` : ''}
+      <small class="jxj-quiz-tap-v2">タップして進む</small>
+    </button>
+  </section>`;
+}
+
 function renderStorytellerEvent(){
   const e=storytellerEventState(); if(!e.active){queueMicrotask(()=>setScreen('okachimachi',{},false));return renderOkachimachi();}
   const q=storytellerCurrentQuestion();
   if(e.questionId && !q && !storytellerQuizLoadPromise){queueMicrotask(()=>loadStorytellerQuestions().then(()=>{if(screen==='storytellerEvent')render();}).catch(console.error));}
-  const character=`<div class="visit-character-area jxj-new-event-character-area"><img class="visit-character jxj-new-event-character storyteller-character" src="./assets/images/events/storyteller.png?v=${VERSION}" alt="ストーリーテラー"></div>`;
-  if(e.stage==='ittomo') return `<main class="main-screen jxj-new-event-screen storyteller-event-screen"><section class="visit-character-event">${character}<button class="storyteller-ittomo" data-action="storyteller-event-next">いいとも！<span>タップして進む</span></button></section></main>`;
+  const characterSrc=`./assets/images/events/storyteller.png?v=${VERSION}`;
+  const eventClass='jxj-quiz-storyteller-v2';
+
   if(e.stage==='question'){
-    if(!q)return `<main class="main-screen jxj-new-event-screen storyteller-event-screen"><section class="storyteller-loading">クイズを読み込んでいます…</section></main>`;
-    return `<main class="main-screen storyteller-quiz-screen"><section class="okachimachi-quiz-event quiz-stage-question storyteller-quiz-event" aria-live="polite"><div class="quiz-character-area" aria-hidden="true"><img class="quiz-character-image storyteller-quiz-character" src="./assets/images/events/storyteller.png?v=${VERSION}" alt="" draggable="false"></div><section class="quiz-question-panel glass-panel"><span class="quiz-event-name-label">ストーリーテラー</span><span class="quiz-question-kicker">4択クイズ</span><h2>${esc(q.question)}</h2><div class="quiz-answer-grid">${['A','B','C','D'].map(k=>`<button type="button" class="quiz-answer-button" data-action="storyteller-quiz-answer" data-key="${k}"><span>${k}</span><strong>${esc(q.choices[k])}</strong></button>`).join('')}</div></section></section></main>`;
+    if(!q)return `<main class="main-screen storyteller-event-screen"><section class="storyteller-loading">クイズを読み込んでいます…</section></main>`;
+    const choicesMarkup=['A','B','C','D'].map(k=>`<button type="button" class="jxj-quiz-answer-v2" data-action="storyteller-quiz-answer" data-key="${k}"><span>${k}</span><strong>${esc(q.choices[k])}</strong></button>`).join('');
+    return `<main class="main-screen storyteller-quiz-screen">${renderQuizLayoutV2Question({
+      name:'ストーリーテラー', characterSrc, question:esc(q.question), choicesMarkup, eventClass,
+    })}</main>`;
   }
-  if(e.stage==='reward') return `<main class="main-screen jxj-new-event-screen storyteller-event-screen storyteller-reward-screen"><section class="visit-character-event"><button class="storyteller-reward" data-action="storyteller-event-next"><img src="./assets/images/items/burari-okachimachi-sticker.png?v=${VERSION}" alt="ブラり御徒町 ステッカー"><strong>ブラり御徒町 ステッカー</strong><span>ステッカーをもらった！</span><small>タップして進む</small></button></section></main>`;
+
+  if(e.stage==='reward') return `<main class="main-screen storyteller-event-screen storyteller-reward-screen">${renderQuizLayoutV2Reward({
+    name:'ストーリーテラー',
+    visualMarkup:`<img class="jxj-quiz-storyteller-reward-image-v2" src="./assets/images/items/burari-okachimachi-sticker.png?v=${VERSION}" alt="ブラり御徒町 ステッカー">`,
+    title:'ブラり御徒町 ステッカー', subtitle:'ステッカーをもらった！', nextAction:'storyteller-event-next', eventClass,
+  })}</main>`;
+
   const answerText=q?.answer_text||q?.choices?.[q?.correct]||'';
   const lineMap={intro1:'すいません、今テレビの街ブラロケしてます、、、、あなた御徒町詳しそうですね、、、、',intro2:'どうです？クイズやってみますか？、、、、',correct:'おっと、、流石ですねえ、こちら差し上げます！、、、',correctFarewell:'放送したら観てくださいね！、、ではでは、、、、',incorrect:'ありゃありゃ、、、残念、、、、',incorrectAnswer:`正解は${esc(answerText)}でした、、、`,incorrectFarewell:'放送したら観てくださいね！、、ではでは、、、'};
-  return `<main class="main-screen jxj-new-event-screen storyteller-event-screen"><section class="visit-character-event">${character}<button type="button" class="event-dialogue-card jxj-transparent-dialogue" data-action="storyteller-event-next"><small>ストーリーテラー</small><strong>${lineMap[e.stage]||''}</strong><span>タップして進む</span></button></section></main>`;
+  const ittomoActive=e.stage==='ittomo';
+  const dialogueStage=ittomoActive?'intro2':e.stage;
+  const ittomoOverlay=`<div class="storyteller-ittomo-overlay-v12 ${ittomoActive?'is-active':''}"><button type="button" class="storyteller-ittomo" data-action="storyteller-event-next">いいとも！<span>タップして進む</span></button></div>`;
+  return `<main class="main-screen storyteller-event-screen">${renderQuizLayoutV2Dialogue({
+    name:'ストーリーテラー', characterSrc, dialogue:lineMap[dialogueStage]||'', nextAction:'storyteller-event-next', eventClass,
+    answerReveal:e.stage==='incorrectAnswer', afterMarkup:ittomoOverlay,
+  }).replace('jxj-quiz-dialogue-panel-v2 ', `jxj-quiz-dialogue-panel-v2 ${ittomoActive?'is-storyteller-ittomo-hidden ':''}`)}</main>`;
 }
-
 function tropicalFishShopEventAccessAllowed() {
   const e = oyatsuDaisukiEventState();
   return Boolean(
@@ -10528,7 +10787,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -10577,7 +10836,8 @@ function backgroundAssetFor(target) {
   if (target === 'displayShop' || target === 'pearlHumanEvent') return isPortraitLayout() ? 'display-shop-portrait-v380' : 'display-shop-v380';
   if (target === 'realEstate' || target === 'tattooWomanAmberEvent') return isPortraitLayout() ? 'real-estate-portrait' : 'real-estate';
   if (target === 'tropicalFishShop') return isPortraitLayout() ? 'tropical-fish-shop-portrait' : 'tropical-fish-shop';
-  if (['oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent'].includes(target)) return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
+  if (['oyatsuDaisukiEvent', 'speedStarEvent'].includes(target)) return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
+  if (target === 'storytellerEvent') return okachimachiBackgroundAssetName();
   if (target === 'clockTowerDonationEvent' || target === 'pandaMusicEvent' || target === 'okachimachiInvasiveTurtlesEvent') return isPortraitLayout() ? 'panda-hiroba-portrait' : 'panda-hiroba';
   if (target === 'apprenticeCinemaEvent') {
     const stage = apprenticeCinemaEventState().stage;
@@ -10591,6 +10851,7 @@ function backgroundAssetFor(target) {
   const base = backgroundFor(target);
   const portrait = isPortraitLayout();
   if (base === 'meal') {
+    if (mealAfter18BackgroundActive()) return mealAfter18BackgroundAssetName(portrait);
     const mealId = screenData?.mealId;
     if (mealId && MEALS[mealId]) return mealBackgroundAssetName(mealId, portrait);
     return portrait ? 'meal-menu-portrait' : 'meal-menu';
@@ -10839,6 +11100,7 @@ function scheduleScreenContentTopOffsetSync() {
 
 
 function eventDialogueBottomLayoutParts() {
+  if (QUIZ_LAYOUT_V2_SCREENS.has(screen)) return null;
   const eventRoot = root.querySelector('.visit-character-event, .western-union-event, .pazupan-event, .mermaid-event, .gray-hood-aquarium-event');
   if (!(eventRoot instanceof HTMLElement)) return null;
   const dialogueSelectors = [
@@ -10967,6 +11229,10 @@ function setScreen(target, data = {}, push = true) {
   screen = target;
   screenData = data;
   if (state) state.game.screen = target;
+  if (['supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide'].includes(target)
+    && !metalMarketTradeReady() && !['live', 'cached'].includes(metalMarket.status)) {
+    metalMarket.status = 'loading';
+  }
   render();
   scheduleAutosave(`screen:${target}`);
   queueMicrotask(() => maybeStartForcedBirthdayRest());
@@ -11293,6 +11559,7 @@ function render() {
       emeraldCaptainKebabEvent: renderEmeraldCaptainKebabEvent,
       whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
       kappaJadeEvent: renderKappaJadeEvent,
+      workshopKappaJadeEvent: renderWorkshopKappaJadeEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
       ganeshaTuskEvent: renderGaneshaTuskEvent,
@@ -13741,6 +14008,40 @@ function renderKappaJadeEvent() {
 }
 
 
+function renderWorkshopKappaJadeEvent() {
+  const eventState = workshopKappaJadeEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('workshop', {}, false));
+    return renderWorkshop();
+  }
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const reward = eventState.stage === 'reward';
+  const showCharacter = !['rustle', 'reward'].includes(eventState.stage);
+  const dialogueMap = {
+    rustle: 'ゴソゴソ、、、、',
+    greet: `あっ、、${playerName}、こんにちは！、、`,
+    arrive: `ようやくたどり着けたよ、${playerName}の工房、、、僕、何度か来たことあるのにね、、、、`,
+    memory: '僕らは君達より覚えておける量が少ないし、、覚えておける期間が短いんだ、、、、',
+    fondness: `でも、楽しいこととか、綺麗なことは忘れないようにしてるんだ、、僕、、、、${playerName}のことも好きだよ、、、、`,
+    giftLead: `そうだ、、！、また綺麗な石を拾ったんだ！、${playerName}にあげなくっちゃいけないと思って持って来たんだ！！、、、`,
+    wish: `綺麗な宝石になるといいなあ、、、ねっ、${playerName}、、、、`,
+    admire: `この工房で、いろんな綺麗なものが作られているんだね、、、、凄いなあ${playerName}は、、、、`,
+    farewell: 'また河原へも来てね、待ってるね、、、、さようなら、、、',
+  };
+  const rewardPanel = `<button type="button" class="kappa-jade-reward-button" data-action="workshop-kappa-jade-event-receive" aria-label="翡翠原石を受け取る"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/events/workshop-kappa-jade-rough.png?v=${VERSION}" alt="翡翠原石" draggable="false"><strong>翡翠原石</strong><small>タップして受け取る</small></button>`;
+  const dialogueText = dialogueMap[eventState.stage] || '';
+  const panel = reward
+    ? rewardPanel
+    : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel ${eventState.stage === 'rustle' ? 'workshop-rustle-panel' : ''}" data-action="workshop-kappa-jade-event-next"><small>河童</small><strong>${dialogueText}</strong><span>タップして進む</span></button>`;
+  return `
+    <main class="main-screen kappa-jade-event-screen">
+      <section class="visit-character-event kappa-jade-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        ${showCharacter ? `<div class="visit-character-area" aria-hidden="true"><img class="visit-character kappa-character workshop-kappa-character" src="./assets/images/events/workshop-kappa-jade.png?v=${VERSION}" alt="" draggable="false"></div>` : ''}
+        ${panel}
+      </section>
+    </main>`;
+}
+
 function grayHoodAquariumEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.grayHoodAquariumEvent && typeof state.events.grayHoodAquariumEvent === 'object' && !Array.isArray(state.events.grayHoodAquariumEvent)
@@ -14141,7 +14442,7 @@ function emeraldCaptainKebabEventState() {
   const saved = state.events.emeraldCaptainKebabEvent && typeof state.events.emeraldCaptainKebabEvent === 'object' && !Array.isArray(state.events.emeraldCaptainKebabEvent)
     ? state.events.emeraldCaptainKebabEvent
     : {};
-  const validStages = new Set(['idle', 'intro1', 'intro2', 'showcase', 'purchase', 'eating', 'farewell', 'completed']);
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'showcase', 'purchaseResult', 'purchase', 'eating', 'farewell', 'completed']);
   state.events.emeraldCaptainKebabEvent = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
@@ -14183,8 +14484,8 @@ function maybeStartEmeraldCaptainKebabEvent() {
   eventState.gemTotalPrice = gemCost;
   state.game.screen = 'emeraldCaptainKebabEvent';
   saveGame();
-  playSfx('impact', { gain: 0.5, rate: 0.92 });
-  setTimeout(() => playSfx('loose-sparkle', { gain: 0.88, rate: 1.04 }), 120);
+  playSfx('emerald-captain-appear', { gain: 0.5, rate: 0.92 });
+  setTimeout(() => playSfx('emerald-captain-reward', { gain: 0.48, rate: 0.96 }), 120);
   vibrate([18, 18, 38]);
   setScreen('emeraldCaptainKebabEvent', { mealId }, false);
   return true;
@@ -14201,8 +14502,24 @@ function applyEmeraldCaptainKebabPurchase() {
   startMoneyFeedback(-totalPrice, 1300);
   eventState.purchased = true;
   saveGame();
-  showToast('エメラルドを購入した', 'success', false);
   return true;
+}
+
+let emeraldCaptainPurchaseResultTimer = null;
+function clearEmeraldCaptainPurchaseResultTimer() {
+  if (emeraldCaptainPurchaseResultTimer) clearTimeout(emeraldCaptainPurchaseResultTimer);
+  emeraldCaptainPurchaseResultTimer = null;
+}
+
+function scheduleEmeraldCaptainPurchaseDialogue(delay = 1200) {
+  clearEmeraldCaptainPurchaseResultTimer();
+  emeraldCaptainPurchaseResultTimer = setTimeout(() => {
+    const eventState = emeraldCaptainKebabEventState();
+    if (!eventState.active || eventState.stage !== 'purchaseResult') return;
+    eventState.stage = 'purchase';
+    saveGame();
+    render();
+  }, Math.max(700, Number(delay) || 1200));
 }
 
 let emeraldCaptainMealWatchdogTimer = null;
@@ -14245,8 +14562,8 @@ function finishEmeraldCaptainKebabMeal({ manual = false } = {}) {
   eventState.stage = 'farewell';
   mealTransitioning = false;
   saveGame();
-  if (manual) playSfx('select', { gain: 0.42 });
-  else playSfx('success', { gain: 0.54 });
+  if (manual) playSfx('emerald-captain-farewell', { gain: 0.48 });
+  else playSfx('emerald-captain-farewell', { gain: 0.54 });
   render();
   return true;
 }
@@ -14279,7 +14596,7 @@ async function startEmeraldCaptainKebabMeal() {
     await waitForNextPaintWithTimeout();
     await wait(420);
     if (emeraldCaptainKebabEventState().stage !== 'eating') return;
-    playSfx('eat');
+    playSfx('emerald-captain-eat');
     await wait(2080);
     finishEmeraldCaptainKebabMeal();
   } catch (error) {
@@ -14314,7 +14631,7 @@ async function advanceEmeraldCaptainKebabEvent() {
   if (eventState.stage === 'intro2') {
     eventState.stage = 'showcase';
     saveGame();
-    playSfx('loose-sparkle', { gain: 0.84, rate: 1.05 });
+    playSfx('emerald-captain-reward', { gain: 0.84, rate: 1.05 });
     render();
     return;
   }
@@ -14323,10 +14640,14 @@ async function advanceEmeraldCaptainKebabEvent() {
       showToast('所持金が足りません。', 'error');
       return;
     }
-    eventState.stage = 'purchase';
+    eventState.stage = 'purchaseResult';
     saveGame();
-    playSfx('success', { gain: 0.72, rate: 1.02 });
+    playSfx('emerald-captain-purchase', { gain: 0.92, rate: 1.0 });
     render();
+    return;
+  }
+  if (eventState.stage === 'purchaseResult') {
+    scheduleEmeraldCaptainPurchaseDialogue();
     return;
   }
   if (eventState.stage === 'purchase') {
@@ -14344,7 +14665,7 @@ async function advanceEmeraldCaptainKebabEvent() {
     hungerFeedback = { before, after, mealName: 'ケバブ' };
     clearTimeout(hungerFeedbackTimer);
     goMain();
-    playSfx('decision', { gain: 0.68, rate: 0.94 });
+    playSfx('emerald-captain-farewell', { gain: 0.68, rate: 0.94 });
     hungerFeedbackTimer = setTimeout(() => {
       hungerFeedback = null;
       if (screen === 'main') render();
@@ -14366,37 +14687,48 @@ function renderEmeraldCaptainKebabEvent() {
   const characterPath = `./assets/images/events/emerald-captain.png?v=${VERSION}`;
   const emeraldSetPath = `./assets/images/events/emerald-captain-loose-set.png?v=${VERSION}`;
   const emeraldTotalLabel = `${Math.max(0, Math.floor(Number(eventState.gemTotalPrice) || 0)).toLocaleString('ja-JP')}円`;
+
+  if (eventState.stage === 'purchaseResult') {
+    queueMicrotask(() => scheduleEmeraldCaptainPurchaseDialogue());
+    return `
+      <main class="main-screen kappa-jade-event-screen emerald-captain-kebab-approved-screen">
+        <section class="visit-character-event kappa-jade-event emerald-captain-kebab-approved-event emerald-captain-purchase-result-stage" aria-live="polite">
+          <div class="emerald-captain-purchase-result" role="status">エメラルドを購入した</div>
+        </section>
+      </main>`;
+  }
+
   if (eventState.stage === 'eating') {
     const foodImage = mealFoodImage('kebab');
     return `
-      <main class="main-screen emerald-captain-kebab-event-screen emerald-captain-eating-screen">
-        <section class="emerald-captain-kebab-event is-eating" aria-live="polite">
-          <button type="button" class="meal-eating-panel glass-panel emerald-captain-eating-continue" data-action="emerald-captain-kebab-meal-finish" aria-label="食事を終えて次へ進む">
-            <figure class="meal-food-display"><img src="${foodImage}" alt="ケバブ" loading="eager" decoding="sync" fetchpriority="high"></figure>
-            <strong>これが通常のケバブ画面...</strong>
-            <small>もぐもぐ... 自動で進まない場合はタップ</small>
+      <main class="main-screen kappa-jade-event-screen emerald-captain-kebab-approved-screen">
+        <section class="visit-character-event kappa-jade-event emerald-captain-kebab-approved-event emerald-captain-kebab-food-stage" aria-live="polite">
+          <button type="button" class="kappa-jade-reward-button emerald-captain-kebab-food-panel" data-action="emerald-captain-kebab-meal-finish" aria-label="ケバブを食べて次へ進む">
+            <img src="${foodImage}" alt="ケバブ" loading="eager" decoding="sync" fetchpriority="high">
+            <strong>ケバブ</strong>
+            <small>タップして進む</small>
           </button>
         </section>
       </main>`;
   }
+
+  const reward = eventState.stage === 'showcase';
   let panel = '';
   if (eventState.stage === 'intro1') {
-    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>フフ......へただなあ、${playerName}くん。へたっぴ......欲望の解放のさせ方がへた....。</strong><span>タップして進む</span></button>`;
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="emerald-captain-kebab-event-next"><small class="emerald-captain-dialogue-name">${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>フフ......へただなあ、${playerName}くん。へたっぴ......欲望の解放のさせ方がへた....。</strong><span>タップして進む</span></button>`;
   } else if (eventState.stage === 'intro2') {
-    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>${playerName}くんが本当に欲しいのは...こっち...</strong><span>タップして進む</span></button>`;
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="emerald-captain-kebab-event-next"><small class="emerald-captain-dialogue-name">${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>${playerName}くんが本当に欲しいのは...こっち...</strong><span>タップして進む</span></button>`;
   } else if (eventState.stage === 'showcase') {
-    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel is-showcase" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><img class="emerald-captain-loose-set" src="${emeraldSetPath}" alt="エメラルドのルース一式" draggable="false"><div class="emerald-captain-loose-total">合計 ${emeraldTotalLabel}</div><strong>${playerName}くん.....贅沢ってやつはね........小出しはダメなの........</strong><span>タップして進む</span></button>`;
+    panel = `<button type="button" class="kappa-jade-reward-button emerald-captain-kebab-reward-button" data-action="emerald-captain-kebab-event-next" aria-label="エメラルド一式を購入する"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="${emeraldSetPath}" alt="エメラルドのルース一式" draggable="false"><strong>合計 ${emeraldTotalLabel}</strong><small>タップして購入</small></button>`;
   } else if (eventState.stage === 'purchase') {
-    panel = `<div class="emerald-captain-purchase-result" role="status">エメラルドを購入した</div><button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel emerald-captain-purchase-dialogue" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>これでケバブも美味しいわ....</strong><span>タップすると通常のケバブ画面へ</span></button>`;
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel emerald-captain-purchase-dialogue" data-action="emerald-captain-kebab-event-next"><small class="emerald-captain-dialogue-name">${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>これでケバブも美味しいわ....</strong><span>タップすると通常のケバブ画面へ</span></button>`;
   } else {
-    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue emerald-captain-dialogue glass-panel emerald-captain-farewell-dialogue" data-action="emerald-captain-kebab-event-next"><small>${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>今日をがんばった者..........今日もがんばり始めた者にのみ......明日が来るの......!じゃあね...</strong><span>タップするとメイン画面へ戻る</span></button>`;
+    panel = `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel emerald-captain-farewell-dialogue" data-action="emerald-captain-kebab-event-next"><small class="emerald-captain-dialogue-name">${EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME}</small><strong>今日をがんばった者..........今日もがんばり始めた者にのみ......明日が来るの......!じゃあね...</strong><span>タップするとメイン画面へ戻る</span></button>`;
   }
   return `
-    <main class="main-screen emerald-captain-kebab-event-screen">
-      <section class="visit-character-event emerald-captain-kebab-event ${eventState.stage === 'farewell' ? 'is-farewell' : ''}" aria-live="polite">
-        <div class="visit-character-area emerald-captain-character-area" aria-hidden="true">
-          <img class="visit-character emerald-captain-character" src="${characterPath}" alt="" draggable="false">
-        </div>
+    <main class="main-screen kappa-jade-event-screen emerald-captain-kebab-approved-screen">
+      <section class="visit-character-event kappa-jade-event emerald-captain-kebab-approved-event ${reward ? 'is-reward' : ''} ${eventState.stage === 'farewell' ? 'is-farewell' : ''}" aria-live="polite">
+        ${reward ? '' : `<div class="visit-character-area" aria-hidden="true"><img class="visit-character kappa-character" src="${characterPath}" alt="" draggable="false"></div>`}
         ${panel}
       </section>
     </main>`;
@@ -14952,7 +15284,7 @@ function renderOkachimachiQuiz() {
     queueMicrotask(startOkachimachiQuizIntroPlayback);
     return `<main class="okachimachi-quiz-video-screen" aria-label="通りすがりのクイズ王イベント導入動画">
       <section class="okachimachi-quiz-video-stage" aria-live="polite">
-        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
+        <button type="button" class="event-movie-skip jxj-quiz-movie-skip-v2" data-action="event-movie-skip" aria-label="動画をスキップしてイベントを開始">MOVIEスキップ</button>
         <video data-okachimachi-quiz-intro-video src="${esc(okachimachiQuizIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="通りすがりのクイズ王イベントの導入動画"></video>
         <div class="okachimachi-quiz-video-loading">動画を読み込んでいます</div>
         <button type="button" class="okachimachi-quiz-video-start" data-action="okachimachi-quiz-video-start">動画を再生する</button>
@@ -14961,18 +15293,13 @@ function renderOkachimachiQuiz() {
     </main>`;
   }
   const playerName = esc(okachimachiQuizPlayerName());
+  const eventClass = 'jxj-quiz-king-v2';
   if (session.stage === 'reward') {
     const gem = GEMS[session.rewardGemId];
-    return shell('通りすがりのクイズ王', `
-      <section class="okachimachi-quiz-event quiz-stage-reward" aria-live="polite">
-        <button type="button" class="quiz-reward-button" data-action="okachimachi-quiz-next" aria-label="御徒町へ進む">
-          <span class="quiz-reward-glow" aria-hidden="true"></span>
-          <span class="quiz-event-name-label">通りすがりのクイズ王</span>
-          ${roughVisual(gem?.id, 'quiz-reward-gem')}
-          <strong>${esc(gem?.name || '')}原石をもらいました</strong>
-          <small>タップして御徒町へ進む</small>
-        </button>
-      </section>`, { back: false, main: false, hideHeader: true });
+    return shell('通りすがりのクイズ王', renderQuizLayoutV2Reward({
+      name:'通りすがりのクイズ王', visualMarkup:roughVisual(gem?.id, 'jxj-quiz-reward-gem-v2'),
+      title:`${esc(gem?.name || '')}原石をもらいました`, nextAction:'okachimachi-quiz-next', eventClass,
+    }), { back: false, main: false, hideHeader: true });
   }
 
   const dialogueByStage = {
@@ -14982,30 +15309,17 @@ function renderOkachimachiQuiz() {
     incorrect: '違いますよ、、まぁ、そのレベルか、、、自分の価値って考えたことあります？ではまた、',
     incorrectAnswer: `正解は「${esc(session.question.choices[session.question.answerIndex] || '')}」でした`,
   };
-  // v0.10.679 APPROVED LAYOUT LOCK: 通りすがりのクイズ王
-  // 通常会話=下詰め / 横4択のみ左人物・右クイズ / 正解・不正解で人物差替え / 正解表示のみ緑。
-  const isQuestion = session.stage === 'question';
-  const character = okachimachiQuizCharacterImage(session.stage);
-  return shell('通りすがりのクイズ王', `
-    <section class="okachimachi-quiz-event ${isQuestion ? 'quiz-stage-question' : `quiz-stage-${esc(session.stage)}`}" aria-live="polite">
-      <div class="quiz-character-area" aria-hidden="true">
-        <img class="quiz-character-image" src="${character}?v=${VERSION}" alt="" draggable="false">
-      </div>
-      ${isQuestion ? `
-        <section class="quiz-question-panel glass-panel">
-          <span class="quiz-event-name-label">通りすがりのクイズ王</span>
-          <span class="quiz-question-kicker">4択クイズ</span>
-          <h2>${esc(session.question.question)}</h2>
-          <div class="quiz-answer-grid">
-            ${session.question.choices.map((choice, index) => `<button type="button" class="quiz-answer-button" data-action="okachimachi-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('')}
-          </div>
-        </section>` : `
-        <button type="button" class="quiz-dialogue-panel glass-panel ${session.stage === 'incorrectAnswer' ? 'quiz-answer-reveal-panel' : ''}" data-action="okachimachi-quiz-next">
-          <span class="quiz-event-name-label">通りすがりのクイズ王</span>
-          <strong>${dialogueByStage[session.stage] || ''}</strong>
-          <small class="approved-event-tap-guide">タップして進む</small>
-        </button>`}
-    </section>`, { back: false, main: false, hideHeader: true });
+  const characterSrc = `${okachimachiQuizCharacterImage(session.stage)}?v=${VERSION}`;
+  if (session.stage === 'question') {
+    const choicesMarkup = session.question.choices.map((choice, index) => `<button type="button" class="jxj-quiz-answer-v2" data-action="okachimachi-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('');
+    return shell('通りすがりのクイズ王', renderQuizLayoutV2Question({
+      name:'通りすがりのクイズ王', characterSrc, question:esc(session.question.question), choicesMarkup, eventClass,
+    }), { back: false, main: false, hideHeader: true });
+  }
+  return shell('通りすがりのクイズ王', renderQuizLayoutV2Dialogue({
+    name:'通りすがりのクイズ王', characterSrc, dialogue:dialogueByStage[session.stage] || '', nextAction:'okachimachi-quiz-next', eventClass,
+    answerReveal:session.stage === 'incorrectAnswer',
+  }), { back: false, main: false, hideHeader: true });
 }
 
 // v0.10.686 APPROVED LAYOUT LOCK: オリジナルルースイベント
@@ -15016,18 +15330,15 @@ function renderLooseShopOriginalQuizEvent() {
     queueMicrotask(() => finishLooseShopOriginalQuiz());
     return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, '<section class="center-card glass-panel"><p>ルース屋へ戻ります…</p></section>', { back: false, main: false, hideHeader: true });
   }
+  const eventClass = 'jxj-quiz-loose-v2';
   if (session.stage === 'reward') {
     const gem = GEMS[session.rewardGemId];
     const shapeId = gem?.originalLooseBaseShape || defaultLooseShapeForGem(session.rewardGemId || '');
-    return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, `
-      <section class="loose-shop-original-quiz-event quiz-stage-reward" aria-live="polite">
-        <button type="button" class="quiz-reward-button" data-action="loose-shop-original-quiz-next" aria-label="次へ進む">
-          <span class="quiz-reward-glow" aria-hidden="true"></span>
-          ${looseVisual(gem?.id, 'quiz-reward-gem', '', shapeId)}
-          <strong>${esc(gem?.name || '')}をもらいました</strong>
-          <small>タップして進む</small>
-        </button>
-      </section>`, { back: false, main: false, hideHeader: true });
+    return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, renderQuizLayoutV2Reward({
+      name:LOOSE_SHOP_ORIGINAL_QUIZ_NAME,
+      visualMarkup:looseVisual(gem?.id, 'jxj-quiz-reward-gem-v2', '', shapeId),
+      title:`${esc(gem?.name || '')}をもらいました`, nextAction:'loose-shop-original-quiz-next', eventClass,
+    }), { back: false, main: false, hideHeader: true });
   }
 
   const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
@@ -15041,26 +15352,17 @@ function renderLooseShopOriginalQuizEvent() {
     incorrectAnswer: `正解は${esc(session.question.choices[session.question.answerIndex] || '')}でした`,
     farewell: `試作品はまだまだあるんだ！また来てくれよ、、、`,
   };
-  const isQuestion = session.stage === 'question';
-  return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, `
-    <section class="okachimachi-quiz-event loose-shop-original-quiz-event ${isQuestion ? 'quiz-stage-question' : `quiz-stage-${esc(session.stage)}` }" aria-live="polite">
-      <div class="quiz-character-area" aria-hidden="true">
-        <img class="quiz-character-image" src="${esc(looseShopOriginalQuizCharacterImage())}" alt="" draggable="false">
-      </div>
-      ${isQuestion ? `
-        <section class="quiz-question-panel glass-panel">
-          <span class="quiz-question-kicker">4択クイズ</span>
-          <h2>${esc(session.question.question)}</h2>
-          <div class="quiz-answer-grid">
-            ${session.question.choices.map((choice, index) => `<button type="button" class="quiz-answer-button" data-action="loose-shop-original-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('')}
-          </div>
-        </section>` : `
-        <button type="button" class="quiz-dialogue-panel glass-panel ${session.stage === 'incorrectAnswer' ? 'original-loose-answer-reveal-panel' : ''}" data-action="loose-shop-original-quiz-next">
-          <span class="original-loose-character-name">${esc(LOOSE_SHOP_ORIGINAL_QUIZ_NAME)}</span>
-          <strong>${dialogueByStage[session.stage] || ''}</strong>
-          <span class="approved-event-tap-guide">タップして進む</span>
-        </button>`}
-    </section>`, { back: false, main: false, hideHeader: true });
+  const characterSrc = esc(looseShopOriginalQuizCharacterImage());
+  if (session.stage === 'question') {
+    const choicesMarkup = session.question.choices.map((choice, index) => `<button type="button" class="jxj-quiz-answer-v2" data-action="loose-shop-original-quiz-answer" data-index="${index}"><span>${String.fromCharCode(65 + index)}</span><strong>${esc(choice)}</strong></button>`).join('');
+    return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, renderQuizLayoutV2Question({
+      name:LOOSE_SHOP_ORIGINAL_QUIZ_NAME, characterSrc, question:esc(session.question.question), choicesMarkup, eventClass,
+    }), { back: false, main: false, hideHeader: true });
+  }
+  return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, renderQuizLayoutV2Dialogue({
+    name:LOOSE_SHOP_ORIGINAL_QUIZ_NAME, characterSrc, dialogue:dialogueByStage[session.stage] || '', nextAction:'loose-shop-original-quiz-next', eventClass,
+    answerReveal:session.stage === 'incorrectAnswer',
+  }), { back: false, main: false, hideHeader: true });
 }
 
 function renderOkachimachiTollEvent() {
@@ -15204,7 +15506,8 @@ function renderSupplierMetals() {
   const products = view === 'sell'
     ? orderedMetals.filter((product) => metalOwnedWeight(product.id) > 0)
     : orderedMetals;
-  const productRows = view === 'market' ? '' : products.map((product) => {
+  const tradeReady = metalMarketTradeReady();
+  const productRows = view === 'market' || !tradeReady ? '' : products.map((product) => {
     const owned = metalOwnedWeight(product.id);
     const reserved = metalReservedWeight(product.id);
     const available = metalAvailableWeight(product.id);
@@ -15212,7 +15515,7 @@ function renderSupplierMetals() {
     const maximum = metalTradeMaximum(mode, product.id);
     const quantity = metalTradeQuantity(mode, product.id);
     const perGram = metalTradePricePerGram(mode, product.id);
-    const disabled = quantity < 1 || !canSpendHours(1);
+    const disabled = !tradeReady || quantity < 1 || !canSpendHours(1);
     return `<article class="product-row metal-product-row metal-trade-card" data-metal-trade-card="${mode}:${product.id}">
       <div class="product-main metal-trade-heading">
         <div class="metal-title-status-row">
@@ -15254,13 +15557,15 @@ function renderSupplierMetals() {
     ${metalSpotMarketMarkup()}
     <button type="button" class="secondary-button full-button metal-market-detail-button" data-action="metal-history-open">地金相場推移</button>
     <div class="button-stack metal-market-trade-buttons">
-      <button type="button" class="primary-button large-button full-button" data-action="metal-trade-open" data-mode="buy">地金を買う</button>
-      <button type="button" class="secondary-button large-button full-button" data-action="metal-trade-open" data-mode="sell">地金を売る</button>
+      <button type="button" class="primary-button large-button full-button" data-action="metal-trade-open" data-mode="buy" ${tradeReady ? '' : 'disabled'}>地金を買う</button>
+      <button type="button" class="secondary-button large-button full-button" data-action="metal-trade-open" data-mode="sell" ${tradeReady ? '' : 'disabled'}>地金を売る</button>
     </div>`;
   const tradeContent = `
     <button type="button" class="secondary-button full-button metal-market-return-button" data-action="metal-market-home">地金相場へ戻る</button>
     <div class="product-list metal-trade-list">
-      ${productRows || (view === 'sell' ? '<div class="empty-state sell-empty-state"><strong>売却できる地金はありません。</strong></div>' : '')}
+      ${!tradeReady
+        ? '<div class="empty-state sell-empty-state"><strong>地金相場を確認できないため売買を停止しています。</strong><small>地金相場へ戻り「相場を再取得」を押してください。</small></div>'
+        : (productRows || (view === 'sell' ? '<div class="empty-state sell-empty-state"><strong>売却できる地金はありません。</strong></div>' : ''))}
     </div>`;
 
   return shell('地金', `
@@ -19459,6 +19764,7 @@ function hitMiningRock(index, button) {
 }
 
 function buyMetal(id) {
+  if (!metalMarketTradeReady()) return showToast('地金相場を確認できないため、現在は購入できません。', 'error');
   const product = METALS[id];
   if (!product) return showToast('この地金は購入できません。', 'error');
   if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
@@ -19481,6 +19787,7 @@ function buyMetal(id) {
 }
 
 function sellMetal(id) {
+  if (!metalMarketTradeReady()) return showToast('地金相場を確認できないため、現在は売却できません。', 'error');
   const product = METALS[id];
   if (!product) return showToast('この地金は売却できません。', 'error');
   if (!canSpendHours(1)) return showToast('今日は売却手続きをする時間がありません。', 'error');
@@ -20861,6 +21168,7 @@ function autopilotRepairTools(summary) {
 }
 
 function autopilotBuyMetal(metalId, targetWeight, summary) {
+  if (!metalMarketTradeReady()) return false;
   const target = Math.max(0, Math.ceil(Number(targetWeight) || 0));
   const owned = metalOwnedWeight(metalId);
   if (owned + 1e-9 >= target) return true;
@@ -22342,6 +22650,12 @@ root.addEventListener('click', async (event) => {
     case 'kappa-jade-event-receive':
       receiveKappaJade();
       break;
+    case 'workshop-kappa-jade-event-next':
+      advanceWorkshopKappaJadeEvent();
+      break;
+    case 'workshop-kappa-jade-event-receive':
+      receiveWorkshopKappaJadeReward();
+      break;
     case 'diamond-polishing-lap-event-next':
       await advanceDiamondPolishingLapEvent();
       break;
@@ -22481,6 +22795,10 @@ root.addEventListener('click', async (event) => {
         if (button.isConnected) button.disabled = false;
         break;
       }
+      if (target === 'workshop') {
+        if (resumeWorkshopKappaJadeEvent()) break;
+        if (maybeStartWorkshopKappaJadeEvent()) break;
+      }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {
         // 進行中イベントは必ず先に復帰。新規訪問では 1/30 動画を先に抽選し、
@@ -22557,6 +22875,7 @@ root.addEventListener('click', async (event) => {
     case 'supplier-metal-tab': screenData.view = button.dataset.tab; render(); break;
     case 'metal-trade-open': screenData.view = button.dataset.mode; render(); break;
     case 'metal-market-home': screenData.view = 'market'; render(); break;
+    case 'metal-market-reload': loadMetalMarket().then(() => { if (screen === 'supplierMetals' || screen === 'supplier') render(); }); break;
     case 'metal-history-open': setScreen('supplierMetalHistory', { historyRange: 'month' }); break;
     case 'pure-metal-detail-open': setScreen('pureMetalProfessionalGuide', { metalId: button.dataset.id }); break;
     case 'metal-history-close': goBack(); break;

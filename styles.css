@@ -2545,6 +2545,9 @@ body[data-screen="meal"] .meal-eating-panel > strong{
 .metal-spot-panel .metal-market-summary{
   margin:.05rem 0 0;
 }
+.metal-market-reload-button{
+  margin-top:.05rem;
+}
 @media (max-width:620px){
   .metal-spot-heading{align-items:flex-start;flex-direction:column;gap:.18rem}
   .metal-spot-row{grid-template-columns:minmax(4.5rem,.72fr) minmax(6.8rem,1fr) minmax(5.5rem,.72fr);gap:.35rem;padding:.58rem .55rem}
@@ -22072,3 +22075,116 @@ body[data-screen="pearlHumanEvent"] .pearl-human-effect-message{
     font-size:clamp(.80rem,2.15vw,1rem);
   }
 }
+
+
+/* Workshop Kappa Jade Event — approved mobile UI (2026-08-21) */
+body[data-screen="workshopKappaJadeEvent"]{
+  overflow:hidden;
+}
+body[data-screen="workshopKappaJadeEvent"] .game-header{
+  display:none!important;
+}
+body[data-screen="workshopKappaJadeEvent"] .screen-content{
+  min-height:100dvh;
+  padding-top:0!important;
+}
+body[data-screen="workshopKappaJadeEvent"] .kappa-jade-event-screen{
+  overflow:hidden;
+}
+body[data-screen="workshopKappaJadeEvent"] .visit-character-event{
+  min-height:100dvh;
+}
+body[data-screen="workshopKappaJadeEvent"] .kappa-jade-event{
+  background:radial-gradient(circle at 50% 28%,rgba(52,106,86,.12),rgba(10,19,19,.02) 48%,rgba(4,7,10,.10) 76%);
+}
+body[data-screen="workshopKappaJadeEvent"] .workshop-kappa-character{
+  max-width:min(94vw,760px)!important;
+  max-height:min(72dvh,1000px)!important;
+  object-fit:contain!important;
+  filter:drop-shadow(0 24px 38px rgba(0,0,0,.82))!important;
+}
+body[data-screen="workshopKappaJadeEvent"] .kappa-jade-event .visit-event-dialogue>small{
+  color:#9ee3c1!important;
+}
+body[data-screen="workshopKappaJadeEvent"] .kappa-jade-event.is-reward .workshop-kappa-character{
+  opacity:.34!important;
+  filter:brightness(.52) drop-shadow(0 24px 38px rgba(0,0,0,.9))!important;
+}
+body[data-screen="workshopKappaJadeEvent"] .workshop-rustle-panel{
+  position:absolute!important;
+  z-index:18!important;
+  left:50%!important;
+  bottom:max(8px,var(--safe-bottom))!important;
+  transform:translateX(-50%)!important;
+  width:calc(100% - 12px)!important;
+  margin:0!important;
+}
+@media (orientation:landscape){
+  body[data-screen="workshopKappaJadeEvent"] .workshop-kappa-character{
+    max-height:95dvh!important;
+    max-width:54vw!important;
+  }
+}
+
+/* v0.10.726+ APPROVED EMERALD CAPTAIN KEBAB UI LOCK — 2026-08-21
+   ユーザー承認済み。河童の翡翠イベントUIを直接利用し、旧ケバブ個別UIから分離する。
+   背景/BGM=ケバブ屋 / 専用SE / 報酬時人物なし / 名前緑 / 金額赤 /
+   ケバブ枠内透明・無発光 / 購入結果単独表示後に会話へ。明示承認なしに変更禁止。 */
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-dialogue-name{
+  color:#7fe2a5!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button>strong{
+  color:#ff5f5f!important;
+  text-shadow:none!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-stage{
+  background:transparent!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-panel{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  box-shadow:none!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-panel::before,
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-panel::after{
+  content:none!important;
+  display:none!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-panel>.special-item-glow{
+  display:none!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-panel>img{
+  filter:none!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-panel>strong,
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-food-panel>small{
+  text-shadow:none!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-purchase-result-stage{
+  display:grid!important;
+  place-items:center!important;
+}
+body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-purchase-result{
+  position:relative!important;
+  left:auto!important;
+  top:auto!important;
+  transform:none!important;
+  width:min(82vw,520px)!important;
+  min-width:0!important;
+  padding:16px 20px!important;
+  margin:0!important;
+  border:1px solid rgba(231,190,104,.62)!important;
+  border-radius:16px!important;
+  background:rgba(13,10,7,.92)!important;
+  color:#ffd56f!important;
+  font-size:clamp(1.35rem,4vw,2.1rem)!important;
+  font-weight:900!important;
+  line-height:1.2!important;
+  text-align:center!important;
+  text-shadow:none!important;
+  box-shadow:0 18px 50px rgba(0,0,0,.68)!important;
+}
+

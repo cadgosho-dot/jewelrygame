@@ -12,7 +12,6 @@ concurrency:
 
 jobs:
   apply-v732:
-    if: github.actor != 'github-actions[bot]'
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -29,14 +28,10 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          def replace_version(path):
-              p = Path(path)
-              text = p.read_text(encoding='utf-8')
-              text = text.replace('0.10.731', '0.10.732')
-              p.write_text(text, encoding='utf-8')
-
           for path in ['game.html', 'index.html', 'auth.html', 'sw.js', 'js/game-data.js']:
-              replace_version(path)
+              p = Path(path)
+              text = p.read_text(encoding='utf-8').replace('0.10.731', '0.10.732')
+              p.write_text(text, encoding='utf-8')
 
           app = Path('js/app.js')
           app_text = app.read_text(encoding='utf-8')
@@ -49,51 +44,33 @@ jobs:
           game = Path('game.html')
           text = game.read_text(encoding='utf-8')
           if 'alien-space-input-safety-v732' not in text:
-              safety = r'''
+              safety = '''
 <style id="alien-space-input-safety-v732">
-/* v0.10.732: iPhone Safari等で宇宙画面が見えているのにタップ不能になる状態を防ぐ。 */
-body[data-screen="main"] .alien-space-main-screen{
-  isolation:isolate!important;
-}
-body[data-screen="main"] .alien-space-main-screen>.alien-space-status{
-  pointer-events:none!important;
-}
+body[data-screen="main"] .alien-space-main-screen{isolation:isolate!important}
+body[data-screen="main"] .alien-space-main-screen>.alien-space-status{pointer-events:none!important}
 body[data-screen="main"] .alien-space-main-screen>.alien-space-menu,
-body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
-  z-index:110!important;
-  pointer-events:auto!important;
-  touch-action:manipulation!important;
-  -webkit-user-select:none!important;
-  user-select:none!important;
-}
+body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{z-index:110!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-user-select:none!important;user-select:none!important}
 body[data-screen="main"] .alien-space-main-screen>.alien-space-menu>button,
-body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
-  position:relative!important;
-  z-index:111!important;
-  pointer-events:auto!important;
-  touch-action:manipulation!important;
-  -webkit-tap-highlight-color:transparent!important;
-}
+body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{position:relative!important;z-index:111!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
 </style>
 <script nonce="jxj-kaitenzushi" id="alien-space-input-safety-v732-script">
 (() => {
-  const isAlienSpace = () => document.body?.dataset?.screen === 'main' && !!document.querySelector('.alien-space-main-screen');
-
-  const repairInvisibleBlockers = () => {
+  const isAlienSpace = () => document.body && document.body.dataset.screen === 'main' && !!document.querySelector('.alien-space-main-screen');
+  const repair = () => {
     if (!isAlienSpace()) return;
     const curtain = document.querySelector('#sleep-curtain');
-    if (curtain?.classList.contains('active')) {
-      const style = getComputedStyle(curtain);
-      if (style.visibility === 'hidden' || Number.parseFloat(style.opacity || '0') < 0.05) {
-        curtain.classList.remove('active', 'next-day-blackout', 'sleep-starting');
+    if (curtain && curtain.classList.contains('active')) {
+      const s = getComputedStyle(curtain);
+      if (s.visibility === 'hidden' || parseFloat(s.opacity || '0') < 0.05) {
+        curtain.classList.remove('active','next-day-blackout','sleep-starting');
         curtain.style.pointerEvents = 'none';
       }
     }
     const morning = document.querySelector('#morning-brief');
-    if (morning?.classList.contains('active')) {
-      const style = getComputedStyle(morning);
-      if (style.visibility === 'hidden' || Number.parseFloat(style.opacity || '0') < 0.05) {
-        morning.classList.remove('active', 'persistent');
+    if (morning && morning.classList.contains('active')) {
+      const s = getComputedStyle(morning);
+      if (s.visibility === 'hidden' || parseFloat(s.opacity || '0') < 0.05) {
+        morning.classList.remove('active','persistent');
         morning.innerHTML = '';
         morning.style.pointerEvents = 'none';
       }
@@ -105,22 +82,20 @@ body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
       modal.style.pointerEvents = 'none';
     }
   };
-
   document.addEventListener('touchend', (event) => {
     if (!isAlienSpace()) return;
-    const target = event.target instanceof Element ? event.target.closest('.alien-space-menu button[data-action]:not(:disabled), .alien-hunger-emergency-card[data-action]:not(:disabled)') : null;
-    if (!(target instanceof HTMLButtonElement)) return;
+    const el = event.target instanceof Element ? event.target.closest('.alien-space-menu button[data-action]:not(:disabled), .alien-hunger-emergency-card[data-action]:not(:disabled)') : null;
+    if (!(el instanceof HTMLButtonElement)) return;
     event.preventDefault();
-    target.click();
-  }, { capture:true, passive:false });
-
-  const scheduleRepair = () => requestAnimationFrame(() => requestAnimationFrame(repairInvisibleBlockers));
-  new MutationObserver(scheduleRepair).observe(document.documentElement, { childList:true, subtree:true, attributes:true, attributeFilter:['class','data-screen'] });
-  window.addEventListener('pageshow', scheduleRepair);
-  window.addEventListener('focus', scheduleRepair);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleRepair(); });
-  setInterval(repairInvisibleBlockers, 1200);
-  scheduleRepair();
+    el.click();
+  }, {capture:true, passive:false});
+  const schedule = () => requestAnimationFrame(() => requestAnimationFrame(repair));
+  new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','data-screen']});
+  window.addEventListener('pageshow',schedule);
+  window.addEventListener('focus',schedule);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
+  setInterval(repair,1200);
+  schedule();
 })();
 </script>
 '''
@@ -143,31 +118,20 @@ body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
     permissions:
       contents: read
       pages: read
-    needs:
-      - apply-v732
+    needs: [apply-v732]
     if: needs.apply-v732.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: 公開する最新版を取得
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
-      - name: GitHub Pagesを設定
-        uses: actions/configure-pages@v5
-      - name: 公開用フォルダを作成
-        run: |
+      - uses: actions/configure-pages@v5
+      - run: |
           mkdir -p _site
-          rsync -a ./ _site/ \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='_site/' \
-            --exclude='scripts/' \
-            --exclude='*.md' \
-            --exclude='firestore.rules'
-      - name: GitHub Pages用ファイルをアップロード
-        uses: actions/upload-pages-artifact@v4
+          rsync -a ./ _site/ --exclude='.git/' --exclude='.github/' --exclude='_site/' --exclude='scripts/' --exclude='*.md' --exclude='firestore.rules'
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
@@ -176,8 +140,7 @@ body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
       contents: read
       pages: write
       id-token: write
-    needs:
-      - build-pages
+    needs: [build-pages]
     if: always() && needs.build-pages.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -185,6 +148,5 @@ body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: GitHub Pagesへ公開
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4

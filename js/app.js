@@ -9981,12 +9981,25 @@ function storytellerEventState() {
   return e;
 }
 
+function recoverInterruptedOyatsuIceMeal() {
+  const e = oyatsuDaisukiEventState();
+  if (!e.active || e.stage !== 'iceEating' || mealTransitioning) return false;
+  // v0.10.733: 「おやつ大好き」アイスルートの食事演出中に再読込・復帰が入ると、
+  // 食事完了Promiseだけが失われて iceEating が永続するため、支払い・時間・空腹を再処理せず
+  // 御徒町へ戻るフェードから安全に再開する。
+  e.stage = 'iceFade';
+  saveGame();
+  setScreen('oyatsuDaisukiEvent', {}, false);
+  return true;
+}
+
 function resumeOyatsuDaisukiEvent() {
   const e = oyatsuDaisukiEventState();
   if (!e.active) return false;
   if (e.stage === 'shop') setScreen('tropicalFishShop', { fromOyatsu: true }, false);
-  else if (e.stage === 'iceEating') setScreen('meal', { mealId: 'ice', eating: true }, false);
-  else setScreen('oyatsuDaisukiEvent', {}, false);
+  else if (e.stage === 'iceEating') {
+    if (!recoverInterruptedOyatsuIceMeal()) setScreen('meal', { mealId: 'ice', eating: true }, false);
+  } else setScreen('oyatsuDaisukiEvent', {}, false);
   return true;
 }
 function resumeSpeedStarEvent() {
@@ -17798,6 +17811,17 @@ function renderEmployee() {
 function renderMeal() {
   const current = hungerLevel();
   const eating = Boolean(screenData?.eating && MEALS[screenData?.mealId]);
+  if (eating && screenData?.mealId === 'ice' && !mealTransitioning) {
+    const oyatsuEvent = oyatsuDaisukiEventState();
+    if (oyatsuEvent.active && oyatsuEvent.stage === 'iceEating') {
+      // v0.10.733: 既に「もぐもぐ…」画面で止まっているセーブも、最新版読込だけで復旧する。
+      queueMicrotask(() => {
+        if (screen === 'meal' && screenData?.eating === true && screenData?.mealId === 'ice') {
+          recoverInterruptedOyatsuIceMeal();
+        }
+      });
+    }
+  }
   if (eating) {
     const meal = MEALS[screenData.mealId];
     const foodImage = mealFoodImage(meal.id);

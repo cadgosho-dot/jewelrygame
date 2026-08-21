@@ -1,9 +1,13 @@
-name: v0.10.732 宇宙画面入力復旧とGitHub Pages公開
+name: 地金相場更新とGitHub Pages公開
 
 on:
   push:
     branches:
       - main
+  schedule:
+    # GitHub ActionsのcronはUTC。日本時間の平日9:43と14:17。
+    - cron: '43 0 * * 1-5'
+    - cron: '17 5 * * 1-5'
   workflow_dispatch:
 
 concurrency:
@@ -11,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  apply-v732:
+  update-metals:
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -23,94 +27,95 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
 
-      - name: v0.10.732を適用
+      - name: Push前の正常な相場履歴を引き継ぐ
+        if: github.event_name == 'push'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          for path in ['game.html', 'index.html', 'auth.html', 'sw.js', 'js/game-data.js']:
-              p = Path(path)
-              text = p.read_text(encoding='utf-8').replace('0.10.731', '0.10.732')
-              p.write_text(text, encoding='utf-8')
-
-          app = Path('js/app.js')
-          app_text = app.read_text(encoding='utf-8')
-          app_text = app_text.replace("const UI_BUILD_VERSION = '0.10.731';", "const UI_BUILD_VERSION = '0.10.732';")
-          app_text = app_text.replace("./audio.js?v=0.10.729", "./audio.js?v=0.10.732")
-          app_text = app_text.replace("./audio-scene-map.js?v=0.10.729", "./audio-scene-map.js?v=0.10.732")
-          app_text = app_text.replace("./firebase-service.js?v=0.10.729", "./firebase-service.js?v=0.10.732")
-          app.write_text(app_text, encoding='utf-8')
-
-          game = Path('game.html')
-          text = game.read_text(encoding='utf-8')
-          if 'alien-space-input-safety-v732' not in text:
-              safety = '''
-<style id="alien-space-input-safety-v732">
-body[data-screen="main"] .alien-space-main-screen{isolation:isolate!important}
-body[data-screen="main"] .alien-space-main-screen>.alien-space-status{pointer-events:none!important}
-body[data-screen="main"] .alien-space-main-screen>.alien-space-menu,
-body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{z-index:110!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-user-select:none!important;user-select:none!important}
-body[data-screen="main"] .alien-space-main-screen>.alien-space-menu>button,
-body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{position:relative!important;z-index:111!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
-</style>
-<script nonce="jxj-kaitenzushi" id="alien-space-input-safety-v732-script">
-(() => {
-  const isAlienSpace = () => document.body && document.body.dataset.screen === 'main' && !!document.querySelector('.alien-space-main-screen');
-  const repair = () => {
-    if (!isAlienSpace()) return;
-    const curtain = document.querySelector('#sleep-curtain');
-    if (curtain && curtain.classList.contains('active')) {
-      const s = getComputedStyle(curtain);
-      if (s.visibility === 'hidden' || parseFloat(s.opacity || '0') < 0.05) {
-        curtain.classList.remove('active','next-day-blackout','sleep-starting');
-        curtain.style.pointerEvents = 'none';
-      }
-    }
-    const morning = document.querySelector('#morning-brief');
-    if (morning && morning.classList.contains('active')) {
-      const s = getComputedStyle(morning);
-      if (s.visibility === 'hidden' || parseFloat(s.opacity || '0') < 0.05) {
-        morning.classList.remove('active','persistent');
-        morning.innerHTML = '';
-        morning.style.pointerEvents = 'none';
-      }
-    }
-    const modal = document.querySelector('#modal-layer');
-    if (modal && !modal.classList.contains('hidden') && !modal.querySelector('.modal-card')) {
-      modal.classList.add('hidden');
-      modal.innerHTML = '';
-      modal.style.pointerEvents = 'none';
-    }
-  };
-  document.addEventListener('touchend', (event) => {
-    if (!isAlienSpace()) return;
-    const el = event.target instanceof Element ? event.target.closest('.alien-space-menu button[data-action]:not(:disabled), .alien-hunger-emergency-card[data-action]:not(:disabled)') : null;
-    if (!(el instanceof HTMLButtonElement)) return;
-    event.preventDefault();
-    el.click();
-  }, {capture:true, passive:false});
-  const schedule = () => requestAnimationFrame(() => requestAnimationFrame(repair));
-  new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','data-screen']});
-  window.addEventListener('pageshow',schedule);
-  window.addEventListener('focus',schedule);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
-  setInterval(repair,1200);
-  schedule();
-})();
-</script>
-'''
-              text = text.replace('</head>', safety + '\n</head>', 1)
-              game.write_text(text, encoding='utf-8')
-          PY
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add game.html index.html auth.html sw.js js/game-data.js js/app.js
-          if git diff --cached --quiet; then
-            echo "v0.10.732はすでに適用済みです。"
+          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "比較できるPush前コミットがないため、履歴引き継ぎを省略します。"
             exit 0
           fi
-          git commit -m "v0.10.732 宇宙画面の操作不能を復旧"
+          if ! curl --fail --silent --show-error --location --retry 3 \
+            -H "Accept: application/vnd.github.raw+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/data/metals.json?ref=${BEFORE_SHA}" \
+            --output /tmp/metals-before-push.json; then
+            echo "Push前の地金相場ファイルを取得できなかったため、履歴引き継ぎを省略します。"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          current_path = Path('data/metals.json')
+          previous_path = Path('/tmp/metals-before-push.json')
+          try:
+              current = json.loads(current_path.read_text(encoding='utf-8'))
+              previous = json.loads(previous_path.read_text(encoding='utf-8'))
+          except (OSError, json.JSONDecodeError):
+              print('履歴引き継ぎ用JSONを読み取れなかったため省略します。')
+              raise SystemExit(0)
+
+          previous_spot = previous.get('spotPerGram') or {}
+          previous_is_live = (
+              previous.get('status') == 'live'
+              and all(isinstance(previous_spot.get(key), (int, float)) and previous_spot[key] > 0
+                      for key in ('gold', 'silver', 'platinum'))
+          )
+          if current.get('status') != 'live' and previous_is_live:
+              current_path.write_text(
+                  json.dumps(previous, ensure_ascii=False, indent=2) + '\n',
+                  encoding='utf-8',
+              )
+              print('Push前の正常な相場・前日比・履歴を引き継ぎました。')
+          else:
+              print('現在の相場JSONをそのまま更新基準にします。')
+          PY
+
+      - name: Metals.Devから価格を取得して計算
+        env:
+          METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
+        run: |
+          cp data/metals.json /tmp/metals-before-api.json
+          if [ -z "$METALS_DEV_API_KEY" ]; then
+            echo "::warning::METALS_DEV_API_KEYが未設定です。既存の正常な地金相場を使ってPages公開を続行します。"
+            exit 0
+          fi
+          echo "::add-mask::$METALS_DEV_API_KEY"
+          if ! python3 scripts/update-metals.py; then
+            echo "::warning::Metals.Devから地金相場を取得できませんでした。既存の正常な地金相場へ戻してPages公開を続行します。"
+            cp /tmp/metals-before-api.json data/metals.json
+          fi
+
+      - name: 公開に使う地金相場JSONを検証
+        run: |
+          python3 -m json.tool data/metals.json > /dev/null
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('data/metals.json').read_text(encoding='utf-8'))
+          if data.get('status') != 'live':
+              raise SystemExit('既存の地金相場もlive状態ではないため、安全のため公開を中止します。')
+          spot = data.get('spotPerGram') or {}
+          for metal in ('gold', 'silver', 'platinum'):
+              value = spot.get(metal)
+              if not isinstance(value, (int, float)) or value <= 0:
+                  raise SystemExit(f'{metal}の地金相場が不正なため、安全のため公開を中止します。')
+          PY
+
+      - name: 更新結果をコミット
+        run: |
+          if git diff --quiet -- data/metals.json; then
+            echo "価格ファイルに変更はありません。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/metals.json
+          git commit -m "地金相場を自動更新"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
@@ -118,20 +123,34 @@ body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{p
     permissions:
       contents: read
       pages: read
-    needs: [apply-v732]
-    if: needs.apply-v732.result == 'success'
+    if: needs.update-metals.result == 'success'
+    needs:
+      - update-metals
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - name: 公開する最新版を取得
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
-      - uses: actions/configure-pages@v5
-      - run: |
+
+      - name: GitHub Pagesを設定
+        uses: actions/configure-pages@v5
+
+      - name: 公開用フォルダを作成
+        run: |
           mkdir -p _site
-          rsync -a ./ _site/ --exclude='.git/' --exclude='.github/' --exclude='_site/' --exclude='scripts/' --exclude='*.md' --exclude='firestore.rules'
-      - uses: actions/upload-pages-artifact@v4
+          rsync -a ./ _site/ \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='_site/' \
+            --exclude='scripts/' \
+            --exclude='*.md' \
+            --exclude='firestore.rules'
+
+      - name: GitHub Pages用ファイルをアップロード
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
@@ -140,13 +159,15 @@ body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{p
       contents: read
       pages: write
       id-token: write
-    needs: [build-pages]
     if: always() && needs.build-pages.result == 'success'
+    needs:
+      - build-pages
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      - name: GitHub Pagesへ公開
+        id: deployment
         uses: actions/deploy-pages@v4

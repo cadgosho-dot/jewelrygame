@@ -1,8 +1,8 @@
-// v0.10.734: 正式版のバージョン入口。
+// v0.10.735: 正式版のバージョン入口。
 // 大容量の既存ゲームデータ本体は game-data-core.js に保持し、内容を変更せず再利用する。
 import * as core from './game-data-core.js';
 
-export const VERSION = '0.10.734';
+export const VERSION = '0.10.735';
 export * from './game-data-core.js';
 
 // 本体側のVERSION依存箇所だけ、732の保存バージョンとして整合させる。

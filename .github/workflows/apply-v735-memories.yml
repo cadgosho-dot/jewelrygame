@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'scripts/apply-v735-memories.py'
+      - 'scripts/trigger-v735-memories.txt'
   workflow_dispatch:
 
 permissions:
@@ -20,15 +20,28 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
-          fetch-depth: 1
+          fetch-depth: 20
+
+      - name: 適用スクリプトを取得
+        run: git show 2f1a1bd0b5bb35fa919e233f08a054d457e8da23:scripts/apply-v735-memories.py > /tmp/apply-v735-memories.py
 
       - name: 思い出画面を実装
-        run: python3 scripts/apply-v735-memories.py
+        id: patch
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python3 /tmp/apply-v735-memories.py 2>&1 | tee /tmp/memories-patch.log
 
       - name: JavaScript構文確認
-        run: node --check js/app.js
+        id: syntax
+        if: steps.patch.outcome == 'success'
+        continue-on-error: true
+        run: node --check js/app.js 2>&1 | tee /tmp/memories-syntax.log
 
       - name: 実装確認
+        id: verify
+        if: steps.patch.outcome == 'success' && steps.syntax.outcome == 'success'
+        continue-on-error: true
         run: |
           grep -q 'data-tab="memories"' js/app.js
           grep -q 'function renderPhoneMemories()' js/app.js
@@ -37,10 +50,25 @@ jobs:
           grep -q "const VERSION = '0.10.735'" sw.js
           grep -q 'phone-memories-background' styles-memories-v735.css
 
-      - name: 一時ファイルを削除
-        run: rm -f scripts/apply-v735-memories.py .github/workflows/apply-v735-memories.yml
+      - name: 失敗内容を記録
+        if: steps.patch.outcome != 'success' || steps.syntax.outcome == 'failure' || steps.verify.outcome == 'failure'
+        run: |
+          {
+            echo "patch=${{ steps.patch.outcome }}"
+            echo "syntax=${{ steps.syntax.outcome }}"
+            echo "verify=${{ steps.verify.outcome }}"
+            echo "--- patch ---"
+            cat /tmp/memories-patch.log 2>/dev/null || true
+            echo "--- syntax ---"
+            cat /tmp/memories-syntax.log 2>/dev/null || true
+          } > memory-patch-error.txt
 
-      - name: 変更をコミットして公開
+      - name: 成功時に一時ファイルを削除
+        if: steps.patch.outcome == 'success' && steps.syntax.outcome == 'success' && steps.verify.outcome == 'success'
+        run: rm -f scripts/apply-v735-memories.py scripts/trigger-v735-memories.txt .github/workflows/apply-v735-memories.yml memory-patch-error.txt
+
+      - name: 結果をコミットして公開
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -49,6 +77,10 @@ jobs:
             echo "変更なし"
             exit 0
           fi
-          git commit -m "v0.10.735 スマートフォンに思い出を追加"
+          if [ "${{ steps.patch.outcome }}" = "success" ] && [ "${{ steps.syntax.outcome }}" = "success" ] && [ "${{ steps.verify.outcome }}" = "success" ]; then
+            git commit -m "v0.10.735 スマートフォンに思い出を追加"
+          else
+            git commit -m "思い出実装の診断結果を記録"
+          fi
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"

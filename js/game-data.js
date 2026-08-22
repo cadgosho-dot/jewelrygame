@@ -1,11 +1,11 @@
-// v0.10.744: 正式版のバージョン入口。
+// v0.10.746: 正式版のバージョン入口。
 // 大容量の既存ゲームデータ本体は game-data-core.js に保持し、内容を変更せず再利用する。
 import * as core from './game-data-core.js';
 
-export const VERSION = '0.10.744';
+export const VERSION = '0.10.746';
 export * from './game-data-core.js';
 
-// 本体側のVERSION依存箇所だけ、732の保存バージョンとして整合させる。
+// 本体側のVERSION依存箇所だけ、746の保存バージョンとして整合させる。
 export function initialState(...args) {
   const state = core.initialState(...args);
   if (state && typeof state === 'object') state.version = VERSION;
@@ -23,16 +23,8 @@ export function migrateState(saved) {
   if (saved && typeof saved === 'object' && savedOyatsu?.active && savedOyatsu?.stage === 'iceEating') {
     source = structuredClone(saved);
     source.events.oyatsuDaisukiEvent.stage = 'iceFade';
-    source.events.oyatsuDaisukiEvent.route = 'ice';
-    if (source.game && typeof source.game === 'object') source.game.screen = 'oyatsuDaisukiEvent';
   }
 
-  // 既存本体は731を基準にした移行条件を持つため、732保存データを再読込する際は
-  // 不要な再移行を起こさないよう内部判定だけ731相当として扱う。
-  if (source && typeof source === 'object' && source.version === VERSION) {
-    if (source === saved) source = structuredClone(saved);
-    source.version = '0.10.731';
-  }
   const state = core.migrateState(source);
   if (state && typeof state === 'object') state.version = VERSION;
   return state;

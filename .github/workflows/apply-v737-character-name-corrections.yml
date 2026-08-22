@@ -1,0 +1,54 @@
+name: v0.10.737 キャラクター名再修正
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/apply-v737-character-name-corrections.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 2
+
+      - name: キャラクター名を再修正
+        run: python3 scripts/apply-v737-character-name-corrections.py
+
+      - name: JavaScript構文確認
+        run: |
+          node --check js/app.js
+          node --check js/memories-screen.js
+          node --check js/game-data.js
+
+      - name: 実装確認
+        run: |
+          grep -q "export const VERSION = '0.10.737'" js/game-data.js
+          grep -q "const VERSION = '0.10.737'" sw.js
+          grep -q "name:'灰色パーカー'" js/memories-screen.js
+          grep -q "name:'カワハラ'" js/memories-screen.js
+          grep -q '<small>灰色パーカー</small>' js/app.js
+          grep -q "KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'カワハラ';" js/app.js
+          grep -q "const kicker = stage === 'reward' ? '加工知識追加' : 'カワハラ';" js/app.js
+
+      - name: 一時ファイルを削除
+        run: rm -f scripts/apply-v737-character-name-corrections.py .github/workflows/apply-v737-character-name-corrections.yml
+
+      - name: 変更をコミットして公開
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "v0.10.737 キャラクター名を再修正"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

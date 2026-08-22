@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.737';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.737';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.737';
+const UI_BUILD_VERSION = '0.10.738';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.738';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.738';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.737';
+} from './firebase-service.js?v=0.10.738';
 
 
 
@@ -121,7 +121,38 @@ winterColdTextObserver.observe(document.body, {
 });
 
 let state = null;
-globalThis.__JXJ_MEMORIES_STATE__ = () => state ? structuredClone({ events: state.events, inventory: state.inventory, game: state.game }) : null;
+globalThis.__JXJ_MEMORIES_STATE__ = () => state ? structuredClone({ events: state.events, inventory: state.inventory, game: state.game, memories: state.memories }) : null;
+globalThis.__JXJ_MEMORIES_RECORD__ = (entry) => {
+  try {
+    if (!state || !entry || typeof entry !== 'object' || Array.isArray(entry)) return false;
+    const key = String(entry.key || entry.screen || '').trim();
+    const name = String(entry.name || '').trim();
+    const image = String(entry.image || '').trim().replace(/\?v=[^#]+$/, '');
+    const description = String(entry.description || '').trim().slice(0, 180);
+    if (!key || !name || !image) return false;
+    state.memories = state.memories && typeof state.memories === 'object' && !Array.isArray(state.memories) ? state.memories : {};
+    const characters = Array.isArray(state.memories.characters) ? state.memories.characters : [];
+    const currentDay = Math.max(1, Math.floor(Number(state.game?.day) || 1));
+    const index = characters.findIndex((row) => row && (row.key === key || (row.name === name && row.image === image)));
+    const previous = index >= 0 && characters[index] && typeof characters[index] === 'object' ? characters[index] : null;
+    const next = {
+      key,
+      name,
+      image,
+      description: description || previous?.description || `${name}と出会ったイベントの記録。`,
+      firstSeenDay: Math.max(1, Math.floor(Number(previous?.firstSeenDay) || currentDay)),
+    };
+    if (previous && previous.key === next.key && previous.name === next.name && previous.image === next.image && previous.description === next.description && Number(previous.firstSeenDay) === next.firstSeenDay) return false;
+    if (index >= 0) characters[index] = next;
+    else characters.push(next);
+    state.memories.characters = characters;
+    void saveGame();
+    return true;
+  } catch (error) {
+    console.warn('[Memories] character record failed', error);
+    return false;
+  }
+};
 let screen = 'loading';
 let screenData = {};
 let navigation = [];

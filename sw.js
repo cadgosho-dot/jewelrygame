@@ -1,12 +1,12 @@
-const VERSION = '0.10.737';
+const VERSION = '0.10.738';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CORE_SHELL = [
   './', './index.html', './game.html', './auth.html', './auth-cache-recovery-v707.js', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.737', './js/audio-scene-map.js?v=0.10.737', './js/game-data.js', './js/memories-screen.js?v=0.10.737', './js/memories-backgrounds.js?v=0.10.737', './js/daily-gems-index.js?v=0.10.691',
+  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.738', './js/audio-scene-map.js?v=0.10.738', './js/game-data.js', './js/memories-screen.js?v=0.10.738', './js/memories-backgrounds.js?v=0.10.738', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.737', './js/security-config.js', './js/firebase-service.js?v=0.10.737',
+  './js/google-auth-bridge.js?v=0.10.738', './js/security-config.js', './js/firebase-service.js?v=0.10.738',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.666: large event images and quiz data are runtime-cached on first use instead of being downloaded during every SW install.

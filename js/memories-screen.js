@@ -1,7 +1,7 @@
 import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js';
 
-const VERSION = '0.10.737';
-const STYLE_ID = 'jxj-memories-style-v737';
+const VERSION = '0.10.738';
+const STYLE_ID = 'jxj-memories-style-v738';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
@@ -19,7 +19,7 @@ const CATALOG = [
   { key:'terryCaliforniaEvent', name:'テリー・カリフォルニア', image:'./assets/images/events/terry-california.png', description:'食事中に現れる、ベニトアイトに縁のある人物。' },
   { key:'hauntingEvent', name:'幽霊', image:'./assets/images/events/haunting-ghost.png', description:'夜に現れる、不気味な存在。' },
   { key:'storeTheftEvent', name:'店に現れた老婆', image:'./assets/images/events/store-thief-old-woman.png', description:'店舗で起きる出来事に関わる老婆。' },
-  { key:'miningPazupanEvent', name:'ボムじいさん', image:'./assets/images/events/pazupan.png', description:'採掘中に出会う、不思議な人物。' },
+  { key:'miningPazupanEvent', name:'ボムじいさん', image:'./assets/images/events/pazupan-miner.png', description:'採掘中に出会う、不思議な人物。' },
   { key:'workshopKappaJadeEvent', fallbackKey:'kappaJadeEvent', name:'河童', image:'./assets/images/events/kappa.png', description:'翡翠に縁のある河童。', reward:{ flag:'rewardGranted', name:'翡翠の原石', image:'./assets/images/events/workshop-kappa-jade-rough.png' } },
   { key:'pearlHumanEvent', name:'真珠人間', image:'./assets/images/events/pearl-human.png', description:'真珠にまつわる出来事で出会う謎の人物。', reward:{ flag:'rewardGranted', name:'真珠', image:'./assets/images/events/pearl.png' } },
   { key:'oyatsuDaisukiEvent', name:'お菓子大好き', image:'./assets/images/events/oyatsu-daisuki.png', description:'御徒町で出会う、アイスと熱帯魚屋が好きな人物。' },
@@ -28,10 +28,54 @@ const CATALOG = [
   { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
   { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
-  { key:'looseShopOriginalQuizEvent', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz.png', description:'ルースショップのクイズに現れる人物。' },
+  { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz.png', description:'ルースショップのクイズに現れる人物。' },
   { key:'clockTowerDonationEvent', name:'時計塔の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町の時計塔付近で出会う老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },
+  { key:'mysteryChineseMealEvent', name:'中華料理屋', image:'./assets/images/events/mystery-chinese-chef.png', description:'謎の中華料理を勧めてくる料理人。' },
+  { key:'okachimachiTollEvent', name:'キャベツ野郎', image:'./assets/images/events/okachimachi-toll-frog.png', description:'御徒町で通行費を要求してくる、妙に馴れ馴れしい相手。', reward:{ flag:'rewardGranted', name:'翡翠の原石', image:'./assets/images/gems/jade.png' } },
+  { key:'whiteBunnyIceEvent', name:'ホワイト・バニー', image:'./assets/images/events/white-bunny.png', description:'アイスを食べている時に現れる、自由奔放な人物。' },
+  { key:'diamondPolishingLapEvent', name:'インド料理屋の店長', image:'./assets/images/events/indian-restaurant-manager.png', description:'ダイヤモンド研磨用の道具を用意してくれる店長。', reward:{ flag:'rewardGranted', name:'ダイヤモンド研磨用平面研磨盤', image:'./assets/images/events/diamond-polishing-lap-reward.png' } },
+  { key:'okachimachiInvasiveTurtlesEvent', name:'外来種', image:'./assets/images/events/okachimachi-invasive-turtles.png', description:'御徒町で見かける、外来種にまつわる生き物。' },
+  { key:'childhoodFriendEvent', name:'幼なじみ', image:'./assets/images/meal-ramen-reunion-v387.webp', description:'ラーメン屋で偶然再会する、子供の頃の友人。' },
+  { key:'okachimachiQuiz', name:'通りすがりのクイズ王', image:'./assets/images/quiz/quiz-king-normal.png', description:'御徒町で突然クイズを出してくる人物。' },
 ];
+
+
+const CATALOG_KEYS = new Set(CATALOG.flatMap((item) => [item.key, item.fallbackKey].filter(Boolean)));
+const AUTO_MEMORY_IGNORED_NAMES = new Set(['', '心の声', '支払い', 'SYSTEM', '御徒町・パンダ広場']);
+
+function normalizedDynamicCharacters(snapshot){
+  const rows = Array.isArray(snapshot?.memories?.characters) ? snapshot.memories.characters : [];
+  return rows
+    .filter((row) => row && typeof row === 'object' && row.key && row.name && row.image)
+    .map((row) => ({
+      key:String(row.key),
+      name:String(row.name),
+      image:String(row.image),
+      description:String(row.description || `${row.name}と出会ったイベントの記録。`),
+      firstSeenDay:Math.max(1,Math.floor(Number(row.firstSeenDay) || 1)),
+    }));
+}
+
+function captureVisibleEventCharacter(){
+  let activeScreen = String(document.body?.dataset?.screen || '').trim();
+  if (!activeScreen) activeScreen = String(stateSnapshot()?.game?.screen || '').trim();
+  if (!activeScreen || CATALOG_KEYS.has(activeScreen) || document.getElementById(OVERLAY_ID)) return;
+  const scope = document.querySelector('main.main-screen, main');
+  if (!scope) return;
+  const label = scope.querySelector('.jxj-quiz-name-v2, .event-dialogue-card small');
+  const image = scope.querySelector('img.visit-character, img.jxj-quiz-character-v2, [class*="character-area"] img, img[class*="-character"]');
+  if (!label || !(image instanceof HTMLImageElement)) return;
+  const src = String(image.getAttribute('src') || '').trim();
+  const name = String(label.textContent || image.getAttribute('alt') || '').trim();
+  if (!src || src.startsWith('data:') || !name || AUTO_MEMORY_IGNORED_NAMES.has(name) || /タップ|読み込み|食事中/.test(name)) return;
+  globalThis.__JXJ_MEMORIES_RECORD__?.({
+    key:`${activeScreen}::${name}`,
+    name,
+    image:src,
+    description:`${name}と出会ったイベントの記録。`,
+  });
+}
 
 function installStyle() {
   if (document.getElementById(STYLE_ID)) return;
@@ -42,7 +86,7 @@ function installStyle() {
     .memories-entry-button{width:100%;min-height:48px;font-size:16px!important;font-weight:800!important}
     #${OVERLAY_ID}{position:fixed;inset:0;z-index:15000;overflow:hidden;background:#080d12;color:#fff;isolation:isolate}
     #${OVERLAY_ID} .memories-bg{position:absolute;inset:0;background-image:url("${MEMORIES_BG_PORTRAIT}");background-size:cover;background-position:center center;background-repeat:no-repeat;pointer-events:none;z-index:0}
-    #${OVERLAY_ID} .memories-shade{position:absolute;inset:0;background:rgba(3,6,9,.34);pointer-events:none;z-index:1}
+    #${OVERLAY_ID} .memories-shade{position:absolute;inset:0;background:rgba(3,6,9,.06);pointer-events:none;z-index:1}
     #${OVERLAY_ID} .memories-shell{position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
     #${OVERLAY_ID} .memories-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom:1px solid rgba(180,218,236,.45);background:transparent}
     #${OVERLAY_ID} .memories-head h1{margin:0;font-size:20px;text-shadow:0 2px 6px #000}
@@ -81,7 +125,11 @@ function stateSnapshot(){
 
 function eventState(snapshot, item){
   const events = snapshot?.events || {};
-  return events[item.key] || (item.fallbackKey ? events[item.fallbackKey] : null) || null;
+  const primary = events[item.key] || null;
+  const fallback = item.fallbackKey ? (events[item.fallbackKey] || null) : null;
+  if (encountered(primary)) return primary;
+  if (encountered(fallback)) return fallback;
+  return primary || fallback || null;
 }
 
 function encountered(ev){
@@ -122,12 +170,19 @@ function openMemories(){
   installStyle();
   closeMemories();
   const snapshot = stateSnapshot();
-  const items = CATALOG.map(item => ({ item, ev:eventState(snapshot,item) })).filter(({ev}) => encountered(ev));
+  const staticItems = CATALOG.map(item => ({ item, ev:eventState(snapshot,item) })).filter(({ev}) => encountered(ev));
+  const staticKeys = new Set(staticItems.flatMap(({item}) => [item.key, item.fallbackKey].filter(Boolean)));
+  const staticNames = new Set(staticItems.map(({item}) => item.name));
+  const dynamicItems = normalizedDynamicCharacters(snapshot)
+    .filter((item) => !staticKeys.has(item.key) && !staticNames.has(item.name))
+    .sort((a,b) => a.firstSeenDay - b.firstSeenDay)
+    .map((item) => ({ item, ev:null, dynamic:true }));
+  const items = [...staticItems, ...dynamicItems];
   const overlay = document.createElement('section');
   overlay.id = OVERLAY_ID;
   overlay.setAttribute('aria-label','思い出');
-  const cards = items.map(({item,ev}) => {
-    const reward = rewardVisible(ev,item.reward) ? item.reward : null;
+  const cards = items.map(({item,ev,dynamic=false}) => {
+    const reward = !dynamic && rewardVisible(ev,item.reward) ? item.reward : null;
     const rewardHtml = reward ? `<div class="memory-reward"><span class="memory-reward-label">報酬</span>${reward.image ? `<img class="memory-reward-image" src="${esc(reward.image)}" alt="${esc(reward.name)}" data-memory-image="${esc(reward.image)}" data-memory-alt="${esc(reward.name)}">` : ''}<span class="memory-reward-name">${esc(reward.name)}</span></div>` : '';
     return `<article class="memory-card"><div class="memory-person-frame"><img class="memory-person" src="${esc(item.image)}" alt="${esc(item.name)}" data-memory-image="${esc(item.image)}" data-memory-alt="${esc(item.name)}"></div><div class="memory-copy"><h2>${esc(item.name)}</h2><p>${esc(item.description)}</p>${rewardHtml}</div></article>`;
   }).join('');
@@ -156,5 +211,12 @@ function installEntryButton(){
 
 installStyle();
 installEntryButton();
-new MutationObserver(() => installEntryButton()).observe(document.documentElement,{childList:true,subtree:true});
-window.addEventListener('pageshow', installEntryButton);
+captureVisibleEventCharacter();
+new MutationObserver(() => {
+  installEntryButton();
+  captureVisibleEventCharacter();
+}).observe(document.documentElement,{childList:true,subtree:true});
+window.addEventListener('pageshow', () => {
+  installEntryButton();
+  captureVisibleEventCharacter();
+});

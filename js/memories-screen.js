@@ -1,7 +1,7 @@
 import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js';
 
-const VERSION = '0.10.739';
-const STYLE_ID = 'jxj-memories-style-v739';
+const VERSION = '0.10.742';
+const STYLE_ID = 'jxj-memories-style-v742';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
@@ -29,7 +29,7 @@ const CATALOG = [
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
   { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
   { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:`./assets/images/events/loose-shop-original-quiz.png?v=${VERSION}`, description:'ルースショップのクイズに現れる人物。' },
-  { key:'clockTowerDonationEvent', name:'時計塔の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町の時計塔付近で出会う老婆。' },
+  { key:'clockTowerDonationEvent', name:'時計台の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町に時計台を建てようとしている老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },
   { key:'mysteryChineseMealEvent', name:'中華料理屋', image:'./assets/images/events/mystery-chinese-chef.png', description:'謎の中華料理を勧めてくる料理人。' },
   { key:'okachimachiTollEvent', name:'キャベツ野郎', image:'./assets/images/events/okachimachi-toll-frog.png', description:'御徒町で通行費を要求してくる、妙に馴れ馴れしい相手。', reward:{ flag:'rewardGranted', name:'翡翠の原石', image:'./assets/images/gems/jade.png' } },

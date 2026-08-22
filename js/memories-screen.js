@@ -1,7 +1,7 @@
-import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.744';
+import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.745';
 
-const VERSION = '0.10.744';
-const STYLE_ID = 'jxj-memories-style-v744';
+const VERSION = '0.10.745';
+const STYLE_ID = 'jxj-memories-style-v745';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
@@ -20,15 +20,15 @@ const CATALOG = [
   { key:'hauntingEvent', name:'幽霊', image:'./assets/images/events/haunting-ghost.png', description:'夜に現れる、不気味な存在。' },
   { key:'storeTheftEvent', name:'店に現れた老婆', image:'./assets/images/events/store-thief-old-woman.png', description:'店舗で起きる出来事に関わる老婆。' },
   { key:'miningPazupanEvent', name:'ボムじいさん', image:'./assets/images/events/pazupan-miner.png', description:'採掘中に出会う、不思議な人物。' },
-  { key:'workshopKappaJadeEvent', fallbackKey:'kappaJadeEvent', name:'河童', image:'./assets/images/events/kappa.png', description:'翡翠に縁のある河童。', reward:{ flag:'rewardGranted', name:'翡翠の原石', image:'./assets/images/events/workshop-kappa-jade-rough.png' } },
+  { key:'workshopKappaJadeEvent', fallbackKey:'kappaJadeEvent', eventKeys:['workshopKappaJadeEvent','kappaJadeEvent'], name:'河童', image:'./assets/images/events/kappa.png', description:'翡翠に縁のある河童。', reward:{ flag:'rewardGranted', name:'翡翠の原石', image:'./assets/images/events/workshop-kappa-jade-rough.png' } },
   { key:'pearlHumanEvent', name:'真珠人間', image:'./assets/images/events/pearl-human.png', description:'真珠にまつわる出来事で出会う謎の人物。', reward:{ flag:'rewardGranted', name:'真珠', image:'./assets/images/events/pearl.png' } },
   { key:'oyatsuDaisukiEvent', name:'お菓子大好き', image:'./assets/images/events/oyatsu-daisuki.png', description:'御徒町で出会う、アイスと熱帯魚屋が好きな人物。' },
   { key:'speedStarEvent', name:'スピードスター', image:'./assets/images/events/speed-star.png', description:'突然現れる、勢いのある人物。' },
-  { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller.png', description:'言葉と物語で印象を残す人物。' },
-  { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
+  { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller-v745.png', description:'言葉と物語で印象を残す人物。' },
+  { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', eventKeys:['alienAbductionEvent','alienReturnEvent'], name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
-  { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
-  { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:`./assets/images/events/loose-shop-original-quiz.png?v=${VERSION}`, description:'ルースショップのクイズに現れる人物。' },
+  { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', eventKeys:['glabVisitVideoEvent','kawaharaKnowledgeEvent'], name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
+  { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz-v745.png', description:'ルースショップのクイズに現れる人物。' },
   { key:'clockTowerDonationEvent', name:'時計台の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町に時計台を建てようとしている老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },
   { key:'mysteryChineseMealEvent', name:'中華料理屋', image:'./assets/images/events/mystery-chinese-chef.png', description:'謎の中華料理を勧めてくる料理人。' },
@@ -40,8 +40,7 @@ const CATALOG = [
   { key:'okachimachiQuiz', name:'通りすがりのクイズ王', image:'./assets/images/quiz/quiz-king-normal.png', description:'御徒町で突然クイズを出してくる人物。' },
 ];
 
-
-const CATALOG_KEYS = new Set(CATALOG.flatMap((item) => [item.key, item.fallbackKey].filter(Boolean)));
+const CATALOG_KEYS = new Set(CATALOG.flatMap((item) => [item.key, item.fallbackKey, ...(item.eventKeys || [])].filter(Boolean)));
 const AUTO_MEMORY_IGNORED_NAMES = new Set(['', '心の声', '支払い', 'SYSTEM', '御徒町・パンダ広場']);
 
 function normalizedDynamicCharacters(snapshot){
@@ -54,6 +53,7 @@ function normalizedDynamicCharacters(snapshot){
       image:String(row.image),
       description:String(row.description || `${row.name}と出会ったイベントの記録。`),
       firstSeenDay:Math.max(1,Math.floor(Number(row.firstSeenDay) || 1)),
+      encounterCount:Math.max(1,Math.floor(Number(row.encounterCount) || 1)),
     }));
 }
 
@@ -98,6 +98,7 @@ function installStyle() {
     #${OVERLAY_ID} .memory-person{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;object-position:center center;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7));cursor:pointer}
     #${OVERLAY_ID} .memory-copy h2{margin:2px 0 7px;font-size:17px;line-height:1.35;text-shadow:0 2px 5px #000}
     #${OVERLAY_ID} .memory-copy p{margin:0;font-size:13px;line-height:1.65;color:#f2f7fa;text-shadow:0 2px 5px #000}
+    #${OVERLAY_ID} .memory-encounter-count{margin-top:8px;font-size:12px;line-height:1.4;font-weight:800;color:#d8f2ff;text-shadow:0 2px 5px #000}
     #${OVERLAY_ID} .memory-reward{margin-top:10px;padding-top:9px;border-top:1px solid rgba(193,225,239,.38);display:flex;align-items:center;gap:9px}
     #${OVERLAY_ID} .memory-reward-label{font-size:11px;color:#bfe8f8;font-weight:800;text-shadow:0 2px 4px #000}
     #${OVERLAY_ID} .memory-reward-image{width:54px;height:54px;object-fit:contain;border:1px solid rgba(193,225,239,.38);border-radius:10px;background:transparent;padding:3px;cursor:pointer}
@@ -125,11 +126,31 @@ function stateSnapshot(){
 
 function eventState(snapshot, item){
   const events = snapshot?.events || {};
-  const primary = events[item.key] || null;
-  const fallback = item.fallbackKey ? (events[item.fallbackKey] || null) : null;
-  if (encountered(primary)) return primary;
-  if (encountered(fallback)) return fallback;
-  return primary || fallback || null;
+  const keys = encounterEventKeys(item);
+  for (const key of keys) {
+    const candidate = events[key] || null;
+    if (encountered(candidate)) return candidate;
+  }
+  for (const key of keys) {
+    if (events[key]) return events[key];
+  }
+  return null;
+}
+
+function encounterEventKeys(item){
+  return [...new Set([item.key, item.fallbackKey, ...(item.eventKeys || [])].filter(Boolean))];
+}
+
+function eventEncounterCount(ev){
+  if (!ev || typeof ev !== 'object') return 0;
+  const explicit = Number(ev.totalTriggered ?? ev.triggerCount ?? ev.visits ?? 0);
+  if (Number.isFinite(explicit) && explicit > 0) return Math.floor(explicit);
+  return encountered(ev) ? 1 : 0;
+}
+
+function encounterCount(snapshot, item){
+  const events = snapshot?.events || {};
+  return encounterEventKeys(item).reduce((sum, key) => sum + eventEncounterCount(events[key]), 0);
 }
 
 function encountered(ev){
@@ -170,21 +191,22 @@ function openMemories(){
   installStyle();
   closeMemories();
   const snapshot = stateSnapshot();
-  const staticItems = CATALOG.map(item => ({ item, ev:eventState(snapshot,item) })).filter(({ev}) => encountered(ev));
-  const staticKeys = new Set(staticItems.flatMap(({item}) => [item.key, item.fallbackKey].filter(Boolean)));
+  const staticItems = CATALOG.map(item => ({ item, ev:eventState(snapshot,item), count:encounterCount(snapshot,item) })).filter(({ev}) => encountered(ev));
+  const staticKeys = new Set(staticItems.flatMap(({item}) => encounterEventKeys(item)));
   const staticNames = new Set(staticItems.map(({item}) => item.name));
   const dynamicItems = normalizedDynamicCharacters(snapshot)
     .filter((item) => !staticKeys.has(item.key) && !staticNames.has(item.name))
     .sort((a,b) => a.firstSeenDay - b.firstSeenDay)
-    .map((item) => ({ item, ev:null, dynamic:true }));
+    .map((item) => ({ item, ev:null, count:item.encounterCount, dynamic:true }));
   const items = [...staticItems, ...dynamicItems];
   const overlay = document.createElement('section');
   overlay.id = OVERLAY_ID;
   overlay.setAttribute('aria-label','思い出');
-  const cards = items.map(({item,ev,dynamic=false}) => {
+  const cards = items.map(({item,ev,count,dynamic=false}) => {
     const reward = !dynamic && rewardVisible(ev,item.reward) ? item.reward : null;
     const rewardHtml = reward ? `<div class="memory-reward"><span class="memory-reward-label">報酬</span>${reward.image ? `<img class="memory-reward-image" src="${esc(reward.image)}" alt="${esc(reward.name)}" data-memory-image="${esc(reward.image)}" data-memory-alt="${esc(reward.name)}">` : ''}<span class="memory-reward-name">${esc(reward.name)}</span></div>` : '';
-    return `<article class="memory-card"><div class="memory-person-frame"><img class="memory-person" src="${esc(item.image)}" alt="${esc(item.name)}" data-memory-image="${esc(item.image)}" data-memory-alt="${esc(item.name)}"></div><div class="memory-copy"><h2>${esc(item.name)}</h2><p>${esc(item.description)}</p>${rewardHtml}</div></article>`;
+    const countHtml = `<div class="memory-encounter-count">出会った回数：${Math.max(1,Number(count) || 1)}回</div>`;
+    return `<article class="memory-card"><div class="memory-person-frame"><img class="memory-person" src="${esc(item.image)}" alt="${esc(item.name)}" data-memory-image="${esc(item.image)}" data-memory-alt="${esc(item.name)}"></div><div class="memory-copy"><h2>${esc(item.name)}</h2><p>${esc(item.description)}</p>${countHtml}${rewardHtml}</div></article>`;
   }).join('');
   overlay.innerHTML = `<div class="memories-bg" aria-hidden="true"></div><div class="memories-shade" aria-hidden="true"></div><div class="memories-shell"><header class="memories-head"><h1>思い出</h1><button type="button" class="memories-close">閉じる</button></header><div class="memories-scroll"><div class="memories-list">${cards || '<div class="memories-empty">まだ思い出はありません。<br>イベントで人物に出会うと、ここに記録されます。</div>'}</div></div></div>`;
   overlay.querySelector('.memories-close')?.addEventListener('click', closeMemories);

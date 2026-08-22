@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.736';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.736';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.736';
+const UI_BUILD_VERSION = '0.10.737';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.737';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.737';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.736';
+} from './firebase-service.js?v=0.10.737';
 
 
 
@@ -375,7 +375,7 @@ const GLAB_VISIT_VIDEO_EVENT_VIDEO = './assets/videos/events/glab-visit-random.m
 const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
 const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png';
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
-const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. 川原';
+const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'カワハラ';
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'tropicalFishShop', 'speedStarEvent', 'storytellerEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
@@ -14203,7 +14203,7 @@ function renderGrayHoodAquariumEvent() {
       : e.stage === 'intro3'
         ? `${playerName}って熱帯魚飼ってたよね？これから今住んでるとこを出るんだけど、、水槽あげようと思って綺麗にしといたんだ、、、`
         : 'またね、どうせどこかで会うよ、、、';
-  return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event" aria-live="polite"><div class="gray-hood-character-area"><img src="./assets/images/events/gray-hood-aquarium.png?v=${VERSION}" alt="灰色パーカーの女" draggable="false"></div><button type="button" class="event-dialogue-card gray-hood-dialogue glass-panel" data-action="gray-hood-aquarium-next"><small>灰色パーカーの女</small><strong>${dialogue}</strong><span>タップして進む</span></button></section></main>`;
+  return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event" aria-live="polite"><div class="gray-hood-character-area"><img src="./assets/images/events/gray-hood-aquarium.png?v=${VERSION}" alt="灰色パーカー" draggable="false"></div><button type="button" class="event-dialogue-card gray-hood-dialogue glass-panel" data-action="gray-hood-aquarium-next"><small>灰色パーカー</small><strong>${dialogue}</strong><span>タップして進む</span></button></section></main>`;
 }
 
 function renderAquariumGame() {
@@ -15018,10 +15018,10 @@ function renderKawaharaKnowledgeEvent() {
   }
   if (eventState.stage === 'video') {
     queueMicrotask(startKawaharaKnowledgeIntroPlayback);
-    return `<main class="western-union-video-screen kawahara-knowledge-video-screen" aria-label="g-Lab. 川原 加工知識イベント導入動画">
+    return `<main class="western-union-video-screen kawahara-knowledge-video-screen" aria-label="カワハラ 加工知識イベント導入動画">
       <section class="western-union-video-stage kawahara-knowledge-video-stage" aria-live="polite">
-        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてg-Lab. 川原の会話を開始">MOVIEスキップ</button>
-        <video data-kawahara-knowledge-intro-video src="${esc(kawaharaKnowledgeIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="g-Lab. 川原 加工知識イベント導入動画"></video>
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてカワハラの会話を開始">MOVIEスキップ</button>
+        <video data-kawahara-knowledge-intro-video src="${esc(kawaharaKnowledgeIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="カワハラ 加工知識イベント導入動画"></video>
         <div class="western-union-video-loading">動画を読み込んでいます</div>
         <button type="button" class="western-union-video-start" data-action="kawahara-knowledge-video-start">動画を再生する</button>
         <div class="western-union-video-error" role="alert"><strong>動画を読み込めませんでした</strong><span>もう一度再生するか、MOVIEスキップで会話へ進んでください。</span></div>
@@ -15039,7 +15039,7 @@ function renderKawaharaKnowledgeEvent() {
     farewell: 'また来てくださいね、、、ありがとうございます、、、、',
   };
   const stage = String(eventState.stage || 'intro1');
-  const kicker = stage === 'reward' ? '加工知識追加' : 'g-Lab. 川原';
+  const kicker = stage === 'reward' ? '加工知識追加' : 'カワハラ';
   const rewardClass = stage === 'reward' ? ' is-reward-center' : '';
   return `
     <main class="main-screen kawahara-knowledge-event-screen" aria-live="polite">

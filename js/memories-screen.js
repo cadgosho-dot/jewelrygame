@@ -1,7 +1,7 @@
 import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js';
 
-const VERSION = '0.10.736';
-const STYLE_ID = 'jxj-memories-style-v736';
+const VERSION = '0.10.737';
+const STYLE_ID = 'jxj-memories-style-v737';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
@@ -15,7 +15,7 @@ const CATALOG = [
   { key:'sushiChefEvent', name:'寿司屋の大将', image:'./assets/images/events/sushi-chef.png', description:'食事イベントで出会う寿司職人。' },
   { key:'cyclopsEvent', name:'サイクロプス', image:'./assets/images/events/cyclops.png', description:'コンビニで遭遇する、ひとつ目の不思議な客。' },
   { key:'ganeshaTuskEvent', name:'ガネーシャ', image:'./assets/images/events/ganesha.png', description:'突然現れる不思議な存在。', reward:{ flag:'rewardGranted', name:'ガネーシャの牙', image:'./assets/images/events/ganesha-tusk.png' } },
-  { key:'grayHoodAquariumEvent', name:'灰色パーカーの女', image:'./assets/images/events/gray-hood-aquarium.png', description:'水槽にまつわる出来事で出会う女性。', reward:{ flag:'rewardGranted', name:'水槽', image:'./assets/images/events/aquarium-tank.png' } },
+  { key:'grayHoodAquariumEvent', name:'灰色パーカー', image:'./assets/images/events/gray-hood-aquarium.png', description:'水槽にまつわる出来事で出会う女性。', reward:{ flag:'rewardGranted', name:'水槽', image:'./assets/images/events/aquarium-tank.png' } },
   { key:'terryCaliforniaEvent', name:'テリー・カリフォルニア', image:'./assets/images/events/terry-california.png', description:'食事中に現れる、ベニトアイトに縁のある人物。' },
   { key:'hauntingEvent', name:'幽霊', image:'./assets/images/events/haunting-ghost.png', description:'夜に現れる、不気味な存在。' },
   { key:'storeTheftEvent', name:'店に現れた老婆', image:'./assets/images/events/store-thief-old-woman.png', description:'店舗で起きる出来事に関わる老婆。' },
@@ -27,7 +27,7 @@ const CATALOG = [
   { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller.png', description:'言葉と物語で印象を残す人物。' },
   { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
-  { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', name:'g-Lab. 川原', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
+  { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
   { key:'looseShopOriginalQuizEvent', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz.png', description:'ルースショップのクイズに現れる人物。' },
   { key:'clockTowerDonationEvent', name:'時計塔の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町の時計塔付近で出会う老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },

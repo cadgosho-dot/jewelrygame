@@ -1,34 +1,34 @@
 import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js';
 
-const VERSION = '0.10.735';
-const STYLE_ID = 'jxj-memories-style-v735';
+const VERSION = '0.10.736';
+const STYLE_ID = 'jxj-memories-style-v736';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
 const CATALOG = [
   { key:'westernUnionEvent', name:'Western Unionの使者', image:'./assets/images/events/western-union-messenger.png', description:'突然現れ、古いダイヤモンドを託してくる使者。', reward:{ flag:'rewardGranted', name:'アンティークダイヤモンド', image:'./assets/images/events/antique-diamond.png' } },
   { key:'mermaidEvent', name:'人魚', image:'./assets/images/events/mermaid.png', description:'不思議な場所で出会う、人ならざる存在。', reward:{ flag:'rewardGranted', name:'真珠', image:'./assets/images/events/pearl.png' } },
-  { key:'tattooWomanAmberEvent', name:'タトゥーの女性', image:'./assets/images/events/tattoo-woman.png', description:'印象的なタトゥーをまとった女性。', reward:{ flag:'rewardGranted', name:'琥珀', image:'./assets/images/events/amber.png' } },
-  { key:'apprenticeCinemaEvent', name:'映画館の見習い', image:'./assets/images/events/cinema-apprentice.png', description:'映画館で出会う、少し変わった見習い。' },
-  { key:'ridleyOkazakiSobaEvent', name:'リドリー岡崎', image:'./assets/images/events/ridley-okazaki.png', description:'食事中に出会う、忘れにくい人物。' },
-  { key:'emeraldCaptainKebabEvent', name:'エメラルド船長', image:'./assets/images/events/emerald-captain.png', description:'ケバブ屋で出会う、エメラルドに縁のある人物。', reward:{ flag:'rewardGranted', name:'エメラルド', image:'./assets/images/events/emerald-captain-loose-set.png' } },
-  { key:'sushiChefEvent', name:'寿司職人', image:'./assets/images/events/sushi-chef.png', description:'食事イベントで出会う寿司職人。' },
+  { key:'tattooWomanAmberEvent', name:'タトゥーの女', image:'./assets/images/events/tattoo-woman.png', description:'印象的なタトゥーをまとった女性。', reward:{ flag:'rewardGranted', name:'琥珀', image:'./assets/images/events/amber.png' } },
+  { key:'apprenticeCinemaEvent', name:'見習い職人', image:'./assets/images/events/cinema-apprentice.png', description:'映画館で出会う、少し変わった見習い。' },
+  { key:'ridleyOkazakiSobaEvent', name:'リドリー・岡崎', image:'./assets/images/events/ridley-okazaki.png', description:'食事中に出会う、忘れにくい人物。' },
+  { key:'emeraldCaptainKebabEvent', name:'エメラルド班班長', image:'./assets/images/events/emerald-captain.png', description:'ケバブ屋で出会う、エメラルドに縁のある人物。', reward:{ flag:'rewardGranted', name:'エメラルド', image:'./assets/images/events/emerald-captain-loose-set.png' } },
+  { key:'sushiChefEvent', name:'寿司屋の大将', image:'./assets/images/events/sushi-chef.png', description:'食事イベントで出会う寿司職人。' },
   { key:'cyclopsEvent', name:'サイクロプス', image:'./assets/images/events/cyclops.png', description:'コンビニで遭遇する、ひとつ目の不思議な客。' },
   { key:'ganeshaTuskEvent', name:'ガネーシャ', image:'./assets/images/events/ganesha.png', description:'突然現れる不思議な存在。', reward:{ flag:'rewardGranted', name:'ガネーシャの牙', image:'./assets/images/events/ganesha-tusk.png' } },
-  { key:'grayHoodAquariumEvent', name:'灰色パーカーの女性', image:'./assets/images/events/gray-hood-aquarium.png', description:'水槽にまつわる出来事で出会う女性。', reward:{ flag:'rewardGranted', name:'水槽', image:'./assets/images/events/aquarium-tank.png' } },
+  { key:'grayHoodAquariumEvent', name:'灰色パーカーの女', image:'./assets/images/events/gray-hood-aquarium.png', description:'水槽にまつわる出来事で出会う女性。', reward:{ flag:'rewardGranted', name:'水槽', image:'./assets/images/events/aquarium-tank.png' } },
   { key:'terryCaliforniaEvent', name:'テリー・カリフォルニア', image:'./assets/images/events/terry-california.png', description:'食事中に現れる、ベニトアイトに縁のある人物。' },
   { key:'hauntingEvent', name:'幽霊', image:'./assets/images/events/haunting-ghost.png', description:'夜に現れる、不気味な存在。' },
   { key:'storeTheftEvent', name:'店に現れた老婆', image:'./assets/images/events/store-thief-old-woman.png', description:'店舗で起きる出来事に関わる老婆。' },
-  { key:'miningPazupanEvent', name:'パズパン', image:'./assets/images/events/pazupan.png', description:'採掘中に出会う、不思議な人物。' },
+  { key:'miningPazupanEvent', name:'ボムじいさん', image:'./assets/images/events/pazupan.png', description:'採掘中に出会う、不思議な人物。' },
   { key:'workshopKappaJadeEvent', fallbackKey:'kappaJadeEvent', name:'河童', image:'./assets/images/events/kappa.png', description:'翡翠に縁のある河童。', reward:{ flag:'rewardGranted', name:'翡翠の原石', image:'./assets/images/events/workshop-kappa-jade-rough.png' } },
   { key:'pearlHumanEvent', name:'真珠人間', image:'./assets/images/events/pearl-human.png', description:'真珠にまつわる出来事で出会う謎の人物。', reward:{ flag:'rewardGranted', name:'真珠', image:'./assets/images/events/pearl.png' } },
   { key:'oyatsuDaisukiEvent', name:'お菓子大好き', image:'./assets/images/events/oyatsu-daisuki.png', description:'御徒町で出会う、アイスと熱帯魚屋が好きな人物。' },
   { key:'speedStarEvent', name:'スピードスター', image:'./assets/images/events/speed-star.png', description:'突然現れる、勢いのある人物。' },
-  { key:'storytellerEvent', name:'語り部', image:'./assets/images/events/storyteller.png', description:'言葉と物語で印象を残す人物。' },
+  { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller.png', description:'言葉と物語で印象を残す人物。' },
   { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
   { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', name:'g-Lab. 川原', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
-  { key:'looseShopOriginalQuizEvent', name:'3Dメガネの人物', image:'./assets/images/events/loose-shop-original-quiz.png', description:'ルースショップのクイズに現れる人物。' },
+  { key:'looseShopOriginalQuizEvent', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz.png', description:'ルースショップのクイズに現れる人物。' },
   { key:'clockTowerDonationEvent', name:'時計塔の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町の時計塔付近で出会う老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },
 ];

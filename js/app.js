@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.735';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.735';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.735';
+const UI_BUILD_VERSION = '0.10.736';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.736';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.736';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.735';
+} from './firebase-service.js?v=0.10.736';
 
 
 
@@ -375,7 +375,7 @@ const GLAB_VISIT_VIDEO_EVENT_VIDEO = './assets/videos/events/glab-visit-random.m
 const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
 const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png';
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
-const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. カワハラ';
+const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'g-Lab. 川原';
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'tropicalFishShop', 'speedStarEvent', 'storytellerEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
@@ -1338,7 +1338,7 @@ const LOOSE_SHAPE_DESCRIPTIONS = Object.freeze({
   ovalCabochon: '縦長のドーム状に磨き、色や模様を広い面で見せるカボションです。',
   antiqueCut: '古い時代のカットを思わせる大きめのファセットで、現代のブリリアントとは異なる穏やかな光を見せるカットです。',
   pearl: '球状のパールです。人魚イベントでのみ入手できる特別なルースとして扱います。',
-  amber: '虫入りの琥珀です。不動産屋で出会うタトゥーの女性イベントでのみ入手できる特別なルースとして扱います。',
+  amber: '虫入りの琥珀です。不動産屋で出会うタトゥーの女イベントでのみ入手できる特別なルースとして扱います。',
 });
 
 const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
@@ -1351,7 +1351,7 @@ const GEM_LOOSE_DESCRIPTIONS = Object.freeze({
   pearl: 'パールは貝の体内で形成される有機質の宝石です。炭酸カルシウムの微細な結晶と有機質が重なった真珠層に光が入り、表面反射と内部干渉が重なることで、柔らかな光沢、奥行き、オリエントと呼ばれる色のゆらぎが生まれます。品質は主にテリ、巻き、表面状態、形、色、サイズで評価し、連で使う場合は色・大きさ・光沢・形の揃い方も重要です。真円だけでなく、セミラウンド、オーバル、ドロップ、ボタン、サークル、バロックなどの形があります。汗、皮脂、化粧品、香水、酸、熱、乾燥、摩擦に弱いため、着用後は柔らかい布で拭き、他の宝石と接触しないよう保管します。ジュエリー加工では穴あけ、片穴・両穴、芯立て、接着、糸組み、ノット、クラスプ交換など、真珠の構造と孔の状態に合わせた作業を行います。',
   ivory: 'インド料理屋で出会うガネーシャから受け取った牙を研磨して作る、イベント限定の象牙ルースです。',
   jade: '河原で出会う河童からもらえる翡翠原石を研磨して作る、イベント限定の翡翠ルースです。',
-  amber: '不動産屋で出会うタトゥーの女性から受け取る、虫入りのイベント限定琥珀ルースです。',
+  amber: '不動産屋で出会うタトゥーの女から受け取る、虫入りのイベント限定琥珀ルースです。',
   emerald: '緑色のベリルで、鮮やかな色と天然由来の内包物が個性になります。',
   moonstone: '乳白色の地色に青白い光が浮かぶ、シラー効果が特徴の宝石です。',
   ruby: '赤色のコランダムで、色の濃さと透明感が印象を左右します。',
@@ -1601,7 +1601,7 @@ function looseGemProfessionalSections(gemId, guide) {
   } else if (gemId === 'jade') {
     extras.push({ title: 'ゲーム内での翡翠', body: 'ゲーム内では河原で出会う河童から翡翠原石を受け取り、工房でラウンドまたはオーバルのカボションへ研磨する特別なルースとして扱います。' });
   } else if (gemId === 'amber') {
-    extras.push({ title: 'ゲーム内での琥珀', body: 'ゲーム内では不動産屋で出会うタトゥーの女性から受け取る特別な虫入り琥珀として扱います。ルース在庫へ直接追加され、制作や売却に使用できます。' });
+    extras.push({ title: 'ゲーム内での琥珀', body: 'ゲーム内では不動産屋で出会うタトゥーの女から受け取る特別な虫入り琥珀として扱います。ルース在庫へ直接追加され、制作や売却に使用できます。' });
   }
   return {
     foundation: [...profileSections, ...guideSections, ...extras],
@@ -1723,7 +1723,7 @@ const GEM_LOOSE_GUIDES = Object.freeze({
   },
   amber: {
     hardness: '2〜2.5', mineral: '有機質宝石材料（樹脂の化石）',
-    overview: '琥珀は太古の樹脂が化石化した有機質宝石材料です。ゲーム内では不動産屋で出会うタトゥーの女性から受け取る、虫入りの特別な琥珀として扱います。軽さ、温かみのある色、内部の包有物が大きな特徴です。',
+    overview: '琥珀は太古の樹脂が化石化した有機質宝石材料です。ゲーム内では不動産屋で出会うタトゥーの女から受け取る、虫入りの特別な琥珀として扱います。軽さ、温かみのある色、内部の包有物が大きな特徴です。',
     sections: [
       { title: '色と包有物', body: '黄色、橙色、赤褐色などの暖色系が多く、透明感や内部の包有物によって印象が大きく変わります。虫、植物片、気泡、流れ模様などは個性として扱われます。' },
       { title: '耐久性', body: 'モース硬度は2〜2.5程度で比較的柔らかく、傷、熱、溶剤、急激な乾燥に弱い素材です。高温や摩擦熱で曇ったり変形したりするおそれがあるため、取り扱いは慎重に行います。' },
@@ -12906,6 +12906,7 @@ function renderWesternUnionEvent() {
         </div>
         ${isGift ? `<div class="western-union-diamond-reveal" role="status"><span class="western-union-diamond-glow" aria-hidden="true"></span><img src="./assets/images/events/antique-diamond.png?v=${VERSION}" alt="アンティークダイヤ" draggable="false"><strong>アンティークダイヤを手に入れました</strong></div>` : ''}
         <section class="western-union-dialogue glass-panel">
+          <small>Western Unionの使者</small>
           <strong>${isChoice ? `${escapedName}君？君の名前は${escapedName}かね？` : (dialogueByStage[eventState.stage] || '')}</strong>
           ${isChoice ? `<div class="western-union-choices"><button type="button" class="primary-button" data-action="western-union-choice" data-answer="yes">そうだけど</button><button type="button" class="secondary-button" data-action="western-union-choice" data-answer="no">いいえ</button></div>` : `<button type="button" class="western-union-next" data-action="western-union-next"><span>タップして進む</span></button>`}
         </section>
@@ -12981,6 +12982,7 @@ function renderMiningPazupanEvent() {
         </div>
         ${reward ? `<div class="special-item-reveal pazupan-reveal" role="status"><span class="special-item-glow" aria-hidden="true"></span><img src="./assets/images/events/pazupan.png?v=${VERSION}" alt="パズーパン" draggable="false"><strong>パズーパンを手に入れました</strong></div>` : ''}
         <button type="button" class="event-dialogue-card glass-panel" data-action="pazupan-event-next">
+          <small>ボムじいさん</small>
           <strong>${dialogue}</strong>
           <span>タップして進む</span>
         </button>
@@ -13513,7 +13515,7 @@ function renderClockTowerDonationEvent() {
           <img class="visit-character clock-tower-donation-character" src="./assets/images/events/clock-tower-donation-old-woman.png?v=${VERSION}" alt="" draggable="false">
         </div>
         <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="clock-tower-donation-event-next">
-          <small>時計台募金の老婆</small>
+          <small>時計塔の老婆</small>
           <strong>${dialogue}</strong>
           <span>タップして進む</span>
         </button>
@@ -13909,6 +13911,7 @@ function renderMermaidEvent() {
         </div>
         ${reward ? `<div class="special-item-reveal pearl-reveal" role="status"><span class="special-item-glow pearl-glow" aria-hidden="true"></span><img src="./assets/images/events/pearl.png?v=${VERSION}" alt="パール" draggable="false"><strong>パールをくれた</strong></div>` : ''}
         <button type="button" class="event-dialogue-card mermaid-dialogue glass-panel" data-action="mermaid-event-next">
+          <small>人魚</small>
           <strong>${reward ? 'パールをくれた' : '生臭いと思ったら風呂場に人魚がいた'}</strong>
           <span>タップして進む</span>
         </button>
@@ -14200,7 +14203,7 @@ function renderGrayHoodAquariumEvent() {
       : e.stage === 'intro3'
         ? `${playerName}って熱帯魚飼ってたよね？これから今住んでるとこを出るんだけど、、水槽あげようと思って綺麗にしといたんだ、、、`
         : 'またね、どうせどこかで会うよ、、、';
-  return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event" aria-live="polite"><div class="gray-hood-character-area"><img src="./assets/images/events/gray-hood-aquarium.png?v=${VERSION}" alt="灰色パーカー" draggable="false"></div><button type="button" class="event-dialogue-card gray-hood-dialogue glass-panel" data-action="gray-hood-aquarium-next"><small>灰色パーカー</small><strong>${dialogue}</strong><span>タップして進む</span></button></section></main>`;
+  return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event" aria-live="polite"><div class="gray-hood-character-area"><img src="./assets/images/events/gray-hood-aquarium.png?v=${VERSION}" alt="灰色パーカーの女" draggable="false"></div><button type="button" class="event-dialogue-card gray-hood-dialogue glass-panel" data-action="gray-hood-aquarium-next"><small>灰色パーカーの女</small><strong>${dialogue}</strong><span>タップして進む</span></button></section></main>`;
 }
 
 function renderAquariumGame() {
@@ -14405,7 +14408,7 @@ function renderRidleyOkazakiSobaEvent() {
         <div class="visit-character-area ridley-okazaki-soba-character-area" aria-hidden="true">
           <img class="visit-character ridley-okazaki-soba-character" src="${characterPath}" alt="" draggable="false">
         </div>
-        <button type="button" class="event-dialogue-card visit-event-dialogue ridley-okazaki-soba-dialogue glass-panel" data-action="ridley-okazaki-soba-event-next"><small>リドリー・オカザキ</small><strong>${dialogue}</strong><span>${hint}</span></button>
+        <button type="button" class="event-dialogue-card visit-event-dialogue ridley-okazaki-soba-dialogue glass-panel" data-action="ridley-okazaki-soba-event-next"><small>リドリー・岡崎</small><strong>${dialogue}</strong><span>${hint}</span></button>
       </section>
     </main>`;
 }
@@ -15015,10 +15018,10 @@ function renderKawaharaKnowledgeEvent() {
   }
   if (eventState.stage === 'video') {
     queueMicrotask(startKawaharaKnowledgeIntroPlayback);
-    return `<main class="western-union-video-screen kawahara-knowledge-video-screen" aria-label="カワハラ加工知識イベント導入動画">
+    return `<main class="western-union-video-screen kawahara-knowledge-video-screen" aria-label="g-Lab. 川原 加工知識イベント導入動画">
       <section class="western-union-video-stage kawahara-knowledge-video-stage" aria-live="polite">
-        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてカワハラの会話を開始">MOVIEスキップ</button>
-        <video data-kawahara-knowledge-intro-video src="${esc(kawaharaKnowledgeIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="カワハラ加工知識イベント導入動画"></video>
+        <button type="button" class="event-movie-skip" data-action="event-movie-skip" aria-label="動画をスキップしてg-Lab. 川原の会話を開始">MOVIEスキップ</button>
+        <video data-kawahara-knowledge-intro-video src="${esc(kawaharaKnowledgeIntroVideoUrl())}" autoplay playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate nofullscreen" tabindex="-1" aria-label="g-Lab. 川原 加工知識イベント導入動画"></video>
         <div class="western-union-video-loading">動画を読み込んでいます</div>
         <button type="button" class="western-union-video-start" data-action="kawahara-knowledge-video-start">動画を再生する</button>
         <div class="western-union-video-error" role="alert"><strong>動画を読み込めませんでした</strong><span>もう一度再生するか、MOVIEスキップで会話へ進んでください。</span></div>
@@ -15036,7 +15039,7 @@ function renderKawaharaKnowledgeEvent() {
     farewell: 'また来てくださいね、、、ありがとうございます、、、、',
   };
   const stage = String(eventState.stage || 'intro1');
-  const kicker = stage === 'reward' ? '加工知識追加' : 'カワハラ';
+  const kicker = stage === 'reward' ? '加工知識追加' : 'g-Lab. 川原';
   const rewardClass = stage === 'reward' ? ' is-reward-center' : '';
   return `
     <main class="main-screen kawahara-knowledge-event-screen" aria-live="polite">
@@ -17179,12 +17182,12 @@ function renderStoreTheftEvent() {
   const stolenLabel = esc(String(eventState.targetItemName || '完成品'));
   const characterHidden = stage === 'pause' || stage === 'theftNotice';
   const vanishing = stage === 'farewell';
-  const choiceMarkup = `<div class="event-dialogue-card visit-event-dialogue glass-panel store-theft-dialogue"><small>老婆</small><strong>これを見せて、試着していい？</strong><div class="store-theft-choice-buttons"><button type="button" class="primary-button" data-action="store-theft-event-choice" data-answer="yes">はい</button><button type="button" class="secondary-button" data-action="store-theft-event-choice" data-answer="no">いいえ</button></div></div>`;
+  const choiceMarkup = `<div class="event-dialogue-card visit-event-dialogue glass-panel store-theft-dialogue"><small>店に現れた老婆</small><strong>これを見せて、試着していい？</strong><div class="store-theft-choice-buttons"><button type="button" class="primary-button" data-action="store-theft-event-choice" data-answer="yes">はい</button><button type="button" class="secondary-button" data-action="store-theft-event-choice" data-answer="no">いいえ</button></div></div>`;
   let bodyMarkup = '';
   if (stage === 'choice') {
     bodyMarkup = choiceMarkup;
   } else if (stage === 'farewell') {
-    bodyMarkup = `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel store-theft-dialogue store-theft-dialogue-auto" data-action="store-theft-event-recover"><small>老婆</small><strong>素敵ねぇ、今度買いに来るわね、ありがとう</strong><span>そう言って老婆は去っていった……<br>自動で進まない場合はタップ</span></button>`;
+    bodyMarkup = `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel store-theft-dialogue store-theft-dialogue-auto" data-action="store-theft-event-recover"><small>店に現れた老婆</small><strong>素敵ねぇ、今度買いに来るわね、ありがとう</strong><span>そう言って老婆は去っていった……<br>自動で進まない場合はタップ</span></button>`;
   } else if (stage === 'pause') {
     bodyMarkup = `<button type="button" class="store-theft-silent-pause" data-action="store-theft-event-recover" aria-label="盗難結果へ進む"><span>……</span><small>自動で進まない場合はタップ</small></button>`;
   } else {

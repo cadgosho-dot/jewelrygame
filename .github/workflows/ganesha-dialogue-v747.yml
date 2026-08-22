@@ -1,0 +1,118 @@
+name: v0.10.747 ガネーシャ台詞更新
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ganesha-dialogue-v747.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: ガネーシャ台詞とバージョンを更新
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              return text.replace(old, new, 1)
+
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          app = replace_once(app,
+              "? `あ、${playerName}、待ってたよ`",
+              "? `おお、、${playerName}、待っていたぞ、、、`",
+              'intro1')
+          app = replace_once(app,
+              "? '牙が折れたんだ、もし、そんなときがあれば欲しいって前に言ってたよね'",
+              "? '私の牙が折れた、、、おまえを思い出した、、、もし、そんな時があれば、こいつが欲しいと、前に言っていたな、、、'",
+              'intro2')
+          app = replace_once(app,
+              "? `${playerName}の役に立つなら、これは君へあげるよ`",
+              "? `${playerName}の役に立つなら、これはおまえに授けよう、、、`",
+              'intro3')
+          app = replace_once(app,
+              ": '好きに使っていいからね！';",
+              ": '好きに使うといい、、それはもう私ではなく、おまえのものだ、、、';",
+              'farewell')
+          app, n = re.subn(r"const UI_BUILD_VERSION = '0\.10\.\d+';", "const UI_BUILD_VERSION = '0.10.747';", app, count=1)
+          if n != 1:
+              raise SystemExit(f'UI_BUILD_VERSION: expected 1 match, found {n}')
+          for filename in ('audio.js', 'audio-scene-map.js', 'firebase-service.js'):
+              app = re.sub(rf"(\./{re.escape(filename)}\?v=)0\.10\.\d+", rf"\g<1>0.10.747", app)
+          app_path.write_text(app, encoding='utf-8')
+
+          data_path = Path('js/game-data.js')
+          data = data_path.read_text(encoding='utf-8')
+          data = re.sub(r"^// v0\.10\.\d+: 正式版のバージョン入口。", "// v0.10.747: 正式版のバージョン入口。", data, count=1, flags=re.M)
+          data, n = re.subn(r"export const VERSION = '0\.10\.\d+';", "export const VERSION = '0.10.747';", data, count=1)
+          if n != 1:
+              raise SystemExit(f'game-data VERSION: expected 1 match, found {n}')
+          data = re.sub(r"// 本体側のVERSION依存箇所だけ、\d+の保存バージョンとして整合させる。", "// 本体側のVERSION依存箇所だけ、747の保存バージョンとして整合させる。", data, count=1)
+          data_path.write_text(data, encoding='utf-8')
+
+          memories_path = Path('js/memories-screen.js')
+          memories = memories_path.read_text(encoding='utf-8')
+          memories = re.sub(r"(memories-backgrounds\.js\?v=)0\.10\.\d+", r"\g<1>0.10.747", memories, count=1)
+          memories = re.sub(r"const VERSION = '0\.10\.\d+';", "const VERSION = '0.10.747';", memories, count=1)
+          memories = re.sub(r"const STYLE_ID = 'jxj-memories-style-v\d+';", "const STYLE_ID = 'jxj-memories-style-v747';", memories, count=1)
+          memories_path.write_text(memories, encoding='utf-8')
+
+          game_path = Path('game.html')
+          game = game_path.read_text(encoding='utf-8')
+          for target in ('hosting-origin-guard.js', 'styles.css', 'js/app.js', 'js/memories-screen.js'):
+              game = re.sub(rf"({re.escape(target)}\?v=)0\.10\.\d+", rf"\g<1>0.10.747", game)
+          game_path.write_text(game, encoding='utf-8')
+
+          index_path = Path('index.html')
+          index = index_path.read_text(encoding='utf-8')
+          for target in ('hosting-origin-guard.js', 'viewport-shell.css', 'game.html', 'viewport-shell.js'):
+              index = re.sub(rf"({re.escape(target)}\?v=)0\.10\.\d+", rf"\g<1>0.10.747", index)
+          index_path.write_text(index, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          sw, n = re.subn(r"const VERSION = '0\.10\.\d+';", "const VERSION = '0.10.747';", sw, count=1)
+          if n != 1:
+              raise SystemExit(f'sw VERSION: expected 1 match, found {n}')
+          for filename in ('audio.js', 'audio-scene-map.js', 'memories-screen.js', 'memories-backgrounds.js', 'google-auth-bridge.js', 'firebase-service.js'):
+              sw = re.sub(rf"(\./js/{re.escape(filename)}\?v=)0\.10\.\d+", rf"\g<1>0.10.747", sw)
+          sw_path.write_text(sw, encoding='utf-8')
+          PY
+
+      - name: 構文と指定台詞を確認
+        run: |
+          node --check js/app.js
+          node --check js/game-data.js
+          node --check js/memories-screen.js
+          node --check sw.js
+          grep -F "おお、、\${playerName}、待っていたぞ、、、" js/app.js
+          grep -F "私の牙が折れた、、、おまえを思い出した、、、もし、そんな時があれば、こいつが欲しいと、前に言っていたな、、、" js/app.js
+          grep -F "\${playerName}の役に立つなら、これはおまえに授けよう、、、" js/app.js
+          grep -F "好きに使うといい、、それはもう私ではなく、おまえのものだ、、、" js/app.js
+
+      - name: 一時ワークフローを削除してmainへ反映
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/ganesha-dialogue-v747.yml
+          git add js/app.js js/game-data.js js/memories-screen.js game.html index.html sw.js
+          git commit -m "v0.10.747 ガネーシャのセリフを変更"
+          git pull --rebase origin main
+          git push origin HEAD:main

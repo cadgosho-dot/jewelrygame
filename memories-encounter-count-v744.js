@@ -2,8 +2,8 @@
   'use strict';
 
   const FRAME_ID = 'game-frame';
-  const STYLE_ID = 'jxj-memories-encounter-count-style-v743';
-  const COUNT_CLASS = 'memory-encounter-count-v743';
+  const STYLE_ID = 'jxj-memories-encounter-count-style-v744';
+  const COUNT_CLASS = 'memory-encounter-count-v744';
 
   const STATIC_EVENT_KEYS = Object.freeze({
     'Western Unionの使者': ['westernUnionEvent'],

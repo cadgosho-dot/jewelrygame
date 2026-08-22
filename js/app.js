@@ -9984,7 +9984,7 @@ function storytellerEventState() {
 function recoverInterruptedOyatsuIceMeal() {
   const e = oyatsuDaisukiEventState();
   if (!e.active || e.stage !== 'iceEating' || mealTransitioning) return false;
-  // v0.10.733: 「おやつ大好き」アイスルートの食事演出中に再読込・復帰が入ると、
+  // v0.10.734: 「おやつ大好き」アイスルートの食事演出中に再読込・復帰が入ると、
   // 食事完了Promiseだけが失われて iceEating が永続するため、支払い・時間・空腹を再処理せず
   // 御徒町へ戻るフェードから安全に再開する。
   e.stage = 'iceFade';
@@ -17814,7 +17814,7 @@ function renderMeal() {
   if (eating && screenData?.mealId === 'ice' && !mealTransitioning) {
     const oyatsuEvent = oyatsuDaisukiEventState();
     if (oyatsuEvent.active && oyatsuEvent.stage === 'iceEating') {
-      // v0.10.733: 既に「もぐもぐ…」画面で止まっているセーブも、最新版読込だけで復旧する。
+      // v0.10.734: 既に「もぐもぐ…」画面で止まっているセーブも、最新版読込だけで復旧する。
       queueMicrotask(() => {
         if (screen === 'meal' && screenData?.eating === true && screenData?.mealId === 'ice') {
           recoverInterruptedOyatsuIceMeal();

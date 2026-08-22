@@ -1,10 +1,10 @@
-const VERSION = '0.10.734';
+const VERSION = '0.10.734-aquarium-1';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CORE_SHELL = [
   './', './index.html', './game.html', './auth.html', './auth-cache-recovery-v707.js', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.734', './js/audio-scene-map.js?v=0.10.734', './js/game-data.js', './js/daily-gems-index.js?v=0.10.691',
+  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.734', './js/audio-scene-map.js?v=0.10.734', './js/game-data.js', './js/aquarium-observe-v734-hotfix.js?v=20260822-1', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
   './js/google-auth-bridge.js?v=0.10.734', './js/security-config.js', './js/firebase-service.js?v=0.10.734',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
@@ -49,6 +49,33 @@ async function kaitenzushiDocumentNetworkFirst(request) {
     status: 503,
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
   });
+}
+
+const AQUARIUM_OBSERVE_PATCH_URL = new URL('./js/aquarium-observe-v734-hotfix.js?v=20260822-1', self.registration.scope).href;
+
+async function aquariumDocumentNetworkFirst(request) {
+  const cache = await caches.open(APP_CACHE);
+  let response = null;
+  try {
+    response = await fetch(request);
+    if (response.ok) cache.put(request, response.clone()).catch(() => {});
+  } catch (_) {
+    response = (await cache.match(request)) || (await cache.match(request, { ignoreSearch: true }));
+  }
+  if (!response || !response.ok) return response || Response.error();
+  const contentType = String(response.headers.get('content-type') || '');
+  if (!contentType.includes('text/html')) return response;
+  const html = await response.text();
+  if (html.includes('aquarium-observe-v734-hotfix.js')) {
+    return new Response(html, { status: response.status, statusText: response.statusText, headers: response.headers });
+  }
+  const tag = `<script src="${AQUARIUM_OBSERVE_PATCH_URL}"></script>`;
+  const patched = html.includes('</body>') ? html.replace('</body>', `${tag}</body>`) : `${html}${tag}`;
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  headers.delete('content-encoding');
+  headers.set('cache-control', 'no-store');
+  return new Response(patched, { status: response.status, statusText: response.statusText, headers });
 }
 
 async function staleWhileRevalidate(request) {
@@ -171,6 +198,10 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.pathname.endsWith('/assets/minigames/kaitenzushi/game/index.html')) {
     event.respondWith(kaitenzushiDocumentNetworkFirst(event.request));
+    return;
+  }
+  if (url.pathname.endsWith('/assets/minigames/aquarium/index.html')) {
+    event.respondWith(aquariumDocumentNetworkFirst(event.request));
     return;
   }
   if (event.request.mode === 'navigate' || destination === 'document') {

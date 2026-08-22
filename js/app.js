@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.744';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.744';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.744';
+const UI_BUILD_VERSION = '0.10.747';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.747';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.747';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.744';
+} from './firebase-service.js?v=0.10.747';
 
 
 
@@ -14012,12 +14012,12 @@ function renderGaneshaTuskEvent() {
   const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
   const reward = eventState.stage === 'reward';
   const dialogue = eventState.stage === 'intro1'
-    ? `あ、${playerName}、待ってたよ`
+    ? `おお、、${playerName}、待っていたぞ、、、`
     : eventState.stage === 'intro2'
-      ? '牙が折れたんだ、もし、そんなときがあれば欲しいって前に言ってたよね'
+      ? '私の牙が折れた、、、おまえを思い出した、、、もし、そんな時があれば、こいつが欲しいと、前に言っていたな、、、'
       : eventState.stage === 'intro3'
-        ? `${playerName}の役に立つなら、これは君へあげるよ`
-        : '好きに使っていいからね！';
+        ? `${playerName}の役に立つなら、これはおまえに授けよう、、、`
+        : '好きに使うといい、、それはもう私ではなく、おまえのものだ、、、';
   return `
     <main class="main-screen ganesha-tusk-event-screen">
       <section class="visit-character-event ganesha-tusk-event ${reward ? 'is-reward' : ''}" aria-live="polite">

@@ -1,7 +1,7 @@
-import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.745';
+import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.747';
 
-const VERSION = '0.10.745';
-const STYLE_ID = 'jxj-memories-style-v745';
+const VERSION = '0.10.747';
+const STYLE_ID = 'jxj-memories-style-v747';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 

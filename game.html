@@ -317,6 +317,14 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="c
 }
 </style>
 
+<style id="amber-loose-size-v740">
+/* v0.10.740: 工房 > 在庫 > ルース一覧で、琥珀だけ小さく見えるため表示サイズを補正。 */
+body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[src*="/loose/amber/amber.png"] {
+  transform: scale(1.28);
+  transform-origin: center center;
+}
+</style>
+
 </head>
 <body>
   <div id="background-layer" aria-hidden="true"></div>

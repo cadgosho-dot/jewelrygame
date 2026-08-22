@@ -1,7 +1,7 @@
 import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js';
 
-const VERSION = '0.10.738';
-const STYLE_ID = 'jxj-memories-style-v738';
+const VERSION = '0.10.739';
+const STYLE_ID = 'jxj-memories-style-v739';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
@@ -28,7 +28,7 @@ const CATALOG = [
   { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
   { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
-  { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz.png', description:'ルースショップのクイズに現れる人物。' },
+  { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:`./assets/images/events/loose-shop-original-quiz.png?v=${VERSION}`, description:'ルースショップのクイズに現れる人物。' },
   { key:'clockTowerDonationEvent', name:'時計塔の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町の時計塔付近で出会う老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },
   { key:'mysteryChineseMealEvent', name:'中華料理屋', image:'./assets/images/events/mystery-chinese-chef.png', description:'謎の中華料理を勧めてくる料理人。' },

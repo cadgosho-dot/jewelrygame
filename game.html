@@ -325,6 +325,165 @@ body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[s
 }
 </style>
 
+<style id="loose-quiz-v2-portrait-safety-v741">
+/* v0.10.741 hotfix: 3Dメガネイベントだけ、縦スマホで人物画像が実寸表示されて画面外へはみ出すのを防ぐ。
+   data-device-class に依存せず、画面名 + 専用v2クラスで完全に限定する。 */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  body[data-screen="looseShopOriginalQuizEvent"]
+  .screen-shell.event-shell-no-header > .screen-content {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2:not(.jxj-quiz-stage-reward-v2) {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2:not(.jxj-quiz-stage-reward-v2) > .jxj-quiz-character-area-v2 {
+    position: absolute !important;
+    z-index: 1 !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: min(90vw, 430px) !important;
+    max-height: 72dvh !important;
+    margin: auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  /* 会話枠は承認済み仕様どおり画面下へ固定。 */
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 {
+    position: absolute !important;
+    z-index: 2 !important;
+    left: 7px !important;
+    right: 7px !important;
+    bottom: max(14px, calc(env(safe-area-inset-bottom) + 9px)) !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 34dvh !important;
+    margin: 0 !important;
+    padding: 12px 14px !important;
+    overflow-y: auto !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 12px !important;
+    background: rgba(20, 15, 11, .86) !important;
+    color: var(--text) !important;
+    text-align: left !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 .jxj-quiz-name-v2 {
+    display: block !important;
+    margin: 0 0 5px !important;
+    font-size: .72rem !important;
+    color: var(--gold-light) !important;
+    text-align: left !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 > strong {
+    display: block !important;
+    font-size: clamp(.9rem, 4vw, 1.02rem) !important;
+    line-height: 1.5 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 .jxj-quiz-tap-v2 {
+    display: block !important;
+    margin-top: 7px !important;
+    font-size: .62rem !important;
+    text-align: right !important;
+    opacity: .8 !important;
+  }
+
+  /* 4択時も人物座標は変えず、問題枠だけ下に固定する。 */
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-question-panel-v2 {
+    position: absolute !important;
+    z-index: 2 !important;
+    left: 7px !important;
+    right: 7px !important;
+    bottom: max(14px, calc(env(safe-area-inset-bottom) + 9px)) !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 44dvh !important;
+    margin: 0 !important;
+    padding: 8px 8px 9px !important;
+    overflow-y: auto !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 12px !important;
+    background: rgba(20, 15, 11, .88) !important;
+    color: var(--text) !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-kicker-v2 {
+    display: inline-flex !important;
+    padding: .18rem .5rem !important;
+    font-size: .62rem !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2 h2 {
+    margin: 5px 0 7px !important;
+    font-size: clamp(.86rem, 4.1vw, 1.02rem) !important;
+    line-height: 1.28 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-grid-v2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-v2 {
+    display: grid !important;
+    grid-template-columns: 1.65rem minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: .38rem !important;
+    min-height: 46px !important;
+    padding: .34rem .42rem !important;
+    border: 1px solid rgba(232,191,104,.38) !important;
+    border-radius: 9px !important;
+    background: rgba(26,19,13,.9) !important;
+    color: var(--text) !important;
+    text-align: left !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-v2 strong {
+    font-size: clamp(.68rem, 3.2vw, .82rem) !important;
+    line-height: 1.24 !important;
+    overflow-wrap: anywhere !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <div id="background-layer" aria-hidden="true"></div>

@@ -4,10 +4,10 @@
   // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも転送が発生しないよう互換目的で残している。
   // v0.10.732 formal-release trigger.
 
-  // v0.10.751: 旧画面／旧キャッシュからでも、思い出とイベント本編の最新画像へ互換的に差し替える。
+  // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
     const script = document.createElement('script');
-    script.src = './memories-event-image-overrides-v751.js?v=0.10.751';
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.752';
     document.head?.appendChild(script);
   })();
 

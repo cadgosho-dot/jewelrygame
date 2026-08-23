@@ -1,0 +1,137 @@
+name: v0.10.748 思い出背景とカワハラ判定修正
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/memories-fix-v748.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 思い出のカワハラ判定とバージョンを修正
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              return text.replace(old, new, 1)
+
+          memories_path = Path('js/memories-screen.js')
+          memories = memories_path.read_text(encoding='utf-8')
+          memories = replace_once(
+              memories,
+              "{ key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', eventKeys:['glabVisitVideoEvent','kawaharaKnowledgeEvent'], name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },",
+              "{ key:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },",
+              'kawahara catalog',
+          )
+          memories = replace_once(
+              memories,
+              "const AUTO_MEMORY_IGNORED_NAMES = new Set(['', '心の声', '支払い', 'SYSTEM', '御徒町・パンダ広場']);",
+              "const AUTO_MEMORY_IGNORED_NAMES = new Set(['', '心の声', '支払い', 'SYSTEM', '御徒町・パンダ広場']);\nconst AUTO_MEMORY_IGNORED_SCREENS = new Set(['glabVisitVideoEvent']);",
+              'ignored screens',
+          )
+          memories = replace_once(
+              memories,
+              "if (!activeScreen || CATALOG_KEYS.has(activeScreen) || document.getElementById(OVERLAY_ID)) return;",
+              "if (!activeScreen || CATALOG_KEYS.has(activeScreen) || AUTO_MEMORY_IGNORED_SCREENS.has(activeScreen) || document.getElementById(OVERLAY_ID)) return;",
+              'capture guard',
+          )
+          memories = replace_once(
+              memories,
+              ".filter((item) => !staticKeys.has(item.key) && !staticNames.has(item.name))",
+              ".filter((item) => !staticKeys.has(item.key) && !staticNames.has(item.name) && item.name !== 'カワハラ' && !String(item.key).startsWith('glabVisitVideoEvent'))",
+              'dynamic kawahara cleanup',
+          )
+          memories = re.sub(r"(memories-backgrounds\.js\?v=)0\.10\.\d+", r"\g<1>0.10.748", memories, count=1)
+          memories = re.sub(r"const VERSION = '0\.10\.\d+';", "const VERSION = '0.10.748';", memories, count=1)
+          memories = re.sub(r"const STYLE_ID = 'jxj-memories-style-v\d+';", "const STYLE_ID = 'jxj-memories-style-v748';", memories, count=1)
+          memories_path.write_text(memories, encoding='utf-8')
+
+          backgrounds_path = Path('js/memories-backgrounds.js')
+          backgrounds = backgrounds_path.read_text(encoding='utf-8')
+          backgrounds = re.sub(
+              r"export const MEMORIES_BG_PORTRAIT = '[^']+';",
+              "export const MEMORIES_BG_PORTRAIT = './assets/images/ui/memories-bg-portrait-v748.webp';",
+              backgrounds,
+              count=1,
+          )
+          backgrounds_path.write_text(backgrounds, encoding='utf-8')
+
+          data_path = Path('js/game-data.js')
+          data = data_path.read_text(encoding='utf-8')
+          data = re.sub(r"^// v0\.10\.\d+: 正式版のバージョン入口。", "// v0.10.748: 正式版のバージョン入口。", data, count=1, flags=re.M)
+          data, n = re.subn(r"export const VERSION = '0\.10\.\d+';", "export const VERSION = '0.10.748';", data, count=1)
+          if n != 1:
+              raise SystemExit(f'game-data VERSION: expected 1 match, found {n}')
+          data = re.sub(r"// 本体側のVERSION依存箇所だけ、\d+の保存バージョンとして整合させる。", "// 本体側のVERSION依存箇所だけ、748の保存バージョンとして整合させる。", data, count=1)
+          data_path.write_text(data, encoding='utf-8')
+
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          app, n = re.subn(r"const UI_BUILD_VERSION = '0\.10\.\d+';", "const UI_BUILD_VERSION = '0.10.748';", app, count=1)
+          if n != 1:
+              raise SystemExit(f'UI_BUILD_VERSION: expected 1 match, found {n}')
+          for filename in ('audio.js', 'audio-scene-map.js', 'firebase-service.js'):
+              app = re.sub(rf"(\./{re.escape(filename)}\?v=)0\.10\.\d+", rf"\g<1>0.10.748", app)
+          app_path.write_text(app, encoding='utf-8')
+
+          game_path = Path('game.html')
+          game = game_path.read_text(encoding='utf-8')
+          for target in ('hosting-origin-guard.js', 'styles.css', 'js/app.js', 'js/memories-screen.js'):
+              game = re.sub(rf"({re.escape(target)}\?v=)0\.10\.\d+", rf"\g<1>0.10.748", game)
+          game_path.write_text(game, encoding='utf-8')
+
+          index_path = Path('index.html')
+          index = index_path.read_text(encoding='utf-8')
+          for target in ('hosting-origin-guard.js', 'viewport-shell.css', 'game.html', 'viewport-shell.js'):
+              index = re.sub(rf"({re.escape(target)}\?v=)0\.10\.\d+", rf"\g<1>0.10.748", index)
+          index_path.write_text(index, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          sw, n = re.subn(r"const VERSION = '0\.10\.\d+';", "const VERSION = '0.10.748';", sw, count=1)
+          if n != 1:
+              raise SystemExit(f'sw VERSION: expected 1 match, found {n}')
+          for filename in ('audio.js', 'audio-scene-map.js', 'memories-screen.js', 'memories-backgrounds.js', 'google-auth-bridge.js', 'firebase-service.js'):
+              sw = re.sub(rf"(\./js/{re.escape(filename)}\?v=)0\.10\.\d+", rf"\g<1>0.10.748", sw)
+          sw_path.write_text(sw, encoding='utf-8')
+          PY
+
+      - name: 構文と判定を確認
+        run: |
+          test -s assets/images/ui/memories-bg-portrait-v748.webp
+          node --check js/app.js
+          node --check js/game-data.js
+          node --check js/memories-screen.js
+          node --check sw.js
+          grep -F "{ key:'kawaharaKnowledgeEvent', name:'カワハラ'" js/memories-screen.js
+          ! grep -F "eventKeys:['glabVisitVideoEvent','kawaharaKnowledgeEvent']" js/memories-screen.js
+          grep -F "AUTO_MEMORY_IGNORED_SCREENS = new Set(['glabVisitVideoEvent'])" js/memories-screen.js
+          grep -F "memories-bg-portrait-v748.webp" js/memories-backgrounds.js
+
+      - name: 一時ワークフローを削除してmainへ反映
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/memories-fix-v748.yml
+          git add js/memories-screen.js js/memories-backgrounds.js js/game-data.js js/app.js game.html index.html sw.js assets/images/ui/memories-bg-portrait-v748.webp
+          git commit -m "v0.10.748 思い出背景とカワハラ判定を修正"
+          git pull --rebase origin main
+          git push origin HEAD:main

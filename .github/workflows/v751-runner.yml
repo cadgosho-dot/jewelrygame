@@ -1,0 +1,52 @@
+name: v0.10.751 One-Time Runner
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  apply-v751:
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.title == 'RUN V751 UPDATE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply v0.10.751
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_update.py
+          if [ -f scripts/verify_update.py ]; then
+            python3 scripts/verify_update.py
+          fi
+
+      - name: Restore normal workflow and remove updater
+        run: |
+          set -euo pipefail
+          git show 7ae770c08312293827a299ee499f5d7152180016:.github/workflows/update-metals.yml > .github/workflows/update-metals.yml
+          rm -f .github/workflows/v751-runner.yml
+          rm -f scripts/apply_update.py scripts/verify_update.py
+          rm -rf payload .chat_update_backup_20260823
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "v0.10.751 思い出画像更新とバージョン統一"
+          git pull --rebase origin main
+          git push origin HEAD:main

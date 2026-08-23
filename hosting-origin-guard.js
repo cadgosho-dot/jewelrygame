@@ -6,22 +6,9 @@
 
   // v0.10.751: 旧画面／旧キャッシュからでも、思い出とイベント本編の最新画像へ互換的に差し替える。
   (() => {
-    const sources = [
-      './memories-3d-image-v750.js?v=0.10.751',
-      './memories-storyteller-image-v750.js?v=0.10.751',
-      './memories-image-overrides-v750.js?v=0.10.751',
-      './memories-event-image-overrides-v751.js?v=0.10.751',
-    ];
-    let index = 0;
-    const loadNext = () => {
-      if (index >= sources.length) return;
-      const script = document.createElement('script');
-      script.src = sources[index++];
-      script.onload = loadNext;
-      script.onerror = loadNext;
-      document.head?.appendChild(script);
-    };
-    loadNext();
+    const script = document.createElement('script');
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.751';
+    document.head?.appendChild(script);
   })();
 
   // v0.10.732: iPhone Safari等で宇宙画面だけタップ不能になるケースを復旧する。

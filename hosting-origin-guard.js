@@ -5,6 +5,7 @@
   // v0.10.732 formal-release trigger.
 
   // v0.10.732: iPhone Safari等で宇宙画面だけタップ不能になるケースを復旧する。
+  // v0.10.749: 古いAndroid/WebViewでも3Dメガネ人物画像が巨大化しない互換CSSを同時に注入する。
   const STYLE_ID = 'alien-space-input-hotfix';
   const installStyle = () => {
     if (document.getElementById(STYLE_ID)) return;
@@ -30,6 +31,19 @@
       body[data-screen="main"] .alien-space-main-screen>.alien-hunger-emergency-card{
         position:relative!important;z-index:221!important;pointer-events:auto!important;
         touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important
+      }
+      @media screen and (max-width:820px){
+        body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2:not(.jxj-quiz-stage-reward-v2)>.jxj-quiz-character-area-v2{
+          position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
+          display:flex!important;align-items:center!important;justify-content:center!important;
+          width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+          overflow:hidden!important;pointer-events:none!important
+        }
+        body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2{
+          position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+          display:block!important;width:90%!important;height:auto!important;max-width:430px!important;max-height:72vh!important;
+          margin:auto!important;transform:none!important;object-fit:contain!important;object-position:center center!important
+        }
       }`;
     document.head?.appendChild(style);
   };

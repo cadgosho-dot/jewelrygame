@@ -1,12 +1,12 @@
-const VERSION = '0.10.749';
+const VERSION = '0.10.751';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CORE_SHELL = [
   './', './index.html', './game.html', './auth.html', './auth-cache-recovery-v707.js', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.749', './js/audio-scene-map.js?v=0.10.749', './js/game-data.js', './js/memories-screen.js?v=0.10.749', './js/memories-backgrounds.js?v=0.10.749', './js/daily-gems-index.js?v=0.10.691',
+  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.751', './js/audio-scene-map.js?v=0.10.751', './js/game-data.js', './js/memories-screen.js?v=0.10.751', './js/memories-backgrounds.js?v=0.10.751', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.749', './js/security-config.js', './js/firebase-service.js?v=0.10.749',
+  './js/google-auth-bridge.js?v=0.10.751', './js/security-config.js', './js/firebase-service.js?v=0.10.751',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.666: large event images and quiz data are runtime-cached on first use instead of being downloaded during every SW install.
@@ -109,7 +109,7 @@ async function cacheFirst(request, cacheName = APP_CACHE) {
 // v0.10.706: scripts and styles must not be served from an older cache merely
 // because their query string differs. Online loads fetch the current bytes;
 // exact-version cache and the unversioned app shell are offline fallbacks only.
-// v0.10.749: 古い端末の更新取りこぼし対策として、オンライン時はHTTPキャッシュも再利用しない。
+// v0.10.751: 古い端末の更新取りこぼし対策を維持し、オンライン時はHTTPキャッシュも再利用しない。
 async function versionedResourceNetworkFirst(request) {
   const runtimeCache = await caches.open(RUNTIME_CACHE);
   const appCache = await caches.open(APP_CACHE);

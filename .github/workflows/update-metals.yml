@@ -27,6 +27,67 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
 
+      # BEGIN ONE-TIME V751 UPDATE
+      - name: v0.10.751を正式適用
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          python3 scripts/apply_update.py
+          python3 - <<'PYVERIFY'
+          from pathlib import Path
+
+          root = Path('.')
+          checks = {
+              'app version': "const UI_BUILD_VERSION = '0.10.751';" in (root/'js/app.js').read_text(encoding='utf-8'),
+              'app 3D image': 'loose-shop-original-quiz-v751.png' in (root/'js/app.js').read_text(encoding='utf-8'),
+              'app storyteller image': 'storyteller-v751.png' in (root/'js/app.js').read_text(encoding='utf-8'),
+              'memories version': "const VERSION = '0.10.751';" in (root/'js/memories-screen.js').read_text(encoding='utf-8'),
+              'memories 3D image': 'loose-shop-original-quiz-v751.png' in (root/'js/memories-screen.js').read_text(encoding='utf-8'),
+              'memories storyteller image': 'storyteller-v751.png' in (root/'js/memories-screen.js').read_text(encoding='utf-8'),
+              'game-data version': "export const VERSION = '0.10.751';" in (root/'js/game-data.js').read_text(encoding='utf-8'),
+              'game app query': 'js/app.js?v=0.10.751' in (root/'game.html').read_text(encoding='utf-8'),
+              'game memories query': 'js/memories-screen.js?v=0.10.751' in (root/'game.html').read_text(encoding='utf-8'),
+              'index game query': 'game.html?v=0.10.751' in (root/'index.html').read_text(encoding='utf-8'),
+              'service worker version': "const VERSION = '0.10.751';" in (root/'sw.js').read_text(encoding='utf-8'),
+              'v750 loader removed': 'memories-3d-image-v750.js' not in (root/'hosting-origin-guard.js').read_text(encoding='utf-8'),
+              'v749 android fix retained': 'max-width:430px' in (root/'hosting-origin-guard.js').read_text(encoding='utf-8') and 'max-height:72vh' in (root/'hosting-origin-guard.js').read_text(encoding='utf-8'),
+          }
+          for rel in ('assets/images/events/loose-shop-original-quiz-v751.png','assets/images/events/storyteller-v751.png'):
+              p=root/rel
+              checks[rel] = p.exists() and p.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
+          for rel in ('memories-3d-image-v750.js','memories-storyteller-image-v750.js','memories-image-overrides-v750.js'):
+              checks[rel+' removed'] = not (root/rel).exists()
+          failed=[k for k,v in checks.items() if not v]
+          for k,v in checks.items(): print(('OK  ' if v else 'NG  ')+k)
+          if failed:
+              raise SystemExit('v0.10.751 verification failed: '+', '.join(failed))
+          PYVERIFY
+
+          rm -rf .chat_update_backup_20260823
+
+          python3 - <<'PYRESTORE'
+          from pathlib import Path
+          p = Path('.github/workflows/update-metals.yml')
+          t = p.read_text(encoding='utf-8')
+          start_marker = '\n      # BEGIN ONE-TIME V751 UPDATE\n'
+          end_marker = '      # END ONE-TIME V751 UPDATE\n'
+          start = t.index(start_marker)
+          end = t.index(end_marker, start) + len(end_marker)
+          p.write_text(t[:start] + t[end:], encoding='utf-8')
+          PYRESTORE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "v0.10.751の変更は既に適用済みです。"
+          else
+            git commit -m "v0.10.751 画像参照とバージョン表示を正式更新"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      # END ONE-TIME V751 UPDATE
+
       - name: Push前の正常な相場履歴を引き継ぐ
         if: github.event_name == 'push'
         env:

@@ -163,3 +163,5 @@ jobs:
           git commit -m "v0.10.749 3Dメガネ縦画面の旧Android互換を追加"
           git pull --rebase origin main
           git push origin HEAD:main
+
+# trigger: second push after workflow registration

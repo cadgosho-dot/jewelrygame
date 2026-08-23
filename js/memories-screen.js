@@ -1,7 +1,7 @@
-import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.747';
+import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.748';
 
-const VERSION = '0.10.747';
-const STYLE_ID = 'jxj-memories-style-v747';
+const VERSION = '0.10.748';
+const STYLE_ID = 'jxj-memories-style-v748';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
@@ -27,7 +27,7 @@ const CATALOG = [
   { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller-v745.png', description:'言葉と物語で印象を残す人物。' },
   { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', eventKeys:['alienAbductionEvent','alienReturnEvent'], name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
-  { key:'glabVisitVideoEvent', fallbackKey:'kawaharaKnowledgeEvent', eventKeys:['glabVisitVideoEvent','kawaharaKnowledgeEvent'], name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
+  { key:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
   { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz-v745.png', description:'ルースショップのクイズに現れる人物。' },
   { key:'clockTowerDonationEvent', name:'時計台の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町に時計台を建てようとしている老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },
@@ -42,6 +42,7 @@ const CATALOG = [
 
 const CATALOG_KEYS = new Set(CATALOG.flatMap((item) => [item.key, item.fallbackKey, ...(item.eventKeys || [])].filter(Boolean)));
 const AUTO_MEMORY_IGNORED_NAMES = new Set(['', '心の声', '支払い', 'SYSTEM', '御徒町・パンダ広場']);
+const AUTO_MEMORY_IGNORED_SCREENS = new Set(['glabVisitVideoEvent']);
 
 function normalizedDynamicCharacters(snapshot){
   const rows = Array.isArray(snapshot?.memories?.characters) ? snapshot.memories.characters : [];
@@ -60,7 +61,7 @@ function normalizedDynamicCharacters(snapshot){
 function captureVisibleEventCharacter(){
   let activeScreen = String(document.body?.dataset?.screen || '').trim();
   if (!activeScreen) activeScreen = String(stateSnapshot()?.game?.screen || '').trim();
-  if (!activeScreen || CATALOG_KEYS.has(activeScreen) || document.getElementById(OVERLAY_ID)) return;
+  if (!activeScreen || CATALOG_KEYS.has(activeScreen) || AUTO_MEMORY_IGNORED_SCREENS.has(activeScreen) || document.getElementById(OVERLAY_ID)) return;
   const scope = document.querySelector('main.main-screen, main');
   if (!scope) return;
   const label = scope.querySelector('.jxj-quiz-name-v2, .event-dialogue-card small');
@@ -195,7 +196,7 @@ function openMemories(){
   const staticKeys = new Set(staticItems.flatMap(({item}) => encounterEventKeys(item)));
   const staticNames = new Set(staticItems.map(({item}) => item.name));
   const dynamicItems = normalizedDynamicCharacters(snapshot)
-    .filter((item) => !staticKeys.has(item.key) && !staticNames.has(item.name))
+    .filter((item) => !staticKeys.has(item.key) && !staticNames.has(item.name) && item.name !== 'カワハラ' && !String(item.key).startsWith('glabVisitVideoEvent'))
     .sort((a,b) => a.firstSeenDay - b.firstSeenDay)
     .map((item) => ({ item, ev:null, count:item.encounterCount, dynamic:true }));
   const items = [...staticItems, ...dynamicItems];

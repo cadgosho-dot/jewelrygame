@@ -3,6 +3,8 @@ name: v0.10.751 One-Time Runner
 on:
   issues:
     types: [opened]
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -11,7 +13,7 @@ permissions:
 
 jobs:
   apply-v751:
-    if: github.event_name == 'workflow_dispatch' || github.event.issue.title == 'RUN V751 UPDATE'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.issue.title == 'RUN V751 UPDATE'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

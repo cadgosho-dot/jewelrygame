@@ -24,6 +24,30 @@
     return;
   }
 
+  function installLooseQuizLegacyCompat() {
+    try {
+      const doc = frame?.contentDocument;
+      if (!doc?.head || doc.getElementById('loose-quiz-legacy-android-v749-shell')) return;
+      const style = doc.createElement('style');
+      style.id = 'loose-quiz-legacy-android-v749-shell';
+      style.textContent = `
+        @media screen and (max-width:820px){
+          body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2:not(.jxj-quiz-stage-reward-v2)>.jxj-quiz-character-area-v2{
+            position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
+            display:flex!important;align-items:center!important;justify-content:center!important;
+            width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+            overflow:hidden!important;pointer-events:none!important
+          }
+          body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2{
+            position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+            display:block!important;width:90%!important;height:auto!important;max-width:430px!important;max-height:72vh!important;
+            margin:auto!important;transform:none!important;object-fit:contain!important;object-position:center center!important
+          }
+        }`;
+      doc.head.appendChild(style);
+    } catch (_) {}
+  }
+
   function openGoogleLoginInBrowser() {
     const authUrl = new URL('./auth.html?from=game&source=shell&browser=1', window.location.href);
     const ua = navigator.userAgent || '';
@@ -85,6 +109,7 @@
     document.documentElement.dataset.orientation = landscape ? 'landscape' : 'portrait';
     document.documentElement.dataset.deviceClass = deviceClass;
 
+    installLooseQuizLegacyCompat();
     postToGame({
       type: 'jwj-shell-viewport',
       orientation: landscape ? 'landscape' : 'portrait',
@@ -175,6 +200,7 @@
   });
 
   frame?.addEventListener('load', () => {
+    installLooseQuizLegacyCompat();
     updateStage();
     sendInstallStatus();
   });

@@ -1,12 +1,12 @@
-const VERSION = '0.10.729';
+const VERSION = '0.10.749';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CORE_SHELL = [
   './', './index.html', './game.html', './auth.html', './auth-cache-recovery-v707.js', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.729', './js/audio-scene-map.js?v=0.10.729', './js/game-data.js', './js/daily-gems-index.js?v=0.10.691',
+  './manifest.webmanifest', './js/app.js', './js/audio.js?v=0.10.749', './js/audio-scene-map.js?v=0.10.749', './js/game-data.js', './js/memories-screen.js?v=0.10.749', './js/memories-backgrounds.js?v=0.10.749', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.729', './js/security-config.js', './js/firebase-service.js?v=0.10.729',
+  './js/google-auth-bridge.js?v=0.10.749', './js/security-config.js', './js/firebase-service.js?v=0.10.749',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.666: large event images and quiz data are runtime-cached on first use instead of being downloaded during every SW install.
@@ -51,6 +51,33 @@ async function kaitenzushiDocumentNetworkFirst(request) {
   });
 }
 
+const AQUARIUM_OBSERVE_PATCH_URL = new URL('./js/aquarium-observe-v734-hotfix.js?v=20260822-1', self.registration.scope).href;
+
+async function aquariumDocumentNetworkFirst(request) {
+  const cache = await caches.open(APP_CACHE);
+  let response = null;
+  try {
+    response = await fetch(request);
+    if (response.ok) cache.put(request, response.clone()).catch(() => {});
+  } catch (_) {
+    response = (await cache.match(request)) || (await cache.match(request, { ignoreSearch: true }));
+  }
+  if (!response || !response.ok) return response || Response.error();
+  const contentType = String(response.headers.get('content-type') || '');
+  if (!contentType.includes('text/html')) return response;
+  const html = await response.text();
+  if (html.includes('aquarium-observe-v734-hotfix.js')) {
+    return new Response(html, { status: response.status, statusText: response.statusText, headers: response.headers });
+  }
+  const tag = `<script src="${AQUARIUM_OBSERVE_PATCH_URL}"></script>`;
+  const patched = html.includes('</body>') ? html.replace('</body>', `${tag}</body>`) : `${html}${tag}`;
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  headers.delete('content-encoding');
+  headers.set('cache-control', 'no-store');
+  return new Response(patched, { status: response.status, statusText: response.statusText, headers });
+}
+
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   const appCache = await caches.open(APP_CACHE);
@@ -82,11 +109,12 @@ async function cacheFirst(request, cacheName = APP_CACHE) {
 // v0.10.706: scripts and styles must not be served from an older cache merely
 // because their query string differs. Online loads fetch the current bytes;
 // exact-version cache and the unversioned app shell are offline fallbacks only.
+// v0.10.749: 古い端末の更新取りこぼし対策として、オンライン時はHTTPキャッシュも再利用しない。
 async function versionedResourceNetworkFirst(request) {
   const runtimeCache = await caches.open(RUNTIME_CACHE);
   const appCache = await caches.open(APP_CACHE);
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: 'no-store' });
     if (response.ok) runtimeCache.put(request, response.clone()).catch(() => {});
     return response;
   } catch (_) {
@@ -171,6 +199,10 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.pathname.endsWith('/assets/minigames/kaitenzushi/game/index.html')) {
     event.respondWith(kaitenzushiDocumentNetworkFirst(event.request));
+    return;
+  }
+  if (url.pathname.endsWith('/assets/minigames/aquarium/index.html')) {
+    event.respondWith(aquariumDocumentNetworkFirst(event.request));
     return;
   }
   if (event.request.mode === 'navigate' || destination === 'document') {

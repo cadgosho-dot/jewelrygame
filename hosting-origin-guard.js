@@ -4,12 +4,13 @@
   // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも転送が発生しないよう互換目的で残している。
   // v0.10.732 formal-release trigger.
 
-  // v0.10.750: 思い出の3Dメガネ／ストーリーテラー最新透明PNGをゲーム内へ読み込む。
+  // v0.10.751: 旧画面／旧キャッシュからでも、思い出とイベント本編の最新画像へ互換的に差し替える。
   (() => {
     const sources = [
-      './memories-3d-image-v750.js?v=0.10.750',
-      './memories-storyteller-image-v750.js?v=0.10.750',
-      './memories-image-overrides-v750.js?v=0.10.750',
+      './memories-3d-image-v750.js?v=0.10.751',
+      './memories-storyteller-image-v750.js?v=0.10.751',
+      './memories-image-overrides-v750.js?v=0.10.751',
+      './memories-event-image-overrides-v751.js?v=0.10.751',
     ];
     let index = 0;
     const loadNext = () => {

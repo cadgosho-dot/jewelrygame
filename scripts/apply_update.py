@@ -258,3 +258,5 @@ else:
 print("\n更新処理完了。GitHub DesktopでChangesを確認してください。")
 print("バックアップ:", BACKUP)
 print("次に scripts/verify_update.py を実行できます。")
+
+# v0.10.751 one-time runner trigger: 2026-08-23

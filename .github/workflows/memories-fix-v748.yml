@@ -21,6 +21,13 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: 指定された縦背景画像を復元
+        run: |
+          mkdir -p assets/images/ui
+          base64 --decode .tmp/memories-bg-v748.b64 > assets/images/ui/memories-bg-portrait-v748.webp
+          test -s assets/images/ui/memories-bg-portrait-v748.webp
+          file assets/images/ui/memories-bg-portrait-v748.webp
+
       - name: 思い出のカワハラ判定とバージョンを修正
         run: |
           python3 - <<'PY'
@@ -126,11 +133,11 @@ jobs:
           grep -F "AUTO_MEMORY_IGNORED_SCREENS = new Set(['glabVisitVideoEvent'])" js/memories-screen.js
           grep -F "memories-bg-portrait-v748.webp" js/memories-backgrounds.js
 
-      - name: 一時ワークフローを削除してmainへ反映
+      - name: 一時ファイルを削除してmainへ反映
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/memories-fix-v748.yml
+          git rm .github/workflows/memories-fix-v748.yml .tmp/memories-bg-v748.b64
           git add js/memories-screen.js js/memories-backgrounds.js js/game-data.js js/app.js game.html index.html sw.js assets/images/ui/memories-bg-portrait-v748.webp
           git commit -m "v0.10.748 思い出背景とカワハラ判定を修正"
           git pull --rebase origin main

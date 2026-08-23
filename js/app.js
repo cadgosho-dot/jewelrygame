@@ -5,9 +5,9 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js';
 
-const UI_BUILD_VERSION = '0.10.748';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.748';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.748';
+const UI_BUILD_VERSION = '0.10.752';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.752';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.752';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.748';
+} from './firebase-service.js?v=0.10.752';
 
 
 
@@ -268,7 +268,7 @@ const OKACHIMACHI_QUIZ_TRIGGER_MIN = 26;
 const OKACHIMACHI_QUIZ_TRIGGER_MAX = 34;
 const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN = 26;
 const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX = 34;
-const LOOSE_SHOP_ORIGINAL_QUIZ_IMAGE = './assets/images/events/loose-shop-original-quiz.png';
+const LOOSE_SHOP_ORIGINAL_QUIZ_IMAGE = './assets/images/events/loose-shop-original-quiz-v751.png';
 const LOOSE_SHOP_ORIGINAL_QUIZ_NAME = '3Dメガネ';
 const OKACHIMACHI_TOLL_EVENT_CHANCE = 1 / 60;
 const OKACHIMACHI_TOLL_EVENT_COST = 100000;
@@ -10440,7 +10440,7 @@ function renderStorytellerEvent(){
   const e=storytellerEventState(); if(!e.active){queueMicrotask(()=>setScreen('okachimachi',{},false));return renderOkachimachi();}
   const q=storytellerCurrentQuestion();
   if(e.questionId && !q && !storytellerQuizLoadPromise){queueMicrotask(()=>loadStorytellerQuestions().then(()=>{if(screen==='storytellerEvent')render();}).catch(console.error));}
-  const characterSrc=`./assets/images/events/storyteller.png?v=${VERSION}`;
+  const characterSrc=`./assets/images/events/storyteller-v751.png?v=${VERSION}`;
   const eventClass='jxj-quiz-storyteller-v2';
 
   if(e.stage==='question'){

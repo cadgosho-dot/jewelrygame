@@ -1,11 +1,11 @@
-// v0.10.751: 正式版のバージョン入口。
+// v0.10.752: 正式版のバージョン入口。
 // 大容量の既存ゲームデータ本体は game-data-core.js に保持し、内容を変更せず再利用する。
 import * as core from './game-data-core.js';
 
-export const VERSION = '0.10.751';
+export const VERSION = '0.10.752';
 export * from './game-data-core.js';
 
-// 本体側のVERSION依存箇所だけ、751の保存バージョンとして整合させる。
+// 本体側のVERSION依存箇所だけ、752の保存バージョンとして整合させる。
 export function initialState(...args) {
   const state = core.initialState(...args);
   if (state && typeof state === 'object') state.version = VERSION;

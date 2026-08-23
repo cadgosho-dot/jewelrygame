@@ -1,0 +1,165 @@
+name: v0.10.749 3Dメガネ縦画面互換修正
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/loose-quiz-compat-v749.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 3Dメガネ縦画面互換CSSと749を反映
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          game_path = Path('game.html')
+          game = game_path.read_text(encoding='utf-8')
+
+          old = '''  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: min(90vw, 430px) !important;
+    max-height: 72dvh !important;
+    margin: auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }'''
+          new = '''  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    width: 90% !important;
+    height: auto !important;
+    max-width: 430px !important;
+    max-height: 72vh !important;
+    max-height: 72dvh !important;
+    margin: auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }'''
+          if old not in game:
+              raise SystemExit('v741 3Dメガネ人物CSSが見つかりません')
+          game = game.replace(old, new, 1)
+
+          compat = '''
+<style id="loose-quiz-legacy-android-v749">
+/* v0.10.749: 古いAndroid/WebViewでも3Dメガネ人物画像を画面内へ強制的に収める互換指定。 */
+@media screen and (max-width: 820px) {
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2:not(.jxj-quiz-stage-reward-v2) > .jxj-quiz-character-area-v2 {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    display: block !important;
+    width: 90% !important;
+    height: auto !important;
+    max-width: 430px !important;
+    max-height: 72vh !important;
+    margin: auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+}
+</style>
+'''
+          if 'loose-quiz-legacy-android-v749' not in game:
+              game = game.replace('</head>', compat + '\n</head>', 1)
+
+          for target in ('hosting-origin-guard.js', 'styles.css', 'js/app.js', 'js/memories-screen.js'):
+              game = re.sub(rf"({re.escape(target)}\?v=)0\.10\.\d+", rf"\g<1>0.10.749", game)
+          game_path.write_text(game, encoding='utf-8')
+
+          data_path = Path('js/game-data.js')
+          data = data_path.read_text(encoding='utf-8')
+          data = re.sub(r"^// v0\.10\.\d+: 正式版のバージョン入口。", "// v0.10.749: 正式版のバージョン入口。", data, count=1, flags=re.M)
+          data, n = re.subn(r"export const VERSION = '0\.10\.\d+';", "export const VERSION = '0.10.749';", data, count=1)
+          if n != 1:
+              raise SystemExit('game-data VERSION更新に失敗')
+          data = re.sub(r"// 本体側のVERSION依存箇所だけ、\d+の保存バージョンとして整合させる。", "// 本体側のVERSION依存箇所だけ、749の保存バージョンとして整合させる。", data, count=1)
+          data_path.write_text(data, encoding='utf-8')
+
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          app, n = re.subn(r"const UI_BUILD_VERSION = '0\.10\.\d+';", "const UI_BUILD_VERSION = '0.10.749';", app, count=1)
+          if n != 1:
+              raise SystemExit('UI_BUILD_VERSION更新に失敗')
+          for filename in ('audio.js', 'audio-scene-map.js', 'firebase-service.js'):
+              app = re.sub(rf"(\./{re.escape(filename)}\?v=)0\.10\.\d+", rf"\g<1>0.10.749", app)
+          app_path.write_text(app, encoding='utf-8')
+
+          memories_path = Path('js/memories-screen.js')
+          memories = memories_path.read_text(encoding='utf-8')
+          memories = re.sub(r"(memories-backgrounds\.js\?v=)0\.10\.\d+", r"\g<1>0.10.749", memories, count=1)
+          memories = re.sub(r"const VERSION = '0\.10\.\d+';", "const VERSION = '0.10.749';", memories, count=1)
+          memories = re.sub(r"const STYLE_ID = 'jxj-memories-style-v\d+';", "const STYLE_ID = 'jxj-memories-style-v749';", memories, count=1)
+          memories_path.write_text(memories, encoding='utf-8')
+
+          index_path = Path('index.html')
+          index = index_path.read_text(encoding='utf-8')
+          for target in ('hosting-origin-guard.js', 'viewport-shell.css', 'game.html', 'viewport-shell.js'):
+              index = re.sub(rf"({re.escape(target)}\?v=)0\.10\.\d+", rf"\g<1>0.10.749", index)
+          index_path.write_text(index, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          sw, n = re.subn(r"const VERSION = '0\.10\.\d+';", "const VERSION = '0.10.749';", sw, count=1)
+          if n != 1:
+              raise SystemExit('sw VERSION更新に失敗')
+          for filename in ('audio.js', 'audio-scene-map.js', 'memories-screen.js', 'memories-backgrounds.js', 'google-auth-bridge.js', 'firebase-service.js'):
+              sw = re.sub(rf"(\./js/{re.escape(filename)}\?v=)0\.10\.\d+", rf"\g<1>0.10.749", sw)
+          sw_path.write_text(sw, encoding='utf-8')
+          PY
+
+      - name: 構文と互換CSSを確認
+        run: |
+          node --check js/app.js
+          node --check js/game-data.js
+          node --check js/memories-screen.js
+          node --check sw.js
+          grep -F 'loose-quiz-legacy-android-v749' game.html
+          grep -F 'width: 90% !important;' game.html
+          grep -F 'max-height: 72vh !important;' game.html
+          grep -F "export const VERSION = '0.10.749';" js/game-data.js
+          grep -F "const VERSION = '0.10.749';" sw.js
+
+      - name: 一時ワークフローを削除してmainへ反映
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/loose-quiz-compat-v749.yml
+          git add game.html index.html sw.js js/app.js js/game-data.js js/memories-screen.js
+          git commit -m "v0.10.749 3Dメガネ縦画面の旧Android互換を追加"
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -11,6 +11,13 @@
     document.head?.appendChild(script);
   })();
 
+  // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
+  (() => {
+    const script = document.createElement('script');
+    script.src = './workshop-staff-images-v754.js?v=0.10.754';
+    document.head?.appendChild(script);
+  })();
+
   // v0.10.732: iPhone Safari等で宇宙画面だけタップ不能になるケースを復旧する。
   // v0.10.749: 古いAndroid/WebViewでも3Dメガネ人物画像が巨大化しない互換CSSを同時に注入する。
   const STYLE_ID = 'alien-space-input-hotfix';

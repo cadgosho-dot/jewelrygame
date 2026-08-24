@@ -4,10 +4,11 @@
   const STYLE_ID = 'jxj-workshop-staff-images-v754';
   const FIGURE_CLASS = 'workshop-staff-level-figure-v754';
   const IMAGE_CLASS = 'workshop-staff-level-image-v754';
-  const IMAGES = Object.freeze({
-    junior: './assets/images/workshop-staff-apprentice-v754.png',
-    skilled: './assets/images/workshop-staff-skilled-v754.png',
+  const IMAGE_DATA = Object.freeze({
+    junior: './assets/images/workshop-staff-apprentice-v754.base64.txt',
+    skilled: './assets/images/workshop-staff-skilled-v754.base64.txt',
   });
+  const imageCache = new Map();
 
   const installStyle = () => {
     if (!document.head || document.getElementById(STYLE_ID)) return;
@@ -41,7 +42,17 @@
     document.querySelectorAll(`.${FIGURE_CLASS}`).forEach((node) => node.remove());
   };
 
-  const apply = () => {
+  const imageSrc = async (key) => {
+    if (imageCache.has(key)) return imageCache.get(key);
+    const response = await fetch(IMAGE_DATA[key], { cache: 'force-cache' });
+    if (!response.ok) throw new Error(`職人画像を読み込めません: ${key}`);
+    const base64 = (await response.text()).trim();
+    const src = `data:image/png;base64,${base64}`;
+    imageCache.set(key, src);
+    return src;
+  };
+
+  const apply = async () => {
     installStyle();
     if (document.body?.dataset?.screen !== 'workshopStaff') {
       removeInjected();
@@ -61,7 +72,20 @@
       return;
     }
 
-    const src = level >= 4 ? IMAGES.skilled : IMAGES.junior;
+    const key = level >= 4 ? 'skilled' : 'junior';
+    let src;
+    try {
+      src = await imageSrc(key);
+    } catch (error) {
+      console.warn('[workshop-staff-images-v754]', error);
+      return;
+    }
+
+    // 読込中に別画面へ移った場合は何も挿入しない。
+    if (document.body?.dataset?.screen !== 'workshopStaff') return;
+    const activeCard = document.querySelector('.workshop-staff-card');
+    if (activeCard !== card || currentLevel(card) !== level) return;
+
     let figure = card.querySelector(`:scope > .${FIGURE_CLASS}`);
     if (!(figure instanceof HTMLElement)) {
       figure = document.createElement('figure');
@@ -90,7 +114,7 @@
     queued = true;
     requestAnimationFrame(() => {
       queued = false;
-      apply();
+      void apply();
     });
   };
 
@@ -103,5 +127,5 @@
   window.addEventListener('pageshow', schedule);
   window.addEventListener('resize', schedule, { passive: true });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(); });
-  apply();
+  void apply();
 })();

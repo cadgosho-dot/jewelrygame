@@ -5,6 +5,37 @@ import * as core from './game-data-core.js';
 export const VERSION = '0.10.753';
 export * from './game-data-core.js';
 
+// v0.10.753 balance hotfix:
+// 見習い職人の成長が長すぎるため、既存の勤務日数をそのまま活かして成長テンポを緩和する。
+// 性能・日給は従来値を維持し、昇格に必要な勤務日数だけを変更する。
+export const WORKSHOP_STAFF_GROWTH_LEVELS = Object.freeze([
+  Object.freeze({ level: 1, label: '見習い職人', minWorkDays: 0, dailyWage: 10000, speedMultiplier: 0.55, goodChance: 0, premiumChance: 0 }),
+  Object.freeze({ level: 2, label: '若手職人', minWorkDays: 60, dailyWage: 15000, speedMultiplier: 0.70, goodChance: 0.10, premiumChance: 0 }),
+  Object.freeze({ level: 3, label: '一人前職人', minWorkDays: 180, dailyWage: 22000, speedMultiplier: 0.85, goodChance: 0.20, premiumChance: 0.02 }),
+  Object.freeze({ level: 4, label: '熟練職人', minWorkDays: 360, dailyWage: 32000, speedMultiplier: 1.00, goodChance: 0.32, premiumChance: 0.08 }),
+  Object.freeze({ level: 5, label: '匠', minWorkDays: 720, dailyWage: 45000, speedMultiplier: 1.20, goodChance: 0.42, premiumChance: 0.15 }),
+]);
+
+export function workshopStaffGrowthForWorkDays(workDays = 0) {
+  const days = Math.max(0, Math.floor(Number(workDays) || 0));
+  return [...WORKSHOP_STAFF_GROWTH_LEVELS].reverse().find((level) => days >= Number(level.minWorkDays))
+    || WORKSHOP_STAFF_GROWTH_LEVELS[0];
+}
+
+export function workshopStaffNextGrowthForWorkDays(workDays = 0) {
+  const current = workshopStaffGrowthForWorkDays(workDays);
+  return WORKSHOP_STAFF_GROWTH_LEVELS.find((level) => Number(level.level) === Number(current.level) + 1) || null;
+}
+
+function syncWorkshopStaffGrowthState(state) {
+  const staff = state?.workshopStaff;
+  if (!staff || typeof staff !== 'object' || Array.isArray(staff)) return state;
+  const growth = workshopStaffGrowthForWorkDays(staff.workDays);
+  // 既存仕様では熟練職人以上で evolutionStage 2。新しい勤務日条件に合わせて同期する。
+  staff.evolutionStage = Number(growth.level) >= 4 ? 2 : 1;
+  return state;
+}
+
 const EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID = 'kebab';
 const EMERALD_CAPTAIN_KEBAB_EVENT_GEM_ID = 'emerald';
 const EMERALD_CAPTAIN_KEBAB_EVENT_SHAPE_IDS = Object.freeze([
@@ -160,7 +191,10 @@ installEmeraldCaptainKebabTapCompatibility();
 // 本体側のVERSION依存箇所だけ、753の保存バージョンとして整合させる。
 export function initialState(...args) {
   const state = core.initialState(...args);
-  if (state && typeof state === 'object') state.version = VERSION;
+  if (state && typeof state === 'object') {
+    state.version = VERSION;
+    syncWorkshopStaffGrowthState(state);
+  }
   return state;
 }
 
@@ -192,6 +226,9 @@ export function migrateState(saved) {
   }
 
   const state = core.migrateState(source);
-  if (state && typeof state === 'object') state.version = VERSION;
+  if (state && typeof state === 'object') {
+    state.version = VERSION;
+    syncWorkshopStaffGrowthState(state);
+  }
   return state;
 }

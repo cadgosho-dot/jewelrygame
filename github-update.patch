@@ -1,0 +1,45 @@
+--- a/js/app.js
++++ b/js/app.js
+@@
+ function isTanabataMainPeriod(date = gameDate()) {
+   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return false;
+   const month = Number(date.getMonth()) + 1;
+   const day = Number(date.getDate());
+   return month === 7 && day === 7;
+ }
++
++function isObonMainPeriod(date = gameDate()) {
++  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return false;
++  const month = Number(date.getMonth()) + 1;
++  const day = Number(date.getDate());
++  return month === 8 && day >= 13 && day <= 16;
++}
++
++function isSpringMainPeriod(date = gameDate()) {
++  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return false;
++  const month = Number(date.getMonth()) + 1;
++  const day = Number(date.getDate());
++  return month === 3 && day >= 15 && day <= 31;
++}
++
++function isLateSummerMainPeriod(date = gameDate()) {
++  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return false;
++  const month = Number(date.getMonth()) + 1;
++  const day = Number(date.getDate());
++  return month === 8 && day >= 25 && day <= 31;
++}
+ 
+ function calendarUserEvents() {
+@@
+     if (isNewYearMainPeriod()) return isPortraitLayout() ? 'main-menu-newyear-portrait' : 'main-menu-newyear';
+     if (isChristmasMainPeriod()) return isPortraitLayout() ? 'main-menu-christmas-portrait' : 'main-menu-christmas';
+     if (isTanabataMainPeriod()) return isPortraitLayout() ? 'main-menu-tanabata-portrait' : 'main-menu-tanabata';
++    if (isObonMainPeriod()) return isPortraitLayout() ? 'main-menu-obon-portrait' : 'main-menu-obon';
++    if (isSpringMainPeriod()) return isPortraitLayout() ? 'main-menu-spring-portrait' : 'main-menu-spring';
++    if (isLateSummerMainPeriod()) return isPortraitLayout() ? 'main-menu-late-summer-portrait' : 'main-menu-late-summer';
+     return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
+   }
+@@
+-  if (target === 'craft' || target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';
++  if (target === 'craft') return isPortraitLayout() ? 'craft-portrait' : 'craft-jewelry-landscape-v758';
++  if (target === 'craftLoose') return isPortraitLayout() ? 'craft-portrait' : 'craft';

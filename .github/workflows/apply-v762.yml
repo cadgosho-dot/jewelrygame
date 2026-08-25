@@ -1,0 +1,79 @@
+name: Apply JEWELRYxJEWELRY v0.10.762
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-v762.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-jxj-v0-10-762
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify source version
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(tr -d '\r\n' < VERSION)"
+          if [ "$current" != "0.10.760" ]; then
+            echo "Expected v0.10.760, found $current"
+            exit 1
+          fi
+
+      - name: Apply verified cumulative patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          patches=(
+            .maintenance/v762/final-nonapp-1.patch
+            .maintenance/v762/final-nonapp-2.patch
+            .maintenance/v762/final-nonapp-3.patch
+            .maintenance/v762/final-app-1.patch
+            .maintenance/v762/final-app-2.patch
+            .maintenance/v762/final-app-3.patch
+            .maintenance/v762/final-app-4.patch
+          )
+          for patch in "${patches[@]}"; do
+            echo "Checking $patch"
+            git apply --check "$patch"
+            git apply "$patch"
+          done
+          test "$(tr -d '\r\n' < VERSION)" = "0.10.762"
+
+      - name: Run current build audit
+        run: python scripts/check-current.py
+
+      - name: Commit v0.10.762 and remove updater files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .maintenance/v762
+          rm -f .github/workflows/apply-v762.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Update JEWELRYxJEWELRY to v0.10.762"
+          git push origin HEAD:main

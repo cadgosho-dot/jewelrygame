@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  // v0.10.756: force the current Service Worker URL so the meal-screen fix is not hidden by an older cache.
-  const BUILD_VERSION = '0.10.756';
+  // v0.10.759: force the current Service Worker URL so seasonal-background updates are not hidden by an older cache.
+  const BUILD_VERSION = '0.10.759';
   const RELOAD_MARKER = `jxj-sw-controller-reloaded-${BUILD_VERSION}`;
   if (!('serviceWorker' in navigator)) return;
   if (window.top !== window.self) return;

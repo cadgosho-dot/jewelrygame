@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.756';
+} from './game-data.js?v=0.10.759';
 
-const UI_BUILD_VERSION = '0.10.756';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.756';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.756';
+const UI_BUILD_VERSION = '0.10.759';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.759';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.759';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.756';
+} from './firebase-service.js?v=0.10.759';
 
 
 
@@ -2321,7 +2321,7 @@ function mealAfter18BackgroundAssetName(portrait = isPortraitLayout()) {
 }
 
 function mealBackgroundAssetName(mealId, portrait = isPortraitLayout()) {
-  // v0.10.756: 18:00以降でも食事中は、選択した店舗ごとの背景を維持する。
+  // v0.10.758: 18:00以降でも食事中は、選択した店舗ごとの背景を維持する。
   if (mealId === 'ramen') return portrait ? 'meal-ramen-portrait-v386' : 'meal-ramen-v386';
   return `meal-${mealId}${portrait ? '-portrait' : ''}`;
 }
@@ -5699,6 +5699,51 @@ function gameDateForDay(dayNumber = state?.game?.day || 1) {
 
 function gameDate() {
   return gameDateForDay(state?.game?.day || 1);
+}
+
+// v0.10.759: メイン画面の季節背景をゲーム内日付で一元管理する。
+function isValidGameDate(date) {
+  return date instanceof Date && !Number.isNaN(date.getTime());
+}
+
+function isMonthDayRange(date, monthIndex, startDay, endDay) {
+  if (!isValidGameDate(date)) return false;
+  return date.getMonth() === monthIndex && date.getDate() >= startDay && date.getDate() <= endDay;
+}
+
+function isNewYearMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 0, 1, 3);
+}
+
+function isSpringMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 2, 25, 31);
+}
+
+function isTanabataMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 6, 7, 7);
+}
+
+function isObonMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 7, 13, 16);
+}
+
+function isLateSummerMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 7, 25, 31);
+}
+
+function isChristmasMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 11, 20, 25);
+}
+
+function seasonalMainBackgroundAsset(date = gameDate(), portrait = isPortraitLayout()) {
+  const suffix = portrait ? '-portrait' : '';
+  if (isNewYearMainPeriod(date)) return `main-menu-new-year${suffix}`;
+  if (isSpringMainPeriod(date)) return `main-menu-spring${suffix}`;
+  if (isTanabataMainPeriod(date)) return `main-menu-tanabata${suffix}`;
+  if (isObonMainPeriod(date)) return `main-menu-obon${suffix}`;
+  if (isLateSummerMainPeriod(date)) return `main-menu-late-summer${suffix}`;
+  if (isChristmasMainPeriod(date)) return `main-menu-christmas${suffix}`;
+  return '';
 }
 
 function dateKey(date) {
@@ -10862,7 +10907,11 @@ function backgroundAssetFor(target) {
     const place = bluesJukeCurrentScene()?.place === 'inside' ? 'interior' : 'exterior';
     return `blues-juke-${place}${isPortraitLayout() ? '-portrait' : ''}`;
   }
-  if (target === 'main') return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
+  if (target === 'main') {
+    const seasonalAsset = seasonalMainBackgroundAsset();
+    if (seasonalAsset) return seasonalAsset;
+    return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
+  }
   if (target === 'sushiChefEvent') return 'meal-kaitenzushi-event';
   if (target === 'cyclopsEvent') return `meal-convenience${isPortraitLayout() ? '-portrait' : ''}`;
   if (target === 'ganeshaTuskEvent') return `meal-indian${isPortraitLayout() ? '-portrait' : ''}`;
@@ -10897,7 +10946,7 @@ function backgroundAssetFor(target) {
   const portrait = isPortraitLayout();
   if (base === 'meal') {
     const mealId = screenData?.mealId;
-    // v0.10.756: 食事選択後は時刻に関係なく各店舗背景を優先する。
+    // v0.10.758: 食事選択後は時刻に関係なく各店舗背景を優先する。
     // 18:00以降の共通夜背景は、店舗未選択の食事メニュー画面だけに適用する。
     if (mealId && MEALS[mealId]) return mealBackgroundAssetName(mealId, portrait);
     if (mealAfter18BackgroundActive()) return mealAfter18BackgroundAssetName(portrait);

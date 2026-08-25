@@ -1,0 +1,72 @@
+diff --git a/js/app.js b/js/app.js
+index efd98ee..010349e 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -3,11 +3,11 @@ import {
+   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
+   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
+   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
+-} from './game-data.js?v=0.10.760';
++} from './game-data.js?v=0.10.762';
+ 
+-const UI_BUILD_VERSION = '0.10.760';
+-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.760';
+-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.760';
++const UI_BUILD_VERSION = '0.10.762';
++import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.762';
++import { resolveAudioScene } from './audio-scene-map.js?v=0.10.762';
+ import { japaneseHolidayName } from './japan-holidays.js';
+ import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
+ import {
+@@ -15,7 +15,7 @@ import {
+   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
+   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
+   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
+-} from './firebase-service.js?v=0.10.760';
++} from './firebase-service.js?v=0.10.762';
+ 
+ 
+ 
+@@ -3698,6 +3698,42 @@ function localLastSaveAtKey() {
+   return `${localSaveKey()}-last-saved-at`;
+ }
+ 
++function localSaveStorageModeKey() {
++  return `${localSaveKey()}-storage-mode`;
++}
++
++function isLocalStorageQuotaError(error) {
++  const name = String(error?.name || '');
++  const code = Number(error?.code);
++  const message = String(error?.message || '');
++  return name === 'QuotaExceededError'
++    || name === 'NS_ERROR_DOM_QUOTA_REACHED'
++    || code === 22
++    || code === 1014
++    || /quota|storage.*full|容量|領域/i.test(message);
++}
++
++function localSingleCopyModeEnabled() {
++  try {
++    return localStorage.getItem(localSaveStorageModeKey()) === 'single-copy';
++  } catch (_) {
++    return false;
++  }
++}
++
++function removeLocalStorageItemQuietly(key) {
++  try { localStorage.removeItem(key); } catch (_) {}
++}
++
++function enableLocalSingleCopyMode() {
++  // 容量不足時は、端末内の巨大な重複コピーを捨て、
++  // 「最新の端末セーブ1本 + クラウド」を安全網にする。
++  removeLocalStorageItemQuietly(localSaveBackupKey());
++  removeLocalStorageItemQuietly(localSavePreMigrationKey());
++  removeLocalStorageItemQuietly(localSaveCorruptKey());
++  try { localStorage.setItem(localSaveStorageModeKey(), 'single-copy'); } catch (_) {}
++}
++
+ function saveStateFingerprint(value = state) {
+   if (!value) return '';
+   try {

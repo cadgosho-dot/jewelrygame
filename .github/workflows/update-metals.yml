@@ -119,13 +119,38 @@ jobs:
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
+  validate-build:
+    permissions:
+      contents: read
+    if: needs.update-metals.result == 'success'
+    needs:
+      - update-metals
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 検証する最新版を取得
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: 公開前の現行ビルド検査
+        run: |
+          echo "Python: $(python3 --version)"
+          echo "Node: $(node --version)"
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: 検査通過を記録
+        run: |
+          echo "CURRENT BUILD AUDIT: PASS — GitHub Pages公開を許可します。"
+
   build-pages:
     permissions:
       contents: read
       pages: read
-    if: needs.update-metals.result == 'success'
+    if: needs.validate-build.result == 'success'
     needs:
-      - update-metals
+      - validate-build
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

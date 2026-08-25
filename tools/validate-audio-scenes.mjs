@@ -46,7 +46,7 @@ const expectedEventScenes = {
   grayHoodAquariumEvent: 'meal-korean',
   terryCaliforniaEvent: 'meal-hamburger',
   looseShopOriginalQuizEvent: 'looseShop',
-  wristFoundEvent: 'okachimachi',
+  wristFoundEvent: 'wristFound',
   kawaharaKnowledgeEvent: 'glab',
 };
 for (const [screen, expected] of Object.entries(expectedEventScenes)) {

@@ -27,6 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / 'js' / 'app.js'
 GAME_DATA = ROOT / 'js' / 'game-data.js'
+GAME_DATA_CORE = ROOT / 'js' / 'game-data-core.js'
 
 
 def extract_object_block(source: str, marker: str) -> str:
@@ -89,6 +90,11 @@ cases = [
 
 # Explicit metadata contracts for intro-video events that previously lost their
 # resume information during migrateState().
+# Intentional crash-recovery migrations: these transient stages are normalized on load.
+stage_migrations = {
+    'oyatsuDaisukiEvent': {'iceEating': 'iceFade'},
+}
+
 video_meta = {
     'westernUnionEvent': {'stageAfterVideo': 'choice'},
     'tattooWomanAmberEvent': {'stageAfterVideo': 'intro1'},
@@ -113,9 +119,10 @@ for (const test of payload.cases) {
   }
   const migrated = migrateState(JSON.parse(JSON.stringify(save)));
   const actual = migrated?.events?.[test.eventKey];
+  const expectedStage = payload.stageMigrations?.[test.eventKey]?.[test.stage] || test.stage;
   checked += 1;
-  if (!actual || actual.active !== true || actual.stage !== test.stage) {
-    failures.push(`${test.eventKey}:${test.stage} -> active=${String(actual?.active)} stage=${String(actual?.stage)}`);
+  if (!actual || actual.active !== true || actual.stage !== expectedStage) {
+    failures.push(`${test.eventKey}:${test.stage} -> active=${String(actual?.active)} stage=${String(actual?.stage)} (expected ${expectedStage})`);
     continue;
   }
   if (test.stage === 'video' && test.eventKey in payload.videoMeta) {
@@ -131,9 +138,10 @@ process.stdout.write(JSON.stringify({checked, failures}));
 with tempfile.TemporaryDirectory(prefix='jj-event-roundtrip-') as temp_name:
     temp = Path(temp_name)
     shutil.copy2(GAME_DATA, temp / 'game-data-under-test.mjs')
+    shutil.copy2(GAME_DATA_CORE, temp / 'game-data-core.js')
     (temp / 'runner.mjs').write_text(runner, encoding='utf-8')
     payload_path = temp / 'cases.json'
-    payload_path.write_text(json.dumps({'cases': cases, 'videoMeta': video_meta}, ensure_ascii=False), encoding='utf-8')
+    payload_path.write_text(json.dumps({'cases': cases, 'videoMeta': video_meta, 'stageMigrations': stage_migrations}, ensure_ascii=False), encoding='utf-8')
     proc = subprocess.run(
         [node, str(temp / 'runner.mjs'), str(payload_path)],
         cwd=temp,
@@ -169,3 +177,4 @@ print(f'OK: {result.get("checked", 0)} active event stages survived JSON save + 
 print('OK: westernUnionEvent video resume metadata preserved')
 print('OK: tattooWomanAmberEvent video resume metadata preserved')
 print('OK: grayHoodAquariumEvent video resume metadata preserved')
+print('OK: oyatsuDaisukiEvent iceEating intentionally recovers to iceFade')

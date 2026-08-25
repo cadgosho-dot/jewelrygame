@@ -221,7 +221,7 @@ expected_routes = {
     'grayHoodAquariumEvent': 'meal-korean',
     'terryCaliforniaEvent': 'meal-hamburger',
     'looseShopOriginalQuizEvent': 'looseShop',
-    'wristFoundEvent': 'okachimachi',
+    'wristFoundEvent': 'wristFound',
     'kawaharaKnowledgeEvent': 'glab',
 }
 for screen, expected in expected_routes.items():

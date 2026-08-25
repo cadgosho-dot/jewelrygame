@@ -43,6 +43,8 @@ audio.configureAudio(() => ({
   externalAudioPriority: false,
 }));
 
+audio.releaseStartupAudioHold();
+
 audio.updateMainEnvironment({ active: true, weather: '雨', audioKey: 'main' });
 await audio.switchAudio('main');
 assert.equal(instances.filter((item) => item.url.endsWith('/bgm-main.ogg')).length, 1, 'メインBGMは1本');

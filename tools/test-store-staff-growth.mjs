@@ -4,8 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
-const source = fs.readFileSync(path.join(root, 'js/game-data.js'), 'utf8');
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+const moduleUrl = `${pathToFileURL(path.join(root, 'js/game-data.js')).href}?test=${Date.now()}`;
 const gameData = await import(moduleUrl);
 const { storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, initialState } = gameData;
 

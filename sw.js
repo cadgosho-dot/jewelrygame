@@ -1,12 +1,13 @@
-const VERSION = '0.10.759';
+const VERSION = '0.10.760';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
+const CACHE_PREFIX = 'jewelrygame-';
 const CORE_SHELL = [
-  './', './index.html', './game.html', './auth.html', './auth-cache-recovery-v707.js', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js?v=0.10.759', './js/audio.js?v=0.10.759', './js/audio-scene-map.js?v=0.10.759', './js/game-data.js?v=0.10.759', './js/memories-screen.js?v=0.10.759', './js/memories-backgrounds.js?v=0.10.759', './js/daily-gems-index.js?v=0.10.691',
+  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.760', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
+  './manifest.webmanifest', './js/app.js?v=0.10.760', './js/audio.js?v=0.10.760', './js/audio-scene-map.js?v=0.10.760', './js/game-data.js?v=0.10.760', './js/memories-screen.js?v=0.10.760', './js/memories-backgrounds.js?v=0.10.760', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.759', './js/security-config.js', './js/firebase-service.js?v=0.10.759',
+  './js/google-auth-bridge.js?v=0.10.760', './js/security-config.js', './js/firebase-service.js?v=0.10.760',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.759: seasonal main-screen backgrounds (landscape + portrait).
@@ -33,6 +34,22 @@ async function networkFirst(request, fallback = './index.html') {
     return response;
   } catch (_) {
     return (await cache.match(request)) || (await cache.match(fallback));
+  }
+}
+
+// Documents are always revalidated from the network so an old browser HTTP cache
+// cannot keep index.html/game.html on a previous build after a deploy.
+async function documentNetworkFirst(request, fallback = './index.html') {
+  const cache = await caches.open(APP_CACHE);
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response.ok) cache.put(request, response.clone()).catch(() => {});
+    return response;
+  } catch (_) {
+    return (await cache.match(request))
+      || (await cache.match(request, { ignoreSearch: true }))
+      || (await cache.match(fallback, { ignoreSearch: true }))
+      || Response.error();
   }
 }
 
@@ -189,7 +206,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => ![APP_CACHE, RUNTIME_CACHE, MEDIA_CACHE].includes(key)).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && ![APP_CACHE, RUNTIME_CACHE, MEDIA_CACHE].includes(key))
+          .map((key) => caches.delete(key)),
+      ))
       .then(() => self.clients.claim()),
   );
 });
@@ -213,7 +234,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (event.request.mode === 'navigate' || destination === 'document') {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(documentNetworkFirst(event.request));
     return;
   }
   if (['script', 'style'].includes(destination) || url.pathname.includes('/js/')) {

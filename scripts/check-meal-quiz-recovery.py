@@ -24,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / 'js' / 'app.js'
 GAME_DATA = ROOT / 'js' / 'game-data.js'
+GAME_DATA_CORE = ROOT / 'js' / 'game-data-core.js'
 
 errors: list[str] = []
 notes: list[str] = []
@@ -243,6 +244,7 @@ process.stdout.write(JSON.stringify({ checked, failures }));
     with tempfile.TemporaryDirectory(prefix='jj-meal-quiz-recovery-') as temp_name:
         temp = Path(temp_name)
         shutil.copy2(GAME_DATA, temp / 'game-data-under-test.mjs')
+        shutil.copy2(GAME_DATA_CORE, temp / 'game-data-core.js')
         (temp / 'runner.mjs').write_text(runner, encoding='utf-8')
         payload = temp / 'payload.json'
         payload.write_text(json.dumps({'specs': specs}, ensure_ascii=False), encoding='utf-8')

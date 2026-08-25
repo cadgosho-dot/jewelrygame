@@ -1,0 +1,83 @@
+--- a/js/memories-screen.js
++++ b/js/memories-screen.js
+@@ -1,6 +1,6 @@
+-import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.760';
+-
+-const VERSION = '0.10.760';
++import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.762';
++
++const VERSION = '0.10.762';
+ const STYLE_ID = 'jxj-memories-style-v752';
+ const OVERLAY_ID = 'jxj-memories-overlay';
+ const LIGHTBOX_ID = 'jxj-memories-lightbox';
+--- a/scripts/check-current.py
++++ b/scripts/check-current.py
+@@ -12,6 +12,7 @@
+     ('回帰防止基準', [sys.executable, str(ROOT / 'scripts/check-regression-baseline.py')]),
+     ('季節メイン背景', [sys.executable, str(ROOT / 'scripts/check-seasonal-main-background.py')]),
+     ('PWAキャッシュ更新', [sys.executable, str(ROOT / 'scripts/check-pwa-cache-policy.py')]),
++    ('長期セーブ容量対策', [sys.executable, str(ROOT / 'scripts/check-save-storage-policy.py')]),
+     ('加工知識データ', [sys.executable, str(ROOT / 'scripts/check-processing-knowledge.py')]),
+     ('ショーケース画像', [sys.executable, str(ROOT / 'scripts/check-showcase-jewelry-visuals.py')]),
+     ('完成画面縦余白', [sys.executable, str(ROOT / 'scripts/check-completion-portrait-header-clearance.py')]),
+--- a/scripts/check-regression-baseline.py
++++ b/scripts/check-regression-baseline.py
+@@ -142,6 +142,7 @@
+ run('店舗ショーケース位置維持', ['node', str(ROOT / 'tools/validate-store-showcase-return.mjs')])
+ run('店舗来店表示', ['node', str(ROOT / 'tools/validate-store-customer-indicator.mjs')])
+ run('原石研磨完了画面', ['node', str(ROOT / 'tools/validate-polishing-result-modal.mjs')])
++run('ダイヤモンド研磨盤イベント終了導線', ['node', str(ROOT / 'tools/validate-diamond-polishing-lap-event.mjs')])
+ 
+ if errors:
+     print('回帰防止チェック: NG')
+--- a/sw.js
++++ b/sw.js
+@@ -1,13 +1,13 @@
+-const VERSION = '0.10.760';
++const VERSION = '0.10.762';
+ const APP_CACHE = `jewelrygame-app-v${VERSION}`;
+ const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
+ const MEDIA_CACHE = 'jewelrygame-media-v1';
+ const CACHE_PREFIX = 'jewelrygame-';
+ const CORE_SHELL = [
+-  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.760', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
+-  './manifest.webmanifest', './js/app.js?v=0.10.760', './js/audio.js?v=0.10.760', './js/audio-scene-map.js?v=0.10.760', './js/game-data.js?v=0.10.760', './js/memories-screen.js?v=0.10.760', './js/memories-backgrounds.js?v=0.10.760', './js/daily-gems-index.js?v=0.10.691',
++  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.762', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
++  './manifest.webmanifest', './js/app.js?v=0.10.762', './js/audio.js?v=0.10.762', './js/audio-scene-map.js?v=0.10.762', './js/game-data.js?v=0.10.762', './js/memories-screen.js?v=0.10.762', './js/memories-backgrounds.js?v=0.10.762', './js/daily-gems-index.js?v=0.10.691',
+   './js/japan-holidays.js', './js/firebase-config.js',
+-  './js/google-auth-bridge.js?v=0.10.760', './js/security-config.js', './js/firebase-service.js?v=0.10.760',
++  './js/google-auth-bridge.js?v=0.10.762', './js/security-config.js', './js/firebase-service.js?v=0.10.762',
+   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
+   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
+   // v0.10.759: seasonal main-screen backgrounds (landscape + portrait).
+--- /dev/null
++++ b/scripts/check-save-storage-policy.py
+@@ -0,0 +1,28 @@
++#!/usr/bin/env python3
++"""Validate long-play localStorage quota recovery policy."""
++from pathlib import Path
++import sys
++
++ROOT = Path(__file__).resolve().parents[1]
++APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
++
++checks = {
++    '容量超過判定がある': 'function isLocalStorageQuotaError(error)' in APP,
++    '端末1コピー節約モードがある': "'single-copy'" in APP and 'function enableLocalSingleCopyMode()' in APP,
++    '容量不足時に重複バックアップを解放する': 'removeLocalStorageItemQuietly(localSaveBackupKey())' in APP and 'removeLocalStorageItemQuietly(localSavePreMigrationKey())' in APP,
++    '破損診断へ巨大なraw全文を保存しない': 'rawCharacters: String(raw).length' in APP and '\n      raw,\n' not in APP[APP.index('function preserveCorruptLocalSave'):APP.index('function localSavedState')],
++    '正常読込時に旧pre-migrationを解放する': 'removeLocalStorageItemQuietly(localSavePreMigrationKey());' in APP[APP.index('function localSavedState'):APP.index('function preferredSavedState')],
++    '端末書込前にクラウド用snapshotを確保する': 'snapshot = createCloudSnapshot ? JSON.parse(nextRaw) : null;' in APP,
++    '容量不足時に最新端末セーブを再試行する': 'quotaRecoveryUsed = true;\n      writePrimary();' in APP,
++    '端末保存失敗でもクラウド保存へ進む': "端末保存失敗／クラウド保存を続行しています" in APP and '.then(() => saveState(userId, snapshot))' in APP,
++    '端末とクラウド両方失敗時の表示がある': '保存できませんでした／${cloudMessage}' in APP,
++}
++
++failed = [label for label, ok in checks.items() if not ok]
++for label, ok in checks.items():
++    print(('OK' if ok else 'NG') + ': ' + label)
++
++if failed:
++    print('\nSAVE STORAGE POLICY: FAIL')
++    sys.exit(1)
++print('\nSAVE STORAGE POLICY: PASS')

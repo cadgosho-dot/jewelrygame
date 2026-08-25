@@ -4,23 +4,18 @@
   // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも転送が発生しないよう互換目的で残している。
   // v0.10.732 formal-release trigger.
 
-  // v0.10.750: 思い出の3Dメガネ／ストーリーテラー最新透明PNGをゲーム内へ読み込む。
+  // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
-    const sources = [
-      './memories-3d-image-v750.js?v=0.10.750',
-      './memories-storyteller-image-v750.js?v=0.10.750',
-      './memories-image-overrides-v750.js?v=0.10.750',
-    ];
-    let index = 0;
-    const loadNext = () => {
-      if (index >= sources.length) return;
-      const script = document.createElement('script');
-      script.src = sources[index++];
-      script.onload = loadNext;
-      script.onerror = loadNext;
-      document.head?.appendChild(script);
-    };
-    loadNext();
+    const script = document.createElement('script');
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.752';
+    document.head?.appendChild(script);
+  })();
+
+  // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
+  (() => {
+    const script = document.createElement('script');
+    script.src = './workshop-staff-images-v754.js?v=0.10.754';
+    document.head?.appendChild(script);
   })();
 
   // v0.10.732: iPhone Safari等で宇宙画面だけタップ不能になるケースを復旧する。

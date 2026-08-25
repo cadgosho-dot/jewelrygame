@@ -1,7 +1,7 @@
-import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.748';
+import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.752';
 
-const VERSION = '0.10.748';
-const STYLE_ID = 'jxj-memories-style-v748';
+const VERSION = '0.10.752';
+const STYLE_ID = 'jxj-memories-style-v752';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
 
@@ -24,11 +24,11 @@ const CATALOG = [
   { key:'pearlHumanEvent', name:'真珠人間', image:'./assets/images/events/pearl-human.png', description:'真珠にまつわる出来事で出会う謎の人物。', reward:{ flag:'rewardGranted', name:'真珠', image:'./assets/images/events/pearl.png' } },
   { key:'oyatsuDaisukiEvent', name:'お菓子大好き', image:'./assets/images/events/oyatsu-daisuki.png', description:'御徒町で出会う、アイスと熱帯魚屋が好きな人物。' },
   { key:'speedStarEvent', name:'スピードスター', image:'./assets/images/events/speed-star.png', description:'突然現れる、勢いのある人物。' },
-  { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller-v745.png', description:'言葉と物語で印象を残す人物。' },
+  { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller-v751.png', description:'言葉と物語で印象を残す人物。' },
   { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', eventKeys:['alienAbductionEvent','alienReturnEvent'], name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。' },
   { key:'bluesJukeEvent', name:'ブルースマン', image:'./assets/images/events/blues-juke/bluesman-serious.png', description:'Juke Jointで出会う、ブルースを愛する男。', reward:{ flag:'rewardGranted', name:'ブラックダイヤモンド' } },
   { key:'kawaharaKnowledgeEvent', name:'カワハラ', image:'./assets/images/events/glab-kawahara.png', description:'g-Lab.で出会うジュエリー職人。' },
-  { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz-v745.png', description:'ルースショップのクイズに現れる人物。' },
+  { key:'looseShopOriginalQuiz', name:'3Dメガネ', image:'./assets/images/events/loose-shop-original-quiz-v751.png', description:'ルースショップのクイズに現れる人物。' },
   { key:'clockTowerDonationEvent', name:'時計台の老婆', image:'./assets/images/events/clock-tower-donation-old-woman.png', description:'御徒町に時計台を建てようとしている老婆。' },
   { key:'touristWoodSwordEvent', name:'観光客', image:'./assets/images/events/tourist.png', description:'御徒町で出会う観光客。' },
   { key:'mysteryChineseMealEvent', name:'中華料理屋', image:'./assets/images/events/mystery-chinese-chef.png', description:'謎の中華料理を勧めてくる料理人。' },

@@ -74,8 +74,17 @@
     });
   }
 
+  function resolvedScreenOrientation(viewportWidth, viewportHeight) {
+    const type = String(window.screen?.orientation?.type || '').toLowerCase();
+    if (type.startsWith('portrait')) return 'portrait';
+    if (type.startsWith('landscape')) return 'landscape';
+    if (window.matchMedia?.('(orientation: portrait)').matches) return 'portrait';
+    if (window.matchMedia?.('(orientation: landscape)').matches) return 'landscape';
+    return viewportWidth > viewportHeight ? 'landscape' : 'portrait';
+  }
+
   function viewportProfile(viewportWidth, viewportHeight) {
-    const landscape = viewportWidth > viewportHeight;
+    const landscape = resolvedScreenOrientation(viewportWidth, viewportHeight) === 'landscape';
     const shortSide = Math.min(viewportWidth, viewportHeight);
     const longSide = Math.max(viewportWidth, viewportHeight);
     const touchDevice = Number(navigator.maxTouchPoints || 0) > 0 || 'ontouchstart' in window;
@@ -209,6 +218,7 @@
   window.addEventListener('orientationchange', () => window.setTimeout(updateStage, 120), { passive: true });
   window.visualViewport?.addEventListener('resize', scheduleStageUpdate, { passive: true });
   window.visualViewport?.addEventListener('scroll', scheduleStageUpdate, { passive: true });
+  window.screen?.orientation?.addEventListener?.('change', () => window.setTimeout(updateStage, 120));
 
   updateStage();
 })();

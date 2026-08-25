@@ -1,0 +1,70 @@
+diff --git a/js/app.js b/js/app.js
+index efd98ee..010349e 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -3761,34 +3797,47 @@ function parseSaveText(raw) {
+ 
+ function preserveCorruptLocalSave(raw, reason) {
+   if (!raw) return;
++  // 破損原本を丸ごと複製すると、長期プレイ時にlocalStorageをさらに圧迫する。
++  // 復旧には正常バックアップ／クラウドを使うため、ここには診断情報だけ残す。
+   try {
+     localStorage.setItem(localSaveCorruptKey(), JSON.stringify({
+       savedAt: new Date().toISOString(),
+       reason: String(reason?.message || reason || 'unknown'),
+-      raw,
++      rawCharacters: String(raw).length,
+     }));
+   } catch (_) {}
+ }
+ 
+ function localSavedState() {
+-  const raw = localStorage.getItem(localSaveKey());
++  let raw = null;
++  try {
++    raw = localStorage.getItem(localSaveKey());
++  } catch (error) {
++    saveRecoveryNotice = '端末の保存領域を読み込めませんでした。クラウドセーブを確認します。';
++    saveRecoveryDetails = String(error?.message || error);
++    return null;
++  }
+   if (!raw) return null;
+   try {
+     const parsed = parseSaveText(raw);
+-    // 読み込み・移行前の原本を保存。移行を繰り返しても数量は変化しない。
+-    localStorage.setItem(localSavePreMigrationKey(), raw);
++    // 旧実装のpre-migrationは通常バックアップと内容が重複し、
++    // 長期プレイでは数MB単位で保存領域を消費していた。
++    // 現在の端末セーブが正常に読めた時点で不要な重複コピーを解放する。
++    removeLocalStorageItemQuietly(localSavePreMigrationKey());
++    removeLocalStorageItemQuietly(localSaveCorruptKey());
+     return parsed;
+   } catch (error) {
+     preserveCorruptLocalSave(raw, error);
+-    const backupRaw = localStorage.getItem(localSaveBackupKey());
++    let backupRaw = null;
++    try { backupRaw = localStorage.getItem(localSaveBackupKey()); } catch (_) {}
+     try {
+       const backup = parseSaveText(backupRaw);
+       saveRecoveryNotice = '破損した端末セーブを直前の正常なバックアップから復元しました。';
+       saveRecoveryDetails = String(error?.message || error);
+-      localStorage.setItem(localSaveKey(), backupRaw);
++      try { localStorage.setItem(localSaveKey(), backupRaw); } catch (_) {}
+       return backup;
+     } catch (backupError) {
+-      saveRecoveryNotice = '端末セーブを読み込めず、正常なバックアップも見つかりませんでした。';
++      saveRecoveryNotice = '端末セーブを読み込めず、正常なバックアップも見つかりませんでした。クラウドセーブを確認します。';
+       saveRecoveryDetails = String(error?.message || error);
+       return null;
+     }
+@@ -3818,6 +3867,10 @@ function loadGame() {
+ 
+ function saveLocalBackup({ fingerprint = null, createCloudSnapshot = true, updateFingerprint = true } = {}) {
+   if (!state || !currentUser || sessionTakenOver) return { saved: false, skipped: true };
++
++  let nextRaw = '';
++  let snapshot = null;
++  let quotaRecoveryUsed = false;
+   try {
+     state.saveRevision = Math.max(0, Math.floor(Number(state.saveRevision) || 0)) + 1;
+     state.updatedAt = new Date().toISOString();

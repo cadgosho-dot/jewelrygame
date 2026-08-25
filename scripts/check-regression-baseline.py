@@ -142,6 +142,7 @@ run('職人スタッフ成長境界', ['node', str(ROOT / 'tools/test-workshop-s
 run('店舗ショーケース位置維持', ['node', str(ROOT / 'tools/validate-store-showcase-return.mjs')])
 run('店舗来店表示', ['node', str(ROOT / 'tools/validate-store-customer-indicator.mjs')])
 run('原石研磨完了画面', ['node', str(ROOT / 'tools/validate-polishing-result-modal.mjs')])
+run('ダイヤモンド研磨盤イベント終了導線', ['node', str(ROOT / 'tools/validate-diamond-polishing-lap-event.mjs')])
 
 if errors:
     print('回帰防止チェック: NG')

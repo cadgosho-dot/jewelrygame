@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.760';
+} from './game-data.js?v=0.10.762';
 
-const UI_BUILD_VERSION = '0.10.760';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.760';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.760';
+const UI_BUILD_VERSION = '0.10.762';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.762';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.762';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.760';
+} from './firebase-service.js?v=0.10.762';
 
 
 
@@ -3698,6 +3698,42 @@ function localLastSaveAtKey() {
   return `${localSaveKey()}-last-saved-at`;
 }
 
+function localSaveStorageModeKey() {
+  return `${localSaveKey()}-storage-mode`;
+}
+
+function isLocalStorageQuotaError(error) {
+  const name = String(error?.name || '');
+  const code = Number(error?.code);
+  const message = String(error?.message || '');
+  return name === 'QuotaExceededError'
+    || name === 'NS_ERROR_DOM_QUOTA_REACHED'
+    || code === 22
+    || code === 1014
+    || /quota|storage.*full|容量|領域/i.test(message);
+}
+
+function localSingleCopyModeEnabled() {
+  try {
+    return localStorage.getItem(localSaveStorageModeKey()) === 'single-copy';
+  } catch (_) {
+    return false;
+  }
+}
+
+function removeLocalStorageItemQuietly(key) {
+  try { localStorage.removeItem(key); } catch (_) {}
+}
+
+function enableLocalSingleCopyMode() {
+  // 容量不足時は、端末内の巨大な重複コピーを捨て、
+  // 「最新の端末セーブ1本 + クラウド」を安全網にする。
+  removeLocalStorageItemQuietly(localSaveBackupKey());
+  removeLocalStorageItemQuietly(localSavePreMigrationKey());
+  removeLocalStorageItemQuietly(localSaveCorruptKey());
+  try { localStorage.setItem(localSaveStorageModeKey(), 'single-copy'); } catch (_) {}
+}
+
 function saveStateFingerprint(value = state) {
   if (!value) return '';
   try {
@@ -3761,34 +3797,47 @@ function parseSaveText(raw) {
 
 function preserveCorruptLocalSave(raw, reason) {
   if (!raw) return;
+  // 破損原本を丸ごと複製すると、長期プレイ時にlocalStorageをさらに圧迫する。
+  // 復旧には正常バックアップ／クラウドを使うため、ここには診断情報だけ残す。
   try {
     localStorage.setItem(localSaveCorruptKey(), JSON.stringify({
       savedAt: new Date().toISOString(),
       reason: String(reason?.message || reason || 'unknown'),
-      raw,
+      rawCharacters: String(raw).length,
     }));
   } catch (_) {}
 }
 
 function localSavedState() {
-  const raw = localStorage.getItem(localSaveKey());
+  let raw = null;
+  try {
+    raw = localStorage.getItem(localSaveKey());
+  } catch (error) {
+    saveRecoveryNotice = '端末の保存領域を読み込めませんでした。クラウドセーブを確認します。';
+    saveRecoveryDetails = String(error?.message || error);
+    return null;
+  }
   if (!raw) return null;
   try {
     const parsed = parseSaveText(raw);
-    // 読み込み・移行前の原本を保存。移行を繰り返しても数量は変化しない。
-    localStorage.setItem(localSavePreMigrationKey(), raw);
+    // 旧実装のpre-migrationは通常バックアップと内容が重複し、
+    // 長期プレイでは数MB単位で保存領域を消費していた。
+    // 現在の端末セーブが正常に読めた時点で不要な重複コピーを解放する。
+    removeLocalStorageItemQuietly(localSavePreMigrationKey());
+    removeLocalStorageItemQuietly(localSaveCorruptKey());
     return parsed;
   } catch (error) {
     preserveCorruptLocalSave(raw, error);
-    const backupRaw = localStorage.getItem(localSaveBackupKey());
+    let backupRaw = null;
+    try { backupRaw = localStorage.getItem(localSaveBackupKey()); } catch (_) {}
     try {
       const backup = parseSaveText(backupRaw);
       saveRecoveryNotice = '破損した端末セーブを直前の正常なバックアップから復元しました。';
       saveRecoveryDetails = String(error?.message || error);
-      localStorage.setItem(localSaveKey(), backupRaw);
+      try { localStorage.setItem(localSaveKey(), backupRaw); } catch (_) {}
       return backup;
     } catch (backupError) {
-      saveRecoveryNotice = '端末セーブを読み込めず、正常なバックアップも見つかりませんでした。';
+      saveRecoveryNotice = '端末セーブを読み込めず、正常なバックアップも見つかりませんでした。クラウドセーブを確認します。';
       saveRecoveryDetails = String(error?.message || error);
       return null;
     }
@@ -3818,6 +3867,10 @@ function loadGame() {
 
 function saveLocalBackup({ fingerprint = null, createCloudSnapshot = true, updateFingerprint = true } = {}) {
   if (!state || !currentUser || sessionTakenOver) return { saved: false, skipped: true };
+
+  let nextRaw = '';
+  let snapshot = null;
+  let quotaRecoveryUsed = false;
   try {
     state.saveRevision = Math.max(0, Math.floor(Number(state.saveRevision) || 0)) + 1;
     state.updatedAt = new Date().toISOString();
@@ -3827,30 +3880,75 @@ function saveLocalBackup({ fingerprint = null, createCloudSnapshot = true, updat
     state.migrations = state.migrations && typeof state.migrations === 'object' && !Array.isArray(state.migrations) ? state.migrations : {};
     state.migrations.looseInventoryCanonicalV231 = true;
     state.saveSchemaVersion = SAVE_SCHEMA_VERSION;
+
     const key = localSaveKey();
-    const nextRaw = JSON.stringify(state);
-    const currentRaw = localStorage.getItem(key);
-    if (currentRaw && currentRaw !== nextRaw) {
+    nextRaw = JSON.stringify(state);
+    // 端末書き込みに失敗してもクラウド保存を続けられるよう、
+    // 書き込み前に切り離し済みスナップショットを確保する。
+    snapshot = createCloudSnapshot ? JSON.parse(nextRaw) : null;
+
+    let currentRaw = null;
+    try { currentRaw = localStorage.getItem(key); } catch (_) {}
+    let singleCopyMode = localSingleCopyModeEnabled();
+
+    if (!singleCopyMode && currentRaw && currentRaw !== nextRaw) {
       try {
         parseSaveText(currentRaw);
         localStorage.setItem(localSaveBackupKey(), currentRaw);
       } catch (error) {
-        preserveCorruptLocalSave(currentRaw, error);
+        if (isLocalStorageQuotaError(error)) {
+          // バックアップ複製だけで上限に達した場合は、クラウドを第2バックアップとして
+          // 端末側を1コピー運用へ自動移行する。
+          enableLocalSingleCopyMode();
+          singleCopyMode = true;
+          quotaRecoveryUsed = true;
+        } else {
+          // currentRawのJSON自体が壊れていた場合のみ診断情報を残す。
+          try { parseSaveText(currentRaw); } catch (parseError) { preserveCorruptLocalSave(currentRaw, parseError); }
+        }
       }
     }
-    localStorage.setItem(key, nextRaw);
-    localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
+
+    const writePrimary = () => localStorage.setItem(key, nextRaw);
+    try {
+      writePrimary();
+    } catch (error) {
+      if (!isLocalStorageQuotaError(error)) throw error;
+      // 既存の巨大バックアップ／旧移行コピーを解放してから、最新セーブを再試行する。
+      enableLocalSingleCopyMode();
+      singleCopyMode = true;
+      quotaRecoveryUsed = true;
+      writePrimary();
+    }
+
+    // 本体セーブが成功した後の補助データはbest-effort。
+    // 設定や時刻の数KBが書けなくても「本体セーブ失敗」にはしない。
+    try { localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings)); } catch (_) {}
     lastSuccessfulSaveAt = state.updatedAt;
-    localStorage.setItem(localLastSaveAtKey(), lastSuccessfulSaveAt);
+    try { localStorage.setItem(localLastSaveAtKey(), lastSuccessfulSaveAt); } catch (_) {}
     if (updateFingerprint) lastSavedFingerprint = fingerprint || saveStateFingerprint(state);
-    // JSON.stringify済みの保存文字列から一度だけスナップショットを作る。
-    // 同じstateをstructuredCloneで複数回コピーしない。
-    const snapshot = createCloudSnapshot ? JSON.parse(nextRaw) : null;
-    if (snapshot) cloudSave = snapshot;
-    return { saved: true, savedAt: lastSuccessfulSaveAt, snapshot, raw: nextRaw };
+    if (singleCopyMode) {
+      removeLocalStorageItemQuietly(localSaveBackupKey());
+      removeLocalStorageItemQuietly(localSavePreMigrationKey());
+    }
+    return {
+      saved: true,
+      savedAt: lastSuccessfulSaveAt,
+      snapshot,
+      raw: nextRaw,
+      storageMode: singleCopyMode ? 'single-copy' : 'normal',
+      quotaRecoveryUsed,
+    };
   } catch (error) {
     console.error('端末保存に失敗しました', error);
-    return { saved: false, error };
+    return {
+      saved: false,
+      error,
+      quota: isLocalStorageQuotaError(error),
+      snapshot,
+      raw: nextRaw,
+      quotaRecoveryUsed,
+    };
   }
 }
 
@@ -3868,30 +3966,51 @@ function saveGame(message = false) {
     return saveQueue;
   }
   const localResult = saveLocalBackup({ fingerprint, createCloudSnapshot: true, updateFingerprint: true });
-  if (!localResult.saved) {
-    showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
+  const snapshot = localResult.snapshot;
+  if (!snapshot) {
+    showAutosaveStatus('error', 'セーブデータを準備できませんでした', { persistent: true });
     return Promise.resolve();
   }
-  // v0.10.611: 端末保存時に作成した切り離し済みスナップショットをクラウド保存にも再利用する。
-  const snapshot = localResult.snapshot;
+
+  if (!localResult.saved) {
+    showAutosaveStatus(
+      'error',
+      localResult.quota ? '端末容量不足／クラウド保存を続行しています' : '端末保存失敗／クラウド保存を続行しています',
+      { persistent: true },
+    );
+  } else if (localResult.quotaRecoveryUsed) {
+    showAutosaveStatus('saved', '端末容量を節約して保存しました');
+  }
+
+  // 端末保存の成否に関係なく、作成済みスナップショットをクラウドへ送る。
+  // 長期プレイ端末がlocalStorage上限に達しても進行を失わない。
   const userId = currentUser.uid;
   const cloudFingerprint = fingerprint || saveStateFingerprint(snapshot);
   saveQueue = saveQueue
     .catch(() => {})
     .then(() => saveState(userId, snapshot))
     .then(() => {
+      cloudSave = snapshot;
       lastCloudSavedFingerprint = cloudFingerprint;
-      if (cloudSaveFailureActive) {
+      if (!localResult.saved) {
+        cloudSaveFailureActive = false;
+        showAutosaveStatus('saved', 'クラウドに保存しました（端末容量不足）');
+      } else if (cloudSaveFailureActive) {
         cloudSaveFailureActive = false;
         showAutosaveStatus('saved', 'クラウド保存を復旧しました');
       }
     })
     .catch((error) => {
       cloudSaveFailureActive = true;
-      const message = firebaseErrorMessage(error, 'cloud-save');
+      const cloudMessage = firebaseErrorMessage(error, 'cloud-save');
       console.error('[Cloud Save]', { code: error?.code || '', message: error?.message || '', detail: error?.detail || null }, error);
-      // 端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
-      showAutosaveStatus('error', `端末保存済み／${message}`, { persistent: true });
+      if (localResult.saved) {
+        // 端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
+        showAutosaveStatus('error', `端末保存済み／${cloudMessage}`, { persistent: true });
+      } else {
+        // 両方失敗した場合だけ、進行を続けず再試行した方がよいことを明確にする。
+        showAutosaveStatus('error', `保存できませんでした／${cloudMessage}`, { persistent: true });
+      }
     });
   return saveQueue;
 }
@@ -8993,7 +9112,7 @@ async function advanceDiamondPolishingLapEvent() {
     eventState.rewardGranted = true;
     playSfx('select', { gain: .86 });
     saveGame();
-    setScreen('meal', {}, false);
+    await eatMeal('indian', { skipEventCheck: true });
     return;
   }
   saveGame();
@@ -14904,7 +15023,7 @@ function renderDiamondPolishingLapEvent() {
         </div>
         ${reward
           ? `<button type="button" class="diamond-polishing-lap-reward-button" data-action="diamond-polishing-lap-event-next" aria-label="ダイヤモンド研磨用平面研磨盤を受け取る"><span class="diamond-polishing-lap-glow" aria-hidden="true"></span><img src="./assets/images/events/diamond-polishing-lap-reward.png?v=${VERSION}" alt="ダイヤモンド研磨用平面研磨盤" draggable="false"><strong>ダイヤモンド研磨用平面研磨盤</strong><small>タップして受け取る</small></button>`
-          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="diamond-polishing-lap-event-next"><small>インド料理屋店長</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
+          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="diamond-polishing-lap-event-next"><small>インド料理屋店長</small><strong>${dialogue}</strong><span>${eventState.stage === 'outro' ? 'タップすると通常のインド料理の食事へ' : 'タップして進む'}</span></button>`}
       </section>
     </main>`;
 }
@@ -22237,6 +22356,11 @@ async function deleteSave() {
   try {
     await deleteGameData(currentUser.uid);
     localStorage.removeItem(localSaveKey());
+    removeLocalStorageItemQuietly(localSaveBackupKey());
+    removeLocalStorageItemQuietly(localSavePreMigrationKey());
+    removeLocalStorageItemQuietly(localSaveCorruptKey());
+    removeLocalStorageItemQuietly(localLastSaveAtKey());
+    removeLocalStorageItemQuietly(localSaveStorageModeKey());
     localStorage.setItem(freshStartFlagKey(), '1');
     cloudSave = null;
     state = null;
@@ -23584,7 +23708,7 @@ async function enterGameAfterLogin() {
     render();
     showModal({
       title: 'セーブデータを読み込めませんでした',
-      body: `<p>${esc(saveRecoveryNotice || '端末またはクラウドのセーブデータを確認できませんでした。')}</p><p class="muted">破損した原本は端末内に退避しています。新規ゲームを始めても、退避データを自動的に削除しません。</p>`,
+      body: `<p>${esc(saveRecoveryNotice || '端末またはクラウドのセーブデータを確認できませんでした。')}</p><p class="muted">破損の診断情報は端末内に記録しています。正常な端末バックアップまたはクラウドセーブがある場合は、そちらから復旧します。</p>`,
       confirm: '閉じる',
       action: 'modal-close',
       hideCancel: true,

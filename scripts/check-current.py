@@ -12,6 +12,7 @@ CHECKS = [
     ('回帰防止基準', [sys.executable, str(ROOT / 'scripts/check-regression-baseline.py')]),
     ('季節メイン背景', [sys.executable, str(ROOT / 'scripts/check-seasonal-main-background.py')]),
     ('PWAキャッシュ更新', [sys.executable, str(ROOT / 'scripts/check-pwa-cache-policy.py')]),
+    ('長期セーブ容量対策', [sys.executable, str(ROOT / 'scripts/check-save-storage-policy.py')]),
     ('加工知識データ', [sys.executable, str(ROOT / 'scripts/check-processing-knowledge.py')]),
     ('ショーケース画像', [sys.executable, str(ROOT / 'scripts/check-showcase-jewelry-visuals.py')]),
     ('完成画面縦余白', [sys.executable, str(ROOT / 'scripts/check-completion-portrait-header-clearance.py')]),

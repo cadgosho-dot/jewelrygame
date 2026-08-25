@@ -1,8 +1,9 @@
-// v0.10.753: 正式版のバージョン入口。
+// v0.10.754: 正式版のバージョン入口を最新ビルドへ同期。
+// v0.10.753: balance / purchase hotfix を継続。
 // 大容量の既存ゲームデータ本体は game-data-core.js に保持し、内容を変更せず再利用する。
 import * as core from './game-data-core.js';
 
-export const VERSION = '0.10.753';
+export const VERSION = '0.10.754';
 export * from './game-data-core.js';
 
 // v0.10.753 balance hotfix:

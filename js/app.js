@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.755';
+} from './game-data.js?v=0.10.756';
 
-const UI_BUILD_VERSION = '0.10.755';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.755';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.755';
+const UI_BUILD_VERSION = '0.10.756';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.756';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.756';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.755';
+} from './firebase-service.js?v=0.10.756';
 
 
 
@@ -767,7 +767,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'mystery-chinese-meal-video-start', 'event-movie-skip', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
-  'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'hit-rock',
+  'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'open-finance', 'hit-rock',
   'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'cancel-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi', 'ridley-okazaki-soba-event-next',
   ...EVENT_PROGRESS_ACTIONS,
 ]);
@@ -2321,7 +2321,7 @@ function mealAfter18BackgroundAssetName(portrait = isPortraitLayout()) {
 }
 
 function mealBackgroundAssetName(mealId, portrait = isPortraitLayout()) {
-  // v0.10.755: 18:00以降でも食事中は、選択した店舗ごとの背景を維持する。
+  // v0.10.756: 18:00以降でも食事中は、選択した店舗ごとの背景を維持する。
   if (mealId === 'ramen') return portrait ? 'meal-ramen-portrait-v386' : 'meal-ramen-v386';
   return `meal-${mealId}${portrait ? '-portrait' : ''}`;
 }
@@ -10897,7 +10897,7 @@ function backgroundAssetFor(target) {
   const portrait = isPortraitLayout();
   if (base === 'meal') {
     const mealId = screenData?.mealId;
-    // v0.10.755: 食事選択後は時刻に関係なく各店舗背景を優先する。
+    // v0.10.756: 食事選択後は時刻に関係なく各店舗背景を優先する。
     // 18:00以降の共通夜背景は、店舗未選択の食事メニュー画面だけに適用する。
     if (mealId && MEALS[mealId]) return mealBackgroundAssetName(mealId, portrait);
     if (mealAfter18BackgroundActive()) return mealAfter18BackgroundAssetName(portrait);
@@ -11270,8 +11270,9 @@ function setScreen(target, data = {}, push = true) {
   if (push && screen !== target) navigation.push({ screen, data: screenData });
   if (target === 'mining' && screen !== 'mining') selectedMining = null;
   if (target === 'phone' && screen !== 'phone') {
-    phoneTab = 'notifications';
-    if (state?.game) state.game.phoneTab = 'notifications';
+    const requestedPhoneTab = typeof data?.phoneTab === 'string' ? data.phoneTab : '';
+    phoneTab = requestedPhoneTab || 'notifications';
+    if (state?.game) state.game.phoneTab = phoneTab;
   }
   screen = target;
   screenData = data;
@@ -23278,10 +23279,10 @@ root.addEventListener('click', async (event) => {
       openCalendarEventEditor(button.dataset.date);
       break;
     case 'open-finance':
+      itemUseFeedback = null;
+      setScreen('phone', { phoneTab: 'finance' });
       phoneTab = 'finance';
       if (state?.game) state.game.phoneTab = 'finance';
-      itemUseFeedback = null;
-      setScreen('phone');
       saveGame();
       break;
     case 'open-tropical-fish-shop':

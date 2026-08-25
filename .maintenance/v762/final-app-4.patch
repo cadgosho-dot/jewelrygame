@@ -1,0 +1,103 @@
+diff --git a/js/app.js b/js/app.js
+index efd98ee..010349e 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -3868,30 +3966,51 @@ function saveGame(message = false) {
+     return saveQueue;
+   }
+   const localResult = saveLocalBackup({ fingerprint, createCloudSnapshot: true, updateFingerprint: true });
+-  if (!localResult.saved) {
+-    showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
++  const snapshot = localResult.snapshot;
++  if (!snapshot) {
++    showAutosaveStatus('error', 'セーブデータを準備できませんでした', { persistent: true });
+     return Promise.resolve();
+   }
+-  // v0.10.611: 端末保存時に作成した切り離し済みスナップショットをクラウド保存にも再利用する。
+-  const snapshot = localResult.snapshot;
++
++  if (!localResult.saved) {
++    showAutosaveStatus(
++      'error',
++      localResult.quota ? '端末容量不足／クラウド保存を続行しています' : '端末保存失敗／クラウド保存を続行しています',
++      { persistent: true },
++    );
++  } else if (localResult.quotaRecoveryUsed) {
++    showAutosaveStatus('saved', '端末容量を節約して保存しました');
++  }
++
++  // 端末保存の成否に関係なく、作成済みスナップショットをクラウドへ送る。
++  // 長期プレイ端末がlocalStorage上限に達しても進行を失わない。
+   const userId = currentUser.uid;
+   const cloudFingerprint = fingerprint || saveStateFingerprint(snapshot);
+   saveQueue = saveQueue
+     .catch(() => {})
+     .then(() => saveState(userId, snapshot))
+     .then(() => {
++      cloudSave = snapshot;
+       lastCloudSavedFingerprint = cloudFingerprint;
+-      if (cloudSaveFailureActive) {
++      if (!localResult.saved) {
++        cloudSaveFailureActive = false;
++        showAutosaveStatus('saved', 'クラウドに保存しました（端末容量不足）');
++      } else if (cloudSaveFailureActive) {
+         cloudSaveFailureActive = false;
+         showAutosaveStatus('saved', 'クラウド保存を復旧しました');
+       }
+     })
+     .catch((error) => {
+       cloudSaveFailureActive = true;
+-      const message = firebaseErrorMessage(error, 'cloud-save');
++      const cloudMessage = firebaseErrorMessage(error, 'cloud-save');
+       console.error('[Cloud Save]', { code: error?.code || '', message: error?.message || '', detail: error?.detail || null }, error);
+-      // 端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
+-      showAutosaveStatus('error', `端末保存済み／${message}`, { persistent: true });
++      if (localResult.saved) {
++        // 端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
++        showAutosaveStatus('error', `端末保存済み／${cloudMessage}`, { persistent: true });
++      } else {
++        // 両方失敗した場合だけ、進行を続けず再試行した方がよいことを明確にする。
++        showAutosaveStatus('error', `保存できませんでした／${cloudMessage}`, { persistent: true });
++      }
+     });
+   return saveQueue;
+ }
+@@ -8993,7 +9112,7 @@ async function advanceDiamondPolishingLapEvent() {
+     eventState.rewardGranted = true;
+     playSfx('select', { gain: .86 });
+     saveGame();
+-    setScreen('meal', {}, false);
++    await eatMeal('indian', { skipEventCheck: true });
+     return;
+   }
+   saveGame();
+@@ -14904,7 +15023,7 @@ function renderDiamondPolishingLapEvent() {
+         </div>
+         ${reward
+           ? `<button type="button" class="diamond-polishing-lap-reward-button" data-action="diamond-polishing-lap-event-next" aria-label="ダイヤモンド研磨用平面研磨盤を受け取る"><span class="diamond-polishing-lap-glow" aria-hidden="true"></span><img src="./assets/images/events/diamond-polishing-lap-reward.png?v=${VERSION}" alt="ダイヤモンド研磨用平面研磨盤" draggable="false"><strong>ダイヤモンド研磨用平面研磨盤</strong><small>タップして受け取る</small></button>`
+-          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="diamond-polishing-lap-event-next"><small>インド料理屋店長</small><strong>${dialogue}</strong><span>タップして進む</span></button>`}
++          : `<button type="button" class="event-dialogue-card visit-event-dialogue glass-panel" data-action="diamond-polishing-lap-event-next"><small>インド料理屋店長</small><strong>${dialogue}</strong><span>${eventState.stage === 'outro' ? 'タップすると通常のインド料理の食事へ' : 'タップして進む'}</span></button>`}
+       </section>
+     </main>`;
+ }
+@@ -22237,6 +22356,11 @@ async function deleteSave() {
+   try {
+     await deleteGameData(currentUser.uid);
+     localStorage.removeItem(localSaveKey());
++    removeLocalStorageItemQuietly(localSaveBackupKey());
++    removeLocalStorageItemQuietly(localSavePreMigrationKey());
++    removeLocalStorageItemQuietly(localSaveCorruptKey());
++    removeLocalStorageItemQuietly(localLastSaveAtKey());
++    removeLocalStorageItemQuietly(localSaveStorageModeKey());
+     localStorage.setItem(freshStartFlagKey(), '1');
+     cloudSave = null;
+     state = null;
+@@ -23584,7 +23708,7 @@ async function enterGameAfterLogin() {
+     render();
+     showModal({
+       title: 'セーブデータを読み込めませんでした',
+-      body: `<p>${esc(saveRecoveryNotice || '端末またはクラウドのセーブデータを確認できませんでした。')}</p><p class="muted">破損した原本は端末内に退避しています。新規ゲームを始めても、退避データを自動的に削除しません。</p>`,
++      body: `<p>${esc(saveRecoveryNotice || '端末またはクラウドのセーブデータを確認できませんでした。')}</p><p class="muted">破損の診断情報は端末内に記録しています。正常な端末バックアップまたはクラウドセーブがある場合は、そちらから復旧します。</p>`,
+       confirm: '閉じる',
+       action: 'modal-close',
+       hideCancel: true,

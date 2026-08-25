@@ -134,6 +134,9 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
 
+      - name: 画像検査用ライブラリを準備
+        run: python3 -m pip install --disable-pip-version-check pillow
+
       - name: 公開前の現行ビルド検査
         run: |
           echo "Python: $(python3 --version)"

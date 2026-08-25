@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.754';
+} from './game-data.js?v=0.10.755';
 
-const UI_BUILD_VERSION = '0.10.754';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.754';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.754';
+const UI_BUILD_VERSION = '0.10.755';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.755';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.755';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.754';
+} from './firebase-service.js?v=0.10.755';
 
 
 
@@ -2321,7 +2321,7 @@ function mealAfter18BackgroundAssetName(portrait = isPortraitLayout()) {
 }
 
 function mealBackgroundAssetName(mealId, portrait = isPortraitLayout()) {
-  if (mealAfter18BackgroundActive()) return mealAfter18BackgroundAssetName(portrait);
+  // v0.10.755: 18:00以降でも食事中は、選択した店舗ごとの背景を維持する。
   if (mealId === 'ramen') return portrait ? 'meal-ramen-portrait-v386' : 'meal-ramen-v386';
   return `meal-${mealId}${portrait ? '-portrait' : ''}`;
 }
@@ -10896,9 +10896,11 @@ function backgroundAssetFor(target) {
   const base = backgroundFor(target);
   const portrait = isPortraitLayout();
   if (base === 'meal') {
-    if (mealAfter18BackgroundActive()) return mealAfter18BackgroundAssetName(portrait);
     const mealId = screenData?.mealId;
+    // v0.10.755: 食事選択後は時刻に関係なく各店舗背景を優先する。
+    // 18:00以降の共通夜背景は、店舗未選択の食事メニュー画面だけに適用する。
     if (mealId && MEALS[mealId]) return mealBackgroundAssetName(mealId, portrait);
+    if (mealAfter18BackgroundActive()) return mealAfter18BackgroundAssetName(portrait);
     return portrait ? 'meal-menu-portrait' : 'meal-menu';
   }
   if (portrait && base === 'main') return 'main-portrait';

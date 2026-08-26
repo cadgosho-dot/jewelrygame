@@ -1,0 +1,346 @@
+name: Long save stress v0.10.772
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/stress-long-save-v772.yml'
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Run 5000 / 10000 day save-load-save stress
+        run: |
+          cat > /tmp/long-save-stress.mjs <<'NODE'
+          import { performance } from 'node:perf_hooks';
+          import {
+            initialState,
+            migrateState,
+            compactLongTermHistory,
+            compactFinanceHistory,
+            LONG_TERM_HISTORY_LIMITS,
+            LONG_TERM_MISC_LIMITS,
+            FINANCE_HISTORY_LIMIT,
+            PROCESSING_KNOWLEDGE,
+          } from './js/game-data.js';
+
+          const MiB = 1024 * 1024;
+          const encoder = new TextEncoder();
+          const bytes = (text) => encoder.encode(text).byteLength;
+          const ms = (n) => Math.round(n * 100) / 100;
+          const mib = (n) => Math.round((n / MiB) * 1000) / 1000;
+          const deepEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+          const fail = (msg) => { throw new Error(msg); };
+          const dateForGameDay = (start, day) => {
+            const d = new Date(`${start}T00:00:00Z`);
+            d.setUTCDate(d.getUTCDate() + Math.max(1, day) - 1);
+            return d.toISOString().slice(0, 10);
+          };
+          const memoryMiB = () => {
+            global.gc?.();
+            return Math.round((process.memoryUsage().heapUsed / MiB) * 100) / 100;
+          };
+
+          function makeClosedOrder(i, day) {
+            const statuses = ['完了', '取消', '期限切れ'];
+            const status = statuses[i % statuses.length];
+            return {
+              id: `closed-${day}-${i}`,
+              customerId: `customer-${i % 15}`,
+              customerName: `長期顧客${i % 15}`,
+              item: 'ring', gem: 'garnet', looseShape: 'round', metal: 'silver', design: 'simple', difficulty: 'normal',
+              requiredArtisanLevel: 1,
+              requiredTools: ['jewelryBench', 'burner'],
+              price: 120000 + (i % 1000), estimatedCost: 45000, estimatedProfit: 75000,
+              acceptedDay: Math.max(1, day - 5), deadlineDay: day + 10, closedDay: day,
+              deliveredDay: status === '完了' ? day : null,
+              cancelledDay: status === '取消' ? day : null,
+              expiredDay: status === '期限切れ' ? day : null,
+              branchNumber: (i % 3) + 1,
+              status,
+              jewelryId: status === '完了' ? `sold-${day}-${i}` : null,
+              legacyVerboseMemo: 'X'.repeat(220),
+            };
+          }
+
+          function makeSoldJewelry(i, day) {
+            return {
+              id: `sold-${day}-${i}`,
+              name: `売却済み完成品-${i}`,
+              item: 'ring', gem: 'garnet', useLoose: true, looseShape: 'round', metal: 'silver', design: 'simple', finish: 'mirror', quality: 'normal',
+              cost: 45000, recommendedPrice: 120000, createdDay: Math.max(1, day - 2), orderId: `closed-${day}-${i}`,
+              acquisition: 'crafted', autopilot: false, craftsmanshipScore: 70, craftsmanshipTier: 'normal',
+              status: 'sold', soldDay: day, soldPrice: 120000, soldProfit: 75000,
+              soldBranchNumber: (i % 3) + 1, soldChannel: 'store', removalReason: '',
+              legacyVerboseMemo: 'Y'.repeat(260),
+            };
+          }
+
+          function makeFinanceRow(i, day) {
+            return {
+              id: `finance-${day}-${i}`,
+              day,
+              label: `長期収支明細 ${i} ${'Z'.repeat(90)}`,
+              income: i % 2 === 0 ? 120000 + (i % 500) : 0,
+              expense: i % 2 === 1 ? 45000 + (i % 500) : 0,
+              category: i % 2 === 0 ? 'sale' : 'expense',
+            };
+          }
+
+          function importantSnapshot(state) {
+            return {
+              day: state.game?.day,
+              startDate: state.game?.startDate,
+              money: state.money,
+              hunger: state.hunger,
+              inventoryItems: state.inventory?.items,
+              inventoryEquipment: state.inventory?.equipment,
+              inventoryMetals: state.inventory?.metals,
+              activeOrderIds: (state.orders || []).filter(o => !['完了', '取消', '期限切れ'].includes(o?.status)).map(o => o.id).sort(),
+              liveJewelryIds: (state.inventory?.jewelry || []).filter(x => x?.status !== 'sold').map(x => x.id).sort(),
+              store: {
+                salesCount: state.store?.salesCount,
+                totalRevenue: state.store?.totalRevenue,
+                totalProfit: state.store?.totalProfit,
+                points: state.store?.points,
+                level: state.store?.level,
+                rating: state.store?.rating,
+                branchNumber: state.store?.branchNumber,
+              },
+              progressFlags: state.progressFlags,
+              eventSentinel: state.events?.robbery?.lastDay ?? null,
+              futureCalendar: Object.fromEntries(Object.entries(state.game?.calendarEvents || {}).filter(([key]) => key > dateForGameDay(state.game.startDate, state.game.day))),
+            };
+          }
+
+          function buildScenario(days) {
+            const t0 = performance.now();
+            let state = migrateState(initialState());
+            state.game.startDate = '2026-01-01';
+            state.game.day = days;
+            if ('money' in state) state.money = 987654321;
+            if ('hunger' in state) state.hunger = 4;
+
+            state.store.salesCount = 246810;
+            state.store.totalRevenue = 9876543210;
+            state.store.totalProfit = 3456789012;
+            state.store.points = Math.max(Number(state.store.points) || 0, 123456);
+            state.store.rating = 88;
+            state.store.branchNumber = 2;
+            state.progressFlags = { ...(state.progressFlags || {}), gameClearAchieved: true, gameClearShown: true, gameClearDay: 777 };
+
+            const activeOrders = Array.from({ length: 8 }, (_, i) => ({
+              id: `active-${i}`,
+              customerId: `customer-${i}`,
+              customerName: `進行中顧客${i}`,
+              status: '受注',
+              acceptedDay: days - i,
+              deadlineDay: days + 20 + i,
+              price: 200000 + i,
+              payload: 'ACTIVE'.repeat(40),
+            }));
+            const closed = [];
+            for (let day = 1; day <= days; day += 1) {
+              closed.push(makeClosedOrder(day * 2, day), makeClosedOrder(day * 2 + 1, day));
+            }
+            state.orders = [...activeOrders, ...closed];
+
+            const live = Array.from({ length: 25 }, (_, i) => ({
+              id: `live-${i}`, name: `現在所有品${i}`, status: 'stock', item: 'ring', gem: 'garnet', metal: 'silver', createdDay: days - i,
+              payload: 'LIVE'.repeat(50),
+            }));
+            const sold = [];
+            for (let day = 1; day <= days; day += 1) {
+              for (let j = 0; j < 4; j += 1) sold.push(makeSoldJewelry(day * 4 + j, day));
+            }
+            state.inventory.jewelry = [...live, ...sold];
+
+            const finance = [];
+            for (let day = 1; day <= days; day += 1) {
+              for (let j = 0; j < 8; j += 1) finance.push(makeFinanceRow(day * 8 + j, day));
+            }
+            state.finance = finance;
+
+            const calendar = {};
+            for (let day = 1; day <= days; day += 1) calendar[dateForGameDay(state.game.startDate, day)] = `過去予定 ${day} ${'C'.repeat(80)}`;
+            for (let extra = 1; extra <= 60; extra += 1) calendar[dateForGameDay(state.game.startDate, days + extra)] = `未来予定 ${extra}`;
+            calendar['invalid-key'] = '削除対象';
+            state.game.calendarEvents = calendar;
+
+            state.notifications = Array.from({ length: 500 }, (_, i) => ({ id: `n-${i}`, title: `通知${i}${'T'.repeat(100)}`, body: 'B'.repeat(2000), type: 'info', day: Math.max(1, days - i), unread: i % 2 === 0 }));
+            state.business.homeRentReports = Array.from({ length: 500 }, (_, i) => ({ month: i, rent: 100000, memo: 'R'.repeat(100) }));
+            state.business.monthlyReports = Array.from({ length: 500 }, (_, i) => ({ month: i, sales: i * 1000, memo: 'M'.repeat(100) }));
+            state.events.robbery = { ...(state.events.robbery || {}), lastDay: 4321, history: Array.from({ length: 500 }, (_, i) => ({ day: i + 1, loss: i * 1000, memo: 'Q'.repeat(100) })) };
+
+            const validKnowledge = Object.keys(PROCESSING_KNOWLEDGE).slice(0, 5);
+            state.workshop.processingKnowledge = [...validKnowledge.map((id, i) => ({ id, acquiredDay: i + 1, source: 'test' })), ...validKnowledge.map(id => ({ id, acquiredDay: 999, source: 'duplicate' })), { id: 'removed-old-knowledge', acquiredDay: 1 }];
+
+            state.store.branches = [
+              { id: 'branch-1', number: 1, label: '店舗1', name: '一号店', rentedDay: 1, level: 10, points: 1000, rating: 90, salesCount: 100 },
+              { id: 'branch-2', number: 2, label: '店舗2', name: '二号店', rentedDay: 2, level: 10, points: 1000, rating: 90, salesCount: 100 },
+              { id: 'branch-2-dup', number: 2, label: '重複', name: '重複', rentedDay: 2, level: 1, points: 0, rating: 50, salesCount: 0 },
+              { id: 'branch-99', number: 99, label: '異常', name: '異常', rentedDay: 1, level: 1, points: 0, rating: 50, salesCount: 0 },
+            ];
+            state.business.branchUnpaid = { '1': 1000, '2': 2000, '3': 0, '4': 999999, '99': 999999 };
+            state.history = { closedOrders: Array.from({ length: 5000 }, (_, i) => makeClosedOrder(i, Math.max(1, days - i))), soldJewelry: Array.from({ length: 5000 }, (_, i) => makeSoldJewelry(i, Math.max(1, days - i))) };
+            return { state, buildMs: performance.now() - t0 };
+          }
+
+          function runScenario(days) {
+            global.gc?.();
+            const heapStart = memoryMiB();
+            const { state, buildMs } = buildScenario(days);
+            const heapBuilt = memoryMiB();
+
+            const rawStart = performance.now();
+            const rawJson = JSON.stringify(state);
+            const rawStringifyMs = performance.now() - rawStart;
+            const rawBytes = bytes(rawJson);
+
+            const expected = importantSnapshot(state);
+
+            const compactStart = performance.now();
+            const historyStats = compactLongTermHistory(state);
+            const financeStats = compactFinanceHistory(state);
+            const compactMs = performance.now() - compactStart;
+
+            if ((state.orders || []).filter(o => ['完了','取消','期限切れ'].includes(o?.status)).length !== LONG_TERM_HISTORY_LIMITS.fullClosedOrders) fail(`${days}: closed order cap mismatch`);
+            if ((state.inventory?.jewelry || []).filter(x => x?.status === 'sold').length !== LONG_TERM_HISTORY_LIMITS.fullSoldJewelry) fail(`${days}: sold jewelry cap mismatch`);
+            if ((state.finance || []).length !== FINANCE_HISTORY_LIMIT) fail(`${days}: finance cap mismatch`);
+            if ((state.notifications || []).length !== LONG_TERM_MISC_LIMITS.notifications) fail(`${days}: notification cap mismatch`);
+            if ((state.business?.homeRentReports || []).length !== LONG_TERM_MISC_LIMITS.homeRentReports) fail(`${days}: rent report cap mismatch`);
+            if ((state.business?.monthlyReports || []).length !== LONG_TERM_MISC_LIMITS.monthlyReports) fail(`${days}: monthly report cap mismatch`);
+            if ((state.events?.robbery?.history || []).length !== LONG_TERM_MISC_LIMITS.robberyHistory) fail(`${days}: robbery cap mismatch`);
+            if ((state.store?.branches || []).some(b => Number(b.number) < 1 || Number(b.number) > 3)) fail(`${days}: invalid branch survived`);
+            if (new Set((state.store?.branches || []).map(b => Number(b.number))).size !== (state.store?.branches || []).length) fail(`${days}: duplicate branch survived`);
+            if (Object.keys(state.business?.branchUnpaid || {}).some(k => Number(k) < 1 || Number(k) > 3)) fail(`${days}: invalid branchUnpaid survived`);
+            if ((state.history?.closedOrders || []).length || (state.history?.soldJewelry || []).length) fail(`${days}: old permanent archive survived`);
+
+            const saveStart = performance.now();
+            const savedJson = JSON.stringify(state);
+            const stringifyMs = performance.now() - saveStart;
+            const savedBytes = bytes(savedJson);
+
+            const parseStart = performance.now();
+            const parsed = JSON.parse(savedJson);
+            const parseMs = performance.now() - parseStart;
+
+            const migrateStart = performance.now();
+            let loaded = migrateState(parsed);
+            const migrateMs = performance.now() - migrateStart;
+
+            const postLoadCompactStart = performance.now();
+            compactLongTermHistory(loaded);
+            compactFinanceHistory(loaded);
+            const postLoadCompactMs = performance.now() - postLoadCompactStart;
+
+            const actual = importantSnapshot(loaded);
+            if (!deepEqual(expected, actual)) {
+              console.error('EXPECTED', JSON.stringify(expected, null, 2));
+              console.error('ACTUAL', JSON.stringify(actual, null, 2));
+              fail(`${days}: important gameplay state changed after round trip`);
+            }
+
+            const reSaveStart = performance.now();
+            let stableJson = JSON.stringify(loaded);
+            const reStringifyMs = performance.now() - reSaveStart;
+            const roundTripBytes = bytes(stableJson);
+
+            const repeatSizes = [];
+            let repeatTotalMs = 0;
+            for (let cycle = 1; cycle <= 10; cycle += 1) {
+              const cycleStart = performance.now();
+              loaded = migrateState(JSON.parse(stableJson));
+              compactLongTermHistory(loaded);
+              compactFinanceHistory(loaded);
+              stableJson = JSON.stringify(loaded);
+              repeatTotalMs += performance.now() - cycleStart;
+              repeatSizes.push(bytes(stableJson));
+            }
+            const maxRepeat = Math.max(...repeatSizes);
+            const minRepeat = Math.min(...repeatSizes);
+            if (maxRepeat - minRepeat > 1024) fail(`${days}: repeated round trips are not size-stable (${minRepeat}..${maxRepeat})`);
+            if (!deepEqual(expected, importantSnapshot(loaded))) fail(`${days}: important gameplay state changed after repeated round trips`);
+
+            const heapEnd = memoryMiB();
+            return {
+              days,
+              generated: {
+                closedOrders: days * 2,
+                soldJewelry: days * 4,
+                financeRows: days * 8,
+                calendarRows: days + 61,
+              },
+              retained: {
+                activeOrders: (loaded.orders || []).filter(o => !['完了','取消','期限切れ'].includes(o?.status)).length,
+                closedOrders: (loaded.orders || []).filter(o => ['完了','取消','期限切れ'].includes(o?.status)).length,
+                liveJewelry: (loaded.inventory?.jewelry || []).filter(x => x?.status !== 'sold').length,
+                soldJewelry: (loaded.inventory?.jewelry || []).filter(x => x?.status === 'sold').length,
+                financeRows: loaded.finance?.length || 0,
+                calendarRows: Object.keys(loaded.game?.calendarEvents || {}).length,
+                notifications: loaded.notifications?.length || 0,
+                homeRentReports: loaded.business?.homeRentReports?.length || 0,
+                monthlyReports: loaded.business?.monthlyReports?.length || 0,
+                robberyHistory: loaded.events?.robbery?.history?.length || 0,
+              },
+              bytes: {
+                raw: rawBytes,
+                compactedSave: savedBytes,
+                afterLoadResave: roundTripBytes,
+                repeatedMin: minRepeat,
+                repeatedMax: maxRepeat,
+              },
+              mib: {
+                raw: mib(rawBytes),
+                compactedSave: mib(savedBytes),
+                afterLoadResave: mib(roundTripBytes),
+              },
+              timingsMs: {
+                build: ms(buildMs),
+                rawStringify: ms(rawStringifyMs),
+                compact: ms(compactMs),
+                compactedStringify: ms(stringifyMs),
+                parse: ms(parseMs),
+                migrate: ms(migrateMs),
+                postLoadCompact: ms(postLoadCompactMs),
+                resaveStringify: ms(reStringifyMs),
+                tenRepeatedRoundTrips: ms(repeatTotalMs),
+                averageRepeatedRoundTrip: ms(repeatTotalMs / 10),
+              },
+              heapMiB: { start: heapStart, built: heapBuilt, end: heapEnd },
+              stats: { historyStats, financeStats },
+              invariantCheck: 'PASS',
+              sizeStability: 'PASS',
+            };
+          }
+
+          const started = performance.now();
+          const results = [runScenario(5000), runScenario(10000)];
+          const report = {
+            version: '0.10.772',
+            environment: { node: process.version, platform: process.platform, arch: process.arch },
+            totalRuntimeMs: ms(performance.now() - started),
+            results,
+            result: 'PASS',
+          };
+          console.log('LONG_SAVE_STRESS_RESULT_START');
+          console.log(JSON.stringify(report, null, 2));
+          console.log('LONG_SAVE_STRESS_RESULT_END');
+          await import('node:fs').then(fs => fs.writeFileSync('/tmp/long-save-stress-results.json', JSON.stringify(report, null, 2)));
+          NODE
+          node --expose-gc /tmp/long-save-stress.mjs
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: long-save-stress-v772
+          path: /tmp/long-save-stress-results.json
+          retention-days: 3

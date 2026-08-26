@@ -1,0 +1,83 @@
+name: Apply v0.10.772 deep cleanup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/apply-v772-deep-cleanup.py'
+      - '.github/workflows/apply-v772.yml'
+
+jobs:
+  apply:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Rebase latest main
+        run: git pull --rebase origin main
+
+      - name: Install validation dependency
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: Repair temporary test quoting
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-v772-deep-cleanup.py')
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              ("long_term_test = r'''#!/usr/bin/env python3", 'long_term_test = r\"\"\"#!/usr/bin/env python3'),
+              ("print(proc.stdout.strip())\n'''\nwrite('scripts/check-long-term-misc-cleanup.py', long_term_test)", "print(proc.stdout.strip())\n\\\"\\\"\\\"\nwrite('scripts/check-long-term-misc-cleanup.py', long_term_test)"),
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'repair marker count={text.count(old)}: {old[:70]}')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          python3 -m py_compile scripts/apply-v772-deep-cleanup.py
+
+      - name: Apply deep cleanup
+        run: python3 scripts/apply-v772-deep-cleanup.py
+
+      - name: Bump build version
+        run: python3 scripts/version-sync.py --bump-patch
+
+      - name: JavaScript syntax checks
+        run: |
+          node --check js/game-data-core.js
+          node --check js/game-data.js
+          node --check js/firebase-service.js
+          node --check js/app.js
+
+      - name: Focused cleanup checks
+        run: |
+          python3 scripts/check-long-term-history.py
+          python3 scripts/check-long-term-misc-cleanup.py
+          python3 scripts/check-cloud-delete-policy.py
+          python3 scripts/check-orphan-chunk-cleanup.py
+          python3 scripts/check-indexeddb-save-policy.py
+
+      - name: Full current-build audit
+        run: python3 -u scripts/check-current.py
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Commit implementation and remove temporary files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/apply-v772.yml scripts/apply-v772-deep-cleanup.py
+          git add -A
+          git commit -m "v0.10.772: Deep-clean long-term save data"
+          git pull --rebase origin main
+          git push origin HEAD:main

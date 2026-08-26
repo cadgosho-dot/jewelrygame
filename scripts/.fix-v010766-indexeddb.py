@@ -40,3 +40,25 @@ if check.count(anchor) != 1:
     raise SystemExit(f'IndexedDB checker anchor count={check.count(anchor)}')
 check = check.replace(anchor, extra, 1)
 check_path.write_text(check, encoding='utf-8')
+
+legacy_check_path = Path('scripts/check-save-storage-policy.py')
+legacy_check = legacy_check_path.read_text(encoding='utf-8')
+legacy_replacements = [
+    (
+        "    'クラウド採用時は安全保存を使う': \"persistBootLocalStateSafely(preferredAtBoot.state, 'クラウド採用セーブ');\" in APP and 'localStorage.setItem(localSaveKey(), JSON.stringify(preferredAtBoot.state));' not in APP,\n",
+        "    'クラウド採用時は安全保存を使う': \"await persistBootDeviceStateSafely(preferredAtBoot.state, 'クラウド採用セーブ');\" in APP and 'persistBootLocalStateSafely(savedState, label)' in APP and 'localStorage.setItem(localSaveKey(), JSON.stringify(preferredAtBoot.state));' not in APP,\n",
+    ),
+    (
+        "    '端末優先移行時は安全保存を使う': \"persistBootLocalStateSafely(migratedLocal, '起動時ローカル移行');\" in APP and 'localStorage.setItem(localSaveKey(), JSON.stringify(migratedLocal));' not in APP,\n",
+        "    '端末優先移行時は安全保存を使う': \"await persistBootDeviceStateSafely(migratedLocal, '起動時ローカル移行');\" in APP and 'persistBootLocalStateSafely(savedState, label)' in APP and 'localStorage.setItem(localSaveKey(), JSON.stringify(migratedLocal));' not in APP,\n",
+    ),
+    (
+        "    '端末保存失敗でもクラウド保存へ進む': \"端末保存失敗／クラウド保存を続行しています\" in APP and '.then(() => saveState(userId, snapshot))' in APP,\n",
+        "    '端末保存失敗でもクラウド保存へ進む': \"端末保存失敗／クラウド保存を続行しています\" in APP and 'return saveState(userId, snapshot);' in APP and 'deviceSaved = indexedDbSaved || Boolean(localResult.saved);' in APP,\n",
+    ),
+]
+for old, new in legacy_replacements:
+    if legacy_check.count(old) != 1:
+        raise SystemExit(f'legacy save checker anchor count={legacy_check.count(old)} for {old[:60]!r}')
+    legacy_check = legacy_check.replace(old, new, 1)
+legacy_check_path.write_text(legacy_check, encoding='utf-8')

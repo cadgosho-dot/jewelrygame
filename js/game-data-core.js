@@ -7497,6 +7497,13 @@ export const LONG_TERM_HISTORY_LIMITS = Object.freeze({
 });
 
 export const FINANCE_HISTORY_LIMIT = 300;
+export const LONG_TERM_MISC_LIMITS = Object.freeze({
+  calendarPastDays: 365,
+  notifications: 40,
+  homeRentReports: 12,
+  monthlyReports: 12,
+  robberyHistory: 10,
+});
 
 function finiteDay(value) {
   const day = Number(value);
@@ -7586,6 +7593,133 @@ function mergeCompactHistory(existing, moved, compactRecord, liveIds) {
   return [...map.values()];
 }
 
+
+export function compactLongTermMiscData(state, limits = LONG_TERM_MISC_LIMITS) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { changed: false };
+  }
+  const stats = {
+    discardedCalendarEvents: 0,
+    discardedNotifications: 0,
+    discardedHomeRentReports: 0,
+    discardedMonthlyReports: 0,
+    discardedRobberyHistory: 0,
+    discardedInvalidBranches: 0,
+    discardedBranchUnpaidKeys: 0,
+    discardedProcessingKnowledge: 0,
+    changed: false,
+  };
+
+  // カレンダーは未来の予定をすべて保護し、過去分だけ一定期間で自動削除する。
+  if (state.game && typeof state.game === 'object') {
+    const rawCalendar = state.game.calendarEvents && typeof state.game.calendarEvents === 'object' && !Array.isArray(state.game.calendarEvents)
+      ? state.game.calendarEvents
+      : {};
+    const currentKey = financeDatePartsForDay(state, state.game.day).dayKey;
+    const currentMs = /^\d{4}-\d{2}-\d{2}$/.test(currentKey)
+      ? Date.parse(`${currentKey}T00:00:00Z`)
+      : NaN;
+    const pastDays = Math.max(0, Math.floor(Number(limits?.calendarPastDays) || 0));
+    const cutoffMs = Number.isFinite(currentMs) ? currentMs - pastDays * 86400000 : NaN;
+    const kept = {};
+    for (const [key, rawValue] of Object.entries(rawCalendar)) {
+      const value = String(rawValue || '').trim().slice(0, 120);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || !value) {
+        stats.discardedCalendarEvents += 1;
+        continue;
+      }
+      const eventMs = Date.parse(`${key}T00:00:00Z`);
+      if (Number.isFinite(cutoffMs) && Number.isFinite(eventMs) && eventMs < cutoffMs) {
+        stats.discardedCalendarEvents += 1;
+        continue;
+      }
+      kept[key] = value;
+    }
+    state.game.calendarEvents = kept;
+  }
+
+  const noticeLimit = Math.max(0, Math.floor(Number(limits?.notifications) || 0));
+  const rawNotices = Array.isArray(state.notifications) ? state.notifications : [];
+  state.notifications = rawNotices.slice(0, noticeLimit).map((note, index) => ({
+    ...note,
+    id: String(note?.id || `note-${index}`).slice(0, 120),
+    title: String(note?.title || note?.sender || 'お知らせ').slice(0, 80),
+    body: String(note?.body || '').slice(0, 500),
+    type: String(note?.type || 'info').slice(0, 40),
+    day: Math.max(1, Math.floor(Number(note?.day) || Number(state.game?.day) || 1)),
+    unread: note?.unread !== false,
+  }));
+  stats.discardedNotifications = Math.max(0, rawNotices.length - state.notifications.length);
+
+  if (state.business && typeof state.business === 'object' && !Array.isArray(state.business)) {
+    const rawHomeRentReports = Array.isArray(state.business.homeRentReports) ? state.business.homeRentReports : [];
+    const rawMonthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports : [];
+    const homeLimit = Math.max(0, Math.floor(Number(limits?.homeRentReports) || 0));
+    const monthlyLimit = Math.max(0, Math.floor(Number(limits?.monthlyReports) || 0));
+    state.business.homeRentReports = rawHomeRentReports.slice(-homeLimit || undefined);
+    state.business.monthlyReports = rawMonthlyReports.slice(-monthlyLimit || undefined);
+    if (homeLimit === 0) state.business.homeRentReports = [];
+    if (monthlyLimit === 0) state.business.monthlyReports = [];
+    stats.discardedHomeRentReports = Math.max(0, rawHomeRentReports.length - state.business.homeRentReports.length);
+    stats.discardedMonthlyReports = Math.max(0, rawMonthlyReports.length - state.business.monthlyReports.length);
+
+    const rawBranchUnpaid = state.business.branchUnpaid && typeof state.business.branchUnpaid === 'object' && !Array.isArray(state.business.branchUnpaid)
+      ? state.business.branchUnpaid
+      : {};
+    const cleanedBranchUnpaid = {};
+    for (const [key, value] of Object.entries(rawBranchUnpaid)) {
+      const number = Math.floor(Number(key));
+      if (number >= 1 && number <= 3 && String(number) === String(key)) cleanedBranchUnpaid[String(number)] = value;
+      else stats.discardedBranchUnpaidKeys += 1;
+    }
+    state.business.branchUnpaid = cleanedBranchUnpaid;
+  }
+
+  if (state.events && typeof state.events === 'object' && state.events.robbery && typeof state.events.robbery === 'object') {
+    const rawHistory = Array.isArray(state.events.robbery.history) ? state.events.robbery.history : [];
+    const robberyLimit = Math.max(0, Math.floor(Number(limits?.robberyHistory) || 0));
+    state.events.robbery.history = robberyLimit > 0 ? rawHistory.slice(-robberyLimit) : [];
+    stats.discardedRobberyHistory = Math.max(0, rawHistory.length - state.events.robbery.history.length);
+  }
+
+  if (state.workshop && typeof state.workshop === 'object') {
+    const rawKnowledge = Array.isArray(state.workshop.processingKnowledge) ? state.workshop.processingKnowledge : [];
+    const seen = new Set();
+    state.workshop.processingKnowledge = rawKnowledge.filter((entry) => {
+      const id = String(typeof entry === 'string' ? entry : entry?.id || '').trim();
+      if (!id || !PROCESSING_KNOWLEDGE[id] || seen.has(id)) {
+        stats.discardedProcessingKnowledge += 1;
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
+  }
+
+  if (state.store && typeof state.store === 'object') {
+    const rawBranches = Array.isArray(state.store.branches) ? state.store.branches : [];
+    const seenBranchNumbers = new Set();
+    state.store.branches = rawBranches.filter((branch) => {
+      const number = Math.floor(Number(branch?.number));
+      if (number < 1 || number > 3 || seenBranchNumbers.has(number)) {
+        stats.discardedInvalidBranches += 1;
+        return false;
+      }
+      seenBranchNumbers.add(number);
+      branch.number = number;
+      return true;
+    });
+    let activeBranchNumber = Math.max(1, Math.min(3, Math.floor(Number(state.store.branchNumber) || 1)));
+    if (state.store.branches.length && !state.store.branches.some((branch) => branch.number === activeBranchNumber)) {
+      activeBranchNumber = state.store.branches[0].number;
+    }
+    state.store.branchNumber = activeBranchNumber;
+  }
+
+  stats.changed = Object.entries(stats).some(([key, value]) => key !== 'changed' && Number(value) > 0);
+  return stats;
+}
+
 export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS) {
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
     return { discardedClosedOrders: 0, discardedSoldJewelry: 0, changed: false };
@@ -7643,6 +7777,7 @@ export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS)
   state.history.closedOrders = [];
   state.history.soldJewelry = [];
 
+  const miscCleanup = compactLongTermMiscData(state);
   const discardedClosedOrders = discardClosed + archivedClosedBefore;
   const discardedSoldJewelry = discardSold + archivedSoldBefore;
   return {
@@ -7653,6 +7788,7 @@ export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS)
     retainedFullSoldJewelry: keepSold.length,
     archivedClosedOrders: 0,
     archivedSoldJewelry: 0,
+    miscCleanup,
   };
 }
 
@@ -8287,10 +8423,10 @@ export function migrateState(saved) {
   state.business.workshopSuspended = Boolean(state.business.workshopSuspended);
   state.business.workshopUnpaid = Math.max(0, Math.floor(Number(state.business.workshopUnpaid) || 0));
   state.business.homeRentUnpaid = Math.max(0, Math.floor(Number(state.business.homeRentUnpaid) || 0));
-  state.business.homeRentReports = Array.isArray(state.business.homeRentReports) ? state.business.homeRentReports.slice(-24) : [];
+  state.business.homeRentReports = Array.isArray(state.business.homeRentReports) ? state.business.homeRentReports.slice(-LONG_TERM_MISC_LIMITS.homeRentReports) : [];
   state.business.lastProcessedHomeRentMonth = String(state.business.lastProcessedHomeRentMonth || '');
   state.business.branchUnpaid = state.business.branchUnpaid && typeof state.business.branchUnpaid === 'object' ? state.business.branchUnpaid : {};
-  state.business.monthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports.slice(-24) : [];
+  state.business.monthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports.slice(-LONG_TERM_MISC_LIMITS.monthlyReports) : [];
   state.business.lastProcessedMonth = String(state.business.lastProcessedMonth || '');
 
   state.employee = normalizeStoreEmployee(state.employee, 1);
@@ -8338,7 +8474,7 @@ export function migrateState(saved) {
 
   const savedBranches = Array.isArray(state.store.branches) ? state.store.branches : [];
   state.store.branches = savedBranches
-    .filter((branch) => branch && Number(branch.number) >= 1)
+    .filter((branch) => branch && Number(branch.number) >= 1 && Number(branch.number) <= 3)
     .map((branch) => {
       const branchNumber = Math.max(1, Number(branch.number) || 1);
       const branchPoints = usesSimplifiedStoreProgress && Number.isFinite(Number(branch.points))
@@ -8604,7 +8740,7 @@ export function migrateState(saved) {
           requiredLooseQuantity: Math.max(1, Math.round(Number(entry.requiredLooseQuantity) || Number(item.looseQuantity) || 1)),
           acceptedDay,
           deadlineDay,
-          branchNumber: Math.max(1, Number(entry.branchNumber) || 1),
+          branchNumber: Math.max(1, Math.min(3, Number(entry.branchNumber) || 1)),
           estimatedCost,
           budget: Math.max(price, Math.round(Number(entry.budget) || 0)),
           estimatedProfit: activeOrder ? price - estimatedCost : Math.round(Number(entry.estimatedProfit) || (price - estimatedCost)),
@@ -8614,11 +8750,11 @@ export function migrateState(saved) {
         };
       })
     : [];
-  state.notifications = (Array.isArray(state.notifications) ? state.notifications : []).slice(0, 80).map((note, index) => ({
-    id: note?.id || `legacy-note-${index}`,
-    title: note?.title || note?.sender || 'お知らせ',
-    body: note?.body || '',
-    type: note?.type || 'info',
+  state.notifications = (Array.isArray(state.notifications) ? state.notifications : []).slice(0, LONG_TERM_MISC_LIMITS.notifications).map((note, index) => ({
+    id: String(note?.id || `legacy-note-${index}`).slice(0, 120),
+    title: String(note?.title || note?.sender || 'お知らせ').slice(0, 80),
+    body: String(note?.body || '').slice(0, 500),
+    type: String(note?.type || 'info').slice(0, 40),
     day: Number(note?.day) || state.game.day,
     unread: note?.unread !== false,
   })).filter((note) => {
@@ -8716,7 +8852,7 @@ export function migrateState(saved) {
     };
   };
   const normalizedRobberyHistory = Array.isArray(savedRobberyEvents.history)
-    ? savedRobberyEvents.history.map(normalizeRobberyReport).filter(Boolean).slice(-20)
+    ? savedRobberyEvents.history.map(normalizeRobberyReport).filter(Boolean).slice(-LONG_TERM_MISC_LIMITS.robberyHistory)
     : [];
   state.events = isRecord(state.events) ? state.events : {};
   state.events.robbery = {

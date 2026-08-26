@@ -39,7 +39,7 @@ import {
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
-import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.771';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.772';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -248,8 +248,8 @@ const CLOUD_INLINE_SAFE_BYTES = 0;
 const CLOUD_CHUNK_RAW_BYTES = 384 * 1024;
 const CLOUD_CHUNK_MAX_COUNT = 64;
 // 強制終了などで参照されないまま残った世代だけを、十分な猶予後に少量ずつ掃除する。
-const ORPHAN_CHUNK_MIN_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const ORPHAN_CHUNK_CLEANUP_LIMIT = 128;
+const ORPHAN_CHUNK_MIN_AGE_MS = 24 * 60 * 60 * 1000;
+const ORPHAN_CHUNK_CLEANUP_LIMIT = 256;
 const cloudStorageMetaByUid = new Map();
 const orphanCleanupAttemptedUids = new Set();
 
@@ -601,13 +601,29 @@ export async function saveState(uid, state) {
   void cleanupOldOrphanChunks(uid);
 }
 
+
+async function deleteUserSaveSubcollections(uid) {
+  if (previewMode || !uid) return;
+  // 親ドキュメントを消してもFirestoreのサブコレクションは自動削除されないため、
+  // 現在のゲーム保存で利用する既知サブコレクションを先に明示的に掃除する。
+  const chunkSnapshots = await getDocs(collection(db, 'users', uid, 'saveChunks'));
+  const deletions = chunkSnapshots.docs.map((snapshot) => deleteDoc(snapshot.ref));
+  deletions.push(deleteDoc(cloudSaveMetaRef(uid)));
+  deletions.push(deleteDoc(sessionDocRef(uid)));
+  await Promise.all(deletions);
+  cloudStorageMetaByUid.delete(uid);
+  orphanCleanupAttemptedUids.delete(uid);
+}
+
 export async function deleteGameData(uid) {
   if (previewMode) {
     localStorage.removeItem(`jewelrygame-preview-${uid}`);
     return;
   }
+  await deleteUserSaveSubcollections(uid);
   await setDoc(doc(db, 'users', uid), {
     gameState: null,
+    gameStateStorage: null,
     activeSession: null,
     updatedAt: serverTimestamp(),
   }, { merge: true });
@@ -641,7 +657,9 @@ export async function deleteAccountCompletely(password = '') {
     throw error;
   }
 
-  // 再認証が成功した後にクラウドデータと認証アカウントを削除する。
+  // 再認証が成功した後に既知サブコレクションを先に削除し、
+  // 残存セーブを作らない状態で親ドキュメントと認証アカウントを削除する。
+  await deleteUserSaveSubcollections(user.uid);
   await deleteDoc(doc(db, 'users', user.uid));
   await deleteUser(user);
 }

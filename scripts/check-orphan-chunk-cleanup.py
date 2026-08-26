@@ -19,8 +19,8 @@ GIFT = FIREBASE[gift_start:gift_end] if gift_start >= 0 and gift_end > gift_star
 
 checks = {
     'Firestoreの限定一覧取得APIを使う': all(token in FIREBASE for token in ('collection,', 'query,', 'where,', 'limit,', 'getDocs,')),
-    '7日以上古いチャンクだけを対象にする': 'ORPHAN_CHUNK_MIN_AGE_MS = 7 * 24 * 60 * 60 * 1000' in FIREBASE and "where('updatedAt', '<', cutoff)" in CLEANUP,
-    '1回最大128件に制限する': 'ORPHAN_CHUNK_CLEANUP_LIMIT = 128' in FIREBASE and 'limit(ORPHAN_CHUNK_CLEANUP_LIMIT)' in CLEANUP,
+    '24時間以上古いチャンクだけを対象にする': 'ORPHAN_CHUNK_MIN_AGE_MS = 24 * 60 * 60 * 1000' in FIREBASE and "where('updatedAt', '<', cutoff)" in CLEANUP,
+    '1回最大256件に制限する': 'ORPHAN_CHUNK_CLEANUP_LIMIT = 256' in FIREBASE and 'limit(ORPHAN_CHUNK_CLEANUP_LIMIT)' in CLEANUP,
     '1セッション1回だけ試す': 'orphanCleanupAttemptedUids = new Set()' in FIREBASE and 'orphanCleanupAttemptedUids.has(uid)' in CLEANUP and 'orphanCleanupAttemptedUids.add(uid)' in CLEANUP,
     '問い合わせ前の現行generationを保護する': 'firstProtectedGeneration' in CLEANUP and '[firstProtectedGeneration, latestProtectedGeneration]' in CLEANUP,
     '削除直前に現行metadataを再確認する': CLEANUP.count('readCurrentCloudMetadata(uid)') >= 2 and 'latestProtectedGeneration' in CLEANUP,

@@ -1,0 +1,74 @@
+  try { localStorage.setItem(`${key}-last-saved-at`, String(nextState?.updatedAt || new Date().toISOString())); } catch (_) {}
+  return true;
+}
+
+async function readGiftCloudBase(uid) {
+  const metadata = await readCurrentCloudMetadata(uid);
+  if (metadata?.mode !== 'chunked') {
+    throw giftServiceError('gift/no-save', 'プレゼント処理前のクラウドセーブを確認できません。');
+  }
+  // saveGame() が直前にクラウドへ送った世代を使う。旧 users/{uid}.gameState は参照しない。
+  const gameState = await readChunkedGameState(uid, metadata);
+  const cloudRevision = Math.max(0, Math.floor(Number(metadata.saveRevision) || 0));
+  const localState = readGiftLocalState(uid);
+  const localRevision = Math.max(0, Math.floor(Number(localState?.saveRevision) || 0));
+  // 端末の方が新しい場合だけ、クラウド保存失敗後の古い状態でプレゼント処理するのを防ぐ。
+  // 端末容量不足で端末側だけ古い場合は、より新しいクラウドを正として継続する。
+  if (localState && localRevision > cloudRevision) {
+    throw giftServiceError('gift/save-conflict', '最新のゲームデータをクラウドへ保存できていません。もう一度お試しください。');
+  }
+  return { metadata, gameState };
+}
+
+async function stageGiftChunkedState(uid, nextState) {
+  const encoded = encodeCloudChunks(JSON.stringify(nextState));
+  const generation = `gift-${Math.max(0, Math.floor(Number(nextState.saveRevision) || 0))}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const metadata = {
+    mode: 'chunked',
+    version: 2,
+    encoding: 'base64-utf8-v1',
+    generation,
+    count: encoded.chunks.length,
+    bytes: encoded.bytes,
+    saveRevision: Math.max(0, Math.floor(Number(nextState.saveRevision) || 0)),
+    updatedAt: String(nextState.updatedAt || new Date().toISOString()),
+  };
+  const writtenChunkRefs = [];
+  try {
+    await runCloudSaveWithRetry(async () => {
+      for (let index = 0; index < encoded.chunks.length; index += 1) {
+        const chunkRef = doc(db, 'users', uid, 'saveChunks', cloudChunkDocId(generation, index));
+        await setDoc(chunkRef, {
+          generation,
+          index,
+          count: encoded.chunks.length,
+          data: encoded.chunks[index],
+          updatedAt: serverTimestamp(),
+        });
+        writtenChunkRefs[index] = chunkRef;
+      }
+    });
+  } catch (error) {
+    void Promise.allSettled(writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
+    throw error;
+  }
+  return { metadata, writtenChunkRefs };
+}
+
+function cleanupStagedGiftState(staged) {
+  if (!staged?.writtenChunkRefs?.length) return;
+  void Promise.allSettled(staged.writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
+}
+
+async function commitGiftChunkedTransition(uid, expectedMetadata, nextState, transactionBody, recoverCommitted) {
+  const staged = await stageGiftChunkedState(uid, nextState);
+  const metaRef = cloudSaveMetaRef(uid);
+  const finalizeCommitted = (result) => {
+    cloudStorageMetaByUid.set(uid, staged.metadata);
+    writeGiftLocalStateSafely(uid, nextState);
+    if (expectedMetadata?.mode === 'chunked' && expectedMetadata.generation !== staged.metadata.generation) {
+      void cleanupChunkGeneration(uid, expectedMetadata);
+    }
+    return result;
+  };
+  try {

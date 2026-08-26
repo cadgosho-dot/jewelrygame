@@ -1,0 +1,157 @@
+name: v0.10.767 IndexedDB offline cache hardening
+
+on:
+  push:
+    branches:
+      - impl/v010767-offline-indexeddb
+    paths:
+      - '.github/workflows/impl-v010767-offline-indexeddb.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: impl-v010767-offline-indexeddb
+  cancel-in-progress: false
+
+jobs:
+  implement-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout implementation branch
+        uses: actions/checkout@v6
+        with:
+          ref: impl/v010767-offline-indexeddb
+          fetch-depth: 20
+
+      - name: Verify base release
+        run: test "$(cat VERSION)" = "0.10.766"
+
+      - name: Patch version sync, offline shell and regression audit
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          version_sync_path = Path('scripts/version-sync.py')
+          text = version_sync_path.read_text(encoding='utf-8')
+
+          sw_rule_anchor = "    Rule('sw.js', 'firebase-service.js precache key', qparam(r'\\./js/firebase-service\\.js'), keep_prefix),\n"
+          sw_rule_new = sw_rule_anchor + "    Rule('sw.js', 'local-save-storage.js precache key', qparam(r'\\./js/local-save-storage\\.js'), keep_prefix),\n"
+          if text.count(sw_rule_anchor) != 1:
+              raise SystemExit(f'version-sync SW anchor count={text.count(sw_rule_anchor)}')
+          text = text.replace(sw_rule_anchor, sw_rule_new, 1)
+
+          app_rule_anchor = "    Rule('js/app.js', 'firebase-service.js import key', qparam(r'\\./firebase-service\\.js'), keep_prefix),\n"
+          app_rule_new = app_rule_anchor + "    Rule('js/app.js', 'local-save-storage.js import key', qparam(r'\\./local-save-storage\\.js'), keep_prefix),\n"
+          if text.count(app_rule_anchor) != 1:
+              raise SystemExit(f'version-sync app anchor count={text.count(app_rule_anchor)}')
+          text = text.replace(app_rule_anchor, app_rule_new, 1)
+
+          game_rule_anchor = "    Rule('js/game-data.js', 'game data VERSION', export_constant('VERSION'), keep_quote),\n"
+          firebase_rule = "    Rule('js/firebase-service.js', 'local-save-storage.js import key', qparam(r'\\./local-save-storage\\.js'), keep_prefix),\n"
+          if text.count(game_rule_anchor) != 1:
+              raise SystemExit(f'version-sync firebase insertion anchor count={text.count(game_rule_anchor)}')
+          text = text.replace(game_rule_anchor, firebase_rule + game_rule_anchor, 1)
+          version_sync_path.write_text(text, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          shell_anchor = "  './js/google-auth-bridge.js?v=0.10.766', './js/security-config.js', './js/firebase-service.js?v=0.10.766',\n"
+          shell_new = "  './js/google-auth-bridge.js?v=0.10.766', './js/security-config.js', './js/firebase-service.js?v=0.10.766', './js/local-save-storage.js?v=0.10.766',\n"
+          if sw.count(shell_anchor) != 1:
+              raise SystemExit(f'SW CORE_SHELL anchor count={sw.count(shell_anchor)}')
+          sw = sw.replace(shell_anchor, shell_new, 1)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          check_path = Path('scripts/check-indexeddb-save-policy.py')
+          check = check_path.read_text(encoding='utf-8')
+          setup_anchor = "STORAGE = (ROOT / 'js/local-save-storage.js').read_text(encoding='utf-8')\n\nboot_start ="
+          setup_new = """STORAGE = (ROOT / 'js/local-save-storage.js').read_text(encoding='utf-8')
+          SW = (ROOT / 'sw.js').read_text(encoding='utf-8')
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          core_shell_start = SW.find('const CORE_SHELL = [')
+          core_shell_end = SW.find('];', core_shell_start)
+          CORE_SHELL = SW[core_shell_start:core_shell_end] if core_shell_start >= 0 and core_shell_end > core_shell_start else ''
+
+          boot_start ="""
+          if check.count(setup_anchor) != 1:
+              raise SystemExit(f'checker setup anchor count={check.count(setup_anchor)}')
+          check = check.replace(setup_anchor, setup_new, 1)
+
+          checks_anchor = "    'IndexedDB保存モジュールがある': \"indexedDB.open(DB_NAME, DB_VERSION)\" in STORAGE and \"db.transaction(STORE_NAME, 'readwrite')\" in STORAGE,\n"
+          checks_new = """    'IndexedDB保存モジュールがある': \"indexedDB.open(DB_NAME, DB_VERSION)\" in STORAGE and \"db.transaction(STORE_NAME, 'readwrite')\" in STORAGE,
+              'appのIndexedDBモジュール版が現行VERSION': f\"from './local-save-storage.js?v={VERSION}';\" in APP,
+              'FirebaseのIndexedDBモジュール版が現行VERSION': f\"from './local-save-storage.js?v={VERSION}';\" in FIREBASE,
+              'オフライン冷間起動用にIndexedDBモジュールをCORE_SHELLへ事前キャッシュ': f\"'./js/local-save-storage.js?v={VERSION}'\" in CORE_SHELL,
+          """
+          if check.count(checks_anchor) != 1:
+              raise SystemExit(f'checker checks anchor count={check.count(checks_anchor)}')
+          check = check.replace(checks_anchor, checks_new, 1)
+          check_path.write_text(check, encoding='utf-8')
+          PY
+
+      - name: Synchronize release to v0.10.767
+        run: python3 scripts/version-sync.py --set 0.10.767
+
+      - name: Verify exact change scope
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          expected = {
+              'VERSION',
+              'auth-cache-recovery.js',
+              'game.html',
+              'hosting-origin-guard.js',
+              'index.html',
+              'js/app.js',
+              'js/firebase-service.js',
+              'js/game-data.js',
+              'js/memories-screen.js',
+              'scripts/check-indexeddb-save-policy.py',
+              'scripts/version-sync.py',
+              'sw.js',
+          }
+          changed = set(filter(None, subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()))
+          if changed != expected:
+              raise SystemExit(f'Unexpected files: changed={sorted(changed)} expected={sorted(expected)}')
+          print('CHANGE SCOPE: PASS')
+          PY
+
+      - name: Install image validation dependency
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: Run full current build audit
+        run: python3 -u scripts/check-current.py
+
+      - name: Verify JavaScript syntax
+        run: |
+          node --check js/app.js
+          node --check js/firebase-service.js
+          node --check js/local-save-storage.js
+          node --check sw.js
+
+      - name: Verify the three durability findings are closed
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          version = Path('VERSION').read_text().strip()
+          app = Path('js/app.js').read_text()
+          firebase = Path('js/firebase-service.js').read_text()
+          sw = Path('sw.js').read_text()
+          assert f"from './local-save-storage.js?v={version}';" in app
+          assert f"from './local-save-storage.js?v={version}';" in firebase
+          core = sw[sw.index('const CORE_SHELL = ['):sw.index('];', sw.index('const CORE_SHELL = ['))]
+          assert f"'./js/local-save-storage.js?v={version}'" in core
+          print('DURABILITY FINDINGS: 3/3 CLOSED')
+          PY
+
+      - name: Commit tested implementation to branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/memories-screen.js scripts/check-indexeddb-save-policy.py scripts/version-sync.py sw.js
+          git diff --cached --check
+          git commit -m "v0.10.767: Cache IndexedDB save module offline"
+          git push origin HEAD:impl/v010767-offline-indexeddb

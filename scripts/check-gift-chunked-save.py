@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ensure gifts use the v0.10.722+ chunked save instead of legacy users/{uid}.gameState."""
+"""Ensure gifts use chunked cloud saves and never re-fail on a raw app-side localStorage write."""
 from __future__ import annotations
 
 import subprocess
@@ -8,8 +8,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FB_PATH = ROOT / 'js/firebase-service.js'
+APP_PATH = ROOT / 'js/app.js'
 FB = FB_PATH.read_text(encoding='utf-8')
+APP = APP_PATH.read_text(encoding='utf-8')
 GIFT = FB[FB.index('export async function createGiftCode'):FB.index('export function giftErrorMessage')]
+APP_GIFT_PERSIST = APP[APP.index('function persistTransactionalGiftState'):APP.index('function giftStatusLabel')]
 
 checks = {
     'gift reads current saveMeta/current generation': 'readGiftCloudBase(uid)' in GIFT,
@@ -21,6 +24,8 @@ checks = {
     'gift never reads legacy inline gameState': 'userSnapshot.data()?.gameState' not in GIFT,
     'gift never writes legacy inline gameState': 'transaction.set(userRef, { gameState:' not in GIFT,
     'gift has explicit save-conflict message': "'gift/save-conflict'" in FB,
+    'app does not raw-write localStorage after committed gift': 'localStorage.setItem' not in APP_GIFT_PERSIST,
+    'app still adopts committed cloud gift state': 'cloudSave = structuredClone(state);' in APP_GIFT_PERSIST,
 }
 
 failed = []
@@ -29,11 +34,12 @@ for label, ok in checks.items():
     if not ok:
         failed.append(label)
 
-syntax = subprocess.run(['node', '--check', str(FB_PATH)], cwd=ROOT, text=True, capture_output=True)
-if syntax.returncode:
-    failed.append('firebase-service.js JavaScript syntax')
-    print(syntax.stdout)
-    print(syntax.stderr)
+for source in (FB_PATH, APP_PATH):
+    syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+    if syntax.returncode:
+        failed.append(f'{source.name} JavaScript syntax')
+        print(syntax.stdout)
+        print(syntax.stderr)
 
 if failed:
     print('\nGIFT CHUNKED SAVE POLICY: FAIL')

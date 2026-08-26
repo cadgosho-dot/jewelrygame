@@ -1,0 +1,69 @@
+  }, () => ({ gift: { ...initialGift, status: 'cancelled', cancelledAtIso }, gameState: nextState }));
+}
+'''
+text = text[:start] + new_funcs + text[end:]
+
+old = """    'gift/no-save': 'ゲームデータを保存してから、もう一度お試しください。',\n    'gift/code-generation-failed': 'プレゼントコードを発行できませんでした。もう一度お試しください。',\n"""
+new = """    'gift/no-save': 'ゲームデータを保存してから、もう一度お試しください。',\n    'gift/save-conflict': '最新のゲームデータをクラウドへ保存してから、もう一度お試しください。',\n    'gift/code-generation-failed': 'プレゼントコードを発行できませんでした。もう一度お試しください。',\n"""
+if old not in text:
+    raise SystemExit('gift message anchor missing')
+text = text.replace(old, new, 1)
+fb.write_text(text, encoding='utf-8')
+
+# Add a static + JS syntax regression guard.
+checker = root / 'scripts/check-gift-chunked-save.py'
+checker.write_text(r'''#!/usr/bin/env python3
+"""Ensure gifts use the v0.10.722+ chunked save instead of legacy users/{uid}.gameState."""
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+FB_PATH = ROOT / 'js/firebase-service.js'
+FB = FB_PATH.read_text(encoding='utf-8')
+GIFT = FB[FB.index('export async function createGiftCode'):FB.index('export function giftErrorMessage')]
+
+checks = {
+    'gift reads current saveMeta/current generation': 'readGiftCloudBase(uid)' in GIFT,
+    'gift stages a new chunk generation': 'stageGiftChunkedState(uid, nextState)' in FB,
+    'gift atomically switches saveMeta/current': 'transaction.set(metaRef, staged.metadata);' in FB,
+    'gift checks save-generation conflicts': 'giftMetadataMatches(currentMetadata, expectedMetadata)' in FB,
+    'gift protects commit-response-loss': 'giftMetadataMatches(currentMetadata, staged.metadata)' in FB,
+    'gift keeps local save quota recovery': "localStorage.removeItem(`${key}-backup`)" in FB and "'single-copy'" in FB,
+    'gift never reads legacy inline gameState': 'userSnapshot.data()?.gameState' not in GIFT,
+    'gift never writes legacy inline gameState': 'transaction.set(userRef, { gameState:' not in GIFT,
+    'gift has explicit save-conflict message': "'gift/save-conflict'" in FB,
+}
+
+failed = []
+for label, ok in checks.items():
+    print(('OK' if ok else 'NG') + ': ' + label)
+    if not ok:
+        failed.append(label)
+
+syntax = subprocess.run(['node', '--check', str(FB_PATH)], cwd=ROOT, text=True, capture_output=True)
+if syntax.returncode:
+    failed.append('firebase-service.js JavaScript syntax')
+    print(syntax.stdout)
+    print(syntax.stderr)
+
+if failed:
+    print('\nGIFT CHUNKED SAVE POLICY: FAIL')
+    for label in failed:
+        print(f'- {label}')
+    sys.exit(1)
+
+print('\nGIFT CHUNKED SAVE POLICY: PASS')
+''', encoding='utf-8')
+
+cc = root / 'scripts/check-current.py'
+cct = cc.read_text(encoding='utf-8')
+anchor = "    ('長期セーブ容量対策', [sys.executable, str(ROOT / 'scripts/check-save-storage-policy.py')]),\n"
+if anchor not in cct:
+    raise SystemExit('check-current anchor missing')
+cct = cct.replace(anchor, anchor + "    ('プレゼント分割セーブ', [sys.executable, str(ROOT / 'scripts/check-gift-chunked-save.py')]),\n", 1)
+cc.write_text(cct, encoding='utf-8')
+
+print('GIFT CHUNKED SAVE HOTFIX: APPLIED')

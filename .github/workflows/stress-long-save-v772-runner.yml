@@ -17,7 +17,7 @@ jobs:
           ref: main
           fetch-depth: 1
 
-      - name: Extract stress script to repository root
+      - name: Extract and normalize stress script
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -25,8 +25,24 @@ jobs:
           start = "          cat > /tmp/long-save-stress.mjs <<'NODE'\n"
           end = "\n          NODE\n"
           body = src.split(start, 1)[1].split(end, 1)[0]
-          lines = [(line[10:] if line.startswith('          ') else line) for line in body.splitlines()]
-          Path('long-save-stress.mjs').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          text = '\n'.join((line[10:] if line.startswith('          ') else line) for line in body.splitlines()) + '\n'
+
+          replacements = [
+            ("  PROCESSING_KNOWLEDGE,\n} from './js/game-data.js';", "  PROCESSING_KNOWLEDGE,\n  CUSTOMERS,\n} from './js/game-data.js';"),
+            ("      points: state.store?.points,\n      level: state.store?.level,\n      rating: state.store?.rating,\n", ""),
+            ("    eventSentinel: state.events?.robbery?.lastDay ?? null,", "    eventSentinel: state.events?.robbery?.lastTriggeredDay ?? null,"),
+            ("  const activeOrders = Array.from({ length: 8 }, (_, i) => ({\n    id: `active-${i}`,\n    customerId: `customer-${i}`,\n    customerName: `進行中顧客${i}`,\n    status: '受注',\n    acceptedDay: days - i,\n    deadlineDay: days + 20 + i,\n    price: 200000 + i,\n    payload: 'ACTIVE'.repeat(40),\n  }));", "  const customerIds = Object.keys(CUSTOMERS);\n  const activeOrders = Array.from({ length: 8 }, (_, i) => ({\n    ...makeClosedOrder(i, Math.max(1, days - i)),\n    id: `active-${i}`,\n    customerId: customerIds[i % customerIds.length],\n    customerName: String(CUSTOMERS[customerIds[i % customerIds.length]]?.name || `進行中顧客${i}`),\n    status: '受注',\n    acceptedDay: Math.max(1, days - i),\n    deadlineDay: days + 20 + i,\n    closedDay: null,\n    deliveredDay: null,\n    cancelledDay: null,\n    expiredDay: null,\n    jewelryId: null,\n    payload: 'ACTIVE'.repeat(40),\n  }));"),
+            ("  const live = Array.from({ length: 25 }, (_, i) => ({\n    id: `live-${i}`, name: `現在所有品${i}`, status: 'stock', item: 'ring', gem: 'garnet', metal: 'silver', createdDay: days - i,\n    payload: 'LIVE'.repeat(50),\n  }));", "  const live = Array.from({ length: 25 }, (_, i) => ({\n    ...makeSoldJewelry(i, Math.max(1, days - i)),\n    id: `live-${i}`,\n    name: `現在所有品${i}`,\n    status: 'stock',\n    soldDay: null,\n    soldPrice: null,\n    soldProfit: null,\n    soldBranchNumber: null,\n    soldChannel: '',\n    removalReason: '',\n    orderId: null,\n    payload: 'LIVE'.repeat(50),\n  }));"),
+            ("  state.events.robbery = { ...(state.events.robbery || {}), lastDay: 4321, history:", "  state.events.robbery = { ...(state.events.robbery || {}), lastTriggeredDay: 4321, history:"),
+            ("  const expected = importantSnapshot(state);\n\n  const compactStart = performance.now();", "  const compactStart = performance.now();"),
+            ("  const compactMs = performance.now() - compactStart;\n\n  if ((state.orders || [])", "  const compactMs = performance.now() - compactStart;\n  const expected = importantSnapshot(state);\n\n  if ((state.orders || [])"),
+          ]
+          for old, new in replacements:
+            count = text.count(old)
+            if count != 1:
+              raise SystemExit(f'fixture patch marker count={count}: {old[:80]!r}')
+            text = text.replace(old, new, 1)
+          Path('long-save-stress.mjs').write_text(text, encoding='utf-8')
           PY
           node --check long-save-stress.mjs
 

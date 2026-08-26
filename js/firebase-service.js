@@ -33,6 +33,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
+import { SAVE_KEY } from './game-data-core.js';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -646,6 +647,155 @@ function applyGiftMutation(gameState, mutator, payload, code) {
   return prepareGiftGameState(result && typeof result === 'object' ? result : draft);
 }
 
+function giftMetadataMatches(left, right) {
+  if (!left || !right) return false;
+  return left.mode === 'chunked'
+    && right.mode === 'chunked'
+    && String(left.generation || '') === String(right.generation || '')
+    && Math.max(0, Math.floor(Number(left.saveRevision) || 0)) === Math.max(0, Math.floor(Number(right.saveRevision) || 0));
+}
+
+function giftLocalSaveKey(uid) {
+  return `${SAVE_KEY}-${uid}`;
+}
+
+function isGiftLocalQuotaError(error) {
+  const name = String(error?.name || '');
+  const code = Number(error?.code);
+  const message = String(error?.message || '');
+  return name === 'QuotaExceededError'
+    || name === 'NS_ERROR_DOM_QUOTA_REACHED'
+    || code === 22
+    || code === 1014
+    || /quota|storage.*full|容量|領域/i.test(message);
+}
+
+function readGiftLocalState(uid) {
+  try {
+    const raw = localStorage.getItem(giftLocalSaveKey(uid));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeGiftLocalStateSafely(uid, nextState) {
+  const key = giftLocalSaveKey(uid);
+  const raw = JSON.stringify(nextState);
+  try {
+    localStorage.setItem(key, raw);
+  } catch (error) {
+    if (!isGiftLocalQuotaError(error)) return false;
+    // v0.10.762と同じ考え方で、巨大な重複コピーだけを解放して最新1本を再試行する。
+    try { localStorage.removeItem(`${key}-backup`); } catch (_) {}
+    try { localStorage.removeItem(`${key}-pre-migration`); } catch (_) {}
+    try { localStorage.removeItem(`${key}-corrupt`); } catch (_) {}
+    try { localStorage.setItem(`${key}-storage-mode`, 'single-copy'); } catch (_) {}
+    try { localStorage.setItem(key, raw); }
+    catch (_) { return false; }
+  }
+  try { localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(nextState?.settings || {})); } catch (_) {}
+  try { localStorage.setItem(`${key}-last-saved-at`, String(nextState?.updatedAt || new Date().toISOString())); } catch (_) {}
+  return true;
+}
+
+async function readGiftCloudBase(uid) {
+  const metadata = await readCurrentCloudMetadata(uid);
+  if (metadata?.mode !== 'chunked') {
+    throw giftServiceError('gift/no-save', 'プレゼント処理前のクラウドセーブを確認できません。');
+  }
+  // saveGame() が直前にクラウドへ送った世代を使う。旧 users/{uid}.gameState は参照しない。
+  const gameState = await readChunkedGameState(uid, metadata);
+  const cloudRevision = Math.max(0, Math.floor(Number(metadata.saveRevision) || 0));
+  const localState = readGiftLocalState(uid);
+  const localRevision = Math.max(0, Math.floor(Number(localState?.saveRevision) || 0));
+  // 端末の方が新しい場合だけ、クラウド保存失敗後の古い状態でプレゼント処理するのを防ぐ。
+  // 端末容量不足で端末側だけ古い場合は、より新しいクラウドを正として継続する。
+  if (localState && localRevision > cloudRevision) {
+    throw giftServiceError('gift/save-conflict', '最新のゲームデータをクラウドへ保存できていません。もう一度お試しください。');
+  }
+  return { metadata, gameState };
+}
+
+async function stageGiftChunkedState(uid, nextState) {
+  const encoded = encodeCloudChunks(JSON.stringify(nextState));
+  const generation = `gift-${Math.max(0, Math.floor(Number(nextState.saveRevision) || 0))}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const metadata = {
+    mode: 'chunked',
+    version: 2,
+    encoding: 'base64-utf8-v1',
+    generation,
+    count: encoded.chunks.length,
+    bytes: encoded.bytes,
+    saveRevision: Math.max(0, Math.floor(Number(nextState.saveRevision) || 0)),
+    updatedAt: String(nextState.updatedAt || new Date().toISOString()),
+  };
+  const writtenChunkRefs = [];
+  try {
+    await runCloudSaveWithRetry(async () => {
+      for (let index = 0; index < encoded.chunks.length; index += 1) {
+        const chunkRef = doc(db, 'users', uid, 'saveChunks', cloudChunkDocId(generation, index));
+        await setDoc(chunkRef, {
+          generation,
+          index,
+          count: encoded.chunks.length,
+          data: encoded.chunks[index],
+          updatedAt: serverTimestamp(),
+        });
+        writtenChunkRefs[index] = chunkRef;
+      }
+    });
+  } catch (error) {
+    void Promise.allSettled(writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
+    throw error;
+  }
+  return { metadata, writtenChunkRefs };
+}
+
+function cleanupStagedGiftState(staged) {
+  if (!staged?.writtenChunkRefs?.length) return;
+  void Promise.allSettled(staged.writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
+}
+
+async function commitGiftChunkedTransition(uid, expectedMetadata, nextState, transactionBody, recoverCommitted) {
+  const staged = await stageGiftChunkedState(uid, nextState);
+  const metaRef = cloudSaveMetaRef(uid);
+  const finalizeCommitted = (result) => {
+    cloudStorageMetaByUid.set(uid, staged.metadata);
+    writeGiftLocalStateSafely(uid, nextState);
+    if (expectedMetadata?.mode === 'chunked' && expectedMetadata.generation !== staged.metadata.generation) {
+      void cleanupChunkGeneration(uid, expectedMetadata);
+    }
+    return result;
+  };
+  try {
+    const result = await runTransaction(db, async (transaction) => {
+      const metaSnapshot = await transaction.get(metaRef);
+      const currentMetadata = metaSnapshot.exists() ? (metaSnapshot.data() || null) : null;
+      if (!giftMetadataMatches(currentMetadata, expectedMetadata)) {
+        throw giftServiceError('gift/save-conflict', 'ゲームデータの保存状態が更新されました。もう一度お試しください。');
+      }
+      const value = await transactionBody(transaction);
+      // 大きなセーブ本体は事前に別世代へ書き、小さな参照先だけをgift文書と原子的に切り替える。
+      transaction.set(metaRef, staged.metadata);
+      return value;
+    });
+    return finalizeCommitted(result);
+  } catch (error) {
+    // 応答だけ失われ、サーバーではコミット済みのケースを保護する。
+    // この固有generationが現行ならgift更新も同じトランザクションで確定済みなので、
+    // 参照中チャンクを削除せず成功結果を復元する。
+    const currentMetadata = await readCurrentCloudMetadata(uid).catch(() => null);
+    if (giftMetadataMatches(currentMetadata, staged.metadata)) {
+      return finalizeCommitted(typeof recoverCommitted === 'function' ? recoverCommitted() : { gameState: nextState });
+    }
+    cleanupStagedGiftState(staged);
+    throw error;
+  }
+}
+
 export function normalizeGiftCode(value) {
   return normalizeGiftCodeValue(value);
 }
@@ -682,32 +832,29 @@ export async function createGiftCode(uid, senderName, payload, removeFromGameSta
       return { code, gift, gameState: nextState };
     }
 
+    const giftRef = doc(db, 'gifts', code);
+    if ((await getDoc(giftRef)).exists()) continue;
+    const { metadata: expectedMetadata, gameState } = await readGiftCloudBase(uid);
+    const nextState = applyGiftMutation(gameState, removeFromGameState, cleanPayload, code);
+    const gift = {
+      code,
+      senderUid: uid,
+      senderName: String(senderName || 'プレイヤー').slice(0, 40),
+      payload: structuredClone(cleanPayload),
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      createdAtIso,
+      claimedBy: null,
+      claimedAtIso: '',
+      cancelledAtIso: '',
+    };
     try {
-      const giftRef = doc(db, 'gifts', code);
-      const userRef = doc(db, 'users', uid);
-      return await runTransaction(db, async (transaction) => {
+      return await commitGiftChunkedTransition(uid, expectedMetadata, nextState, async (transaction) => {
         const giftSnapshot = await transaction.get(giftRef);
-        const userSnapshot = await transaction.get(userRef);
         if (giftSnapshot.exists()) throw giftServiceError('gift/code-collision', 'プレゼントコードが重複しました。');
-        const gameState = userSnapshot.data()?.gameState;
-        if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント作成前にゲームを保存してください。');
-        const nextState = applyGiftMutation(gameState, removeFromGameState, cleanPayload, code);
-        const gift = {
-          code,
-          senderUid: uid,
-          senderName: String(senderName || 'プレイヤー').slice(0, 40),
-          payload: structuredClone(cleanPayload),
-          status: 'pending',
-          createdAt: serverTimestamp(),
-          createdAtIso,
-          claimedBy: null,
-          claimedAtIso: '',
-          cancelledAtIso: '',
-        };
-        transaction.set(userRef, { gameState: nextState, updatedAt: serverTimestamp() }, { merge: true });
         transaction.set(giftRef, gift);
         return { code, gift: { ...gift, createdAt: null }, gameState: nextState };
-      });
+      }, () => ({ code, gift: { ...gift, createdAt: null }, gameState: nextState }));
     } catch (error) {
       if (error?.code === 'gift/code-collision') continue;
       throw error;
@@ -755,21 +902,28 @@ export async function claimGiftCode(uid, recipientName, codeValue, addToGameStat
   }
 
   const giftRef = doc(db, 'gifts', code);
-  const userRef = doc(db, 'users', uid);
-  return runTransaction(db, async (transaction) => {
-    const giftSnapshot = await transaction.get(giftRef);
-    const userSnapshot = await transaction.get(userRef);
-    if (!giftSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
-    const gift = { code: giftSnapshot.id, ...giftSnapshot.data() };
+  const firstSnapshot = await getDoc(giftRef);
+  if (!firstSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+  const initialGift = { code: firstSnapshot.id, ...firstSnapshot.data() };
+  if (initialGift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントは受け取り済みです。');
+  if (initialGift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントは取り消されています。');
+  if (initialGift.status !== 'pending') throw giftServiceError('gift/unavailable', 'このプレゼントは現在受け取れません。');
+  if (initialGift.senderUid === uid) throw giftServiceError('gift/self-claim', '自分で発行したプレゼントは受け取れません。');
+
+  const { metadata: expectedMetadata, gameState } = await readGiftCloudBase(uid);
+  const nextState = applyGiftMutation(gameState, addToGameState, initialGift.payload, code);
+  const claimedAtIso = new Date().toISOString();
+  return commitGiftChunkedTransition(uid, expectedMetadata, nextState, async (transaction) => {
+    const currentSnapshot = await transaction.get(giftRef);
+    if (!currentSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    const gift = { code: currentSnapshot.id, ...currentSnapshot.data() };
     if (gift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントは受け取り済みです。');
     if (gift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントは取り消されています。');
     if (gift.status !== 'pending') throw giftServiceError('gift/unavailable', 'このプレゼントは現在受け取れません。');
     if (gift.senderUid === uid) throw giftServiceError('gift/self-claim', '自分で発行したプレゼントは受け取れません。');
-    const gameState = userSnapshot.data()?.gameState;
-    if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント受取前にゲームを保存してください。');
-    const nextState = applyGiftMutation(gameState, addToGameState, gift.payload, code);
-    const claimedAtIso = new Date().toISOString();
-    transaction.set(userRef, { gameState: nextState, updatedAt: serverTimestamp() }, { merge: true });
+    if (JSON.stringify(cleanGiftPayload(gift.payload)) !== JSON.stringify(cleanGiftPayload(initialGift.payload))) {
+      throw giftServiceError('gift/unavailable', 'プレゼント内容が更新されました。もう一度確認してください。');
+    }
     transaction.update(giftRef, {
       status: 'claimed',
       claimedBy: uid,
@@ -778,7 +932,10 @@ export async function claimGiftCode(uid, recipientName, codeValue, addToGameStat
       claimedAtIso,
     });
     return { gift: { ...gift, status: 'claimed', claimedBy: uid, claimedAtIso }, gameState: nextState };
-  });
+  }, () => ({
+    gift: { ...initialGift, status: 'claimed', claimedBy: uid, recipientName: String(recipientName || 'プレイヤー').slice(0, 40), claimedAtIso },
+    gameState: nextState,
+  }));
 }
 
 export async function cancelGiftCode(uid, codeValue, restoreToGameState) {
@@ -804,28 +961,35 @@ export async function cancelGiftCode(uid, codeValue, restoreToGameState) {
   }
 
   const giftRef = doc(db, 'gifts', code);
-  const userRef = doc(db, 'users', uid);
-  return runTransaction(db, async (transaction) => {
-    const giftSnapshot = await transaction.get(giftRef);
-    const userSnapshot = await transaction.get(userRef);
-    if (!giftSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
-    const gift = { code: giftSnapshot.id, ...giftSnapshot.data() };
+  const firstSnapshot = await getDoc(giftRef);
+  if (!firstSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+  const initialGift = { code: firstSnapshot.id, ...firstSnapshot.data() };
+  if (initialGift.senderUid !== uid) throw giftServiceError('gift/not-owner', 'このプレゼントは取り消せません。');
+  if (initialGift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントはすでに受け取られています。');
+  if (initialGift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントはすでに取り消されています。');
+  if (initialGift.status !== 'pending') throw giftServiceError('gift/unavailable', 'このプレゼントは現在取り消せません。');
+
+  const { metadata: expectedMetadata, gameState } = await readGiftCloudBase(uid);
+  const nextState = applyGiftMutation(gameState, restoreToGameState, initialGift.payload, code);
+  const cancelledAtIso = new Date().toISOString();
+  return commitGiftChunkedTransition(uid, expectedMetadata, nextState, async (transaction) => {
+    const currentSnapshot = await transaction.get(giftRef);
+    if (!currentSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    const gift = { code: currentSnapshot.id, ...currentSnapshot.data() };
     if (gift.senderUid !== uid) throw giftServiceError('gift/not-owner', 'このプレゼントは取り消せません。');
     if (gift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントはすでに受け取られています。');
     if (gift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントはすでに取り消されています。');
     if (gift.status !== 'pending') throw giftServiceError('gift/unavailable', 'このプレゼントは現在取り消せません。');
-    const gameState = userSnapshot.data()?.gameState;
-    if (!gameState) throw giftServiceError('gift/no-save', 'ゲームデータを確認できません。');
-    const nextState = applyGiftMutation(gameState, restoreToGameState, gift.payload, code);
-    const cancelledAtIso = new Date().toISOString();
-    transaction.set(userRef, { gameState: nextState, updatedAt: serverTimestamp() }, { merge: true });
+    if (JSON.stringify(cleanGiftPayload(gift.payload)) !== JSON.stringify(cleanGiftPayload(initialGift.payload))) {
+      throw giftServiceError('gift/unavailable', 'プレゼント内容が更新されました。もう一度確認してください。');
+    }
     transaction.update(giftRef, {
       status: 'cancelled',
       cancelledAt: serverTimestamp(),
       cancelledAtIso,
     });
     return { gift: { ...gift, status: 'cancelled', cancelledAtIso }, gameState: nextState };
-  });
+  }, () => ({ gift: { ...initialGift, status: 'cancelled', cancelledAtIso }, gameState: nextState }));
 }
 
 export function giftErrorMessage(error) {
@@ -839,6 +1003,7 @@ export function giftErrorMessage(error) {
     'gift/not-owner': 'このプレゼントは取り消せません。',
     'gift/unavailable': 'このプレゼントは現在利用できません。',
     'gift/no-save': 'ゲームデータを保存してから、もう一度お試しください。',
+    'gift/save-conflict': '最新のゲームデータをクラウドへ保存してから、もう一度お試しください。',
     'gift/code-generation-failed': 'プレゼントコードを発行できませんでした。もう一度お試しください。',
     'permission-denied': 'プレゼント機能のFirebaseルールが未反映の可能性があります。管理者へお知らせください。',
     'firestore/permission-denied': 'プレゼント機能のFirebaseルールが未反映の可能性があります。管理者へお知らせください。',

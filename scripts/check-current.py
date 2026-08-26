@@ -15,6 +15,7 @@ CHECKS = [
     ('長期セーブ容量対策', [sys.executable, str(ROOT / 'scripts/check-save-storage-policy.py')]),
     ('IndexedDB端末セーブ', [sys.executable, str(ROOT / 'scripts/check-indexeddb-save-policy.py')]),
     ('プレゼント分割セーブ', [sys.executable, str(ROOT / 'scripts/check-gift-chunked-save.py')]),
+    ('未参照クラウドチャンク掃除', [sys.executable, str(ROOT / 'scripts/check-orphan-chunk-cleanup.py')]),
     ('加工知識データ', [sys.executable, str(ROOT / 'scripts/check-processing-knowledge.py')]),
     ('ショーケース画像', [sys.executable, str(ROOT / 'scripts/check-showcase-jewelry-visuals.py')]),
     ('完成画面縦余白', [sys.executable, str(ROOT / 'scripts/check-completion-portrait-header-clearance.py')]),

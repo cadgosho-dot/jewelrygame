@@ -22,6 +22,11 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
 import {
   getFirestore,
+  collection,
+  query,
+  where,
+  limit,
+  getDocs,
   doc,
   getDoc,
   setDoc,
@@ -34,7 +39,7 @@ import {
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
-import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.767';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.768';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -242,7 +247,11 @@ export async function logout() {
 const CLOUD_INLINE_SAFE_BYTES = 0;
 const CLOUD_CHUNK_RAW_BYTES = 384 * 1024;
 const CLOUD_CHUNK_MAX_COUNT = 64;
+// 強制終了などで参照されないまま残った世代だけを、十分な猶予後に少量ずつ掃除する。
+const ORPHAN_CHUNK_MIN_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const ORPHAN_CHUNK_CLEANUP_LIMIT = 128;
 const cloudStorageMetaByUid = new Map();
+const orphanCleanupAttemptedUids = new Set();
 
 function cloudSaveError(code, message, detail = null) {
   const error = new Error(message);
@@ -335,6 +344,46 @@ async function cleanupChunkGeneration(uid, metadata) {
   await Promise.allSettled(Array.from({ length: count }, (_, index) => (
     deleteDoc(doc(db, 'users', uid, 'saveChunks', cloudChunkDocId(generation, index)))
   )));
+}
+
+async function cleanupOldOrphanChunks(uid) {
+  if (previewMode || !uid || orphanCleanupAttemptedUids.has(uid)) return;
+  // 保存成功の主経路を遅くしないため、同じページセッションでは1回だけ試す。
+  orphanCleanupAttemptedUids.add(uid);
+  try {
+    const currentMetadata = await readCurrentCloudMetadata(uid);
+    const firstProtectedGeneration = currentMetadata?.mode === 'chunked'
+      ? String(currentMetadata.generation || '')
+      : '';
+    if (!firstProtectedGeneration) return;
+
+    const cutoff = new Date(Date.now() - ORPHAN_CHUNK_MIN_AGE_MS);
+    const oldChunks = await getDocs(query(
+      collection(db, 'users', uid, 'saveChunks'),
+      where('updatedAt', '<', cutoff),
+      limit(ORPHAN_CHUNK_CLEANUP_LIMIT),
+    ));
+    if (oldChunks.empty) return;
+
+    // 問い合わせ中に別タブが保存しても、問い合わせ前後の現行世代を両方保護する。
+    const latestMetadata = await readCurrentCloudMetadata(uid);
+    const latestProtectedGeneration = latestMetadata?.mode === 'chunked'
+      ? String(latestMetadata.generation || '')
+      : '';
+    const protectedGenerations = new Set(
+      [firstProtectedGeneration, latestProtectedGeneration].filter(Boolean),
+    );
+    const deletions = oldChunks.docs
+      .filter((snapshot) => {
+        const generation = String(snapshot.data()?.generation || '');
+        return generation && !protectedGenerations.has(generation);
+      })
+      .map((snapshot) => deleteDoc(snapshot.ref));
+    if (deletions.length) await Promise.allSettled(deletions);
+  } catch (error) {
+    // 掃除は容量最適化だけ。失敗してもゲーム保存・起動・プレゼントの成功判定へ影響させない。
+    console.warn('古い未参照クラウドチャンクの掃除を見送りました。ゲーム保存は継続します。', error);
+  }
 }
 
 function shouldRetryCloudSave(error, attempt) {
@@ -499,6 +548,7 @@ export async function saveState(uid, state) {
   if (previousMetadata?.mode === 'chunked' && previousMetadata.generation !== generation) {
     void cleanupChunkGeneration(uid, previousMetadata);
   }
+  void cleanupOldOrphanChunks(uid);
 }
 
 export async function deleteGameData(uid) {
@@ -781,6 +831,7 @@ async function commitGiftChunkedTransition(uid, expectedMetadata, nextState, tra
     if (expectedMetadata?.mode === 'chunked' && expectedMetadata.generation !== staged.metadata.generation) {
       void cleanupChunkGeneration(uid, expectedMetadata);
     }
+    void cleanupOldOrphanChunks(uid);
     return result;
   };
   try {

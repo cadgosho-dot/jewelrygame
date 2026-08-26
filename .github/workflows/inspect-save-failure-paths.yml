@@ -1,0 +1,38 @@
+name: Inspect save failure paths
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-save-failure-paths.yml'
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Print save/load/session call sites
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('js/app.js')
+          lines = p.read_text(encoding='utf-8').splitlines()
+          needles = ['saveState(', 'loadState(', 'claimSession(', 'watchSession(', 'chooseNewestSavedState(', 'writeIndexedDbSave(', 'readIndexedDbSave(']
+          hits=[]
+          for i,line in enumerate(lines):
+              if any(n in line for n in needles):
+                  hits.append(i)
+          merged=[]
+          for i in hits:
+              a=max(0,i-18); b=min(len(lines),i+32)
+              if merged and a <= merged[-1][1]+3:
+                  merged[-1]=(merged[-1][0],max(merged[-1][1],b))
+              else:
+                  merged.append((a,b))
+          for a,b in merged:
+              print(f'--- app.js lines {a+1}-{b} ---')
+              for j in range(a,b): print(f'{j+1}: {lines[j]}')
+          PY

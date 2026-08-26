@@ -48,6 +48,6 @@ jobs:
         run: |
           git config user.name "cadgosho-dot"
           git config user.email "cadgosho@gmail.com"
-          git add VERSION index.html game.html sw.js service-worker.js hosting-origin-guard.js auth-cache-recovery.js js/app.js js/game-data.js js/game-data-core.js js/firebase-service.js js/memories-screen.js scripts/check-save-resilience-v773.py
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/memories-screen.js sw.js scripts/check-save-resilience-v773.py
           git commit -m "v0.10.773: Harden save recovery and concurrency"
           git push origin main

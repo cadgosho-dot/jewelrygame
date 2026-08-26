@@ -51,6 +51,7 @@ jobs:
               'js/memories-screen.js',
               'scripts/check-current.py',
               'scripts/check-indexeddb-save-policy.py',
+              'scripts/check-save-storage-policy.py',
               'sw.js',
           }
           tracked = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
@@ -80,7 +81,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/local-save-storage.js js/memories-screen.js scripts/check-current.py scripts/check-indexeddb-save-policy.py sw.js
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/local-save-storage.js js/memories-screen.js scripts/check-current.py scripts/check-indexeddb-save-policy.py scripts/check-save-storage-policy.py sw.js
           git diff --cached --quiet && exit 0
           git commit -m "Migrate device saves to IndexedDB"
           git pull --rebase origin main

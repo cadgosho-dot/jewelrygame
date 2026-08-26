@@ -1,0 +1,135 @@
+name: プレゼント端末保存修正 v0.10.764（一回限り）
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-gift-local-v764-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-hotfix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: 最新mainを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: v0.10.763を安全確認
+        run: |
+          test "$(tr -d '\r\n' < VERSION)" = "0.10.763"
+          git status --short
+
+      - name: プレゼント成功後の直接localStorage保存を除去
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+          old = """function persistTransactionalGiftState(nextState) {
+            state = migrateState(nextState);
+            ensureGiftState(state);
+            syncFinishedJewelryCapacity();
+            cloudSave = structuredClone(state);
+            localStorage.setItem(localSaveKey(), JSON.stringify(state));
+            localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
+          }
+          """
+          new = """function persistTransactionalGiftState(nextState) {
+            state = migrateState(nextState);
+            ensureGiftState(state);
+            syncFinishedJewelryCapacity();
+            cloudSave = structuredClone(state);
+            // Firebase側がクラウド確定後に容量対策付きで端末保存するため、
+            // ここでは再度localStorageへ直接書かない。クラウド成功を端末容量不足で失敗扱いにしない。
+          }
+          """
+          if text.count(old) != 1:
+            raise SystemExit(f'persistTransactionalGiftState anchor mismatch: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: プレゼント自動検査をapp.jsまで拡張
+        run: |
+          cat > scripts/check-gift-chunked-save.py <<'PY'
+          #!/usr/bin/env python3
+          """Ensure gifts use chunked cloud saves and never re-fail on a raw app-side localStorage write."""
+          from __future__ import annotations
+
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          FB_PATH = ROOT / 'js/firebase-service.js'
+          APP_PATH = ROOT / 'js/app.js'
+          FB = FB_PATH.read_text(encoding='utf-8')
+          APP = APP_PATH.read_text(encoding='utf-8')
+          GIFT = FB[FB.index('export async function createGiftCode'):FB.index('export function giftErrorMessage')]
+          APP_GIFT_PERSIST = APP[APP.index('function persistTransactionalGiftState'):APP.index('function giftStatusLabel')]
+
+          checks = {
+              'gift reads current saveMeta/current generation': 'readGiftCloudBase(uid)' in GIFT,
+              'gift stages a new chunk generation': 'stageGiftChunkedState(uid, nextState)' in FB,
+              'gift atomically switches saveMeta/current': 'transaction.set(metaRef, staged.metadata);' in FB,
+              'gift checks save-generation conflicts': 'giftMetadataMatches(currentMetadata, expectedMetadata)' in FB,
+              'gift protects commit-response-loss': 'giftMetadataMatches(currentMetadata, staged.metadata)' in FB,
+              'gift keeps local save quota recovery': "localStorage.removeItem(`${key}-backup`)" in FB and "'single-copy'" in FB,
+              'gift never reads legacy inline gameState': 'userSnapshot.data()?.gameState' not in GIFT,
+              'gift never writes legacy inline gameState': 'transaction.set(userRef, { gameState:' not in GIFT,
+              'gift has explicit save-conflict message': "'gift/save-conflict'" in FB,
+              'app does not raw-write localStorage after committed gift': 'localStorage.setItem' not in APP_GIFT_PERSIST,
+              'app still adopts committed cloud gift state': 'cloudSave = structuredClone(state);' in APP_GIFT_PERSIST,
+          }
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+
+          for source in (FB_PATH, APP_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+
+          if failed:
+              print('\nGIFT CHUNKED SAVE POLICY: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+
+          print('\nGIFT CHUNKED SAVE POLICY: PASS')
+          PY
+          chmod +x scripts/check-gift-chunked-save.py
+
+      - name: VERSIONを0.10.764へ同期
+        run: python3 scripts/version-sync.py --set 0.10.764
+
+      - name: 画像検査用ライブラリを準備
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: 公開前の全自動検査
+        run: |
+          node --check js/app.js
+          node --check js/firebase-service.js
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: 検査済み変更のみコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION game.html index.html sw.js hosting-origin-guard.js auth-cache-recovery.js \
+            js/app.js js/game-data.js js/memories-screen.js scripts/check-gift-chunked-save.py
+          git diff --cached --check
+          git commit -m "v0.10.764: Harden gift local save completion"
+          git pull --rebase origin main
+          git push origin HEAD:main

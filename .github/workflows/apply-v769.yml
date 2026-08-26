@@ -43,7 +43,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -f scripts/apply-v769.py .github/workflows/apply-v769.yml
+          rm -f scripts/apply-v769.py scripts/.v769-patch-*.txt .github/workflows/apply-v769.yml
           git add -A
           git commit -m "v0.10.769: Compress long-term save history"
           git pull --rebase origin main

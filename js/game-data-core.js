@@ -7244,6 +7244,9 @@ export function initialState() {
       proposedItemIds: [],
     }])),
     orders: [],
+    // v0.10.769: 長期プレイで増え続ける完了注文・売却済み完成品は、
+    // 現役データと分離した軽量履歴へ退避する。直近分だけ従来の完全データを保持する。
+    history: { closedOrders: [], soldJewelry: [] },
     employee: storeEmployeeDefaults(1),
     events: {
       bluesJukeEvent: {
@@ -7480,6 +7483,159 @@ export function initialState() {
 
 function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+export const LONG_TERM_HISTORY_LIMITS = Object.freeze({
+  fullClosedOrders: 100,
+  fullSoldJewelry: 200,
+});
+
+function finiteDay(value) {
+  const day = Number(value);
+  return Number.isFinite(day) && day > 0 ? Math.floor(day) : null;
+}
+
+function finiteMoney(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.round(amount) : null;
+}
+
+function compactClosedOrderRecord(order = {}) {
+  return {
+    id: String(order.id || ''),
+    customerId: String(order.customerId || ''),
+    customerName: String(order.customerName || ''),
+    item: String(order.item || ''),
+    gem: String(order.gem || ''),
+    looseShape: String(order.looseShape || ''),
+    metal: String(order.metal || ''),
+    design: String(order.design || ''),
+    difficulty: String(order.difficulty || ''),
+    requiredArtisanLevel: Math.max(0, Math.floor(Number(order.requiredArtisanLevel) || 0)),
+    requiredTools: Array.isArray(order.requiredTools) ? [...new Set(order.requiredTools.map(String).filter(Boolean))].slice(0, 8) : [],
+    price: finiteMoney(order.price),
+    estimatedCost: finiteMoney(order.estimatedCost),
+    estimatedProfit: finiteMoney(order.estimatedProfit),
+    acceptedDay: finiteDay(order.acceptedDay),
+    deadlineDay: finiteDay(order.deadlineDay),
+    branchNumber: Math.max(1, Math.floor(Number(order.branchNumber) || 1)),
+    status: ['完了', '取消', '期限切れ'].includes(order.status) ? order.status : '完了',
+    closedDay: finiteDay(order.closedDay),
+    deliveredDay: finiteDay(order.deliveredDay),
+    cancelledDay: finiteDay(order.cancelledDay),
+    expiredDay: finiteDay(order.expiredDay),
+    jewelryId: order.jewelryId ? String(order.jewelryId) : null,
+  };
+}
+
+function compactSoldJewelryRecord(item = {}) {
+  const soldPrice = finiteMoney(item.soldPrice);
+  const cost = Math.max(0, finiteMoney(item.cost) || 0);
+  return {
+    id: String(item.id || ''),
+    name: String(item.name || ''),
+    item: String(item.item || ''),
+    gem: String(item.gem || ''),
+    useLoose: item.useLoose !== false,
+    looseShape: String(item.looseShape || ''),
+    metal: String(item.metal || ''),
+    design: String(item.design || ''),
+    finish: String(item.finish || ''),
+    quality: String(item.quality || ''),
+    cost,
+    recommendedPrice: Math.max(0, finiteMoney(item.recommendedPrice) || 0),
+    createdDay: finiteDay(item.createdDay),
+    orderId: item.orderId ? String(item.orderId) : null,
+    acquisition: item.acquisition ? String(item.acquisition) : '',
+    autopilot: Boolean(item.autopilot),
+    craftsmanshipScore: Math.max(0, Math.floor(Number(item.craftsmanshipScore) || 0)) || null,
+    craftsmanshipTier: item.craftsmanshipTier ? String(item.craftsmanshipTier) : '',
+    status: 'sold',
+    soldDay: finiteDay(item.soldDay || item.removedDay || item.stolenDay),
+    soldPrice,
+    soldProfit: finiteMoney(item.soldProfit) ?? (soldPrice == null ? null : soldPrice - cost),
+    soldBranchNumber: item.soldBranchNumber == null ? null : Math.max(1, Math.floor(Number(item.soldBranchNumber) || 1)),
+    soldChannel: item.soldChannel ? String(item.soldChannel) : '',
+    removalReason: item.removalReason ? String(item.removalReason) : (item.stolenDay ? 'stolen' : ''),
+    stolenDay: finiteDay(item.stolenDay),
+    stolenBranchNumber: item.stolenBranchNumber == null ? null : Math.max(1, Math.floor(Number(item.stolenBranchNumber) || 1)),
+    stolenLossValue: Math.max(0, finiteMoney(item.stolenLossValue) || 0) || null,
+  };
+}
+
+function mergeCompactHistory(existing, moved, compactRecord, liveIds) {
+  const map = new Map();
+  for (const raw of Array.isArray(existing) ? existing : []) {
+    if (!raw?.id || liveIds.has(String(raw.id))) continue;
+    const compact = compactRecord(raw);
+    if (compact.id) map.set(compact.id, compact);
+  }
+  for (const raw of moved) {
+    if (!raw?.id || liveIds.has(String(raw.id))) continue;
+    const compact = compactRecord(raw);
+    if (compact.id) map.set(compact.id, compact);
+  }
+  return [...map.values()];
+}
+
+export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { movedClosedOrders: 0, movedSoldJewelry: 0, changed: false };
+  }
+  const closedLimit = Math.max(0, Math.floor(Number(limits?.fullClosedOrders) || 0));
+  const soldLimit = Math.max(0, Math.floor(Number(limits?.fullSoldJewelry) || 0));
+  state.history = state.history && typeof state.history === 'object' && !Array.isArray(state.history)
+    ? state.history
+    : {};
+  state.history.closedOrders = Array.isArray(state.history.closedOrders) ? state.history.closedOrders : [];
+  state.history.soldJewelry = Array.isArray(state.history.soldJewelry) ? state.history.soldJewelry : [];
+
+  const orders = Array.isArray(state.orders) ? state.orders : [];
+  const activeOrders = [];
+  const closedOrders = [];
+  orders.forEach((order, index) => {
+    const closed = ['完了', '取消', '期限切れ'].includes(order?.status);
+    (closed ? closedOrders : activeOrders).push({ value: order, index });
+  });
+  closedOrders.sort((a, b) => {
+    const dayA = Number(a.value?.closedDay ?? a.value?.deliveredDay ?? a.value?.expiredDay ?? a.value?.cancelledDay ?? a.value?.deadlineDay ?? a.value?.acceptedDay ?? 0) || 0;
+    const dayB = Number(b.value?.closedDay ?? b.value?.deliveredDay ?? b.value?.expiredDay ?? b.value?.cancelledDay ?? b.value?.deadlineDay ?? b.value?.acceptedDay ?? 0) || 0;
+    return dayB - dayA || b.index - a.index;
+  });
+  const keepClosed = closedOrders.slice(0, closedLimit).map((entry) => entry.value);
+  const moveClosed = closedOrders.slice(closedLimit).map((entry) => entry.value);
+  const keptOrderIds = new Set([...activeOrders.map((entry) => entry.value), ...keepClosed].map((order) => String(order?.id || '')).filter(Boolean));
+  state.orders = [...activeOrders.sort((a, b) => a.index - b.index).map((entry) => entry.value), ...keepClosed.reverse()];
+  state.history.closedOrders = mergeCompactHistory(state.history.closedOrders, moveClosed, compactClosedOrderRecord, keptOrderIds);
+
+  const jewelry = Array.isArray(state.inventory?.jewelry) ? state.inventory.jewelry : [];
+  const liveJewelry = [];
+  const soldJewelry = [];
+  jewelry.forEach((item, index) => {
+    (item?.status === 'sold' ? soldJewelry : liveJewelry).push({ value: item, index });
+  });
+  soldJewelry.sort((a, b) => {
+    const dayA = Number(a.value?.soldDay ?? a.value?.removedDay ?? a.value?.stolenDay ?? a.value?.createdDay ?? 0) || 0;
+    const dayB = Number(b.value?.soldDay ?? b.value?.removedDay ?? b.value?.stolenDay ?? b.value?.createdDay ?? 0) || 0;
+    return dayB - dayA || b.index - a.index;
+  });
+  const keepSold = soldJewelry.slice(0, soldLimit).map((entry) => entry.value);
+  const moveSold = soldJewelry.slice(soldLimit).map((entry) => entry.value);
+  const keptJewelryIds = new Set([...liveJewelry.map((entry) => entry.value), ...keepSold].map((item) => String(item?.id || '')).filter(Boolean));
+  if (state.inventory && typeof state.inventory === 'object') {
+    state.inventory.jewelry = [...liveJewelry.sort((a, b) => a.index - b.index).map((entry) => entry.value), ...keepSold.reverse()];
+  }
+  state.history.soldJewelry = mergeCompactHistory(state.history.soldJewelry, moveSold, compactSoldJewelryRecord, keptJewelryIds);
+
+  return {
+    movedClosedOrders: moveClosed.length,
+    movedSoldJewelry: moveSold.length,
+    changed: moveClosed.length > 0 || moveSold.length > 0,
+    retainedFullClosedOrders: keepClosed.length,
+    retainedFullSoldJewelry: keepSold.length,
+    archivedClosedOrders: state.history.closedOrders.length,
+    archivedSoldJewelry: state.history.soldJewelry.length,
+  };
 }
 
 function merge(base, saved) {
@@ -8987,6 +9143,9 @@ export function migrateState(saved) {
   const activeBranchV454 = state.store.branches.find((branch) => Number(branch.number) === Math.max(1, Number(state.store.branchNumber) || 1)) || state.store.branches[0];
   if (activeBranchV454) state.store.level = activeBranchV454.level;
   state.workshopStaff.evolutionStage = workshopStaffGrowthForWorkDays(state.workshopStaff.workDays).level >= 4 ? 2 : 1;
+
+  // v0.10.769: 現役データはそのまま、古い完了注文と売却済み完成品だけを軽量履歴へ退避する。
+  compactLongTermHistory(state);
 
   return state;
 }

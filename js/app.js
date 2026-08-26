@@ -1,13 +1,13 @@
 import {
-  VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
+  VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.768';
+} from './game-data.js?v=0.10.769';
 
-const UI_BUILD_VERSION = '0.10.768';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.768';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.768';
+const UI_BUILD_VERSION = '0.10.769';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.769';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.769';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,8 +15,8 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.768';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.768';
+} from './firebase-service.js?v=0.10.769';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.769';
 
 
 
@@ -4058,6 +4058,9 @@ function saveLocalBackup({ fingerprint = null, createCloudSnapshot = true, updat
 function saveGame(message = false) {
   if (!state) return Promise.resolve();
   syncGameClearState();
+  // v0.10.769: 保存直前に古い完了注文・売却済み完成品を軽量履歴へ退避する。
+  // saveRevisionを余分に増やさず、現役注文・現役商品には触れない。
+  compactLongTermHistory(state);
   if (!currentUser || sessionTakenOver) return Promise.resolve();
   if (autosaveTimer) {
     clearTimeout(autosaveTimer);
@@ -16442,7 +16445,7 @@ function confirmJewelryShopTrade() {
   if (!item) return showToast('この商品は現在売却できません。', 'error');
   const offer = jewelryShopSellOffer(item);
   const profit = offer - Math.max(0, Number(item.cost) || 0);
-  removeJewelry(item.id);
+  removeJewelry(item.id, { price: offer, channel: 'jewelryShop' });
   state.game.money += offer;
   spendHours(JEWELRY_SHOP_TRANSACTION_HOURS);
   state.daily.sold.push({ itemId: item.id, name: item.name, price: offer, profit, channel: 'jewelryShop' });
@@ -17580,7 +17583,7 @@ function applyStoreTheftEventLoss() {
   const itemId = String(eventState.targetItemId || '');
   const itemName = String(eventState.targetItemName || '完成品');
   const item = state.inventory?.jewelry?.find((entry) => entry.id === itemId && entry.status === 'displayed');
-  if (item) removeJewelry(item.id);
+  if (item) removeJewelry(item.id, { reason: 'stolen' });
   eventState.theftApplied = true;
   addNotification('店舗で盗難が発生しました', `${itemName}が盗まれていました。`, 'warning');
 }
@@ -18180,9 +18183,12 @@ function orderCustomerProfile(customerId, order = null) {
 
 function renderOrders() {
   const active = state.orders.filter((order) => !orderClosed(order));
-  const completed = state.orders
+  const completedSource = [
+    ...(state.orders || []).filter((order) => orderClosed(order)),
+    ...(state.history?.closedOrders || []),
+  ];
+  const completed = completedSource
     .map((order, index) => ({ order, index }))
-    .filter(({ order }) => orderClosed(order))
     .sort((a, b) => orderClosedSortValue(b.order, b.index) - orderClosedSortValue(a.order, a.index))
     .map(({ order }) => order);
   const rows = active.map((order) => {
@@ -19676,7 +19682,8 @@ function aiLooseInventoryRows() {
 }
 
 function aiJewelryRows() {
-  return (state.inventory.jewelry || []).map((jewelry) => ({
+  const rows = [...(state.inventory.jewelry || []), ...(state.history?.soldJewelry || [])];
+  return rows.map((jewelry) => ({
     id: jewelry.id,
     name: jewelry.name || itemName(jewelry),
     item: ITEMS[jewelry.item]?.name || jewelry.item,
@@ -19700,7 +19707,8 @@ function aiJewelryRows() {
 }
 
 function aiOrderRows() {
-  return (state.orders || []).map((order) => ({
+  const rows = [...(state.orders || []), ...(state.history?.closedOrders || [])];
+  return rows.map((order) => ({
     id: order.id,
     customerName: order.customerName,
     item: ITEMS[order.item]?.name || order.item,
@@ -20723,13 +20731,24 @@ function showMoveShowcaseItemModal(itemId) {
   });
 }
 
-function removeJewelry(itemId) {
+function removeJewelry(itemId, saleMeta = {}) {
   for (const branch of state.store.branches || []) {
     branch.showcases = branchShowcases(branch).map((showcase) => ({ ...showcase, slots: (showcase.slots || []).map((slot) => slot?.jewelryId === itemId ? null : slot) }));
   }
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
   if (item) {
     item.status = 'sold';
+    item.removedDay = Math.max(1, Number(state.game.day) || 1);
+    const price = Number(saleMeta.price);
+    if (Number.isFinite(price)) {
+      item.soldDay = item.removedDay;
+      item.soldPrice = Math.round(price);
+      item.soldProfit = Math.round(price - Math.max(0, Number(item.cost) || 0));
+    }
+    if (saleMeta.branchNumber != null) item.soldBranchNumber = Math.max(1, Math.floor(Number(saleMeta.branchNumber) || 1));
+    if (saleMeta.channel) item.soldChannel = String(saleMeta.channel);
+    if (saleMeta.reason) item.removalReason = String(saleMeta.reason);
+    else if (item.stolenDay) item.removalReason = 'stolen';
     delete item.displayBranchNumber;
   }
   mirrorCurrentStoreDisplay(currentStoreBranch());
@@ -20762,7 +20781,7 @@ function customerBuy(customerId, itemId) {
     customerState.activeRequest = null;
     customerState.wishesHeard = false;
     customerState.proposedItemIds = [];
-    removeJewelry(itemId);
+    removeJewelry(itemId, { price, branchNumber: state.store.branchNumber, channel: 'customer' });
     state.game.money += price;
     startMoneyFeedback(price);
     state.store.salesCount += 1;
@@ -20998,6 +21017,12 @@ function deliverOrder(orderId, { immediateFromCompletion = false } = {}) {
   order.closedDay = state.game.day;
   order.deliveredDay = state.game.day;
   item.status = 'sold';
+  item.removedDay = state.game.day;
+  item.soldDay = state.game.day;
+  item.soldPrice = Math.round(Number(order.price) || 0);
+  item.soldProfit = Math.round((Number(order.price) || 0) - Math.max(0, Number(item.cost) || 0));
+  item.soldBranchNumber = Math.max(1, Number(order.branchNumber) || 1);
+  item.soldChannel = 'order';
   state.game.money += order.price;
   startMoneyFeedback(order.price);
   state.store.salesCount += 1;
@@ -21806,6 +21831,12 @@ function autopilotDeliverCompletedOrders(summary) {
     order.closedDay = state.game.day;
     order.deliveredDay = state.game.day;
     item.status = 'sold';
+    item.removedDay = state.game.day;
+    item.soldDay = state.game.day;
+    item.soldPrice = Math.round(Number(order.price) || 0);
+    item.soldProfit = Math.round((Number(order.price) || 0) - Math.max(0, Number(item.cost) || 0));
+    item.soldBranchNumber = Math.max(1, Number(order.branchNumber) || 1);
+    item.soldChannel = 'order-autopilot';
     state.game.money += order.price;
     state.store.salesCount += 1;
     state.store.totalRevenue += order.price;
@@ -21922,7 +21953,7 @@ function autopilotWholesaleStoredItems(summary) {
     if (!autopilotCanSpendHours(JEWELRY_SHOP_TRANSACTION_HOURS, summary)) break;
     const offer = jewelryShopSellOffer(item);
     const profit = offer - Math.max(0, Number(item.cost) || 0);
-    removeJewelry(item.id);
+    removeJewelry(item.id, { price: offer, channel: 'jewelryShop-autopilot' });
     state.game.money += offer;
     spendHours(JEWELRY_SHOP_TRANSACTION_HOURS);
     state.daily.sold.push({ itemId: item.id, name: item.name, price: offer, profit, channel: 'jewelryShop', autopilot: true });
@@ -22165,7 +22196,7 @@ function settleDay({ showResult = true, save = true } = {}) {
           : 0.035;
         const chance = clamp(normalChance * (pearlHumanEffectActive() ? 2 : 1), 0, 1);
         if (Math.random() < chance) {
-          removeJewelry(item.id);
+          removeJewelry(item.id, { price, branchNumber: branch.number, channel: 'showcase' });
           jewelryById.delete(item.id);
           state.game.money += price;
           state.store.salesCount += 1;

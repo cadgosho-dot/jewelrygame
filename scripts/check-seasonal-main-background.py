@@ -36,6 +36,14 @@ SEASONS = [
         'before': '2027-08-24', 'start': '2027-08-25', 'end': '2027-08-31', 'after': '2027-09-01',
     },
     {
+        'label': 'ハロウィン', 'func': 'isHalloweenMainPeriod', 'asset': 'main-menu-halloween',
+        'before': '2027-10-30', 'start': '2027-10-31', 'end': '2027-10-31', 'after': '2027-11-01',
+    },
+    {
+        'label': '晩秋', 'func': 'isLateAutumnMainPeriod', 'asset': 'main-menu-late-autumn',
+        'before': '2027-11-24', 'start': '2027-11-25', 'end': '2027-11-30', 'after': '2027-12-01',
+    },
+    {
         'label': 'クリスマス', 'func': 'isChristmasMainPeriod', 'asset': 'main-menu-christmas',
         'before': '2027-12-19', 'start': '2027-12-20', 'end': '2027-12-25', 'after': '2027-12-26',
     },

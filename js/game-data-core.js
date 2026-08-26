@@ -3208,6 +3208,7 @@ export const GEMS = {
   atelierAmethyst: { id: 'atelierAmethyst', name: 'ヴィンチ村産アメシスト', roughPrice: 0, price: 4000, looseRank: 'D', hue: '#8e62c7', eventOnly: true, originalLoose: true, noLooseShopTrade: true, originalLooseBaseGem: 'amethyst', originalLooseBaseShape: 'oval', originalLooseStoneName: 'アメシスト', originalLooseStyle: '観察と想像が同居するルネサンス風', originalLooseDescription: '深い紫の陰影の中に柔らかな光が浮かぶ、静かな観察眼と探究心を感じさせるルース。' },
   streetStone: { id: 'streetStone', name: 'ストリート・ストーン', roughPrice: 0, price: 3000, looseRank: 'D', hue: '#36c9d0', eventOnly: true, originalLoose: true, noLooseShopTrade: true, originalLooseBaseGem: 'turquoise', originalLooseBaseShape: 'oval', originalLooseStoneName: 'トルコ石', originalLooseStyle: '落書きの衝動をそのまま封じたストリートアート風', originalLooseDescription: '鮮やかな青に走る荒々しい線と飛沫のような色が印象的な、街の熱気と反骨心を感じるルース。' },
   biteMechaMoon: { id: 'biteMechaMoon', name: 'バイトメカムーン', roughPrice: 0, price: 5500, looseRank: 'C', hue: '#9fc5e7', eventOnly: true, originalLoose: true, noLooseShopTrade: true, originalLooseBaseGem: 'moonstone', originalLooseBaseShape: 'oval', originalLooseStoneName: 'ブルームーンストーン', originalLooseStyle: '有機的な機械フレームをまとったバイオメカニカル風', originalLooseDescription: '青白い光を宿した石のまわりに、生体機械のような有機的フレームが絡みつく、異質で幻想的なルース。' },
+  rosequartz: { id: 'rosequartz', name: 'ローズクォーツ', roughPrice: 0, price: 6000, looseRank: 'C', hue: '#e9b7c8', eventOnly: true },
   citrine: { id: 'citrine', name: 'シトリン', roughPrice: 3500, price: 3500, looseRank: 'D', hue: '#d89a22' },
 };
 
@@ -3236,7 +3237,7 @@ export const LOOSE_SHAPES = {
 
 const STANDARD_LOOSE_SHAPE_IDS = ['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon'];
 const CABOCHON_ONLY_GEMS = new Set(['opal', 'turquoise', 'lapislazuli']);
-const SPECIAL_LOOSE_SHAPES = Object.freeze({ blackDiamond: ['round'], antiqueDiamond: ['antiqueCut'], pearl: ['pearl'], ivory: ['roundCabochon', 'ovalCabochon'], jade: ['roundCabochon', 'ovalCabochon'], amber: ['amber'], starrySapphire: ['oval'], cubistRuby: ['pear'], waterGardenEmerald: ['emerald'], meltingTopaz: ['round'], burstOpal: ['oval'], marbleDiamond: ['round'], popDiamond: ['round'], arabesquePeridot: ['oval'], skyTourmaline: ['emerald'], outsideDiamond: ['round'], morningPearl: ['pearl'], waveAquamarine: ['oval'], atelierAmethyst: ['oval'], streetStone: ['oval'], biteMechaMoon: ['oval'] });
+const SPECIAL_LOOSE_SHAPES = Object.freeze({ blackDiamond: ['round'], antiqueDiamond: ['antiqueCut'], pearl: ['pearl'], ivory: ['roundCabochon', 'ovalCabochon'], jade: ['roundCabochon', 'ovalCabochon'], amber: ['amber'], rosequartz: ['ovalCabochon'], starrySapphire: ['oval'], cubistRuby: ['pear'], waterGardenEmerald: ['emerald'], meltingTopaz: ['round'], burstOpal: ['oval'], marbleDiamond: ['round'], popDiamond: ['round'], arabesquePeridot: ['oval'], skyTourmaline: ['emerald'], outsideDiamond: ['round'], morningPearl: ['pearl'], waveAquamarine: ['oval'], atelierAmethyst: ['oval'], streetStone: ['oval'], biteMechaMoon: ['oval'] });
 
 export const LOOSE_CUT_PRICE_MULTIPLIERS = Object.freeze({
   round: 1.00,

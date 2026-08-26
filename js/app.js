@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.762';
+} from './game-data.js?v=0.10.763';
 
-const UI_BUILD_VERSION = '0.10.762';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.762';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.762';
+const UI_BUILD_VERSION = '0.10.763';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.763';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.763';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.762';
+} from './firebase-service.js?v=0.10.763';
 
 
 
@@ -407,6 +407,9 @@ const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
 const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png';
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'カワハラ';
+const YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE = 1 / 12;
+const YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID = 'rosequartz';
+const YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID = 'ovalCabochon';
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'tropicalFishShop', 'speedStarEvent', 'storytellerEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
   'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
@@ -419,6 +422,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   miningPazupanEvent: new Set(['intro', 'intro2', 'intro3', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   workshopKappaJadeEvent: new Set(['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell']),
+  yowamushiRoseQuartzEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
   pandaMusicEvent: new Set(['intro1', 'intro2']),
@@ -456,7 +460,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'bluesJukeEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
-  'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent',
+  'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent', 'yowamushiRoseQuartzEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
 ]);
@@ -479,6 +483,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
   workshopKappaJadeEvent: { eventKey: 'workshopKappaJadeEvent', fallback: 'workshop' },
+  yowamushiRoseQuartzEvent: { eventKey: 'yowamushiRoseQuartzEvent', fallback: 'workshop' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   okachimachiInvasiveTurtlesEvent: { eventKey: 'okachimachiInvasiveTurtlesEvent', fallback: 'okachimachi' },
   pandaMusicEvent: { eventKey: 'pandaMusicEvent', fallback: 'okachimachi' },
@@ -523,7 +528,7 @@ const NON_EVENT_RECOVERY_SCREENS = new Set(['phone', 'aquarium', 'tropicalFishSh
 const EVENT_EMERGENCY_POLICY = Object.freeze({
   guaranteedReward: new Set([
     'miningPazupanEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'kappaJadeEvent',
-    'cyclopsEvent', 'ganeshaTuskEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
+    'cyclopsEvent', 'ganeshaTuskEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent', 'yowamushiRoseQuartzEvent',
   ]),
   conditionalReward: new Set(['westernUnionEvent']),
   committedExpense: new Set([
@@ -660,6 +665,17 @@ function runEventEmergencySettlement(key, eventState) {
       changed = grantEmergencyRough(eventState, GANESHA_TUSK_GEM_ID, 'ガネーシャの牙を手に入れました', '工房の原石へ追加されました。研磨すると象牙のルースになります。') || changed;
       break;
 
+    case 'yowamushiRoseQuartzEvent':
+      if (!eventState.rewardGranted) {
+        state.inventory.loose = state.inventory.loose && typeof state.inventory.loose === 'object' ? state.inventory.loose : {};
+        state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] = state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] && typeof state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] === 'object' ? state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] : {};
+        state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID] = Math.max(0, Math.floor(Number(state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID]) || 0)) + 1;
+        eventState.rewardGranted = true;
+        addNotification('ローズクォーツを手に入れました', '工房のルースへ追加されました。', 'special');
+        changed = true;
+      }
+      break;
+
     case 'touristWoodSwordEvent':
       changed = grantEmergencyItem(eventState, 'bokuto', '木刀を手に入れました', '観光客から木刀を受け取りました。持っている間は強盗の発生率が半分になります。') || changed;
       eventState.triggered = true;
@@ -752,7 +768,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'blues-juke-event-next', 'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
   'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-video-start', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
   'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'apprentice-cinema-event-next', 'apprentice-cinema-video-start', 'apprentice-cinema-video-finish', 'cinema-video-finish',
-  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
+  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'yowamushi-event-next', 'yowamushi-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
@@ -1299,6 +1315,12 @@ const GEM_LOOSE_IMAGE_REGISTRY = Object.freeze({
       amber: './assets/images/loose/amber/amber.png',
     },
   },
+  rosequartz: {
+    defaultShape: 'ovalCabochon',
+    shapes: {
+      ovalCabochon: './assets/images/loose/rosequartz/oval-cabochon.png',
+    },
+  },
   citrine: {
     defaultShape: 'round',
     shapes: {
@@ -1633,6 +1655,8 @@ function looseGemProfessionalSections(gemId, guide) {
     extras.push({ title: 'ゲーム内での翡翠', body: 'ゲーム内では河原で出会う河童から翡翠原石を受け取り、工房でラウンドまたはオーバルのカボションへ研磨する特別なルースとして扱います。' });
   } else if (gemId === 'amber') {
     extras.push({ title: 'ゲーム内での琥珀', body: 'ゲーム内では不動産屋で出会うタトゥーの女から受け取る特別な虫入り琥珀として扱います。ルース在庫へ直接追加され、制作や売却に使用できます。' });
+  } else if (gemId === 'rosequartz') {
+    extras.push({ title: 'ゲーム内でのローズクォーツ', body: 'ゲーム内では3月〜4月に工房へ現れる「よわむし」イベントで受け取る特別なローズクォーツとして扱います。工房のルース在庫へ直接追加され、制作や売却に使用できます。' });
   }
   return {
     foundation: [...profileSections, ...guideSections, ...extras],
@@ -1904,6 +1928,18 @@ const GEM_LOOSE_GUIDES = Object.freeze({
       { title: '耐久性', body: 'モース硬度はおおむね6〜6.5で、日常使用では擦り傷やエッジ欠けに注意が必要です。劈開方向の問題だけでなく、内部亀裂や薄いガードルがあると石留め時の圧力で欠けやすくなります。リングよりも、衝撃の少ないペンダントやピアスで扱いやすい石種です。' },
       { title: 'カットと見え方', body: '高い分散を生かすには、単に深いだけでなく、光が正面へ戻る角度設計と対称性が重要です。オーバルでは中央の暗部やボウタイが強く出ることがあるため、正面色とファイアの見え方を複数方向で確認します。' },
       { title: '鑑別と取り扱い', body: '鮮やかな青色石としてサファイア、タンザナイト、合成スピネル、ガラスなどと比較対象になります。外観だけで断定せず、屈折率、分散、二色性、内包物、必要に応じて専門検査を行います。洗浄は温かい石けん水を基本とし、超音波や強い熱、急冷を避けて扱います。' },
+    ],
+  },
+  rosequartz: {
+    hardness: '7', mineral: 'クォーツ（石英）',
+    overview: 'ローズクォーツは淡いピンクから中程度のピンク色を示すクォーツです。一般的な塊状ローズクォーツの色は、微細な繊維状包有物や構造欠陥との関係が研究されています。透明度の高い結晶質ピンククォーツは、一般的な塊状ローズクォーツとは色因や退色挙動が異なる場合があります。ゲーム内では工房へ現れる「よわむし」から受け取る特別なルースとして扱います。',
+    sections: [
+      { title: '色と外観', body: '色はごく淡い桜色からやや濃いピンクまで幅があります。一般的には半透明から不透明寄りの塊状材が多く、均一な柔らかい色味、白濁の程度、内部の雲状感や筋の見え方が印象を左右します。' },
+      { title: '色の原因と退色', body: 'ローズクォーツの色は、微細な繊維状包有物や結晶構造上の欠陥との関連が議論されています。長時間の強い加熱や日光で色味が弱く見えることがあるため、修理や展示では過度な熱と強光を避けます。' },
+      { title: '加工の考え方', body: '透明石のように強いファセット輝きを狙うより、色の面積を見せるカボションやシンプルな曲面仕上げと相性が良い素材です。今回のゲーム内ルースはオーバルカボションとして扱い、左右対称、ドームの高さ、底面の安定、色の見え方を重視します。' },
+      { title: '耐久性', body: 'モース硬度は7で日常使いに一定の適性がありますが、石英は靭性が高いわけではないため、角や縁へ強い衝撃を受けると欠けることがあります。硬い宝石と擦れると表面艶が落ちることもあるため、保管時は接触を避けます。' },
+      { title: '石留め・修理', body: '爪留めでは一方向から急激に締め込まず、複数点へ少しずつ力を分散します。カボションの縁を均等に支える覆輪や低めの爪と相性が良く、火を使う修理では石外しを優先し、超音波洗浄や急熱急冷は避けます。' },
+      { title: '手入れ', body: '温かい石けん水と柔らかい布、または柔らかいブラシで優しく洗浄します。長時間の直射日光、高温環境、強い薬品、研磨剤の使用は避け、個別保管で表面傷を防ぎます。' },
     ],
   },
   citrine: {
@@ -5850,8 +5886,22 @@ function isLateSummerMainPeriod(date = gameDate()) {
   return isMonthDayRange(date, 7, 25, 31);
 }
 
+function isHalloweenMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 9, 31, 31);
+}
+
+function isLateAutumnMainPeriod(date = gameDate()) {
+  return isMonthDayRange(date, 10, 25, 30);
+}
+
 function isChristmasMainPeriod(date = gameDate()) {
   return isMonthDayRange(date, 11, 20, 25);
+}
+
+function snowMainBackgroundAsset(portrait = isPortraitLayout()) {
+  const weather = String(state?.game?.weather || '').trim();
+  if (weather !== '雪') return '';
+  return `main-menu-snow${portrait ? '-portrait' : ''}`;
 }
 
 function seasonalMainBackgroundAsset(date = gameDate(), portrait = isPortraitLayout()) {
@@ -5861,6 +5911,8 @@ function seasonalMainBackgroundAsset(date = gameDate(), portrait = isPortraitLay
   if (isTanabataMainPeriod(date)) return `main-menu-tanabata${suffix}`;
   if (isObonMainPeriod(date)) return `main-menu-obon${suffix}`;
   if (isLateSummerMainPeriod(date)) return `main-menu-late-summer${suffix}`;
+  if (isHalloweenMainPeriod(date)) return `main-menu-halloween${suffix}`;
+  if (isLateAutumnMainPeriod(date)) return `main-menu-late-autumn${suffix}`;
   if (isChristmasMainPeriod(date)) return `main-menu-christmas${suffix}`;
   return '';
 }
@@ -7624,6 +7676,192 @@ function advanceWorkshopKappaJadeEvent() {
     render();
     return;
   }
+}
+
+function ensureYowamushiEventStyles() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('yowamushi-rosequartz-event-style')) return;
+  const style = document.createElement('style');
+  style.id = 'yowamushi-rosequartz-event-style';
+  style.textContent = `
+    .yowamushi-event-screen .yowamushi-dialogue-button,
+    .yowamushi-event-screen .yowamushi-reward-button {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+    }
+    .yowamushi-event-screen .yowamushi-dialogue-button strong,
+    .yowamushi-event-screen .yowamushi-dialogue-button small,
+    .yowamushi-event-screen .yowamushi-dialogue-button span {
+      text-shadow: 0 2px 12px rgba(0,0,0,.72);
+    }
+    .yowamushi-event-screen .yowamushi-dialogue-button small {
+      color:#ff8fbd !important;
+    }
+    .yowamushi-event-screen .yowamushi-character-area {
+      position:absolute;
+      left:50%;
+      top:0;
+      bottom:clamp(122px,26vh,186px);
+      z-index:5;
+      width:100%;
+      padding:8px 5px 0;
+      transform:translateX(-50%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:visible;
+      pointer-events:none;
+    }
+    .yowamushi-event-screen .yowamushi-character {
+      display:block;
+      max-width:min(94vw,760px);
+      max-height:min(72dvh,1000px);
+      width:auto;
+      height:auto;
+      object-fit:contain;
+      filter:drop-shadow(0 24px 38px rgba(0,0,0,.82));
+      user-select:none;
+    }
+    @media (orientation:portrait) {
+      .yowamushi-event-screen .yowamushi-character { transform:translateY(12dvh); }
+    }
+    @media (orientation:landscape) {
+      .yowamushi-event-screen .yowamushi-character-area { top:0; bottom:112px; padding:0 5px; align-items:flex-start; }
+      .yowamushi-event-screen .yowamushi-character { max-height:calc(100dvh - 112px); max-width:54vw; transform:none; }
+    }
+    .yowamushi-event-screen .yowamushi-reward-button img {
+      max-width: 48vw;
+      max-height: 24vh;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.42));
+    }
+  `;
+  document.head?.appendChild(style);
+}
+
+function yowamushiRoseQuartzEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.yowamushiRoseQuartzEvent && typeof state.events.yowamushiRoseQuartzEvent === 'object' && !Array.isArray(state.events.yowamushiRoseQuartzEvent)
+    ? state.events.yowamushiRoseQuartzEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2', 'completed']);
+  state.events.yowamushiRoseQuartzEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+    lastTriggeredYear: Math.max(0, Math.floor(Number(saved.lastTriggeredYear) || 0)),
+  };
+  if (!state.events.yowamushiRoseQuartzEvent.active && !['idle', 'completed'].includes(state.events.yowamushiRoseQuartzEvent.stage)) state.events.yowamushiRoseQuartzEvent.stage = 'completed';
+  return state.events.yowamushiRoseQuartzEvent;
+}
+
+function resumeYowamushiRoseQuartzEvent() {
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active) return false;
+  setScreen('yowamushiRoseQuartzEvent', {}, false);
+  return true;
+}
+
+function maybeStartYowamushiRoseQuartzEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = yowamushiRoseQuartzEventState();
+  if (eventState.active) return resumeYowamushiRoseQuartzEvent();
+  const today = gameDate();
+  const month = today.getMonth();
+  const year = today.getFullYear();
+  if (![2, 3].includes(month)) return false;
+  if (Math.max(0, Number(eventState.lastTriggeredYear) || 0) >= year) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  const forceLateApril = month === 3 && today.getDate() >= 25;
+  if (!forceLateApril && Math.random() >= YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  eventState.lastTriggeredYear = year;
+  saveGame();
+  setScreen('yowamushiRoseQuartzEvent', {}, false);
+  playSfx('select', { gain: 0.64, rate: 0.86 });
+  vibrate([18, 30, 18]);
+  return true;
+}
+
+function receiveYowamushiRoseQuartzReward() {
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.loose = state.inventory.loose && typeof state.inventory.loose === 'object' ? state.inventory.loose : {};
+    state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] = state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] && typeof state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] === 'object' ? state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] : {};
+    state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID] = Math.max(0, Math.floor(Number(state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID]) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('ローズクォーツを手に入れました', '工房のルースへ追加されました。', 'special');
+  }
+  eventState.stage = 'outro1';
+  saveGame();
+  playSfx('success', { gain: 0.78, rate: 1.08 });
+  vibrate([24, 36, 54]);
+  render();
+}
+
+function advanceYowamushiRoseQuartzEvent() {
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active) {
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (eventState.stage === 'reward') return;
+  const order = ['intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2'];
+  const index = order.indexOf(eventState.stage);
+  if (eventState.stage === 'outro2') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.62, rate: 0.82 });
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (index >= 0 && index < order.length - 1) {
+    eventState.stage = order[index + 1];
+    saveGame();
+    if (eventState.stage === 'reward') playSfx('success', { gain: 0.66, rate: 1.04 });
+    else playSfx('select', { gain: 0.62, rate: 0.92 });
+    render();
+  }
+}
+
+function renderYowamushiRoseQuartzEvent() {
+  ensureYowamushiEventStyles();
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active) return renderWorkshop();
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const reward = eventState.stage === 'reward';
+  const dialogueMap = {
+    intro1: `こんにちは、、${playerName}、、、`,
+    intro2: 'そういえば、以前君に僕の指輪をメンテナンスしてもらった事を思い出したんだ、、、、',
+    intro3: 'その君の優しさに、、今日はお礼をしに来たというわけさ、、、、',
+    intro4: 'よければ、これを受け取ってくれ、、、',
+    outro1: '僕はもう行くけど、、、たとえば僕が死んだら、、、僕の骨は合成ダイヤにでもして泣いてくれ、、、、それも君にあげよう、、、',
+    outro2: `それじゃ、、またね、${playerName}、、、、`,
+  };
+  const rewardPanel = `<button type="button" class="yowamushi-reward-button kappa-jade-reward-button" data-action="yowamushi-event-receive" aria-label="ローズクォーツを受け取る"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/loose/rosequartz/oval-cabochon.png?v=${VERSION}" alt="ローズクォーツ" draggable="false"><strong>ローズクォーツ</strong><small>タップして受け取る</small></button>`;
+  const dialoguePanel = `<button type="button" class="event-dialogue-card visit-event-dialogue yowamushi-dialogue-button" data-action="yowamushi-event-next"><small>よわむし</small><strong>${dialogueMap[eventState.stage] || ''}</strong><span>タップして進む</span></button>`;
+  return `
+    <main class="main-screen yowamushi-event-screen">
+      <section class="visit-character-event kappa-jade-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        ${reward ? '' : `<div class="yowamushi-character-area" aria-hidden="true"><img class="yowamushi-character" src="./assets/images/events/yowamushi.png?v=${VERSION}" alt="" draggable="false"></div>`}
+        ${reward ? rewardPanel : dialoguePanel}
+      </section>
+    </main>`;
 }
 
 function tattooWomanAmberEventState() {
@@ -10996,7 +11234,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -11029,6 +11267,8 @@ function backgroundAssetFor(target) {
   if (target === 'main') {
     const seasonalAsset = seasonalMainBackgroundAsset();
     if (seasonalAsset) return seasonalAsset;
+    const snowAsset = snowMainBackgroundAsset();
+    if (snowAsset) return snowAsset;
     return isPortraitLayout() ? 'main-menu-portrait' : 'main-menu';
   }
   if (target === 'sushiChefEvent') return 'meal-kaitenzushi-event';
@@ -11776,6 +12016,7 @@ function render() {
       whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
       kappaJadeEvent: renderKappaJadeEvent,
       workshopKappaJadeEvent: renderWorkshopKappaJadeEvent,
+      yowamushiRoseQuartzEvent: renderYowamushiRoseQuartzEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
       ganeshaTuskEvent: renderGaneshaTuskEvent,
@@ -22891,6 +23132,12 @@ root.addEventListener('click', async (event) => {
     case 'workshop-kappa-jade-event-receive':
       receiveWorkshopKappaJadeReward();
       break;
+    case 'yowamushi-event-next':
+      advanceYowamushiRoseQuartzEvent();
+      break;
+    case 'yowamushi-event-receive':
+      receiveYowamushiRoseQuartzReward();
+      break;
     case 'diamond-polishing-lap-event-next':
       await advanceDiamondPolishingLapEvent();
       break;
@@ -23032,7 +23279,9 @@ root.addEventListener('click', async (event) => {
       }
       if (target === 'workshop') {
         if (resumeWorkshopKappaJadeEvent()) break;
+        if (resumeYowamushiRoseQuartzEvent()) break;
         if (maybeStartWorkshopKappaJadeEvent()) break;
+        if (maybeStartYowamushiRoseQuartzEvent()) break;
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {

@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.764';
+} from './game-data.js?v=0.10.765';
 
-const UI_BUILD_VERSION = '0.10.764';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.764';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.764';
+const UI_BUILD_VERSION = '0.10.765';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.765';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.765';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,7 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.764';
+} from './firebase-service.js?v=0.10.765';
 
 
 
@@ -3768,6 +3768,37 @@ function enableLocalSingleCopyMode() {
   removeLocalStorageItemQuietly(localSavePreMigrationKey());
   removeLocalStorageItemQuietly(localSaveCorruptKey());
   try { localStorage.setItem(localSaveStorageModeKey(), 'single-copy'); } catch (_) {}
+}
+
+function persistBootLocalStateSafely(savedState, label = '起動時セーブ') {
+  let serialized = '';
+  try {
+    serialized = JSON.stringify(savedState);
+  } catch (error) {
+    console.warn(`${label}の端末保存準備に失敗しました。クラウド/メモリ上のセーブで起動を続行します。`, error);
+    return false;
+  }
+
+  const writePrimary = () => localStorage.setItem(localSaveKey(), serialized);
+  try {
+    writePrimary();
+    return true;
+  } catch (error) {
+    if (!isLocalStorageQuotaError(error)) {
+      console.warn(`${label}の端末保存に失敗しました。クラウド/メモリ上のセーブで起動を続行します。`, error);
+      return false;
+    }
+  }
+
+  console.warn(`${label}の端末保存容量が不足したため、端末内バックアップを整理して再保存します。`);
+  enableLocalSingleCopyMode();
+  try {
+    writePrimary();
+    return true;
+  } catch (retryError) {
+    console.warn(`${label}を端末へ保存できませんでした。クラウド/メモリ上のセーブで起動を続行します。`, retryError);
+    return false;
+  }
 }
 
 function saveStateFingerprint(value = state) {
@@ -24077,7 +24108,7 @@ async function boot() {
         const preferredAtBoot = preferredSavedState();
         const localWasNewer = preferredAtBoot.source === 'local' && Boolean(preferredAtBoot.state);
         if (preferredAtBoot.source === 'cloud' && preferredAtBoot.state) {
-          localStorage.setItem(localSaveKey(), JSON.stringify(preferredAtBoot.state));
+          persistBootLocalStateSafely(preferredAtBoot.state, 'クラウド採用セーブ');
         } else if (localWasNewer) {
           cloudSave = structuredClone(preferredAtBoot.state);
         }
@@ -24096,7 +24127,7 @@ async function boot() {
               console.warn('新しい端末セーブのバックグラウンド同期に失敗しました。端末保存は完了しています。', error);
             });
           cloudSave = structuredClone(migratedLocal);
-          localStorage.setItem(localSaveKey(), JSON.stringify(migratedLocal));
+          persistBootLocalStateSafely(migratedLocal, '起動時ローカル移行');
         }
         stopSessionWatch = watchSession(user.uid, sessionId, () => {
           sessionTakenOver = true;

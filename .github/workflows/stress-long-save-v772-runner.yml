@@ -1,0 +1,41 @@
+name: Long save stress v0.10.772 rerun
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/stress-long-save-v772-runner.yml'
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Extract stress script to repository root
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path('.github/workflows/stress-long-save-v772.yml').read_text(encoding='utf-8')
+          start = "          cat > /tmp/long-save-stress.mjs <<'NODE'\n"
+          end = "\n          NODE\n"
+          body = src.split(start, 1)[1].split(end, 1)[0]
+          lines = [(line[10:] if line.startswith('          ') else line) for line in body.splitlines()]
+          Path('long-save-stress.mjs').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+          node --check long-save-stress.mjs
+
+      - name: Run 5000 / 10000 day save-load-save stress
+        run: node --expose-gc long-save-stress.mjs
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: long-save-stress-v772-rerun
+          path: /tmp/long-save-stress-results.json
+          retention-days: 3

@@ -1,0 +1,74 @@
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      createdAtIso,
+      claimedBy: null,
+      claimedAtIso: '',
+      cancelledAtIso: '',
+    };
+    try {
+      return await commitGiftChunkedTransition(uid, expectedMetadata, nextState, async (transaction) => {
+        const giftSnapshot = await transaction.get(giftRef);
+        if (giftSnapshot.exists()) throw giftServiceError('gift/code-collision', 'プレゼントコードが重複しました。');
+        transaction.set(giftRef, gift);
+        return { code, gift: { ...gift, createdAt: null }, gameState: nextState };
+      }, () => ({ code, gift: { ...gift, createdAt: null }, gameState: nextState }));
+    } catch (error) {
+      if (error?.code === 'gift/code-collision') continue;
+      throw error;
+    }
+  }
+  throw giftServiceError('gift/code-generation-failed', 'プレゼントコードを発行できませんでした。もう一度お試しください。');
+}
+
+export async function inspectGiftCode(codeValue) {
+  const code = normalizeGiftCodeValue(codeValue);
+  if (!/^JXJ-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) throw giftServiceError('gift/invalid-code', 'プレゼントコードの形式を確認してください。');
+  if (previewMode) {
+    const gift = readPreviewGiftStore()[code];
+    if (!gift) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    return structuredClone(gift);
+  }
+  if (!auth?.currentUser) throw giftServiceError('gift/not-authenticated', 'ログインしてください。');
+  const snapshot = await getDoc(doc(db, 'gifts', code));
+  if (!snapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+  return { code: snapshot.id, ...snapshot.data() };
+}
+
+export async function claimGiftCode(uid, recipientName, codeValue, addToGameState) {
+  requireGiftUser(uid);
+  const code = normalizeGiftCodeValue(codeValue);
+  if (previewMode) {
+    const store = readPreviewGiftStore();
+    const gift = store[code];
+    if (!gift) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+    if (gift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントは受け取り済みです。');
+    if (gift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントは取り消されています。');
+    if (gift.senderUid === uid) throw giftServiceError('gift/self-claim', '自分で発行したプレゼントは受け取れません。');
+    const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
+    const gameState = saved ? JSON.parse(saved) : null;
+    if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント受取前にゲームを保存してください。');
+    const nextState = applyGiftMutation(gameState, addToGameState, gift.payload, code);
+    gift.status = 'claimed';
+    gift.claimedBy = uid;
+    gift.recipientName = String(recipientName || 'プレイヤー').slice(0, 40);
+    gift.claimedAtIso = new Date().toISOString();
+    store[code] = gift;
+    writePreviewGiftStore(store);
+    localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(nextState));
+    return { gift: structuredClone(gift), gameState: nextState };
+  }
+
+  const giftRef = doc(db, 'gifts', code);
+  const firstSnapshot = await getDoc(giftRef);
+  if (!firstSnapshot.exists()) throw giftServiceError('gift/not-found', 'プレゼントコードが見つかりません。');
+  const initialGift = { code: firstSnapshot.id, ...firstSnapshot.data() };
+  if (initialGift.status === 'claimed') throw giftServiceError('gift/already-claimed', 'このプレゼントは受け取り済みです。');
+  if (initialGift.status === 'cancelled') throw giftServiceError('gift/cancelled', 'このプレゼントは取り消されています。');
+  if (initialGift.status !== 'pending') throw giftServiceError('gift/unavailable', 'このプレゼントは現在受け取れません。');
+  if (initialGift.senderUid === uid) throw giftServiceError('gift/self-claim', '自分で発行したプレゼントは受け取れません。');
+
+  const { metadata: expectedMetadata, gameState } = await readGiftCloudBase(uid);
+  const nextState = applyGiftMutation(gameState, addToGameState, initialGift.payload, code);
+  const claimedAtIso = new Date().toISOString();
+  return commitGiftChunkedTransition(uid, expectedMetadata, nextState, async (transaction) => {
+    const currentSnapshot = await transaction.get(giftRef);

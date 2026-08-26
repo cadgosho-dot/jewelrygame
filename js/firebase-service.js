@@ -39,7 +39,7 @@ import {
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
-import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.772';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.773';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -548,9 +548,9 @@ export async function loadState(uid) {
 }
 
 export async function saveState(uid, state) {
-  // v0.10.722: Firestoreの1文書上限を根本回避するため、セーブは常に
-  // users/{uid}/saveChunks + users/{uid}/saveMeta/current へ保存する。
-  // 旧 users/{uid}.gameState は触らない。これにより旧文書が上限直前でも保存可能。
+  // v0.10.773: チャンク本体を先に別世代へ書き、最後のメタ切替だけを
+  // compare-and-swap付きトランザクションで確定する。別端末の新しい保存を
+  // 古い端末が後から上書きすることを防ぐ。
   const clean = { ...state, updatedAt: new Date().toISOString() };
   if (previewMode) {
     localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(clean));
@@ -571,6 +571,12 @@ export async function saveState(uid, state) {
     saveRevision: Math.max(0, Math.floor(Number(clean.saveRevision) || 0)),
     updatedAt: clean.updatedAt,
   };
+  const metadataIdentityMatches = (left, right) => Boolean(
+    left?.mode === 'chunked'
+      && right?.mode === 'chunked'
+      && String(left.generation || '') === String(right.generation || '')
+      && Math.max(0, Math.floor(Number(left.saveRevision) || 0)) === Math.max(0, Math.floor(Number(right.saveRevision) || 0)),
+  );
 
   const writtenChunkRefs = [];
   try {
@@ -586,12 +592,51 @@ export async function saveState(uid, state) {
         });
         writtenChunkRefs[index] = chunkRef;
       }
-      // 全チャンク成功後、小さなメタ文書だけを切り替える。ルート文書は更新しない。
-      await setDoc(cloudSaveMetaRef(uid), metadata);
     });
   } catch (error) {
-    void Promise.allSettled(writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
+    await Promise.allSettled(writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
     throw error;
+  }
+
+  try {
+    await runCloudSaveWithRetry(async () => {
+      const metaRef = cloudSaveMetaRef(uid);
+      await runTransaction(db, async (transaction) => {
+        const metaSnapshot = await transaction.get(metaRef);
+        const currentMetadata = metaSnapshot.exists() ? (metaSnapshot.data() || null) : null;
+        const expectedMatches = previousMetadata?.mode === 'chunked'
+          ? metadataIdentityMatches(currentMetadata, previousMetadata)
+          : !currentMetadata;
+        const currentRevision = Math.max(0, Math.floor(Number(currentMetadata?.saveRevision) || 0));
+        const nextRevision = Math.max(0, Math.floor(Number(metadata.saveRevision) || 0));
+        const currentTimestamp = Date.parse(String(currentMetadata?.updatedAt || ''));
+        const nextTimestamp = Date.parse(String(metadata.updatedAt || ''));
+        const sameRevisionButOlder = nextRevision === currentRevision
+          && Number.isFinite(currentTimestamp)
+          && Number.isFinite(nextTimestamp)
+          && nextTimestamp < currentTimestamp;
+
+        if (!expectedMatches || nextRevision < currentRevision || sameRevisionButOlder) {
+          throw cloudSaveError(
+            'jxj/cloud-save-conflict',
+            '別の端末で新しいゲームデータが保存されています。この端末の保存データは残っています。',
+            {
+              expectedGeneration: String(previousMetadata?.generation || ''),
+              currentGeneration: String(currentMetadata?.generation || ''),
+              currentRevision,
+              nextRevision,
+            },
+          );
+        }
+        transaction.set(metaRef, metadata);
+      });
+    });
+  } catch (error) {
+    const currentMetadata = await readCurrentCloudMetadata(uid).catch(() => null);
+    if (!metadataIdentityMatches(currentMetadata, metadata)) {
+      await Promise.allSettled(writtenChunkRefs.filter(Boolean).map((ref) => deleteDoc(ref)));
+      throw error;
+    }
   }
 
   cloudStorageMetaByUid.set(uid, metadata);
@@ -600,7 +645,6 @@ export async function saveState(uid, state) {
   }
   void cleanupOldOrphanChunks(uid);
 }
-
 
 async function deleteUserSaveSubcollections(uid) {
   if (previewMode || !uid) return;

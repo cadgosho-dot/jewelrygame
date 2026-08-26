@@ -1,0 +1,35 @@
+name: v0.10.766 long-save durability audit
+
+on:
+  push:
+    branches:
+      - test/v010766-long-save-durability
+
+permissions:
+  contents: read
+
+jobs:
+  long-save-durability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v6
+
+      - name: Confirm target version
+        run: test "$(cat VERSION)" = "0.10.766"
+
+      - name: Install IndexedDB test shim
+        run: npm install --no-save fake-indexeddb@6
+
+      - name: Existing long-save quota policy
+        run: python3 scripts/check-save-storage-policy.py
+
+      - name: Existing IndexedDB policy
+        run: python3 scripts/check-indexeddb-save-policy.py
+
+      - name: Existing gift chunk policy
+        run: python3 scripts/check-gift-chunked-save.py
+
+      - name: 1000/3000/5000 day durability test
+        run: node scripts/test-long-save-v010766.mjs

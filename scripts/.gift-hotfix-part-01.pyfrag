@@ -1,0 +1,74 @@
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[1]
+if (root / 'VERSION').read_text(encoding='utf-8').strip() != '0.10.763':
+    raise SystemExit('VERSIONが0.10.763ではないため、安全のため適用を中止します。')
+fb = root / 'js/firebase-service.js'
+text = fb.read_text(encoding='utf-8')
+
+# Reuse the canonical local save key without touching app.js.
+anchor = "import { securityConfig } from './security-config.js';\n"
+insert = anchor + "import { SAVE_KEY } from './game-data-core.js';\n"
+if anchor not in text:
+    raise SystemExit('import anchor missing')
+text = text.replace(anchor, insert, 1)
+
+# Insert gift-safe chunk staging and local-storage helpers immediately before the gift API.
+anchor = """function applyGiftMutation(gameState, mutator, payload, code) {\n  if (typeof mutator !== 'function') throw giftServiceError('gift/invalid-mutation', 'プレゼント在庫処理を確認できません。');\n  const draft = structuredClone(gameState || {});\n  const result = mutator(draft, structuredClone(payload || {}), code);\n  return prepareGiftGameState(result && typeof result === 'object' ? result : draft);\n}\n\nexport function normalizeGiftCode(value) {\n"""
+helpers = r'''function applyGiftMutation(gameState, mutator, payload, code) {
+  if (typeof mutator !== 'function') throw giftServiceError('gift/invalid-mutation', 'プレゼント在庫処理を確認できません。');
+  const draft = structuredClone(gameState || {});
+  const result = mutator(draft, structuredClone(payload || {}), code);
+  return prepareGiftGameState(result && typeof result === 'object' ? result : draft);
+}
+
+function giftMetadataMatches(left, right) {
+  if (!left || !right) return false;
+  return left.mode === 'chunked'
+    && right.mode === 'chunked'
+    && String(left.generation || '') === String(right.generation || '')
+    && Math.max(0, Math.floor(Number(left.saveRevision) || 0)) === Math.max(0, Math.floor(Number(right.saveRevision) || 0));
+}
+
+function giftLocalSaveKey(uid) {
+  return `${SAVE_KEY}-${uid}`;
+}
+
+function isGiftLocalQuotaError(error) {
+  const name = String(error?.name || '');
+  const code = Number(error?.code);
+  const message = String(error?.message || '');
+  return name === 'QuotaExceededError'
+    || name === 'NS_ERROR_DOM_QUOTA_REACHED'
+    || code === 22
+    || code === 1014
+    || /quota|storage.*full|容量|領域/i.test(message);
+}
+
+function readGiftLocalState(uid) {
+  try {
+    const raw = localStorage.getItem(giftLocalSaveKey(uid));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeGiftLocalStateSafely(uid, nextState) {
+  const key = giftLocalSaveKey(uid);
+  const raw = JSON.stringify(nextState);
+  try {
+    localStorage.setItem(key, raw);
+  } catch (error) {
+    if (!isGiftLocalQuotaError(error)) return false;
+    // v0.10.762と同じ考え方で、巨大な重複コピーだけを解放して最新1本を再試行する。
+    try { localStorage.removeItem(`${key}-backup`); } catch (_) {}
+    try { localStorage.removeItem(`${key}-pre-migration`); } catch (_) {}
+    try { localStorage.removeItem(`${key}-corrupt`); } catch (_) {}
+    try { localStorage.setItem(`${key}-storage-mode`, 'single-copy'); } catch (_) {}
+    try { localStorage.setItem(key, raw); }
+    catch (_) { return false; }
+  }
+  try { localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(nextState?.settings || {})); } catch (_) {}

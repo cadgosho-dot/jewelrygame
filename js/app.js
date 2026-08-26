@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.769';
+} from './game-data.js?v=0.10.770';
 
-const UI_BUILD_VERSION = '0.10.769';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.769';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.769';
+const UI_BUILD_VERSION = '0.10.770';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.770';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.770';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
-  loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
+  loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.769';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.769';
+} from './firebase-service.js?v=0.10.770';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.770';
 
 
 
@@ -20080,6 +20080,93 @@ function renderPhoneContent() {
   return renderSettingsForm(false, true);
 }
 
+function formatSaveDiagnosticBytes(value) {
+  const bytes = Math.max(0, Number(value) || 0);
+  if (bytes < 1024) return `${Math.round(bytes).toLocaleString('ja-JP')} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function formatSaveDiagnosticDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('ja-JP');
+}
+
+function buildSaveDiagnosticsSnapshot() {
+  const snapshot = structuredClone(state || {});
+  // v0.10.770: 診断は複製データだけを圧縮し、実ゲームのstateやsaveRevisionを変更しない。
+  compactLongTermHistory(snapshot);
+  snapshot.saveRevision = Math.max(0, Math.floor(Number(snapshot.saveRevision) || 0)) + 1;
+  snapshot.updatedAt = new Date().toISOString();
+  if (snapshot.inventory && Object.prototype.hasOwnProperty.call(snapshot.inventory, 'general')) delete snapshot.inventory.general;
+  if (snapshot.inventory && Object.prototype.hasOwnProperty.call(snapshot.inventory, 'gems')) delete snapshot.inventory.gems;
+  snapshot.migrations = snapshot.migrations && typeof snapshot.migrations === 'object' && !Array.isArray(snapshot.migrations) ? snapshot.migrations : {};
+  snapshot.migrations.looseInventoryCanonicalV231 = true;
+  snapshot.saveSchemaVersion = SAVE_SCHEMA_VERSION;
+  const raw = JSON.stringify(snapshot);
+  return {
+    bytes: new TextEncoder().encode(raw).length,
+    nextSaveRevision: snapshot.saveRevision,
+    archivedClosedOrders: Array.isArray(snapshot.history?.closedOrders) ? snapshot.history.closedOrders.length : 0,
+    archivedSoldJewelry: Array.isArray(snapshot.history?.soldJewelry) ? snapshot.history.soldJewelry.length : 0,
+  };
+}
+
+function saveDiagnosticsCapacityLabel(projectedCount, maxCount) {
+  if (maxCount <= 0) return '確認不能';
+  if (projectedCount > maxCount) return 'クラウド上限超過';
+  if (projectedCount === maxCount) return '上限付近';
+  if (projectedCount >= Math.ceil(maxCount * 0.8)) return '注意';
+  return '余裕あり';
+}
+
+async function showSaveDiagnostics() {
+  if (!state) return;
+  const local = buildSaveDiagnosticsSnapshot();
+  let cloud = null;
+  let cloudError = null;
+  if (currentUser?.uid) {
+    try {
+      cloud = await getCloudSaveDiagnostics(currentUser.uid);
+    } catch (error) {
+      cloudError = error;
+      console.warn('セーブ容量診断のクラウド管理情報を取得できませんでした。', error);
+    }
+  }
+  const chunkRawBytes = Math.max(1, Number(cloud?.chunkRawBytes) || (384 * 1024));
+  const maxCount = Math.max(1, Math.floor(Number(cloud?.maxCount) || 64));
+  const projectedCount = local.bytes ? Math.ceil(local.bytes / chunkRawBytes) : 0;
+  const currentCloudChunkLabel = cloud?.mode === 'chunked'
+    ? `${Math.max(0, Math.floor(Number(cloud.count) || 0))} / ${maxCount}`
+    : (cloud?.mode === 'preview' ? `${Math.max(0, Math.floor(Number(cloud.count) || 0))}（プレビュー）` : '—');
+  const currentCloudBytes = Number(cloud?.bytes) > 0 ? formatSaveDiagnosticBytes(cloud.bytes) : '—';
+  const cloudSourceNote = cloud?.source === 'cache' ? '直近取得済み情報' : '';
+  showModal({
+    title: 'セーブ容量診断',
+    body: `<p>現在のセーブ容量を読み取り専用で確認します。<strong>ゲームデータやsaveRevisionは変更しません。</strong></p>
+      <div class="stat-grid">
+        <div><small>次回JSON予測</small><strong>${formatSaveDiagnosticBytes(local.bytes)}</strong></div>
+        <div><small>次回チャンク予測</small><strong>${projectedCount} / ${maxCount}</strong></div>
+        <div><small>完了注文アーカイブ</small><strong>${local.archivedClosedOrders.toLocaleString('ja-JP')}件</strong></div>
+        <div><small>売却済みアーカイブ</small><strong>${local.archivedSoldJewelry.toLocaleString('ja-JP')}件</strong></div>
+      </div>
+      <p><strong>容量判定：${esc(saveDiagnosticsCapacityLabel(projectedCount, maxCount))}</strong></p>
+      <div class="stat-grid">
+        <div><small>現在クラウド容量</small><strong>${esc(currentCloudBytes)}</strong></div>
+        <div><small>現在クラウドチャンク</small><strong>${esc(currentCloudChunkLabel)}</strong></div>
+        <div><small>クラウドsaveRevision</small><strong>${cloud ? Math.max(0, Math.floor(Number(cloud.saveRevision) || 0)).toLocaleString('ja-JP') : '—'}</strong></div>
+        <div><small>クラウド更新</small><strong>${esc(formatSaveDiagnosticDate(cloud?.updatedAt))}</strong></div>
+      </div>
+      ${cloudError ? '<p class="small-note">クラウド管理情報は取得できなかったため、端末上の次回保存予測だけを表示しています。</p>' : ''}
+      ${cloudSourceNote ? `<p class="small-note">クラウド値は${esc(cloudSourceNote)}です。</p>` : ''}
+      <p class="small-note">クラウドは1チャンクあたり約${formatSaveDiagnosticBytes(chunkRawBytes)}、最大${maxCount}チャンクです。診断を開くだけでは保存処理を行いません。次回保存予測のsaveRevisionは ${local.nextSaveRevision.toLocaleString('ja-JP')} です。</p>`,
+    confirm: '閉じる',
+    action: 'modal-close',
+    hideCancel: true,
+  });
+}
+
 function renderSettings(titleMode) {
   const settings = titleMode ? titleSettings : state.settings;
   return titleMode ? `
@@ -20129,6 +20216,10 @@ function renderSettingsForm(titleMode, compact) {
     <section class="home-install-setting">
       <div><strong>JEWELRY×JEWELRYをホーム画面へ追加</strong><small>${installStatusText()}</small></div>
       <button type="button" class="secondary-button full-button install-home-button" data-action="install-app" ${isStandaloneApp() ? 'disabled' : ''}>${isStandaloneApp() ? '追加済み' : 'ホーム画面に追加する'}</button>
+    </section>` : ''}
+    ${!titleMode ? `<section class="home-install-setting save-diagnostics-setting">
+      <div><strong>セーブ容量診断</strong><small>現在のJSON容量・クラウドチャンク数・長期履歴件数を確認します。診断だけでは保存データを変更しません。</small></div>
+      <button type="button" class="secondary-button full-button" data-action="save-diagnostics">セーブ容量を確認する</button>
     </section>` : ''}
     <small>バージョン ${UI_BUILD_VERSION}</small>
     ${!titleMode ? `<div class="account-danger-actions" aria-label="アカウント操作">
@@ -23916,6 +24007,9 @@ root.addEventListener('click', async (event) => {
       saveGame();
       showToast('スマートフォンの背景を標準に戻しました。');
       render();
+      break;
+    case 'save-diagnostics':
+      await showSaveDiagnostics();
       break;
     case 'delete-account':
       showAccountDeletionExecution();

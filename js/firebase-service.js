@@ -39,7 +39,7 @@ import {
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
-import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.769';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.770';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -463,6 +463,56 @@ function cloudSaveMetaRef(uid) {
 async function readCurrentCloudMetadata(uid) {
   const metaSnapshot = await getDoc(cloudSaveMetaRef(uid));
   return metaSnapshot.exists() ? (metaSnapshot.data() || null) : null;
+}
+
+export async function getCloudSaveDiagnostics(uid) {
+  const base = {
+    chunkRawBytes: CLOUD_CHUNK_RAW_BYTES,
+    maxCount: CLOUD_CHUNK_MAX_COUNT,
+  };
+
+  if (previewMode) {
+    const raw = uid ? String(localStorage.getItem(`jewelrygame-preview-${uid}`) || '') : '';
+    const bytes = raw ? cloudUtf8Bytes(raw).length : 0;
+    return {
+      ...base,
+      mode: 'preview',
+      source: 'preview',
+      bytes,
+      count: bytes ? Math.ceil(bytes / CLOUD_CHUNK_RAW_BYTES) : 0,
+      saveRevision: 0,
+      updatedAt: '',
+    };
+  }
+
+  if (!uid) {
+    return { ...base, mode: 'none', source: 'none', bytes: 0, count: 0, saveRevision: 0, updatedAt: '' };
+  }
+
+  let metadata = null;
+  let source = 'cloud';
+  try {
+    metadata = await readCurrentCloudMetadata(uid);
+    if (metadata) cloudStorageMetaByUid.set(uid, metadata);
+  } catch (error) {
+    metadata = cloudStorageMetaByUid.get(uid) || null;
+    if (!metadata) throw error;
+    source = 'cache';
+  }
+
+  if (!metadata) {
+    return { ...base, mode: 'none', source, bytes: 0, count: 0, saveRevision: 0, updatedAt: '' };
+  }
+
+  return {
+    ...base,
+    mode: String(metadata.mode || 'unknown'),
+    source,
+    bytes: Math.max(0, Math.floor(Number(metadata.bytes) || 0)),
+    count: Math.max(0, Math.floor(Number(metadata.count) || 0)),
+    saveRevision: Math.max(0, Math.floor(Number(metadata.saveRevision) || 0)),
+    updatedAt: String(metadata.updatedAt || ''),
+  };
 }
 
 export async function loadState(uid) {

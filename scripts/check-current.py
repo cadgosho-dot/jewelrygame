@@ -14,6 +14,7 @@ CHECKS = [
     ('PWAキャッシュ更新', [sys.executable, str(ROOT / 'scripts/check-pwa-cache-policy.py')]),
     ('長期セーブ容量対策', [sys.executable, str(ROOT / 'scripts/check-save-storage-policy.py')]),
     ('長期履歴圧縮', [sys.executable, str(ROOT / 'scripts/check-long-term-history.py')]),
+    ('セーブ容量診断', [sys.executable, str(ROOT / 'scripts/check-save-diagnostics.py')]),
     ('IndexedDB端末セーブ', [sys.executable, str(ROOT / 'scripts/check-indexeddb-save-policy.py')]),
     ('プレゼント分割セーブ', [sys.executable, str(ROOT / 'scripts/check-gift-chunked-save.py')]),
     ('未参照クラウドチャンク掃除', [sys.executable, str(ROOT / 'scripts/check-orphan-chunk-cleanup.py')]),

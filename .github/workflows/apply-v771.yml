@@ -27,7 +27,7 @@ jobs:
       - name: Install validation dependency
         run: python3 -m pip install --disable-pip-version-check pillow
 
-      - name: Repair temporary patch quoting
+      - name: Repair temporary patch runner
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -37,10 +37,11 @@ jobs:
               ("check_history = r'''#!/usr/bin/env python3", 'check_history = r"""#!/usr/bin/env python3'),
               ("\n'''\nwrite('scripts/check-long-term-history.py', check_history)", "\n\"\"\"\nwrite('scripts/check-long-term-history.py', check_history)"),
               ('"""Validate bounded long-term history and finance pruning for v0.10.771."""', '# Validate bounded long-term history and finance pruning for v0.10.771.'),
+              ("text2, count = re.subn(pattern, repl, text, count=1, flags=flags)", "compiled = re.compile(pattern, flags)\n    text2, count = compiled.subn(lambda _match: repl, text, count=1)"),
           ]
           for old, new in replacements:
               if text.count(old) != 1:
-                  raise SystemExit(f'temporary patch marker not found exactly once: {old[:40]}')
+                  raise SystemExit(f'temporary patch marker not found exactly once: {old[:60]}')
               text = text.replace(old, new, 1)
           path.write_text(text, encoding='utf-8')
           PY

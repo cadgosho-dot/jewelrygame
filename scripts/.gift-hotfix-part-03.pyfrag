@@ -1,0 +1,74 @@
+    const result = await runTransaction(db, async (transaction) => {
+      const metaSnapshot = await transaction.get(metaRef);
+      const currentMetadata = metaSnapshot.exists() ? (metaSnapshot.data() || null) : null;
+      if (!giftMetadataMatches(currentMetadata, expectedMetadata)) {
+        throw giftServiceError('gift/save-conflict', 'ゲームデータの保存状態が更新されました。もう一度お試しください。');
+      }
+      const value = await transactionBody(transaction);
+      // 大きなセーブ本体は事前に別世代へ書き、小さな参照先だけをgift文書と原子的に切り替える。
+      transaction.set(metaRef, staged.metadata);
+      return value;
+    });
+    return finalizeCommitted(result);
+  } catch (error) {
+    // 応答だけ失われ、サーバーではコミット済みのケースを保護する。
+    // この固有generationが現行ならgift更新も同じトランザクションで確定済みなので、
+    // 参照中チャンクを削除せず成功結果を復元する。
+    const currentMetadata = await readCurrentCloudMetadata(uid).catch(() => null);
+    if (giftMetadataMatches(currentMetadata, staged.metadata)) {
+      return finalizeCommitted(typeof recoverCommitted === 'function' ? recoverCommitted() : { gameState: nextState });
+    }
+    cleanupStagedGiftState(staged);
+    throw error;
+  }
+}
+
+export function normalizeGiftCode(value) {
+'''
+if anchor not in text:
+    raise SystemExit('gift helper anchor missing')
+text = text.replace(anchor, helpers, 1)
+
+start = text.index('export async function createGiftCode(')
+end = text.index('\nexport function giftErrorMessage(', start)
+new_funcs = r'''export async function createGiftCode(uid, senderName, payload, removeFromGameState) {
+  requireGiftUser(uid);
+  if (!payload || typeof payload !== 'object') throw giftServiceError('gift/invalid', 'プレゼント内容を確認できません。');
+  const cleanPayload = cleanGiftPayload(payload);
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const code = randomGiftCode();
+    const createdAtIso = new Date().toISOString();
+    if (previewMode) {
+      const store = readPreviewGiftStore();
+      if (store[code]) continue;
+      const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
+      const gameState = saved ? JSON.parse(saved) : null;
+      if (!gameState) throw giftServiceError('gift/no-save', 'プレゼント作成前にゲームを保存してください。');
+      const nextState = applyGiftMutation(gameState, removeFromGameState, cleanPayload, code);
+      const gift = {
+        code,
+        senderUid: uid,
+        senderName: String(senderName || 'プレイヤー').slice(0, 40),
+        payload: structuredClone(cleanPayload),
+        status: 'pending',
+        createdAtIso,
+        claimedBy: null,
+        claimedAtIso: '',
+        cancelledAtIso: '',
+      };
+      store[code] = gift;
+      writePreviewGiftStore(store);
+      localStorage.setItem(`jewelrygame-preview-${uid}`, JSON.stringify(nextState));
+      return { code, gift, gameState: nextState };
+    }
+
+    const giftRef = doc(db, 'gifts', code);
+    if ((await getDoc(giftRef)).exists()) continue;
+    const { metadata: expectedMetadata, gameState } = await readGiftCloudBase(uid);
+    const nextState = applyGiftMutation(gameState, removeFromGameState, cleanPayload, code);
+    const gift = {
+      code,
+      senderUid: uid,
+      senderName: String(senderName || 'プレイヤー').slice(0, 40),
+      payload: structuredClone(cleanPayload),

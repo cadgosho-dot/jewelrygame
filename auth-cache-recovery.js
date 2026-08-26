@@ -2,7 +2,7 @@
   'use strict';
 
   // Canonical PWA recovery bootstrap. Keep BUILD_VERSION synchronized with VERSION.
-  const BUILD_VERSION = '0.10.770';
+  const BUILD_VERSION = '0.10.771';
   const RELOAD_MARKER = `jxj-sw-controller-reloaded-${BUILD_VERSION}`;
   if (!('serviceWorker' in navigator)) return;
   if (window.top !== window.self) return;

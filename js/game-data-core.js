@@ -7445,6 +7445,12 @@ export function initialState() {
     },
     notifications: [],
     finance: [],
+    financeSummary: {
+      archivedIncome: 0, archivedExpense: 0,
+      dayKey: '', dayIncome: 0, dayExpense: 0,
+      monthKey: '', monthIncome: 0, monthExpense: 0,
+      yearKey: '', yearIncome: 0, yearExpense: 0,
+    },
     daily: { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], workshopStaffCrafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 },
     settings: {
       bgmVolume: 0.35,
@@ -7486,9 +7492,11 @@ function isRecord(value) {
 }
 
 export const LONG_TERM_HISTORY_LIMITS = Object.freeze({
-  fullClosedOrders: 100,
-  fullSoldJewelry: 200,
+  fullClosedOrders: 20,
+  fullSoldJewelry: 20,
 });
+
+export const FINANCE_HISTORY_LIMIT = 300;
 
 function finiteDay(value) {
   const day = Number(value);
@@ -7580,15 +7588,15 @@ function mergeCompactHistory(existing, moved, compactRecord, liveIds) {
 
 export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS) {
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
-    return { movedClosedOrders: 0, movedSoldJewelry: 0, changed: false };
+    return { discardedClosedOrders: 0, discardedSoldJewelry: 0, changed: false };
   }
   const closedLimit = Math.max(0, Math.floor(Number(limits?.fullClosedOrders) || 0));
   const soldLimit = Math.max(0, Math.floor(Number(limits?.fullSoldJewelry) || 0));
   state.history = state.history && typeof state.history === 'object' && !Array.isArray(state.history)
     ? state.history
     : {};
-  state.history.closedOrders = Array.isArray(state.history.closedOrders) ? state.history.closedOrders : [];
-  state.history.soldJewelry = Array.isArray(state.history.soldJewelry) ? state.history.soldJewelry : [];
+  const archivedClosedBefore = Array.isArray(state.history.closedOrders) ? state.history.closedOrders.length : 0;
+  const archivedSoldBefore = Array.isArray(state.history.soldJewelry) ? state.history.soldJewelry.length : 0;
 
   const orders = Array.isArray(state.orders) ? state.orders : [];
   const activeOrders = [];
@@ -7603,10 +7611,11 @@ export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS)
     return dayB - dayA || b.index - a.index;
   });
   const keepClosed = closedOrders.slice(0, closedLimit).map((entry) => entry.value);
-  const moveClosed = closedOrders.slice(closedLimit).map((entry) => entry.value);
-  const keptOrderIds = new Set([...activeOrders.map((entry) => entry.value), ...keepClosed].map((order) => String(order?.id || '')).filter(Boolean));
-  state.orders = [...activeOrders.sort((a, b) => a.index - b.index).map((entry) => entry.value), ...keepClosed.reverse()];
-  state.history.closedOrders = mergeCompactHistory(state.history.closedOrders, moveClosed, compactClosedOrderRecord, keptOrderIds);
+  const discardClosed = closedOrders.slice(closedLimit).length;
+  state.orders = [
+    ...activeOrders.sort((a, b) => a.index - b.index).map((entry) => entry.value),
+    ...keepClosed.reverse(),
+  ];
 
   const jewelry = Array.isArray(state.inventory?.jewelry) ? state.inventory.jewelry : [];
   const liveJewelry = [];
@@ -7620,22 +7629,122 @@ export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS)
     return dayB - dayA || b.index - a.index;
   });
   const keepSold = soldJewelry.slice(0, soldLimit).map((entry) => entry.value);
-  const moveSold = soldJewelry.slice(soldLimit).map((entry) => entry.value);
-  const keptJewelryIds = new Set([...liveJewelry.map((entry) => entry.value), ...keepSold].map((item) => String(item?.id || '')).filter(Boolean));
+  const discardSold = soldJewelry.slice(soldLimit).length;
   if (state.inventory && typeof state.inventory === 'object') {
-    state.inventory.jewelry = [...liveJewelry.sort((a, b) => a.index - b.index).map((entry) => entry.value), ...keepSold.reverse()];
+    state.inventory.jewelry = [
+      ...liveJewelry.sort((a, b) => a.index - b.index).map((entry) => entry.value),
+      ...keepSold.reverse(),
+    ];
   }
-  state.history.soldJewelry = mergeCompactHistory(state.history.soldJewelry, moveSold, compactSoldJewelryRecord, keptJewelryIds);
 
+  // v0.10.771: 旧版の永久アーカイブは読み込み時・保存時に完全破棄する。
+  // 進行に必要な累計値は store / customer / event 側へ既に独立保存されているため、
+  // 個別の終了注文・売却済み完成品を永久保持しない。
+  state.history.closedOrders = [];
+  state.history.soldJewelry = [];
+
+  const discardedClosedOrders = discardClosed + archivedClosedBefore;
+  const discardedSoldJewelry = discardSold + archivedSoldBefore;
   return {
-    movedClosedOrders: moveClosed.length,
-    movedSoldJewelry: moveSold.length,
-    changed: moveClosed.length > 0 || moveSold.length > 0,
+    discardedClosedOrders,
+    discardedSoldJewelry,
+    changed: discardedClosedOrders > 0 || discardedSoldJewelry > 0,
     retainedFullClosedOrders: keepClosed.length,
     retainedFullSoldJewelry: keepSold.length,
-    archivedClosedOrders: state.history.closedOrders.length,
-    archivedSoldJewelry: state.history.soldJewelry.length,
+    archivedClosedOrders: 0,
+    archivedSoldJewelry: 0,
   };
+}
+
+function financeDatePartsForDay(state, value) {
+  const start = String(state?.game?.startDate || '').trim();
+  const match = start.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return { dayKey: '', monthKey: '', yearKey: '' };
+  const day = Math.max(1, Math.floor(Number(value) || 1));
+  const timestamp = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) + (day - 1) * 86400000;
+  const date = new Date(timestamp);
+  const year = String(date.getUTCFullYear()).padStart(4, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dateOfMonth = String(date.getUTCDate()).padStart(2, '0');
+  return {
+    dayKey: `${year}-${month}-${dateOfMonth}`,
+    monthKey: `${year}-${month}`,
+    yearKey: year,
+  };
+}
+
+function ensureFinanceSummary(state) {
+  const source = state.financeSummary && typeof state.financeSummary === 'object' && !Array.isArray(state.financeSummary)
+    ? state.financeSummary
+    : {};
+  const current = financeDatePartsForDay(state, state?.game?.day);
+  const summary = {
+    archivedIncome: Math.max(0, Number(source.archivedIncome) || 0),
+    archivedExpense: Math.max(0, Number(source.archivedExpense) || 0),
+    dayKey: String(source.dayKey || ''),
+    dayIncome: Math.max(0, Number(source.dayIncome) || 0),
+    dayExpense: Math.max(0, Number(source.dayExpense) || 0),
+    monthKey: String(source.monthKey || ''),
+    monthIncome: Math.max(0, Number(source.monthIncome) || 0),
+    monthExpense: Math.max(0, Number(source.monthExpense) || 0),
+    yearKey: String(source.yearKey || ''),
+    yearIncome: Math.max(0, Number(source.yearIncome) || 0),
+    yearExpense: Math.max(0, Number(source.yearExpense) || 0),
+  };
+  if (summary.dayKey !== current.dayKey) {
+    summary.dayKey = current.dayKey;
+    summary.dayIncome = 0;
+    summary.dayExpense = 0;
+  }
+  if (summary.monthKey !== current.monthKey) {
+    summary.monthKey = current.monthKey;
+    summary.monthIncome = 0;
+    summary.monthExpense = 0;
+  }
+  if (summary.yearKey !== current.yearKey) {
+    summary.yearKey = current.yearKey;
+    summary.yearIncome = 0;
+    summary.yearExpense = 0;
+  }
+  state.financeSummary = summary;
+  return summary;
+}
+
+export function compactFinanceHistory(state, limit = FINANCE_HISTORY_LIMIT) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { discardedFinanceRows: 0, changed: false };
+  }
+  const rows = Array.isArray(state.finance) ? state.finance : [];
+  const maxRows = Math.max(0, Math.floor(Number(limit) || 0));
+  const summary = ensureFinanceSummary(state);
+  if (rows.length <= maxRows) {
+    state.finance = rows;
+    return { discardedFinanceRows: 0, changed: false };
+  }
+
+  const cut = rows.length - maxRows;
+  const discarded = rows.slice(0, cut);
+  for (const row of discarded) {
+    const income = Math.max(0, Number(row?.income) || 0);
+    const expense = Math.max(0, Number(row?.expense) || 0);
+    summary.archivedIncome += income;
+    summary.archivedExpense += expense;
+    const parts = financeDatePartsForDay(state, row?.day);
+    if (parts.dayKey && parts.dayKey === summary.dayKey) {
+      summary.dayIncome += income;
+      summary.dayExpense += expense;
+    }
+    if (parts.monthKey && parts.monthKey === summary.monthKey) {
+      summary.monthIncome += income;
+      summary.monthExpense += expense;
+    }
+    if (parts.yearKey && parts.yearKey === summary.yearKey) {
+      summary.yearIncome += income;
+      summary.yearExpense += expense;
+    }
+  }
+  state.finance = rows.slice(cut);
+  return { discardedFinanceRows: discarded.length, changed: discarded.length > 0 };
 }
 
 function merge(base, saved) {
@@ -8518,7 +8627,7 @@ export function migrateState(saved) {
     return !miningResult && !hungerNotice;
   });
   state.finance = Array.isArray(state.finance)
-    ? state.finance.slice(-2000).map((row, index) => ({
+    ? state.finance.map((row, index) => ({
         id: row?.id || `legacy-finance-${index}`,
         day: Math.max(1, Number(row?.day) || state.game.day),
         label: String(row?.label || '収支'),
@@ -9144,8 +9253,9 @@ export function migrateState(saved) {
   if (activeBranchV454) state.store.level = activeBranchV454.level;
   state.workshopStaff.evolutionStage = workshopStaffGrowthForWorkDays(state.workshopStaff.workDays).level >= 4 ? 2 : 1;
 
-  // v0.10.769: 現役データはそのまま、古い完了注文と売却済み完成品だけを軽量履歴へ退避する。
+  // v0.10.771: 進行中データを保護しつつ、古い終了履歴と収支明細を自動整理する。
   compactLongTermHistory(state);
+  compactFinanceHistory(state);
 
   return state;
 }

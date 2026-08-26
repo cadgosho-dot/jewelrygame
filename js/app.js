@@ -1,13 +1,13 @@
 import {
-  VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory,
+  VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.770';
+} from './game-data.js?v=0.10.771';
 
-const UI_BUILD_VERSION = '0.10.770';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.770';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.770';
+const UI_BUILD_VERSION = '0.10.771';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.771';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.771';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,8 +15,8 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.770';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.770';
+} from './firebase-service.js?v=0.10.771';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.771';
 
 
 
@@ -4058,9 +4058,10 @@ function saveLocalBackup({ fingerprint = null, createCloudSnapshot = true, updat
 function saveGame(message = false) {
   if (!state) return Promise.resolve();
   syncGameClearState();
-  // v0.10.769: 保存直前に古い完了注文・売却済み完成品を軽量履歴へ退避する。
-  // saveRevisionを余分に増やさず、現役注文・現役商品には触れない。
+  // v0.10.771: 保存前に不要な終了履歴と古い収支明細を整理し、セーブサイズを一定範囲に保つ。
+  // 進行中注文・未販売商品・累計値には触れない。
   compactLongTermHistory(state);
+  compactFinanceHistory(state);
   if (!currentUser || sessionTakenOver) return Promise.resolve();
   if (autosaveTimer) {
     clearTimeout(autosaveTimer);
@@ -5263,7 +5264,7 @@ function addNotification(title, body, type = 'info') {
 
 function addFinance(label, income = 0, expense = 0) {
   state.finance.push({ id: uid(), day: state.game.day, label, income, expense });
-  state.finance = state.finance.slice(-2000);
+  compactFinanceHistory(state);
   state.daily.income += income;
   state.daily.expense += expense;
 }
@@ -13218,6 +13219,28 @@ function financePeriodRows(period = state?.game?.financePeriod) {
   });
 }
 
+function financePeriodTotals(period = state?.game?.financePeriod, rows = financePeriodRows(period)) {
+  const resolved = validFinancePeriod(period);
+  const summary = state?.financeSummary && typeof state.financeSummary === 'object' ? state.financeSummary : {};
+  const currentKey = dateKey(gameDate());
+  let income = rows.reduce((sum, row) => sum + Number(row.income || 0), 0);
+  let expense = rows.reduce((sum, row) => sum + Number(row.expense || 0), 0);
+  if (resolved === 'cumulative') {
+    income += Math.max(0, Number(summary.archivedIncome) || 0);
+    expense += Math.max(0, Number(summary.archivedExpense) || 0);
+  } else if (resolved === 'today' && String(summary.dayKey || '') === currentKey) {
+    income += Math.max(0, Number(summary.dayIncome) || 0);
+    expense += Math.max(0, Number(summary.dayExpense) || 0);
+  } else if (resolved === 'month' && String(summary.monthKey || '') === currentKey.slice(0, 7)) {
+    income += Math.max(0, Number(summary.monthIncome) || 0);
+    expense += Math.max(0, Number(summary.monthExpense) || 0);
+  } else if (resolved === 'year' && String(summary.yearKey || '') === currentKey.slice(0, 4)) {
+    income += Math.max(0, Number(summary.yearIncome) || 0);
+    expense += Math.max(0, Number(summary.yearExpense) || 0);
+  }
+  return { income, expense };
+}
+
 function financePeriodHeading(period = state?.game?.financePeriod) {
   const resolved = validFinancePeriod(period);
   const current = gameDate();
@@ -20057,8 +20080,7 @@ function renderPhoneContent() {
     const period = validFinancePeriod(state.game.financePeriod);
     state.game.financePeriod = period;
     const rows = financePeriodRows(period);
-    const income = rows.reduce((sum, row) => sum + Number(row.income || 0), 0);
-    const expense = rows.reduce((sum, row) => sum + Number(row.expense || 0), 0);
+    const { income, expense } = financePeriodTotals(period, rows);
     const balance = income - expense;
     const outstanding = totalOutstandingBusinessCost();
     return `<section class="phone-finance-screen"><nav class="finance-period-tabs" aria-label="収支の表示期間">
@@ -20095,8 +20117,9 @@ function formatSaveDiagnosticDate(value) {
 
 function buildSaveDiagnosticsSnapshot() {
   const snapshot = structuredClone(state || {});
-  // v0.10.770: 診断は複製データだけを圧縮し、実ゲームのstateやsaveRevisionを変更しない。
+  // v0.10.771: 内部診断も実セーブと同じ整理後サイズを測る。実stateは変更しない。
   compactLongTermHistory(snapshot);
+  compactFinanceHistory(snapshot);
   snapshot.saveRevision = Math.max(0, Math.floor(Number(snapshot.saveRevision) || 0)) + 1;
   snapshot.updatedAt = new Date().toISOString();
   if (snapshot.inventory && Object.prototype.hasOwnProperty.call(snapshot.inventory, 'general')) delete snapshot.inventory.general;
@@ -20216,10 +20239,6 @@ function renderSettingsForm(titleMode, compact) {
     <section class="home-install-setting">
       <div><strong>JEWELRY×JEWELRYをホーム画面へ追加</strong><small>${installStatusText()}</small></div>
       <button type="button" class="secondary-button full-button install-home-button" data-action="install-app" ${isStandaloneApp() ? 'disabled' : ''}>${isStandaloneApp() ? '追加済み' : 'ホーム画面に追加する'}</button>
-    </section>` : ''}
-    ${!titleMode ? `<section class="home-install-setting save-diagnostics-setting">
-      <div><strong>セーブ容量診断</strong><small>現在のJSON容量・クラウドチャンク数・長期履歴件数を確認します。診断だけでは保存データを変更しません。</small></div>
-      <button type="button" class="secondary-button full-button" data-action="save-diagnostics">セーブ容量を確認する</button>
     </section>` : ''}
     <small>バージョン ${UI_BUILD_VERSION}</small>
     ${!titleMode ? `<div class="account-danger-actions" aria-label="アカウント操作">
@@ -24007,9 +24026,6 @@ root.addEventListener('click', async (event) => {
       saveGame();
       showToast('スマートフォンの背景を標準に戻しました。');
       render();
-      break;
-    case 'save-diagnostics':
-      await showSaveDiagnostics();
       break;
     case 'delete-account':
       showAccountDeletionExecution();

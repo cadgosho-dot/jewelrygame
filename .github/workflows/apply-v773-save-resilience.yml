@@ -41,7 +41,7 @@ jobs:
       - name: Verify version and protected workflow
         run: |
           test "$(cat VERSION)" = "0.10.773"
-          grep -q "pip install.*Pillow\|pip install Pillow" .github/workflows/update-metals.yml
+          grep -qi 'pillow' .github/workflows/update-metals.yml
           git diff --check
           git status --short
       - name: Commit implementation

@@ -27,7 +27,9 @@ jobs:
           fetch-depth: 20
 
       - name: IndexedDB端末セーブを実装
-        run: python3 scripts/.apply-v010766-indexeddb.py
+        run: |
+          python3 scripts/.apply-v010766-indexeddb.py
+          python3 scripts/.fix-v010766-indexeddb.py
 
       - name: VERSIONを0.10.766へ同期
         run: python3 scripts/version-sync.py --set 0.10.766

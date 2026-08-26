@@ -8,6 +8,11 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
 FIREBASE = (ROOT / 'js/firebase-service.js').read_text(encoding='utf-8')
 STORAGE = (ROOT / 'js/local-save-storage.js').read_text(encoding='utf-8')
+SW = (ROOT / 'sw.js').read_text(encoding='utf-8')
+VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+core_shell_start = SW.find('const CORE_SHELL = [')
+core_shell_end = SW.find('];', core_shell_start)
+CORE_SHELL = SW[core_shell_start:core_shell_end] if core_shell_start >= 0 and core_shell_end > core_shell_start else ''
 
 boot_start = APP.find('indexedDbSave = await readIndexedDbSave(user.uid);')
 cloud_start = APP.find('cloudSave = await loadState(user.uid);')
@@ -19,6 +24,9 @@ boot_helper = APP[boot_helper_start:boot_helper_end] if boot_helper_start >= 0 a
 
 checks = {
     'IndexedDB保存モジュールがある': "indexedDB.open(DB_NAME, DB_VERSION)" in STORAGE and "db.transaction(STORE_NAME, 'readwrite')" in STORAGE,
+    'appのIndexedDBモジュール版が現行VERSION': f"from './local-save-storage.js?v={VERSION}';" in APP,
+    'FirebaseのIndexedDBモジュール版が現行VERSION': f"from './local-save-storage.js?v={VERSION}';" in FIREBASE,
+    'オフライン冷間起動用にIndexedDBモジュールをCORE_SHELLへ事前キャッシュ': f"'./js/local-save-storage.js?v={VERSION}'" in CORE_SHELL,
     'IndexedDBはユーザー別キーで保存する': 'normalizedUserId(uid)' in STORAGE and '.put({' in STORAGE,
     'IndexedDB読み書き削除APIがある': all(token in STORAGE for token in ('export async function readIndexedDbSave', 'export async function writeIndexedDbSave', 'export async function deleteIndexedDbSave')),
     'IndexedDB完了監視をリクエスト前に登録する': STORAGE.count('const done = transactionDone(transaction);') == 3 and STORAGE.count('await done;') == 3,

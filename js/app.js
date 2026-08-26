@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.765';
+} from './game-data.js?v=0.10.766';
 
-const UI_BUILD_VERSION = '0.10.765';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.765';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.765';
+const UI_BUILD_VERSION = '0.10.766';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.766';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.766';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,7 +15,8 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.765';
+} from './firebase-service.js?v=0.10.766';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.765';
 
 
 
@@ -198,6 +199,8 @@ let hungerFeedbackTimer = null;
 let titleSettings = loadTitleSettings();
 let currentUser = null;
 let cloudSave = null;
+let indexedDbSave = null;
+let indexedDbStorageReady = false;
 let authReady = false;
 let startupSaveReady = false;
 let authEntryRequested = false;
@@ -3801,6 +3804,27 @@ function persistBootLocalStateSafely(savedState, label = '起動時セーブ') {
   }
 }
 
+async function persistIndexedDbStateSafely(uid, savedState, label = '端末セーブ') {
+  if (!uid || !savedState) return false;
+  try {
+    await writeIndexedDbSave(uid, savedState);
+    indexedDbSave = structuredClone(savedState);
+    indexedDbStorageReady = true;
+    return true;
+  } catch (error) {
+    indexedDbStorageReady = false;
+    console.warn(`${label}をIndexedDBへ保存できませんでした。localStorage／クラウドの安全網を継続します。`, error);
+    return false;
+  }
+}
+
+async function persistBootDeviceStateSafely(savedState, label = '起動時セーブ') {
+  const uid = currentUser?.uid || '';
+  const indexedDbSaved = await persistIndexedDbStateSafely(uid, savedState, label);
+  const legacySaved = persistBootLocalStateSafely(savedState, label);
+  return indexedDbSaved || legacySaved;
+}
+
 function saveStateFingerprint(value = state) {
   if (!value) return '';
   try {
@@ -3911,9 +3935,21 @@ function localSavedState() {
   }
 }
 
+function preferredDeviceSavedState() {
+  const legacyLocalSave = localSavedState();
+  const preferred = chooseNewestSavedState(indexedDbSave, legacyLocalSave);
+  if (preferred.source === 'local') return { source: 'indexeddb', state: preferred.state };
+  if (preferred.source === 'cloud') return { source: 'local', state: preferred.state };
+  return { source: 'none', state: null };
+}
+
 function preferredSavedState() {
   const safeCloudSave = isSaveStateCandidate(cloudSave) ? cloudSave : null;
-  return chooseNewestSavedState(localSavedState(), safeCloudSave);
+  const device = preferredDeviceSavedState();
+  const preferred = chooseNewestSavedState(device.state, safeCloudSave);
+  if (preferred.source === 'local') return { source: device.source, state: preferred.state };
+  if (preferred.source === 'cloud') return { source: 'cloud', state: preferred.state };
+  return { source: 'none', state: null };
 }
 
 function loadGame() {
@@ -4039,27 +4075,37 @@ function saveGame(message = false) {
     return Promise.resolve();
   }
 
-  if (!localResult.saved) {
-    showAutosaveStatus(
-      'error',
-      localResult.quota ? '端末容量不足／クラウド保存を続行しています' : '端末保存失敗／クラウド保存を続行しています',
-      { persistent: true },
-    );
-  } else if (localResult.quotaRecoveryUsed) {
+  if (localResult.saved && localResult.quotaRecoveryUsed) {
     showAutosaveStatus('saved', '端末容量を節約して保存しました');
   }
 
-  // 端末保存の成否に関係なく、作成済みスナップショットをクラウドへ送る。
-  // 長期プレイ端末がlocalStorage上限に達しても進行を失わない。
+  // 通常保存ではIndexedDBを端末側の第一保存先とする。
+  // localStorageは旧版互換・終了直前の同期バックアップとして残し、どちらか一方が失敗してもクラウド保存を続行する。
   const userId = currentUser.uid;
   const cloudFingerprint = fingerprint || saveStateFingerprint(snapshot);
+  let deviceSaved = Boolean(localResult.saved);
   saveQueue = saveQueue
     .catch(() => {})
-    .then(() => saveState(userId, snapshot))
+    .then(async () => {
+      const indexedDbSaved = await persistIndexedDbStateSafely(userId, snapshot, '通常セーブ');
+      deviceSaved = indexedDbSaved || Boolean(localResult.saved);
+      if (indexedDbSaved) {
+        lastSuccessfulSaveAt = String(snapshot.updatedAt || lastSuccessfulSaveAt || '');
+        lastSavedFingerprint = cloudFingerprint;
+        if (!localResult.saved) showAutosaveStatus('saved', '端末に保存しました（IndexedDB）');
+      } else if (!deviceSaved) {
+        showAutosaveStatus(
+          'error',
+          localResult.quota ? '端末容量不足／クラウド保存を続行しています' : '端末保存失敗／クラウド保存を続行しています',
+          { persistent: true },
+        );
+      }
+      return saveState(userId, snapshot);
+    })
     .then(() => {
       cloudSave = snapshot;
       lastCloudSavedFingerprint = cloudFingerprint;
-      if (!localResult.saved) {
+      if (!deviceSaved) {
         cloudSaveFailureActive = false;
         showAutosaveStatus('saved', 'クラウドに保存しました（端末容量不足）');
       } else if (cloudSaveFailureActive) {
@@ -4071,8 +4117,8 @@ function saveGame(message = false) {
       cloudSaveFailureActive = true;
       const cloudMessage = firebaseErrorMessage(error, 'cloud-save');
       console.error('[Cloud Save]', { code: error?.code || '', message: error?.message || '', detail: error?.detail || null }, error);
-      if (localResult.saved) {
-        // 端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
+      if (deviceSaved) {
+        // IndexedDBまたはlocalStorageへの端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
         showAutosaveStatus('error', `端末保存済み／${cloudMessage}`, { persistent: true });
       } else {
         // 両方失敗した場合だけ、進行を続けず再試行した方がよいことを明確にする。
@@ -22627,6 +22673,9 @@ async function deleteSave() {
   if (!currentUser) return;
   try {
     await deleteGameData(currentUser.uid);
+    await deleteIndexedDbSave(currentUser.uid).catch((error) => console.warn('IndexedDB端末セーブの削除に失敗しました。', error));
+    indexedDbSave = null;
+    indexedDbStorageReady = false;
     localStorage.removeItem(localSaveKey());
     removeLocalStorageItemQuietly(localSaveBackupKey());
     removeLocalStorageItemQuietly(localSavePreMigrationKey());
@@ -22677,6 +22726,8 @@ function clearAllClientAccountData() {
   try { sessionStorage.clear(); } catch (_) {}
   titleSettings = structuredClone(initialState().settings);
   cloudSave = null;
+  indexedDbSave = null;
+  indexedDbStorageReady = false;
   state = null;
   craftDraft = null;
   completionId = null;
@@ -22694,6 +22745,9 @@ async function executeAccountDeletion() {
   try {
     await saveQueue.catch(() => {});
     await deleteAccountCompletely(password);
+    await deleteIndexedDbSave(currentUser.uid).catch((error) => console.warn('削除済みアカウントのIndexedDB端末セーブを削除できませんでした。', error));
+    indexedDbSave = null;
+    indexedDbStorageReady = false;
     if (stopSessionWatch) { stopSessionWatch(); stopSessionWatch = null; }
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     clearAllClientAccountData();
@@ -24104,19 +24158,27 @@ async function boot() {
           .catch((error) => {
             console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
           });
+        try {
+          indexedDbSave = await readIndexedDbSave(user.uid);
+          indexedDbStorageReady = true;
+        } catch (error) {
+          indexedDbSave = null;
+          indexedDbStorageReady = false;
+          console.warn('IndexedDBの端末セーブを読み込めませんでした。旧localStorage／クラウドから継続します。', error);
+        }
         cloudSave = await loadState(user.uid);
         const preferredAtBoot = preferredSavedState();
-        const localWasNewer = preferredAtBoot.source === 'local' && Boolean(preferredAtBoot.state);
+        const deviceWasNewer = ['local', 'indexeddb'].includes(preferredAtBoot.source) && Boolean(preferredAtBoot.state);
         if (preferredAtBoot.source === 'cloud' && preferredAtBoot.state) {
-          persistBootLocalStateSafely(preferredAtBoot.state, 'クラウド採用セーブ');
-        } else if (localWasNewer) {
+          await persistBootDeviceStateSafely(preferredAtBoot.state, 'クラウド採用セーブ');
+        } else if (deviceWasNewer) {
           cloudSave = structuredClone(preferredAtBoot.state);
         }
         // 端末側が新しい場合は端末データを即採用し、クラウドへの書き戻しだけを
         // 保存キューへ積む。通信が遅くてもタイトル表示やゲーム開始は待たせない。
         // 同一クライアント内の後続クラウド保存はこのキューの後ろへ並ぶため、
         // 古い起動時スナップショットが新しいプレイ内容を後から上書きしない。
-        if (localWasNewer) {
+        if (deviceWasNewer) {
           const migratedLocal = migrateState(preferredAtBoot.state);
           migratedLocal.updatedAt = String(preferredAtBoot.state.updatedAt || new Date().toISOString());
           const bootSyncSnapshot = structuredClone(migratedLocal);
@@ -24127,7 +24189,7 @@ async function boot() {
               console.warn('新しい端末セーブのバックグラウンド同期に失敗しました。端末保存は完了しています。', error);
             });
           cloudSave = structuredClone(migratedLocal);
-          persistBootLocalStateSafely(migratedLocal, '起動時ローカル移行');
+          await persistBootDeviceStateSafely(migratedLocal, '起動時ローカル移行');
         }
         stopSessionWatch = watchSession(user.uid, sessionId, () => {
           sessionTakenOver = true;

@@ -33,7 +33,8 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
-import { SAVE_KEY } from './game-data-core.js';
+import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.765';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -670,15 +671,22 @@ function isGiftLocalQuotaError(error) {
     || /quota|storage.*full|容量|領域/i.test(message);
 }
 
-function readGiftLocalState(uid) {
+async function readGiftLocalState(uid) {
+  let legacyState = null;
   try {
     const raw = localStorage.getItem(giftLocalSaveKey(uid));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
-  } catch (_) {
-    return null;
-  }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      legacyState = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+    }
+  } catch (_) {}
+
+  let indexedState = null;
+  try {
+    indexedState = await readIndexedDbSave(uid);
+  } catch (_) {}
+
+  return chooseNewestSavedState(indexedState, legacyState).state;
 }
 
 function writeGiftLocalStateSafely(uid, nextState) {
@@ -709,7 +717,7 @@ async function readGiftCloudBase(uid) {
   // saveGame() が直前にクラウドへ送った世代を使う。旧 users/{uid}.gameState は参照しない。
   const gameState = await readChunkedGameState(uid, metadata);
   const cloudRevision = Math.max(0, Math.floor(Number(metadata.saveRevision) || 0));
-  const localState = readGiftLocalState(uid);
+  const localState = await readGiftLocalState(uid);
   const localRevision = Math.max(0, Math.floor(Number(localState?.saveRevision) || 0));
   // 端末の方が新しい場合だけ、クラウド保存失敗後の古い状態でプレゼント処理するのを防ぐ。
   // 端末容量不足で端末側だけ古い場合は、より新しいクラウドを正として継続する。
@@ -762,8 +770,13 @@ function cleanupStagedGiftState(staged) {
 async function commitGiftChunkedTransition(uid, expectedMetadata, nextState, transactionBody, recoverCommitted) {
   const staged = await stageGiftChunkedState(uid, nextState);
   const metaRef = cloudSaveMetaRef(uid);
-  const finalizeCommitted = (result) => {
+  const finalizeCommitted = async (result) => {
     cloudStorageMetaByUid.set(uid, staged.metadata);
+    try {
+      await writeIndexedDbSave(uid, nextState);
+    } catch (error) {
+      console.warn('プレゼント確定後のIndexedDB端末保存に失敗しました。localStorage／クラウドの保存を維持します。', error);
+    }
     writeGiftLocalStateSafely(uid, nextState);
     if (expectedMetadata?.mode === 'chunked' && expectedMetadata.generation !== staged.metadata.generation) {
       void cleanupChunkGeneration(uid, expectedMetadata);
@@ -782,14 +795,14 @@ async function commitGiftChunkedTransition(uid, expectedMetadata, nextState, tra
       transaction.set(metaRef, staged.metadata);
       return value;
     });
-    return finalizeCommitted(result);
+    return await finalizeCommitted(result);
   } catch (error) {
     // 応答だけ失われ、サーバーではコミット済みのケースを保護する。
     // この固有generationが現行ならgift更新も同じトランザクションで確定済みなので、
     // 参照中チャンクを削除せず成功結果を復元する。
     const currentMetadata = await readCurrentCloudMetadata(uid).catch(() => null);
     if (giftMetadataMatches(currentMetadata, staged.metadata)) {
-      return finalizeCommitted(typeof recoverCommitted === 'function' ? recoverCommitted() : { gameState: nextState });
+      return await finalizeCommitted(typeof recoverCommitted === 'function' ? recoverCommitted() : { gameState: nextState });
     }
     cleanupStagedGiftState(staged);
     throw error;

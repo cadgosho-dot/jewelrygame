@@ -1,0 +1,62 @@
+name: Apply v0.10.771 bounded save cleanup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/apply-v771-bounded-save.py'
+      - '.github/workflows/apply-v771.yml'
+
+jobs:
+  apply:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Rebase latest main
+        run: git pull --rebase origin main
+
+      - name: Install validation dependency
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: Apply bounded save cleanup
+        run: python3 scripts/apply-v771-bounded-save.py
+
+      - name: Bump build version
+        run: python3 scripts/version-sync.py --bump-patch
+
+      - name: JavaScript syntax checks
+        run: |
+          node --check js/app.js
+          node --check js/game-data-core.js
+          node --check js/game-data.js
+          node --check js/firebase-service.js
+
+      - name: Focused save cleanup checks
+        run: |
+          python3 scripts/check-long-term-history.py
+          python3 scripts/check-save-diagnostics.py
+
+      - name: Full current-build audit
+        run: python3 -u scripts/check-current.py
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Commit implementation and remove temporary files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-v771.yml scripts/apply-v771-bounded-save.py
+          git add -A
+          git commit -m "v0.10.771: Bound long-term save history"
+          git pull --rebase origin main
+          git push origin HEAD:main

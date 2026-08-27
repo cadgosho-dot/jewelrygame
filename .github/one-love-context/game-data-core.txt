@@ -1,0 +1,246 @@
+===== js/game-data-core.js:7231-7285 =====
+007231:       lastResult: null,
+007232:     },
+007233:     customers: Object.fromEntries(Object.keys(CUSTOMERS).map((customerId) => [customerId, {
+007234:       met: false,
+007235:       relation: '初来店',
+007236:       purchases: 0,
+007237:       visiting: false,
+007238:       visitingBranchNumber: null,
+007239:       activeRequest: null,
+007240:       lastVisitDay: null,
+007241:       lastRequestSignature: '',
+007242:       ignoredToday: false,
+007243:       wishesHeard: false,
+007244:       proposedItemIds: [],
+007245:     }])),
+007246:     orders: [],
+007247:     // v0.10.769: 長期プレイで増え続ける完了注文・売却済み完成品は、
+007248:     // 現役データと分離した軽量履歴へ退避する。直近分だけ従来の完全データを保持する。
+007249:     history: { closedOrders: [], soldJewelry: [] },
+007250:     employee: storeEmployeeDefaults(1),
+007251:     events: {
+007252:       bluesJukeEvent: {
+007253:         nextTriggerDay: 0,
+007254:         lastTriggeredDay: 0,
+007255:         totalTriggered: 0,
+007256:         active: false,
+007257:         stage: 'idle',
+007258:         episode: 1,
+007259:         step: 0,
+007260:         rewardGranted: false,
+007261:         knowledgeUnlocked: false,
+007262:       },
+007263:       grayHoodAquariumEvent: { active: false, completed: false, stage: 'idle', triggeredDay: 0, introVideoCompleted: false, stageAfterVideo: '' },
+007264:       robbery: {
+007265:         lastTriggeredDay: 0,
+007266:         pendingReport: null,
+007267:         history: [],
+007268:       },
+007269:       okachimachiQuiz: {
+007270:         totalVisits: 0,
+007271:         visitsSinceLast: 0,
+007272:         nextTriggerAt: 30,
+007273:         totalTriggered: 0,
+007274:         lastCountedDate: '',
+007275:         lastQuestionIndex: -1,
+007276:       },
+007277:       // v0.10.654: クイズ途中のPWA終了・再読込でも進行を失わない。
+007278:       okachimachiQuizSession: null,
+007279:       looseShopOriginalQuizSession: null,
+007280:       okachimachiTollEvent: {
+007281:         lastAttemptDay: 0,
+007282:         lastTriggeredDay: 0,
+007283:         totalTriggered: 0,
+007284:         active: false,
+007285:         stage: 'idle',
+===== js/game-data-core.js:7308-7370 =====
+007308:         scheduleYear: 0,
+007309:         eligibleDayOfYear: 0,
+007310:         lastCheckedDate: '',
+007311:         lastTriggeredYear: 0,
+007312:         totalTriggered: 0,
+007313:         active: false,
+007314:         stage: 'idle',
+007315:         rewardGranted: false,
+007316:         eventDate: '',
+007317:         introVideoCompleted: false,
+007318:         stageAfterVideo: '',
+007319:       },
+007320:       miningPazupanEvent: {
+007321:         nextTriggerDay: 0,
+007322:         lastTriggeredDay: 0,
+007323:         totalTriggered: 0,
+007324:         active: false,
+007325:         stage: 'idle',
+007326:         rewardGranted: false,
+007327:       },
+007328:       kappaJadeEvent: {
+007329:         nextTriggerDay: 0,
+007330:         lastTriggeredDay: 0,
+007331:         totalTriggered: 0,
+007332:         active: false,
+007333:         stage: 'idle',
+007334:         rewardGranted: false,
+007335:       },
+007336:       workshopKappaJadeEvent: {
+007337:         nextTriggerDay: 0,
+007338:         lastTriggeredDay: 0,
+007339:         totalTriggered: 0,
+007340:         lastCheckedDate: '',
+007341:         active: false,
+007342:         stage: 'idle',
+007343:         rewardGranted: false,
+007344:       },
+007345:       mermaidEvent: {
+007346:         nextTriggerDay: 0,
+007347:         lastTriggeredDay: 0,
+007348:         totalTriggered: 0,
+007349:         active: false,
+007350:         stage: 'idle',
+007351:         rewardGranted: false,
+007352:       },
+007353:       tattooWomanAmberEvent: {
+007354:         nextTriggerDay: 0,
+007355:         lastTriggeredDay: 0,
+007356:         totalTriggered: 0,
+007357:         lastCheckedDate: '',
+007358:         active: false,
+007359:         stage: 'idle',
+007360:         rewardGranted: false,
+007361:         introVideoCompleted: false,
+007362:         stageAfterVideo: '',
+007363:       },
+007364:       sushiChefEvent: {
+007365:         lastCheckedDate: '',
+007366:         totalTriggered: 0,
+007367:         active: false,
+007368:         stage: 'idle',
+007369:         lastPlates: 0,
+007370:         lastHungerBefore: 0,
+===== js/game-data-core.js:8208-8272 =====
+008208:         stage: 'completed',
+008209:         eventYear: completionYear,
+008210:         lastCompletedYear: Math.max(
+008211:           Math.max(0, Math.floor(Number(savedBirthday.lastCompletedYear) || 0)),
+008212:           completionYear,
+008213:         ),
+008214:       };
+008215:       state.game.screen = 'main';
+008216:       state.migrations.illnessBirthdayDeadlockV460 = true;
+008217:     } else {
+008218:       state.migrations.illnessBirthdayDeadlockV460 = Boolean(state.migrations.illnessBirthdayDeadlockV460);
+008219:     }
+008220:   }
+008221: 
+008222:   // v0.10.463: 旧版でイベント途中のまま保存されたデータを一度だけ安全に復旧する。
+008223:   // 画面に留まり続ける可能性がある短期イベントだけを対象にし、通常の宇宙滞在と療養中の進行は維持する。
+008224:   {
+008225:     const legacyScreen = String(legacy.game?.screen || '');
+008226:     const recoveryScreens = new Set([
+008227:       'winterColdEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent',
+008228:       'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'mysteryChineseMealEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'sushiChefEvent',
+008229:       'cyclopsEvent', 'ganeshaTuskEvent', 'childhoodFriendEvent', 'touristWoodSwordEvent', 'diamondPolishingLapEvent',
+008230:       'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
+008231:       'wristFoundEvent', 'okachimachiQuiz', 'robberyReport', 'kaitenzushi',
+008232:     ]);
+008233:     const activeStages = {
+008234:       birthdaySleepEvent: ['phone', 'greeting', 'congratulations', 'thanks'],
+008235:       westernUnionEvent: ['choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3'],
+008236:       miningPazupanEvent: ['intro', 'intro2', 'intro3', 'reward'],
+008237:       kappaJadeEvent: ['intro1', 'intro2', 'reward', 'farewell'],
+008238:       workshopKappaJadeEvent: ['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell'],
+008239:       tattooWomanAmberEvent: ['intro1', 'intro2', 'intro3', 'reward', 'farewell'],
+008240:       mermaidEvent: ['intro', 'reward'],
+008241:       sushiChefEvent: ['intro1', 'intro2', 'playing', 'farewell'],
+008242:       cyclopsEvent: ['intro1', 'intro2', 'reward'],
+008243:       ganeshaTuskEvent: ['intro1', 'intro2', 'intro3', 'reward', 'farewell'],
+008244:       hauntingEvent: ['intro1', 'intro2', 'processing'],
+008245:       childhoodFriendEvent: ['intro1', 'intro2', 'intro3', 'eating', 'postMeal'],
+008246:       touristWoodSwordEvent: ['intro1', 'route', 'reward', 'farewell'],
+008247:       diamondPolishingLapEvent: ['intro1', 'intro2', 'reward', 'outro'],
+008248:       cinemaVisitEvent: ['invitation', 'playing'],
+008249:       apprenticeCinemaEvent: ['intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2'],
+008250:       clockTowerDonationEvent: ['intro1', 'intro2', 'intro3'],
+008251:       mysteryChineseMealEvent: ['intro1', 'intro2', 'intro3', 'reward'],
+008252:       wristFoundEvent: ['intro', 'report'],
+008253:       storeTheftEvent: ['intro1', 'choice', 'declined', 'intro2', 'intro3', 'farewell', 'pause', 'theftNotice'],
+008254:     };
+008255:     const hasTransientEvent = Object.entries(activeStages).some(([key, stages]) => {
+008256:       const eventState = isRecord(state.events[key]) ? state.events[key] : {};
+008257:       return Boolean(eventState.active) || stages.includes(String(eventState.stage || ''));
+008258:     });
+008259:     const cold = isRecord(state.events.winterColdEvent) ? state.events.winterColdEvent : {};
+008260:     const alien = isRecord(state.events.alienAbductionEvent) ? state.events.alienAbductionEvent : {};
+008261:     const hasInterruptibleLongEvent = (Boolean(cold.active) && String(cold.stage || '') === 'intro')
+008262:       || (Boolean(alien.active) && ['intro1', 'intro2'].includes(String(alien.stage || '')));
+008263:     const needsRecovery = versionBefore(legacy.version, '0.10.463')
+008264:       && (recoveryScreens.has(legacyScreen) || hasTransientEvent || hasInterruptibleLongEvent);
+008265:     state.migrations.transientEventRecoveryV462Pending = needsRecovery
+008266:       || Boolean(state.migrations.transientEventRecoveryV462Pending);
+008267:     state.migrations.transientEventRecoveryV462 = !state.migrations.transientEventRecoveryV462Pending
+008268:       && Boolean(state.migrations.transientEventRecoveryV462);
+008269:     if (needsRecovery) state.game.screen = 'main';
+008270:   }
+008271: 
+008272:   state.progressFlags = state.progressFlags && typeof state.progressFlags === 'object' && !Array.isArray(state.progressFlags)
+===== js/game-data-core.js:8977-9035 =====
+008977:     stageAfterVideo: ['choice', 'declined', 'gift', 'explain1', 'explain2', 'explain3'].includes(savedWesternUnionEvent.stageAfterVideo) ? savedWesternUnionEvent.stageAfterVideo : '',
+008978:   };
+008979:   if (!state.events.westernUnionEvent.active && !['idle', 'completed'].includes(state.events.westernUnionEvent.stage)) {
+008980:     state.events.westernUnionEvent.stage = 'completed';
+008981:   }
+008982: 
+008983:   const normalizeSimpleEvent = (key, validStages, extra = {}) => {
+008984:     const saved = isRecord(state.events[key]) ? state.events[key] : {};
+008985:     state.events[key] = {
+008986:       nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+008987:       lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+008988:       totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+008989:       active: Boolean(saved.active),
+008990:       stage: validStages.includes(saved.stage) ? saved.stage : 'idle',
+008991:       ...extra(saved),
+008992:     };
+008993:     if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
+008994:   };
+008995:   normalizeSimpleEvent('miningPazupanEvent', ['idle', 'intro', 'intro2', 'intro3', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+008996:   normalizeSimpleEvent('mermaidEvent', ['idle', 'intro', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+008997:   normalizeSimpleEvent('kappaJadeEvent', ['idle', 'intro1', 'intro2', 'reward', 'farewell', 'completed'], (saved) => ({
+008998:     rewardGranted: Boolean(saved.rewardGranted),
+008999:     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+009000:   }));
+009001:   normalizeSimpleEvent('workshopKappaJadeEvent', ['idle', 'rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell', 'completed'], (saved) => ({
+009002:     rewardGranted: Boolean(saved.rewardGranted),
+009003:     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+009004:   }));
+009005:   normalizeSimpleEvent('tattooWomanAmberEvent', ['idle', 'video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed'], (saved) => ({
+009006:     rewardGranted: Boolean(saved.rewardGranted),
+009007:     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+009008:     introVideoCompleted: Boolean(saved.introVideoCompleted),
+009009:     stageAfterVideo: ['intro1', 'intro2', 'intro3', 'reward', 'farewell'].includes(saved.stageAfterVideo) ? saved.stageAfterVideo : '',
+009010:   }));
+009011: 
+009012:   const normalizeVisitEvent = (key, validStages, extra = {}) => {
+009013:     const saved = isRecord(state.events[key]) ? state.events[key] : {};
+009014:     state.events[key] = {
+009015:       lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+009016:       totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+009017:       active: Boolean(saved.active),
+009018:       stage: validStages.includes(saved.stage) ? saved.stage : 'idle',
+009019:       ...extra(saved),
+009020:     };
+009021:     if (!state.events[key].active && !['idle', 'completed'].includes(state.events[key].stage)) state.events[key].stage = 'completed';
+009022:   };
+009023:   normalizeVisitEvent('sushiChefEvent', ['idle', 'intro1', 'intro2', 'playing', 'farewell', 'completed'], (saved) => ({
+009024:     lastPlates: Math.max(0, Math.floor(Number(saved.lastPlates) || 0)),
+009025:     lastHungerBefore: Math.max(0, Math.min(7, Math.floor(Number(saved.lastHungerBefore) || 0))),
+009026:     lastHungerAfter: Math.max(0, Math.min(7, Math.floor(Number(saved.lastHungerAfter) || 0))),
+009027:   }));
+009028:   normalizeVisitEvent('cyclopsEvent', ['idle', 'intro1', 'intro2', 'reward', 'completed'], (saved) => ({ rewardGranted: Boolean(saved.rewardGranted) }));
+009029:   {
+009030:     const saved = isRecord(state.events.ganeshaTuskEvent) ? state.events.ganeshaTuskEvent : {};
+009031:     const active = Boolean(saved.active);
+009032:     const legacyVideoStage = String(saved.stage || '') === 'video';
+009033:     const validStages = ['idle', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'completed'];
+009034:     state.events.ganeshaTuskEvent = {
+009035:       lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',

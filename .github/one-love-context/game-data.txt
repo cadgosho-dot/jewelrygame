@@ -1,0 +1,64 @@
+===== js/game-data.js:82-144 =====
+000082: function installEmeraldCaptainKebabTapCompatibility() {
+000083:   if (typeof document === 'undefined' || typeof globalThis === 'undefined') return;
+000084:   if (globalThis.__JXJ_EMERALD_CAPTAIN_TAP_V753__) return;
+000085:   globalThis.__JXJ_EMERALD_CAPTAIN_TAP_V753__ = true;
+000086: 
+000087:   const installStyle = () => {
+000088:     if (!document.head || document.getElementById('jxj-emerald-captain-tap-v753')) return;
+000089:     const style = document.createElement('style');
+000090:     style.id = 'jxj-emerald-captain-tap-v753';
+000091:     style.textContent = `
+000092:       /* v0.10.753: 古いAndroid/WebViewでも購入カードと実タップ領域を一致させる。 */
+000093:       body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button {
+000094:         position: absolute !important;
+000095:         z-index: 24 !important;
+000096:         left: 50% !important;
+000097:         top: 48% !important;
+000098:         transform: translate(-50%, -50%) !important;
+000099:         width: 86vw !important;
+000100:         max-width: 620px !important;
+000101:         min-height: 170px !important;
+000102:         pointer-events: auto !important;
+000103:         touch-action: manipulation !important;
+000104:         -webkit-tap-highlight-color: transparent !important;
+000105:         -webkit-appearance: none !important;
+000106:         appearance: none !important;
+000107:         cursor: pointer !important;
+000108:       }
+000109:       body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button > * {
+000110:         pointer-events: none !important;
+000111:       }
+000112:       body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button img {
+000113:         width: 72vw !important;
+000114:         max-width: 430px !important;
+000115:         max-height: 31vh !important;
+000116:         object-fit: contain !important;
+000117:       }
+000118:       @media (orientation: portrait) {
+000119:         body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button {
+000120:           width: 90vw !important;
+000121:           max-width: 620px !important;
+000122:         }
+000123:       }
+000124:       @media (orientation: landscape) {
+000125:         body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button {
+000126:           width: 52vw !important;
+000127:           max-width: 620px !important;
+000128:         }
+000129:         body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button img {
+000130:           width: 40vw !important;
+000131:           max-width: 430px !important;
+000132:           max-height: 34vh !important;
+000133:         }
+000134:       }
+000135:     `;
+000136:     document.head.appendChild(style);
+000137:   };
+000138: 
+000139:   if (document.head) installStyle();
+000140:   else document.addEventListener('DOMContentLoaded', installStyle, { once: true });
+000141: 
+000142:   let lastSyntheticActivation = 0;
+000143:   let suppressTrustedClickUntil = 0;
+000144: 

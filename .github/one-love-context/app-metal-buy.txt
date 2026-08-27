@@ -1,0 +1,91 @@
+  const hits = miningGame.hits[index];
+  button.classList.remove('swinging');
+  void button.offsetWidth;
+  button.classList.add('swinging');
+  updateRockVisual(button, hits);
+  playSfx('impact', { gain: 1.12, rate: 0.92 + Math.random() * 0.16 });
+  vibrate([24, 12, 28]);
+  if (hits >= 5) {
+    setTimeout(() => finishMiningRock(index, button), 300);
+    return;
+  }
+  setTimeout(() => {
+    button.classList.remove('swinging');
+    if (miningGame) miningGame.busy = false;
+  }, 330);
+}
+
+function buyMetal(id) {
+  if (!metalMarketTradeReady()) return showToast('地金相場を確認できないため、現在は購入できません。', 'error');
+  const product = METALS[id];
+  if (!product) return showToast('この地金は購入できません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
+  const quantity = metalTradeQuantity('buy', id);
+  const maximum = metalTradeMaximum('buy', id);
+  if (quantity < 1 || quantity > maximum) return showToast('購入する重量を▲▼で選んでください。', 'error');
+  const unitPrice = metalTradePricePerGram('buy', id);
+  const totalPrice = unitPrice * quantity;
+  if (state.game.money < totalPrice) return showToast('所持金が足りません。', 'error');
+  if (metalOwnedWeight(id) + quantity > metalStorageLimit(id) + 1e-9) return showToast('地金の保管上限を超えています。', 'error');
+  state.game.money -= totalPrice;
+  state.inventory.metals[id] = roundedMetalWeight(metalOwnedWeight(id) + quantity);
+  startMoneyFeedback(-totalPrice);
+  spendHours(1);
+  addFinance(`${product.name}を${quantity}g購入`, 0, totalPrice);
+  metalTradeDraft.buy[id] = 1;
+  saveGame();
+  showToast(`${product.name}を${quantity}g購入しました`, 'info', false);
+  render();
+}
+
+function sellMetal(id) {
+  if (!metalMarketTradeReady()) return showToast('地金相場を確認できないため、現在は売却できません。', 'error');
+  const product = METALS[id];
+  if (!product) return showToast('この地金は売却できません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は売却手続きをする時間がありません。', 'error');
+  const quantity = metalTradeQuantity('sell', id);
+  const maximum = metalTradeMaximum('sell', id);
+  if (quantity < 1 || quantity > maximum) return showToast('売却する重量を▲▼で選んでください。', 'error');
+  const unitPrice = metalTradePricePerGram('sell', id);
+  const totalPrice = unitPrice * quantity;
+  state.inventory.metals[id] = roundedMetalWeight(metalOwnedWeight(id) - quantity);
+  state.game.money += totalPrice;
+  spendHours(1);
+  addFinance(`${product.name}を${quantity}g売却`, totalPrice, 0);
+  metalTradeDraft.sell[id] = 1;
+  saveGame();
+  startMoneyFeedback(totalPrice);
+  showToast(`${product.name}を${quantity}g売却しました`, 'info', false);
+  render();
+}
+
+function purchase(kind, id, shapeId = '') {
+  if (kind === 'metal') return buyMetal(id);
+  const product = kind === 'loose' ? GEMS[id] : null;
+  if (!product) return showToast('この商品は購入できません。', 'error');
+  if (product.noLooseShopTrade) return showToast('このオリジナルルースはルース屋では購入できません。イベントで入手してください。', 'error');
+  const resolvedShape = normalizeLooseShape(id, shapeId);
+  const quantity = loosePurchaseQuantity(id, resolvedShape);
+  const unitPrice = loosePurchasePrice(id, resolvedShape);
+  const totalPrice = unitPrice * quantity;
+  const scrollSnapshot = captureLooseShopScrollState();
+  if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
+  if (quantity < 1) return showToast('購入する数を選択してください。', 'error');
+  if (state.game.money < totalPrice) return showToast('所持金が足りません。', 'error');
+  state.game.money -= totalPrice;
+  startMoneyFeedback(-totalPrice);
+  adjustLooseInventory(id, resolvedShape, quantity);
+  spendHours(1);
+  const itemLabel = looseDisplayLabel(id, resolvedShape, { suffix: true });
+  addFinance(`${itemLabel}を${quantity}個購入`, 0, totalPrice);
+  loosePurchaseDraft[loosePurchaseDraftKey(id, resolvedShape)] = 1;
+  saveGame();
+  showToast(`${itemLabel}を${quantity}個、${yen(totalPrice)}で購入しました。`, 'info', false);
+  render();
+  restoreLooseShopScrollState(scrollSnapshot);
+}
+
+function sellRough(id, sellAll = false) {
+  const gem = GEMS[id];
+  const owned = Number(state.inventory.rough[id]) || 0;
+  if (!gem || owned < 1) return showToast('売却できる原石がありません。', 'error');

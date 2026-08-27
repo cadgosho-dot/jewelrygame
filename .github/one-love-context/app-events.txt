@@ -1,0 +1,361 @@
+  vibrate([24, 30, 48]);
+  return true;
+}
+
+function receiveKappaJade() {
+  const eventState = kappaJadeEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.rough.jade = Math.max(0, Math.floor(Number(state.inventory.rough?.jade) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。', 'special');
+  }
+  eventState.stage = 'farewell';
+  saveGame();
+  playSfx('jade-gift', { gain: 1.02 });
+  vibrate([34, 26, 64]);
+  render();
+}
+
+function advanceKappaJadeEvent() {
+  const eventState = kappaJadeEventState();
+  if (!eventState.active) {
+    setScreen('mining', {}, false);
+    return;
+  }
+  if (eventState.stage === 'intro1') eventState.stage = 'intro2';
+  else if (eventState.stage === 'intro2') eventState.stage = 'reward';
+  else if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    eventState.introVideoCompleted = true;
+    eventState.stageAfterVideo = '';
+    saveGame();
+    playSfx('select', { gain: 0.82 });
+    setScreen('mining', {}, false);
+    return;
+  }
+  saveGame();
+  playSfx('select', { gain: 0.82 });
+  render();
+}
+
+function workshopKappaJadeEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.workshopKappaJadeEvent && typeof state.events.workshopKappaJadeEvent === 'object' && !Array.isArray(state.events.workshopKappaJadeEvent)
+    ? state.events.workshopKappaJadeEvent
+    : {};
+  const validStages = new Set(['idle', 'rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell', 'completed']);
+  state.events.workshopKappaJadeEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+  };
+  if (!state.events.workshopKappaJadeEvent.active && !['idle', 'completed'].includes(state.events.workshopKappaJadeEvent.stage)) state.events.workshopKappaJadeEvent.stage = 'completed';
+  return state.events.workshopKappaJadeEvent;
+}
+
+function resumeWorkshopKappaJadeEvent() {
+  const eventState = workshopKappaJadeEventState();
+  if (!eventState.active) return false;
+  setScreen('workshopKappaJadeEvent', {}, false);
+  return true;
+}
+
+function maybeStartWorkshopKappaJadeEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = workshopKappaJadeEventState();
+  if (eventState.active) return resumeWorkshopKappaJadeEvent();
+  const riverKappa = kappaJadeEventState();
+  if (Math.max(0, Number(riverKappa.totalTriggered) || 0) < 1) return false;
+  // 工房の河童イベントは、河原の河童イベントを一度以上経験した後だけ発生する。
+  if (kappaJadeEventState().totalTriggered < 1) return false;
+  if (state.game.day < Math.max(0, Number(eventState.nextTriggerDay) || 0)) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= (1 / 30)) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'rustle';
+  eventState.rewardGranted = false;
+  eventState.nextTriggerDay = state.game.day + 150;
+  saveGame();
+  setScreen('workshopKappaJadeEvent', {}, false);
+  playSfx('earth-dig', { gain: 0.42, rate: 1.12 });
+  vibrate([18, 22, 28]);
+  return true;
+}
+
+function receiveWorkshopKappaJadeReward() {
+  const eventState = workshopKappaJadeEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.rough.jade = Math.max(0, Math.floor(Number(state.inventory.rough?.jade) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('翡翠原石を手に入れました', '工房の原石へ追加されました。研磨すると翡翠のルースになります。', 'special');
+  }
+  eventState.stage = 'admire';
+  saveGame();
+  playSfx('jade-gift', { gain: 1.02, rate: 1.02 });
+  vibrate([30, 24, 56]);
+  render();
+}
+
+function advanceWorkshopKappaJadeEvent() {
+  const eventState = workshopKappaJadeEventState();
+  if (!eventState.active) {
+    setScreen('workshop', {}, false);
+    return;
+  }
+  const order = ['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell'];
+  const index = order.indexOf(eventState.stage);
+  if (eventState.stage === 'reward') return;
+  if (eventState.stage === 'farewell') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.82 });
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (index >= 0 && index < order.length - 1) {
+    eventState.stage = order[index + 1];
+    saveGame();
+    if (eventState.stage === 'greet') playSfx('kappa-appear', { gain: 0.92, rate: 1.0 });
+    else if (eventState.stage === 'reward') playSfx('success', { gain: 0.84, rate: 1.04 });
+    else playSfx('select', { gain: 0.82 });
+    render();
+    return;
+  }
+}
+
+function ensureYowamushiEventStyles() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('yowamushi-rosequartz-event-style')) return;
+  const style = document.createElement('style');
+  style.id = 'yowamushi-rosequartz-event-style';
+  style.textContent = `
+    .yowamushi-event-screen .yowamushi-dialogue-button,
+    .yowamushi-event-screen .yowamushi-reward-button {
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+    }
+    .yowamushi-event-screen .yowamushi-dialogue-button strong,
+    .yowamushi-event-screen .yowamushi-dialogue-button small,
+    .yowamushi-event-screen .yowamushi-dialogue-button span {
+      text-shadow: 0 2px 12px rgba(0,0,0,.72);
+    }
+    .yowamushi-event-screen .yowamushi-dialogue-button small {
+      color:#ff8fbd !important;
+    }
+    .yowamushi-event-screen .yowamushi-character-area {
+      position:absolute;
+      left:50%;
+      top:0;
+      bottom:clamp(122px,26vh,186px);
+      z-index:5;
+      width:100%;
+      padding:8px 5px 0;
+      transform:translateX(-50%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:visible;
+      pointer-events:none;
+    }
+    .yowamushi-event-screen .yowamushi-character {
+      display:block;
+      max-width:min(94vw,760px);
+      max-height:min(72dvh,1000px);
+      width:auto;
+      height:auto;
+      object-fit:contain;
+      filter:drop-shadow(0 24px 38px rgba(0,0,0,.82));
+      user-select:none;
+    }
+    @media (orientation:portrait) {
+      .yowamushi-event-screen .yowamushi-character { transform:translateY(12dvh); }
+    }
+    @media (orientation:landscape) {
+      .yowamushi-event-screen .yowamushi-character-area { top:0; bottom:112px; padding:0 5px; align-items:flex-start; }
+      .yowamushi-event-screen .yowamushi-character { max-height:calc(100dvh - 112px); max-width:54vw; transform:none; }
+    }
+    .yowamushi-event-screen .yowamushi-reward-button img {
+      max-width: 48vw;
+      max-height: 24vh;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.42));
+    }
+  `;
+  document.head?.appendChild(style);
+}
+
+function yowamushiRoseQuartzEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.yowamushiRoseQuartzEvent && typeof state.events.yowamushiRoseQuartzEvent === 'object' && !Array.isArray(state.events.yowamushiRoseQuartzEvent)
+    ? state.events.yowamushiRoseQuartzEvent
+    : {};
+  const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2', 'completed']);
+  state.events.yowamushiRoseQuartzEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+    lastTriggeredYear: Math.max(0, Math.floor(Number(saved.lastTriggeredYear) || 0)),
+  };
+  if (!state.events.yowamushiRoseQuartzEvent.active && !['idle', 'completed'].includes(state.events.yowamushiRoseQuartzEvent.stage)) state.events.yowamushiRoseQuartzEvent.stage = 'completed';
+  return state.events.yowamushiRoseQuartzEvent;
+}
+
+function resumeYowamushiRoseQuartzEvent() {
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active) return false;
+  setScreen('yowamushiRoseQuartzEvent', {}, false);
+  return true;
+}
+
+function maybeStartYowamushiRoseQuartzEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = yowamushiRoseQuartzEventState();
+  if (eventState.active) return resumeYowamushiRoseQuartzEvent();
+  const today = gameDate();
+  const month = today.getMonth();
+  const year = today.getFullYear();
+  if (![2, 3].includes(month)) return false;
+  if (Math.max(0, Number(eventState.lastTriggeredYear) || 0) >= year) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  const forceLateApril = month === 3 && today.getDate() >= 25;
+  if (!forceLateApril && Math.random() >= YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = state.game.day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.rewardGranted = false;
+  eventState.lastTriggeredYear = year;
+  saveGame();
+  setScreen('yowamushiRoseQuartzEvent', {}, false);
+  playSfx('select', { gain: 0.64, rate: 0.86 });
+  vibrate([18, 30, 18]);
+  return true;
+}
+
+function receiveYowamushiRoseQuartzReward() {
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.loose = state.inventory.loose && typeof state.inventory.loose === 'object' ? state.inventory.loose : {};
+    state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] = state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] && typeof state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] === 'object' ? state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] : {};
+    state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID] = Math.max(0, Math.floor(Number(state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID]) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('ローズクォーツを手に入れました', '工房のルースへ追加されました。', 'special');
+  }
+  eventState.stage = 'outro1';
+  saveGame();
+  playSfx('success', { gain: 0.78, rate: 1.08 });
+  vibrate([24, 36, 54]);
+  render();
+}
+
+function advanceYowamushiRoseQuartzEvent() {
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active) {
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (eventState.stage === 'reward') return;
+  const order = ['intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2'];
+  const index = order.indexOf(eventState.stage);
+  if (eventState.stage === 'outro2') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.62, rate: 0.82 });
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (index >= 0 && index < order.length - 1) {
+    eventState.stage = order[index + 1];
+    saveGame();
+    if (eventState.stage === 'reward') playSfx('success', { gain: 0.66, rate: 1.04 });
+    else playSfx('select', { gain: 0.62, rate: 0.92 });
+    render();
+  }
+}
+
+function renderYowamushiRoseQuartzEvent() {
+  ensureYowamushiEventStyles();
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active) return renderWorkshop();
+  const playerName = esc(String(state?.playerName || 'あなた').trim() || 'あなた');
+  const reward = eventState.stage === 'reward';
+  const dialogueMap = {
+    intro1: `こんにちは、、${playerName}、、、`,
+    intro2: 'そういえば、以前君に僕の指輪をメンテナンスしてもらった事を思い出したんだ、、、、',
+    intro3: 'その君の優しさに、、今日はお礼をしに来たというわけさ、、、、',
+    intro4: 'よければ、これを受け取ってくれ、、、',
+    outro1: '僕はもう行くけど、、、たとえば僕が死んだら、、、僕の骨は合成ダイヤにでもして泣いてくれ、、、、それも君にあげよう、、、',
+    outro2: `それじゃ、、またね、${playerName}、、、、`,
+  };
+  const rewardPanel = `<button type="button" class="yowamushi-reward-button kappa-jade-reward-button" data-action="yowamushi-event-receive" aria-label="ローズクォーツを受け取る"><span class="special-item-glow kappa-jade-glow" aria-hidden="true"></span><img src="./assets/images/loose/rosequartz/oval-cabochon.png?v=${VERSION}" alt="ローズクォーツ" draggable="false"><strong>ローズクォーツ</strong><small>タップして受け取る</small></button>`;
+  const dialoguePanel = `<button type="button" class="event-dialogue-card visit-event-dialogue yowamushi-dialogue-button" data-action="yowamushi-event-next"><small>よわむし</small><strong>${dialogueMap[eventState.stage] || ''}</strong><span>タップして進む</span></button>`;
+  return `
+    <main class="main-screen yowamushi-event-screen">
+      <section class="visit-character-event kappa-jade-event ${reward ? 'is-reward' : ''}" aria-live="polite">
+        ${reward ? '' : `<div class="yowamushi-character-area" aria-hidden="true"><img class="yowamushi-character" src="./assets/images/events/yowamushi.png?v=${VERSION}" alt="" draggable="false"></div>`}
+        ${reward ? rewardPanel : dialoguePanel}
+      </section>
+    </main>`;
+}
+
+function tattooWomanAmberEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.tattooWomanAmberEvent && typeof state.events.tattooWomanAmberEvent === 'object' && !Array.isArray(state.events.tattooWomanAmberEvent)
+    ? state.events.tattooWomanAmberEvent
+    : {};
+  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']);
+  const validStages = new Set(['idle', 'video', ...dialogueStages, 'completed']);
+  state.events.tattooWomanAmberEvent = {
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: validStages.has(saved.stage) ? saved.stage : 'idle',
+    rewardGranted: Boolean(saved.rewardGranted),
+    introVideoCompleted: Boolean(saved.introVideoCompleted),
+    stageAfterVideo: dialogueStages.has(saved.stageAfterVideo) ? saved.stageAfterVideo : '',
+  };
+  const eventState = state.events.tattooWomanAmberEvent;
+  if (!eventState.active) {
+    if (!['idle', 'completed'].includes(eventState.stage)) eventState.stage = 'completed';
+    eventState.stageAfterVideo = '';
+    if (eventState.stage === 'completed') eventState.introVideoCompleted = true;
+    return eventState;
+  }
+  if (!eventState.introVideoCompleted) {
+    if (eventState.stage !== 'video') eventState.stageAfterVideo = dialogueStages.has(eventState.stage) ? eventState.stage : (eventState.stageAfterVideo || 'intro1');
+    if (!eventState.stageAfterVideo) eventState.stageAfterVideo = 'intro1';
+    eventState.stage = 'video';
+  }
+  return eventState;
+}
+
+function resumeTattooWomanAmberEvent() {
+  const eventState = tattooWomanAmberEventState();
+  if (!eventState.active) return false;
+  setScreen('tattooWomanAmberEvent', {}, false);

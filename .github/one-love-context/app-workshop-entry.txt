@@ -1,0 +1,51 @@
+      if (target === 'mining' && !['mining', 'miningGame', 'miningResult', 'miningPazupanEvent', 'kappaJadeEvent'].includes(screen)) {
+        button.disabled = true;
+        enterMiningFromOutside();
+        if (button.isConnected) button.disabled = false;
+        break;
+      }
+      if (target === 'okachimachi' && !OKACHIMACHI_AREA_SCREENS.has(screen)) {
+        button.disabled = true;
+        await enterOkachimachiFromOutside();
+        if (button.isConnected) button.disabled = false;
+        break;
+      }
+      const facilityId = facilityIdForScreen(target);
+      if (facilityId) {
+        const availability = okachimachiFacilityAvailability(facilityId);
+        if (!availability.open) {
+          showToast(availability.reason, 'error');
+          break;
+        }
+      }
+      if (target === 'looseShop' && screen !== 'looseShop') {
+        button.disabled = true;
+        await maybeEnterLooseShop();
+        if (button.isConnected) button.disabled = false;
+        break;
+      }
+      if (target === 'workshop') {
+        if (resumeWorkshopKappaJadeEvent()) break;
+        if (resumeYowamushiRoseQuartzEvent()) break;
+        if (maybeStartWorkshopKappaJadeEvent()) break;
+        if (maybeStartYowamushiRoseQuartzEvent()) break;
+      }
+      if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
+      if (target === 'glab') {
+        // 進行中イベントは必ず先に復帰。新規訪問では 1/30 動画を先に抽選し、
+        // 当選した訪問ではカワハライベントを重ねない。
+        if (resumeGlabVisitVideoEvent()) break;
+        if (resumeKawaharaKnowledgeEvent()) break;
+        if (maybeStartGlabVisitVideoEvent()) break;
+        if (maybeStartKawaharaKnowledgeEvent()) break;
+      }
+      setScreen(target, target === 'supplierMetals' ? { tab: button.dataset.tab || 'market' } : {});
+      break;
+    }
+    case 'open-store-branch': {
+      const branch = (state.store.branches || []).find((entry) => entry.id === button.dataset.id);
+      if (!branch) break;
+      state.store.branchNumber = Math.max(1, Number(branch.number) || 1);
+      mirrorCurrentStoreDisplay(branch);
+      saveGame();
+      if (maybeStartStoreTheftEvent(branch)) break;

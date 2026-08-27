@@ -1,0 +1,61 @@
+    case 'wood-sword-event-next':
+      advanceTouristWoodSwordEvent();
+      break;
+    case 'wood-sword-event-route':
+      confirmTouristWoodSwordRoute();
+      break;
+    case 'wood-sword-event-receive':
+      receiveTouristWoodSword();
+      break;
+    case 'alien-event-next':
+      advanceAlienAbductionEvent();
+      break;
+    case 'alien-return-next':
+      completeAlienReturnEvent();
+      break;
+    case 'sushi-chef-event-next':
+      advanceSushiChefEvent();
+      break;
+    case 'cyclops-event-next':
+      advanceCyclopsEvent();
+      break;
+    case 'cyclops-event-receive':
+      await receiveCyclopsEnergyDrink();
+      break;
+    case 'kappa-jade-event-next':
+      advanceKappaJadeEvent();
+      break;
+    case 'kappa-jade-event-receive':
+      receiveKappaJade();
+      break;
+    case 'workshop-kappa-jade-event-next':
+      advanceWorkshopKappaJadeEvent();
+      break;
+    case 'workshop-kappa-jade-event-receive':
+      receiveWorkshopKappaJadeReward();
+      break;
+    case 'yowamushi-event-next':
+      advanceYowamushiRoseQuartzEvent();
+      break;
+    case 'yowamushi-event-receive':
+      receiveYowamushiRoseQuartzReward();
+      break;
+    case 'diamond-polishing-lap-event-next':
+      await advanceDiamondPolishingLapEvent();
+      break;
+    case 'mystery-chinese-meal-video-start':
+      retryMysteryChineseMealIntroPlayback();
+      break;
+    case 'terry-california-video-start':
+      retryTerryCaliforniaIntroPlayback();
+      break;
+    case 'terry-california-event-next':
+      advanceTerryCaliforniaEvent();
+      break;
+    case 'terry-california-event-buy':
+      buyTerryCaliforniaBenitoite();
+      break;
+    case 'terry-california-event-decline':
+      declineTerryCaliforniaOffer();
+      break;
+    case 'event-movie-skip':

@@ -1,0 +1,71 @@
+    });
+    const audioSwitchResult = switchAudio(currentAudioKey);
+    if (screen === 'whiteBunnyIceEvent') {
+      stopMealAudio();
+      stopIceMealAudio();
+      playWhiteBunnyEventBgm();
+      Promise.resolve(audioSwitchResult).finally(() => {
+        if (screen === 'whiteBunnyIceEvent') syncWhiteBunnyEventBgm();
+      });
+    } else if (screen === 'meal' && screenData?.eating === true && screenData?.mealId === 'ice') {
+      stopMealAudio();
+      startIceMealAudio();
+      Promise.resolve(audioSwitchResult).finally(() => {
+        if (screen === 'meal' && screenData?.eating === true && screenData?.mealId === 'ice') syncIceMealAudio();
+      });
+    } else {
+      stopIceMealAudio();
+    }
+
+    const renderers = {
+      loading: renderLoading,
+      login: renderLogin,
+      emailVerification: renderEmailVerification,
+      title: renderTitle,
+      nameSetup: renderNameSetup,
+      settingsTitle: () => renderSettings(true),
+      main: renderMain,
+      oyatsuDaisukiEvent: renderOyatsuDaisukiEvent,
+      speedStarEvent: renderSpeedStarEvent,
+      storytellerEvent: renderStorytellerEvent,
+      tropicalFishShop: renderTropicalFishShop,
+      bluesJukeEvent: renderBluesJukeEvent,
+      winterColdEvent: renderWinterColdEvent,
+      birthdaySleepEvent: renderBirthdaySleepEvent,
+      westernUnionEvent: renderWesternUnionEvent,
+      mermaidEvent: renderMermaidEvent,
+      tattooWomanAmberEvent: renderTattooWomanAmberEvent,
+      clockTowerDonationEvent: renderClockTowerDonationEvent,
+      cinemaVisitEvent: renderCinemaVisitEvent,
+      apprenticeCinemaEvent: renderApprenticeCinemaEvent,
+      mysteryChineseMealEvent: renderMysteryChineseMealEvent,
+      ridleyOkazakiSobaEvent: renderRidleyOkazakiSobaEvent,
+      emeraldCaptainKebabEvent: renderEmeraldCaptainKebabEvent,
+      whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
+      kappaJadeEvent: renderKappaJadeEvent,
+      workshopKappaJadeEvent: renderWorkshopKappaJadeEvent,
+      yowamushiRoseQuartzEvent: renderYowamushiRoseQuartzEvent,
+      sushiChefEvent: renderSushiChefEvent,
+      cyclopsEvent: renderCyclopsEvent,
+      ganeshaTuskEvent: renderGaneshaTuskEvent,
+      childhoodFriendEvent: renderChildhoodFriendEvent,
+      grayHoodAquariumEvent: renderGrayHoodAquariumEvent,
+      aquarium: renderAquariumGame,
+      touristWoodSwordEvent: renderTouristWoodSwordEvent,
+      terryCaliforniaEvent: renderTerryCaliforniaEvent,
+      diamondPolishingLapEvent: renderDiamondPolishingLapEvent,
+      hauntingEvent: renderHauntingEvent,
+      storeTheftEvent: renderStoreTheftEvent,
+      alienAbductionEvent: renderAlienAbductionEvent,
+      alienReturnEvent: renderAlienReturnEvent,
+      mining: renderMining,
+      miningPazupanEvent: renderMiningPazupanEvent,
+      miningGame: renderMiningGame,
+      miningResult: renderMiningResult,
+      okachimachi: renderOkachimachi,
+      okachimachiQuiz: renderOkachimachiQuiz,
+      looseShopOriginalQuizEvent: renderLooseShopOriginalQuizEvent,
+      okachimachiTollEvent: renderOkachimachiTollEvent,
+      okachimachiInvasiveTurtlesEvent: renderOkachimachiInvasiveTurtlesEvent,
+      pandaMusicEvent: renderPandaMusicEvent,
+      wristFoundEvent: renderWristFoundEvent,

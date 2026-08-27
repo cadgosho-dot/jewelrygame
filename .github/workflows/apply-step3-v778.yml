@@ -57,6 +57,7 @@ jobs:
           PY
           node --check js/app.js
           node --check js/firebase-service.js
+          python3 -m pip install Pillow
           python3 scripts/check-current.py
           grep -q '^0.10.778$' VERSION
           grep -q "sobaMori: './assets/images/foods/soba-mori-v778.webp'" js/app.js

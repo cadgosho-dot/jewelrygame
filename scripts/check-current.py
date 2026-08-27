@@ -24,6 +24,7 @@ CHECKS = [
     ('ショーケース画像', [sys.executable, str(ROOT / 'scripts/check-showcase-jewelry-visuals.py')]),
     ('完成画面縦余白', [sys.executable, str(ROOT / 'scripts/check-completion-portrait-header-clearance.py')]),
     ('見習い映画館中央配置', [sys.executable, str(ROOT / 'scripts/check-apprentice-cinema-center.py')]),
+    ('ONE LOVE地金イベント', [sys.executable, str(ROOT / 'scripts/check-one-love-event.py')]),
 ]
 
 failed = []

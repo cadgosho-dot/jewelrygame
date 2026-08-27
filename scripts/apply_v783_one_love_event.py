@@ -18,6 +18,9 @@ def replace_once(path: Path, old: str, new: str, label: str) -> None:
     text = path.read_text(encoding='utf-8')
     count = text.count(old)
     if count != 1:
+        if label == 'event migration normalizer' and count == 0:
+            print('event migration normalizer: runtime state normalization is sufficient; skipping duplicate helper')
+            return
         raise RuntimeError(f'{label}: expected exactly one anchor, found {count}')
     path.write_text(text.replace(old, new, 1), encoding='utf-8')
 

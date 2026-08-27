@@ -75,6 +75,8 @@ jobs:
           PY
 
       - name: Metals.Devから価格を取得して計算
+        # ゲーム本体のpushではAPI枠を消費しない。定期実行・手動実行時だけ取得する。
+        if: github.event_name != 'push'
         env:
           METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
         run: |

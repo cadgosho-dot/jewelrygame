@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message == 'Stage step1 v0.10.776 workflow'
+    if: github.event.head_commit.message == 'Run step1 v0.10.776'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +20,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p assets/images/foods
+          base64 -d .github/v776-step1/chicken.b64 > assets/images/foods/convenience-christmas-v776.webp
+          echo '137d4891cb55b3116a9f7b6069493ac6c1fc7c14a71112900919272dc496da33  assets/images/foods/convenience-christmas-v776.webp' | sha256sum -c -
           python3 - <<'PY'
           from pathlib import Path
           version_files = [
@@ -60,7 +63,6 @@ jobs:
           s = s.replace(old_fn, new_fn, 1)
           app.write_text(s)
           PY
-          test -f assets/images/foods/convenience-christmas-v776.webp
           node --check js/app.js
           node --check js/firebase-service.js
           python3 scripts/check-current.py

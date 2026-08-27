@@ -1,0 +1,75 @@
+name: Apply step6 v0.10.781
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'Run step6 v0.10.781'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply regular bibimbap image
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin step6-v781-assets:refs/remotes/origin/step6-v781-assets
+          : > /tmp/korean-bibimbap-v781.b64
+          for f in part00 part01 part02 part03 part04 part05; do
+            git show "origin/step6-v781-assets:.github/v781-step6/$f.b64" >> /tmp/korean-bibimbap-v781.b64
+          done
+          mkdir -p assets/images/foods
+          base64 -d /tmp/korean-bibimbap-v781.b64 > assets/images/foods/korean-bibimbap-v781.webp
+          echo 'b9e0aef3ae5ddc11ca67feaa8db6d5d0df134368f0d4675f84985aa25c181992  assets/images/foods/korean-bibimbap-v781.webp' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+
+          version_files = [
+              'VERSION','auth-cache-recovery.js','game.html','hosting-origin-guard.js','index.html',
+              'js/app.js','js/firebase-service.js','js/game-data.js','js/memories-screen.js','sw.js'
+          ]
+          for rel in version_files:
+              p = Path(rel)
+              s = p.read_text()
+              if '0.10.780' not in s and rel != 'VERSION':
+                  raise SystemExit(f'expected 0.10.780 in {rel}')
+              s = s.replace('0.10.780','0.10.781')
+              p.write_text(s)
+
+          app = Path('js/app.js')
+          s = app.read_text()
+          old = "  korean: './assets/images/foods/korean.png',\n"
+          new = "  korean: './assets/images/foods/korean-bibimbap-v781.webp',\n"
+          if s.count(old) != 1:
+              raise SystemExit('korean image anchor mismatch')
+          s = s.replace(old, new, 1)
+          app.write_text(s)
+          PY
+          node --check js/app.js
+          node --check js/firebase-service.js
+          python3 -m pip install --quiet Pillow
+          python3 - <<'PY'
+          from PIL import Image
+          p = 'assets/images/foods/korean-bibimbap-v781.webp'
+          im = Image.open(p)
+          if im.size != (128, 128):
+              raise SystemExit(f'unexpected bibimbap size: {im.size}')
+          if 'A' not in im.getbands():
+              raise SystemExit(f'bibimbap lost alpha: {im.getbands()}')
+          PY
+          python3 scripts/check-current.py
+          grep -q '^0.10.781$' VERSION
+          grep -q "korean: './assets/images/foods/korean-bibimbap-v781.webp'" js/app.js
+      - name: Commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'cadgosho-dot'
+          git config user.email 'cadgosho@gmail.com'
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/memories-screen.js sw.js assets/images/foods/korean-bibimbap-v781.webp
+          git commit -m 'v0.10.781: Use regular bibimbap image'
+          git push origin main

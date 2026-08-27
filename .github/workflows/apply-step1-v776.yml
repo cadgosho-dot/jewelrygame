@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message == 'Run step1 v0.10.776'
+    if: github.event.head_commit.message == 'Run step1 v0.10.776 chunks'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +21,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p assets/images/foods
-          base64 -d .github/v776-step1/chicken.b64 > assets/images/foods/convenience-christmas-v776.webp
-          echo '137d4891cb55b3116a9f7b6069493ac6c1fc7c14a71112900919272dc496da33  assets/images/foods/convenience-christmas-v776.webp' | sha256sum -c -
+          cat .github/v776-step1/chicken.part00.b64 .github/v776-step1/chicken.part01.b64 .github/v776-step1/chicken.part02.b64 | base64 -d > assets/images/foods/convenience-christmas-v776.webp
+          echo '1f6e5a2653db144e9837b6b35817b4527ed1000143f439d6233a9158b65584c2  assets/images/foods/convenience-christmas-v776.webp' | sha256sum -c -
           python3 - <<'PY'
           from pathlib import Path
           version_files = [

@@ -93,21 +93,12 @@ app = replace_once(
 
 app_path.write_text(app, encoding="utf-8")
 
+# update-metals.yml is updated directly through the GitHub connector because an Actions token
+# cannot modify workflow files. Confirm the required quota-saving guard is already present.
 workflow_path = Path(".github/workflows/update-metals.yml")
 workflow = workflow_path.read_text(encoding="utf-8")
-workflow = replace_once(
-    workflow,
-    """      - name: Metals.Devから価格を取得して計算
-        env:
-""",
-    """      - name: Metals.Devから価格を取得して計算
-        # ゲーム本体のpushではAPI枠を消費しない。定期実行・手動実行時だけ取得する。
-        if: github.event_name != 'push'
-        env:
-""",
-    "skip Metals.Dev on push",
-)
-workflow_path.write_text(workflow, encoding="utf-8")
+if "if: github.event_name != 'push'" not in workflow:
+    raise SystemExit("update-metals.yml: push quota-saving guard is missing")
 
 updater_path = Path("scripts/update-metals.py")
 updater = updater_path.read_text(encoding="utf-8")
@@ -150,8 +141,9 @@ updater_path.write_text(updater, encoding="utf-8")
 # historical Markdown/TXT handoff documents are intentionally left untouched.
 allowed_suffixes = {".js", ".html", ".py", ".yml", ".yaml"}
 changed_version_files = []
+self_path = Path("scripts/apply-v774-metal-fallback.py")
 for path in Path(".").rglob("*"):
-    if not path.is_file() or ".git" in path.parts:
+    if not path.is_file() or ".git" in path.parts or path == self_path:
         continue
     if path.name != "VERSION" and path.suffix.lower() not in allowed_suffixes:
         continue

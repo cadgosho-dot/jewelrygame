@@ -1,0 +1,89 @@
+name: Apply step7 v0.10.782
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'Run step7 v0.10.782'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply stone bibimbap variant
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin step7-v782-assets:refs/remotes/origin/step7-v782-assets
+          mkdir -p assets/images/foods
+          git show origin/step7-v782-assets:.github/v782-step7/stone-bibimbap.b64 | base64 -d > assets/images/foods/korean-stone-bibimbap-v782.webp
+          echo '9169be64d0dc322cbd1607048a37dfe98b0b0be920d1cd1d5075a01330f7e23a  assets/images/foods/korean-stone-bibimbap-v782.webp' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+
+          version_files = [
+              'VERSION','auth-cache-recovery.js','game.html','hosting-origin-guard.js','index.html',
+              'js/app.js','js/firebase-service.js','js/game-data.js','js/memories-screen.js','sw.js'
+          ]
+          for rel in version_files:
+              p = Path(rel)
+              s = p.read_text()
+              if '0.10.781' not in s and rel != 'VERSION':
+                  raise SystemExit(f'expected 0.10.781 in {rel}')
+              s = s.replace('0.10.781','0.10.782')
+              p.write_text(s)
+
+          app = Path('js/app.js')
+          s = app.read_text()
+          old_image = "  korean: './assets/images/foods/korean-bibimbap-v781.webp',\n"
+          new_image = old_image + "  koreanStone: './assets/images/foods/korean-stone-bibimbap-v782.webp',\n"
+          if s.count(old_image) != 1:
+              raise SystemExit('korean image anchor mismatch')
+          s = s.replace(old_image, new_image, 1)
+
+          anchor = "  return versionedAsset(MEAL_FOOD_IMAGES[mealId] || '');\n}\n"
+          korean_block = """  if (mealId === 'korean') {
+            const koreanImages = [MEAL_FOOD_IMAGES.korean, MEAL_FOOD_IMAGES.koreanStone];
+            const dayKey = Math.max(1, Math.trunc(Number(state?.game?.day) || 1));
+            const cache = mealFoodImage.koreanVariantCache || (mealFoodImage.koreanVariantCache = { dayKey: null, image: '' });
+            if (cache.dayKey !== dayKey || !koreanImages.includes(cache.image)) {
+              cache.dayKey = dayKey;
+              cache.image = koreanImages[Math.floor(Math.random() * koreanImages.length)];
+            }
+            return versionedAsset(cache.image);
+          }
+"""
+          if s.count(anchor) != 1:
+              raise SystemExit('mealFoodImage return anchor mismatch')
+          s = s.replace(anchor, korean_block + anchor, 1)
+          app.write_text(s)
+          PY
+          node --check js/app.js
+          node --check js/firebase-service.js
+          python3 -m pip install --quiet Pillow
+          python3 - <<'PY'
+          from PIL import Image
+          p = 'assets/images/foods/korean-stone-bibimbap-v782.webp'
+          im = Image.open(p)
+          if im.size != (128, 128):
+              raise SystemExit(f'unexpected stone bibimbap size: {im.size}')
+          if 'A' not in im.getbands():
+              raise SystemExit(f'stone bibimbap lost alpha: {im.getbands()}')
+          PY
+          python3 scripts/check-current.py
+          grep -q '^0.10.782$' VERSION
+          grep -q "koreanStone: './assets/images/foods/korean-stone-bibimbap-v782.webp'" js/app.js
+          grep -q "mealFoodImage.koreanVariantCache" js/app.js
+          grep -q "const koreanImages = \[MEAL_FOOD_IMAGES.korean, MEAL_FOOD_IMAGES.koreanStone\]" js/app.js
+      - name: Commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'cadgosho-dot'
+          git config user.email 'cadgosho@gmail.com'
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/memories-screen.js sw.js assets/images/foods/korean-stone-bibimbap-v782.webp
+          git commit -m 'v0.10.782: Randomize Korean bibimbap images'
+          git push origin main

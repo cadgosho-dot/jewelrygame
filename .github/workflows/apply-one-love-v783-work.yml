@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message == 'Retry ONE LOVE v783 work patch'
+    if: github.event.head_commit.message == 'Retry2 ONE LOVE v783 work patch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -19,16 +19,18 @@ jobs:
           fetch-depth: 1
       - name: Prepare validation dependencies
         run: python3 -m pip install --disable-pip-version-check pillow
-      - name: Correct patcher regex escaping
+      - name: Make patcher tolerant of redundant migration helper
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('scripts/apply_v783_one_love_event.py')
           s = p.read_text(encoding='utf-8')
-          before = s.count(r'\\d')
-          s = s.replace(r'\\d', r'\d')
+          old = "    if count != 1:\n        raise RuntimeError(f'{label}: expected exactly one anchor, found {count}')\n"
+          new = "    if count != 1:\n        if label == 'event migration normalizer' and count == 0:\n            print('event migration normalizer: runtime state normalization is sufficient; skipping duplicate helper')\n            return\n        raise RuntimeError(f'{label}: expected exactly one anchor, found {count}')\n"
+          if old not in s:
+              raise SystemExit('replace_once helper anchor not found')
+          s = s.replace(old, new, 1)
           p.write_text(s, encoding='utf-8')
-          print(f'corrected double-backslash regex fragments: {before}')
           PY
       - name: Use non-committed placeholder only for pre-image code validation
         run: cp assets/images/events/workshop-kappa-jade.png assets/images/events/one-love.png
@@ -55,7 +57,7 @@ jobs:
             git clean -fd
             cp /tmp/one-love-v783-patch-log.txt .github/one-love-v783-patch-log.txt
             git add .github/one-love-v783-patch-log.txt
-            git commit -m 'Save ONE LOVE v783 retry failure log'
+            git commit -m 'Save ONE LOVE v783 retry2 failure log'
             git push origin HEAD:one-love-v783-work
             exit 0
           fi

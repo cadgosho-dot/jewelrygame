@@ -52,11 +52,6 @@ jobs:
           grep -q "0.10.774" js/app.js
           grep -q "0.10.774" sw.js
 
-      - name: 一時適用ファイルを削除
-        run: |
-          git rm -f .github/workflows/apply-v774-metal-fallback.yml
-          git rm -f scripts/apply-v774-metal-fallback.py
-
       - name: 変更をコミット
         run: |
           git config user.name "github-actions[bot]"

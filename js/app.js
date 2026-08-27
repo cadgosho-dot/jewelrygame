@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.773';
+} from './game-data.js?v=0.10.774';
 
-const UI_BUILD_VERSION = '0.10.773';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.773';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.773';
+const UI_BUILD_VERSION = '0.10.774';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.774';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.774';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,8 +15,8 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.773';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.773';
+} from './firebase-service.js?v=0.10.774';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.774';
 
 
 
@@ -2468,7 +2468,7 @@ async function preparePhoneHomeImage(file) {
 
 const METAL_MARKET_CACHE_KEY = `${SAVE_KEY}-metal-market-v2`;
 const METAL_MARKET_FETCH_TIMEOUT_MS = 15000;
-const METAL_MARKET_TRADE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const METAL_MARKET_STALE_NOTICE_MS = 72 * 60 * 60 * 1000;
 
 const METAL_MARKET_FALLBACK = Object.freeze({
   status: 'unavailable',
@@ -2541,9 +2541,9 @@ function metalMarketTradeReady() {
   const purchase = metalMarket.purchasePerGramByMetalId || {};
   const sell = metalMarket.sellPerGramByMetalId || {};
   if (!['silver', 'gold', 'platinum'].every((id) => validPositivePrice(purchase[id]) && validPositivePrice(sell[id]))) return false;
-  const timestamp = metalMarketTimestampMs();
-  if (!timestamp) return false;
-  return Date.now() - timestamp <= METAL_MARKET_TRADE_MAX_AGE_MS;
+  // 最終正常取得値は、経過日数だけを理由に売買停止しない。
+  // 価格形式と取得日時が正常な「最後に検証済みの相場」であることだけを必須とする。
+  return metalMarketTimestampMs() > 0;
 }
 
 function cachedMetalMarketPayload() {
@@ -2565,7 +2565,8 @@ function restoreCachedMetalMarket() {
   const cached = cachedMetalMarketPayload();
   if (!cached?.data) return false;
   const cachedTimestamp = new Date(cached.data.updatedAt || cached.data.marketTimestamp || cached.savedAt || '').getTime();
-  if (!Number.isFinite(cachedTimestamp) || Date.now() - cachedTimestamp > METAL_MARKET_TRADE_MAX_AGE_MS) return false;
+  // オフラインやAPI停止が長期化しても、最後に検証済みの正常キャッシュを利用できるようにする。
+  if (!Number.isFinite(cachedTimestamp)) return false;
   try {
     applyMetalMarketData(cached.data, { statusOverride: 'cached' });
     return true;
@@ -2599,7 +2600,7 @@ function validSpotPrice(value) {
 
 function metalMarketIsStale() {
   const date = new Date(metalMarket.updatedAt || metalMarket.marketTimestamp || '');
-  return Number.isFinite(date.getTime()) && Date.now() - date.getTime() > 72 * 60 * 60 * 1000;
+  return Number.isFinite(date.getTime()) && Date.now() - date.getTime() > METAL_MARKET_STALE_NOTICE_MS;
 }
 
 function normalizeMetalHistory(rawHistory, currentSpot = {}, currentDate = null) {
@@ -2764,7 +2765,7 @@ function metalMarketSummary() {
   const stale = metalMarketIsStale();
   const tradeReady = metalMarketTradeReady();
   const title = metalMarket.status === 'cached' || stale ? '前回取得した地金相場' : '現実の地金相場と連動してます';
-  const caution = tradeReady ? '' : '　価格が古いため売買停止中';
+  const caution = !tradeReady ? '　価格情報が不完全なため売買停止中' : stale ? '　最終取得価格で売買中' : '';
   return `<div class="metal-market-summary ${stale || !tradeReady ? 'stale' : ''}"><strong>${title}</strong><small>最終更新：${esc(timestamp)}　取得元：${esc(metalMarket.sourceName)}${caution}</small></div>`;
 }
 
@@ -24311,7 +24312,7 @@ async function boot() {
         try {
           cloudSave = await loadState(user.uid);
         } catch (error) {
-          // v0.10.773: クラウドの現行チャンクが欠損・破損していても、
+          // v0.10.774: クラウドの現行チャンクが欠損・破損していても、
           // 先に読み込めた正常な端末セーブがあればそちらから起動を継続する。
           cloudLoadError = error;
           cloudSave = null;

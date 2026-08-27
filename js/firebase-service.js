@@ -39,7 +39,7 @@ import {
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
-import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.773';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.774';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -548,7 +548,7 @@ export async function loadState(uid) {
 }
 
 export async function saveState(uid, state) {
-  // v0.10.773: チャンク本体を先に別世代へ書き、最後のメタ切替だけを
+  // v0.10.774: チャンク本体を先に別世代へ書き、最後のメタ切替だけを
   // compare-and-swap付きトランザクションで確定する。別端末の新しい保存を
   // 古い端末が後から上書きすることを防ぐ。
   const clean = { ...state, updatedAt: new Date().toISOString() };

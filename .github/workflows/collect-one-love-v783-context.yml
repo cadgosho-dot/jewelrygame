@@ -1,0 +1,69 @@
+name: Collect ONE LOVE v783 context
+
+on:
+  push:
+    branches: [one-love-v783-work]
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    if: github.event.head_commit.message == 'Collect ONE LOVE v783 context'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: one-love-v783-work
+      - name: Collect exact current-source excerpts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          targets = [
+              Path('js/app.js'),
+              Path('js/game-data.js'),
+              Path('js/game-data-core.js'),
+              Path('js/audio-scene-map.js'),
+              Path('styles.css'),
+          ]
+          terms = [
+              'workshopKappa', 'KappaJade', 'kappa-jade', 'workshop-kappa',
+              'weakling', 'Weakling', 'よわむし', '河童',
+              "screen = 'workshop'", "screen === 'workshop'", 'renderWorkshop(',
+              'metalBuy', 'buyMetal', 'metal shop', 'metalShop', 'metal-shop',
+              'purchaseMetal', 'purchase price', 'purchasePrice', 'METAL_PRICES',
+              'metalMarket', 'marketPrice', 'metal price', '地金',
+              'resolveAudioScene', "'workshop'",
+          ]
+          blocks = []
+          for path in targets:
+              if not path.exists():
+                  continue
+              lines = path.read_text(encoding='utf-8').splitlines()
+              hits = []
+              for idx, line in enumerate(lines):
+                  if any(term in line for term in terms):
+                      hits.append(idx)
+              intervals = []
+              for idx in hits:
+                  lo = max(0, idx - 35)
+                  hi = min(len(lines), idx + 60)
+                  if intervals and lo <= intervals[-1][1] + 5:
+                      intervals[-1] = (intervals[-1][0], max(intervals[-1][1], hi))
+                  else:
+                      intervals.append((lo, hi))
+              for lo, hi in intervals:
+                  blocks.append(f'\n===== {path}:{lo+1}-{hi} =====\n')
+                  blocks.extend(f'{n+1:06d}: {lines[n]}\n' for n in range(lo, hi))
+          out = Path('.github/one-love-v783-context.txt')
+          out.write_text(''.join(blocks), encoding='utf-8')
+          print(f'wrote {out} ({out.stat().st_size} bytes)')
+          PY
+      - name: Commit context
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/one-love-v783-context.txt
+          git commit -m 'Save ONE LOVE v783 source context'
+          git push origin HEAD:one-love-v783-work

@@ -1,0 +1,71 @@
+name: Apply step4 v0.10.779
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'Run step4 v0.10.779'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply kake soba and mini curry image
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin step4-v779-assets:refs/remotes/origin/step4-v779-assets
+          mkdir -p assets/images/foods
+          git show origin/step4-v779-assets:assets/images/foods/soba-kake-curry-v779.webp > assets/images/foods/soba-kake-curry-v779.webp
+          echo '92d9a50a5be7d9df09fd24fc8ad7c27acb4ea3035ae95b9a8661edf3a8bf7027  assets/images/foods/soba-kake-curry-v779.webp' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+
+          version_files = [
+              'VERSION','auth-cache-recovery.js','game.html','hosting-origin-guard.js','index.html',
+              'js/app.js','js/firebase-service.js','js/game-data.js','js/memories-screen.js','sw.js'
+          ]
+          for rel in version_files:
+              p = Path(rel)
+              s = p.read_text()
+              if '0.10.778' not in s and rel != 'VERSION':
+                  raise SystemExit(f'expected 0.10.778 in {rel}')
+              s = s.replace('0.10.778','0.10.779')
+              p.write_text(s)
+
+          app = Path('js/app.js')
+          s = app.read_text()
+          old_images = "  sobaMori: './assets/images/foods/soba-mori-v778.webp',\n  hamburger: './assets/images/foods/hamburger.png',\n"
+          new_images = "  sobaMori: './assets/images/foods/soba-mori-v778.webp',\n  sobaKakeCurry: './assets/images/foods/soba-kake-curry-v779.webp',\n  hamburger: './assets/images/foods/hamburger.png',\n"
+          if s.count(old_images) != 1:
+              raise SystemExit('soba image anchor mismatch')
+          s = s.replace(old_images, new_images, 1)
+
+          old_logic = """  if (mealId === 'soba') {\n    const date = gameDateForDay(state?.game?.day || 1);\n    if (isValidGameDate(date) && (date.getMonth() === 6 || date.getMonth() === 7)) {\n      return versionedAsset(MEAL_FOOD_IMAGES.sobaMori);\n    }\n  }\n"""
+          new_logic = """  if (mealId === 'soba') {\n    const date = gameDateForDay(state?.game?.day || 1);\n    if (isValidGameDate(date) && (date.getMonth() === 6 || date.getMonth() === 7)) {\n      return versionedAsset(MEAL_FOOD_IMAGES.sobaMori);\n    }\n    const normalSobaImages = [MEAL_FOOD_IMAGES.soba, MEAL_FOOD_IMAGES.sobaKakeCurry];\n    const dayKey = Math.max(1, Math.trunc(Number(state?.game?.day) || 1));\n    const cache = mealFoodImage.normalSobaVariantCache || (mealFoodImage.normalSobaVariantCache = { dayKey: null, image: '' });\n    if (cache.dayKey !== dayKey || !normalSobaImages.includes(cache.image)) {\n      cache.dayKey = dayKey;\n      cache.image = normalSobaImages[Math.floor(Math.random() * normalSobaImages.length)];\n    }\n    return versionedAsset(cache.image);\n  }\n"""
+          if s.count(old_logic) != 1:
+              raise SystemExit('soba meal logic anchor mismatch')
+          s = s.replace(old_logic, new_logic, 1)
+          app.write_text(s)
+          PY
+          node --check js/app.js
+          node --check js/firebase-service.js
+          python3 -m pip install --quiet Pillow
+          python3 scripts/check-current.py
+          grep -q '^0.10.779$' VERSION
+          grep -q "sobaKakeCurry: './assets/images/foods/soba-kake-curry-v779.webp'" js/app.js
+          grep -q "normalSobaImages = \[MEAL_FOOD_IMAGES.soba, MEAL_FOOD_IMAGES.sobaKakeCurry\]" js/app.js
+          grep -q "Math.floor(Math.random() \* normalSobaImages.length)" js/app.js
+          grep -q "date.getMonth() === 6 || date.getMonth() === 7" js/app.js
+      - name: Commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'cadgosho-dot'
+          git config user.email 'cadgosho@gmail.com'
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/memories-screen.js sw.js assets/images/foods/soba-kake-curry-v779.webp
+          git commit -m 'v0.10.779: Add kake soba and mini curry option'
+          git push origin main

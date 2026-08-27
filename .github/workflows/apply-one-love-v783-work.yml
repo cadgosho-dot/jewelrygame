@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message == 'Run ONE LOVE v783 work patch'
+    if: github.event.head_commit.message == 'Debug ONE LOVE v783 work patch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -21,14 +21,40 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check pillow
       - name: Use non-committed placeholder only for pre-image code validation
         run: cp assets/images/events/workshop-kappa-jade.png assets/images/events/one-love.png
-      - name: Apply v0.10.783 and run full regression
-        run: python3 -u scripts/apply_v783_one_love_event.py
-      - name: Do not commit placeholder image
-        run: rm -f assets/images/events/one-love.png
-      - name: Commit validated code only
+      - name: Apply and capture result
+        id: apply
+        shell: bash
         run: |
+          set +e
+          python3 -u scripts/apply_v783_one_love_event.py > .github/one-love-v783-patch-log.txt 2>&1
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          cat .github/one-love-v783-patch-log.txt
+          exit 0
+      - name: Remove placeholder image
+        run: rm -f assets/images/events/one-love.png
+      - name: Save failure log or commit validated code
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ '${{ steps.apply.outputs.exit_code }}' != '0' ]; then
+            git reset --hard HEAD
+            git clean -fd
+            # reset removes the just-created log, so run the patcher once more only to capture stderr text safely
+            cp assets/images/events/workshop-kappa-jade.png assets/images/events/one-love.png
+            set +e
+            python3 -u scripts/apply_v783_one_love_event.py > /tmp/one-love-log.txt 2>&1
+            set -e
+            rm -f assets/images/events/one-love.png
+            cp /tmp/one-love-log.txt .github/one-love-v783-patch-log.txt
+            git add .github/one-love-v783-patch-log.txt
+            git commit -m 'Save ONE LOVE v783 patch failure log'
+            git push origin HEAD:one-love-v783-work
+            exit 0
+          fi
+          rm -f .github/one-love-v783-patch-log.txt
           git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html sw.js \
             js/app.js js/audio-scene-map.js js/firebase-service.js js/game-data.js js/memories-screen.js \
             scripts/check-current.py scripts/check-one-love-event.py scripts/apply_v783_one_love_event.py

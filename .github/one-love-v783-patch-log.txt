@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/runner/work/jewelrygame/jewelrygame/scripts/apply_v783_one_love_event.py", line 261, in <module>
+    replace_once(
+  File "/home/runner/work/jewelrygame/jewelrygame/scripts/apply_v783_one_love_event.py", line 21, in replace_once
+    raise RuntimeError(f'{label}: expected exactly one anchor, found {count}')
+RuntimeError: event migration normalizer: expected exactly one anchor, found 0

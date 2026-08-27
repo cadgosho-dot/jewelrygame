@@ -1,0 +1,85 @@
+name: Apply step5 v0.10.780
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'Run step5 v0.10.780'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply croquette soba image
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin step5-v780-assets:refs/remotes/origin/step5-v780-assets
+          : > /tmp/soba-croquette-v780.b64
+          for f in part00 part01 part02 part03 part04 part05 part06 part07; do
+            git show "origin/step5-v780-assets:staging/soba-croquette-v780/$f" >> /tmp/soba-croquette-v780.b64
+          done
+          mkdir -p assets/images/foods
+          base64 -d /tmp/soba-croquette-v780.b64 > assets/images/foods/soba-croquette-v780.webp
+          echo '0a69fbaaa3a3945f6c883dc42732ab83c43d24294a3437322ee48d619a1b6403  assets/images/foods/soba-croquette-v780.webp' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+
+          version_files = [
+              'VERSION','auth-cache-recovery.js','game.html','hosting-origin-guard.js','index.html',
+              'js/app.js','js/firebase-service.js','js/game-data.js','js/memories-screen.js','sw.js'
+          ]
+          for rel in version_files:
+              p = Path(rel)
+              s = p.read_text()
+              if '0.10.779' not in s and rel != 'VERSION':
+                  raise SystemExit(f'expected 0.10.779 in {rel}')
+              s = s.replace('0.10.779','0.10.780')
+              p.write_text(s)
+
+          app = Path('js/app.js')
+          s = app.read_text()
+          old_images = "  sobaMori: './assets/images/foods/soba-mori-v778.webp',\n  sobaKakeCurry: './assets/images/foods/soba-kake-curry-v779.webp',\n  hamburger: './assets/images/foods/hamburger.png',\n"
+          new_images = "  sobaMori: './assets/images/foods/soba-mori-v778.webp',\n  sobaKakeCurry: './assets/images/foods/soba-kake-curry-v779.webp',\n  sobaCroquette: './assets/images/foods/soba-croquette-v780.webp',\n  hamburger: './assets/images/foods/hamburger.png',\n"
+          if s.count(old_images) != 1:
+              raise SystemExit('soba image anchor mismatch')
+          s = s.replace(old_images, new_images, 1)
+
+          old_logic = "    const normalSobaImages = [MEAL_FOOD_IMAGES.soba, MEAL_FOOD_IMAGES.sobaKakeCurry];"
+          new_logic = "    const normalSobaImages = [MEAL_FOOD_IMAGES.soba, MEAL_FOOD_IMAGES.sobaKakeCurry, MEAL_FOOD_IMAGES.sobaCroquette];"
+          if s.count(old_logic) != 1:
+              raise SystemExit('normal soba array anchor mismatch')
+          s = s.replace(old_logic, new_logic, 1)
+          app.write_text(s)
+          PY
+          node --check js/app.js
+          node --check js/firebase-service.js
+          python3 -m pip install --quiet Pillow
+          python3 - <<'PY'
+          from PIL import Image
+          p = 'assets/images/foods/soba-croquette-v780.webp'
+          im = Image.open(p)
+          if im.size != (192, 192):
+              raise SystemExit(f'unexpected croquette soba size: {im.size}')
+          if 'A' not in im.getbands():
+              raise SystemExit(f'croquette soba lost alpha: {im.getbands()}')
+          PY
+          python3 scripts/check-current.py
+          grep -q '^0.10.780$' VERSION
+          grep -q "sobaCroquette: './assets/images/foods/soba-croquette-v780.webp'" js/app.js
+          grep -q "normalSobaImages = \[MEAL_FOOD_IMAGES.soba, MEAL_FOOD_IMAGES.sobaKakeCurry, MEAL_FOOD_IMAGES.sobaCroquette\]" js/app.js
+          grep -q "date.getMonth() === 6 || date.getMonth() === 7" js/app.js
+          grep -q "Math.floor(Math.random() \* normalSobaImages.length)" js/app.js
+          grep -q "normalSobaVariantCache" js/app.js
+      - name: Commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'cadgosho-dot'
+          git config user.email 'cadgosho@gmail.com'
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html js/app.js js/firebase-service.js js/game-data.js js/memories-screen.js sw.js assets/images/foods/soba-croquette-v780.webp
+          git commit -m 'v0.10.780: Add croquette soba option'
+          git push origin main

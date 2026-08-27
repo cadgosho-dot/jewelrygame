@@ -1,0 +1,36 @@
+name: Apply ONE LOVE v783 on work branch
+
+on:
+  push:
+    branches: [one-love-v783-work]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'Run ONE LOVE v783 work patch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: one-love-v783-work
+          fetch-depth: 1
+      - name: Prepare validation dependencies
+        run: python3 -m pip install --disable-pip-version-check pillow
+      - name: Use non-committed placeholder only for pre-image code validation
+        run: cp assets/images/events/workshop-kappa-jade.png assets/images/events/one-love.png
+      - name: Apply v0.10.783 and run full regression
+        run: python3 -u scripts/apply_v783_one_love_event.py
+      - name: Do not commit placeholder image
+        run: rm -f assets/images/events/one-love.png
+      - name: Commit validated code only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html sw.js \
+            js/app.js js/audio-scene-map.js js/firebase-service.js js/game-data.js js/memories-screen.js \
+            scripts/check-current.py scripts/check-one-love-event.py scripts/apply_v783_one_love_event.py
+          git commit -m 'v0.10.783: Implement ONE LOVE event code'
+          git push origin HEAD:one-love-v783-work

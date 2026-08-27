@@ -1,4 +1,4 @@
-# trigger v0.10.782
+# trigger v0.10.782 fixed
 name: Apply step7 v0.10.782
 
 on:
@@ -46,17 +46,18 @@ jobs:
           s = s.replace(old_image, new_image, 1)
 
           anchor = "  return versionedAsset(MEAL_FOOD_IMAGES[mealId] || '');\n}\n"
-          korean_block = """  if (mealId === 'korean') {
-            const koreanImages = [MEAL_FOOD_IMAGES.korean, MEAL_FOOD_IMAGES.koreanStone];
-            const dayKey = Math.max(1, Math.trunc(Number(state?.game?.day) || 1));
-            const cache = mealFoodImage.koreanVariantCache || (mealFoodImage.koreanVariantCache = { dayKey: null, image: '' });
-            if (cache.dayKey !== dayKey || !koreanImages.includes(cache.image)) {
-              cache.dayKey = dayKey;
-              cache.image = koreanImages[Math.floor(Math.random() * koreanImages.length)];
-            }
-            return versionedAsset(cache.image);
-          }
-"""
+          korean_block = "\n".join([
+              "  if (mealId === 'korean') {",
+              "    const koreanImages = [MEAL_FOOD_IMAGES.korean, MEAL_FOOD_IMAGES.koreanStone];",
+              "    const dayKey = Math.max(1, Math.trunc(Number(state?.game?.day) || 1));",
+              "    const cache = mealFoodImage.koreanVariantCache || (mealFoodImage.koreanVariantCache = { dayKey: null, image: '' });",
+              "    if (cache.dayKey !== dayKey || !koreanImages.includes(cache.image)) {",
+              "      cache.dayKey = dayKey;",
+              "      cache.image = koreanImages[Math.floor(Math.random() * koreanImages.length)];",
+              "    }",
+              "    return versionedAsset(cache.image);",
+              "  }",
+          ]) + "\n"
           if s.count(anchor) != 1:
               raise SystemExit('mealFoodImage return anchor mismatch')
           s = s.replace(anchor, korean_block + anchor, 1)

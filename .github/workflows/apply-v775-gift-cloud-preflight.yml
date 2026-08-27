@@ -1,0 +1,42 @@
+name: Apply v0.10.775 gift cloud preflight
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply-v775:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Prepare validation dependencies
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: Apply and validate v0.10.775
+        run: python3 -u scripts/apply_v775_gift_cloud_preflight.py
+
+      - name: Commit patched build
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION auth-cache-recovery.js game.html hosting-origin-guard.js index.html sw.js \
+            js/app.js js/firebase-service.js js/game-data.js js/memories-screen.js \
+            scripts/check-gift-chunked-save.py
+          if git diff --cached --quiet; then
+            echo "No v0.10.775 changes to commit."
+            exit 0
+          fi
+          git commit -m "v0.10.775: Confirm cloud save before gift codes"
+          git pull --rebase origin main
+          git push origin HEAD:main

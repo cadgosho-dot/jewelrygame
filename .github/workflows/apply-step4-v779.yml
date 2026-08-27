@@ -1,4 +1,4 @@
-# trigger v0.10.779
+# trigger v0.10.779 exact image
 name: Apply step4 v0.10.779
 
 on:
@@ -21,7 +21,7 @@ jobs:
           git fetch origin step4-v779-assets:refs/remotes/origin/step4-v779-assets
           mkdir -p assets/images/foods
           git show origin/step4-v779-assets:assets/images/foods/soba-kake-curry-v779.webp > assets/images/foods/soba-kake-curry-v779.webp
-          echo '92d9a50a5be7d9df09fd24fc8ad7c27acb4ea3035ae95b9a8661edf3a8bf7027  assets/images/foods/soba-kake-curry-v779.webp' | sha256sum -c -
+          echo '5559fc4ef65ed5210f9ab670d8c6abafbebb313364e8c6cb3c47c30eeb231233  assets/images/foods/soba-kake-curry-v779.webp' | sha256sum -c -
           python3 - <<'PY'
           from pathlib import Path
 

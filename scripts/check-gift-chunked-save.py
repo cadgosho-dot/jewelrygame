@@ -24,6 +24,12 @@ checks = {
     'gift never reads legacy inline gameState': 'userSnapshot.data()?.gameState' not in GIFT,
     'gift never writes legacy inline gameState': 'transaction.set(userRef, { gameState:' not in GIFT,
     'gift has explicit save-conflict message': "'gift/save-conflict'" in FB,
+    'gift exports preflight cloud confirmation': 'export async function confirmGiftCloudSave(uid, expectedRevision = 0)' in FB,
+    'gift preflight directly reads current cloud metadata': 'metadata = await readCurrentCloudMetadata(uid);' in FB,
+    'gift preflight validates current saveRevision': 'cloudRevision < requiredRevision' in FB,
+    'gift has cloud-save-unavailable message': "'gift/cloud-save-unavailable'" in FB,
+    'app confirms cloud save before gift creation': 'await confirmGiftCloudSave(currentUser.uid, state.saveRevision);' in APP,
+    'app remaps post-confirm no-save to cloud retry guidance': "error?.code === 'gift/no-save'" in APP and "code: 'gift/cloud-save-unavailable'" in APP,
     'app does not raw-write localStorage after committed gift': 'localStorage.setItem' not in APP_GIFT_PERSIST,
     'app still adopts committed cloud gift state': 'cloudSave = structuredClone(state);' in APP_GIFT_PERSIST,
 }

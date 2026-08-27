@@ -39,7 +39,7 @@ import {
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
-import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.774';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.775';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -889,6 +889,35 @@ async function readGiftCloudBase(uid) {
   return { metadata, gameState };
 }
 
+export async function confirmGiftCloudSave(uid, expectedRevision = 0) {
+  requireGiftUser(uid);
+  if (previewMode) {
+    const saved = localStorage.getItem(`jewelrygame-preview-${uid}`);
+    if (!saved) throw giftServiceError('gift/cloud-save-unavailable', 'プレゼント発行前の保存を確認できませんでした。');
+    return true;
+  }
+
+  let metadata = null;
+  try {
+    // キャッシュへフォールバックせずFirestoreを直接確認する。
+    // これによりsaveGame()内部で通信失敗が処理済みになっていても、
+    // プレゼント発行だけが古いクラウド状態で進むことを防ぐ。
+    metadata = await readCurrentCloudMetadata(uid);
+  } catch (error) {
+    const wrapped = giftServiceError('gift/cloud-save-unavailable', 'プレゼント発行前のクラウド保存を確認できませんでした。');
+    wrapped.cause = error;
+    throw wrapped;
+  }
+
+  const cloudRevision = Math.max(0, Math.floor(Number(metadata?.saveRevision) || 0));
+  const requiredRevision = Math.max(0, Math.floor(Number(expectedRevision) || 0));
+  if (metadata?.mode !== 'chunked' || cloudRevision < requiredRevision) {
+    throw giftServiceError('gift/cloud-save-unavailable', 'プレゼント発行前のクラウド保存が完了していません。');
+  }
+  cloudStorageMetaByUid.set(uid, metadata);
+  return true;
+}
+
 async function stageGiftChunkedState(uid, nextState) {
   const encoded = encodeCloudChunks(JSON.stringify(nextState));
   const generation = `gift-${Math.max(0, Math.floor(Number(nextState.saveRevision) || 0))}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1179,6 +1208,7 @@ export function giftErrorMessage(error) {
     'gift/not-owner': 'このプレゼントは取り消せません。',
     'gift/unavailable': 'このプレゼントは現在利用できません。',
     'gift/no-save': 'ゲームデータを保存してから、もう一度お試しください。',
+    'gift/cloud-save-unavailable': 'クラウド保存を完了できませんでした。通信状態を確認して、もう一度お試しください。',
     'gift/save-conflict': '最新のゲームデータをクラウドへ保存してから、もう一度お試しください。',
     'gift/code-generation-failed': 'プレゼントコードを発行できませんでした。もう一度お試しください。',
     'permission-denied': 'プレゼント機能のFirebaseルールが未反映の可能性があります。管理者へお知らせください。',

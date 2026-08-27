@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.774';
+} from './game-data.js?v=0.10.775';
 
-const UI_BUILD_VERSION = '0.10.774';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.774';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.774';
+const UI_BUILD_VERSION = '0.10.775';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.775';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.775';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
-  createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.774';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.774';
+  createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
+} from './firebase-service.js?v=0.10.775';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.775';
 
 
 
@@ -19394,6 +19394,10 @@ async function createGiftFromDraft() {
   render();
   try {
     await saveGame();
+    // プレゼント発行は在庫をクラウド側でも同時に確定するため、
+    // 通常セーブのPromise終了だけでなく、saveMeta/currentへ今回のsaveRevisionが
+    // 実際に反映されたことを確認してからコード発行へ進む。
+    await confirmGiftCloudSave(currentUser.uid, state.saveRevision);
     const result = await createGiftCode(currentUser.uid, state.playerName, payload, removeGiftFromGameState);
     persistTransactionalGiftState(result.gameState);
     giftLastCreated = { code: result.code, payload };
@@ -19404,7 +19408,12 @@ async function createGiftFromDraft() {
     render();
   } catch (error) {
     console.error('プレゼントコード発行エラー', error);
-    showToast(giftErrorMessage(error), 'error');
+    // 発行直前にクラウド確認を行っているため、ここでno-saveになった場合も
+    // 「手動保存してください」ではなく、通信／クラウド同期の再試行案内に統一する。
+    const displayError = error?.code === 'gift/no-save'
+      ? Object.assign(new Error('プレゼント発行前のクラウド保存を確認できませんでした。'), { code: 'gift/cloud-save-unavailable' })
+      : error;
+    showToast(giftErrorMessage(displayError), 'error');
   } finally {
     giftBusy = false;
     if (screen === 'phone' && phoneTab === 'gift') render();

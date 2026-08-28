@@ -244,6 +244,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
 
   workshop: 'workshop',
   workshopKappaJadeEvent: 'workshop',
+  oneLoveEvent: 'workshop',
   yowamushiRoseQuartzEvent: 'workshop',
   inventory: 'workshop',
   finishedItemDetail: 'workshop',

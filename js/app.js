@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.782';
+} from './game-data.js?v=0.10.783';
 
-const UI_BUILD_VERSION = '0.10.782';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.782';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.782';
+const UI_BUILD_VERSION = '0.10.783';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.783';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.783';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,8 +15,8 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.782';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.782';
+} from './firebase-service.js?v=0.10.783';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.783';
 
 
 
@@ -411,6 +411,11 @@ const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'カワハラ';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE = 1 / 12;
+const ONE_LOVE_EVENT_CHANCE = 0.02;
+const ONE_LOVE_EVENT_COOLDOWN_DAYS = 180;
+const ONE_LOVE_EVENT_MAX_METAL_COUNT = 4;
+const ONE_LOVE_EVENT_DISCOUNT_STEP = 10;
+const ONE_LOVE_EVENT_IMAGE = './assets/images/events/one-love.webp';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID = 'rosequartz';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID = 'ovalCabochon';
 const OKACHIMACHI_AREA_SCREENS = new Set([
@@ -425,6 +430,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   miningPazupanEvent: new Set(['intro', 'intro2', 'intro3', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   workshopKappaJadeEvent: new Set(['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell']),
+  oneLoveEvent: new Set(['intro']),
   yowamushiRoseQuartzEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
@@ -462,7 +468,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'bluesJukeEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
-  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
+  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'oneLoveEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent', 'yowamushiRoseQuartzEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
@@ -486,6 +492,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
   workshopKappaJadeEvent: { eventKey: 'workshopKappaJadeEvent', fallback: 'workshop' },
+  oneLoveEvent: { eventKey: 'oneLoveEvent', fallback: 'workshop' },
   yowamushiRoseQuartzEvent: { eventKey: 'yowamushiRoseQuartzEvent', fallback: 'workshop' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   okachimachiInvasiveTurtlesEvent: { eventKey: 'okachimachiInvasiveTurtlesEvent', fallback: 'okachimachi' },
@@ -540,7 +547,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
     'bluesJukeEvent', 'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent', 'whiteBunnyIceEvent',
-    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent',
+    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent', 'oneLoveEvent',
   ]),
   sessionOnly: new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'robberyReport', 'kaitenzushi']),
 });
@@ -771,7 +778,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'blues-juke-event-next', 'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
   'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-video-start', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
   'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'apprentice-cinema-event-next', 'apprentice-cinema-video-start', 'apprentice-cinema-video-finish', 'cinema-video-finish',
-  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'yowamushi-event-next', 'yowamushi-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
+  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'one-love-event-next', 'yowamushi-event-next', 'yowamushi-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
@@ -3050,6 +3057,10 @@ function metalRemainingCapacity(id) {
 
 function metalTradePricePerGram(mode, id) {
   if (!metalMarketTradeReady()) return 0;
+  if (mode !== 'sell') {
+    const oneLovePrice = oneLoveDealPurchasePrice(id);
+    if (Number.isFinite(oneLovePrice) && oneLovePrice >= 0) return Math.round(oneLovePrice);
+  }
   const table = mode === 'sell' ? metalMarket.sellPerGramByMetalId : metalMarket.purchasePerGramByMetalId;
   const price = Number(table?.[id]);
   return validPositivePrice(price) ? Math.round(price) : 0;
@@ -7795,6 +7806,135 @@ function advanceWorkshopKappaJadeEvent() {
   }
 }
 
+function oneLoveEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.oneLoveEvent && typeof state.events.oneLoveEvent === 'object' && !Array.isArray(state.events.oneLoveEvent)
+    ? state.events.oneLoveEvent
+    : {};
+  const validStages = new Set(['idle', 'intro', 'completed']);
+  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  const lastTriggeredDay = Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0));
+  const rawSelectedMetalIds = Array.isArray(saved.selectedMetalIds) ? saved.selectedMetalIds : [];
+  const selectedMetalIds = [...new Set(rawSelectedMetalIds.map((id) => String(id || '')).filter((id) => Object.hasOwn(METALS, id)))].slice(0, ONE_LOVE_EVENT_MAX_METAL_COUNT);
+  const rawDiscountPercent = Math.floor(Number(saved.discountPercent) || 0);
+  const discountPercent = rawDiscountPercent >= ONE_LOVE_EVENT_DISCOUNT_STEP && rawDiscountPercent <= 100 && rawDiscountPercent % ONE_LOVE_EVENT_DISCOUNT_STEP === 0
+    ? rawDiscountPercent
+    : 0;
+  const rawSnapshot = saved.basePurchasePerGramByMetalId && typeof saved.basePurchasePerGramByMetalId === 'object' && !Array.isArray(saved.basePurchasePerGramByMetalId)
+    ? saved.basePurchasePerGramByMetalId
+    : {};
+  const basePurchasePerGramByMetalId = {};
+  selectedMetalIds.forEach((id) => {
+    const price = Number(rawSnapshot[id]);
+    if (validPositivePrice(price)) basePurchasePerGramByMetalId[id] = Math.round(price);
+  });
+  state.events.oneLoveEvent = {
+    nextTriggerDay: Math.max(
+      1,
+      Math.floor(Number(saved.nextTriggerDay) || currentDay),
+      lastTriggeredDay > 0 ? lastTriggeredDay + ONE_LOVE_EVENT_COOLDOWN_DAYS + 1 : currentDay,
+    ),
+    lastTriggeredDay,
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active: Boolean(saved.active),
+    stage: Boolean(saved.active) ? 'intro' : (validStages.has(saved.stage) ? saved.stage : 'idle'),
+    selectedMetalIds,
+    discountPercent,
+    basePurchasePerGramByMetalId,
+  };
+  if (!state.events.oneLoveEvent.active && !['idle', 'completed'].includes(state.events.oneLoveEvent.stage)) state.events.oneLoveEvent.stage = 'completed';
+  return state.events.oneLoveEvent;
+}
+
+function oneLoveEffectActive(gameDay = state?.game?.day, eventState = oneLoveEventState()) {
+  const day = Math.max(0, Math.floor(Number(gameDay) || 0));
+  const eventDay = Math.max(0, Math.floor(Number(eventState?.lastTriggeredDay) || 0));
+  return eventDay > 0 && day === eventDay;
+}
+
+function oneLoveDealPurchasePrice(id) {
+  const eventState = oneLoveEventState();
+  if (!oneLoveEffectActive(state?.game?.day, eventState)) return null;
+  if (!eventState.selectedMetalIds.includes(id)) return null;
+  const basePrice = Number(eventState.basePurchasePerGramByMetalId?.[id]);
+  const discountPercent = Math.floor(Number(eventState.discountPercent) || 0);
+  if (!validPositivePrice(basePrice) || discountPercent < ONE_LOVE_EVENT_DISCOUNT_STEP || discountPercent > 100 || discountPercent % ONE_LOVE_EVENT_DISCOUNT_STEP !== 0) return null;
+  return Math.max(0, Math.round(basePrice * (100 - discountPercent) / 100));
+}
+
+function oneLoveRandomInteger(min, max) {
+  const lower = Math.ceil(Number(min) || 0);
+  const upper = Math.floor(Number(max) || 0);
+  if (upper <= lower) return lower;
+  return lower + Math.floor(Math.random() * (upper - lower + 1));
+}
+
+function createOneLoveMetalDeal() {
+  const availableMetalIds = Object.keys(METALS).filter((id) => validPositivePrice(Number(metalMarket.purchasePerGramByMetalId?.[id])));
+  for (let index = availableMetalIds.length - 1; index > 0; index -= 1) {
+    const swapIndex = oneLoveRandomInteger(0, index);
+    [availableMetalIds[index], availableMetalIds[swapIndex]] = [availableMetalIds[swapIndex], availableMetalIds[index]];
+  }
+  const selectedCount = oneLoveRandomInteger(1, Math.min(ONE_LOVE_EVENT_MAX_METAL_COUNT, availableMetalIds.length));
+  const selectedMetalIds = availableMetalIds.slice(0, selectedCount);
+  const discountPercent = oneLoveRandomInteger(1, 10) * ONE_LOVE_EVENT_DISCOUNT_STEP;
+  const basePurchasePerGramByMetalId = {};
+  selectedMetalIds.forEach((id) => {
+    basePurchasePerGramByMetalId[id] = Math.round(Number(metalMarket.purchasePerGramByMetalId[id]));
+  });
+  return { selectedMetalIds, discountPercent, basePurchasePerGramByMetalId };
+}
+
+function resumeOneLoveEvent() {
+  const eventState = oneLoveEventState();
+  if (!eventState.active) return false;
+  setScreen('oneLoveEvent', {}, false);
+  return true;
+}
+
+function maybeStartOneLoveEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = oneLoveEventState();
+  if (eventState.active) return resumeOneLoveEvent();
+  const day = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (day < Math.max(1, Number(eventState.nextTriggerDay) || 1)) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= ONE_LOVE_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  const deal = createOneLoveMetalDeal();
+  if (!deal.selectedMetalIds.length) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro';
+  eventState.nextTriggerDay = day + ONE_LOVE_EVENT_COOLDOWN_DAYS + 1;
+  eventState.selectedMetalIds = deal.selectedMetalIds;
+  eventState.discountPercent = deal.discountPercent;
+  eventState.basePurchasePerGramByMetalId = deal.basePurchasePerGramByMetalId;
+  saveGame();
+  setScreen('oneLoveEvent', {}, false);
+  return true;
+}
+
+function advanceOneLoveEvent() {
+  const eventState = oneLoveEventState();
+  if (!eventState.active) {
+    setScreen('workshop', {}, false);
+    return;
+  }
+  eventState.active = false;
+  eventState.stage = 'completed';
+  saveGame();
+  playSfx('select', { gain: 0.75 });
+  setScreen('workshop', {}, false);
+}
+
 function ensureYowamushiEventStyles() {
   if (typeof document === 'undefined') return;
   if (document.getElementById('yowamushi-rosequartz-event-style')) return;
@@ -11351,7 +11491,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', oneLoveEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -12133,6 +12273,7 @@ function render() {
       whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
       kappaJadeEvent: renderKappaJadeEvent,
       workshopKappaJadeEvent: renderWorkshopKappaJadeEvent,
+      oneLoveEvent: renderOneLoveEvent,
       yowamushiRoseQuartzEvent: renderYowamushiRoseQuartzEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
@@ -14606,6 +14747,33 @@ function renderKappaJadeEvent() {
     </main>`;
 }
 
+
+function renderOneLoveEvent() {
+  const eventState = oneLoveEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('workshop', {}, false));
+    return renderWorkshop();
+  }
+  const dealItems = eventState.selectedMetalIds.map((id) => {
+    const metalName = METALS[id]?.shortName || METALS[id]?.name || id;
+    const discountPercent = Math.max(ONE_LOVE_EVENT_DISCOUNT_STEP, Math.min(100, Math.floor(Number(eventState.discountPercent) || 0)));
+    return `<span class="one-love-deal-item"><b>${esc(metalName)}</b><em>仕入れ値引き${discountPercent}％</em></span>`;
+  }).join('');
+  return `
+    <main class="main-screen kappa-jade-event-screen one-love-event-screen">
+      <section class="visit-character-event kappa-jade-event one-love-event" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character kappa-character workshop-kappa-character one-love-character" src="${ONE_LOVE_EVENT_IMAGE}?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel one-love-dialogue" data-action="one-love-event-next" aria-label="タップして工房へ戻る">
+          <small>ONE LOVE</small>
+          <strong>今日だけ特別価格で仕入れができるみたいだ！</strong>
+          <span class="one-love-deal-list">${dealItems}</span>
+          <span>タップして工房へ戻る</span>
+        </button>
+      </section>
+    </main>`;
+}
 
 function renderWorkshopKappaJadeEvent() {
   const eventState = workshopKappaJadeEventState();
@@ -23403,6 +23571,9 @@ root.addEventListener('click', async (event) => {
     case 'workshop-kappa-jade-event-receive':
       receiveWorkshopKappaJadeReward();
       break;
+    case 'one-love-event-next':
+      advanceOneLoveEvent();
+      break;
     case 'yowamushi-event-next':
       advanceYowamushiRoseQuartzEvent();
       break;
@@ -23551,8 +23722,10 @@ root.addEventListener('click', async (event) => {
       if (target === 'workshop') {
         if (resumeWorkshopKappaJadeEvent()) break;
         if (resumeYowamushiRoseQuartzEvent()) break;
+        if (resumeOneLoveEvent()) break;
         if (maybeStartWorkshopKappaJadeEvent()) break;
         if (maybeStartYowamushiRoseQuartzEvent()) break;
+        if (maybeStartOneLoveEvent()) break;
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {

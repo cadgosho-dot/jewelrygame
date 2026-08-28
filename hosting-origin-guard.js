@@ -20,6 +20,14 @@
     installMealImageSizeHotfix();
   }
 
+  // 2026-08-29: ONE LOVE会話内の「○○○」を現在のプレイヤー名へ置き換える。
+  (() => {
+    const script = document.createElement('script');
+    script.src = './one-love-player-name-hotfix.js?v=20260829-1';
+    script.dataset.oneLovePlayerNameHotfix = '1';
+    document.head?.appendChild(script);
+  })();
+
   // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
     const script = document.createElement('script');

@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.783';
+} from './game-data.js?v=0.10.784';
 
-const UI_BUILD_VERSION = '0.10.783';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.783';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.783';
+const UI_BUILD_VERSION = '0.10.784';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.784';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.784';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,8 +15,8 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.783';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.783';
+} from './firebase-service.js?v=0.10.784';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.784';
 
 
 
@@ -411,11 +411,12 @@ const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'カワハラ';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE = 1 / 12;
-const ONE_LOVE_EVENT_CHANCE = 0.02;
+const ONE_LOVE_EVENT_CHANCE = 0.25;
+const ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY = 181;
 const ONE_LOVE_EVENT_COOLDOWN_DAYS = 180;
-const ONE_LOVE_EVENT_MAX_METAL_COUNT = 4;
-const ONE_LOVE_EVENT_DISCOUNT_STEP = 10;
-const ONE_LOVE_EVENT_IMAGE = './assets/images/events/one-love.webp';
+const ONE_LOVE_EVENT_DISCOUNT_RATE = 0.80;
+const ONE_LOVE_EVENT_EFFECT_DAYS = 3;
+const ONE_LOVE_EVENT_IMAGE = './assets/images/events/one-love.png';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID = 'rosequartz';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID = 'ovalCabochon';
 const OKACHIMACHI_AREA_SCREENS = new Set([
@@ -430,7 +431,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   miningPazupanEvent: new Set(['intro', 'intro2', 'intro3', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   workshopKappaJadeEvent: new Set(['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell']),
-  oneLoveEvent: new Set(['intro']),
+  oneLoveEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'intro5']),
   yowamushiRoseQuartzEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
@@ -3058,8 +3059,8 @@ function metalRemainingCapacity(id) {
 function metalTradePricePerGram(mode, id) {
   if (!metalMarketTradeReady()) return 0;
   if (mode !== 'sell') {
-    const oneLovePrice = oneLoveDealPurchasePrice(id);
-    if (Number.isFinite(oneLovePrice) && oneLovePrice >= 0) return Math.round(oneLovePrice);
+    const oneLovePrice = oneLoveFixedPurchasePrice(id);
+    if (validPositivePrice(oneLovePrice)) return Math.round(oneLovePrice);
   }
   const table = mode === 'sell' ? metalMarket.sellPerGramByMetalId : metalMarket.purchasePerGramByMetalId;
   const price = Number(table?.[id]);
@@ -7811,37 +7812,39 @@ function oneLoveEventState() {
   const saved = state.events.oneLoveEvent && typeof state.events.oneLoveEvent === 'object' && !Array.isArray(state.events.oneLoveEvent)
     ? state.events.oneLoveEvent
     : {};
-  const validStages = new Set(['idle', 'intro', 'completed']);
-  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  const activeStages = new Set(['intro1', 'intro2', 'intro3', 'intro4', 'intro5']);
+  const validStages = new Set(['idle', ...activeStages, 'completed']);
   const lastTriggeredDay = Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0));
-  const rawSelectedMetalIds = Array.isArray(saved.selectedMetalIds) ? saved.selectedMetalIds : [];
-  const selectedMetalIds = [...new Set(rawSelectedMetalIds.map((id) => String(id || '')).filter((id) => Object.hasOwn(METALS, id)))].slice(0, ONE_LOVE_EVENT_MAX_METAL_COUNT);
-  const rawDiscountPercent = Math.floor(Number(saved.discountPercent) || 0);
-  const discountPercent = rawDiscountPercent >= ONE_LOVE_EVENT_DISCOUNT_STEP && rawDiscountPercent <= 100 && rawDiscountPercent % ONE_LOVE_EVENT_DISCOUNT_STEP === 0
-    ? rawDiscountPercent
-    : 0;
-  const rawSnapshot = saved.basePurchasePerGramByMetalId && typeof saved.basePurchasePerGramByMetalId === 'object' && !Array.isArray(saved.basePurchasePerGramByMetalId)
+  const primarySnapshot = saved.purchasePriceSnapshotByMetalId && typeof saved.purchasePriceSnapshotByMetalId === 'object' && !Array.isArray(saved.purchasePriceSnapshotByMetalId)
+    ? saved.purchasePriceSnapshotByMetalId
+    : null;
+  const legacySnapshot = saved.basePurchasePerGramByMetalId && typeof saved.basePurchasePerGramByMetalId === 'object' && !Array.isArray(saved.basePurchasePerGramByMetalId)
     ? saved.basePurchasePerGramByMetalId
     : {};
-  const basePurchasePerGramByMetalId = {};
-  selectedMetalIds.forEach((id) => {
+  const rawSnapshot = primarySnapshot || legacySnapshot;
+  const purchasePriceSnapshotByMetalId = {};
+  Object.keys(METALS).forEach((id) => {
     const price = Number(rawSnapshot[id]);
-    if (validPositivePrice(price)) basePurchasePerGramByMetalId[id] = Math.round(price);
+    const migrationFallback = Number(metalMarket?.purchasePerGramByMetalId?.[id]);
+    if (validPositivePrice(price)) purchasePriceSnapshotByMetalId[id] = Math.round(price);
+    else if (lastTriggeredDay > 0 && validPositivePrice(migrationFallback)) purchasePriceSnapshotByMetalId[id] = Math.round(migrationFallback);
   });
+  const active = Boolean(saved.active);
+  const migratedStage = saved.stage === 'intro' ? 'intro1' : saved.stage;
   state.events.oneLoveEvent = {
     nextTriggerDay: Math.max(
-      1,
-      Math.floor(Number(saved.nextTriggerDay) || currentDay),
-      lastTriggeredDay > 0 ? lastTriggeredDay + ONE_LOVE_EVENT_COOLDOWN_DAYS + 1 : currentDay,
+      ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY,
+      Math.floor(Number(saved.nextTriggerDay) || 0),
+      lastTriggeredDay > 0 ? lastTriggeredDay + ONE_LOVE_EVENT_COOLDOWN_DAYS + 1 : ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY,
     ),
     lastTriggeredDay,
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
-    active: Boolean(saved.active),
-    stage: Boolean(saved.active) ? 'intro' : (validStages.has(saved.stage) ? saved.stage : 'idle'),
-    selectedMetalIds,
-    discountPercent,
-    basePurchasePerGramByMetalId,
+    active,
+    stage: active
+      ? (activeStages.has(migratedStage) ? migratedStage : 'intro1')
+      : (validStages.has(migratedStage) ? migratedStage : 'idle'),
+    purchasePriceSnapshotByMetalId,
   };
   if (!state.events.oneLoveEvent.active && !['idle', 'completed'].includes(state.events.oneLoveEvent.stage)) state.events.oneLoveEvent.stage = 'completed';
   return state.events.oneLoveEvent;
@@ -7850,40 +7853,24 @@ function oneLoveEventState() {
 function oneLoveEffectActive(gameDay = state?.game?.day, eventState = oneLoveEventState()) {
   const day = Math.max(0, Math.floor(Number(gameDay) || 0));
   const eventDay = Math.max(0, Math.floor(Number(eventState?.lastTriggeredDay) || 0));
-  return eventDay > 0 && day === eventDay;
+  return eventDay > 0 && day >= eventDay + 1 && day <= eventDay + ONE_LOVE_EVENT_EFFECT_DAYS;
 }
 
-function oneLoveDealPurchasePrice(id) {
+function oneLoveFixedPurchasePrice(id) {
   const eventState = oneLoveEventState();
   if (!oneLoveEffectActive(state?.game?.day, eventState)) return null;
-  if (!eventState.selectedMetalIds.includes(id)) return null;
-  const basePrice = Number(eventState.basePurchasePerGramByMetalId?.[id]);
-  const discountPercent = Math.floor(Number(eventState.discountPercent) || 0);
-  if (!validPositivePrice(basePrice) || discountPercent < ONE_LOVE_EVENT_DISCOUNT_STEP || discountPercent > 100 || discountPercent % ONE_LOVE_EVENT_DISCOUNT_STEP !== 0) return null;
-  return Math.max(0, Math.round(basePrice * (100 - discountPercent) / 100));
+  const eventDayPrice = Number(eventState.purchasePriceSnapshotByMetalId?.[id]);
+  if (!validPositivePrice(eventDayPrice)) return null;
+  return Math.max(1, Math.round(eventDayPrice * ONE_LOVE_EVENT_DISCOUNT_RATE));
 }
 
-function oneLoveRandomInteger(min, max) {
-  const lower = Math.ceil(Number(min) || 0);
-  const upper = Math.floor(Number(max) || 0);
-  if (upper <= lower) return lower;
-  return lower + Math.floor(Math.random() * (upper - lower + 1));
-}
-
-function createOneLoveMetalDeal() {
-  const availableMetalIds = Object.keys(METALS).filter((id) => validPositivePrice(Number(metalMarket.purchasePerGramByMetalId?.[id])));
-  for (let index = availableMetalIds.length - 1; index > 0; index -= 1) {
-    const swapIndex = oneLoveRandomInteger(0, index);
-    [availableMetalIds[index], availableMetalIds[swapIndex]] = [availableMetalIds[swapIndex], availableMetalIds[index]];
-  }
-  const selectedCount = oneLoveRandomInteger(1, Math.min(ONE_LOVE_EVENT_MAX_METAL_COUNT, availableMetalIds.length));
-  const selectedMetalIds = availableMetalIds.slice(0, selectedCount);
-  const discountPercent = oneLoveRandomInteger(1, 10) * ONE_LOVE_EVENT_DISCOUNT_STEP;
-  const basePurchasePerGramByMetalId = {};
-  selectedMetalIds.forEach((id) => {
-    basePurchasePerGramByMetalId[id] = Math.round(Number(metalMarket.purchasePerGramByMetalId[id]));
+function captureOneLoveMetalPurchasePrices() {
+  const snapshot = {};
+  Object.keys(METALS).forEach((id) => {
+    const price = Number(metalMarket.purchasePerGramByMetalId?.[id]);
+    if (validPositivePrice(price)) snapshot[id] = Math.round(price);
   });
-  return { selectedMetalIds, discountPercent, basePurchasePerGramByMetalId };
+  return snapshot;
 }
 
 function resumeOneLoveEvent() {
@@ -7898,27 +7885,27 @@ function maybeStartOneLoveEvent() {
   const eventState = oneLoveEventState();
   if (eventState.active) return resumeOneLoveEvent();
   const day = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
-  if (day < Math.max(1, Number(eventState.nextTriggerDay) || 1)) return false;
+  if (day < Math.max(ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY, Number(eventState.nextTriggerDay) || 0)) return false;
   if (!markVisitEventCheckOncePerDay(eventState)) return false;
   if (Math.random() >= ONE_LOVE_EVENT_CHANCE) {
     saveGame();
     return false;
   }
-  const deal = createOneLoveMetalDeal();
-  if (!deal.selectedMetalIds.length) {
+  const snapshot = captureOneLoveMetalPurchasePrices();
+  if (!Object.keys(snapshot).length) {
     saveGame();
     return false;
   }
   eventState.lastTriggeredDay = day;
   eventState.totalTriggered += 1;
   eventState.active = true;
-  eventState.stage = 'intro';
+  eventState.stage = 'intro1';
   eventState.nextTriggerDay = day + ONE_LOVE_EVENT_COOLDOWN_DAYS + 1;
-  eventState.selectedMetalIds = deal.selectedMetalIds;
-  eventState.discountPercent = deal.discountPercent;
-  eventState.basePurchasePerGramByMetalId = deal.basePurchasePerGramByMetalId;
+  eventState.purchasePriceSnapshotByMetalId = snapshot;
   saveGame();
   setScreen('oneLoveEvent', {}, false);
+  playSfx('kappa-appear', { gain: 0.9, rate: 0.86 });
+  vibrate([18, 30, 36]);
   return true;
 }
 
@@ -7928,11 +7915,22 @@ function advanceOneLoveEvent() {
     setScreen('workshop', {}, false);
     return;
   }
-  eventState.active = false;
-  eventState.stage = 'completed';
-  saveGame();
-  playSfx('select', { gain: 0.75 });
-  setScreen('workshop', {}, false);
+  const order = ['intro1', 'intro2', 'intro3', 'intro4', 'intro5'];
+  const index = order.indexOf(eventState.stage);
+  if (eventState.stage === 'intro5') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.75 });
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (index >= 0 && index < order.length - 1) {
+    eventState.stage = order[index + 1];
+    saveGame();
+    playSfx('select', { gain: 0.75 });
+    render();
+  }
 }
 
 function ensureYowamushiEventStyles() {
@@ -14754,22 +14752,25 @@ function renderOneLoveEvent() {
     queueMicrotask(() => setScreen('workshop', {}, false));
     return renderWorkshop();
   }
-  const dealItems = eventState.selectedMetalIds.map((id) => {
-    const metalName = METALS[id]?.shortName || METALS[id]?.name || id;
-    const discountPercent = Math.max(ONE_LOVE_EVENT_DISCOUNT_STEP, Math.min(100, Math.floor(Number(eventState.discountPercent) || 0)));
-    return `<span class="one-love-deal-item"><b>${esc(metalName)}</b><em>仕入れ値引き${discountPercent}％</em></span>`;
-  }).join('');
+  const dialogueMap = {
+    intro1: 'yeah man、、、○○○♪、、、、',
+    intro2: 'いい情報持ってきてやったぜ、、、',
+    intro3: 'いいか、？、、明日から3日間の間、、、地金の相場が下がる、、、、',
+    intro4: '信用出来るところからの情報だから、、あとはオマエの好きにしな、、、、',
+    intro5: 'いつも助けてもらってるからな、、、いいってことよ、、、\nそれじゃな、、、Bless up、、、',
+  };
+  const finalLine = eventState.stage === 'intro5';
+  const dialogue = dialogueMap[eventState.stage] || dialogueMap.intro1;
   return `
     <main class="main-screen kappa-jade-event-screen one-love-event-screen">
       <section class="visit-character-event kappa-jade-event one-love-event" aria-live="polite">
         <div class="visit-character-area" aria-hidden="true">
           <img class="visit-character kappa-character workshop-kappa-character one-love-character" src="${ONE_LOVE_EVENT_IMAGE}?v=${VERSION}" alt="" draggable="false">
         </div>
-        <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel one-love-dialogue" data-action="one-love-event-next" aria-label="タップして工房へ戻る">
+        <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel one-love-dialogue" data-action="one-love-event-next" aria-label="${finalLine ? 'タップして工房へ戻る' : 'タップして会話を進める'}">
           <small>ONE LOVE</small>
-          <strong>今日だけ特別価格で仕入れができるみたいだ！</strong>
-          <span class="one-love-deal-list">${dealItems}</span>
-          <span>タップして工房へ戻る</span>
+          <strong>${esc(dialogue)}</strong>
+          <span>${finalLine ? 'タップして工房へ戻る' : 'タップして進む'}</span>
         </button>
       </section>
     </main>`;

@@ -1,7 +1,0 @@
-assets/images/foods/convenience-christmas-v776.webp
-assets/images/foods/indian-v777.webp
-assets/images/foods/soba-mori-v778.webp
-assets/images/foods/soba-kake-curry-v779.webp
-assets/images/foods/soba-croquette-v780.webp
-assets/images/foods/korean-bibimbap-v781.webp
-assets/images/foods/korean-stone-bibimbap-v782.webp

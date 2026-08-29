@@ -1,13 +1,13 @@
-const VERSION = '0.10.784';
+const VERSION = '0.10.791';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CACHE_PREFIX = 'jewelrygame-';
 const CORE_SHELL = [
-  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.784', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js?v=0.10.784', './js/audio.js?v=0.10.784', './js/audio-scene-map.js?v=0.10.784', './js/game-data.js?v=0.10.784', './js/memories-screen.js?v=0.10.784', './js/memories-backgrounds.js?v=0.10.784', './js/daily-gems-index.js?v=0.10.691',
+  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.791', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
+  './manifest.webmanifest', './js/app.js?v=0.10.791', './js/audio.js?v=0.10.791', './js/audio-scene-map.js?v=0.10.791', './js/game-data.js?v=0.10.791', './js/memories-screen.js?v=0.10.791', './js/memories-backgrounds.js?v=0.10.791', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.784', './js/security-config.js', './js/firebase-service.js?v=0.10.784', './js/local-save-storage.js?v=0.10.784',
+  './js/google-auth-bridge.js?v=0.10.791', './js/security-config.js', './js/firebase-service.js?v=0.10.791', './js/local-save-storage.js?v=0.10.791',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.759: seasonal main-screen backgrounds (landscape + portrait).

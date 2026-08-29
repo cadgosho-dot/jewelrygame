@@ -10,7 +10,7 @@
     if (document.querySelector('link[data-meal-image-size-hotfix]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = './meal-image-size-hotfix.css?v=20260828-1';
+    link.href = './meal-image-size-hotfix.css?v=20260829-7';
     link.dataset.mealImageSizeHotfix = '1';
     document.head?.appendChild(link);
   };
@@ -31,14 +31,14 @@
   // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
     const script = document.createElement('script');
-    script.src = './memories-event-image-overrides-v751.js?v=0.10.784';
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.791';
     document.head?.appendChild(script);
   })();
 
   // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
   (() => {
     const script = document.createElement('script');
-    script.src = './workshop-staff-images-v754.js?v=0.10.784';
+    script.src = './workshop-staff-images-v754.js?v=0.10.791';
     document.head?.appendChild(script);
   })();
 

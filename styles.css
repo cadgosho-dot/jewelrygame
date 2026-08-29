@@ -22236,3 +22236,71 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="o
     transform:none!important;
   }
 }
+
+/* v0.10.792: hospital event */
+body[data-screen="hospitalEvent"] .hospital-event-screen{
+  position:relative!important;
+  min-height:100dvh!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+}
+body[data-screen="hospitalEvent"] .hospital-event-stage{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:16px max(12px,env(safe-area-inset-right)) max(18px,calc(env(safe-area-inset-bottom) + 12px)) max(12px,env(safe-area-inset-left));
+  pointer-events:none;
+}
+body[data-screen="hospitalEvent"] .hospital-event-dialogue{
+  pointer-events:auto;
+  width:min(940px,calc(100vw - 28px));
+  min-height:116px;
+  margin:0 auto;
+  padding:16px 20px 14px;
+  background:rgba(7,8,9,.18)!important;
+  border:1px solid rgba(214,217,214,.18)!important;
+  box-shadow:0 8px 34px rgba(0,0,0,.16)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+body[data-screen="hospitalEvent"] .hospital-event-dialogue>small{
+  display:block;
+  margin-bottom:7px;
+  color:rgba(228,231,228,.88)!important;
+  letter-spacing:.12em;
+  text-shadow:0 2px 9px rgba(0,0,0,.95);
+}
+body[data-screen="hospitalEvent"] .hospital-event-dialogue>strong{
+  display:block;
+  color:#f0f0ed!important;
+  white-space:pre-line;
+  line-height:1.85;
+  font-weight:600;
+  text-shadow:0 2px 10px rgba(0,0,0,.98),0 0 18px rgba(0,0,0,.74);
+}
+body[data-screen="hospitalEvent"] .hospital-event-dialogue>span{
+  display:block;
+  margin-top:8px;
+  color:rgba(220,222,219,.60)!important;
+  text-shadow:0 2px 8px rgba(0,0,0,.95);
+}
+@media (orientation:landscape) and (max-height:620px){
+  body[data-screen="hospitalEvent"] .hospital-event-stage{
+    padding-top:8px;
+    padding-bottom:max(8px,env(safe-area-inset-bottom));
+  }
+  body[data-screen="hospitalEvent"] .hospital-event-dialogue{
+    width:min(980px,74vw);
+    min-height:0;
+    padding:10px 16px 9px;
+  }
+  body[data-screen="hospitalEvent"] .hospital-event-dialogue>strong{
+    line-height:1.55;
+  }
+  body[data-screen="hospitalEvent"] .hospital-event-dialogue>span{
+    margin-top:4px;
+  }
+}
+

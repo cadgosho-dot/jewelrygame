@@ -117,6 +117,10 @@ export const AUDIO_SCENE_DEFINITIONS = Object.freeze({
     ambient: { type: 'file', url: `${AUDIO_DIR}/amb-sleep.ogg` },
     bgmScale: 0.64, ambientScale: 0.56,
   }),
+  hospital: frozenScene({
+    ambient: { type: 'file', url: `${AUDIO_DIR}/amb-hospital-clock.wav` },
+    bgmScale: 0, ambientScale: 0.92,
+  }),
   meal: frozenScene({
     bgm: `${AUDIO_DIR}/bgm-meal.ogg`,
     ambient: { type: 'file', url: `${AUDIO_DIR}/amb-meal.ogg` },
@@ -231,6 +235,8 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   settings: 'main',
   phone: 'main',
   todayGem: 'main',
+
+  hospitalEvent: 'hospital',
 
   birthdaySleepEvent: 'sleep',
   hauntingEvent: 'sleep',

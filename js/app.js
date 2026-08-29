@@ -3,11 +3,11 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.791';
+} from './game-data.js?v=0.10.799';
 
-const UI_BUILD_VERSION = '0.10.791';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.791';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.791';
+const UI_BUILD_VERSION = '0.10.799';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.799';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.799';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
@@ -15,8 +15,8 @@ import {
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.791';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.791';
+} from './firebase-service.js?v=0.10.799';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.799';
 
 
 
@@ -267,13 +267,13 @@ const OKACHIMACHI_QUIZ_DATA_URL = './data/jewelry_okachimachi_quiz_200_game_form
 const LOOSE_SHOP_ORIGINAL_QUIZ_DATA_URL = './data/jewelry_quiz_50_verified_2026-08-10.json';
 const OKACHIMACHI_QUIZ_INTRO_VIDEO = './assets/videos/events/okachimachi-quiz-king-intro.mp4';
 const CINEMA_EVENT_VIDEO_MANIFEST_URL = './data/cinema-event-videos.json';
-const OKACHIMACHI_QUIZ_TRIGGER_MIN = 26;
-const OKACHIMACHI_QUIZ_TRIGGER_MAX = 34;
-const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN = 26;
-const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX = 34;
+const OKACHIMACHI_QUIZ_TRIGGER_MIN = 20;
+const OKACHIMACHI_QUIZ_TRIGGER_MAX = 30;
+const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN = 22;
+const LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX = 28;
 const LOOSE_SHOP_ORIGINAL_QUIZ_IMAGE = './assets/images/events/loose-shop-original-quiz-v751.png';
 const LOOSE_SHOP_ORIGINAL_QUIZ_NAME = '3Dメガネ';
-const OKACHIMACHI_TOLL_EVENT_CHANCE = 1 / 60;
+const OKACHIMACHI_TOLL_EVENT_CHANCE = 0.025;
 const OKACHIMACHI_TOLL_EVENT_COST = 100000;
 const OKACHIMACHI_INVASIVE_TURTLES_EVENT_IMAGE = './assets/images/events/okachimachi-invasive-turtles.png';
 const OKACHIMACHI_INVASIVE_TURTLES_EVENT_INTRO_VIDEO = './assets/videos/events/okachimachi-invasive-turtles-intro.mp4';
@@ -301,12 +301,13 @@ const BLUES_JUKE_EVENT_GEM_ID = 'blackDiamond';
 const BLUES_JUKE_EVENT_GEM_SHAPE_ID = 'round';
 const BLUES_JUKE_EVENT_CHEER_SFX = 'blues-juke-cheer';
 // v0.10.586: 「1/30」は30回に1回程度の分数確率として統一する。
-const MEAL_RANDOM_EVENT_CHANCE = 1 / 30;
+const MEAL_EVENT_RATE_MULTIPLIER = 1.2;
+const MEAL_RANDOM_EVENT_CHANCE = (1 / 30) * MEAL_EVENT_RATE_MULTIPLIER;
 const SUSHI_CHEF_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
 const CYCLOPS_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
-const WHITE_BUNNY_ICE_EVENT_CHANCE_DENOMINATOR = 50;
+const WHITE_BUNNY_ICE_EVENT_CHANCE = 0.04;
 // v0.10.603: テリー・カリフォルニアイベントの確定仕様値。
-const TERRY_CALIFORNIA_EVENT_CHANCE = 30;
+const TERRY_CALIFORNIA_EVENT_CHANCE = (1 / 30) * MEAL_EVENT_RATE_MULTIPLIER;
 const TERRY_CALIFORNIA_BENITOITE_PRICE = 200000;
 const TERRY_CALIFORNIA_GEM_ID = 'benitoite';
 const TERRY_CALIFORNIA_GEM_SHAPE = 'oval';
@@ -350,7 +351,7 @@ const SPACE_MINING_LOCATION = (() => {
 const WOOD_SWORD_EVENT_REQUIRED_DAYS = 365;
 const WOOD_SWORD_ROBBERY_MULTIPLIER = 0.5;
 const CLOCK_TOWER_DONATION_EVENT_CHANCE = 1 / 90;
-const PANDA_MUSIC_EVENT_CHANCE = 1 / 90;
+const PANDA_MUSIC_EVENT_CHANCE = 0.02;
 const PANDA_MUSIC_EVENT_AUDIO_URL = `./assets/audio/sfx-panda-music-event.ogg?v=${VERSION}`;
 const PANDA_MUSIC_EVENT_AUDIO_GAIN = 0.72;
 const WHITE_BUNNY_EVENT_BGM_URL = `./assets/audio/bgm-white-bunny.ogg?v=${VERSION}`;
@@ -368,28 +369,28 @@ const APPRENTICE_CINEMA_EVENT_CHANCE = 0.03;
 const APPRENTICE_CINEMA_EVENT_COST = CINEMA_VISIT_EVENT_COST;
 const APPRENTICE_CINEMA_EVENT_HOURS = CINEMA_VISIT_EVENT_HOURS;
 const MYSTERY_CHINESE_MEAL_EVENT_CHANCE = MEAL_RANDOM_EVENT_CHANCE;
-const EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE_DENOMINATOR = 30;
+const EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE = (1 / 30) * MEAL_EVENT_RATE_MULTIPLIER;
 const EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID = 'kebab';
 const EMERALD_CAPTAIN_KEBAB_EVENT_GEM_ID = 'emerald';
 const EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME = 'エメラルド班班長';
 const EMERALD_CAPTAIN_KEBAB_EVENT_SHAPE_IDS = Object.freeze(['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon']);
 const GRAY_HOOD_AQUARIUM_EVENT_MIN_DAY = 366;
 // v0.10.586: 一度限りの重要イベントのため、韓国料理の水槽イベントのみ1/15。
-const GRAY_HOOD_AQUARIUM_EVENT_CHANCE = 1 / 15;
+const GRAY_HOOD_AQUARIUM_EVENT_CHANCE = (1 / 15) * MEAL_EVENT_RATE_MULTIPLIER;
 const GRAY_HOOD_AQUARIUM_INTRO_VIDEO = './assets/videos/events/gray-hood-aquarium-intro.mp4';
 const TATTOO_WOMAN_AMBER_INTRO_VIDEO = './assets/videos/events/tattoo-woman-amber-intro.mp4';
 const MYSTERY_CHINESE_MEAL_EVENT_COST = 15000;
-const MYSTERY_CHINESE_MEAL_EVENT_IMAGES = Object.freeze(['mystery-chinese-food-01.png', 'mystery-chinese-food-02.png']);
+const MYSTERY_CHINESE_MEAL_EVENT_IMAGES = Object.freeze(['mystery-chinese-food-01.png', 'mystery-chinese-food-02.png', 'mystery-chinese-food-03.png', 'mystery-chinese-food-04.png']);
 const MYSTERY_CHINESE_MEAL_INTRO_VIDEO = './assets/videos/events/mystery-chinese-meal-intro.mp4';
-const RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR = 30;
+const RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE = (1 / 30) * MEAL_EVENT_RATE_MULTIPLIER;
 const RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID = 'soba';
 const RIDLEY_OKAZAKI_SOBA_EVENT_PRICE_MULTIPLIER = 2;
 const WRIST_FOUND_EVENT_CHANCE = 1 / 200;
-const OYATSU_DAISUKI_EVENT_CHANCE = 1 / 30;
+const OYATSU_DAISUKI_EVENT_CHANCE = 0.04;
 const OYATSU_DAISUKI_EVENT_LATEST_MINUTES = 18 * 60;
 const OYATSU_TROPICAL_SHOP_INTRO_VIDEO = './assets/videos/events/oyatsu-tropical-shop-intro.mp4';
 const SPEED_STAR_EVENT_CHANCE = 1 / 100;
-const STORYTELLER_EVENT_CHANCE = 1 / 30;
+const STORYTELLER_EVENT_CHANCE = 0.05;
 const STORYTELLER_EVENT_EARLIEST_MINUTES = 18 * 60;
 const STORYTELLER_QUIZ_URL = './assets/data/storyteller-okachimachi-quiz.json';
 const TROPICAL_FISH_SHOP_PRODUCTS = Object.freeze({
@@ -417,6 +418,43 @@ const ONE_LOVE_EVENT_COOLDOWN_DAYS = 180;
 const ONE_LOVE_EVENT_DISCOUNT_RATE = 0.80;
 const ONE_LOVE_EVENT_EFFECT_DAYS = 3;
 const ONE_LOVE_EVENT_IMAGE = './assets/images/events/one-love.png';
+
+const HOSPITAL_EVENT_FIRST_ELIGIBLE_DAY = 401;
+const HOSPITAL_EVENT_FIRST_WAIT_MIN_DAYS = 0;
+const HOSPITAL_EVENT_FIRST_WAIT_MAX_DAYS = 45;
+const HOSPITAL_EVENT_REPEAT_MIN_DAYS = 330;
+const HOSPITAL_EVENT_REPEAT_MAX_DAYS = 400;
+const HOSPITAL_EVENT_CHARACTER_NAME = '友達';
+const HOSPITAL_EVENT_STAGE_ORDER = Object.freeze(['line1', 'line2', 'line3', 'line4', 'line5']);
+const HOSPITAL_EVENT_EPISODES = Object.freeze([
+  Object.freeze([
+    '少し、、疲れたんじゃないですかね、、、眠寝不足かな？、、、、',
+    '大丈夫、、あなたの言うようにここはちゃんと現実です、、、、',
+    'この部屋も、私も、あなたも、、、、、、',
+    '、、、、、、',
+  ]),
+  Object.freeze([
+    '御徒町？、、、台東区？、、、、もちろん、、、',
+    'もちろん知ってます、、そこは私もよく知るたったひとつの現実です、、、、、',
+    'あなたは、現実と非現実が重なっていると言いましたね、、、、、',
+    'では、ひとつだけ聞きます、、、、その世界の中にこの診察室はありますか？、、、',
+    '、、、、、、',
+  ]),
+  Object.freeze([
+    '大丈夫、、あなたは病気ではありませんよ、、、、',
+    'ここだって、ちゃんと現実なんです、、、、',
+    'どうです、あなたの言うもうひとつの現実には私はいないでしょ？、、、、',
+    'もしいたとして、その世界の私はこのように私と同じ事言ってますか？、、、、',
+    '、、、、、、、、',
+  ]),
+  Object.freeze([
+    '、、、、、、、、、、',
+    '、、、、',
+    '、、、、、、、、、、、、、、、、、',
+    '、、、、、、、、',
+    '、、、、、',
+  ]),
+]);
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID = 'rosequartz';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID = 'ovalCabochon';
 const OKACHIMACHI_AREA_SCREENS = new Set([
@@ -432,6 +470,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   workshopKappaJadeEvent: new Set(['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell']),
   oneLoveEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'intro5']),
+  hospitalEvent: new Set(['line1', 'line2', 'line3', 'line4', 'line5']),
   yowamushiRoseQuartzEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
@@ -469,7 +508,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'bluesJukeEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
-  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'oneLoveEvent', 'sushiChefEvent', 'cyclopsEvent',
+  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'oneLoveEvent', 'hospitalEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent', 'yowamushiRoseQuartzEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
@@ -494,6 +533,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
   workshopKappaJadeEvent: { eventKey: 'workshopKappaJadeEvent', fallback: 'workshop' },
   oneLoveEvent: { eventKey: 'oneLoveEvent', fallback: 'workshop' },
+  hospitalEvent: { eventKey: 'hospitalEvent', fallback: 'main' },
   yowamushiRoseQuartzEvent: { eventKey: 'yowamushiRoseQuartzEvent', fallback: 'workshop' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   okachimachiInvasiveTurtlesEvent: { eventKey: 'okachimachiInvasiveTurtlesEvent', fallback: 'okachimachi' },
@@ -548,7 +588,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
     'bluesJukeEvent', 'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent', 'whiteBunnyIceEvent',
-    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent', 'oneLoveEvent',
+    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent', 'oneLoveEvent', 'hospitalEvent',
   ]),
   sessionOnly: new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'robberyReport', 'kaitenzushi']),
 });
@@ -779,7 +819,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'blues-juke-event-next', 'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
   'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-video-start', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
   'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'apprentice-cinema-event-next', 'apprentice-cinema-video-start', 'apprentice-cinema-video-finish', 'cinema-video-finish',
-  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'one-love-event-next', 'yowamushi-event-next', 'yowamushi-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
+  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'one-love-event-next', 'hospital-event-next', 'yowamushi-event-next', 'yowamushi-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
@@ -858,6 +898,11 @@ function completeTransientEventSafely(key, { preserveLongRunning = true, force =
     const completionYear = Math.max(0, Math.floor(Number(eventState.eventYear) || gameDate().getFullYear()));
     eventState.eventYear = completionYear;
     eventState.lastCompletedYear = Math.max(Math.floor(Number(eventState.lastCompletedYear) || 0), completionYear);
+  }
+  if (key === 'hospitalEvent') {
+    eventState.pendingSleepDay = 0;
+    scheduleNextHospitalEvent(eventState, Math.max(1, Math.floor(Number(state?.game?.day) || 1)));
+    completeMorningTransition();
   }
   eventState.active = false;
   eventState.stage = 'completed';
@@ -6777,7 +6822,7 @@ function repairMorningOverlapDeadlockV475({ save = false } = {}) {
   const atMorningStart = Number(state.game.minutes) <= DAY_START_MINUTES;
   const advancedDuringSettling = transition.phase === 'settling' && transition.toDay > 0 && currentDay >= transition.toDay;
   const interruptedBeforeAdvance = transition.phase === 'settling' && !advancedDuringSettling;
-  const normalMorningScreens = new Set(['main', 'dayResult', 'robberyReport', 'alienReturnEvent', 'alienAbductionEvent', 'winterColdEvent', 'mermaidEvent', 'westernUnionEvent']);
+  const normalMorningScreens = new Set(['main', 'dayResult', 'hospitalEvent', 'robberyReport', 'alienReturnEvent', 'alienAbductionEvent', 'winterColdEvent', 'mermaidEvent', 'westernUnionEvent']);
   const abnormalMorningScreen = transition.phase === 'morningPending'
     && !normalMorningScreens.has(String(screen || state.game.screen || ''));
   const overlap = morningOverlapStatus();
@@ -6874,11 +6919,13 @@ function finishMorningBriefAndContinue() {
     goMain();
     return;
   }
-  if (maybeStartAlienAbductionEvent()) return;
   if (!specialMorningEventTriggeredToday()) {
-    if (maybeStartMermaidEvent()) return;
-    if (maybeStartWesternUnionEvent()) return;
-  }
+    if (tryRandomEventStarters([
+      () => maybeStartAlienAbductionEvent(),
+      () => maybeStartMermaidEvent(),
+      () => maybeStartWesternUnionEvent(),
+    ])) return;
+  } else if (maybeStartAlienAbductionEvent()) return;
   continueMorningAfterSpecialEvents();
 }
 
@@ -6895,17 +6942,25 @@ async function maybeResumeMorningSequence() {
     if (screen !== 'main') goMain();
     return;
   }
+  if (resumeHospitalEvent()) return;
   if (resumeBluesJukeEvent()) return;
   if (resumeWinterColdEvent()) return;
-  if (dayTransitionState().phase === 'morningPending' && maybeStartBluesJukeEvent()) return;
-  if (maybeStartWinterColdEvent()) return;
+  if (dayTransitionState().phase === 'morningPending') {
+    if (tryRandomEventStarters([
+      () => maybeStartHospitalEvent(),
+      () => maybeStartBluesJukeEvent(),
+      () => maybeStartWinterColdEvent(),
+    ])) return;
+  } else if (maybeStartWinterColdEvent()) return;
   if (resumeAlienReturnEvent()) return;
   if (resumeAlienAbductionEvent()) return;
   if (resumeMermaidEvent()) return;
   if (resumeWesternUnionEvent()) return;
   if (!specialMorningEventTriggeredToday()) {
-    if (maybeStartMermaidEvent()) return;
-    if (maybeStartWesternUnionEvent()) return;
+    if (tryRandomEventStarters([
+      () => maybeStartMermaidEvent(),
+      () => maybeStartWesternUnionEvent(),
+    ])) return;
   }
   const report = pendingRobberyReport();
   if (!report) {
@@ -7008,6 +7063,7 @@ async function beginNextDay() {
       const returningFromSpace = alienAbductionEventState().active && alienAbductionEventState().stage === 'returnPending';
       let coldStarted = false;
       let bluesJukeStarted = false;
+      let hospitalStarted = false;
       if (returningFromSpace) {
         grantAlienBodyChip();
         setScreen('alienReturnEvent', {}, false);
@@ -7017,16 +7073,20 @@ async function beginNextDay() {
         completeMorningTransition({ save: true });
         goMain();
       } else {
-        bluesJukeStarted = maybeStartBluesJukeEvent();
-        if (!bluesJukeStarted) {
-          coldStarted = maybeStartWinterColdEvent();
-          if (!coldStarted) goMain();
-        }
+        const morningEvent = tryRandomNamedEventStarters([
+          { id: 'hospital', start: () => maybeStartHospitalEvent() },
+          { id: 'bluesJuke', start: () => maybeStartBluesJukeEvent() },
+          { id: 'winterCold', start: () => maybeStartWinterColdEvent() },
+        ]);
+        hospitalStarted = morningEvent === 'hospital';
+        bluesJukeStarted = morningEvent === 'bluesJuke';
+        coldStarted = morningEvent === 'winterCold';
+        if (!morningEvent) goMain();
       }
       await wait(40);
       sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
-      if (!bluesJukeStarted) playSfx(returningFromSpace ? 'success' : coldStarted ? 'impact' : stillSick ? 'sleep' : 'alarm', { gain: .92 });
-      if (!returningFromSpace && !coldStarted && !stillSick && !bluesJukeStarted) await showMorningBrief();
+      if (!bluesJukeStarted && !hospitalStarted) playSfx(returningFromSpace ? 'success' : coldStarted ? 'impact' : stillSick ? 'sleep' : 'alarm', { gain: .92 });
+      if (!returningFromSpace && !coldStarted && !stillSick && !bluesJukeStarted && !hospitalStarted) await showMorningBrief();
     } catch (error) {
       console.error('翌日表示復帰エラー', error);
       clearMorningBrief();
@@ -7931,6 +7991,139 @@ function advanceOneLoveEvent() {
     playSfx('select', { gain: 0.75 });
     render();
   }
+}
+
+
+function hospitalEventRandomOffset(minDays, maxDays) {
+  const min = Math.max(0, Math.floor(Number(minDays) || 0));
+  const max = Math.max(min, Math.floor(Number(maxDays) || min));
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function hospitalEventDialogueForEpisode(episode) {
+  const index = Math.max(1, Math.floor(Number(episode) || 1)) - 1;
+  return HOSPITAL_EVENT_EPISODES[index] || HOSPITAL_EVENT_EPISODES[0];
+}
+
+function hospitalEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.hospitalEvent && typeof state.events.hospitalEvent === 'object' && !Array.isArray(state.events.hospitalEvent)
+    ? state.events.hospitalEvent
+    : {};
+  const totalTriggered = Math.max(0, Math.min(HOSPITAL_EVENT_EPISODES.length, Math.floor(Number(saved.totalTriggered) || 0)));
+  const active = Boolean(saved.active);
+  const episode = Math.max(1, Math.min(HOSPITAL_EVENT_EPISODES.length, Math.floor(Number(saved.episode) || Math.max(1, totalTriggered))));
+  const lines = hospitalEventDialogueForEpisode(episode);
+  const validActiveStages = new Set(HOSPITAL_EVENT_STAGE_ORDER.slice(0, lines.length));
+  const rawStage = String(saved.stage || 'idle');
+  const stage = active
+    ? (validActiveStages.has(rawStage) ? rawStage : 'line1')
+    : (['idle', 'completed'].includes(rawStage) ? rawStage : 'completed');
+
+  state.events.hospitalEvent = {
+    active,
+    stage,
+    episode,
+    totalTriggered,
+    lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
+    nextTriggerDay: Math.max(0, Math.floor(Number(saved.nextTriggerDay) || 0)),
+    pendingSleepDay: Math.max(0, Math.floor(Number(saved.pendingSleepDay) || 0)),
+  };
+  if (state.events.hospitalEvent.totalTriggered >= HOSPITAL_EVENT_EPISODES.length && !state.events.hospitalEvent.active) {
+    state.events.hospitalEvent.nextTriggerDay = 0;
+  }
+  return state.events.hospitalEvent;
+}
+
+function scheduleNextHospitalEvent(eventState = hospitalEventState(), fromDay = state?.game?.day) {
+  if (!eventState) return 0;
+  const day = Math.max(1, Math.floor(Number(fromDay) || 1));
+  if (Math.max(0, Math.floor(Number(eventState.totalTriggered) || 0)) >= HOSPITAL_EVENT_EPISODES.length) {
+    eventState.nextTriggerDay = 0;
+    return 0;
+  }
+  eventState.nextTriggerDay = day + hospitalEventRandomOffset(HOSPITAL_EVENT_REPEAT_MIN_DAYS, HOSPITAL_EVENT_REPEAT_MAX_DAYS);
+  return eventState.nextTriggerDay;
+}
+
+function markHospitalSleepCheckForMorning() {
+  const eventState = hospitalEventState();
+  eventState.pendingSleepDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  return eventState;
+}
+
+function resumeHospitalEvent() {
+  const eventState = hospitalEventState();
+  if (!eventState.active) return false;
+  setScreen('hospitalEvent', {}, false);
+  return true;
+}
+
+function hospitalEventCanStartToday(eventState = hospitalEventState()) {
+  if (!state || eventState.active) return false;
+  const day = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  if (day < HOSPITAL_EVENT_FIRST_ELIGIBLE_DAY) return false;
+  if (Math.floor(Number(eventState.pendingSleepDay) || 0) !== day) return false;
+  if (Math.floor(Number(eventState.totalTriggered) || 0) >= HOSPITAL_EVENT_EPISODES.length) return false;
+  if (illnessEventSuppressionActive() || isAlienAbducted()) return false;
+  if (pendingRobberyReport()) return false;
+  return true;
+}
+
+function maybeStartHospitalEvent() {
+  const eventState = hospitalEventState();
+  if (eventState.active) return resumeHospitalEvent();
+  if (!hospitalEventCanStartToday(eventState)) return false;
+
+  const day = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  if (eventState.nextTriggerDay <= 0) {
+    eventState.nextTriggerDay = day + hospitalEventRandomOffset(HOSPITAL_EVENT_FIRST_WAIT_MIN_DAYS, HOSPITAL_EVENT_FIRST_WAIT_MAX_DAYS);
+    void saveGame();
+  }
+  if (day < eventState.nextTriggerDay) return false;
+
+  const episode = Math.min(HOSPITAL_EVENT_EPISODES.length, Math.max(1, eventState.totalTriggered + 1));
+  eventState.active = true;
+  eventState.stage = 'line1';
+  eventState.episode = episode;
+  eventState.totalTriggered = episode;
+  eventState.lastTriggeredDay = day;
+  eventState.nextTriggerDay = 0;
+  eventState.pendingSleepDay = 0;
+  clearMorningBrief();
+  saveGame();
+  setScreen('hospitalEvent', {}, false);
+  return true;
+}
+
+function finishHospitalEvent() {
+  const eventState = hospitalEventState();
+  eventState.active = false;
+  eventState.stage = 'completed';
+  eventState.pendingSleepDay = 0;
+  scheduleNextHospitalEvent(eventState, Math.max(1, Math.floor(Number(state?.game?.day) || 1)));
+  completeMorningTransition();
+  saveGame();
+  setScreen('main', {}, false);
+}
+
+function advanceHospitalEvent() {
+  const eventState = hospitalEventState();
+  if (!eventState.active) {
+    completeMorningTransition({ save: true });
+    setScreen('main', {}, false);
+    return;
+  }
+  const lines = hospitalEventDialogueForEpisode(eventState.episode);
+  const order = HOSPITAL_EVENT_STAGE_ORDER.slice(0, lines.length);
+  const index = order.indexOf(eventState.stage);
+  if (index < 0 || index >= order.length - 1) {
+    finishHospitalEvent();
+    return;
+  }
+  eventState.stage = order[index + 1];
+  saveGame();
+  render();
 }
 
 function ensureYowamushiEventStyles() {
@@ -9047,7 +9240,7 @@ function maybeStartRidleyOkazakiSobaEvent() {
   const meal = MEALS[mealId];
   const eventCost = ridleyOkazakiSobaEventCost();
   if (!meal || eventCost <= 0 || state.game.money < eventCost) return false;
-  if (Math.floor(Math.random() * RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
+  if (Math.random() >= RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE) return false;
   eventState.active = true;
   eventState.stage = 'intro1';
   eventState.pendingMealId = mealId;
@@ -9124,7 +9317,7 @@ function maybeStartWhiteBunnyIceEvent() {
     return true;
   }
   if (!state?.store?.rented || !anyInstalledShowcaseExists()) return false;
-  if (Math.floor(Math.random() * WHITE_BUNNY_ICE_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
+  if (Math.random() >= WHITE_BUNNY_ICE_EVENT_CHANCE) return false;
   eventState.active = true;
   eventState.stage = 'intro1';
   eventState.pendingMealId = 'ice';
@@ -9290,7 +9483,7 @@ function maybeStartTerryCaliforniaEvent() {
     setScreen('terryCaliforniaEvent', { mealId: TERRY_CALIFORNIA_MEAL_ID }, false);
     return true;
   }
-  if (Math.floor(Math.random() * TERRY_CALIFORNIA_EVENT_CHANCE) !== 0) return false;
+  if (Math.random() >= TERRY_CALIFORNIA_EVENT_CHANCE) return false;
   eventState.active = true;
   eventState.stage = 'video';
   eventState.pendingMealId = TERRY_CALIFORNIA_MEAL_ID;
@@ -9683,7 +9876,7 @@ function looseShopOriginalQuizEventState() {
   state.events.looseShopOriginalQuiz = {
     totalVisits: Math.max(0, Math.floor(Number(saved.totalVisits) || 0)),
     visitsSinceLast: Math.max(0, Math.floor(Number(saved.visitsSinceLast) || 0)),
-    nextTriggerAt: Math.max(LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN, Math.min(LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX, Math.floor(Number(saved.nextTriggerAt) || 30))),
+    nextTriggerAt: Math.max(LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MIN, Math.min(LOOSE_SHOP_ORIGINAL_QUIZ_TRIGGER_MAX, Math.floor(Number(saved.nextTriggerAt) || 25))),
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
     lastQuestionIndex: Number.isFinite(Number(saved.lastQuestionIndex))
       ? Math.max(-1, Math.floor(Number(saved.lastQuestionIndex)))
@@ -11158,46 +11351,31 @@ function renderTropicalFishShop(){
   });
 }
 
-async function enterOkachimachiFromOutside() {
-  if (illnessEventSuppressionActive()) {
-    setScreen('okachimachi', {});
-    return;
+function shuffleEventAttempts(attempts) {
+  const shuffled = [...attempts];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
   }
-  if (resumeOkachimachiInvasiveTurtlesEvent()) return;
-  if (resumePandaMusicEvent()) return;
-  if (resumeWristFoundEvent()) return;
-  if (resumeOkachimachiTollEvent()) return;
-  if (resumeApprenticeCinemaEvent()) return;
-  if (resumeCinemaVisitEvent()) return;
-  if (resumeClockTowerDonationEvent()) return;
-  if (resumePearlHumanEvent()) return;
-  if (resumeOyatsuDaisukiEvent()) return;
-  if (resumeSpeedStarEvent()) return;
-  if (resumeStorytellerEvent()) return;
-  const eventState = okachimachiQuizEventState();
-  const todayKey = dateKey(gameDate());
-  if (eventState.lastCountedDate !== todayKey) {
-    eventState.totalVisits += 1;
-    eventState.visitsSinceLast += 1;
-    eventState.lastCountedDate = todayKey;
-  }
-  const shouldTrigger = eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1);
-  saveGame();
-  if (maybeStartOkachimachiInvasiveTurtlesEvent()) return;
-  if (maybeStartWristFoundEvent()) return;
-  if (maybeStartPandaMusicEvent()) return;
-  if (maybeStartOkachimachiTollEvent()) return;
-  if (await maybeStartApprenticeCinemaEvent()) return;
-  if (await maybeStartCinemaVisitEvent()) return;
-  if (maybeStartClockTowerDonationEvent()) return;
-  if (maybeStartOyatsuDaisukiEvent()) return;
-  if (maybeStartSpeedStarEvent()) return;
-  if (await maybeStartStorytellerEvent()) return;
-  if (!shouldTrigger) {
-    setScreen('okachimachi', {});
-    return;
-  }
+  return shuffled;
+}
 
+function tryRandomEventStarters(starters) {
+  for (const start of shuffleEventAttempts(starters)) {
+    if (start()) return true;
+  }
+  return false;
+}
+
+function tryRandomNamedEventStarters(entries) {
+  for (const entry of shuffleEventAttempts(entries)) {
+    if (entry?.start?.()) return String(entry.id || 'event');
+  }
+  return '';
+}
+
+async function startOkachimachiQuizIfDue(eventState) {
+  if (!eventState || eventState.visitsSinceLast < eventState.nextTriggerAt || !canSpendHours(1)) return false;
   try {
     const questions = await loadOkachimachiQuizQuestions();
     const selected = chooseOkachimachiQuizQuestion(questions, eventState.lastQuestionIndex);
@@ -11217,11 +11395,67 @@ async function enterOkachimachiFromOutside() {
     saveGame();
     setScreen('okachimachiQuiz', {});
     vibrate([20, 28, 46]);
+    return true;
   } catch (error) {
     console.error(error);
     showToast('クイズデータを読み込めなかったため、通常の御徒町へ移動しました。', 'error');
-    setScreen('okachimachi', {});
+    return false;
   }
+}
+
+async function tryRandomOkachimachiEntryEvent(eventState) {
+  // v0.10.799: 御徒町イベントは固定優先順を廃止し、外部から入るたびに判定順をシャッフルする。
+  // 各イベント固有の発生率・日次制限・条件はそのまま維持し、特定イベントが常に後回しになる偏りをなくす。
+  const attempts = [
+    () => maybeStartOkachimachiInvasiveTurtlesEvent(),
+    () => maybeStartWristFoundEvent(),
+    () => maybeStartPandaMusicEvent(),
+    () => maybeStartOkachimachiTollEvent(),
+    () => maybeStartApprenticeCinemaEvent(),
+    () => maybeStartCinemaVisitEvent(),
+    () => maybeStartClockTowerDonationEvent(),
+    () => maybeStartOyatsuDaisukiEvent(),
+    () => maybeStartSpeedStarEvent(),
+    () => maybeStartStorytellerEvent(),
+  ];
+  if (eventState && eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1)) {
+    attempts.push(() => startOkachimachiQuizIfDue(eventState));
+  }
+  for (const attempt of shuffleEventAttempts(attempts)) {
+    if (await attempt()) return true;
+  }
+  return false;
+}
+
+async function enterOkachimachiFromOutside() {
+  if (illnessEventSuppressionActive()) {
+    setScreen('okachimachi', {});
+    return;
+  }
+  // 進行中イベントの再開は抽選ではないため、従来どおり最優先で復帰する。
+  if (resumeOkachimachiInvasiveTurtlesEvent()) return;
+  if (resumePandaMusicEvent()) return;
+  if (resumeWristFoundEvent()) return;
+  if (resumeOkachimachiTollEvent()) return;
+  if (resumeApprenticeCinemaEvent()) return;
+  if (resumeCinemaVisitEvent()) return;
+  if (resumeClockTowerDonationEvent()) return;
+  if (resumePearlHumanEvent()) return;
+  if (resumeOyatsuDaisukiEvent()) return;
+  if (resumeSpeedStarEvent()) return;
+  if (resumeStorytellerEvent()) return;
+
+  const eventState = okachimachiQuizEventState();
+  const todayKey = dateKey(gameDate());
+  if (eventState.lastCountedDate !== todayKey) {
+    eventState.totalVisits += 1;
+    eventState.visitsSinceLast += 1;
+    eventState.lastCountedDate = todayKey;
+  }
+  saveGame();
+
+  if (await tryRandomOkachimachiEntryEvent(eventState)) return;
+  setScreen('okachimachi', {});
 }
 
 function okachimachiQuizPlayerName() {
@@ -11489,7 +11723,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', oneLoveEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', hospitalEvent: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', oneLoveEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -11583,6 +11817,14 @@ function backgroundLayoutFor(target, asset) {
 }
 
 function applyCurrentBackground() {
+  if (screen === 'hospitalEvent') {
+    document.body.dataset.backgroundLayout = 'cover';
+    const hospitalImage = isPortraitLayout()
+      ? './assets/images/events/hospital-room-portrait.jpg'
+      : './assets/images/events/hospital-room-landscape.jpg';
+    document.documentElement.style.setProperty('--screen-bg', `url('${hospitalImage}?v=${VERSION}')`);
+    return;
+  }
   if (backgroundFor(screen) === 'phone') {
     document.body.dataset.backgroundLayout = 'cover';
     document.documentElement.style.setProperty('--screen-bg', 'none');
@@ -12272,6 +12514,7 @@ function render() {
       kappaJadeEvent: renderKappaJadeEvent,
       workshopKappaJadeEvent: renderWorkshopKappaJadeEvent,
       oneLoveEvent: renderOneLoveEvent,
+      hospitalEvent: renderHospitalEvent,
       yowamushiRoseQuartzEvent: renderYowamushiRoseQuartzEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
@@ -14776,6 +15019,33 @@ function renderOneLoveEvent() {
     </main>`;
 }
 
+
+function renderHospitalEvent() {
+  const eventState = hospitalEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => {
+      completeMorningTransition({ save: true });
+      setScreen('main', {}, false);
+    });
+    return renderMain();
+  }
+  const lines = hospitalEventDialogueForEpisode(eventState.episode);
+  const order = HOSPITAL_EVENT_STAGE_ORDER.slice(0, lines.length);
+  const index = Math.max(0, order.indexOf(eventState.stage));
+  const dialogue = lines[index] || lines[0] || '、、、、';
+  const finalLine = index >= order.length - 1;
+  return `
+    <main class="main-screen hospital-event-screen" aria-live="polite">
+      <section class="hospital-event-stage">
+        <button type="button" class="event-dialogue-card hospital-event-dialogue" data-action="hospital-event-next" aria-label="${finalLine ? 'タップしてメイン画面へ戻る' : 'タップして会話を進める'}">
+          <small>${HOSPITAL_EVENT_CHARACTER_NAME}</small>
+          <strong>${esc(dialogue)}</strong>
+          <span>${finalLine ? 'タップして進む' : 'タップして進む'}</span>
+        </button>
+      </section>
+    </main>`;
+}
+
 function renderWorkshopKappaJadeEvent() {
   const eventState = workshopKappaJadeEventState();
   if (!eventState.active) {
@@ -15240,7 +15510,7 @@ function maybeStartEmeraldCaptainKebabEvent() {
   const gemCost = emeraldCaptainKebabEventTotalCost();
   const totalRequired = gemCost + Math.max(0, Math.floor(Number(meal?.price) || 0));
   if (!meal || gemCost <= 0 || Math.max(0, Math.floor(Number(state?.game?.money) || 0)) < totalRequired) return false;
-  if (Math.floor(Math.random() * EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE_DENOMINATOR) !== 0) return false;
+  if (Math.random() >= EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE) return false;
   eventState.active = true;
   eventState.stage = 'intro1';
   eventState.pendingMealId = mealId;
@@ -19050,10 +19320,14 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
   if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
   if (mealId === 'ice' && !skipEventCheck && maybeStartWhiteBunnyIceEvent()) return;
   if (mealId === 'kebab' && !skipEventCheck && maybeStartEmeraldCaptainKebabEvent()) return;
-  if (mealId === 'hamburger' && !skipEventCheck && maybeStartTouristWoodSwordEvent()) return;
-  if (mealId === 'hamburger' && !skipEventCheck && maybeStartTerryCaliforniaEvent()) return;
-  if (mealId === 'indian' && !skipEventCheck && maybeStartDiamondPolishingLapEvent()) return;
-  if (mealId === 'indian' && !skipEventCheck && maybeStartGaneshaTuskEvent()) return;
+  if (mealId === 'hamburger' && !skipEventCheck && tryRandomEventStarters([
+    () => maybeStartTouristWoodSwordEvent(),
+    () => maybeStartTerryCaliforniaEvent(),
+  ])) return;
+  if (mealId === 'indian' && !skipEventCheck && tryRandomEventStarters([
+    () => maybeStartDiamondPolishingLapEvent(),
+    () => maybeStartGaneshaTuskEvent(),
+  ])) return;
   if (mealId === 'ramen' && !skipEventCheck && maybeStartChildhoodFriendEvent()) return;
   if (mealId === 'soba' && !skipEventCheck && maybeStartRidleyOkazakiSobaEvent()) return;
   if (mealId === 'chinese' && !skipEventCheck && maybeStartMysteryChineseMealEvent()) return;
@@ -22480,7 +22754,7 @@ function scheduleAutopilotChecks() {
   }, 30 * 60 * 1000);
 }
 
-function settleDay({ showResult = true, save = true } = {}) {
+function settleDay({ showResult = true, save = true, hospitalCheck = false } = {}) {
   const looseBeforeSettlement = looseInventorySnapshot();
   const moneyBeforeSettlement = state.game.money;
   const sold = [];
@@ -22634,6 +22908,7 @@ function settleDay({ showResult = true, save = true } = {}) {
   updateOrderNotifications();
   restoreLooseInventory(looseBeforeSettlement, 'settleDay');
   markMorningTransitionPending();
+  if (hospitalCheck) markHospitalSleepCheckForMorning();
   if (showResult) setScreen('dayResult', {}, false);
   // v0.10.611: 結果画面を先に描画キューへ渡し、その後に重い保存処理を開始する。
   // 演出時間は変更せず、体感上の「計算待ち」を減らす。
@@ -22944,7 +23219,7 @@ async function beginSleepTransition({ allowEarly = false } = {}) {
       wait(700),
     ]);
 
-    const daySave = settleDay();
+    const daySave = settleDay({ hospitalCheck: true });
     await Promise.race([daySave, wait(1800)]);
     await wait(420);
     sleepCurtainEl?.classList.remove('sleep-starting');
@@ -23575,6 +23850,9 @@ root.addEventListener('click', async (event) => {
     case 'one-love-event-next':
       advanceOneLoveEvent();
       break;
+    case 'hospital-event-next':
+      advanceHospitalEvent();
+      break;
     case 'yowamushi-event-next':
       advanceYowamushiRoseQuartzEvent();
       break;
@@ -23721,21 +23999,25 @@ root.addEventListener('click', async (event) => {
         break;
       }
       if (target === 'workshop') {
+        // 進行中イベントの再開順は固定のまま。新規発生だけ毎回ランダム順で判定する。
         if (resumeWorkshopKappaJadeEvent()) break;
         if (resumeYowamushiRoseQuartzEvent()) break;
         if (resumeOneLoveEvent()) break;
-        if (maybeStartWorkshopKappaJadeEvent()) break;
-        if (maybeStartYowamushiRoseQuartzEvent()) break;
-        if (maybeStartOneLoveEvent()) break;
+        if (tryRandomEventStarters([
+          () => maybeStartWorkshopKappaJadeEvent(),
+          () => maybeStartYowamushiRoseQuartzEvent(),
+          () => maybeStartOneLoveEvent(),
+        ])) break;
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {
-        // 進行中イベントは必ず先に復帰。新規訪問では 1/30 動画を先に抽選し、
-        // 当選した訪問ではカワハライベントを重ねない。
+        // 進行中イベントは必ず先に復帰し、新規イベント2種の判定順だけを毎回ランダム化する。
         if (resumeGlabVisitVideoEvent()) break;
         if (resumeKawaharaKnowledgeEvent()) break;
-        if (maybeStartGlabVisitVideoEvent()) break;
-        if (maybeStartKawaharaKnowledgeEvent()) break;
+        if (tryRandomEventStarters([
+          () => maybeStartGlabVisitVideoEvent(),
+          () => maybeStartKawaharaKnowledgeEvent(),
+        ])) break;
       }
       setScreen(target, target === 'supplierMetals' ? { tab: button.dataset.tab || 'market' } : {});
       break;

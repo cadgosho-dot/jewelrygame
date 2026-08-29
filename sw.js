@@ -1,13 +1,13 @@
-const VERSION = '0.10.791';
+const VERSION = '0.10.799';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CACHE_PREFIX = 'jewelrygame-';
 const CORE_SHELL = [
-  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.791', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './js/app.js?v=0.10.791', './js/audio.js?v=0.10.791', './js/audio-scene-map.js?v=0.10.791', './js/game-data.js?v=0.10.791', './js/memories-screen.js?v=0.10.791', './js/memories-backgrounds.js?v=0.10.791', './js/daily-gems-index.js?v=0.10.691',
+  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.799', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
+  './manifest.webmanifest', './js/app.js?v=0.10.799', './js/audio.js?v=0.10.799', './js/audio-scene-map.js?v=0.10.799', './js/game-data.js?v=0.10.799', './js/memories-screen.js?v=0.10.799', './js/memories-backgrounds.js?v=0.10.799', './js/daily-gems-index.js?v=0.10.691',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.791', './js/security-config.js', './js/firebase-service.js?v=0.10.791', './js/local-save-storage.js?v=0.10.791',
+  './js/google-auth-bridge.js?v=0.10.799', './js/security-config.js', './js/firebase-service.js?v=0.10.799', './js/local-save-storage.js?v=0.10.799',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.759: seasonal main-screen backgrounds (landscape + portrait).
@@ -21,6 +21,7 @@ const CORE_SHELL = [
   './assets/images/main-menu-christmas.webp', './assets/images/main-menu-christmas-portrait.webp',
   './assets/images/main-menu-snow.webp', './assets/images/main-menu-snow-portrait.webp',
   './assets/images/events/yowamushi.png', './assets/images/events/one-love.png', './assets/images/loose/rosequartz/oval-cabochon.png',
+  './assets/images/events/hospital-room-landscape.jpg', './assets/images/events/hospital-room-portrait.jpg', './assets/audio/amb-hospital-clock.wav',
   // v0.10.666: large event images and quiz data are runtime-cached on first use instead of being downloaded during every SW install.
 ];
 

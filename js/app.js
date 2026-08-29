@@ -1,21 +1,22 @@
 import {
-  VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES,
+  VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.763';
+} from './game-data.js?v=0.10.784';
 
-const UI_BUILD_VERSION = '0.10.763';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.763';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.763';
+const UI_BUILD_VERSION = '0.10.784';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.784';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.784';
 import { japaneseHolidayName } from './japan-holidays.js';
 import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
-  loadState, saveState, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
-  createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, giftErrorMessage,
-} from './firebase-service.js?v=0.10.763';
+  loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
+  createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
+} from './firebase-service.js?v=0.10.784';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.784';
 
 
 
@@ -198,6 +199,8 @@ let hungerFeedbackTimer = null;
 let titleSettings = loadTitleSettings();
 let currentUser = null;
 let cloudSave = null;
+let indexedDbSave = null;
+let indexedDbStorageReady = false;
 let authReady = false;
 let startupSaveReady = false;
 let authEntryRequested = false;
@@ -408,6 +411,12 @@ const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'カワハラ';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE = 1 / 12;
+const ONE_LOVE_EVENT_CHANCE = 0.25;
+const ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY = 181;
+const ONE_LOVE_EVENT_COOLDOWN_DAYS = 180;
+const ONE_LOVE_EVENT_DISCOUNT_RATE = 0.80;
+const ONE_LOVE_EVENT_EFFECT_DAYS = 3;
+const ONE_LOVE_EVENT_IMAGE = './assets/images/events/one-love.png';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID = 'rosequartz';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID = 'ovalCabochon';
 const OKACHIMACHI_AREA_SCREENS = new Set([
@@ -422,6 +431,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   miningPazupanEvent: new Set(['intro', 'intro2', 'intro3', 'reward']),
   kappaJadeEvent: new Set(['intro1', 'intro2', 'reward', 'farewell']),
   workshopKappaJadeEvent: new Set(['rustle', 'greet', 'arrive', 'memory', 'fondness', 'giftLead', 'wish', 'reward', 'admire', 'farewell']),
+  oneLoveEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'intro5']),
   yowamushiRoseQuartzEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'reward', 'outro1', 'outro2']),
   okachimachiTollEvent: new Set(['intro1', 'intro2', 'intro3', 'jadeReward', 'paymentDemand', 'paymentNotice', 'farewell']),
   okachimachiInvasiveTurtlesEvent: new Set(['video', 'intro1', 'intro2', 'intro3']),
@@ -459,7 +469,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
 
 const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'bluesJukeEvent', 'birthdaySleepEvent', 'westernUnionEvent', 'mermaidEvent', 'tattooWomanAmberEvent', 'clockTowerDonationEvent',
-  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'sushiChefEvent', 'cyclopsEvent',
+  'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'oneLoveEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent', 'yowamushiRoseQuartzEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
   'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
@@ -483,6 +493,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
   kappaJadeEvent: { eventKey: 'kappaJadeEvent', fallback: 'mining' },
   workshopKappaJadeEvent: { eventKey: 'workshopKappaJadeEvent', fallback: 'workshop' },
+  oneLoveEvent: { eventKey: 'oneLoveEvent', fallback: 'workshop' },
   yowamushiRoseQuartzEvent: { eventKey: 'yowamushiRoseQuartzEvent', fallback: 'workshop' },
   okachimachiTollEvent: { eventKey: 'okachimachiTollEvent', fallback: 'okachimachi' },
   okachimachiInvasiveTurtlesEvent: { eventKey: 'okachimachiInvasiveTurtlesEvent', fallback: 'okachimachi' },
@@ -537,7 +548,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
     'bluesJukeEvent', 'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent', 'whiteBunnyIceEvent',
-    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent',
+    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent', 'oneLoveEvent',
   ]),
   sessionOnly: new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'robberyReport', 'kaitenzushi']),
 });
@@ -768,7 +779,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'blues-juke-event-next', 'winter-cold-event-next', 'birthday-sleep-event-next', 'western-union-video-start', 'western-union-choice', 'western-union-next',
   'pazupan-event-next', 'mermaid-event-next', 'tattoo-woman-amber-video-start', 'tattoo-woman-amber-event-next', 'tattoo-woman-amber-event-receive',
   'clock-tower-donation-event-next', 'cinema-visit-event-start', 'cinema-video-start', 'apprentice-cinema-event-next', 'apprentice-cinema-video-start', 'apprentice-cinema-video-finish', 'cinema-video-finish',
-  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'yowamushi-event-next', 'yowamushi-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
+  'kappa-jade-event-next', 'kappa-jade-event-receive', 'workshop-kappa-jade-event-next', 'workshop-kappa-jade-event-receive', 'one-love-event-next', 'yowamushi-event-next', 'yowamushi-event-receive', 'sushi-chef-event-next', 'cyclops-event-next',
   'cyclops-event-receive', 'ganesha-tusk-event-next', 'ganesha-tusk-event-receive',
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice',
@@ -2122,12 +2133,17 @@ function looseVariantRows({ ownedOnly = false } = {}) {
 const MEAL_FOOD_IMAGES = Object.freeze({
   ice: './assets/images/foods/ice-chocomint.png',
   convenience: './assets/images/foods/convenience.png',
+  convenienceChristmas: './assets/images/foods/convenience-christmas-v776.webp',
   chinese: './assets/images/foods/chinese.png',
-  korean: './assets/images/foods/korean.png',
-  indian: './assets/images/foods/indian.png',
+  korean: './assets/images/foods/korean-bibimbap-v781.webp',
+  koreanStone: './assets/images/foods/korean-stone-bibimbap-v782.webp',
+  indian: './assets/images/foods/indian-v777.webp',
   kebab: './assets/images/foods/kebab.png',
   ramen: './assets/images/foods/ramen.png',
   soba: './assets/images/foods/soba.png',
+  sobaMori: './assets/images/foods/soba-mori-v778.webp',
+  sobaKakeCurry: './assets/images/foods/soba-kake-curry-v779.webp',
+  sobaCroquette: './assets/images/foods/soba-croquette-v780.webp',
   hamburger: './assets/images/foods/hamburger.png',
 });
 
@@ -2342,6 +2358,36 @@ function versionedAsset(path) {
 }
 
 function mealFoodImage(mealId) {
+  if (mealId === 'convenience') {
+    const date = gameDateForDay(state?.game?.day || 1);
+    if (isValidGameDate(date) && date.getMonth() === 11 && (date.getDate() === 24 || date.getDate() === 25)) {
+      return versionedAsset(MEAL_FOOD_IMAGES.convenienceChristmas);
+    }
+  }
+  if (mealId === 'soba') {
+    const date = gameDateForDay(state?.game?.day || 1);
+    if (isValidGameDate(date) && (date.getMonth() === 6 || date.getMonth() === 7)) {
+      return versionedAsset(MEAL_FOOD_IMAGES.sobaMori);
+    }
+    const normalSobaImages = [MEAL_FOOD_IMAGES.soba, MEAL_FOOD_IMAGES.sobaKakeCurry, MEAL_FOOD_IMAGES.sobaCroquette];
+    const dayKey = Math.max(1, Math.trunc(Number(state?.game?.day) || 1));
+    const cache = mealFoodImage.normalSobaVariantCache || (mealFoodImage.normalSobaVariantCache = { dayKey: null, image: '' });
+    if (cache.dayKey !== dayKey || !normalSobaImages.includes(cache.image)) {
+      cache.dayKey = dayKey;
+      cache.image = normalSobaImages[Math.floor(Math.random() * normalSobaImages.length)];
+    }
+    return versionedAsset(cache.image);
+  }
+  if (mealId === 'korean') {
+    const koreanImages = [MEAL_FOOD_IMAGES.korean, MEAL_FOOD_IMAGES.koreanStone];
+    const dayKey = Math.max(1, Math.trunc(Number(state?.game?.day) || 1));
+    const cache = mealFoodImage.koreanVariantCache || (mealFoodImage.koreanVariantCache = { dayKey: null, image: '' });
+    if (cache.dayKey !== dayKey || !koreanImages.includes(cache.image)) {
+      cache.dayKey = dayKey;
+      cache.image = koreanImages[Math.floor(Math.random() * koreanImages.length)];
+    }
+    return versionedAsset(cache.image);
+  }
   return versionedAsset(MEAL_FOOD_IMAGES[mealId] || '');
 }
 
@@ -2465,7 +2511,7 @@ async function preparePhoneHomeImage(file) {
 
 const METAL_MARKET_CACHE_KEY = `${SAVE_KEY}-metal-market-v2`;
 const METAL_MARKET_FETCH_TIMEOUT_MS = 15000;
-const METAL_MARKET_TRADE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const METAL_MARKET_STALE_NOTICE_MS = 72 * 60 * 60 * 1000;
 
 const METAL_MARKET_FALLBACK = Object.freeze({
   status: 'unavailable',
@@ -2538,9 +2584,9 @@ function metalMarketTradeReady() {
   const purchase = metalMarket.purchasePerGramByMetalId || {};
   const sell = metalMarket.sellPerGramByMetalId || {};
   if (!['silver', 'gold', 'platinum'].every((id) => validPositivePrice(purchase[id]) && validPositivePrice(sell[id]))) return false;
-  const timestamp = metalMarketTimestampMs();
-  if (!timestamp) return false;
-  return Date.now() - timestamp <= METAL_MARKET_TRADE_MAX_AGE_MS;
+  // 最終正常取得値は、経過日数だけを理由に売買停止しない。
+  // 価格形式と取得日時が正常な「最後に検証済みの相場」であることだけを必須とする。
+  return metalMarketTimestampMs() > 0;
 }
 
 function cachedMetalMarketPayload() {
@@ -2562,7 +2608,8 @@ function restoreCachedMetalMarket() {
   const cached = cachedMetalMarketPayload();
   if (!cached?.data) return false;
   const cachedTimestamp = new Date(cached.data.updatedAt || cached.data.marketTimestamp || cached.savedAt || '').getTime();
-  if (!Number.isFinite(cachedTimestamp) || Date.now() - cachedTimestamp > METAL_MARKET_TRADE_MAX_AGE_MS) return false;
+  // オフラインやAPI停止が長期化しても、最後に検証済みの正常キャッシュを利用できるようにする。
+  if (!Number.isFinite(cachedTimestamp)) return false;
   try {
     applyMetalMarketData(cached.data, { statusOverride: 'cached' });
     return true;
@@ -2596,7 +2643,7 @@ function validSpotPrice(value) {
 
 function metalMarketIsStale() {
   const date = new Date(metalMarket.updatedAt || metalMarket.marketTimestamp || '');
-  return Number.isFinite(date.getTime()) && Date.now() - date.getTime() > 72 * 60 * 60 * 1000;
+  return Number.isFinite(date.getTime()) && Date.now() - date.getTime() > METAL_MARKET_STALE_NOTICE_MS;
 }
 
 function normalizeMetalHistory(rawHistory, currentSpot = {}, currentDate = null) {
@@ -2761,7 +2808,7 @@ function metalMarketSummary() {
   const stale = metalMarketIsStale();
   const tradeReady = metalMarketTradeReady();
   const title = metalMarket.status === 'cached' || stale ? '前回取得した地金相場' : '現実の地金相場と連動してます';
-  const caution = tradeReady ? '' : '　価格が古いため売買停止中';
+  const caution = !tradeReady ? '　価格情報が不完全なため売買停止中' : stale ? '　最終取得価格で売買中' : '';
   return `<div class="metal-market-summary ${stale || !tradeReady ? 'stale' : ''}"><strong>${title}</strong><small>最終更新：${esc(timestamp)}　取得元：${esc(metalMarket.sourceName)}${caution}</small></div>`;
 }
 
@@ -3011,6 +3058,10 @@ function metalRemainingCapacity(id) {
 
 function metalTradePricePerGram(mode, id) {
   if (!metalMarketTradeReady()) return 0;
+  if (mode !== 'sell') {
+    const oneLovePrice = oneLoveFixedPurchasePrice(id);
+    if (validPositivePrice(oneLovePrice)) return Math.round(oneLovePrice);
+  }
   const table = mode === 'sell' ? metalMarket.sellPerGramByMetalId : metalMarket.purchasePerGramByMetalId;
   const price = Number(table?.[id]);
   return validPositivePrice(price) ? Math.round(price) : 0;
@@ -3770,6 +3821,58 @@ function enableLocalSingleCopyMode() {
   try { localStorage.setItem(localSaveStorageModeKey(), 'single-copy'); } catch (_) {}
 }
 
+function persistBootLocalStateSafely(savedState, label = '起動時セーブ') {
+  let serialized = '';
+  try {
+    serialized = JSON.stringify(savedState);
+  } catch (error) {
+    console.warn(`${label}の端末保存準備に失敗しました。クラウド/メモリ上のセーブで起動を続行します。`, error);
+    return false;
+  }
+
+  const writePrimary = () => localStorage.setItem(localSaveKey(), serialized);
+  try {
+    writePrimary();
+    return true;
+  } catch (error) {
+    if (!isLocalStorageQuotaError(error)) {
+      console.warn(`${label}の端末保存に失敗しました。クラウド/メモリ上のセーブで起動を続行します。`, error);
+      return false;
+    }
+  }
+
+  console.warn(`${label}の端末保存容量が不足したため、端末内バックアップを整理して再保存します。`);
+  enableLocalSingleCopyMode();
+  try {
+    writePrimary();
+    return true;
+  } catch (retryError) {
+    console.warn(`${label}を端末へ保存できませんでした。クラウド/メモリ上のセーブで起動を続行します。`, retryError);
+    return false;
+  }
+}
+
+async function persistIndexedDbStateSafely(uid, savedState, label = '端末セーブ') {
+  if (!uid || !savedState) return false;
+  try {
+    await writeIndexedDbSave(uid, savedState);
+    indexedDbSave = structuredClone(savedState);
+    indexedDbStorageReady = true;
+    return true;
+  } catch (error) {
+    indexedDbStorageReady = false;
+    console.warn(`${label}をIndexedDBへ保存できませんでした。localStorage／クラウドの安全網を継続します。`, error);
+    return false;
+  }
+}
+
+async function persistBootDeviceStateSafely(savedState, label = '起動時セーブ') {
+  const uid = currentUser?.uid || '';
+  const indexedDbSaved = await persistIndexedDbStateSafely(uid, savedState, label);
+  const legacySaved = persistBootLocalStateSafely(savedState, label);
+  return indexedDbSaved || legacySaved;
+}
+
 function saveStateFingerprint(value = state) {
   if (!value) return '';
   try {
@@ -3880,9 +3983,21 @@ function localSavedState() {
   }
 }
 
+function preferredDeviceSavedState() {
+  const legacyLocalSave = localSavedState();
+  const preferred = chooseNewestSavedState(indexedDbSave, legacyLocalSave);
+  if (preferred.source === 'local') return { source: 'indexeddb', state: preferred.state };
+  if (preferred.source === 'cloud') return { source: 'local', state: preferred.state };
+  return { source: 'none', state: null };
+}
+
 function preferredSavedState() {
   const safeCloudSave = isSaveStateCandidate(cloudSave) ? cloudSave : null;
-  return chooseNewestSavedState(localSavedState(), safeCloudSave);
+  const device = preferredDeviceSavedState();
+  const preferred = chooseNewestSavedState(device.state, safeCloudSave);
+  if (preferred.source === 'local') return { source: device.source, state: preferred.state };
+  if (preferred.source === 'cloud') return { source: 'cloud', state: preferred.state };
+  return { source: 'none', state: null };
 }
 
 function loadGame() {
@@ -3991,6 +4106,10 @@ function saveLocalBackup({ fingerprint = null, createCloudSnapshot = true, updat
 function saveGame(message = false) {
   if (!state) return Promise.resolve();
   syncGameClearState();
+  // v0.10.771: 保存前に不要な終了履歴と古い収支明細を整理し、セーブサイズを一定範囲に保つ。
+  // 進行中注文・未販売商品・累計値には触れない。
+  compactLongTermHistory(state);
+  compactFinanceHistory(state);
   if (!currentUser || sessionTakenOver) return Promise.resolve();
   if (autosaveTimer) {
     clearTimeout(autosaveTimer);
@@ -4008,27 +4127,37 @@ function saveGame(message = false) {
     return Promise.resolve();
   }
 
-  if (!localResult.saved) {
-    showAutosaveStatus(
-      'error',
-      localResult.quota ? '端末容量不足／クラウド保存を続行しています' : '端末保存失敗／クラウド保存を続行しています',
-      { persistent: true },
-    );
-  } else if (localResult.quotaRecoveryUsed) {
+  if (localResult.saved && localResult.quotaRecoveryUsed) {
     showAutosaveStatus('saved', '端末容量を節約して保存しました');
   }
 
-  // 端末保存の成否に関係なく、作成済みスナップショットをクラウドへ送る。
-  // 長期プレイ端末がlocalStorage上限に達しても進行を失わない。
+  // 通常保存ではIndexedDBを端末側の第一保存先とする。
+  // localStorageは旧版互換・終了直前の同期バックアップとして残し、どちらか一方が失敗してもクラウド保存を続行する。
   const userId = currentUser.uid;
   const cloudFingerprint = fingerprint || saveStateFingerprint(snapshot);
+  let deviceSaved = Boolean(localResult.saved);
   saveQueue = saveQueue
     .catch(() => {})
-    .then(() => saveState(userId, snapshot))
+    .then(async () => {
+      const indexedDbSaved = await persistIndexedDbStateSafely(userId, snapshot, '通常セーブ');
+      deviceSaved = indexedDbSaved || Boolean(localResult.saved);
+      if (indexedDbSaved) {
+        lastSuccessfulSaveAt = String(snapshot.updatedAt || lastSuccessfulSaveAt || '');
+        lastSavedFingerprint = cloudFingerprint;
+        if (!localResult.saved) showAutosaveStatus('saved', '端末に保存しました（IndexedDB）');
+      } else if (!deviceSaved) {
+        showAutosaveStatus(
+          'error',
+          localResult.quota ? '端末容量不足／クラウド保存を続行しています' : '端末保存失敗／クラウド保存を続行しています',
+          { persistent: true },
+        );
+      }
+      return saveState(userId, snapshot);
+    })
     .then(() => {
       cloudSave = snapshot;
       lastCloudSavedFingerprint = cloudFingerprint;
-      if (!localResult.saved) {
+      if (!deviceSaved) {
         cloudSaveFailureActive = false;
         showAutosaveStatus('saved', 'クラウドに保存しました（端末容量不足）');
       } else if (cloudSaveFailureActive) {
@@ -4040,8 +4169,8 @@ function saveGame(message = false) {
       cloudSaveFailureActive = true;
       const cloudMessage = firebaseErrorMessage(error, 'cloud-save');
       console.error('[Cloud Save]', { code: error?.code || '', message: error?.message || '', detail: error?.detail || null }, error);
-      if (localResult.saved) {
-        // 端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
+      if (deviceSaved) {
+        // IndexedDBまたはlocalStorageへの端末保存は成功しているので、中央の大きなエラーは出さず下部ステータスだけで通知する。
         showAutosaveStatus('error', `端末保存済み／${cloudMessage}`, { persistent: true });
       } else {
         // 両方失敗した場合だけ、進行を続けず再試行した方がよいことを明確にする。
@@ -5183,7 +5312,7 @@ function addNotification(title, body, type = 'info') {
 
 function addFinance(label, income = 0, expense = 0) {
   state.finance.push({ id: uid(), day: state.game.day, label, income, expense });
-  state.finance = state.finance.slice(-2000);
+  compactFinanceHistory(state);
   state.daily.income += income;
   state.daily.expense += expense;
 }
@@ -7675,6 +7804,132 @@ function advanceWorkshopKappaJadeEvent() {
     else playSfx('select', { gain: 0.82 });
     render();
     return;
+  }
+}
+
+function oneLoveEventState() {
+  state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+  const saved = state.events.oneLoveEvent && typeof state.events.oneLoveEvent === 'object' && !Array.isArray(state.events.oneLoveEvent)
+    ? state.events.oneLoveEvent
+    : {};
+  const activeStages = new Set(['intro1', 'intro2', 'intro3', 'intro4', 'intro5']);
+  const validStages = new Set(['idle', ...activeStages, 'completed']);
+  const lastTriggeredDay = Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0));
+  const primarySnapshot = saved.purchasePriceSnapshotByMetalId && typeof saved.purchasePriceSnapshotByMetalId === 'object' && !Array.isArray(saved.purchasePriceSnapshotByMetalId)
+    ? saved.purchasePriceSnapshotByMetalId
+    : null;
+  const legacySnapshot = saved.basePurchasePerGramByMetalId && typeof saved.basePurchasePerGramByMetalId === 'object' && !Array.isArray(saved.basePurchasePerGramByMetalId)
+    ? saved.basePurchasePerGramByMetalId
+    : {};
+  const rawSnapshot = primarySnapshot || legacySnapshot;
+  const purchasePriceSnapshotByMetalId = {};
+  Object.keys(METALS).forEach((id) => {
+    const price = Number(rawSnapshot[id]);
+    const migrationFallback = Number(metalMarket?.purchasePerGramByMetalId?.[id]);
+    if (validPositivePrice(price)) purchasePriceSnapshotByMetalId[id] = Math.round(price);
+    else if (lastTriggeredDay > 0 && validPositivePrice(migrationFallback)) purchasePriceSnapshotByMetalId[id] = Math.round(migrationFallback);
+  });
+  const active = Boolean(saved.active);
+  const migratedStage = saved.stage === 'intro' ? 'intro1' : saved.stage;
+  state.events.oneLoveEvent = {
+    nextTriggerDay: Math.max(
+      ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY,
+      Math.floor(Number(saved.nextTriggerDay) || 0),
+      lastTriggeredDay > 0 ? lastTriggeredDay + ONE_LOVE_EVENT_COOLDOWN_DAYS + 1 : ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY,
+    ),
+    lastTriggeredDay,
+    totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
+    lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
+    active,
+    stage: active
+      ? (activeStages.has(migratedStage) ? migratedStage : 'intro1')
+      : (validStages.has(migratedStage) ? migratedStage : 'idle'),
+    purchasePriceSnapshotByMetalId,
+  };
+  if (!state.events.oneLoveEvent.active && !['idle', 'completed'].includes(state.events.oneLoveEvent.stage)) state.events.oneLoveEvent.stage = 'completed';
+  return state.events.oneLoveEvent;
+}
+
+function oneLoveEffectActive(gameDay = state?.game?.day, eventState = oneLoveEventState()) {
+  const day = Math.max(0, Math.floor(Number(gameDay) || 0));
+  const eventDay = Math.max(0, Math.floor(Number(eventState?.lastTriggeredDay) || 0));
+  return eventDay > 0 && day >= eventDay + 1 && day <= eventDay + ONE_LOVE_EVENT_EFFECT_DAYS;
+}
+
+function oneLoveFixedPurchasePrice(id) {
+  const eventState = oneLoveEventState();
+  if (!oneLoveEffectActive(state?.game?.day, eventState)) return null;
+  const eventDayPrice = Number(eventState.purchasePriceSnapshotByMetalId?.[id]);
+  if (!validPositivePrice(eventDayPrice)) return null;
+  return Math.max(1, Math.round(eventDayPrice * ONE_LOVE_EVENT_DISCOUNT_RATE));
+}
+
+function captureOneLoveMetalPurchasePrices() {
+  const snapshot = {};
+  Object.keys(METALS).forEach((id) => {
+    const price = Number(metalMarket.purchasePerGramByMetalId?.[id]);
+    if (validPositivePrice(price)) snapshot[id] = Math.round(price);
+  });
+  return snapshot;
+}
+
+function resumeOneLoveEvent() {
+  const eventState = oneLoveEventState();
+  if (!eventState.active) return false;
+  setScreen('oneLoveEvent', {}, false);
+  return true;
+}
+
+function maybeStartOneLoveEvent() {
+  if (illnessEventSuppressionActive()) return false;
+  const eventState = oneLoveEventState();
+  if (eventState.active) return resumeOneLoveEvent();
+  const day = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (day < Math.max(ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY, Number(eventState.nextTriggerDay) || 0)) return false;
+  if (!markVisitEventCheckOncePerDay(eventState)) return false;
+  if (Math.random() >= ONE_LOVE_EVENT_CHANCE) {
+    saveGame();
+    return false;
+  }
+  const snapshot = captureOneLoveMetalPurchasePrices();
+  if (!Object.keys(snapshot).length) {
+    saveGame();
+    return false;
+  }
+  eventState.lastTriggeredDay = day;
+  eventState.totalTriggered += 1;
+  eventState.active = true;
+  eventState.stage = 'intro1';
+  eventState.nextTriggerDay = day + ONE_LOVE_EVENT_COOLDOWN_DAYS + 1;
+  eventState.purchasePriceSnapshotByMetalId = snapshot;
+  saveGame();
+  setScreen('oneLoveEvent', {}, false);
+  playSfx('kappa-appear', { gain: 0.9, rate: 0.86 });
+  vibrate([18, 30, 36]);
+  return true;
+}
+
+function advanceOneLoveEvent() {
+  const eventState = oneLoveEventState();
+  if (!eventState.active) {
+    setScreen('workshop', {}, false);
+    return;
+  }
+  const order = ['intro1', 'intro2', 'intro3', 'intro4', 'intro5'];
+  const index = order.indexOf(eventState.stage);
+  if (eventState.stage === 'intro5') {
+    eventState.active = false;
+    eventState.stage = 'completed';
+    saveGame();
+    playSfx('select', { gain: 0.75 });
+    setScreen('workshop', {}, false);
+    return;
+  }
+  if (index >= 0 && index < order.length - 1) {
+    eventState.stage = order[index + 1];
+    saveGame();
+    playSfx('select', { gain: 0.75 });
+    render();
   }
 }
 
@@ -11234,7 +11489,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', oneLoveEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -12016,6 +12271,7 @@ function render() {
       whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
       kappaJadeEvent: renderKappaJadeEvent,
       workshopKappaJadeEvent: renderWorkshopKappaJadeEvent,
+      oneLoveEvent: renderOneLoveEvent,
       yowamushiRoseQuartzEvent: renderYowamushiRoseQuartzEvent,
       sushiChefEvent: renderSushiChefEvent,
       cyclopsEvent: renderCyclopsEvent,
@@ -13136,6 +13392,28 @@ function financePeriodRows(period = state?.game?.financePeriod) {
     }
     return rowDate.getFullYear() === current.getFullYear();
   });
+}
+
+function financePeriodTotals(period = state?.game?.financePeriod, rows = financePeriodRows(period)) {
+  const resolved = validFinancePeriod(period);
+  const summary = state?.financeSummary && typeof state.financeSummary === 'object' ? state.financeSummary : {};
+  const currentKey = dateKey(gameDate());
+  let income = rows.reduce((sum, row) => sum + Number(row.income || 0), 0);
+  let expense = rows.reduce((sum, row) => sum + Number(row.expense || 0), 0);
+  if (resolved === 'cumulative') {
+    income += Math.max(0, Number(summary.archivedIncome) || 0);
+    expense += Math.max(0, Number(summary.archivedExpense) || 0);
+  } else if (resolved === 'today' && String(summary.dayKey || '') === currentKey) {
+    income += Math.max(0, Number(summary.dayIncome) || 0);
+    expense += Math.max(0, Number(summary.dayExpense) || 0);
+  } else if (resolved === 'month' && String(summary.monthKey || '') === currentKey.slice(0, 7)) {
+    income += Math.max(0, Number(summary.monthIncome) || 0);
+    expense += Math.max(0, Number(summary.monthExpense) || 0);
+  } else if (resolved === 'year' && String(summary.yearKey || '') === currentKey.slice(0, 4)) {
+    income += Math.max(0, Number(summary.yearIncome) || 0);
+    expense += Math.max(0, Number(summary.yearExpense) || 0);
+  }
+  return { income, expense };
 }
 
 function financePeriodHeading(period = state?.game?.financePeriod) {
@@ -14467,6 +14745,36 @@ function renderKappaJadeEvent() {
     </main>`;
 }
 
+
+function renderOneLoveEvent() {
+  const eventState = oneLoveEventState();
+  if (!eventState.active) {
+    queueMicrotask(() => setScreen('workshop', {}, false));
+    return renderWorkshop();
+  }
+  const dialogueMap = {
+    intro1: 'yeah man、、、○○○♪、、、、',
+    intro2: 'いい情報持ってきてやったぜ、、、',
+    intro3: 'いいか、？、、明日から3日間の間、、、地金の相場が下がる、、、、',
+    intro4: '信用出来るところからの情報だから、、あとはオマエの好きにしな、、、、',
+    intro5: 'いつも助けてもらってるからな、、、いいってことよ、、、\nそれじゃな、、、Bless up、、、',
+  };
+  const finalLine = eventState.stage === 'intro5';
+  const dialogue = dialogueMap[eventState.stage] || dialogueMap.intro1;
+  return `
+    <main class="main-screen kappa-jade-event-screen one-love-event-screen">
+      <section class="visit-character-event kappa-jade-event one-love-event" aria-live="polite">
+        <div class="visit-character-area" aria-hidden="true">
+          <img class="visit-character kappa-character workshop-kappa-character one-love-character" src="${ONE_LOVE_EVENT_IMAGE}?v=${VERSION}" alt="" draggable="false">
+        </div>
+        <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel one-love-dialogue" data-action="one-love-event-next" aria-label="${finalLine ? 'タップして工房へ戻る' : 'タップして会話を進める'}">
+          <small>ONE LOVE</small>
+          <strong>${esc(dialogue)}</strong>
+          <span>${finalLine ? 'タップして工房へ戻る' : 'タップして進む'}</span>
+        </button>
+      </section>
+    </main>`;
+}
 
 function renderWorkshopKappaJadeEvent() {
   const eventState = workshopKappaJadeEventState();
@@ -16365,7 +16673,7 @@ function confirmJewelryShopTrade() {
   if (!item) return showToast('この商品は現在売却できません。', 'error');
   const offer = jewelryShopSellOffer(item);
   const profit = offer - Math.max(0, Number(item.cost) || 0);
-  removeJewelry(item.id);
+  removeJewelry(item.id, { price: offer, channel: 'jewelryShop' });
   state.game.money += offer;
   spendHours(JEWELRY_SHOP_TRANSACTION_HOURS);
   state.daily.sold.push({ itemId: item.id, name: item.name, price: offer, profit, channel: 'jewelryShop' });
@@ -17503,7 +17811,7 @@ function applyStoreTheftEventLoss() {
   const itemId = String(eventState.targetItemId || '');
   const itemName = String(eventState.targetItemName || '完成品');
   const item = state.inventory?.jewelry?.find((entry) => entry.id === itemId && entry.status === 'displayed');
-  if (item) removeJewelry(item.id);
+  if (item) removeJewelry(item.id, { reason: 'stolen' });
   eventState.theftApplied = true;
   addNotification('店舗で盗難が発生しました', `${itemName}が盗まれていました。`, 'warning');
 }
@@ -18103,9 +18411,12 @@ function orderCustomerProfile(customerId, order = null) {
 
 function renderOrders() {
   const active = state.orders.filter((order) => !orderClosed(order));
-  const completed = state.orders
+  const completedSource = [
+    ...(state.orders || []).filter((order) => orderClosed(order)),
+    ...(state.history?.closedOrders || []),
+  ];
+  const completed = completedSource
     .map((order, index) => ({ order, index }))
-    .filter(({ order }) => orderClosed(order))
     .sort((a, b) => orderClosedSortValue(b.order, b.index) - orderClosedSortValue(a.order, a.index))
     .map(({ order }) => order);
   const rows = active.map((order) => {
@@ -19095,8 +19406,8 @@ function persistTransactionalGiftState(nextState) {
   ensureGiftState(state);
   syncFinishedJewelryCapacity();
   cloudSave = structuredClone(state);
-  localStorage.setItem(localSaveKey(), JSON.stringify(state));
-  localStorage.setItem(`${SAVE_KEY}-settings`, JSON.stringify(state.settings));
+  // Firebase側がクラウド確定後に容量対策付きで端末保存するため、
+  // ここでは再度localStorageへ直接書かない。クラウド成功を端末容量不足で失敗扱いにしない。
 }
 
 function giftStatusLabel(status) {
@@ -19287,6 +19598,10 @@ async function createGiftFromDraft() {
   render();
   try {
     await saveGame();
+    // プレゼント発行は在庫をクラウド側でも同時に確定するため、
+    // 通常セーブのPromise終了だけでなく、saveMeta/currentへ今回のsaveRevisionが
+    // 実際に反映されたことを確認してからコード発行へ進む。
+    await confirmGiftCloudSave(currentUser.uid, state.saveRevision);
     const result = await createGiftCode(currentUser.uid, state.playerName, payload, removeGiftFromGameState);
     persistTransactionalGiftState(result.gameState);
     giftLastCreated = { code: result.code, payload };
@@ -19297,7 +19612,12 @@ async function createGiftFromDraft() {
     render();
   } catch (error) {
     console.error('プレゼントコード発行エラー', error);
-    showToast(giftErrorMessage(error), 'error');
+    // 発行直前にクラウド確認を行っているため、ここでno-saveになった場合も
+    // 「手動保存してください」ではなく、通信／クラウド同期の再試行案内に統一する。
+    const displayError = error?.code === 'gift/no-save'
+      ? Object.assign(new Error('プレゼント発行前のクラウド保存を確認できませんでした。'), { code: 'gift/cloud-save-unavailable' })
+      : error;
+    showToast(giftErrorMessage(displayError), 'error');
   } finally {
     giftBusy = false;
     if (screen === 'phone' && phoneTab === 'gift') render();
@@ -19599,7 +19919,8 @@ function aiLooseInventoryRows() {
 }
 
 function aiJewelryRows() {
-  return (state.inventory.jewelry || []).map((jewelry) => ({
+  const rows = [...(state.inventory.jewelry || []), ...(state.history?.soldJewelry || [])];
+  return rows.map((jewelry) => ({
     id: jewelry.id,
     name: jewelry.name || itemName(jewelry),
     item: ITEMS[jewelry.item]?.name || jewelry.item,
@@ -19623,7 +19944,8 @@ function aiJewelryRows() {
 }
 
 function aiOrderRows() {
-  return (state.orders || []).map((order) => ({
+  const rows = [...(state.orders || []), ...(state.history?.closedOrders || [])];
+  return rows.map((order) => ({
     id: order.id,
     customerName: order.customerName,
     item: ITEMS[order.item]?.name || order.item,
@@ -19972,8 +20294,7 @@ function renderPhoneContent() {
     const period = validFinancePeriod(state.game.financePeriod);
     state.game.financePeriod = period;
     const rows = financePeriodRows(period);
-    const income = rows.reduce((sum, row) => sum + Number(row.income || 0), 0);
-    const expense = rows.reduce((sum, row) => sum + Number(row.expense || 0), 0);
+    const { income, expense } = financePeriodTotals(period, rows);
     const balance = income - expense;
     const outstanding = totalOutstandingBusinessCost();
     return `<section class="phone-finance-screen"><nav class="finance-period-tabs" aria-label="収支の表示期間">
@@ -19993,6 +20314,94 @@ function renderPhoneContent() {
   if (phoneTab === 'aquarium') return renderPhoneAquarium();
   if (phoneTab === 'ai') return renderPhoneAI();
   return renderSettingsForm(false, true);
+}
+
+function formatSaveDiagnosticBytes(value) {
+  const bytes = Math.max(0, Number(value) || 0);
+  if (bytes < 1024) return `${Math.round(bytes).toLocaleString('ja-JP')} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function formatSaveDiagnosticDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('ja-JP');
+}
+
+function buildSaveDiagnosticsSnapshot() {
+  const snapshot = structuredClone(state || {});
+  // v0.10.771: 内部診断も実セーブと同じ整理後サイズを測る。実stateは変更しない。
+  compactLongTermHistory(snapshot);
+  compactFinanceHistory(snapshot);
+  snapshot.saveRevision = Math.max(0, Math.floor(Number(snapshot.saveRevision) || 0)) + 1;
+  snapshot.updatedAt = new Date().toISOString();
+  if (snapshot.inventory && Object.prototype.hasOwnProperty.call(snapshot.inventory, 'general')) delete snapshot.inventory.general;
+  if (snapshot.inventory && Object.prototype.hasOwnProperty.call(snapshot.inventory, 'gems')) delete snapshot.inventory.gems;
+  snapshot.migrations = snapshot.migrations && typeof snapshot.migrations === 'object' && !Array.isArray(snapshot.migrations) ? snapshot.migrations : {};
+  snapshot.migrations.looseInventoryCanonicalV231 = true;
+  snapshot.saveSchemaVersion = SAVE_SCHEMA_VERSION;
+  const raw = JSON.stringify(snapshot);
+  return {
+    bytes: new TextEncoder().encode(raw).length,
+    nextSaveRevision: snapshot.saveRevision,
+    archivedClosedOrders: Array.isArray(snapshot.history?.closedOrders) ? snapshot.history.closedOrders.length : 0,
+    archivedSoldJewelry: Array.isArray(snapshot.history?.soldJewelry) ? snapshot.history.soldJewelry.length : 0,
+  };
+}
+
+function saveDiagnosticsCapacityLabel(projectedCount, maxCount) {
+  if (maxCount <= 0) return '確認不能';
+  if (projectedCount > maxCount) return 'クラウド上限超過';
+  if (projectedCount === maxCount) return '上限付近';
+  if (projectedCount >= Math.ceil(maxCount * 0.8)) return '注意';
+  return '余裕あり';
+}
+
+async function showSaveDiagnostics() {
+  if (!state) return;
+  const local = buildSaveDiagnosticsSnapshot();
+  let cloud = null;
+  let cloudError = null;
+  if (currentUser?.uid) {
+    try {
+      cloud = await getCloudSaveDiagnostics(currentUser.uid);
+    } catch (error) {
+      cloudError = error;
+      console.warn('セーブ容量診断のクラウド管理情報を取得できませんでした。', error);
+    }
+  }
+  const chunkRawBytes = Math.max(1, Number(cloud?.chunkRawBytes) || (384 * 1024));
+  const maxCount = Math.max(1, Math.floor(Number(cloud?.maxCount) || 64));
+  const projectedCount = local.bytes ? Math.ceil(local.bytes / chunkRawBytes) : 0;
+  const currentCloudChunkLabel = cloud?.mode === 'chunked'
+    ? `${Math.max(0, Math.floor(Number(cloud.count) || 0))} / ${maxCount}`
+    : (cloud?.mode === 'preview' ? `${Math.max(0, Math.floor(Number(cloud.count) || 0))}（プレビュー）` : '—');
+  const currentCloudBytes = Number(cloud?.bytes) > 0 ? formatSaveDiagnosticBytes(cloud.bytes) : '—';
+  const cloudSourceNote = cloud?.source === 'cache' ? '直近取得済み情報' : '';
+  showModal({
+    title: 'セーブ容量診断',
+    body: `<p>現在のセーブ容量を読み取り専用で確認します。<strong>ゲームデータやsaveRevisionは変更しません。</strong></p>
+      <div class="stat-grid">
+        <div><small>次回JSON予測</small><strong>${formatSaveDiagnosticBytes(local.bytes)}</strong></div>
+        <div><small>次回チャンク予測</small><strong>${projectedCount} / ${maxCount}</strong></div>
+        <div><small>完了注文アーカイブ</small><strong>${local.archivedClosedOrders.toLocaleString('ja-JP')}件</strong></div>
+        <div><small>売却済みアーカイブ</small><strong>${local.archivedSoldJewelry.toLocaleString('ja-JP')}件</strong></div>
+      </div>
+      <p><strong>容量判定：${esc(saveDiagnosticsCapacityLabel(projectedCount, maxCount))}</strong></p>
+      <div class="stat-grid">
+        <div><small>現在クラウド容量</small><strong>${esc(currentCloudBytes)}</strong></div>
+        <div><small>現在クラウドチャンク</small><strong>${esc(currentCloudChunkLabel)}</strong></div>
+        <div><small>クラウドsaveRevision</small><strong>${cloud ? Math.max(0, Math.floor(Number(cloud.saveRevision) || 0)).toLocaleString('ja-JP') : '—'}</strong></div>
+        <div><small>クラウド更新</small><strong>${esc(formatSaveDiagnosticDate(cloud?.updatedAt))}</strong></div>
+      </div>
+      ${cloudError ? '<p class="small-note">クラウド管理情報は取得できなかったため、端末上の次回保存予測だけを表示しています。</p>' : ''}
+      ${cloudSourceNote ? `<p class="small-note">クラウド値は${esc(cloudSourceNote)}です。</p>` : ''}
+      <p class="small-note">クラウドは1チャンクあたり約${formatSaveDiagnosticBytes(chunkRawBytes)}、最大${maxCount}チャンクです。診断を開くだけでは保存処理を行いません。次回保存予測のsaveRevisionは ${local.nextSaveRevision.toLocaleString('ja-JP')} です。</p>`,
+    confirm: '閉じる',
+    action: 'modal-close',
+    hideCancel: true,
+  });
 }
 
 function renderSettings(titleMode) {
@@ -20646,13 +21055,24 @@ function showMoveShowcaseItemModal(itemId) {
   });
 }
 
-function removeJewelry(itemId) {
+function removeJewelry(itemId, saleMeta = {}) {
   for (const branch of state.store.branches || []) {
     branch.showcases = branchShowcases(branch).map((showcase) => ({ ...showcase, slots: (showcase.slots || []).map((slot) => slot?.jewelryId === itemId ? null : slot) }));
   }
   const item = state.inventory.jewelry.find((entry) => entry.id === itemId);
   if (item) {
     item.status = 'sold';
+    item.removedDay = Math.max(1, Number(state.game.day) || 1);
+    const price = Number(saleMeta.price);
+    if (Number.isFinite(price)) {
+      item.soldDay = item.removedDay;
+      item.soldPrice = Math.round(price);
+      item.soldProfit = Math.round(price - Math.max(0, Number(item.cost) || 0));
+    }
+    if (saleMeta.branchNumber != null) item.soldBranchNumber = Math.max(1, Math.floor(Number(saleMeta.branchNumber) || 1));
+    if (saleMeta.channel) item.soldChannel = String(saleMeta.channel);
+    if (saleMeta.reason) item.removalReason = String(saleMeta.reason);
+    else if (item.stolenDay) item.removalReason = 'stolen';
     delete item.displayBranchNumber;
   }
   mirrorCurrentStoreDisplay(currentStoreBranch());
@@ -20685,7 +21105,7 @@ function customerBuy(customerId, itemId) {
     customerState.activeRequest = null;
     customerState.wishesHeard = false;
     customerState.proposedItemIds = [];
-    removeJewelry(itemId);
+    removeJewelry(itemId, { price, branchNumber: state.store.branchNumber, channel: 'customer' });
     state.game.money += price;
     startMoneyFeedback(price);
     state.store.salesCount += 1;
@@ -20921,6 +21341,12 @@ function deliverOrder(orderId, { immediateFromCompletion = false } = {}) {
   order.closedDay = state.game.day;
   order.deliveredDay = state.game.day;
   item.status = 'sold';
+  item.removedDay = state.game.day;
+  item.soldDay = state.game.day;
+  item.soldPrice = Math.round(Number(order.price) || 0);
+  item.soldProfit = Math.round((Number(order.price) || 0) - Math.max(0, Number(item.cost) || 0));
+  item.soldBranchNumber = Math.max(1, Number(order.branchNumber) || 1);
+  item.soldChannel = 'order';
   state.game.money += order.price;
   startMoneyFeedback(order.price);
   state.store.salesCount += 1;
@@ -21729,6 +22155,12 @@ function autopilotDeliverCompletedOrders(summary) {
     order.closedDay = state.game.day;
     order.deliveredDay = state.game.day;
     item.status = 'sold';
+    item.removedDay = state.game.day;
+    item.soldDay = state.game.day;
+    item.soldPrice = Math.round(Number(order.price) || 0);
+    item.soldProfit = Math.round((Number(order.price) || 0) - Math.max(0, Number(item.cost) || 0));
+    item.soldBranchNumber = Math.max(1, Number(order.branchNumber) || 1);
+    item.soldChannel = 'order-autopilot';
     state.game.money += order.price;
     state.store.salesCount += 1;
     state.store.totalRevenue += order.price;
@@ -21845,7 +22277,7 @@ function autopilotWholesaleStoredItems(summary) {
     if (!autopilotCanSpendHours(JEWELRY_SHOP_TRANSACTION_HOURS, summary)) break;
     const offer = jewelryShopSellOffer(item);
     const profit = offer - Math.max(0, Number(item.cost) || 0);
-    removeJewelry(item.id);
+    removeJewelry(item.id, { price: offer, channel: 'jewelryShop-autopilot' });
     state.game.money += offer;
     spendHours(JEWELRY_SHOP_TRANSACTION_HOURS);
     state.daily.sold.push({ itemId: item.id, name: item.name, price: offer, profit, channel: 'jewelryShop', autopilot: true });
@@ -22088,7 +22520,7 @@ function settleDay({ showResult = true, save = true } = {}) {
           : 0.035;
         const chance = clamp(normalChance * (pearlHumanEffectActive() ? 2 : 1), 0, 1);
         if (Math.random() < chance) {
-          removeJewelry(item.id);
+          removeJewelry(item.id, { price, branchNumber: branch.number, channel: 'showcase' });
           jewelryById.delete(item.id);
           state.game.money += price;
           state.store.salesCount += 1;
@@ -22596,6 +23028,9 @@ async function deleteSave() {
   if (!currentUser) return;
   try {
     await deleteGameData(currentUser.uid);
+    await deleteIndexedDbSave(currentUser.uid).catch((error) => console.warn('IndexedDB端末セーブの削除に失敗しました。', error));
+    indexedDbSave = null;
+    indexedDbStorageReady = false;
     localStorage.removeItem(localSaveKey());
     removeLocalStorageItemQuietly(localSaveBackupKey());
     removeLocalStorageItemQuietly(localSavePreMigrationKey());
@@ -22646,6 +23081,8 @@ function clearAllClientAccountData() {
   try { sessionStorage.clear(); } catch (_) {}
   titleSettings = structuredClone(initialState().settings);
   cloudSave = null;
+  indexedDbSave = null;
+  indexedDbStorageReady = false;
   state = null;
   craftDraft = null;
   completionId = null;
@@ -22663,6 +23100,9 @@ async function executeAccountDeletion() {
   try {
     await saveQueue.catch(() => {});
     await deleteAccountCompletely(password);
+    await deleteIndexedDbSave(currentUser.uid).catch((error) => console.warn('削除済みアカウントのIndexedDB端末セーブを削除できませんでした。', error));
+    indexedDbSave = null;
+    indexedDbStorageReady = false;
     if (stopSessionWatch) { stopSessionWatch(); stopSessionWatch = null; }
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     clearAllClientAccountData();
@@ -23132,6 +23572,9 @@ root.addEventListener('click', async (event) => {
     case 'workshop-kappa-jade-event-receive':
       receiveWorkshopKappaJadeReward();
       break;
+    case 'one-love-event-next':
+      advanceOneLoveEvent();
+      break;
     case 'yowamushi-event-next':
       advanceYowamushiRoseQuartzEvent();
       break;
@@ -23280,8 +23723,10 @@ root.addEventListener('click', async (event) => {
       if (target === 'workshop') {
         if (resumeWorkshopKappaJadeEvent()) break;
         if (resumeYowamushiRoseQuartzEvent()) break;
+        if (resumeOneLoveEvent()) break;
         if (maybeStartWorkshopKappaJadeEvent()) break;
         if (maybeStartYowamushiRoseQuartzEvent()) break;
+        if (maybeStartOneLoveEvent()) break;
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {
@@ -24073,19 +24518,41 @@ async function boot() {
           .catch((error) => {
             console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
           });
-        cloudSave = await loadState(user.uid);
+        try {
+          indexedDbSave = await readIndexedDbSave(user.uid);
+          indexedDbStorageReady = true;
+        } catch (error) {
+          indexedDbSave = null;
+          indexedDbStorageReady = false;
+          console.warn('IndexedDBの端末セーブを読み込めませんでした。旧localStorage／クラウドから継続します。', error);
+        }
+        let cloudLoadError = null;
+        try {
+          cloudSave = await loadState(user.uid);
+        } catch (error) {
+          // v0.10.774: クラウドの現行チャンクが欠損・破損していても、
+          // 先に読み込めた正常な端末セーブがあればそちらから起動を継続する。
+          cloudLoadError = error;
+          cloudSave = null;
+          console.warn('クラウドセーブを読み込めなかったため、端末セーブから復旧を試みます。', error);
+        }
         const preferredAtBoot = preferredSavedState();
-        const localWasNewer = preferredAtBoot.source === 'local' && Boolean(preferredAtBoot.state);
+        if (cloudLoadError && !preferredAtBoot.state) throw cloudLoadError;
+        const deviceWasNewer = ['local', 'indexeddb'].includes(preferredAtBoot.source) && Boolean(preferredAtBoot.state);
+        if (cloudLoadError && deviceWasNewer) {
+          saveRecoveryNotice = 'クラウドセーブを読み込めなかったため、端末の正常なセーブから復旧しました。';
+          saveRecoveryDetails = String(cloudLoadError?.message || cloudLoadError);
+        }
         if (preferredAtBoot.source === 'cloud' && preferredAtBoot.state) {
-          localStorage.setItem(localSaveKey(), JSON.stringify(preferredAtBoot.state));
-        } else if (localWasNewer) {
+          await persistBootDeviceStateSafely(preferredAtBoot.state, 'クラウド採用セーブ');
+        } else if (deviceWasNewer) {
           cloudSave = structuredClone(preferredAtBoot.state);
         }
         // 端末側が新しい場合は端末データを即採用し、クラウドへの書き戻しだけを
         // 保存キューへ積む。通信が遅くてもタイトル表示やゲーム開始は待たせない。
         // 同一クライアント内の後続クラウド保存はこのキューの後ろへ並ぶため、
         // 古い起動時スナップショットが新しいプレイ内容を後から上書きしない。
-        if (localWasNewer) {
+        if (deviceWasNewer) {
           const migratedLocal = migrateState(preferredAtBoot.state);
           migratedLocal.updatedAt = String(preferredAtBoot.state.updatedAt || new Date().toISOString());
           const bootSyncSnapshot = structuredClone(migratedLocal);
@@ -24096,7 +24563,7 @@ async function boot() {
               console.warn('新しい端末セーブのバックグラウンド同期に失敗しました。端末保存は完了しています。', error);
             });
           cloudSave = structuredClone(migratedLocal);
-          localStorage.setItem(localSaveKey(), JSON.stringify(migratedLocal));
+          await persistBootDeviceStateSafely(migratedLocal, '起動時ローカル移行');
         }
         stopSessionWatch = watchSession(user.uid, sessionId, () => {
           sessionTakenOver = true;

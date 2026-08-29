@@ -7244,6 +7244,9 @@ export function initialState() {
       proposedItemIds: [],
     }])),
     orders: [],
+    // v0.10.769: 長期プレイで増え続ける完了注文・売却済み完成品は、
+    // 現役データと分離した軽量履歴へ退避する。直近分だけ従来の完全データを保持する。
+    history: { closedOrders: [], soldJewelry: [] },
     employee: storeEmployeeDefaults(1),
     events: {
       bluesJukeEvent: {
@@ -7442,6 +7445,12 @@ export function initialState() {
     },
     notifications: [],
     finance: [],
+    financeSummary: {
+      archivedIncome: 0, archivedExpense: 0,
+      dayKey: '', dayIncome: 0, dayExpense: 0,
+      monthKey: '', monthIncome: 0, monthExpense: 0,
+      yearKey: '', yearIncome: 0, yearExpense: 0,
+    },
     daily: { mined: [], polished: [], roughSold: [], looseSold: [], crafted: [], workshopStaffCrafted: [], sold: [], meals: [], visitors: 0, income: 0, expense: 0 },
     settings: {
       bgmVolume: 0.35,
@@ -7480,6 +7489,398 @@ export function initialState() {
 
 function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+export const LONG_TERM_HISTORY_LIMITS = Object.freeze({
+  fullClosedOrders: 20,
+  fullSoldJewelry: 20,
+});
+
+export const FINANCE_HISTORY_LIMIT = 300;
+export const LONG_TERM_MISC_LIMITS = Object.freeze({
+  calendarPastDays: 365,
+  notifications: 40,
+  homeRentReports: 12,
+  monthlyReports: 12,
+  robberyHistory: 10,
+});
+
+function finiteDay(value) {
+  const day = Number(value);
+  return Number.isFinite(day) && day > 0 ? Math.floor(day) : null;
+}
+
+function finiteMoney(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.round(amount) : null;
+}
+
+function compactClosedOrderRecord(order = {}) {
+  return {
+    id: String(order.id || ''),
+    customerId: String(order.customerId || ''),
+    customerName: String(order.customerName || ''),
+    item: String(order.item || ''),
+    gem: String(order.gem || ''),
+    looseShape: String(order.looseShape || ''),
+    metal: String(order.metal || ''),
+    design: String(order.design || ''),
+    difficulty: String(order.difficulty || ''),
+    requiredArtisanLevel: Math.max(0, Math.floor(Number(order.requiredArtisanLevel) || 0)),
+    requiredTools: Array.isArray(order.requiredTools) ? [...new Set(order.requiredTools.map(String).filter(Boolean))].slice(0, 8) : [],
+    price: finiteMoney(order.price),
+    estimatedCost: finiteMoney(order.estimatedCost),
+    estimatedProfit: finiteMoney(order.estimatedProfit),
+    acceptedDay: finiteDay(order.acceptedDay),
+    deadlineDay: finiteDay(order.deadlineDay),
+    branchNumber: Math.max(1, Math.floor(Number(order.branchNumber) || 1)),
+    status: ['完了', '取消', '期限切れ'].includes(order.status) ? order.status : '完了',
+    closedDay: finiteDay(order.closedDay),
+    deliveredDay: finiteDay(order.deliveredDay),
+    cancelledDay: finiteDay(order.cancelledDay),
+    expiredDay: finiteDay(order.expiredDay),
+    jewelryId: order.jewelryId ? String(order.jewelryId) : null,
+  };
+}
+
+function compactSoldJewelryRecord(item = {}) {
+  const soldPrice = finiteMoney(item.soldPrice);
+  const cost = Math.max(0, finiteMoney(item.cost) || 0);
+  return {
+    id: String(item.id || ''),
+    name: String(item.name || ''),
+    item: String(item.item || ''),
+    gem: String(item.gem || ''),
+    useLoose: item.useLoose !== false,
+    looseShape: String(item.looseShape || ''),
+    metal: String(item.metal || ''),
+    design: String(item.design || ''),
+    finish: String(item.finish || ''),
+    quality: String(item.quality || ''),
+    cost,
+    recommendedPrice: Math.max(0, finiteMoney(item.recommendedPrice) || 0),
+    createdDay: finiteDay(item.createdDay),
+    orderId: item.orderId ? String(item.orderId) : null,
+    acquisition: item.acquisition ? String(item.acquisition) : '',
+    autopilot: Boolean(item.autopilot),
+    craftsmanshipScore: Math.max(0, Math.floor(Number(item.craftsmanshipScore) || 0)) || null,
+    craftsmanshipTier: item.craftsmanshipTier ? String(item.craftsmanshipTier) : '',
+    status: 'sold',
+    soldDay: finiteDay(item.soldDay || item.removedDay || item.stolenDay),
+    soldPrice,
+    soldProfit: finiteMoney(item.soldProfit) ?? (soldPrice == null ? null : soldPrice - cost),
+    soldBranchNumber: item.soldBranchNumber == null ? null : Math.max(1, Math.floor(Number(item.soldBranchNumber) || 1)),
+    soldChannel: item.soldChannel ? String(item.soldChannel) : '',
+    removalReason: item.removalReason ? String(item.removalReason) : (item.stolenDay ? 'stolen' : ''),
+    stolenDay: finiteDay(item.stolenDay),
+    stolenBranchNumber: item.stolenBranchNumber == null ? null : Math.max(1, Math.floor(Number(item.stolenBranchNumber) || 1)),
+    stolenLossValue: Math.max(0, finiteMoney(item.stolenLossValue) || 0) || null,
+  };
+}
+
+function mergeCompactHistory(existing, moved, compactRecord, liveIds) {
+  const map = new Map();
+  for (const raw of Array.isArray(existing) ? existing : []) {
+    if (!raw?.id || liveIds.has(String(raw.id))) continue;
+    const compact = compactRecord(raw);
+    if (compact.id) map.set(compact.id, compact);
+  }
+  for (const raw of moved) {
+    if (!raw?.id || liveIds.has(String(raw.id))) continue;
+    const compact = compactRecord(raw);
+    if (compact.id) map.set(compact.id, compact);
+  }
+  return [...map.values()];
+}
+
+
+export function compactLongTermMiscData(state, limits = LONG_TERM_MISC_LIMITS) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { changed: false };
+  }
+  const stats = {
+    discardedCalendarEvents: 0,
+    discardedNotifications: 0,
+    discardedHomeRentReports: 0,
+    discardedMonthlyReports: 0,
+    discardedRobberyHistory: 0,
+    discardedInvalidBranches: 0,
+    discardedBranchUnpaidKeys: 0,
+    discardedProcessingKnowledge: 0,
+    changed: false,
+  };
+
+  // カレンダーは未来の予定をすべて保護し、過去分だけ一定期間で自動削除する。
+  if (state.game && typeof state.game === 'object') {
+    const rawCalendar = state.game.calendarEvents && typeof state.game.calendarEvents === 'object' && !Array.isArray(state.game.calendarEvents)
+      ? state.game.calendarEvents
+      : {};
+    const currentKey = financeDatePartsForDay(state, state.game.day).dayKey;
+    const currentMs = /^\d{4}-\d{2}-\d{2}$/.test(currentKey)
+      ? Date.parse(`${currentKey}T00:00:00Z`)
+      : NaN;
+    const pastDays = Math.max(0, Math.floor(Number(limits?.calendarPastDays) || 0));
+    const cutoffMs = Number.isFinite(currentMs) ? currentMs - pastDays * 86400000 : NaN;
+    const kept = {};
+    for (const [key, rawValue] of Object.entries(rawCalendar)) {
+      const value = String(rawValue || '').trim().slice(0, 120);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || !value) {
+        stats.discardedCalendarEvents += 1;
+        continue;
+      }
+      const eventMs = Date.parse(`${key}T00:00:00Z`);
+      if (Number.isFinite(cutoffMs) && Number.isFinite(eventMs) && eventMs < cutoffMs) {
+        stats.discardedCalendarEvents += 1;
+        continue;
+      }
+      kept[key] = value;
+    }
+    state.game.calendarEvents = kept;
+  }
+
+  const noticeLimit = Math.max(0, Math.floor(Number(limits?.notifications) || 0));
+  const rawNotices = Array.isArray(state.notifications) ? state.notifications : [];
+  state.notifications = rawNotices.slice(0, noticeLimit).map((note, index) => ({
+    ...note,
+    id: String(note?.id || `note-${index}`).slice(0, 120),
+    title: String(note?.title || note?.sender || 'お知らせ').slice(0, 80),
+    body: String(note?.body || '').slice(0, 500),
+    type: String(note?.type || 'info').slice(0, 40),
+    day: Math.max(1, Math.floor(Number(note?.day) || Number(state.game?.day) || 1)),
+    unread: note?.unread !== false,
+  }));
+  stats.discardedNotifications = Math.max(0, rawNotices.length - state.notifications.length);
+
+  if (state.business && typeof state.business === 'object' && !Array.isArray(state.business)) {
+    const rawHomeRentReports = Array.isArray(state.business.homeRentReports) ? state.business.homeRentReports : [];
+    const rawMonthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports : [];
+    const homeLimit = Math.max(0, Math.floor(Number(limits?.homeRentReports) || 0));
+    const monthlyLimit = Math.max(0, Math.floor(Number(limits?.monthlyReports) || 0));
+    state.business.homeRentReports = rawHomeRentReports.slice(-homeLimit || undefined);
+    state.business.monthlyReports = rawMonthlyReports.slice(-monthlyLimit || undefined);
+    if (homeLimit === 0) state.business.homeRentReports = [];
+    if (monthlyLimit === 0) state.business.monthlyReports = [];
+    stats.discardedHomeRentReports = Math.max(0, rawHomeRentReports.length - state.business.homeRentReports.length);
+    stats.discardedMonthlyReports = Math.max(0, rawMonthlyReports.length - state.business.monthlyReports.length);
+
+    const rawBranchUnpaid = state.business.branchUnpaid && typeof state.business.branchUnpaid === 'object' && !Array.isArray(state.business.branchUnpaid)
+      ? state.business.branchUnpaid
+      : {};
+    const cleanedBranchUnpaid = {};
+    for (const [key, value] of Object.entries(rawBranchUnpaid)) {
+      const number = Math.floor(Number(key));
+      if (number >= 1 && number <= 3 && String(number) === String(key)) cleanedBranchUnpaid[String(number)] = value;
+      else stats.discardedBranchUnpaidKeys += 1;
+    }
+    state.business.branchUnpaid = cleanedBranchUnpaid;
+  }
+
+  if (state.events && typeof state.events === 'object' && state.events.robbery && typeof state.events.robbery === 'object') {
+    const rawHistory = Array.isArray(state.events.robbery.history) ? state.events.robbery.history : [];
+    const robberyLimit = Math.max(0, Math.floor(Number(limits?.robberyHistory) || 0));
+    state.events.robbery.history = robberyLimit > 0 ? rawHistory.slice(-robberyLimit) : [];
+    stats.discardedRobberyHistory = Math.max(0, rawHistory.length - state.events.robbery.history.length);
+  }
+
+  if (state.workshop && typeof state.workshop === 'object') {
+    const rawKnowledge = Array.isArray(state.workshop.processingKnowledge) ? state.workshop.processingKnowledge : [];
+    const seen = new Set();
+    state.workshop.processingKnowledge = rawKnowledge.filter((entry) => {
+      const id = String(typeof entry === 'string' ? entry : entry?.id || '').trim();
+      if (!id || !PROCESSING_KNOWLEDGE[id] || seen.has(id)) {
+        stats.discardedProcessingKnowledge += 1;
+        return false;
+      }
+      seen.add(id);
+      return true;
+    });
+  }
+
+  if (state.store && typeof state.store === 'object') {
+    const rawBranches = Array.isArray(state.store.branches) ? state.store.branches : [];
+    const seenBranchNumbers = new Set();
+    state.store.branches = rawBranches.filter((branch) => {
+      const number = Math.floor(Number(branch?.number));
+      if (number < 1 || number > 3 || seenBranchNumbers.has(number)) {
+        stats.discardedInvalidBranches += 1;
+        return false;
+      }
+      seenBranchNumbers.add(number);
+      branch.number = number;
+      return true;
+    });
+    let activeBranchNumber = Math.max(1, Math.min(3, Math.floor(Number(state.store.branchNumber) || 1)));
+    if (state.store.branches.length && !state.store.branches.some((branch) => branch.number === activeBranchNumber)) {
+      activeBranchNumber = state.store.branches[0].number;
+    }
+    state.store.branchNumber = activeBranchNumber;
+  }
+
+  stats.changed = Object.entries(stats).some(([key, value]) => key !== 'changed' && Number(value) > 0);
+  return stats;
+}
+
+export function compactLongTermHistory(state, limits = LONG_TERM_HISTORY_LIMITS) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { discardedClosedOrders: 0, discardedSoldJewelry: 0, changed: false };
+  }
+  const closedLimit = Math.max(0, Math.floor(Number(limits?.fullClosedOrders) || 0));
+  const soldLimit = Math.max(0, Math.floor(Number(limits?.fullSoldJewelry) || 0));
+  state.history = state.history && typeof state.history === 'object' && !Array.isArray(state.history)
+    ? state.history
+    : {};
+  const archivedClosedBefore = Array.isArray(state.history.closedOrders) ? state.history.closedOrders.length : 0;
+  const archivedSoldBefore = Array.isArray(state.history.soldJewelry) ? state.history.soldJewelry.length : 0;
+
+  const orders = Array.isArray(state.orders) ? state.orders : [];
+  const activeOrders = [];
+  const closedOrders = [];
+  orders.forEach((order, index) => {
+    const closed = ['完了', '取消', '期限切れ'].includes(order?.status);
+    (closed ? closedOrders : activeOrders).push({ value: order, index });
+  });
+  closedOrders.sort((a, b) => {
+    const dayA = Number(a.value?.closedDay ?? a.value?.deliveredDay ?? a.value?.expiredDay ?? a.value?.cancelledDay ?? a.value?.deadlineDay ?? a.value?.acceptedDay ?? 0) || 0;
+    const dayB = Number(b.value?.closedDay ?? b.value?.deliveredDay ?? b.value?.expiredDay ?? b.value?.cancelledDay ?? b.value?.deadlineDay ?? b.value?.acceptedDay ?? 0) || 0;
+    return dayB - dayA || b.index - a.index;
+  });
+  const keepClosed = closedOrders.slice(0, closedLimit).map((entry) => entry.value);
+  const discardClosed = closedOrders.slice(closedLimit).length;
+  state.orders = [
+    ...activeOrders.sort((a, b) => a.index - b.index).map((entry) => entry.value),
+    ...keepClosed.reverse(),
+  ];
+
+  const jewelry = Array.isArray(state.inventory?.jewelry) ? state.inventory.jewelry : [];
+  const liveJewelry = [];
+  const soldJewelry = [];
+  jewelry.forEach((item, index) => {
+    (item?.status === 'sold' ? soldJewelry : liveJewelry).push({ value: item, index });
+  });
+  soldJewelry.sort((a, b) => {
+    const dayA = Number(a.value?.soldDay ?? a.value?.removedDay ?? a.value?.stolenDay ?? a.value?.createdDay ?? 0) || 0;
+    const dayB = Number(b.value?.soldDay ?? b.value?.removedDay ?? b.value?.stolenDay ?? b.value?.createdDay ?? 0) || 0;
+    return dayB - dayA || b.index - a.index;
+  });
+  const keepSold = soldJewelry.slice(0, soldLimit).map((entry) => entry.value);
+  const discardSold = soldJewelry.slice(soldLimit).length;
+  if (state.inventory && typeof state.inventory === 'object') {
+    state.inventory.jewelry = [
+      ...liveJewelry.sort((a, b) => a.index - b.index).map((entry) => entry.value),
+      ...keepSold.reverse(),
+    ];
+  }
+
+  // v0.10.771: 旧版の永久アーカイブは読み込み時・保存時に完全破棄する。
+  // 進行に必要な累計値は store / customer / event 側へ既に独立保存されているため、
+  // 個別の終了注文・売却済み完成品を永久保持しない。
+  state.history.closedOrders = [];
+  state.history.soldJewelry = [];
+
+  const miscCleanup = compactLongTermMiscData(state);
+  const discardedClosedOrders = discardClosed + archivedClosedBefore;
+  const discardedSoldJewelry = discardSold + archivedSoldBefore;
+  return {
+    discardedClosedOrders,
+    discardedSoldJewelry,
+    changed: discardedClosedOrders > 0 || discardedSoldJewelry > 0,
+    retainedFullClosedOrders: keepClosed.length,
+    retainedFullSoldJewelry: keepSold.length,
+    archivedClosedOrders: 0,
+    archivedSoldJewelry: 0,
+    miscCleanup,
+  };
+}
+
+function financeDatePartsForDay(state, value) {
+  const start = String(state?.game?.startDate || '').trim();
+  const match = start.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return { dayKey: '', monthKey: '', yearKey: '' };
+  const day = Math.max(1, Math.floor(Number(value) || 1));
+  const timestamp = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) + (day - 1) * 86400000;
+  const date = new Date(timestamp);
+  const year = String(date.getUTCFullYear()).padStart(4, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dateOfMonth = String(date.getUTCDate()).padStart(2, '0');
+  return {
+    dayKey: `${year}-${month}-${dateOfMonth}`,
+    monthKey: `${year}-${month}`,
+    yearKey: year,
+  };
+}
+
+function ensureFinanceSummary(state) {
+  const source = state.financeSummary && typeof state.financeSummary === 'object' && !Array.isArray(state.financeSummary)
+    ? state.financeSummary
+    : {};
+  const current = financeDatePartsForDay(state, state?.game?.day);
+  const summary = {
+    archivedIncome: Math.max(0, Number(source.archivedIncome) || 0),
+    archivedExpense: Math.max(0, Number(source.archivedExpense) || 0),
+    dayKey: String(source.dayKey || ''),
+    dayIncome: Math.max(0, Number(source.dayIncome) || 0),
+    dayExpense: Math.max(0, Number(source.dayExpense) || 0),
+    monthKey: String(source.monthKey || ''),
+    monthIncome: Math.max(0, Number(source.monthIncome) || 0),
+    monthExpense: Math.max(0, Number(source.monthExpense) || 0),
+    yearKey: String(source.yearKey || ''),
+    yearIncome: Math.max(0, Number(source.yearIncome) || 0),
+    yearExpense: Math.max(0, Number(source.yearExpense) || 0),
+  };
+  if (summary.dayKey !== current.dayKey) {
+    summary.dayKey = current.dayKey;
+    summary.dayIncome = 0;
+    summary.dayExpense = 0;
+  }
+  if (summary.monthKey !== current.monthKey) {
+    summary.monthKey = current.monthKey;
+    summary.monthIncome = 0;
+    summary.monthExpense = 0;
+  }
+  if (summary.yearKey !== current.yearKey) {
+    summary.yearKey = current.yearKey;
+    summary.yearIncome = 0;
+    summary.yearExpense = 0;
+  }
+  state.financeSummary = summary;
+  return summary;
+}
+
+export function compactFinanceHistory(state, limit = FINANCE_HISTORY_LIMIT) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { discardedFinanceRows: 0, changed: false };
+  }
+  const rows = Array.isArray(state.finance) ? state.finance : [];
+  const maxRows = Math.max(0, Math.floor(Number(limit) || 0));
+  const summary = ensureFinanceSummary(state);
+  if (rows.length <= maxRows) {
+    state.finance = rows;
+    return { discardedFinanceRows: 0, changed: false };
+  }
+
+  const cut = rows.length - maxRows;
+  const discarded = rows.slice(0, cut);
+  for (const row of discarded) {
+    const income = Math.max(0, Number(row?.income) || 0);
+    const expense = Math.max(0, Number(row?.expense) || 0);
+    summary.archivedIncome += income;
+    summary.archivedExpense += expense;
+    const parts = financeDatePartsForDay(state, row?.day);
+    if (parts.dayKey && parts.dayKey === summary.dayKey) {
+      summary.dayIncome += income;
+      summary.dayExpense += expense;
+    }
+    if (parts.monthKey && parts.monthKey === summary.monthKey) {
+      summary.monthIncome += income;
+      summary.monthExpense += expense;
+    }
+    if (parts.yearKey && parts.yearKey === summary.yearKey) {
+      summary.yearIncome += income;
+      summary.yearExpense += expense;
+    }
+  }
+  state.finance = rows.slice(cut);
+  return { discardedFinanceRows: discarded.length, changed: discarded.length > 0 };
 }
 
 function merge(base, saved) {
@@ -8022,10 +8423,10 @@ export function migrateState(saved) {
   state.business.workshopSuspended = Boolean(state.business.workshopSuspended);
   state.business.workshopUnpaid = Math.max(0, Math.floor(Number(state.business.workshopUnpaid) || 0));
   state.business.homeRentUnpaid = Math.max(0, Math.floor(Number(state.business.homeRentUnpaid) || 0));
-  state.business.homeRentReports = Array.isArray(state.business.homeRentReports) ? state.business.homeRentReports.slice(-24) : [];
+  state.business.homeRentReports = Array.isArray(state.business.homeRentReports) ? state.business.homeRentReports.slice(-LONG_TERM_MISC_LIMITS.homeRentReports) : [];
   state.business.lastProcessedHomeRentMonth = String(state.business.lastProcessedHomeRentMonth || '');
   state.business.branchUnpaid = state.business.branchUnpaid && typeof state.business.branchUnpaid === 'object' ? state.business.branchUnpaid : {};
-  state.business.monthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports.slice(-24) : [];
+  state.business.monthlyReports = Array.isArray(state.business.monthlyReports) ? state.business.monthlyReports.slice(-LONG_TERM_MISC_LIMITS.monthlyReports) : [];
   state.business.lastProcessedMonth = String(state.business.lastProcessedMonth || '');
 
   state.employee = normalizeStoreEmployee(state.employee, 1);
@@ -8073,7 +8474,7 @@ export function migrateState(saved) {
 
   const savedBranches = Array.isArray(state.store.branches) ? state.store.branches : [];
   state.store.branches = savedBranches
-    .filter((branch) => branch && Number(branch.number) >= 1)
+    .filter((branch) => branch && Number(branch.number) >= 1 && Number(branch.number) <= 3)
     .map((branch) => {
       const branchNumber = Math.max(1, Number(branch.number) || 1);
       const branchPoints = usesSimplifiedStoreProgress && Number.isFinite(Number(branch.points))
@@ -8339,7 +8740,7 @@ export function migrateState(saved) {
           requiredLooseQuantity: Math.max(1, Math.round(Number(entry.requiredLooseQuantity) || Number(item.looseQuantity) || 1)),
           acceptedDay,
           deadlineDay,
-          branchNumber: Math.max(1, Number(entry.branchNumber) || 1),
+          branchNumber: Math.max(1, Math.min(3, Number(entry.branchNumber) || 1)),
           estimatedCost,
           budget: Math.max(price, Math.round(Number(entry.budget) || 0)),
           estimatedProfit: activeOrder ? price - estimatedCost : Math.round(Number(entry.estimatedProfit) || (price - estimatedCost)),
@@ -8349,11 +8750,11 @@ export function migrateState(saved) {
         };
       })
     : [];
-  state.notifications = (Array.isArray(state.notifications) ? state.notifications : []).slice(0, 80).map((note, index) => ({
-    id: note?.id || `legacy-note-${index}`,
-    title: note?.title || note?.sender || 'お知らせ',
-    body: note?.body || '',
-    type: note?.type || 'info',
+  state.notifications = (Array.isArray(state.notifications) ? state.notifications : []).slice(0, LONG_TERM_MISC_LIMITS.notifications).map((note, index) => ({
+    id: String(note?.id || `legacy-note-${index}`).slice(0, 120),
+    title: String(note?.title || note?.sender || 'お知らせ').slice(0, 80),
+    body: String(note?.body || '').slice(0, 500),
+    type: String(note?.type || 'info').slice(0, 40),
     day: Number(note?.day) || state.game.day,
     unread: note?.unread !== false,
   })).filter((note) => {
@@ -8362,7 +8763,7 @@ export function migrateState(saved) {
     return !miningResult && !hungerNotice;
   });
   state.finance = Array.isArray(state.finance)
-    ? state.finance.slice(-2000).map((row, index) => ({
+    ? state.finance.map((row, index) => ({
         id: row?.id || `legacy-finance-${index}`,
         day: Math.max(1, Number(row?.day) || state.game.day),
         label: String(row?.label || '収支'),
@@ -8451,7 +8852,7 @@ export function migrateState(saved) {
     };
   };
   const normalizedRobberyHistory = Array.isArray(savedRobberyEvents.history)
-    ? savedRobberyEvents.history.map(normalizeRobberyReport).filter(Boolean).slice(-20)
+    ? savedRobberyEvents.history.map(normalizeRobberyReport).filter(Boolean).slice(-LONG_TERM_MISC_LIMITS.robberyHistory)
     : [];
   state.events = isRecord(state.events) ? state.events : {};
   state.events.robbery = {
@@ -8987,6 +9388,10 @@ export function migrateState(saved) {
   const activeBranchV454 = state.store.branches.find((branch) => Number(branch.number) === Math.max(1, Number(state.store.branchNumber) || 1)) || state.store.branches[0];
   if (activeBranchV454) state.store.level = activeBranchV454.level;
   state.workshopStaff.evolutionStage = workshopStaffGrowthForWorkDays(state.workshopStaff.workDays).level >= 4 ? 2 : 1;
+
+  // v0.10.771: 進行中データを保護しつつ、古い終了履歴と収支明細を自動整理する。
+  compactLongTermHistory(state);
+  compactFinanceHistory(state);
 
   return state;
 }

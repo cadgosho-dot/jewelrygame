@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import tempfile
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone
@@ -81,6 +82,17 @@ def fetch_latest(api_key: str) -> dict:
             if response.status != 200:
                 fail(f"Metals.DevがHTTP {response.status}を返しました。")
             return json.load(response)
+    except urllib.error.HTTPError as error:
+        # APIキーやリクエストURLはログへ出さず、原因判別に必要なHTTP状態とerror_codeだけを残す。
+        api_error_code = None
+        try:
+            error_payload = json.loads(error.read().decode("utf-8", errors="replace"))
+            if isinstance(error_payload, dict):
+                api_error_code = error_payload.get("error_code") or error_payload.get("code")
+        except Exception:
+            api_error_code = None
+        detail = f" / error_code={api_error_code}" if api_error_code else ""
+        fail(f"Metals.DevがHTTP {error.code}を返しました{detail}。")
     except SystemExit:
         raise
     except Exception:

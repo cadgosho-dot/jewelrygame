@@ -22188,3 +22188,51 @@ body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-purchase-result{
   box-shadow:0 18px 50px rgba(0,0,0,.68)!important;
 }
 
+
+
+/* ONE LOVE workshop event — v0.10.784 */
+body[data-screen="oneLoveEvent"]{
+  overflow:hidden;
+}
+body[data-screen="oneLoveEvent"] .game-header{
+  display:none!important;
+}
+body[data-screen="oneLoveEvent"] .screen-content{
+  min-height:100dvh;
+  padding-top:0!important;
+}
+body[data-screen="oneLoveEvent"] .one-love-event-screen{
+  overflow:hidden;
+}
+body[data-screen="oneLoveEvent"] .visit-character-event{
+  min-height:100dvh;
+}
+body[data-screen="oneLoveEvent"] .one-love-event{
+  background:radial-gradient(circle at 50% 28%,rgba(52,106,86,.12),rgba(10,19,19,.02) 48%,rgba(4,7,10,.10) 76%);
+}
+body[data-screen="oneLoveEvent"] .one-love-character{
+  max-width:min(94vw,760px)!important;
+  max-height:min(72dvh,1000px)!important;
+  object-fit:contain!important;
+  filter:drop-shadow(0 24px 38px rgba(0,0,0,.82))!important;
+}
+body[data-screen="oneLoveEvent"] .one-love-dialogue>small{
+  color:#9ee3c1!important;
+}
+body[data-screen="oneLoveEvent"] .one-love-dialogue>strong{
+  white-space:pre-line;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="oneLoveEvent"] .one-love-character{
+  transform:scale(.88)!important;
+  transform-origin:center bottom!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="oneLoveEvent"] .visit-character-area{
+  overflow:visible!important;
+}
+@media (orientation:landscape){
+  body[data-screen="oneLoveEvent"] .one-love-character{
+    max-height:95dvh!important;
+    max-width:54vw!important;
+    transform:none!important;
+  }
+}

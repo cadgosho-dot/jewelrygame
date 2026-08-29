@@ -79,6 +79,7 @@ RULES = [
     Rule('sw.js', 'memories-backgrounds.js precache key', qparam(r'\./js/memories-backgrounds\.js'), keep_prefix),
     Rule('sw.js', 'google-auth-bridge.js precache key', qparam(r'\./js/google-auth-bridge\.js'), keep_prefix),
     Rule('sw.js', 'firebase-service.js precache key', qparam(r'\./js/firebase-service\.js'), keep_prefix),
+    Rule('sw.js', 'local-save-storage.js precache key', qparam(r'\./js/local-save-storage\.js'), keep_prefix),
 
     # compatibility loaders
     Rule('hosting-origin-guard.js', 'memories override cache key', qparam(r'\./memories-event-image-overrides-v751\.js'), keep_prefix),
@@ -91,6 +92,8 @@ RULES = [
     Rule('js/app.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
     Rule('js/app.js', 'audio-scene-map.js import key', qparam(r'\./audio-scene-map\.js'), keep_prefix),
     Rule('js/app.js', 'firebase-service.js import key', qparam(r'\./firebase-service\.js'), keep_prefix),
+    Rule('js/app.js', 'local-save-storage.js import key', qparam(r'\./local-save-storage\.js'), keep_prefix),
+    Rule('js/firebase-service.js', 'local-save-storage.js import key', qparam(r'\./local-save-storage\.js'), keep_prefix),
     Rule('js/game-data.js', 'game data VERSION', export_constant('VERSION'), keep_quote),
     Rule('js/memories-screen.js', 'memories-backgrounds import key', qparam(r'\./memories-backgrounds\.js'), keep_prefix),
     Rule('js/memories-screen.js', 'memories VERSION', quoted_constant('VERSION'), keep_quote),

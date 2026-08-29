@@ -4,17 +4,41 @@
   // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも転送が発生しないよう互換目的で残している。
   // v0.10.732 formal-release trigger.
 
+  // 2026-08-28: v776-v782で追加した小さい料理画像だけ、ハンバーガー基準の表示枠へ統一する。
+  // 本体CSSや既存料理画像は変更せず、正式画像への差し替え時にも同じ表示基準を維持する。
+  const installMealImageSizeHotfix = () => {
+    if (document.querySelector('link[data-meal-image-size-hotfix]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = './meal-image-size-hotfix.css?v=20260828-1';
+    link.dataset.mealImageSizeHotfix = '1';
+    document.head?.appendChild(link);
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installMealImageSizeHotfix, { once: true });
+  } else {
+    installMealImageSizeHotfix();
+  }
+
+  // 2026-08-29: ONE LOVE会話内の「○○○」を現在のプレイヤー名へ置き換える。
+  (() => {
+    const script = document.createElement('script');
+    script.src = './one-love-player-name-hotfix.js?v=20260829-1';
+    script.dataset.oneLovePlayerNameHotfix = '1';
+    document.head?.appendChild(script);
+  })();
+
   // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
     const script = document.createElement('script');
-    script.src = './memories-event-image-overrides-v751.js?v=0.10.763';
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.784';
     document.head?.appendChild(script);
   })();
 
   // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
   (() => {
     const script = document.createElement('script');
-    script.src = './workshop-staff-images-v754.js?v=0.10.763';
+    script.src = './workshop-staff-images-v754.js?v=0.10.784';
     document.head?.appendChild(script);
   })();
 

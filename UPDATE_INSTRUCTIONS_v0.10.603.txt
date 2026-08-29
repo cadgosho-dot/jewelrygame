@@ -1,8 +1,0 @@
-JEWELRY×JEWELRY v0.10.603 更新方法
-
-1. GitHub Desktopで jewelrygame リポジトリを開きます。
-2. v0.10.603 更新用ZIPの中身をリポジトリ直下へ上書きします。
-3. Changesを確認します。
-4. Commit名を「Update to v0.10.603」にしてください。
-5. Commit to main → Push origin を実行します。
-6. GitHub Pages反映後、必要に応じてPWAを再読み込みしてv0.10.603を確認します。

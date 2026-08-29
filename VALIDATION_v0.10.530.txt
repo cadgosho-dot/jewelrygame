@@ -1,9 +1,0 @@
-JEWELRY×JEWELRY v0.10.530 検証結果
-
-[OK] js/app.js JavaScript構文
-[OK] js/game-data.js JavaScript構文
-[OK] sw.js JavaScript構文
-[OK] hosting-origin-guard.js JavaScript構文
-[OK] Firebase Hostingへの自動転送コードが存在しない
-[OK] バージョン0.10.530へ更新
-[OK] v0.10.529の御徒町イベント実装を維持

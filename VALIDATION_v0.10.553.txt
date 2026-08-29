@@ -1,8 +1,0 @@
-JEWELRYxJEWELRY v0.10.553 VALIDATION
-
-[OK] Workshop staff artisan-level unlock requirement changed from Lv.15 to Lv.10.
-[OK] Unlock-screen label changed to "職人レベル10以上".
-[OK] Other workshop staff requirements remain unchanged.
-[OK] Existing hired workshop staff data remains compatible.
-[OK] JavaScript syntax checked.
-[OK] Version and Service Worker cache updated to 0.10.553.

@@ -1,6 +1,0 @@
-JEWELRY×JEWELRY v0.10.435 検証結果
-
-- VERSION、Service Worker、HTML参照を0.10.435へ更新
-- JavaScript構文: 正常
-- 削除対象文言の残存検査: 0件
-- ジュエリーショップの売買ボタン: 維持

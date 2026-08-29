@@ -1,9 +1,0 @@
-JEWELRYxJEWELRY v0.10.563 update
-
-1. Extract this ZIP.
-2. Copy all extracted files into the root of the jewelrygame repository.
-3. Overwrite files when prompted.
-4. In GitHub Desktop, commit with: Update to v0.10.563
-5. Push to GitHub.
-
-This update preserves existing save data.

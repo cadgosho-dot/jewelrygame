@@ -1,7 +1,0 @@
-JEWELRY×JEWELRY v0.10.643 source manifest
-
-Base project: user-provided jewelrygame-main (2).zip / v0.10.639
-Cumulative prior update: v0.10.642
-Current user report: completion earrings loose stones too large; portrait earrings artwork sits too high.
-Current change: completion earrings stones capped at 48px (phone 42px), portrait-phone completion artwork shifted down 16px.
-No new external assets were generated for v0.10.643.

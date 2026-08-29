@@ -1,8 +1,0 @@
-JEWELRY×JEWELRY v0.10.499 VALIDATION
-
-JavaScript syntax: PASS
-Version markers: PASS
-Quiz recovery button target: .okachimachi-quiz-event child
-Quiz recovery button position: top 0 / left 0
-Quiz recovery button visibility: forced visible / pointer-events auto / top stacking order
-Result: PASS

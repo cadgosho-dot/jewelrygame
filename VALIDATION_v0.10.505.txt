@@ -1,9 +1,0 @@
-JEWELRY×JEWELRY v0.10.505 VALIDATION
-
-== Clock tower donation payment feedback ==
-OK: payment remains 100,000 yen
-OK: startMoneyFeedback(-100000, 1800) added after deduction
-OK: toast message "時計台募金 −100,000円" added
-OK: existing notification and save flow preserved
-
-RESULT: PASS

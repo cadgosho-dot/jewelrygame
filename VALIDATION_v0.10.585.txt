@@ -1,5 +1,0 @@
-v0.10.585 validation
-- Mystery Chinese meal intro video displays centered in portrait/landscape.
-- Video uses contain and does not crop.
-- BGM/ambience continue during playback.
-- Event resumes dialogue after video end.

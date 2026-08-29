@@ -1,7 +1,0 @@
-JEWELRY×JEWELRY v0.10.596 更新手順
-
-1. ZIPを展開します。
-2. 展開した内容をGitHub Desktopで管理しているゲームフォルダへ上書きします。
-3. GitHub Desktopで変更を確認し、Commit名「Update to v0.10.596」でコミットします。
-4. Push originを実行します。
-5. 公開後、PWAまたはブラウザを再読み込みしてください。

@@ -1,8 +1,0 @@
-JEWELRY×JEWELRY v0.10.367 GitHub反映手順
-
-1. 差し替えZIPを展開します。
-2. リポジトリへ内容を上書きします。
-3. styles.css、js/game-data.js、sw.js、game.html、index.htmlの変更を確認します。
-4. 「v0.10.367 縦画面クイズキャラクター表示修正」などでコミットします。
-5. Push origin後、GitHub Pagesを再読み込みします。
-6. PWAは一度完全終了してから開き直してください。

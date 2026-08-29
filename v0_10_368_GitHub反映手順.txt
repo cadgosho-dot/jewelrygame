@@ -1,9 +1,0 @@
-JEWELRY×JEWELRY v0.10.368 GitHub反映手順
-
-1. GitHub Desktopでゲームのリポジトリを開きます。
-2. 「JEWELRYxJEWELRY_v0_10_368_GitHub差し替えデータ.zip」を展開します。
-3. 展開した内容をリポジトリへ上書きコピーします。
-4. styles.css、js/game-data.js、sw.js、index.html、game.htmlの変更を確認します。
-5. Commit summaryへ「v0.10.368 縦画面イベントキャラクター表示修正」と入力してコミットします。
-6. Push originを押します。
-7. GitHub Pages反映後、アプリを完全終了して再起動します。

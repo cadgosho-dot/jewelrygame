@@ -1,7 +1,0 @@
-JEWELRY×JEWELRY v0.10.436 検証結果
-
-- VERSION: 0.10.436
-- game.html CSS/JS参照: 0.10.436
-- JavaScript構文検査: 正常
-- ジュエリーショップ購入・売却キャラクター: fixedレイヤー化
-- 操作干渉防止: pointer-events:none

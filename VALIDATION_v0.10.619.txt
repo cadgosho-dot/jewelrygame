@@ -1,9 +1,0 @@
-v0.10.619 validation summary
-- JS syntax: OK (node --check js/app.js / js/game-data.js)
-- Service Worker syntax: OK (node --check sw.js)
-- Phone aquarium fish filter: inTank > 0
-- Phone aquarium plant filter: inTank > 0
-- Aquarium iframe undiscovered guard: hidden by both display name and item/species ID
-- Observation detail filter: current in-tank fish/plants only
-- styles.css modified: NO
-- styles.css SHA256: b2d1c16d83abab7493e6f7306b4f69c3c150a7cfe4ca8c25c54c8d96bc02ad29

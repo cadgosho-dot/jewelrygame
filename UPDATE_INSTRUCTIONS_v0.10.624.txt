@@ -1,5 +1,0 @@
-JEWELRY×JEWELRY v0.10.624 更新手順
-1. 更新ZIPの内容を現在のGitHub Desktopリポジトリへ上書きしてください。
-2. 主な更新対象は game.html / sw.js / js/app.js / js/game-data.js / CHANGELOG.md です。
-3. Service Worker更新後、必要に応じて強制再読み込みしてください。
-4. 加工知識の取得順が「サイズ直し → ロー付け → 仕上げ → 石留め」であることを確認してください。

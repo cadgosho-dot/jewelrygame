@@ -1,4 +1,0 @@
-Validation summary for v0.10.504
-- Updated landscape phone layout for clockTowerDonationEvent dialogue anchoring.
-- Updated visible asset/version query strings from 0.10.503 to 0.10.504.
-- JS syntax check pending in automated step below.

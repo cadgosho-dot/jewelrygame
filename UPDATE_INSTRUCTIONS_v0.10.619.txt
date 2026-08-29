@@ -1,8 +1,0 @@
-JEWELRY×JEWELRY v0.10.619 GitHub Desktop更新手順
-
-1. v0.10.618適用済みのリポジトリへ、このZIPの内容を上書きしてください。
-2. GitHub DesktopでChangesを確認します。
-3. Commit名: Update to v0.10.619
-4. Commit to main → Push origin を実行します。
-
-※ UIレイアウト用の styles.css は変更していません。

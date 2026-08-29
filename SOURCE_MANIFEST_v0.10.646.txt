@@ -1,9 +1,0 @@
-JEWELRY×JEWELRY v0.10.646 source manifest
-- Base: v0.10.645 cumulative GitHub Desktop update
-- New change: completion earrings use a shape-sized loose overlay and precise top-round-plate anchors
-- New portrait change: completion earrings receive 44px top spacing below the second header bar
-- Preserved v0.10.645 ring portrait positioning
-- Preserved v0.10.644 pendant portrait positioning
-- Preserved v0.10.643 earrings loose size caps
-- Preserved recovery assets: glab-visit-random.mp4 / glab-kawahara.png / ridley-okazaki.png
-- Preserved dedicated loose-shop quiz: data/jewelry_quiz_50_verified_2026-08-10.json

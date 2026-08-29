@@ -1,8 +1,0 @@
-v0.10.586 validation
-- node --check js/app.js: passed
-- node --check js/game-data.js: passed
-- node --check sw.js: passed
-- Wrist-found event chance: 1/200 per Okachimachi entry
-- Event is repeatable
-- Event image: assets/images/events/found-wrist.png
-- Dialogue progression and forced sleep transition implemented

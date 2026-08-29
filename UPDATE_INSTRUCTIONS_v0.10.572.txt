@@ -1,8 +1,0 @@
-JEWELRYxJEWELRY v0.10.572 update
-
-1. Close the running game tab or installed PWA.
-2. Extract this ZIP into the GitHub repository folder.
-3. Overwrite the existing files when prompted.
-4. In GitHub Desktop, commit with: Update to v0.10.572
-5. Push to origin.
-6. Confirm with the site URL followed by ?v=0.10.572

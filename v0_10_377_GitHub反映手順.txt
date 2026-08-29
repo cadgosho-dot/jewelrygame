@@ -1,9 +1,0 @@
-JEWELRY×JEWELRY v0.10.377 GitHub反映手順
-
-1. 「JEWELRYxJEWELRY_v0_10_377_GitHub差し替えデータ.zip」を展開します。
-2. 展開した中身を、GitHub Desktopで管理しているプロジェクトへ上書きします。
-3. Changesで js/app.js、js/game-data.js、sw.js、index.html、game.html、CHANGELOG.md、v0.10.377_実装確認資料.md、v0_10_377_GitHub反映手順.txt を確認します。
-4. 「v0.10.377 店頭自動販売確率を調整」などの内容でコミットします。
-5. Push originを実行します。
-6. GitHub Pages公開後、アプリを完全終了して再起動します。
-7. 店舗へジュエリーを陳列し、販売判定が正常に動くことを確認します。

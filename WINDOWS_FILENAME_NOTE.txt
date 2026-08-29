@@ -1,2 +1,0 @@
-All documentation filenames in this update use ASCII characters for Windows compatibility.
-The game files may still contain Japanese text inside the files.

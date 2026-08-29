@@ -1,8 +1,0 @@
-JEWELRYxJEWELRY v0.10.589 update
-
-1. Extract this ZIP.
-2. Copy all extracted files into the existing GitHub repository and overwrite matching files.
-3. Keep the repository's .git folder.
-4. In GitHub Desktop, use commit name: Update to v0.10.589
-5. Commit and Push origin.
-6. After GitHub Pages updates, open the game with ?v=0.10.589 and reload once.

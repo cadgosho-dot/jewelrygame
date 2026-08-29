@@ -1,8 +1,0 @@
-JEWELRY×JEWELRY v0.10.437 検証結果
-
-- VERSION：0.10.437
-- JavaScript構文：正常
-- jewelry-shop.webp：1536x691、ユーザー提供画像とRGB画素一致
-- jewelry-shop-portrait.webp：691x1536、ユーザー提供画像とRGB画素一致
-- 背景への追加暗転：なし
-- キャラクター：brightness(.8)

@@ -1,9 +1,0 @@
-JEWELRY×JEWELRY v0.10.359 GitHub反映手順
-
-1. GitHub Desktopで対象リポジトリを開きます。
-2. 「JEWELRYxJEWELRY_v0_10_359_GitHub差し替えデータ.zip」を展開します。
-3. 展開した中身をリポジトリへ上書きコピーします。
-4. Changesで変更内容を確認します。
-5. Commit summaryへ「v0.10.359 宇宙人誘拐イベント追加」などを入力します。
-6. Commit、Push originの順に実行します。
-7. GitHub Pagesをハードリロードして確認してください。

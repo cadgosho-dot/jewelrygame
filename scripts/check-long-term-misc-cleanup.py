@@ -77,7 +77,7 @@ console.log(JSON.stringify({ checks, misc: result.miscCleanup }));
 if (Object.values(checks).some((value) => !value)) process.exit(1);
 ''';
 proc = subprocess.run(
-    ['node', '--experimental-default-type=module', '--input-type=module', '-e', NODE],
+    ['node', '--input-type=module', '-e', NODE],
     cwd=ROOT, text=True, capture_output=True, timeout=60,
 )
 if proc.returncode != 0:

@@ -1,6 +1,6 @@
 # TODO — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.811** / 棚卸し日: 2026-08-30
+> 現行基準: **v0.10.813** / 棚卸し日: 2026-08-30
 > **未実装・保留・要調査だけ**を置く。実装済み仕様は `GAME_RULES.md`、履歴は `CHANGELOG.md`、メディアは `ASSETS.md` に分離する。
 
 ## 優先度A — 安全な開発基盤
@@ -10,11 +10,11 @@
   - Google Cloud / Firebase ConsoleでreCAPTCHA Enterpriseのsite keyを取得し、メトリクス確認後にEnforceを有効化する作業だけが残る。詳細は `SECURITY_SETUP.md`。
   - site key未取得のまま `enabled: true` にしない。
 
-- [ ] **Google Search Consoleへ正式公開URLを登録する（v0.10.811公開後の外部作業）**
+- [ ] **Google Search Consoleへ正式公開URLを登録する（v0.10.813公開後の外部作業）**
   - URLプレフィックス `https://cadgosho-dot.github.io/jewelrygame/` を登録する。
   - `https://cadgosho-dot.github.io/jewelrygame/sitemap.xml` を送信する。
   - トップページと `about.html` のインデックス登録をリクエストし、canonicalが正式URLとして認識されたことを確認する。
-  - GitHubへv0.10.811以降を公開する前には実行しない。
+  - GitHubへv0.10.813以降を公開する前には実行しない。
 
 - [ ] **アセット由来の未分類を減らす**
   - `ASSETS.md` で「由来記録なし」とした画像・音源は、過去チャットや元データが確認できた時だけ由来を追記する。

@@ -82,7 +82,7 @@ python scripts/check-regression-baseline.py
 - GitHub ActionsではPlaywright Chromiumによる新規ゲーム→保存→再読込→続きから→スマートフォン→就寝翌日→水槽観察の実ブラウザ検査を必須とすること。
 - Firebase App Checkは、無効時は安全なステージ状態、有効時は有効なreCAPTCHA Enterprise site keyを必須とすること。
 
-## v0.10.811 追加の検索・SEO回帰検査
+## v0.10.813 追加の検索・SEO回帰検査
 
 - 正式canonicalは `https://cadgosho-dot.github.io/jewelrygame/` を維持すること。
 - `index.html` のタイトル、description、OGP、Twitter Card、代表画像が検索用設定から欠落しないこと。

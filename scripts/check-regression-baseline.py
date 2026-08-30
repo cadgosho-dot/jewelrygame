@@ -89,7 +89,7 @@ if (recentOut.settings.bgmVolume !== 0.85) throw new Error('recent save BGM was 
 if (oldOut.settings.bgmVolume !== 0.35) throw new Error('legacy BGM migration did not run');
 if (recentOut.version !== VERSION || oldOut.version !== VERSION) throw new Error('migrated VERSION mismatch');
 '''
-run('BGM migration guard', ['node', '--experimental-default-type=module', '--input-type=module', '-e', bgm_migration_test])
+run('BGM migration guard', ['node', '--input-type=module', '-e', bgm_migration_test])
 
 # 2) Split game-data contract.  Both wrapper and core must exist and the wrapper
 # must re-export core while keeping current overrides possible.

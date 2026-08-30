@@ -1,49 +1,140 @@
 {
-  "baseVersion": "0.10.805",
-  "targetVersion": "0.10.806",
-  "note": "Apply added/changed files, then delete only paths listed in deleteFiles. GitHub update is intentionally deferred.",
-  "addedFiles": [
-    "EVENT_PROBABILITY_LIST.md",
-    "docs/archive/EVENT_PROBABILITY_LIST_v0.10.581.md",
-    "docs/archive/INDEX.md",
-    "docs/archive/JEWELRYxJEWELRY_#U5f15#U304d#U7d99#U304e#U8cc7#U6599.md",
-    "docs/archive/README_#U6700#U521d#U306b#U8aad#U3093#U3067#U304f#U3060#U3055#U3044.txt",
-    "docs/archive/README_FIRST.txt",
-    "docs/archive/README_UPDATE_v0.10.728.txt",
-    "docs/archive/README_UPDATE_v0.10.729.txt",
-    "docs/archive/README_v0.10.356.md",
-    "scripts/check-management-docs.py",
-    "scripts/generate-assets-manifest.py",
-    "scripts/generate-event-probability-list.py"
+  "name": "JEWELRY×JEWELRY v0.10.814 cumulative update",
+  "acceptedBaseVersions": [
+    "0.10.811",
+    "0.10.813"
   ],
-  "changedFiles": [
-    "ASSETS.md",
-    "CHANGELOG.md",
-    "GAME_RULES.md",
-    "README.md",
-    "TODO.md",
-    "VERSION",
-    "auth-cache-recovery.js",
-    "auth.html",
-    "game.html",
-    "hosting-origin-guard.js",
-    "index.html",
-    "js/app.js",
-    "js/audio.js",
-    "js/firebase-service.js",
-    "js/game-data-core.js",
-    "js/game-data.js",
-    "js/memories-screen.js",
-    "scripts/check-current.py",
-    "scripts/version-sync.py",
-    "sw.js"
+  "targetVersion": "0.10.814",
+  "purpose": "熱帯魚屋の魚・水草・ディスプレイカテゴリ導線修正 + v0.10.813 お菓子大好き正式画像差し替えを含む累積更新",
+  "files": [
+    {
+      "path": "ASSETS.md",
+      "size": 152437,
+      "sha256": "a08ee43a3d1b2e74a8f12e1ae59011d5635d0a08fdaee00daebace23fd2d8032"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "size": 298278,
+      "sha256": "38d2ee535b951d6946dc6b507b86b4da745b61803e48ad129ce7096ef92cf8b9"
+    },
+    {
+      "path": "EVENT_PROBABILITY_LIST.md",
+      "size": 5881,
+      "sha256": "6f197144fa2ccd1f4fefaef5c61cee73d9f84b9e845abb67ced45f832232abae"
+    },
+    {
+      "path": "GAME_RULES.md",
+      "size": 8836,
+      "sha256": "02462f5ade24e8c5dd15cfc52e1e6b57ac19e7020478c759cb935cb4ecb9ef79"
+    },
+    {
+      "path": "README.md",
+      "size": 5543,
+      "sha256": "029cd9a8d05a65f1d7937a785863f6257e468412cde379874c040f8faecb5ce0"
+    },
+    {
+      "path": "REGRESSION_PROTECTION_CHECKLIST.md",
+      "size": 6592,
+      "sha256": "dcb8f3d22030d9b5782e2f2abf9edf60c157ebd656c2258b0d65b492b4c8b4c9"
+    },
+    {
+      "path": "TODO.md",
+      "size": 3503,
+      "sha256": "878b45f7e74aceb2aeccd406bb9591f55936e4dd8bb558adbef58ad33971c000"
+    },
+    {
+      "path": "VERSION",
+      "size": 9,
+      "sha256": "d51783d74cfdbd267f50eda164269369673170fd9672cec42b90cd4898d7d9d9"
+    },
+    {
+      "path": "assets/images/events/oyatsu-daisuki.png",
+      "size": 384674,
+      "sha256": "13d8ec2951232e47ca9167fdedec8b369da1ec93549aadd8df7233fff7217e1a"
+    },
+    {
+      "path": "auth-cache-recovery.js",
+      "size": 1163,
+      "sha256": "69a495706613ea61584897d420a5bf549db86b46f6f056427b13412705fd3896"
+    },
+    {
+      "path": "auth.html",
+      "size": 4854,
+      "sha256": "0a3c20c74f8379570762e46cff041776d57f183148c2700d55ee03465618fbbb"
+    },
+    {
+      "path": "game.html",
+      "size": 20387,
+      "sha256": "2cce1b32e4c2a43380efa3eba21084fd23c28edfe8e87fc1df9464c93af77516"
+    },
+    {
+      "path": "hosting-origin-guard.js",
+      "size": 9616,
+      "sha256": "df5bf6d773ab1f74b9c5b0cf8e7e363de1f3f0431844924f40686fa0e778c81d"
+    },
+    {
+      "path": "index.html",
+      "size": 6380,
+      "sha256": "161317267bb6c107e91fef9db2df9b166bc139679b097e303c55c9b934a759ee"
+    },
+    {
+      "path": "js/app.js",
+      "size": 1406974,
+      "sha256": "a0614d53b9f9d410eabeab7272cf54335dd21c767e6132d9e935f0f4690d8320"
+    },
+    {
+      "path": "js/audio.js",
+      "size": 25464,
+      "sha256": "7c8928ef93df07b4ce64f017fcf4ad4a54ad81b69829306ad33276d499f72624"
+    },
+    {
+      "path": "js/firebase-service.js",
+      "size": 59117,
+      "sha256": "83ef515a9d8144ceb3b8755678806c0aaae841e406b49a9d7717154775cc6ac6"
+    },
+    {
+      "path": "js/game-data-core.js",
+      "size": 699601,
+      "sha256": "cac796f5579a7a82b9a1d0952545a6944a6d977a3958a2c86998bd01514b3097"
+    },
+    {
+      "path": "js/game-data.js",
+      "size": 10531,
+      "sha256": "d21c70a079e6026c36a85ba2f3198edbe91d4114a78b93e556670b3cc0e81e1e"
+    },
+    {
+      "path": "js/memories-screen.js",
+      "size": 20560,
+      "sha256": "ed767f130096f3f6ed67f37e0a4549ce5f88301080a84055fcbc6edcf27382d4"
+    },
+    {
+      "path": "scripts/check-current.py",
+      "size": 5796,
+      "sha256": "abb0de062daf46038c5f5508a059aad0eefb62a1f913df9bc92ad86d1117112a"
+    },
+    {
+      "path": "scripts/check-tropical-shop-navigation.py",
+      "size": 1954,
+      "sha256": "3a37e17429b5e53bdbb5e3f789da3d2812d6682559550f05d291d3f87f5277f8"
+    },
+    {
+      "path": "styles.css",
+      "size": 890891,
+      "sha256": "ee1bcc83b9001e2802eccce6cbeb699784593c5ffd04db4522e4ecc24e16b8c2"
+    },
+    {
+      "path": "sw.js",
+      "size": 10273,
+      "sha256": "349afa226787a822ab74409971018d194723aa32be512349bdca850bbcee154c"
+    }
   ],
   "deleteFiles": [
     "EVENT_PROBABILITY_LIST_v0.10.581.md",
-    "JEWELRYxJEWELRY_#U5f15#U304d#U7d99#U304e#U8cc7#U6599.md",
-    "README_#U6700#U521d#U306b#U8aad#U3093#U3067#U304f#U3060#U3055#U3044.txt",
     "README_FIRST.txt",
     "README_UPDATE_v0.10.728.txt",
-    "README_UPDATE_v0.10.729.txt"
-  ]
+    "README_UPDATE_v0.10.729.txt",
+    "README_#U6700#U521d#U306b#U8aad#U3093#U3067#U304f#U3060#U3055#U3044.txt",
+    "JEWELRYxJEWELRY_#U5f15#U304d#U7d99#U304e#U8cc7#U6599.md"
+  ],
+  "oyatsuUserImageSha256": "13d8ec2951232e47ca9167fdedec8b369da1ec93549aadd8df7233fff7217e1a"
 }

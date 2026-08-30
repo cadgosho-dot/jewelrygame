@@ -1,0 +1,119 @@
+{
+  "base_version": "0.10.811",
+  "target_version": "0.10.813",
+  "purpose": "Replace broken お菓子大好き image with the exact user-provided image and synchronize cache/version references.",
+  "image": {
+    "path": "assets/images/events/oyatsu-daisuki.png",
+    "bytes": 384674,
+    "sha256": "13d8ec2951232e47ca9167fdedec8b369da1ec93549aadd8df7233fff7217e1a",
+    "source_filename": "1000020869.png",
+    "preserve_exact_bytes": true
+  },
+  "files": [
+    {
+      "path": "ASSETS.md",
+      "bytes": 152433,
+      "sha256": "a498b05d20e8a3e76a46b1f7eeb5956af241a571f2651ea0ec0b225669548462"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 297349,
+      "sha256": "9b3b341348becdd5a5d3ccd5089af789fd56f497596220ef725ad891082434ee"
+    },
+    {
+      "path": "EVENT_PROBABILITY_LIST.md",
+      "bytes": 5881,
+      "sha256": "22785e4b7f23cd7c57ba1998f725d676ed300cfeb2d42ea0a2a6601ac395d64e"
+    },
+    {
+      "path": "GAME_RULES.md",
+      "bytes": 8836,
+      "sha256": "53a2aeb5d3f01d26100472bfb2525444780cc6bb31b7362da8502c2d19b38c55"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5543,
+      "sha256": "fc51f713288a2d00f6a052af81803d8752d77e13894291989e8c6438e0dfd2d9"
+    },
+    {
+      "path": "REGRESSION_PROTECTION_CHECKLIST.md",
+      "bytes": 6433,
+      "sha256": "09799c5c04ce4533f5fb81316fb458b96271fd7c454177f6f0dccda64f278902"
+    },
+    {
+      "path": "TODO.md",
+      "bytes": 3503,
+      "sha256": "6e1a700faa447701928637f47a8c44ac88e58498037a37741465d59bb36d83be"
+    },
+    {
+      "path": "VERSION",
+      "bytes": 9,
+      "sha256": "f943c377682491b53bd4abbe418097d90970aefa36132ebf481974f80c4bc6fa"
+    },
+    {
+      "path": "assets/images/events/oyatsu-daisuki.png",
+      "bytes": 384674,
+      "sha256": "13d8ec2951232e47ca9167fdedec8b369da1ec93549aadd8df7233fff7217e1a"
+    },
+    {
+      "path": "auth-cache-recovery.js",
+      "bytes": 1163,
+      "sha256": "14ad1977a92ea97f3cee812d3e74c71d6c9571627fcd16d042024dfee66c0c18"
+    },
+    {
+      "path": "auth.html",
+      "bytes": 4854,
+      "sha256": "9378ad3abe05aa13b3a9f51713def06985156eeaf552abc9a307ad40220e34c5"
+    },
+    {
+      "path": "game.html",
+      "bytes": 20387,
+      "sha256": "cb656cbedcdb9351d728ec246e406cf1022e1cdc0552099bbde405e0fc7ac13e"
+    },
+    {
+      "path": "hosting-origin-guard.js",
+      "bytes": 9616,
+      "sha256": "94b67dc25bd5a084dd964ffa41e0f861f70d78a7bb45fd7e22caae24d2803d16"
+    },
+    {
+      "path": "index.html",
+      "bytes": 6380,
+      "sha256": "8c03519cbf1f752d6f2d07d6df3e0847f66c9ff937752c40dc94f56eb4a61797"
+    },
+    {
+      "path": "js/app.js",
+      "bytes": 1403215,
+      "sha256": "f1919bfcead439a3b10851600baac54b24c446a89891a4b0dc8cbe87b633f0d5"
+    },
+    {
+      "path": "js/audio.js",
+      "bytes": 25464,
+      "sha256": "dac76e3a914bde7a0e4614ea81ad47ace56d75eb21da2a03fbfb355261526685"
+    },
+    {
+      "path": "js/firebase-service.js",
+      "bytes": 59117,
+      "sha256": "dff1e61d6de7f4ca4e070c10f10e64b984f7e53d5845e9d6b4e9ee5bcb868d36"
+    },
+    {
+      "path": "js/game-data-core.js",
+      "bytes": 699601,
+      "sha256": "927ac46e3bd45b80534450803ab35f85916c99e9ed55435d76c7e89dd81434ef"
+    },
+    {
+      "path": "js/game-data.js",
+      "bytes": 10531,
+      "sha256": "88b1de01e882f3e5d96c5982f2df084c7beda8672abf75ca06a2276773c36bd2"
+    },
+    {
+      "path": "js/memories-screen.js",
+      "bytes": 20560,
+      "sha256": "9175c43b10faa148d6b5a278e99ea7f2b5577e524a3c8083ce7502d00057f11d"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 10273,
+      "sha256": "d4c53dc845f027226d900e9e14b3363ef3557c20a8e82b5812905543d7d0ad17"
+    }
+  ]
+}

@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'nonce-jxj-kaitenzushi' https://www.gstatic.com https://apis.google.com https://www.google.com https://www.recaptcha.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://*.googleusercontent.com; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://accounts.google.com https://*.google.com https://www.recaptcha.net https://*.gstatic.com; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com https://www.recaptcha.net; worker-src 'self' blob:; child-src 'self' blob:; manifest-src 'self'; form-action 'self' https://accounts.google.com; upgrade-insecure-requests">
+  <script src="./auth-cache-recovery.js?v=0.10.813"></script>
+  <script src="./hosting-origin-guard.js?v=0.10.813"></script>
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#130e09">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="宝石を採掘し、原石を研磨してジュエリーを制作。御徒町を舞台に接客・販売・店舗経営を楽しめるブラウザシミュレーションゲーム「JEWELRY×JEWELRY」。">
+  <meta name="robots" content="noindex,follow">
+  <title>JEWELRY×JEWELRY｜ゲーム画面</title>
+  <!-- v0.10.672: warm only the Firebase origins needed on the launch critical path. -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/icons/favicon.png">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css?v=0.10.813">
+
+  <style id="event-video-contain-v638">
+    /* v0.10.632: Event movies must always show the complete source frame.
+       Landscape: maximize by available height. Portrait: maximize by available width. */
+    :is(
+      video[data-western-union-intro-video],
+      video[data-tattoo-woman-amber-intro-video],
+      video[data-cinema-event-video],
+      video[data-apprentice-cinema-video],
+      video[data-mystery-chinese-meal-intro-video],
+      video[data-gray-hood-aquarium-intro-video],
+      video[data-terry-california-intro-video],
+      video[data-okachimachi-quiz-intro-video],
+      video[data-glab-visit-video],
+      video[data-kawahara-knowledge-intro-video]
+    ) {
+      object-fit: contain !important;
+      object-position: center center !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      margin: auto !important;
+    }
+
+    @media (orientation: landscape) {
+      :is(
+        video[data-western-union-intro-video],
+        video[data-tattoo-woman-amber-intro-video],
+        video[data-cinema-event-video],
+        video[data-apprentice-cinema-video],
+        video[data-mystery-chinese-meal-intro-video],
+        video[data-gray-hood-aquarium-intro-video],
+        video[data-terry-california-intro-video],
+        video[data-okachimachi-quiz-intro-video],
+      video[data-glab-visit-video],
+        video[data-kawahara-knowledge-intro-video]
+      ) {
+        width: auto !important;
+        height: 100% !important;
+      }
+    }
+
+    @media (orientation: portrait) {
+      :is(
+        video[data-western-union-intro-video],
+        video[data-tattoo-woman-amber-intro-video],
+        video[data-cinema-event-video],
+        video[data-apprentice-cinema-video],
+        video[data-mystery-chinese-meal-intro-video],
+        video[data-gray-hood-aquarium-intro-video],
+        video[data-terry-california-intro-video],
+        video[data-okachimachi-quiz-intro-video],
+      video[data-glab-visit-video],
+        video[data-kawahara-knowledge-intro-video]
+      ) {
+        width: 100% !important;
+        height: auto !important;
+      }
+    }
+
+
+    /* g-Lab. 1/30 visit movie: preserve the whole frame and use pure black letterbox/pillarbox space. */
+    .glab-visit-video-screen,
+    .glab-visit-video-stage,
+    .kawahara-knowledge-video-screen,
+    .kawahara-knowledge-video-stage {
+      background: #000 !important;
+    }
+
+    .glab-visit-video-screen,
+    .kawahara-knowledge-video-screen {
+      width: 100% !important;
+      min-height: 100dvh !important;
+      height: 100dvh !important;
+      overflow: hidden !important;
+    }
+
+    .glab-visit-video-stage,
+    .kawahara-knowledge-video-stage {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+    }
+
+
+    /* v0.10.642: Completion fallback caps; JS also emits direct completion sizing so ring/pendant silhouettes stay visible even with stale CSS. */
+    .completion-jewelry-preview:not(.item-earrings) .jewelry-loose-set .center-gem {
+      width: 84px !important;
+      max-width: 84px !important;
+    }
+    .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem {
+      width: 74px !important;
+      max-width: 74px !important;
+    }
+    .completion-jewelry-preview .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      display: block !important;
+      width: 100% !important;
+      height: auto !important;
+      max-width: 100% !important;
+      max-height: 84px !important;
+      object-fit: contain !important;
+    }
+    .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      max-height: 74px !important;
+    }
+    @media (max-width: 700px) {
+      .completion-jewelry-preview:not(.item-earrings) .jewelry-loose-set .center-gem {
+        width: 70px !important;
+        max-width: 70px !important;
+      }
+      .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem {
+        width: 62px !important;
+        max-width: 62px !important;
+      }
+      .completion-jewelry-preview .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+        max-height: 70px !important;
+      }
+      .completion-jewelry-preview.item-pendant .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+        max-height: 62px !important;
+      }
+    }
+
+
+    /* v0.10.649: Completion earrings only — enlarge stones to about 120% while retaining plate-center positioning. */
+    .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem {
+      width: 58px !important;
+      max-width: 58px !important;
+      min-width: 0 !important;
+    }
+    .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      display: block !important;
+      width: 58px !important;
+      height: 58px !important;
+      max-width: 58px !important;
+      max-height: 58px !important;
+      object-fit: contain !important;
+    }
+    html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem {
+      width: 50px !important;
+      max-width: 50px !important;
+    }
+    html[data-device-class="phone"] .completion-jewelry-preview.item-earrings .jewelry-loose-set .center-gem > img.jewelry-loose-preview {
+      width: 50px !important;
+      height: 50px !important;
+      max-width: 50px !important;
+      max-height: 50px !important;
+    }
+    html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings,
+    html[data-device-class="phone"][data-orientation="portrait"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose {
+      transform: translateY(16px) !important;
+    }
+
+
+    /* v0.10.644: Portrait-phone pendant completion is moved below the second header bar. */
+    html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-pendant {
+      margin-top: 44px !important;
+    }
+
+
+    /* v0.10.645: Portrait-phone ring completion is moved below the second header bar. */
+    html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-ring {
+      margin-top: 44px !important;
+    }
+
+
+/* v0.10.646 ピアス完成画面: ルースを丸い玉の中心へ固定し、縦スマホでは全体を上部バーから離す */
+.completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+  inset:auto!important;
+  left:50%!important;
+  top:50%!important;
+  width:228px!important;
+  height:206px!important;
+  transform:translate(-50%,-50%)!important;
+}
+@media (max-width:700px){
+  .completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+    width:190px!important;
+    height:172px!important;
+  }
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings{
+  margin-top:44px!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings .jewelry-item-shape.item-earrings{
+  transform:none!important;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="completion"] .completion-jewelry-preview.item-earrings .jewelry-preview-loose{
+  transform:translate(-50%,-50%)!important;
+}
+
+
+    /* v0.10.647: Portrait completion safety gap independent of data-device-class. */
+    @media (orientation: portrait) and (max-width: 820px) {
+      body[data-screen="completion"] .result-card > .completion-jewelry-preview {
+        margin-top: 76px !important;
+      }
+    }
+
+  
+
+    /* v0.10.648: Completion artwork is an explicit stage.
+       Portrait no longer relies on outer margins: the artwork itself starts well below the second header bar. */
+    .completion-jewelry-artwork {
+      position: relative !important;
+      display: grid !important;
+      place-items: center !important;
+      flex: 0 0 auto !important;
+      width: 210px !important;
+      height: 210px !important;
+      overflow: visible !important;
+    }
+    .completion-jewelry-artwork.item-pendant { width: 165px !important; height: 226px !important; }
+    .completion-jewelry-artwork.item-earrings { width: 228px !important; height: 206px !important; }
+    .completion-jewelry-artwork > .jewelry-item-shape.large {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      transform: none !important;
+    }
+    .completion-jewelry-artwork > .jewelry-preview-loose {
+      position: absolute !important;
+      inset: 0 !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      transform: none !important;
+      overflow: visible !important;
+    }
+    @media (max-width: 700px) {
+      .completion-jewelry-artwork { width: 184px !important; height: 184px !important; }
+      .completion-jewelry-artwork.item-pendant { width: 142px !important; height: 195px !important; }
+      .completion-jewelry-artwork.item-earrings { width: 190px !important; height: 172px !important; }
+    }
+    @media (orientation: portrait) and (max-width: 820px) {
+      body[data-screen="completion"] .result-card > .completion-jewelry-preview {
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 0 4px !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      body[data-screen="completion"] .completion-jewelry-artwork {
+        margin: 0 !important;
+        transform: none !important;
+      }
+      body[data-screen="completion"] .result-card > h1 {
+        margin: 0.2rem 0 0.6rem !important;
+      }
+    }
+</style>
+
+<style id="completion-safety-v731">
+/* v0.10.738: 縦画面の完成品イラスト上切れ防止。画像を少し縮小し、上側に安全余白を確保する。 */
+@media (orientation: portrait) and (max-width: 820px) {
+  body[data-screen="completion"] .result-card > .completion-jewelry-preview {
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 0 2px !important;
+    padding: 10px 0 0 !important;
+    overflow: visible !important;
+  }
+  body[data-screen="completion"] .completion-jewelry-artwork {
+    width: 170px !important;
+    height: 170px !important;
+    margin: 0 auto !important;
+    transform: none !important;
+  }
+  body[data-screen="completion"] .completion-jewelry-artwork.item-pendant {
+    width: 132px !important;
+    height: 181px !important;
+  }
+  body[data-screen="completion"] .completion-jewelry-artwork.item-earrings {
+    width: 176px !important;
+    height: 159px !important;
+  }
+  body[data-screen="completion"] .result-card > h1 {
+    margin: 0.1rem 0 0.55rem !important;
+  }
+}
+</style>
+
+<style id="amber-loose-size-v740">
+/* v0.10.740: 工房 > 在庫 > ルース一覧で、琥珀だけ小さく見えるため表示サイズを補正。 */
+body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[src*="/loose/amber/amber.png"] {
+  transform: scale(1.28);
+  transform-origin: center center;
+}
+</style>
+
+<style id="loose-quiz-v2-portrait-safety-v741">
+/* v0.10.741 hotfix: 3Dメガネイベントだけ、縦スマホで人物画像が実寸表示されて画面外へはみ出すのを防ぐ。
+   data-device-class に依存せず、画面名 + 専用v2クラスで完全に限定する。 */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  body[data-screen="looseShopOriginalQuizEvent"]
+  .screen-shell.event-shell-no-header > .screen-content {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2:not(.jxj-quiz-stage-reward-v2) {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2:not(.jxj-quiz-stage-reward-v2) > .jxj-quiz-character-area-v2 {
+    position: absolute !important;
+    z-index: 1 !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: min(90vw, 430px) !important;
+    max-height: 72dvh !important;
+    margin: auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  /* 会話枠は承認済み仕様どおり画面下へ固定。 */
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 {
+    position: absolute !important;
+    z-index: 2 !important;
+    left: 7px !important;
+    right: 7px !important;
+    bottom: max(14px, calc(env(safe-area-inset-bottom) + 9px)) !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 34dvh !important;
+    margin: 0 !important;
+    padding: 12px 14px !important;
+    overflow-y: auto !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 12px !important;
+    background: rgba(20, 15, 11, .86) !important;
+    color: var(--text) !important;
+    text-align: left !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 .jxj-quiz-name-v2 {
+    display: block !important;
+    margin: 0 0 5px !important;
+    font-size: .72rem !important;
+    color: var(--gold-light) !important;
+    text-align: left !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 > strong {
+    display: block !important;
+    font-size: clamp(.9rem, 4vw, 1.02rem) !important;
+    line-height: 1.5 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-dialogue-panel-v2 .jxj-quiz-tap-v2 {
+    display: block !important;
+    margin-top: 7px !important;
+    font-size: .62rem !important;
+    text-align: right !important;
+    opacity: .8 !important;
+  }
+
+  /* 4択時も人物座標は変えず、問題枠だけ下に固定する。 */
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 > .jxj-quiz-question-panel-v2 {
+    position: absolute !important;
+    z-index: 2 !important;
+    left: 7px !important;
+    right: 7px !important;
+    bottom: max(14px, calc(env(safe-area-inset-bottom) + 9px)) !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 44dvh !important;
+    margin: 0 !important;
+    padding: 8px 8px 9px !important;
+    overflow-y: auto !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 12px !important;
+    background: rgba(20, 15, 11, .88) !important;
+    color: var(--text) !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-kicker-v2 {
+    display: inline-flex !important;
+    padding: .18rem .5rem !important;
+    font-size: .62rem !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2 h2 {
+    margin: 5px 0 7px !important;
+    font-size: clamp(.86rem, 4.1vw, 1.02rem) !important;
+    line-height: 1.28 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-grid-v2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-v2 {
+    display: grid !important;
+    grid-template-columns: 1.65rem minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: .38rem !important;
+    min-height: 46px !important;
+    padding: .34rem .42rem !important;
+    border: 1px solid rgba(232,191,104,.38) !important;
+    border-radius: 9px !important;
+    background: rgba(26,19,13,.9) !important;
+    color: var(--text) !important;
+    text-align: left !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-v2 strong {
+    font-size: clamp(.68rem, 3.2vw, .82rem) !important;
+    line-height: 1.24 !important;
+    overflow-wrap: anywhere !important;
+  }
+}
+</style>
+
+</head>
+<body>
+  <div id="background-layer" aria-hidden="true"></div>
+  <div id="background-shade" aria-hidden="true"></div>
+  <div id="root" aria-live="polite"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="modal-layer" class="hidden"></div>
+  <div id="sleep-curtain" aria-hidden="true"></div>
+  <div id="morning-brief" aria-live="polite"></div>
+  <script type="module" src="./js/app.js?v=0.10.813"></script>
+  <script type="module" src="./js/memories-screen.js?v=0.10.813"></script>
+</body>
+</html>

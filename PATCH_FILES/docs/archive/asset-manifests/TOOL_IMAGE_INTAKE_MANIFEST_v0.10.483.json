@@ -1,0 +1,195 @@
+{
+  "version": "0.10.483",
+  "createdAt": "2026-08-01T14:34:00+09:00",
+  "status": "implemented_received_assets",
+  "items": [
+    {
+      "id": "piercing-saw",
+      "nameJa": "糸鋸",
+      "expectedFilename": "piercing-saw.png",
+      "status": "implemented",
+      "sourceFilename": "1000019136.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/piercing-saw.png",
+      "outputSha256": "483121ef224eee439ce30345e00c9a3ac5e45bf6ff2f5a84cb430fdfb39f087b"
+    },
+    {
+      "id": "nipper",
+      "nameJa": "ニッパー",
+      "expectedFilename": "nipper.png",
+      "status": "implemented",
+      "sourceFilename": "1000019138.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/nipper.png",
+      "outputSha256": "155c7f78c68aee094e35ec27c3e07edda51eb34cb4aef5d43db57ef3dd3e9300"
+    },
+    {
+      "id": "electronic-scale",
+      "nameJa": "電子秤",
+      "expectedFilename": "electronic-scale.png",
+      "status": "implemented",
+      "sourceFilename": "1000019142.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/electronic-scale.png",
+      "outputSha256": "dd0c153bbfd003995b0f5da1d3fba4185176b2820cb10c85f933686771123fea"
+    },
+    {
+      "id": "wood-block",
+      "nameJa": "木台",
+      "expectedFilename": "wood-block.png",
+      "status": "implemented",
+      "sourceFilename": "1000019168.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/wood-block.png",
+      "outputSha256": "37d0592d75089a79e9bfb83c99418ed7342d60747936f3366593024061cdc6b2"
+    },
+    {
+      "id": "dividers",
+      "nameJa": "ケガキ（カニコンパス）",
+      "expectedFilename": "dividers.png",
+      "status": "implemented",
+      "sourceFilename": "1000019173.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/dividers.png",
+      "outputSha256": "a475b150a52751e25de977e814ec4a1cc803d01da31841ed6703b80e0350c3eb"
+    },
+    {
+      "id": "milgrain-tool",
+      "nameJa": "ミルタガネ",
+      "expectedFilename": "milgrain-tool.png",
+      "status": "implemented",
+      "sourceFilename": "1000019172.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/milgrain-tool.png",
+      "outputSha256": "fa1d0693838c5dd1ccde86647b526aa4cf3015518d475292c537e81ba0e13654"
+    },
+    {
+      "id": "rolling-mill",
+      "nameJa": "ローラー",
+      "expectedFilename": "rolling-mill.png",
+      "status": "implemented",
+      "sourceFilename": "1000019170.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/rolling-mill.png",
+      "outputSha256": "70ff3711684129bf2b81831cd148e28ff98a169ac160d728a384f52a79f66720"
+    },
+    {
+      "id": "file",
+      "nameJa": "ヤスリ",
+      "expectedFilename": "file.png",
+      "status": "implemented",
+      "sourceFilename": "1000019171.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/file.png",
+      "outputSha256": "a34e17d4efdc422f0cac917ddcc84f09efc0ed8e30eee154da43d24406728655"
+    },
+    {
+      "id": "pliers",
+      "nameJa": "ヤットコ",
+      "expectedFilename": "pliers.png",
+      "status": "implemented",
+      "sourceFilename": "1000019135.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/pliers.png",
+      "outputSha256": "ad21db2ba45baa4e05c6ea995d5d36a800bf144f280d7add447b843fa22e1340"
+    },
+    {
+      "id": "torch",
+      "nameJa": "バーナー",
+      "expectedFilename": "torch.png",
+      "status": "implemented",
+      "sourceFilename": "1000019140.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/torch.png",
+      "outputSha256": "9e95c49c8397520853df7b99e8ef0dc8185fbf76f803ce460b6508d3ca1001e8"
+    },
+    {
+      "id": "hammer",
+      "nameJa": "ハンマー",
+      "expectedFilename": "hammer.png",
+      "status": "implemented",
+      "sourceFilename": "1000019167.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/hammer.png",
+      "outputSha256": "1371e464da264da891fda5ca34a8e649e38f843ea42c3ff4f293f37b9c907757"
+    },
+    {
+      "id": "magnifier",
+      "nameJa": "作業用拡大鏡",
+      "expectedFilename": "magnifier.png",
+      "status": "implemented",
+      "sourceFilename": "1000019169.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/magnifier.png",
+      "outputSha256": "d3d29ec2ae0b03e305d7a8a875884ea5f81c83fb45a764024d2dd9a3e53e87d3"
+    },
+    {
+      "id": "bench-peg",
+      "nameJa": "スリ板",
+      "expectedFilename": "bench-peg.png",
+      "status": "implemented",
+      "sourceFilename": "1000019139.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/bench-peg.png",
+      "outputSha256": "1ce58525adffa9cef721527f7be7089ba8c5e8cb1a3d27c4270ca62f1f28d5cc"
+    },
+    {
+      "id": "graver",
+      "nameJa": "タガネ",
+      "expectedFilename": "graver.png",
+      "status": "implemented",
+      "sourceFilename": "1000019134.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/graver.png",
+      "outputSha256": "fef422afb1b4a86ce3e4aa5330329cc90e71fd35b6a2a648ec0e644fc9e719b5"
+    },
+    {
+      "id": "engraving-block",
+      "nameJa": "彫刻台",
+      "expectedFilename": "engraving-block.png",
+      "status": "implemented",
+      "sourceFilename": "1000019166.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/engraving-block.png",
+      "outputSha256": "d89bde06266c91394d58b105aa02d2636cc968e8fd09b9cf818df1e5c356a588"
+    },
+    {
+      "id": "stamps",
+      "nameJa": "刻印セット",
+      "expectedFilename": "stamps.png",
+      "status": "implemented",
+      "sourceFilename": "1000019165.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/stamps.png",
+      "outputSha256": "8f0038d501d565b0cdb8233189fa85ef78af930bcbc06c8eeb36c82bfc993452"
+    },
+    {
+      "id": "rotary-tool",
+      "nameJa": "リューター",
+      "expectedFilename": "rotary-tool.png",
+      "status": "implemented",
+      "sourceFilename": "1000019141.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/rotary-tool.png",
+      "outputSha256": "54cd8c3fde5c02cef028e1808641b8325533c7240cd6ca1883cdeff1806d1c51"
+    },
+    {
+      "id": "buffer",
+      "nameJa": "バッファー",
+      "expectedFilename": "buffer.png",
+      "status": "not_received",
+      "sourceFilename": null,
+      "implemented": false
+    },
+    {
+      "id": "ultrasonic-cleaner",
+      "nameJa": "超音波洗浄機",
+      "expectedFilename": "ultrasonic-cleaner.png",
+      "status": "implemented",
+      "sourceFilename": "1000019137.png",
+      "implemented": true,
+      "outputPath": "assets/images/tools/ultrasonic-cleaner.png",
+      "outputSha256": "a6949dee73a35e9a9013c199ed0fdbcdcaa51155642800aa323848fe0385305d"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+trigger v0.10.725 portrait spacing and quantity long-hold fix
+retry=1

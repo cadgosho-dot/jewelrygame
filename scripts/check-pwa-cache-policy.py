@@ -24,6 +24,7 @@ def require(ok: bool, message: str) -> None:
 
 index = read('index.html')
 game = read('game.html')
+auth = read('auth.html')
 app = read('js/app.js')
 sw = read('sw.js')
 recovery = read('auth-cache-recovery.js')
@@ -31,7 +32,8 @@ recovery = read('auth-cache-recovery.js')
 canonical_tag = f'<script src="./auth-cache-recovery.js?v={VERSION}"></script>'
 require(canonical_tag in index, 'index.html が現行PWA復旧スクリプトをバージョン付きで読み込んでいません')
 require(canonical_tag in game, 'game.html が現行PWA復旧スクリプトをバージョン付きで読み込んでいません')
-for source_name, source in [('index.html', index), ('game.html', game), ('sw.js', sw)]:
+require(canonical_tag in auth, 'auth.html が現行PWA復旧スクリプトをバージョン付きで読み込んでいません')
+for source_name, source in [('index.html', index), ('game.html', game), ('auth.html', auth), ('sw.js', sw)]:
     require('auth-cache-recovery-v707.js' not in source, f'{source_name} が旧v707復旧スクリプトを現役参照しています')
 
 require(f"const BUILD_VERSION = '{VERSION}';" in recovery, 'PWA復旧スクリプトのBUILD_VERSIONがVERSIONと一致しません')

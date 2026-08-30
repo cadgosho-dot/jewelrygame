@@ -38,7 +38,7 @@ checks = {
     '起動時はlocalStorage互換コピーを残す': 'persistBootLocalStateSafely(savedState, label)' in boot_helper,
     '通常保存はIndexedDBをクラウドより先に確定する': 0 <= normal_idb < normal_cloud,
     'IndexedDB失敗時もlocalStorage結果をフォールバックに使う': 'deviceSaved = indexedDbSaved || Boolean(localResult.saved);' in APP,
-    '終了直前のlocalStorage緊急コピーを維持する': "window.addEventListener('beforeunload', () => saveLocalBackup" in APP,
+    '終了直前のlocalStorage緊急コピーを単一経路で維持する': ("window.addEventListener('beforeunload', () => flushAutosaveLocally" in APP and "const result = saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false });" in APP),
     'ゲームデータ削除でIndexedDBも削除する': 'await deleteIndexedDbSave(currentUser.uid)' in APP,
     'アカウント削除でIndexedDBも削除する': '削除済みアカウントのIndexedDB端末セーブ' in APP,
     'プレゼント競合判定もIndexedDBを見る': 'const localState = await readGiftLocalState(uid);' in FIREBASE and 'await readIndexedDbSave(uid)' in FIREBASE,

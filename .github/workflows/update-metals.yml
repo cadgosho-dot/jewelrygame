@@ -136,10 +136,14 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
 
-      - name: 画像検査用ライブラリを準備
-        run: python3 -m pip install --disable-pip-version-check pillow
+      - name: 画像・実ブラウザ検査環境を準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
 
       - name: 公開前の現行ビルド検査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
         run: |
           echo "Python: $(python3 --version)"
           echo "Node: $(node --version)"
@@ -176,8 +180,15 @@ jobs:
             --exclude='.github/' \
             --exclude='_site/' \
             --exclude='scripts/' \
+            --exclude='tools/' \
+            --exclude='docs/' \
             --exclude='*.md' \
-            --exclude='firestore.rules'
+            --exclude='.firebaserc' \
+            --exclude='.gitignore' \
+            --exclude='firebase.json' \
+            --exclude='firestore.rules' \
+            --exclude='HANDOFF_MANDATORY_REGRESSION_RULES.txt' \
+            --exclude='quiz-layout-test.html'
 
       - name: GitHub Pages用ファイルをアップロード
         uses: actions/upload-pages-artifact@v4

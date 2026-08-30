@@ -4,6 +4,11 @@
   // このファイル名は、旧キャッシュの index.html / game.html が読み込んでも転送が発生しないよう互換目的で残している。
   // v0.10.732 formal-release trigger.
 
+  // v0.10.810: index.html は外側の表示シェルだけなので、ゲームDOM向け互換処理を起動しない。
+  // 旧キャッシュ互換のためファイル自体は読み込ませるが、常時監視や追加スクリプト読込は game.html に限定する。
+  const path = String(location.pathname || '').toLowerCase();
+  if (path.endsWith('/') || path.endsWith('/index.html')) return;
+
   // 2026-08-28: v776-v782で追加した小さい料理画像だけ、ハンバーガー基準の表示枠へ統一する。
   // 本体CSSや既存料理画像は変更せず、正式画像への差し替え時にも同じ表示基準を維持する。
   const installMealImageSizeHotfix = () => {
@@ -31,14 +36,14 @@
   // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
     const script = document.createElement('script');
-    script.src = './memories-event-image-overrides-v751.js?v=0.10.799';
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.811';
     document.head?.appendChild(script);
   })();
 
   // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
   (() => {
     const script = document.createElement('script');
-    script.src = './workshop-staff-images-v754.js?v=0.10.799';
+    script.src = './workshop-staff-images-v754.js?v=0.10.811';
     document.head?.appendChild(script);
   })();
 
@@ -153,13 +158,26 @@
     target.click();
   }, { capture: true, passive: false });
 
-  const scheduleRepair = () => requestAnimationFrame(() => requestAnimationFrame(repairInvisibleBlockers));
-  new MutationObserver(scheduleRepair).observe(document.documentElement, {
-    childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-screen'],
-  });
+  let repairQueued = false;
+  const scheduleRepair = () => {
+    if (repairQueued) return;
+    repairQueued = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      repairQueued = false;
+      repairInvisibleBlockers();
+    }));
+  };
+  const startRepairObserver = () => {
+    const target = document.body;
+    if (!target) return;
+    new MutationObserver(scheduleRepair).observe(target, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-screen', 'style'],
+    });
+    scheduleRepair();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startRepairObserver, { once: true });
+  else startRepairObserver();
   window.addEventListener('pageshow', scheduleRepair);
   window.addEventListener('focus', scheduleRepair);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleRepair(); });
-  window.setInterval(repairInvisibleBlockers, 1200);
-  scheduleRepair();
 })();

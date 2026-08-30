@@ -1,4 +1,4 @@
-export const VERSION = '0.10.731';
+export const VERSION = '0.10.811';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -7137,8 +7137,9 @@ export function createInitialAquariumState(metadata = {}) {
     unlocked: Boolean(metadata.unlocked),
     unlockedDay: Math.max(0, Math.floor(Number(metadata.unlockedDay) || 0)),
     unlockSource: String(metadata.unlockSource || '').slice(0, 80),
-    dataVersion: 3,
+    dataVersion: 5,
     lastSyncRevision: Math.max(0, Math.floor(Number(metadata.lastSyncRevision) || 0)),
+    mortality: { lastProcessedDay: 0, totalDeaths: 0, lastViewedDeathDay: 0, pendingNotices: [], plantLastProcessedDay: 0, totalWithered: 0, lastViewedWitherDay: 0, plantPendingNotices: [] },
   };
 }
 
@@ -7921,23 +7922,88 @@ export function normalizeAquariumState(saved) {
   next.unlocked = Boolean(source.unlocked);
   next.unlockedDay = Math.max(0, Math.floor(Number(source.unlockedDay) || 0));
   next.unlockSource = String(source.unlockSource || '').slice(0, 80);
-  next.dataVersion = 3;
+  next.dataVersion = 5;
   next.lastSyncRevision = Math.max(0, Math.floor(Number(source.lastSyncRevision) || 0));
+  const mortalitySource = isRecord(source.mortality) ? source.mortality : {};
+  next.mortality = {
+    lastProcessedDay: Math.max(0, Math.floor(Number(mortalitySource.lastProcessedDay) || 0)),
+    totalDeaths: Math.max(0, Math.floor(Number(mortalitySource.totalDeaths) || 0)),
+    lastViewedDeathDay: Math.max(0, Math.floor(Number(mortalitySource.lastViewedDeathDay) || 0)),
+    pendingNotices: Array.isArray(mortalitySource.pendingNotices)
+      ? mortalitySource.pendingNotices.slice(-30).map((notice, index) => {
+          const sourceNotice = isRecord(notice) ? notice : {};
+          const deaths = Array.isArray(sourceNotice.deaths) ? sourceNotice.deaths : [];
+          return {
+            id: String(sourceNotice.id || `aquarium-death-${index}`).slice(0, 120),
+            day: Math.max(1, Math.floor(Number(sourceNotice.day) || 1)),
+            tone: Math.max(0, Math.min(5, Math.floor(Number(sourceNotice.tone) || 0))),
+            deaths: deaths.slice(0, 20).map((death) => ({
+              id: String(death?.id || '').slice(0, 100),
+              name: String(death?.name || '').slice(0, 80),
+              count: Math.max(1, Math.floor(Number(death?.count) || 1)),
+            })).filter((death) => death.id && death.name),
+          };
+        }).filter((notice) => notice.deaths.length)
+      : [],
+    plantLastProcessedDay: Math.max(0, Math.floor(Number(mortalitySource.plantLastProcessedDay) || 0)),
+    totalWithered: Math.max(0, Math.floor(Number(mortalitySource.totalWithered) || 0)),
+    lastViewedWitherDay: Math.max(0, Math.floor(Number(mortalitySource.lastViewedWitherDay) || 0)),
+    plantPendingNotices: Array.isArray(mortalitySource.plantPendingNotices)
+      ? mortalitySource.plantPendingNotices.slice(-30).map((notice, index) => {
+          const sourceNotice = isRecord(notice) ? notice : {};
+          const withered = Array.isArray(sourceNotice.withered) ? sourceNotice.withered : [];
+          return {
+            id: String(sourceNotice.id || `aquarium-wither-${index}`).slice(0, 120),
+            day: Math.max(1, Math.floor(Number(sourceNotice.day) || 1)),
+            tone: Math.max(0, Math.min(5, Math.floor(Number(sourceNotice.tone) || 0))),
+            withered: withered.slice(0, 20).map((loss) => ({
+              id: String(loss?.id || '').slice(0, 100),
+              name: String(loss?.name || '').slice(0, 80),
+              count: Math.max(1, Math.floor(Number(loss?.count) || 1)),
+            })).filter((loss) => loss.id && loss.name),
+          };
+        }).filter((notice) => notice.withered.length)
+      : [],
+  };
   next.fish = isRecord(next.fish) ? next.fish : {};
   for (const def of AQUARIUM_CONFIG.fish) {
     const row = isRecord(next.fish[def.id]) ? next.fish[def.id] : {};
+    const individuals = Array.isArray(row.individuals)
+      ? row.individuals.slice(0, Math.max(0, Math.floor(Number(row.owned) || 0))).map((individual, index) => {
+          const sourceIndividual = isRecord(individual) ? individual : {};
+          return {
+            id: String(sourceIndividual.id || `${def.id}-legacy-${index}`).slice(0, 120),
+            acquiredDay: Math.max(1, Math.floor(Number(sourceIndividual.acquiredDay) || 1)),
+            lifespanTargetDays: Math.max(30, Math.floor(Number(sourceIndividual.lifespanTargetDays) || 365)),
+            vulnerability: Math.max(0.25, Math.min(3, Number(sourceIndividual.vulnerability) || 1)),
+          };
+        })
+      : [];
     next.fish[def.id] = {
       owned: Math.max(0, Math.floor(Number(row.owned) || 0)),
       inTank: Math.max(0, Math.floor(Number(row.inTank) || 0)),
       juveniles: Math.max(0, Math.floor(Number(row.juveniles) || 0)),
+      individuals,
     };
   }
   next.plants = isRecord(next.plants) ? next.plants : {};
   for (const def of AQUARIUM_CONFIG.plants) {
     const row = isRecord(next.plants[def.id]) ? next.plants[def.id] : {};
+    const individuals = Array.isArray(row.individuals)
+      ? row.individuals.slice(0, Math.max(0, Math.floor(Number(row.owned) || 0))).map((individual, index) => {
+          const sourceIndividual = isRecord(individual) ? individual : {};
+          return {
+            id: String(sourceIndividual.id || `${def.id}-plant-legacy-${index}`).slice(0, 120),
+            acquiredDay: Math.max(1, Math.floor(Number(sourceIndividual.acquiredDay) || 1)),
+            lifespanTargetDays: Math.max(120, Math.floor(Number(sourceIndividual.lifespanTargetDays) || 1800)),
+            vulnerability: Math.max(0.30, Math.min(2.5, Number(sourceIndividual.vulnerability) || 1)),
+          };
+        })
+      : [];
     next.plants[def.id] = {
       owned: Math.max(0, Math.floor(Number(row.owned) || 0)),
       inTank: Math.max(0, Math.floor(Number(row.inTank) || 0)),
+      individuals,
     };
   }
   next.displayItems = isRecord(next.displayItems) ? next.displayItems : {};
@@ -9201,7 +9267,7 @@ export function migrateState(saved) {
   // v0.10.12ではBGMだけを控えめにし、環境音と効果音は従来の設定を維持する。
   const savedBgmVolume = Number(legacy.settings?.bgmVolume);
   if (!Number.isFinite(Number(state.settings.bgmVolume))) state.settings.bgmVolume = 0.35;
-  if (legacy.version !== VERSION && Number.isFinite(savedBgmVolume) && savedBgmVolume >= 0.70) state.settings.bgmVolume = 0.35;
+  if (versionBefore(legacy.version, '0.10.12') && Number.isFinite(savedBgmVolume) && savedBgmVolume >= 0.70) state.settings.bgmVolume = 0.35;
   state.settings.bgmVolume = Math.max(0, Math.min(1, Number(state.settings.bgmVolume)));
   state.settings.ambientVolume = Number.isFinite(Number(state.settings.ambientVolume)) ? Math.max(0, Math.min(1, Number(state.settings.ambientVolume))) : 0.60;
   if (Number(state.settings.sfxVolume) <= 0.65) state.settings.sfxVolume = 0.75;

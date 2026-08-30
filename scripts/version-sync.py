@@ -77,9 +77,14 @@ RULES = [
     Rule('sw.js', 'game-data.js precache key', qparam(r'\./js/game-data\.js'), keep_prefix),
     Rule('sw.js', 'memories-screen.js precache key', qparam(r'\./js/memories-screen\.js'), keep_prefix),
     Rule('sw.js', 'memories-backgrounds.js precache key', qparam(r'\./js/memories-backgrounds\.js'), keep_prefix),
+    Rule('sw.js', 'daily-gems-index.js precache key', qparam(r'\./js/daily-gems-index\.js'), keep_prefix),
     Rule('sw.js', 'google-auth-bridge.js precache key', qparam(r'\./js/google-auth-bridge\.js'), keep_prefix),
     Rule('sw.js', 'firebase-service.js precache key', qparam(r'\./js/firebase-service\.js'), keep_prefix),
     Rule('sw.js', 'local-save-storage.js precache key', qparam(r'\./js/local-save-storage\.js'), keep_prefix),
+
+    # auth shell
+    Rule('auth.html', 'PWA recovery cache key', qparam(r'\./auth-cache-recovery\.js'), keep_prefix),
+    Rule('auth.html', 'google-auth-bridge.js cache key', qparam(r'\./js/google-auth-bridge\.js'), keep_prefix),
 
     # compatibility loaders
     Rule('hosting-origin-guard.js', 'memories override cache key', qparam(r'\./memories-event-image-overrides-v751\.js'), keep_prefix),
@@ -91,12 +96,23 @@ RULES = [
     Rule('js/app.js', 'UI build version', quoted_constant('UI_BUILD_VERSION'), keep_quote),
     Rule('js/app.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
     Rule('js/app.js', 'audio-scene-map.js import key', qparam(r'\./audio-scene-map\.js'), keep_prefix),
+    Rule('js/app.js', 'daily-gems-index.js import key', qparam(r'\./daily-gems-index\.js'), keep_prefix),
     Rule('js/app.js', 'firebase-service.js import key', qparam(r'\./firebase-service\.js'), keep_prefix),
     Rule('js/app.js', 'local-save-storage.js import key', qparam(r'\./local-save-storage\.js'), keep_prefix),
     Rule('js/firebase-service.js', 'local-save-storage.js import key', qparam(r'\./local-save-storage\.js'), keep_prefix),
+    Rule('js/audio.js', 'audio-scene-map.js import key', qparam(r'\./audio-scene-map\.js'), keep_prefix),
     Rule('js/game-data.js', 'game data VERSION', export_constant('VERSION'), keep_quote),
+    Rule('js/game-data-core.js', 'game data core VERSION', export_constant('VERSION'), keep_quote),
     Rule('js/memories-screen.js', 'memories-backgrounds import key', qparam(r'\./memories-backgrounds\.js'), keep_prefix),
     Rule('js/memories-screen.js', 'memories VERSION', quoted_constant('VERSION'), keep_quote),
+
+    # current management documents; historical archive files are intentionally excluded
+    Rule('README.md', 'README current version', re.compile(r'(?P<prefix>現在の開発基準は、リポジトリ直下 `VERSION` に記録された \*\*v)0\.10\.\d+(?P<suffix>\*\*)'), keep_quote),
+    Rule('CHANGELOG.md', 'CHANGELOG current version', re.compile(r'(?P<prefix>現行基準: \*\*v)0\.10\.\d+(?P<suffix>\*\*)'), keep_quote),
+    Rule('GAME_RULES.md', 'GAME_RULES current version', re.compile(r'(?P<prefix>現行実装基準: \*\*v)0\.10\.\d+(?P<suffix>\*\*)'), keep_quote),
+    Rule('ASSETS.md', 'ASSETS current version', re.compile(r'(?P<prefix>対象: \*\*v)0\.10\.\d+(?P<suffix>\*\*)'), keep_quote),
+    Rule('TODO.md', 'TODO current version', re.compile(r'(?P<prefix>現行基準: \*\*v)0\.10\.\d+(?P<suffix>\*\*)'), keep_quote),
+    Rule('EVENT_PROBABILITY_LIST.md', 'event probability doc version', re.compile(r'(?P<prefix>現行実装基準: \*\*v)0\.10\.\d+(?P<suffix>\*\*)'), keep_quote),
 ]
 
 
@@ -117,6 +133,33 @@ def bump_patch(version: str) -> str:
     match = VERSION_RE.fullmatch(version)
     assert match
     return f'0.10.{int(match.group(1)) + 1}'
+
+
+ACTIVE_QUERY_VERSION_PATHS = [
+    'index.html', 'game.html', 'auth.html', 'sw.js',
+    'hosting-origin-guard.js', 'auth-cache-recovery.js',
+]
+ACTIVE_QUERY_VERSION_RE = re.compile(r"\?v=(0\.10\.\d+)")
+
+
+def inspect_stale_active_query_versions(version: str) -> list[str]:
+    """Catch cache-busting build refs that were added without a synchronization Rule."""
+    errors: list[str] = []
+    paths = [ROOT / rel for rel in ACTIVE_QUERY_VERSION_PATHS]
+    paths.extend(sorted((ROOT / 'js').glob('*.js')))
+    for path in paths:
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding='utf-8')
+        for match in ACTIVE_QUERY_VERSION_RE.finditer(text):
+            found = match.group(1)
+            if found == version:
+                continue
+            line = text.count('\n', 0, match.start()) + 1
+            errors.append(
+                f'{path.relative_to(ROOT)}:{line}: active cache-busting version = {found}（期待 {version}）'
+            )
+    return errors
 
 
 def inspect(version: str) -> list[str]:
@@ -145,6 +188,7 @@ def inspect(version: str) -> list[str]:
                     found_versions = re.findall(r'0\.10\.\d+', match.group(0))
                     found = found_versions[-1] if found_versions else match.group(0)
                     errors.append(f'{rel_path}: {rule.label} = {found}（期待 {version}）')
+    errors.extend(inspect_stale_active_query_versions(version))
     return errors
 
 

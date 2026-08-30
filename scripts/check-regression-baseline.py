@@ -50,8 +50,11 @@ index_html = read('index.html')
 game_html = read('game.html')
 
 # 1) Build version consistency.  Use current markers instead of a fixed number.
+canonical_version = read('VERSION').strip()
 patterns = {
+    'canonical-version': (canonical_version, r'^([0-9.]+)$'),
     'game-data': (game_data, r"export const VERSION = '([0-9.]+)'"),
+    'game-data-core': (game_data_core, r"export const VERSION = '([0-9.]+)'"),
     'service-worker': (sw, r"const VERSION = '([0-9.]+)'"),
     'app-ui': (app, r"const UI_BUILD_VERSION = '([0-9.]+)'"),
     'index-shell': (index_html, r"viewport-shell\.css\?v=([0-9.]+)"),
@@ -69,6 +72,24 @@ if versions and len(set(versions.values())) != 1:
     errors.append('バージョン番号が一致していません: ' + ', '.join(f'{k}={v}' for k, v in versions.items()))
 else:
     notes.append('主要バージョン整合')
+
+# 1b) Migration guard must not reinterpret every normal build bump as the old v0.10.12 BGM migration.
+# A current-ish save with a manually raised BGM volume must remain untouched, while a truly old save is migrated once.
+bgm_migration_test = r'''
+import { initialState, migrateState, VERSION } from './js/game-data.js';
+const recent = initialState();
+recent.version = '0.10.804';
+recent.settings.bgmVolume = 0.85;
+const recentOut = migrateState(structuredClone(recent));
+const old = initialState();
+old.version = '0.10.11';
+old.settings.bgmVolume = 0.85;
+const oldOut = migrateState(structuredClone(old));
+if (recentOut.settings.bgmVolume !== 0.85) throw new Error('recent save BGM was overwritten');
+if (oldOut.settings.bgmVolume !== 0.35) throw new Error('legacy BGM migration did not run');
+if (recentOut.version !== VERSION || oldOut.version !== VERSION) throw new Error('migrated VERSION mismatch');
+'''
+run('BGM migration guard', ['node', '--experimental-default-type=module', '--input-type=module', '-e', bgm_migration_test])
 
 # 2) Split game-data contract.  Both wrapper and core must exist and the wrapper
 # must re-export core while keeping current overrides possible.

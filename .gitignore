@@ -2,3 +2,9 @@
 Thumbs.db
 .firebase/
 firebase-debug.log
+# Python build/cache artifacts
+__pycache__/
+*.py[cod]
+
+# Local generated site/output
+_site/

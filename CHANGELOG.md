@@ -1,3 +1,137 @@
+# CHANGELOG — JEWELRY×JEWELRY
+
+> 現行基準: **v0.10.811** / 棚卸し日: 2026-08-30
+> 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
+> **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
+
+## v0.10.811 — 検索インデックス・SEO公開基盤
+
+- 正式公開URLを `https://cadgosho-dot.github.io/jewelrygame/` としてcanonicalへ固定。トップページのタイトル・説明を「宝石採掘 / 研磨 / ジュエリー制作 / 店舗経営」が検索エンジンへ伝わる内容へ整理。
+- OGP / Twitter Cardを追加し、既存の `assets/images/main-menu.webp` を共有・検索用代表画像として指定。元画像自体は変更なし。
+- GoogleがWebゲームを理解できるよう、トップページへ `VideoGame + WebApplication`、`applicationCategory: GameApplication` のJSON-LD構造化データを追加。架空のレビュー・評価は追加しない。
+- 検索エンジンと初見ユーザー向けの静的な `about.html` を追加。採掘、研磨・制作、接客・販売・店舗経営、御徒町イベントという現行ゲーム内容を文章で説明し、ゲーム入口へリンク。
+- `sitemap.xml` を追加し、検索対象を正式トップURLと `about.html` の2ページに限定。`game.html` は `noindex,follow`、`auth.html` は `noindex,nofollow,noarchive` とし、内部画面が検索結果で競合しないよう整理。
+- `robots.txt` を追加。ただしGitHub Pagesのプロジェクトサイトではホスト直下robotsにはならないため、Google向けサイトマップは公開後にSearch Consoleから直接送信する運用を明記。
+- PWAマニフェストの説明文を検索用説明と統一。JavaScript無効時にはトップでゲーム概要と `about.html` へのリンクを表示する正規fallbackを追加。
+- `scripts/check-seo.py` を追加し、canonical、meta description、OGP、Twitter Card、JSON-LD、サイトマップ、robots、内部ページnoindexを総合監査で自動検査。Pages公開検査でもSEO必須ファイルを確認する。
+- ゲームルール、セーブ形式、イベント、画像・音源の内容は変更なし。
+
+## v0.10.810 — 水槽正本化・終了時保存一本化・実ブラウザ監査基盤
+
+- 水槽観察の旧 `aquarium-observe-v734-hotfix.js` をService WorkerがHTMLへ動的注入する処理を廃止。v0.10.802以降の再設置対応を含む `assets/minigames/aquarium/index.html` 本体を唯一の実行正本にした。旧ホットフィックスは `docs/archive/legacy-code/` へ履歴保存。
+- 旧ホットフィックスが「設置数0の流木・石」を観察一覧から隠し、v0.10.802の再設置修正を上書きし得た競合を解消。
+- `beforeunload` / `pagehide` / `visibilitychange` の重複端末保存を一本化し、同じ状態の連続ライフサイクルイベントでは指紋比較で再保存を抑止。`saveRevision` が終了操作だけで不必要に複数進む状態を防止。
+- `check-current.py` から漏れていた `check-event-integrity.py`、`check-event-save-roundtrip.py`、`check-meal-quiz-recovery.py`、`check-okachimachi-night-background.py`、`check-startup-diagnostics.py` を正式に総合監査へ追加。
+- 水槽正本、終了時保存、互換DOM監視、Firebase App Check準備状態を守る専用検査を追加し、現行 `check-*.py` が総合監査から漏れていない状態にした。
+- 総合監査は独立した検査を最大4本まで並列実行するようにし、検査項目を省略せず長時間化を抑制。`JXJ_CHECK_WORKERS=1` で従来どおり逐次実行も可能。
+- `hosting-origin-guard.js` は外側の `index.html` ではゲーム用互換処理を起動せず、`game.html` だけで動作するよう限定。1.2秒周期の常時監視を廃止し、DOM変更・復帰・フォーカス時のイベント駆動へ変更。
+- Playwrightによる実ブラウザ・スモークテストを追加。新規ゲーム、名前設定、端末保存、再読込、続きから、スマートフォン、就寝翌日、水槽観察、未設置流木の再設置可能状態を検査する。
+- GitHub Actionsの公開前検査でPlaywright Chromiumを準備し、実ブラウザテストを必須化。ローカルでブラウザ未導入の場合のみ明示的にSKIPする。
+- Firebase App Checkは初期化・不完全設定拒否のコードを保持し、site key未取得の現在は安全な `enabled: false` を維持。管理画面設定後のみ有効化することを自動検査する。
+- ゲームルール、セーブ形式、イベント確率、画像・音源の内容は変更なし。
+
+## v0.10.809 — リポジトリ整理・現行検査経路の明確化
+
+- 現行 `scripts/` から、過去更新専用の `check-vXXX` / `apply_vXXX` / 旧起動最適化・旧セーブ検査 **43件**を `docs/archive/verification-code/scripts/` へ移動。
+- 現行 `tools/` から、過去VERSION専用の `validate-vXXX` 等 **30件**を `docs/archive/verification-code/tools/` へ移動。削除せず履歴保存。
+- 工具画像の旧受領・実装・パッケージマニフェスト5件を `docs/archive/asset-manifests/`、旧 `TRIGGER_V725.txt` を `docs/archive/legacy-markers/` へ分離。
+- `scripts/generate-assets-manifest.py` は `docs/archive/` 内の歴史コードを「現行の使用場所」として数えないよう修正。一方、アーカイブ済み受領マニフェストは由来情報として引き続き読み取る。
+- `scripts/check-repository-hygiene.py` を追加し、Pythonキャッシュ、過去専用検証コードの現行フォルダ混入、旧マニフェスト/トリガーのルート復帰、アーカイブ欠落を自動検出。
+- `.gitignore` に `__pycache__/` / `*.py[cod]` / `_site/` を追加し、生成物混入を防止。既存の `scripts/__pycache__` は削除。
+- 整理中に、`scripts/check-metal-market-fallback.py` が存在するのに全体監査から呼ばれていないことを確認。`check-current.py` へ追加し、地金相場API失敗時の既存価格継続ルールを毎回検査するよう修正。
+- GitHub Pagesの `rsync` が `docs/`・`tools/`・Firebase設定・確認用HTMLなど開発/履歴ファイルまで公開対象にしていたため、公開除外を追加。`scripts/check-pages-publish-policy.py` を全体監査へ追加し、再発を自動検出。
+- ゲーム内容、セーブ形式、イベント確率、画像・音源、PWA挙動には変更なし。
+
+## v0.10.808 — 旧引継ぎ資料の重複解消
+
+- ルートに残っていた旧引継ぎ資料 `JEWELRYxJEWELRY_#U5f15#U304d#U7d99#U304e#U8cc7#U6599.md` を除去。
+- 同一SHA-256の `docs/archive/JEWELRYxJEWELRY_#U5f15#U304d#U7d99#U304e#U8cc7#U6599.md` は履歴資料として保持。
+- ゲームコード、セーブ形式、イベント、画像・音源、PWA挙動には変更なし。
+
+## v0.10.807 — 認証PWA経路・旧確認資料アーカイブ修正
+
+- `auth.html` が旧 `auth-cache-recovery-v707.js` を読み込んでいた不整合を修正し、`auth-cache-recovery.js?v=<現行VERSION>` へ統一。
+- `version-sync.py` の同期対象に `auth.html` のPWA復旧スクリプトを追加し、認証画面だけ古いキャッシュ参照が残る再発を防止。
+- `check-pwa-cache-policy.py` の検査対象へ `auth.html` を追加し、旧v707参照または現行VERSIONなしの復旧スクリプト参照を自動FAILにした。
+- 統一後に参照0件となった `auth-cache-recovery-v707.js` は削除せず `docs/archive/legacy-code/` へ退避し、現役コードと分離。
+- ルートに重複して残っていた旧引継ぎ資料を除去し、同一内容の `docs/archive/` 側だけを履歴として保持。
+- ルートに残っていた旧実装確認資料36件を、参照なしを確認したうえで `docs/archive/verification/` へ移動。元ファイル名は維持。
+- `docs/archive/verification/INDEX.md` を追加し、過去確認資料を現行正本から明確に分離。
+- `check-management-docs.py` を強化し、旧 `v0.10.*.md` がルートへ戻った場合や確認資料アーカイブが欠落した場合を自動検出。
+- ゲーム内容、セーブ形式、イベント、画像・音源の仕様には変更なし。
+
+## v0.10.806 — 管理基盤・資料整合の完全化
+
+- `version-sync.py` の同期対象へ `daily-gems-index.js`、`audio-scene-map.js`、`google-auth-bridge.js` の残存キャッシュバスターを追加し、すべて現行VERSIONへ統一。
+- HTML / Service Worker / `js/*.js` に古い `?v=0.10.xxx` が残った場合、個別Ruleに未登録でも自動検出してFAILする安全網を追加。
+- README / CHANGELOG / GAME_RULES / ASSETS / TODO / EVENT_PROBABILITY_LIST の現行VERSIONヘッダーも `VERSION` から同期するようにした。
+- `EVENT_PROBABILITY_LIST.md` を現行 `js/app.js` の定数から自動生成・照合する仕組みに変更。韓国料理の水槽イベントは `1/15 × 1.2 = 8%` と明示。
+- 河原・工房の河童イベントの `1/30` 直書きを名前付き定数化。確率そのものは変更なし。
+- 旧README、旧v0.10.581確率表、旧更新説明、旧引継ぎ資料を `docs/archive/` へ移し、ルートREADMEを現行開発案内へ更新。
+- `scripts/check-management-docs.py` を追加し、現行資料・アーカイブ分離・確率資料・ASSETS棚卸しの自動整合を `check-current.py` で毎回検査。
+- `ASSETS.md` も `assets/` 実ファイル・寸法・透明性・SHA-256・静的参照から再生成/照合できるようにし、コード行番号のずれも検出可能にした。
+- ゲーム内容、セーブ形式、イベント発生率そのもの、画像・音源には変更なし。
+
+## v0.10.805 — VERSION正本化・移行判定修正
+
+- リポジトリ直下 `VERSION` を唯一の正本とする既存方針を強化。
+- `scripts/version-sync.py` の同期・検査対象に `js/game-data-core.js` の `VERSION` を追加。
+- `scripts/check-regression-baseline.py` で `VERSION` / `game-data.js` / `game-data-core.js` / Service Worker / UI の一致を検査。
+- `game-data-core.js` に残っていた 0.10.731 のドリフトを現行VERSIONへ同期。
+- BGM音量の旧移行処理を「VERSIONが異なる時」ではなく「v0.10.12より前のセーブだけ」に限定し、通常の更新でユーザー設定を上書きしないよう修正。
+- ゲーム内容、セーブ形式、イベント、画像、PWA仕様は変更なし。
+
+## 現行管理ルール
+
+- 作業開始時に `VERSION` と `python3 scripts/version-sync.py --check` を確認する。
+- 古いZIP・途中版を作業基準にしない。最新版の完全プロジェクトだけを基準にする。
+- 「実装してください」と明示されるまでは本体コードを変更しない。
+- 実装前に変更対象ファイル・機能を限定し、セーブ／ロード、日付進行、所持金、イベント判定、画像読込、PWAは必要がない限り触らない。
+- ユーザー提供画像は、明示許可がない限り **再生成・色変更・彩度変更・画風変更禁止**。
+- 不要ファイル削除は、バックアップ → 使用状況調査 → 不要候補一覧 → 削除 → 全体検証、の順で行う。
+- 完了前に `python3 scripts/check-current.py` を実行し、`CURRENT BUILD AUDIT: PASS` を必須とする。
+- GitHub反映はこのチャットでは最後にまとめて行う。
+
+## 直近の確定更新
+
+### v0.10.804 — 水草の自然な枯死
+- 水草10種類に株ごとの個体差・寿命傾向・購入直後の不安定さを持つランダム枯死を追加。
+- 判定は就寝して翌日に進む時に1日1回。購入当日、同日複数株、連日での枯死も発生可能。
+- 日常の枯死率は魚より明確に低く、長期間変化しない状態を通常とした。
+- 枯れた株は所持数・水槽内数から減り、水槽を開いた時に初めて変化を通知する。
+
+### v0.10.803 — 魚のランダム死亡
+- 魚1匹ごとの寿命傾向・個体差・購入直後の不安定さと、日ごとの水槽全体の揺らぎを使う死亡判定を追加。
+- 購入当日から死亡可能。同日大量死、前日死亡後の翌日死亡も制限しない。
+- 死亡すると `owned` / `inTank` を減らし、飼育負荷を即時解放する。
+- 水槽を開くまで死亡通知を保留し、開いた時にまとめて確認する。
+
+### v0.10.802 — 水槽レイアウト用品の再設置
+- 流木・石を設置数0まで撤去しても、所持中なら観察一覧に残るよう修正。
+- 所持数・設置上限の範囲で「1個設置」から再設置可能にした。
+
+### v0.10.801 — 水槽表示の完全同期
+- 魚11種、水草10種、流木6種、石9種を現在のセーブID体系から水槽へ反映。
+- 旧 `driftwood` / `layout_stone` 汎用ID依存を外し、本体セーブデータを同期元に統一。
+- 追加5種の水草も水槽画面へ表示。
+
+### v0.10.800 — 熱帯魚購入データの水槽同期修正
+- 水槽HTMLのJavaScript構文エラーを修正。
+- タブ操作の内側へ入り込んでいた同期開始処理をページ起動時へ戻し、購入済みの `inTank` を水槽へ反映。
+
+### v0.10.799 — v0.10.791からの統合更新（履歴上の統合版）
+- 病院イベント第1〜4回を実装。
+- 中華料理「謎のメニュー」を4種類へ拡張。
+- 料理系ランダムイベント発生率、ルース屋3Dメガネ、御徒町イベント頻度を調整。
+- 新規イベント同士が競合する場面で判定候補順をシャッフルし、固定順の偏りを軽減。
+- ※ v0.10.792〜798の個別詳細は現行リポジトリの `CHANGELOG.md` に残っていないため、推測で分割記録しない。
+
+---
+
+## 既存履歴（内容を保持）
+
+以下は棚卸し前から存在していた履歴。順序が前後している箇所もあるが、履歴破壊を避けるため今回は並べ替えていない。
+
 # v0.10.738 - 2026-08-22
 
 - 「思い出」の背景を、電球と蛾の確定済み横画面／縦画面画像へ復旧し、少し暗く調整。

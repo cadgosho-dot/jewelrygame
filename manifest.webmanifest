@@ -1,7 +1,7 @@
 {
   "name": "JEWELRY×JEWELRY",
   "short_name": "JEWELRY×JEWELRY",
-  "description": "宝石を採掘し、ジュエリーを作って店舗で販売するゲーム",
+  "description": "宝石を採掘し、原石を研磨してジュエリーを制作。御徒町を舞台に接客・販売・店舗経営を楽しめるブラウザシミュレーションゲーム「JEWELRY×JEWELRY」。",
   "start_url": "./game.html?source=pwa",
   "scope": "./",
   "display": "standalone",

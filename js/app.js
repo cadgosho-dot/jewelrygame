@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.799';
+} from './game-data.js?v=0.10.811';
 
-const UI_BUILD_VERSION = '0.10.799';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.799';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.799';
+const UI_BUILD_VERSION = '0.10.811';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.811';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.811';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.691';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.811';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.799';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.799';
+} from './firebase-service.js?v=0.10.811';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.811';
 
 
 
@@ -213,6 +213,7 @@ let autosaveLastReason = '';
 let autosaveStatusHideTimer = null;
 let lastSavedFingerprint = '';
 let lastCloudSavedFingerprint = '';
+let lastLifecycleLocalFingerprint = '';
 let cloudSaveFailureActive = false;
 let lastSuccessfulSaveAt = '';
 const AUTOSAVE_DELAY_MS = 450;
@@ -375,7 +376,7 @@ const EMERALD_CAPTAIN_KEBAB_EVENT_GEM_ID = 'emerald';
 const EMERALD_CAPTAIN_KEBAB_EVENT_CHARACTER_NAME = 'エメラルド班班長';
 const EMERALD_CAPTAIN_KEBAB_EVENT_SHAPE_IDS = Object.freeze(['round', 'oval', 'pear', 'marquise', 'emerald', 'trilliant', 'roundCabochon', 'ovalCabochon']);
 const GRAY_HOOD_AQUARIUM_EVENT_MIN_DAY = 366;
-// v0.10.586: 一度限りの重要イベントのため、韓国料理の水槽イベントのみ1/15。
+// 韓国料理の水槽イベントは基礎1/15に料理イベント倍率を適用し、現行8%。
 const GRAY_HOOD_AQUARIUM_EVENT_CHANCE = (1 / 15) * MEAL_EVENT_RATE_MULTIPLIER;
 const GRAY_HOOD_AQUARIUM_INTRO_VIDEO = './assets/videos/events/gray-hood-aquarium-intro.mp4';
 const TATTOO_WOMAN_AMBER_INTRO_VIDEO = './assets/videos/events/tattoo-woman-amber-intro.mp4';
@@ -411,6 +412,8 @@ const KAWAHARA_KNOWLEDGE_EVENT_CHANCE = 1 / 40;
 const KAWAHARA_KNOWLEDGE_EVENT_IMAGE = './assets/images/events/glab-kawahara.png';
 const KAWAHARA_KNOWLEDGE_EVENT_INTRO_VIDEO = './assets/videos/events/glab-kawahara-intro.mp4';
 const KAWAHARA_KNOWLEDGE_EVENT_SOURCE = 'カワハラ';
+const KAPPA_JADE_EVENT_CHANCE = 1 / 30;
+const WORKSHOP_KAPPA_JADE_EVENT_CHANCE = 1 / 30;
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE = 1 / 12;
 const ONE_LOVE_EVENT_CHANCE = 0.25;
 const ONE_LOVE_EVENT_FIRST_ELIGIBLE_DAY = 181;
@@ -4166,6 +4169,7 @@ function saveGame(message = false) {
     return saveQueue;
   }
   const localResult = saveLocalBackup({ fingerprint, createCloudSnapshot: true, updateFingerprint: true });
+  if (localResult.saved && fingerprint) lastLifecycleLocalFingerprint = fingerprint;
   const snapshot = localResult.snapshot;
   if (!snapshot) {
     showAutosaveStatus('error', 'セーブデータを準備できませんでした', { persistent: true });
@@ -4257,7 +4261,12 @@ function flushAutosaveLocally(reason = 'lifecycle-local') {
   }
   autosavePending = false;
   syncGameClearState();
+  const fingerprint = saveStateFingerprint(state);
+  // visibilitychange -> pagehide -> beforeunload/freeze が同じ終了操作で連続しても、
+  // 内容が変わっていなければ端末セーブを重複実行しない。saveRevision の不要な増加も防ぐ。
+  if (fingerprint && fingerprint === lastLifecycleLocalFingerprint) return;
   const result = saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false });
+  if (result.saved) lastLifecycleLocalFingerprint = fingerprint;
   if (!result.saved && !result.skipped) showAutosaveStatus('error', '端末に保存できませんでした', { persistent: true });
 }
 
@@ -7717,7 +7726,7 @@ function maybeStartKappaJadeEvent() {
   if (eventState.active) return resumeKappaJadeEvent();
   if (selectedMining !== 'river') return false;
   if (!markVisitEventCheckOncePerDay(eventState)) return false;
-  if (Math.random() >= (1 / 30)) {
+  if (Math.random() >= KAPPA_JADE_EVENT_CHANCE) {
     saveGame();
     return false;
   }
@@ -7807,7 +7816,7 @@ function maybeStartWorkshopKappaJadeEvent() {
   if (kappaJadeEventState().totalTriggered < 1) return false;
   if (state.game.day < Math.max(0, Number(eventState.nextTriggerDay) || 0)) return false;
   if (!markVisitEventCheckOncePerDay(eventState)) return false;
-  if (Math.random() >= (1 / 30)) {
+  if (Math.random() >= WORKSHOP_KAPPA_JADE_EVENT_CHANCE) {
     saveGame();
     return false;
   }
@@ -11163,8 +11172,8 @@ function purchaseTropicalShopItem(){
   const max=tropicalShopMaxQuantity(product); const qty=Math.max(0,Math.min(max,Math.floor(Number(modal.qty)||0))); if(qty<1)return showToast('購入できません。','error');
   const total=product.price*qty; if(state.game.money<total)return showToast('所持金が足りません。','error');
   const aquarium=aquariumState();
-  if(product.category==='fish'){const row=aquarium.fish[product.id];row.owned+=qty;row.inTank+=qty;refreshAquariumLoad(aquarium);}
-  else if(product.category==='plant'){const row=aquarium.plants[product.id];row.owned+=qty;row.inTank+=qty;}
+  if(product.category==='fish'){const row=aquarium.fish[product.id];ensureAquariumFishIndividuals(aquarium,state.game.day);row.owned+=qty;row.inTank+=qty;addAquariumFishIndividuals(product.id,qty,aquarium,state.game.day);refreshAquariumLoad(aquarium);}
+  else if(product.category==='plant'){const row=aquarium.plants[product.id];ensureAquariumPlantIndividuals(aquarium,state.game.day);row.owned+=qty;row.inTank+=qty;addAquariumPlantIndividuals(product.id,qty,aquarium,state.game.day);}
   else {const row=aquarium.displayItems[product.id];row.owned+=qty;row.installed+=qty;}
   aquarium.lastSyncRevision+=1; state.game.money-=total; addFinance(`熱帯魚屋 ${product.name}`,0,total); addNotification(`${product.name}を購入しました`, product.category==='fish'?`${qty}匹を水槽へ入れました。`:product.category==='plant'?`${qty}株を水槽へ入れました。`:`${qty}個を水槽へ設置しました。`,'special');
   delete screenData.tropicalModal; saveGame(); startMoneyFeedback(-total,1200); playSfx('coin',{gain:.86}); vibrate(28); render();
@@ -13176,6 +13185,387 @@ function refreshAquariumLoad(aquarium = aquariumState()) {
 function aquariumPlantTotal(aquarium = aquariumState()) {
   return AQUARIUM_CONFIG.plants.reduce((sum, def) => sum + Math.max(0, Number(aquarium.plants?.[def.id]?.inTank) || 0), 0);
 }
+
+// v0.10.804: 水草も固定日数で一斉に消えず、株ごとの個体差と日ごとの揺らぎで自然に枯れる。
+// 魚よりかなり低い頻度にしつつ、購入直後・同日複数・連日枯死を禁止する保護ルールは置かない。
+const AQUARIUM_PLANT_MORTALITY = Object.freeze({
+  anacharis: Object.freeze({ lifespanMin: 1100, lifespanMax: 2800, baseRisk: 0.00012, acclimationRisk: 0.0010 }),
+  amazon_sword: Object.freeze({ lifespanMin: 1400, lifespanMax: 3800, baseRisk: 0.00008, acclimationRisk: 0.0008 }),
+  microsorum: Object.freeze({ lifespanMin: 1600, lifespanMax: 4200, baseRisk: 0.00007, acclimationRisk: 0.0006 }),
+  anubias_nana: Object.freeze({ lifespanMin: 1800, lifespanMax: 4800, baseRisk: 0.00005, acclimationRisk: 0.0005 }),
+  willow_moss: Object.freeze({ lifespanMin: 1300, lifespanMax: 3600, baseRisk: 0.00008, acclimationRisk: 0.0006 }),
+  vallisneria: Object.freeze({ lifespanMin: 1100, lifespanMax: 3000, baseRisk: 0.00010, acclimationRisk: 0.0009 }),
+  cabomba: Object.freeze({ lifespanMin: 750, lifespanMax: 2200, baseRisk: 0.00020, acclimationRisk: 0.0025 }),
+  hygrophila: Object.freeze({ lifespanMin: 1000, lifespanMax: 2800, baseRisk: 0.00011, acclimationRisk: 0.0011 }),
+  amazon_pennywort: Object.freeze({ lifespanMin: 1000, lifespanMax: 2800, baseRisk: 0.00012, acclimationRisk: 0.0012 }),
+  cryptocoryne: Object.freeze({ lifespanMin: 1300, lifespanMax: 3600, baseRisk: 0.00009, acclimationRisk: 0.0028 }),
+});
+
+function aquariumPlantMortalityProfile(id) {
+  return AQUARIUM_PLANT_MORTALITY[id] || Object.freeze({ lifespanMin: 1100, lifespanMax: 3000, baseRisk: 0.00010, acclimationRisk: 0.0010 });
+}
+
+function randomAquariumPlantLifespanTarget(profile) {
+  const minimum = Math.max(120, Math.floor(Number(profile?.lifespanMin) || 1100));
+  const maximum = Math.max(minimum, Math.floor(Number(profile?.lifespanMax) || minimum));
+  return minimum + Math.floor(Math.random() * (maximum - minimum + 1));
+}
+
+function createAquariumPlantIndividual(plantId, currentDay = state?.game?.day || 1, { legacy = false } = {}) {
+  const profile = aquariumPlantMortalityProfile(plantId);
+  const lifespanTargetDays = randomAquariumPlantLifespanTarget(profile);
+  const day = Math.max(1, Math.floor(Number(currentDay) || 1));
+  // 既存セーブの水草は購入日が不明なので、初回だけ無理のない範囲で年齢差を与える。
+  const unknownAgeDays = legacy ? Math.floor(Math.random() * Math.max(1, Math.floor(lifespanTargetDays * 0.75))) : 0;
+  return {
+    id: `${plantId}-${day}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+    acquiredDay: Math.max(1, day - unknownAgeDays),
+    lifespanTargetDays,
+    vulnerability: 0.62 + Math.random() * 0.92,
+  };
+}
+
+function ensureAquariumPlantIndividuals(aquarium = aquariumState(), currentDay = state?.game?.day || 1) {
+  for (const def of AQUARIUM_CONFIG.plants) {
+    const row = aquarium.plants?.[def.id];
+    if (!row) continue;
+    row.individuals = Array.isArray(row.individuals) ? row.individuals : [];
+    const owned = Math.max(0, Math.floor(Number(row.owned) || 0));
+    if (row.individuals.length > owned) row.individuals = row.individuals.slice(0, owned);
+    while (row.individuals.length < owned) row.individuals.push(createAquariumPlantIndividual(def.id, currentDay, { legacy: true }));
+  }
+  return aquarium;
+}
+
+function addAquariumPlantIndividuals(plantId, quantity = 1, aquarium = aquariumState(), currentDay = state?.game?.day || 1) {
+  const row = aquarium.plants?.[plantId];
+  if (!row) return false;
+  row.individuals = Array.isArray(row.individuals) ? row.individuals : [];
+  const qty = Math.max(0, Math.floor(Number(quantity) || 0));
+  for (let index = 0; index < qty; index += 1) row.individuals.push(createAquariumPlantIndividual(plantId, currentDay));
+  return qty > 0;
+}
+
+function aquariumDailyPlantMortalityFactor() {
+  const roll = Math.random();
+  // 水草は魚より安定。ごくまれな「調子の悪い日」だけ複数株が同時に枯れやすくなる。
+  if (roll < 0.010) return 2.5 + Math.random() * 2.0;
+  if (roll < 0.080) return 1.15 + Math.random() * 0.65;
+  return 0.70 + Math.random() * 0.50;
+}
+
+function aquariumIndividualPlantDeathChance(plantId, individual, currentDay, tankFactor = 1) {
+  const profile = aquariumPlantMortalityProfile(plantId);
+  const acquiredDay = Math.max(1, Math.floor(Number(individual?.acquiredDay) || currentDay));
+  const ageDays = Math.max(0, currentDay - acquiredDay);
+  const lifespanTarget = Math.max(120, Math.floor(Number(individual?.lifespanTargetDays) || randomAquariumPlantLifespanTarget(profile)));
+  const vulnerability = Math.max(0.30, Math.min(2.5, Number(individual?.vulnerability) || 1));
+  const ageRatio = ageDays / lifespanTarget;
+  let ageMultiplier = 1;
+  if (ageRatio >= 1) ageMultiplier = Math.min(12, 2.2 + (ageRatio - 1) * 6.5);
+  else if (ageRatio >= 0.70) ageMultiplier = 1 + ((ageRatio - 0.70) / 0.30) * 1.25;
+  const acclimationProgress = Math.min(1, ageDays / 35);
+  const acclimationRisk = ageDays <= 34
+    ? Math.max(0, Number(profile.acclimationRisk) || 0) * Math.pow(1 - acclimationProgress, 1.45)
+    : 0;
+  const baseRisk = Math.max(0, Number(profile.baseRisk) || 0.00010) * ageMultiplier;
+  return clamp((baseRisk + acclimationRisk) * vulnerability * Math.max(0.30, Number(tankFactor) || 1), 0, 0.12);
+}
+
+// v0.10.803: 魚は固定寿命日で機械的に消さず、個体差と日ごとの揺らぎを持つ自然死亡にする。
+// 購入直後・同日複数死亡・連日死亡を禁止する保護ルールは置かない。
+const AQUARIUM_FISH_MORTALITY = Object.freeze({
+  neon_tetra: Object.freeze({ lifespanMin: 260, lifespanMax: 760, baseRisk: 0.0014, acclimationRisk: 0.0070 }),
+  rummy_nose_tetra: Object.freeze({ lifespanMin: 300, lifespanMax: 850, baseRisk: 0.0013, acclimationRisk: 0.0080 }),
+  red_phantom_tetra: Object.freeze({ lifespanMin: 280, lifespanMax: 780, baseRisk: 0.0014, acclimationRisk: 0.0070 }),
+  african_lampeye: Object.freeze({ lifespanMin: 220, lifespanMax: 650, baseRisk: 0.0016, acclimationRisk: 0.0080 }),
+  platy: Object.freeze({ lifespanMin: 180, lifespanMax: 520, baseRisk: 0.0019, acclimationRisk: 0.0090 }),
+  black_molly: Object.freeze({ lifespanMin: 200, lifespanMax: 580, baseRisk: 0.0018, acclimationRisk: 0.0090 }),
+  corydoras: Object.freeze({ lifespanMin: 420, lifespanMax: 1100, baseRisk: 0.0010, acclimationRisk: 0.0060 }),
+  dwarf_gourami: Object.freeze({ lifespanMin: 300, lifespanMax: 760, baseRisk: 0.0014, acclimationRisk: 0.0080 }),
+  altum_angelfish: Object.freeze({ lifespanMin: 520, lifespanMax: 1300, baseRisk: 0.0012, acclimationRisk: 0.0140 }),
+  discus_blue_diamond: Object.freeze({ lifespanMin: 560, lifespanMax: 1400, baseRisk: 0.0010, acclimationRisk: 0.0120 }),
+  discus_red_map: Object.freeze({ lifespanMin: 560, lifespanMax: 1400, baseRisk: 0.0010, acclimationRisk: 0.0125 }),
+});
+
+function aquariumFishMortalityProfile(id) {
+  return AQUARIUM_FISH_MORTALITY[id] || Object.freeze({ lifespanMin: 300, lifespanMax: 800, baseRisk: 0.0014, acclimationRisk: 0.008 });
+}
+
+function randomAquariumFishLifespanTarget(profile) {
+  const minimum = Math.max(30, Math.floor(Number(profile?.lifespanMin) || 300));
+  const maximum = Math.max(minimum, Math.floor(Number(profile?.lifespanMax) || minimum));
+  return minimum + Math.floor(Math.random() * (maximum - minimum + 1));
+}
+
+function createAquariumFishIndividual(fishId, currentDay = state?.game?.day || 1, { legacy = false } = {}) {
+  const profile = aquariumFishMortalityProfile(fishId);
+  const lifespanTargetDays = randomAquariumFishLifespanTarget(profile);
+  const day = Math.max(1, Math.floor(Number(currentDay) || 1));
+  // 既存セーブの魚は購入日が不明なので、初回だけ「すでにある程度飼っていた」個体差を与える。
+  // 新規購入魚は当日を購入日として記録し、その晩から死亡抽選の対象になる。
+  const unknownAgeDays = legacy ? Math.floor(Math.random() * Math.max(1, Math.floor(lifespanTargetDays * 0.90))) : 0;
+  return {
+    id: `${fishId}-${day}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+    acquiredDay: Math.max(1, day - unknownAgeDays),
+    lifespanTargetDays,
+    vulnerability: 0.58 + Math.random() * 1.34,
+  };
+}
+
+function ensureAquariumFishIndividuals(aquarium = aquariumState(), currentDay = state?.game?.day || 1) {
+  for (const def of AQUARIUM_CONFIG.fish) {
+    const row = aquarium.fish?.[def.id];
+    if (!row) continue;
+    row.individuals = Array.isArray(row.individuals) ? row.individuals : [];
+    const owned = Math.max(0, Math.floor(Number(row.owned) || 0));
+    if (row.individuals.length > owned) row.individuals = row.individuals.slice(0, owned);
+    while (row.individuals.length < owned) row.individuals.push(createAquariumFishIndividual(def.id, currentDay, { legacy: true }));
+  }
+  return aquarium;
+}
+
+function addAquariumFishIndividuals(fishId, quantity = 1, aquarium = aquariumState(), currentDay = state?.game?.day || 1) {
+  const row = aquarium.fish?.[fishId];
+  if (!row) return false;
+  row.individuals = Array.isArray(row.individuals) ? row.individuals : [];
+  const qty = Math.max(0, Math.floor(Number(quantity) || 0));
+  for (let index = 0; index < qty; index += 1) row.individuals.push(createAquariumFishIndividual(fishId, currentDay));
+  return qty > 0;
+}
+
+function aquariumDailyMortalityFactor() {
+  const roll = Math.random();
+  // 普段の日にも揺らぎを出し、まれに水槽全体で死亡が重なる日を作る。
+  // 原因名はプレイヤーへ表示しないため、「なぜか今日は何匹か死んだ」という見え方になる。
+  if (roll < 0.025) return 4 + Math.random() * 5;
+  if (roll < 0.14) return 1.35 + Math.random() * 1.65;
+  return 0.62 + Math.random() * 0.90;
+}
+
+function aquariumIndividualDeathChance(fishId, individual, currentDay, tankFactor = 1) {
+  const profile = aquariumFishMortalityProfile(fishId);
+  const acquiredDay = Math.max(1, Math.floor(Number(individual?.acquiredDay) || currentDay));
+  const ageDays = Math.max(0, currentDay - acquiredDay);
+  const lifespanTarget = Math.max(30, Math.floor(Number(individual?.lifespanTargetDays) || randomAquariumFishLifespanTarget(profile)));
+  const vulnerability = Math.max(0.25, Math.min(3, Number(individual?.vulnerability) || 1));
+  const ageRatio = ageDays / lifespanTarget;
+  let ageMultiplier = 1;
+  if (ageRatio >= 1) ageMultiplier = Math.min(18, 2.8 + (ageRatio - 1) * 10);
+  else if (ageRatio >= 0.55) ageMultiplier = 1 + ((ageRatio - 0.55) / 0.45) * 1.8;
+  const acclimationProgress = Math.min(1, ageDays / 22);
+  const acclimationRisk = ageDays <= 21
+    ? Math.max(0, Number(profile.acclimationRisk) || 0) * Math.pow(1 - acclimationProgress, 1.35)
+    : 0;
+  const baseRisk = Math.max(0, Number(profile.baseRisk) || 0.0014) * ageMultiplier;
+  return clamp((baseRisk + acclimationRisk) * vulnerability * Math.max(0.2, Number(tankFactor) || 1), 0, 0.45);
+}
+
+function aquariumMortalityState(aquarium = aquariumState()) {
+  const saved = aquarium.mortality && typeof aquarium.mortality === 'object' && !Array.isArray(aquarium.mortality)
+    ? aquarium.mortality
+    : {};
+  aquarium.mortality = {
+    lastProcessedDay: Math.max(0, Math.floor(Number(saved.lastProcessedDay) || 0)),
+    totalDeaths: Math.max(0, Math.floor(Number(saved.totalDeaths) || 0)),
+    lastViewedDeathDay: Math.max(0, Math.floor(Number(saved.lastViewedDeathDay) || 0)),
+    pendingNotices: Array.isArray(saved.pendingNotices) ? saved.pendingNotices : [],
+    plantLastProcessedDay: Math.max(0, Math.floor(Number(saved.plantLastProcessedDay) || 0)),
+    totalWithered: Math.max(0, Math.floor(Number(saved.totalWithered) || 0)),
+    lastViewedWitherDay: Math.max(0, Math.floor(Number(saved.lastViewedWitherDay) || 0)),
+    plantPendingNotices: Array.isArray(saved.plantPendingNotices) ? saved.plantPendingNotices : [],
+  };
+  return aquarium.mortality;
+}
+
+function processAquariumFishMortality() {
+  if (!state || !aquariumUnlocked()) return [];
+  const currentDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  const aquarium = ensureAquariumFishIndividuals(aquariumState(), currentDay);
+  const mortality = aquariumMortalityState(aquarium);
+  if (mortality.lastProcessedDay >= currentDay) return [];
+  mortality.lastProcessedDay = currentDay;
+  const tankFactor = aquariumDailyMortalityFactor();
+  const deaths = [];
+
+  for (const def of AQUARIUM_CONFIG.fish) {
+    const row = aquarium.fish?.[def.id];
+    if (!row || row.inTank <= 0 || !Array.isArray(row.individuals) || !row.individuals.length) continue;
+    const inTankCount = Math.min(Math.max(0, Math.floor(Number(row.inTank) || 0)), row.individuals.length);
+    const deadIndexes = [];
+    for (let index = 0; index < inTankCount; index += 1) {
+      const individual = row.individuals[index];
+      const chance = aquariumIndividualDeathChance(def.id, individual, currentDay, tankFactor);
+      if (Math.random() < chance) deadIndexes.push(index);
+    }
+    if (!deadIndexes.length) continue;
+    for (let index = deadIndexes.length - 1; index >= 0; index -= 1) row.individuals.splice(deadIndexes[index], 1);
+    const count = deadIndexes.length;
+    row.inTank = Math.max(0, Math.floor(Number(row.inTank) || 0) - count);
+    row.owned = Math.max(0, Math.floor(Number(row.owned) || 0) - count);
+    deaths.push({ id: def.id, name: def.name, count });
+  }
+
+  if (deaths.length) {
+    const total = deaths.reduce((sum, death) => sum + death.count, 0);
+    mortality.totalDeaths += total;
+    mortality.pendingNotices.push({
+      id: `aquarium-death-${currentDay}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      day: currentDay,
+      tone: Math.floor(Math.random() * 6),
+      deaths,
+    });
+    mortality.pendingNotices = mortality.pendingNotices.slice(-30);
+    aquarium.lastSyncRevision += 1;
+    refreshAquariumLoad(aquarium);
+  }
+  return deaths;
+}
+
+function processAquariumPlantMortality() {
+  if (!state || !aquariumUnlocked()) return [];
+  const currentDay = Math.max(1, Math.floor(Number(state.game.day) || 1));
+  const aquarium = ensureAquariumPlantIndividuals(aquariumState(), currentDay);
+  const mortality = aquariumMortalityState(aquarium);
+  if (mortality.plantLastProcessedDay >= currentDay) return [];
+  mortality.plantLastProcessedDay = currentDay;
+  const tankFactor = aquariumDailyPlantMortalityFactor();
+  const withered = [];
+
+  for (const def of AQUARIUM_CONFIG.plants) {
+    const row = aquarium.plants?.[def.id];
+    if (!row || row.inTank <= 0 || !Array.isArray(row.individuals) || !row.individuals.length) continue;
+    const inTankCount = Math.min(Math.max(0, Math.floor(Number(row.inTank) || 0)), row.individuals.length);
+    const deadIndexes = [];
+    for (let index = 0; index < inTankCount; index += 1) {
+      const individual = row.individuals[index];
+      const chance = aquariumIndividualPlantDeathChance(def.id, individual, currentDay, tankFactor);
+      if (Math.random() < chance) deadIndexes.push(index);
+    }
+    if (!deadIndexes.length) continue;
+    for (let index = deadIndexes.length - 1; index >= 0; index -= 1) row.individuals.splice(deadIndexes[index], 1);
+    const count = deadIndexes.length;
+    row.inTank = Math.max(0, Math.floor(Number(row.inTank) || 0) - count);
+    row.owned = Math.max(0, Math.floor(Number(row.owned) || 0) - count);
+    withered.push({ id: def.id, name: def.name, count });
+  }
+
+  if (withered.length) {
+    const total = withered.reduce((sum, loss) => sum + loss.count, 0);
+    mortality.totalWithered += total;
+    mortality.plantPendingNotices.push({
+      id: `aquarium-wither-${currentDay}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      day: currentDay,
+      tone: Math.floor(Math.random() * 6),
+      withered,
+    });
+    mortality.plantPendingNotices = mortality.plantPendingNotices.slice(-30);
+    aquarium.lastSyncRevision += 1;
+  }
+  return withered;
+}
+
+function aquariumDeathNoticeSummary(aquarium = aquariumState()) {
+  const mortality = aquariumMortalityState(aquarium);
+  const fishPending = mortality.pendingNotices;
+  const plantPending = mortality.plantPendingNotices;
+  if (!fishPending.length && !plantPending.length) return null;
+
+  const fishById = new Map();
+  for (const notice of fishPending) {
+    for (const death of notice.deaths || []) {
+      if (!death?.id || !death?.name) continue;
+      const current = fishById.get(death.id) || { id: death.id, name: death.name, count: 0 };
+      current.count += Math.max(1, Math.floor(Number(death.count) || 1));
+      fishById.set(death.id, current);
+    }
+  }
+  const plantById = new Map();
+  for (const notice of plantPending) {
+    for (const loss of notice.withered || []) {
+      if (!loss?.id || !loss?.name) continue;
+      const current = plantById.get(loss.id) || { id: loss.id, name: loss.name, count: 0 };
+      current.count += Math.max(1, Math.floor(Number(loss.count) || 1));
+      plantById.set(loss.id, current);
+    }
+  }
+
+  const deaths = [...fishById.values()];
+  const withered = [...plantById.values()];
+  const fishTotal = deaths.reduce((sum, death) => sum + death.count, 0);
+  const plantTotal = withered.reduce((sum, loss) => sum + loss.count, 0);
+  if (!fishTotal && !plantTotal) return null;
+
+  const latestToneSource = [fishPending[fishPending.length - 1], plantPending[plantPending.length - 1]]
+    .filter(Boolean)
+    .sort((a, b) => (Number(a.day) || 0) - (Number(b.day) || 0))
+    .at(-1);
+  const tone = Math.max(0, Math.min(5, Math.floor(Number(latestToneSource?.tone) || 0)));
+  const fishSingleName = deaths.length === 1 ? deaths[0].name : '';
+  const plantSingleName = withered.length === 1 ? withered[0].name : '';
+
+  const singleFishPhrases = [
+    `水槽の底に、${fishSingleName}が一匹沈んでいる。`,
+    `昨日まで泳いでいた${fishSingleName}が、動かなくなっている。`,
+    `${fishSingleName}が一匹、静かに横たわっている。`,
+    `水槽を見ると、${fishSingleName}が一匹いなくなっている。`,
+    `${fishSingleName}が一匹、もう泳いでいない。`,
+    `水槽の隅で、${fishSingleName}が動かなくなっている。`,
+  ];
+  const multipleFishPhrases = [
+    '水槽を見ると、何匹か動かなくなっている。',
+    '水槽の様子がいつもと違う。何匹か死んでいる。',
+    '昨日より、水槽が少し静かになっている。',
+    '水槽を覗くと、何匹かいなくなっている。',
+    '水槽の中で、何匹かがもう泳いでいない。',
+    '水槽を見ていると、何匹かの姿がないことに気づく。',
+  ];
+  const singlePlantPhrases = [
+    `${plantSingleName}が一株、茶色く枯れている。`,
+    `水槽を見ると、${plantSingleName}が一株しおれている。`,
+    `${plantSingleName}が一株、昨日より弱って枯れている。`,
+    `水槽の${plantSingleName}が一株なくなっている。`,
+    `${plantSingleName}の一株が、静かに枯れている。`,
+    `水槽の隅で、${plantSingleName}が一株枯れている。`,
+  ];
+  const multiplePlantPhrases = [
+    '水草の一部が茶色く枯れている。',
+    '水槽を見ると、いくつかの水草がしおれている。',
+    '昨日より、水草が少し減っている。',
+    '水槽を覗くと、何株かの水草が枯れている。',
+    '水草の一部が弱り、そのままなくなっている。',
+    '水槽の景色が少し変わっている。何株か枯れたようだ。',
+  ];
+  const mixedPhrases = [
+    '水槽を見ると、魚と水草の様子が昨日と違う。',
+    '水槽の中で、魚も水草もいくつか失われている。',
+    '昨日より水槽が少し静かで、水草も減っている。',
+    '水槽を覗くと、魚と水草の両方に変化がある。',
+    '水槽の景色が変わっている。魚も水草もいくつかなくなった。',
+    '水槽の中に、昨日とは違う静けさがある。',
+  ];
+
+  let message = '';
+  if (fishTotal && plantTotal) message = mixedPhrases[tone];
+  else if (fishTotal) message = fishTotal === 1 && deaths.length === 1 ? singleFishPhrases[tone] : multipleFishPhrases[tone];
+  else message = plantTotal === 1 && withered.length === 1 ? singlePlantPhrases[tone] : multiplePlantPhrases[tone];
+
+  return { total: fishTotal + plantTotal, fishTotal, plantTotal, deaths, withered, message };
+}
+
+function acknowledgeAquariumDeathNotices() {
+  const aquarium = aquariumState();
+  const mortality = aquariumMortalityState(aquarium);
+  if (!mortality.pendingNotices.length && !mortality.plantPendingNotices.length) return false;
+  const day = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+  if (mortality.pendingNotices.length) mortality.lastViewedDeathDay = day;
+  if (mortality.plantPendingNotices.length) mortality.lastViewedWitherDay = day;
+  mortality.pendingNotices = [];
+  mortality.plantPendingNotices = [];
+  saveGame();
+  render();
+  return true;
+}
 function aquariumLimitResult(ok, reason = '', message = '') { return { ok, reason, ...(message ? { message } : {}) }; }
 function canAcquireAquariumFish(id, quantity = 1) {
   const def = aquariumFishDefinition(id), row = aquariumState().fish?.[id], qty = Math.max(1, Math.floor(Number(quantity) || 1));
@@ -13224,8 +13614,8 @@ function setAquariumItemQuantity(id, quantity, metadata = {}) {
   const collection = category === 'fish' ? aquarium.fish : category === 'plant' ? aquarium.plants : category === 'display' ? aquarium.displayItems : null;
   if (!collection?.[safeId]) return false;
   const key = category === 'display' ? 'owned' : 'owned', previous = collection[safeId][key]; collection[safeId][key] = qty;
-  if (category === 'fish') collection[safeId].inTank = Math.min(collection[safeId].inTank, qty);
-  if (category === 'plant') collection[safeId].inTank = Math.min(collection[safeId].inTank, qty);
+  if (category === 'fish') { collection[safeId].inTank = Math.min(collection[safeId].inTank, qty); ensureAquariumFishIndividuals(aquarium, state?.game?.day || 1); }
+  if (category === 'plant') { collection[safeId].inTank = Math.min(collection[safeId].inTank, qty); ensureAquariumPlantIndividuals(aquarium, state?.game?.day || 1); }
   if (category === 'display') collection[safeId].installed = Math.min(collection[safeId].installed, qty);
   const changed = previous !== qty; if (changed) { aquarium.lastSyncRevision += 1; refreshAquariumLoad(aquarium); }
   return changed;
@@ -13235,7 +13625,13 @@ function addAquariumItem(id, quantity = 1, metadata = {}) {
   const category = metadata.category || (aquarium.fish[safeId] ? 'fish' : aquarium.plants[safeId] ? 'plant' : aquarium.displayItems[safeId] ? 'display' : '');
   const check = category === 'fish' ? canAcquireAquariumFish(safeId, qty) : category === 'plant' ? canAcquireAquariumPlant(safeId, qty) : category === 'display' ? canAcquireAquariumDisplay(safeId, qty) : aquariumLimitResult(false, 'unknown');
   if (!check.ok) { if (check.message) showToast(check.message); return false; }
-  const row = category === 'fish' ? aquarium.fish[safeId] : category === 'plant' ? aquarium.plants[safeId] : aquarium.displayItems[safeId]; row.owned += qty; aquarium.lastSyncRevision += 1; return true;
+  const row = category === 'fish' ? aquarium.fish[safeId] : category === 'plant' ? aquarium.plants[safeId] : aquarium.displayItems[safeId];
+  if (category === 'fish') ensureAquariumFishIndividuals(aquarium, state?.game?.day || 1);
+  if (category === 'plant') ensureAquariumPlantIndividuals(aquarium, state?.game?.day || 1);
+  row.owned += qty;
+  if (category === 'fish') addAquariumFishIndividuals(safeId, qty, aquarium, state?.game?.day || 1);
+  if (category === 'plant') addAquariumPlantIndividuals(safeId, qty, aquarium, state?.game?.day || 1);
+  aquarium.lastSyncRevision += 1; return true;
 }
 function setAquariumDisplayInstalled(id, target) {
   const aquarium = aquariumState(), def = aquariumDisplayDefinition(id), row = aquarium.displayItems?.[id]; if (!def || !row || def.required) return aquariumLimitResult(false, 'required');
@@ -13590,14 +13986,12 @@ function bindAquariumFrameSync() {
       window.setTimeout(() => {
         if (!frame.isConnected) return;
         postAquariumSnapshot(frame);
-        syncAquariumRuntime(frame, { force: true });
       }, delay);
     }
   };
   const sync = () => {
     postAquariumSnapshot(frame);
     installAquariumPortraitCentering(frame);
-    syncAquariumRuntime(frame);
     forceFreshSyncs();
   };
   if (frame.dataset.jxjSyncBound !== '1') {
@@ -15229,8 +15623,14 @@ function renderGrayHoodAquariumEvent() {
 
 function renderAquariumGame() {
   if (!aquariumUnlocked()) { queueMicrotask(() => setScreen('phone', {}, false)); return renderPhone(); }
+  const deathNotice = aquariumDeathNoticeSummary();
   queueMicrotask(bindAquariumFrameSync);
-  return `<main class="aquarium-game-screen"><button type="button" class="aquarium-game-close" data-action="close-aquarium">スマートフォンへ戻る</button><iframe class="aquarium-game-frame" src="./assets/minigames/aquarium/index.html?v=${VERSION}" title="水槽ミニゲーム" allow="fullscreen" loading="eager"></iframe></main>`;
+  const lossDetails = deathNotice ? [
+    ...deathNotice.deaths.map((death) => `${esc(death.name)} × ${death.count}匹`),
+    ...deathNotice.withered.map((loss) => `${esc(loss.name)} × ${loss.count}株`),
+  ] : [];
+  const deathHtml = deathNotice ? `<section class="aquarium-death-notice" role="dialog" aria-modal="true" aria-label="水槽の変化"><div class="aquarium-death-card"><small>水槽</small><strong>${esc(deathNotice.message)}</strong>${deathNotice.total > 1 ? `<p>${lossDetails.join('<br>')}</p>` : ''}<button type="button" class="primary-button" data-action="aquarium-death-ack">確認</button></div></section>` : '';
+  return `<main class="aquarium-game-screen"><button type="button" class="aquarium-game-close" data-action="close-aquarium">スマートフォンへ戻る</button><iframe class="aquarium-game-frame" src="./assets/minigames/aquarium/index.html?v=${VERSION}" title="水槽ミニゲーム" allow="fullscreen" loading="eager"></iframe>${deathHtml}</main>`;
 }
 
 function renderChildhoodFriendEvent() {
@@ -19237,13 +19637,14 @@ function handleAquariumFrameMessage(event) {
   if (data.source !== 'jxj-aquarium') return;
   if (data.type === 'ready' || data.type === 'request-state') {
     postAquariumSnapshot(frame);
-    [0, 80, 260, 600, 1200].forEach((delay) => window.setTimeout(() => syncAquariumRuntime(frame, { force: delay >= 260 }), delay));
+    // v0.10.803: 水槽iframeは本体スナップショットを唯一の同期元とする。旧aquariumEngine同期は呼び出さない。
+    [80, 260, 600, 1200].forEach((delay) => window.setTimeout(() => postAquariumSnapshot(frame), delay));
     return;
   }
   if (data.type === 'display-install') {
     const result = setAquariumDisplayInstalled(String(data.id || ''), data.target);
     if (!result.ok && result.message) showToast(result.message);
-    saveGame(); postAquariumSnapshot(frame); syncAquariumRuntime(frame);
+    saveGame(); postAquariumSnapshot(frame);
     if (screen === 'phone' && phoneTab === 'aquarium') render();
   }
 }
@@ -22885,6 +23286,8 @@ function settleDay({ showResult = true, save = true, hospitalCheck = false } = {
   progressWinterColdSleep({ showResult });
 
   state.game.day += 1;
+  processAquariumFishMortality();
+  processAquariumPlantMortality();
   progressAlienAbductionSleep();
   state.game.minutes = DAY_START_MINUTES;
   state.game.weather = nextWeather(gameDate());
@@ -24467,6 +24870,7 @@ root.addEventListener('click', async (event) => {
       if (!showOyatsuShopExitConfirm()) goMain();
       break;
     case 'open-aquarium': setScreen('aquarium', {}, false); saveGame(); break;
+    case 'aquarium-death-ack': acknowledgeAquariumDeathNotices(); break;
     case 'close-aquarium': phoneTab = 'notifications'; setScreen('phone', {}, false); saveGame(); break;
     case 'gray-hood-aquarium-video-start': retryGrayHoodAquariumIntroPlayback(); break;
     case 'gray-hood-aquarium-next': await advanceGrayHoodAquariumEvent(); break;
@@ -24721,16 +25125,11 @@ async function enterGameAfterLogin() {
   if (advancedDays > 0) showToast(`自動操縦でゲーム内時間が${advancedDays}日進みました。`, 'info', false);
   lastSuccessfulSaveAt = String(state.updatedAt || localStorage.getItem(localLastSaveAtKey()) || '');
   lastSavedFingerprint = saveStateFingerprint(state);
+  lastLifecycleLocalFingerprint = lastSavedFingerprint;
   // 読み込み直後に正規化済みデータを保存し、クラウドの旧在庫項目を完全に除去する。
   scheduleAutosave('post-load-normalization', 0);
 }
 
-window.addEventListener('beforeunload', () => saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false }));
-window.addEventListener('pagehide', () => saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false }));
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') saveLocalBackup({ createCloudSnapshot: false, updateFingerprint: false });
-  else processAutopilotIfDue().catch((error) => console.error(error));
-});
 window.addEventListener('pageshow', () => {
   if (phoneGameReturnRequested() && screen === 'phone') clearPhoneGameReturnRequest();
   if (glabAboutReturnRequested() && screen === 'glab') clearGlabAboutReturnRequest();
@@ -24993,6 +25392,7 @@ document.addEventListener('visibilitychange', () => {
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     return;
   }
+  processAutopilotIfDue().catch((error) => console.error(error));
   const criticalEventVideoPlaying = screen === 'grayHoodAquariumEvent' && grayHoodAquariumEventState().stage === 'video';
   const apprenticeCinemaPlaying = screen === 'apprenticeCinemaEvent' && apprenticeCinemaEventState().stage === 'playing';
   if ((screen === 'cinemaVisitEvent' && cinemaVisitEventState().stage === 'playing') || apprenticeCinemaPlaying || criticalEventVideoPlaying) suspendAudio();

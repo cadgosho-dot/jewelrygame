@@ -71,3 +71,24 @@ python scripts/check-regression-baseline.py
 - 食事の時間経過も職人スタッフの勤務時間処理、店舗閉店処理、空腹度消費へ共通の`spendMinutes`を通して反映する。
 - `node tools/validate-time-and-meals.mjs`と総合回帰防止検査を必ず実行する。
 
+
+
+## v0.10.810 追加の自動回帰検査
+
+- 水槽HTML本体を正本とし、Service Workerが旧観察ホットフィックスを注入していないこと。
+- 所持中・設置数0の流木/石が観察一覧に残り、再設置ボタンが有効であること。
+- `visibilitychange` / `pagehide` / `beforeunload` / `freeze` が同一内容を重複保存せず、終了操作だけで `saveRevision` を水増ししないこと。
+- `hosting-origin-guard.js` が外側の `index.html` でゲーム用常時監視を起動しないこと。
+- GitHub ActionsではPlaywright Chromiumによる新規ゲーム→保存→再読込→続きから→スマートフォン→就寝翌日→水槽観察の実ブラウザ検査を必須とすること。
+- Firebase App Checkは、無効時は安全なステージ状態、有効時は有効なreCAPTCHA Enterprise site keyを必須とすること。
+
+## v0.10.811 追加の検索・SEO回帰検査
+
+- 正式canonicalは `https://cadgosho-dot.github.io/jewelrygame/` を維持すること。
+- `index.html` のタイトル、description、OGP、Twitter Card、代表画像が検索用設定から欠落しないこと。
+- JSON-LDは `VideoGame + WebApplication` を併記し、`applicationCategory: GameApplication` を維持すること。
+- `about.html` は検索可能な実本文を持ち、ゲーム入口へリンクすること。
+- `game.html` は `noindex,follow`、`auth.html` は `noindex,nofollow,noarchive` を維持すること。
+- `sitemap.xml` はトップページと `about.html` のcanonical URLだけを掲載すること。
+- `python3 scripts/check-seo.py` を実行し、`SEO POLICY: PASS` を確認すること。この検査は `check-current.py` に含める。
+- GitHub Pages公開後はSearch Consoleから `sitemap.xml` を直接送信し、トップページと `about.html` のインデックス状態を確認すること。

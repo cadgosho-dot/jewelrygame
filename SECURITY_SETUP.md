@@ -1,6 +1,8 @@
-# JEWELRY×JEWELRY v0.10.39 公開前セキュリティ設定
+# JEWELRY×JEWELRY 公開前セキュリティ設定
 
-このZIPには、コードだけで実装できる安全対策を反映済みです。下記の管理画面設定は、川原さんのGitHub・Firebase管理権限が必要なため、初回のみ手動で行ってください。
+コードだけで実装できる安全対策は反映済みです。下記の管理画面設定はGitHub・Firebase管理権限が必要なため、初回のみ手動で行ってください。
+
+**現在のApp Check状態:** コード側の初期化・不完全設定拒否は実装済みですが、reCAPTCHA Enterpriseのsite keyが未登録のため `enabled: false` です。site key取得前に有効化しないでください。
 
 ## 1. GitHubアカウント
 
@@ -40,7 +42,7 @@
 
 このZIPの `firestore.rules` をFirebaseへ反映する。**メール確認済みで、ログイン中の本人UIDと一致する場合だけ**読み書きできる設定です。
 
-## v0.10.39で実装済み
+## コード側で実装済み
 
 - iframeの不要なclipboard-read権限を削除。
 - Content Security Policyを追加。

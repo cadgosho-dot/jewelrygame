@@ -180,7 +180,7 @@ displayRows.push(
  ["流木 中 B","ディスプレイ用品","天然レイアウト素材","流木","中","前景〜中景","水景の骨格・隠れ家","水槽環境に準ずる","安定して設置する","木目と陰影、魚のくぐり方を観察する。"],
  ["流木 小 A","ディスプレイ用品","天然レイアウト素材","流木","小","前景","水景のアクセント・隠れ家","水槽環境に準ずる","安定して設置する","木目と陰影、魚のくぐり方を観察する。"],
  ["流木 小 B","ディスプレイ用品","天然レイアウト素材","流木","小","前景","水景のアクセント・隠れ家","水槽環境に準ずる","安定して設置する","木目と陰影、魚のくぐり方を観察する。"],
- ...[['A','stone_a'],['B','stone_b'],['C','stone_c']].flatMap(([type,id])=>[['大','large'],['中','medium'],['小','small']].map(([size,sid])=>[\`Stone type ${type} ${size}\`,"ディスプレイ用品","天然レイアウト素材",\`Stone type ${type}\`,size,"前景〜中景","地形表現・視線誘導","水槽環境に準ずる","転倒しないよう安定して設置する","表面の質感と魚が石陰を使う様子を観察する。"]))
+ ...[['A','stone_a'],['B','stone_b'],['C','stone_c']].flatMap(([type,id])=>[['大','large'],['中','medium'],['小','small']].map(([size,sid])=>[`Stone type ${type} ${size}`,"ディスプレイ用品","天然レイアウト素材",`Stone type ${type}`,size,"前景〜中景","地形表現・視線誘導","水槽環境に準ずる","転倒しないよう安定して設置する","表面の質感と魚が石陰を使う様子を観察する。"]))
 );
 const extraImageMap={'ブラックモーリー':blackMollySrc,'ドワーフグラミー':dwarfGouramiSrc,'アルタムエンゼルフィッシュ':altumAngelfishSrc,'アフリカンランプアイ':africanLampeyeSrc};
 const fishImagesByName={'ネオンテトラ':baseFishImages[0]||'','ラミーノーズテトラ':baseFishImages[1]||'','レッドファントムテトラ':baseFishImages[2]||'','プラティ':baseFishImages[3]||'','ディスカス・ブルーダイヤモンド':baseFishImages[4]||'','ディスカス・レッドマップ':baseFishImages[5]||'','コリドラス':coryImage,...extraImageMap};
@@ -203,37 +203,118 @@ const fishProfiles={"ネオンテトラ":{"scientific":"Paracheirodon innesi","t
 const plantProfiles={"アナカリス":{"scientific":"Egeria densa（流通上アナカリス）","taxonomy":"トチカガミ科の沈水性多年草","origin":"南米原産。観賞用・水質浄化用として世界各地へ導入されている。","form":"茎の節ごとに細長い葉を輪生し、先端ほど密になる。水中で長く伸び、条件がよいと側枝を多数出す。","growth":"成長は速め。光量と栄養が十分なら短期間で水面へ到達する。","light":"中程度以上の光で密に育つ。弱光では節間が伸び、下葉が落ちやすい。","co2":"二酸化炭素添加なしでも育つが、添加すると成長と葉の密度が上がる。","nutrition":"水中の窒素・リン・微量元素を葉と茎から吸収する。極端な栄養不足では黄化や先端萎縮が起こる。","planting":"底床へ植えるほか、浮かべて管理も可能。茎を深く埋めすぎると腐敗しやすい。","propagation":"健康な先端を切り、下部の葉を除いて差し戻す。残った茎からも側芽が出る。","trimming":"上部を切り戻し、古い下部を更新する。密生しすぎると内部へ光と水流が届かない。","trouble":"下葉の透明化は光不足・老化、先端の白化は微量元素不足、茎の軟化は高温・傷み・水質悪化を疑う。","ecology":"成長が速く栄養塩を吸収するが、ろ過や換水の代わりにはならない。"},"アマゾンソード":{"scientific":"Echinodorus grisebachii 系など","taxonomy":"オモダカ科のロゼット型水草","origin":"南米の湿地、河川縁、氾濫原。流通名には複数品種・近縁系統が含まれる。","form":"株元から長い葉柄と披針形の葉を放射状に展開する。成長すると大型化する。","growth":"根張りが強く、中速で成長。植え替え直後は古葉が傷み、新しい水中葉へ更新される。","light":"中程度の光で育つ。強光では葉が密になりやすいが、栄養不足時はコケが付きやすい。","co2":"無添加でも維持可能だが、添加で新葉の展開が速くなる。","nutrition":"根からの吸収が重要。栄養系底床や根元への固形肥料が有効。鉄欠乏では新葉が薄くなる。","planting":"成長点を埋めず、根だけを底床へ入れる。大型化を見越して周囲に空間を取る。","propagation":"花茎に子株を作ることがあり、十分に発根した後に切り分ける。株分け可能な場合もある。","trimming":"古葉・傷んだ葉を葉柄の根元から切る。葉の途中切りは切断面が残りやすい。","trouble":"新葉の黄白化は鉄・微量元素不足、葉の穴はカリウム不足や食害、根腐れは底床の嫌気化や植え傷みを疑う。","ecology":"大きな葉は魚の隠れ場所や産卵基質になる一方、水流と光を大きく遮る。"},"ミクロソリウム":{"scientific":"Leptochilus pteropus（旧 Microsorum pteropus）","taxonomy":"ウラボシ科の水生シダ","origin":"東南アジアの河川沿い、湿潤な岩や倒木。","form":"横に伸びる根茎から硬めの葉を出す。葉形にはナロー、トライデントなど多数の園芸型がある。","growth":"成長は遅め。環境へ馴染むと根茎を伸ばして株が広がる。","light":"弱〜中光で育つ。強光下では葉面へコケが付きやすい。","co2":"無添加で維持できる。添加すると新葉と根茎の成長が安定しやすい。","nutrition":"水中から栄養を吸収する。液体肥料が有効だが、過剰施肥はコケを招く。","planting":"根茎を底床へ埋めてはいけない。流木や石へ糸・接着剤で固定し、活着させる。","propagation":"根茎を数枚の葉が付く位置で切り分ける。古葉に子株が生じることもある。","trimming":"黒くなった古葉やコケの多い葉を根茎近くから除去する。一度に大量除去しない。","trouble":"根茎を埋めると腐敗しやすい。葉の黒斑は胞子嚢の場合もあり、病気とは限らない。透明化は環境変化や傷みを疑う。","ecology":"硬い葉と活着性により、底床を掘る魚がいる環境でも使いやすい。"},"アヌビアス・ナナ":{"scientific":"Anubias barteri var. nana","taxonomy":"サトイモ科の着生・抽水性植物","origin":"西〜中央アフリカの河川沿い、岩や流木上。","form":"太い根茎から厚く光沢のある楕円葉を出す。水中では非常にゆっくり成長する。","growth":"遅い。新葉が一枚ずつ展開し、株は根茎方向へ広がる。","light":"弱光に強い。強光では成長速度以上にコケが付きやすくなる。","co2":"必須ではないが、添加で葉の展開と根茎成長がやや改善する。","nutrition":"水中栄養を利用する。少量の液体肥料で足り、過剰施肥は葉面コケを増やす。","planting":"根茎を埋めず、流木や石へ活着させる。細根は底床へ入ってもよい。","propagation":"根茎を切り、各片に数枚の葉と根を残して分ける。","trimming":"古葉や損傷葉を葉柄の付け根から切る。成長が遅いため切りすぎると回復に時間がかかる。","trouble":"根茎腐敗、葉面の黒髭ゴケ、葉のピンホールに注意。新葉だけ薄い場合は微量元素不足も検討する。","ecology":"丈夫だが「何もしなくてもよい」植物ではない。水流停滞と有機物付着を避ける。"},"ウィローモス":{"scientific":"Vesicularia 属など流通上複数系統","taxonomy":"蘚類・モス系水草","origin":"東アジアを含む温帯〜熱帯域に近縁種が分布。流通名だけで種同定が難しい場合がある。","form":"細い枝が不規則に分岐し、塊状または垂れ下がるように広がる。","growth":"中程度。環境が安定すると表面から新芽を重ね、厚いマットになる。","light":"弱〜中光で育つ。強光と栄養過多では内部へコケが入り込みやすい。","co2":"無添加でも育つが、添加で枝分かれと密度が増しやすい。","nutrition":"水中から吸収する。肥料は少量でよく、汚れの堆積を避ける方が重要。","planting":"流木や石へ薄く広げ、糸やネットで固定する。厚く巻くと内側が枯れる。","propagation":"切り分けた小片から増殖可能。細片が他所へ散って定着することもある。","trimming":"表面を薄く刈り込み、内部へ光と水流を通す。切れ端は吸い出して回収する。","trouble":"茶色化は光不足・堆積汚れ・高温・水流不足が候補。糸状藻が絡むと完全除去が難しい。","ecology":"微小生物の付着面となり、稚魚や小型甲殻類の隠れ場所になる。"}};
 const displayProfiles={"水槽":{"overview":"水槽は水・底床・生体・器具の荷重を保持する飼育容器で、ガラス厚、接着、底面支持、設置水平が安全性を左右する。","mechanism":"透明板をシリコーン接着し、水圧を面で受ける。水深が増すほど下部へ大きな圧力がかかる。","selection":"飼育する魚の成魚サイズ、遊泳距離、体高、群れ数、器具スペース、総重量を基準に選ぶ。容量だけでなく横幅と奥行きが重要。","installation":"水平で剛性の高い専用台に全面支持で置く。ねじれ、部分的な突起、直射日光、温度差の大きい場所を避ける。","maintenance":"ガラス面の藻類、シリコーンの剥離・白化、欠け、微細な漏水を定期確認する。清掃時に硬い砂粒を噛ませると傷になる。","safety":"満水状態で移動しない。水槽重量は水1Lあたり約1kgに底床・石・本体重量が加わる。地震対策と漏電対策を行う。","effect":"大型化するほど水質は急変しにくいが、必要な換水量と設置荷重は増える。"},"床砂":{"overview":"ソイルは土壌を焼成・造粒した多孔質の底床材。製品により栄養含有、pH・硬度への影響、粒の耐久性が異なる。","mechanism":"多孔質粒の表面に微生物が定着し、根を固定する。イオン交換や酸性成分により水質へ影響する製品もある。","selection":"水草育成型、吸着型、栄養型など目的で選ぶ。底生魚には角が少なく崩れにくい粒が望ましい。","installation":"粉を舞わせないよう静かに敷き、前低後高で奥行きを作れる。深くしすぎる場合は通水不足と嫌気化へ注意。","maintenance":"強くかき混ぜず、表面のデトリタスを軽く吸い出す。崩壊・目詰まり・緩衝力低下を見て交換時期を判断する。","safety":"製品によって導入初期にアンモニアが出るため、生体導入前の立ち上げと測定が必要。交換時の水質急変にも注意。","effect":"根張りと栄養供給を助ける一方、魚種によっては軟水・酸性化が合わない。"},"ライト":{"overview":"水槽用ライトは鑑賞、魚の昼夜リズム、水草の光合成を担う。明るさだけでなく波長分布、照射範囲、点灯時間が重要。","mechanism":"LEDが電気を光へ変換し、レンズや反射板で水面へ照射する。水深、濁り、浮草で底部の光量は低下する。","selection":"水槽幅、深さ、育てる水草の要求光量、演色性、防滴性能、調光・タイマー機能で選ぶ。","installation":"水面から適切な距離を取り、結露や水滴が電源へ流れないようドリップループを作る。","maintenance":"カバーの水垢、レンズの曇り、放熱部のほこりを除去する。LEDも経年で光量が低下する。","safety":"防水等級を確認し、濡れた手でプラグを扱わない。発熱部を覆わない。","effect":"過剰な光と長時間点灯はコケを増やす。点灯時間を一定にし、栄養・二酸化炭素との均衡を取る。"},"フィルター":{"overview":"外掛け式フィルターは水槽外へ本体を掛け、吸水管で水を汲み上げ、ろ材を通して落水させる装置。","mechanism":"ポンプが水を吸い上げ、物理ろ過・生物ろ過・必要に応じた化学ろ過を行う。落水で水面を揺らしガス交換も促す。","selection":"水量に対する流量、ろ材容量、流量調整、呼び水のしやすさ、稚魚吸い込み対策、運転音で選ぶ。","installation":"水平に掛け、吸水口を底床へ近づけすぎない。電源コードにはドリップループを作る。","maintenance":"流量低下時は吸水口、インペラー、ろ材の目詰まりを確認。生物ろ材は飼育水で軽くすすぎ、全交換を避ける。","safety":"停電復帰時の自動再始動可否と、空運転の危険を確認する。小型魚・稚魚にはスポンジを付ける。","effect":"水面揺動が強いと二酸化炭素が抜けやすい一方、酸素供給には有利。流れの強さを魚種へ合わせる。"},"ヒーター":{"overview":"観賞魚用ヒーターは水温を設定範囲へ維持する加温器具。サーモスタット内蔵型と別体型がある。","mechanism":"発熱体が通電して水を加熱し、温度センサーが設定温度で通電を制御する。水流が弱いと局所的な温度差が生じる。","selection":"水量、室温との差、断熱性を考慮して出力を選ぶ。出力不足は連続運転、過大出力は故障時の急加熱リスクを高める。","installation":"必ず規定水位内へ設置し、水流が当たる場所へ固定する。底床へ埋めず、生体が挟まらない位置にする。","maintenance":"吸盤の硬化、コード損傷、白い析出物、設定温度とのずれを確認する。別の温度計で実水温を検証する。","safety":"通電中・通電直後に空気中へ出さない。換水前に電源を切り、十分冷ましてから露出させる。","effect":"安定水温は代謝と免疫に重要だが、魚種に不適切な高温は酸素不足と寿命短縮を招く。"},"流木":{"overview":"流木は天然木を乾燥・加工したレイアウト素材。形状、比重、樹種、腐植成分の量が個体ごとに異なる。","mechanism":"沈水後、表面へ微生物膜が形成され、水草の活着面や魚の隠れ場所になる。タンニンが水を黄褐色にする場合がある。","selection":"鋭い枝、腐敗部、魚が挟まる穴を避け、水槽内で安定して置ける形を選ぶ。","installation":"洗浄し、必要に応じて長期間浸水させる。浮く場合は石や台座へ固定する。","maintenance":"白い菌膜は導入初期に出やすい。腐敗臭、極端な軟化、黒い崩れがある部分は除去する。","safety":"煮沸は材質・大きさによって割れや火傷の危険がある。薬剤や洗剤は使用しない。","effect":"陰影と縄張り境界を作り、タンニンが一部魚種の環境再現に役立つ。"},"レイアウトストーン":{"overview":"石は水景の骨格を作る天然素材。鉱物組成によって硬度・pHへの影響が異なる。","mechanism":"表面は微生物と藻類の付着面になり、配置によって水流と魚の動線を変える。","selection":"割れやすさ、鋭利さ、重さ、石灰質の有無、同系統の色と層理で選ぶ。","installation":"底床の上へ不安定に積まず、底面へ安定させてから周囲へ底床を入れる。大型石は荷重分散板を用いる。","maintenance":"隙間の汚れを吸い出し、ブラシで表面を清掃する。崩れや接着部の劣化を確認する。","safety":"転倒、ガラスへの点荷重、魚の挟まりを防ぐ。酸処理や薬剤処理は危険なため安易に行わない。","effect":"石灰質石は硬度を上げることがある。軟水を必要とする魚・水草では事前試験が重要。"}};
 const fixedDisplayNames=new Set(['水槽','ライト','フィルター','ヒーター','床砂']);
-const frontDecor=[...document.querySelectorAll('.frontplants .decor')];
-const optionalDisplayTargets={'流木':frontDecor[0]||null,'レイアウトストーン':frontDecor[2]||null};
-const displayInstallState={};
-function readInstallState(name){return false;}
-function saveInstallState(name,value){const id=name==='流木'?'driftwood':name==='レイアウトストーン'?'layout_stone':'';if(!id)return;const current=Math.max(0,Number(aquariumSnapshot?.displayItems?.[id]?.installed)||0);const target=value?current+1:current-1;postAquariumMessage({type:'display-install',id,target});}
-function applyDisplayInstallation(name){const target=optionalDisplayTargets[name];if(target)target.style.display=displayInstallState[name]?'':'none';}
-function setDisplayInstallation(name,value){displayInstallState[name]=value;saveInstallState(name,value);applyDisplayInstallation(name);}
-Object.keys(optionalDisplayTargets).forEach(name=>{displayInstallState[name]=readInstallState(name);applyDisplayInstallation(name);});
 const currentFishCounts={'ネオンテトラ':0,'ラミーノーズテトラ':0,'レッドファントムテトラ':0,'アフリカンランプアイ':0,'プラティ':0,'ブラックモーリー':0,'コリドラス':0,'ドワーフグラミー':0,'アルタムエンゼルフィッシュ':0,'ディスカス・ブルーダイヤモンド':0,'ディスカス・レッドマップ':0};
-const currentPlantCounts={'アナカリス':0,'アマゾンソード':0,'ミクロソリウム':0,'アヌビアス・ナナ':0,'ウィローモス':0};
-function currentCountText(item){
- if(item.category==='魚')return '現在 '+(currentFishCounts[item.name]??0)+'匹';
- if(item.category==='水草')return '現在 '+(currentPlantCounts[item.name]??0)+'株';
- return '';
-}
+const currentPlantCounts={'アナカリス':0,'アマゾンソード':0,'ミクロソリウム':0,'アヌビアス・ナナ':0,'ウィローモス':0,'バリスネリア':0,'カボンバ':0,'ハイグロフィラ':0,'アマゾンチドメグサ':0,'クリプトコリネ':0};
 const tabsEl=document.getElementById('catalogTabs'),gridEl=document.getElementById('catalogGrid'),overlay=document.getElementById('detailOverlay');let activeCategory='魚';
-function renderTabs(){tabsEl.innerHTML='';Object.keys(catalog).forEach(cat=>{const b=document.createElement('button');b.className='tab'+(cat===activeCategory?' active':'');b.textContent=cat+'（'+catalog[cat].length+'）';b.onclick=()=>{activeCategory=cat;
 const aquariumNameMaps={
  fish:{'ネオンテトラ':'neon_tetra','ラミーノーズテトラ':'rummy_nose_tetra','レッドファントムテトラ':'red_phantom_tetra','アフリカンランプアイ':'african_lampeye','プラティ':'platy','ブラックモーリー':'black_molly','コリドラス':'corydoras','ドワーフグラミー':'dwarf_gourami','アルタムエンゼルフィッシュ':'altum_angelfish','ディスカス・ブルーダイヤモンド':'discus_blue_diamond','ディスカス・レッドマップ':'discus_red_map'},
  plant:{'アナカリス':'anacharis','アマゾンソード':'amazon_sword','ミクロソリウム':'microsorum','アヌビアス・ナナ':'anubias_nana','ウィローモス':'willow_moss','バリスネリア':'vallisneria','カボンバ':'cabomba','ハイグロフィラ':'hygrophila','アマゾンチドメグサ':'amazon_pennywort','クリプトコリネ':'cryptocoryne'},
- display:{'水槽':'tank','フィルター':'hang_on_filter','ヒーター':'heater','ライト':'light','床砂':'soil','流木':'driftwood','レイアウトストーン':'layout_stone','流木 大 A':'wood_large_a','流木 大 B':'wood_large_b','流木 中 A':'wood_medium_a','流木 中 B':'wood_medium_b','流木 小 A':'wood_small_a','流木 小 B':'wood_small_b','Stone type A 大':'stone_a_large','Stone type A 中':'stone_a_medium','Stone type A 小':'stone_a_small','Stone type B 大':'stone_b_large','Stone type B 中':'stone_b_medium','Stone type B 小':'stone_b_small','Stone type C 大':'stone_c_large','Stone type C 中':'stone_c_medium','Stone type C 小':'stone_c_small'}
+ display:{'水槽':'tank','フィルター':'hang_on_filter','ヒーター':'heater','ライト':'light','床砂':'soil','流木 大 A':'wood_large_a','流木 大 B':'wood_large_b','流木 中 A':'wood_medium_a','流木 中 B':'wood_medium_b','流木 小 A':'wood_small_a','流木 小 B':'wood_small_b','Stone type A 大':'stone_a_large','Stone type A 中':'stone_a_medium','Stone type A 小':'stone_a_small','Stone type B 大':'stone_b_large','Stone type B 中':'stone_b_medium','Stone type B 小':'stone_b_small','Stone type C 大':'stone_c_large','Stone type C 中':'stone_c_medium','Stone type C 小':'stone_c_small'}
 };
 let aquariumSnapshot=null;
-function postAquariumMessage(payload){try{parent.postMessage({source:'jxj-aquarium',...payload},window.location.origin);}catch(e){}}
-function aquariumCount(kind,id,key){return Math.max(0,Math.floor(Number(aquariumSnapshot?.[kind]?.[id]?.[key])||0));}
+function postAquariumMessage(payload){
+ try{
+  const targetOrigin=window.location.origin&&window.location.origin!=='null'?window.location.origin:'*';
+  parent.postMessage({source:'jxj-aquarium',...payload},targetOrigin);
+ }catch(e){}
+}
+function aquariumCount(kind,id,key){return id?Math.max(0,Math.floor(Number(aquariumSnapshot?.[kind]?.[id]?.[key])||0)):0;}
 function currentCountText(item){
  if(item.category==='魚'){const id=aquariumNameMaps.fish[item.name];return `所持 ${aquariumCount('fish',id,'owned')}匹 / 水槽 ${aquariumCount('fish',id,'inTank')}匹`;}
  if(item.category==='水草'){const id=aquariumNameMaps.plant[item.name];return `所持 ${aquariumCount('plants',id,'owned')}株 / 水槽 ${aquariumCount('plants',id,'inTank')}株`;}
  if(item.category==='ディスプレイ用品'){const id=aquariumNameMaps.display[item.name];return `所持 ${aquariumCount('displayItems',id,'owned')}個 / 設置中 ${aquariumCount('displayItems',id,'installed')}個`;}
  return '';
 }
+const fishPools={};
+function registerFishNode(id,node){if(!node)return;node.dataset.aquariumSpecies=id;(fishPools[id]||(fishPools[id]=[])).push(node);}
+const baseMainFish=[...document.querySelectorAll('.mainfish>.fish')].slice(0,6);
+['neon_tetra','rummy_nose_tetra','red_phantom_tetra','platy','discus_blue_diamond','discus_red_map'].forEach((id,i)=>registerFishNode(id,baseMainFish[i]));
+document.querySelectorAll('.floorfish>.cory').forEach(node=>registerFishNode('corydoras',node));
+document.querySelectorAll('.mainfish>.blackmolly').forEach(node=>registerFishNode('black_molly',node));
+document.querySelectorAll('.mainfish>.dwarfgourami').forEach(node=>registerFishNode('dwarf_gourami',node));
+document.querySelectorAll('.mainfish>.altum').forEach(node=>registerFishNode('altum_angelfish',node));
+document.querySelectorAll('.mainfish>.lampeye').forEach(node=>registerFishNode('african_lampeye',node));
+function ensureFishPool(id,count){
+ const pool=fishPools[id]||[];if(!pool.length)return;
+ while(pool.length<count){const template=pool[pool.length%Math.max(1,pool.length)]||pool[0];const clone=template.cloneNode(true);const index=pool.length;clone.dataset.phase=String((Number(template.dataset.phase)||index)+index*.83);clone.dataset.y=String(Math.max(20,Math.min(68,(Number(template.dataset.y)||42)+((index%5)-2)*3)));clone.dataset.min=String(Math.max(7,(Number(template.dataset.min)||12)+(index%4)*2));clone.dataset.max=String(Math.min(93,(Number(template.dataset.max)||88)-(index%3)*2));template.parentElement.appendChild(clone);pool.push(clone);state.push({el:clone,x:+clone.dataset.min+(index*7)%35,dir:index%2?1:-1,min:+clone.dataset.min,max:+clone.dataset.max,speed:+clone.dataset.speed,y:+clone.dataset.y,phase:+(clone.dataset.phase||index)});}
+ pool.forEach((node,index)=>node.style.setProperty('display',index<count?'block':'none','important'));
+}
+const allDecor=[...document.querySelectorAll('.rearplants>.decor,.midplants>.decor,.frontplants>.decor')];
+const decorPools={
+ anacharis:[allDecor[0]],
+ amazon_sword:[allDecor[1]],
+ microsorum:[allDecor[2]],
+ anubias_nana:[allDecor[3]],
+ willow_moss:[allDecor[5]]
+};
+// v0.10.801: 旧汎用「流木」「レイアウトストーン」の描画は使わず、現行の商品IDごとの画像へ統一する。
+[allDecor[4],allDecor[6]].filter(Boolean).forEach((node)=>node.style.setProperty('display','none','important'));
+function createSyncedDecor(id,{src,layer='midplants',left=50,top=80,width=20}={}){
+ const parentNode=document.querySelector('.'+layer);if(!parentNode||!src)return null;
+ const node=document.createElement('img');node.className='decor aquarium-synced-decor';node.alt='';node.src=src;node.dataset.aquariumDecor=id;
+ node.style.left=left+'%';node.style.top=top+'%';node.style.width=width+'%';node.style.setProperty('display','none','important');parentNode.appendChild(node);
+ (decorPools[id]||(decorPools[id]=[])).push(node);return node;
+}
+const syncedDecorDefinitions={
+ vallisneria:{src:'../../images/tropical-shop/plant-vallisneria.png',layer:'rearplants',left:54,top:80,width:24},
+ cabomba:{src:'../../images/tropical-shop/plant-cabomba.png',layer:'rearplants',left:43,top:80,width:22},
+ hygrophila:{src:'../../images/tropical-shop/plant-hygrophila.png',layer:'midplants',left:58,top:80,width:21},
+ amazon_pennywort:{src:'../../images/tropical-shop/plant-amazon-pennywort.png',layer:'midplants',left:47,top:79,width:19},
+ cryptocoryne:{src:'../../images/tropical-shop/plant-cryptocoryne.png',layer:'frontplants',left:34,top:82,width:18},
+ wood_large_a:{src:'../../images/tropical-shop/wood_large_a.png',layer:'frontplants',left:50,top:83,width:42},
+ wood_large_b:{src:'../../images/tropical-shop/wood_large_b.png',layer:'frontplants',left:44,top:83,width:40},
+ wood_medium_a:{src:'../../images/tropical-shop/wood_medium_a.png',layer:'frontplants',left:57,top:83,width:32},
+ wood_medium_b:{src:'../../images/tropical-shop/wood_medium_b.png',layer:'frontplants',left:39,top:83,width:30},
+ wood_small_a:{src:'../../images/tropical-shop/wood_small_a.png',layer:'frontplants',left:66,top:83,width:22},
+ wood_small_b:{src:'../../images/tropical-shop/wood_small_b.png',layer:'frontplants',left:28,top:83,width:22},
+ stone_a_large:{src:'../../images/tropical-shop/stone_a.png',layer:'frontplants',left:76,top:84,width:24},
+ stone_a_medium:{src:'../../images/tropical-shop/stone_a.png',layer:'frontplants',left:71,top:84,width:18},
+ stone_a_small:{src:'../../images/tropical-shop/stone_a.png',layer:'frontplants',left:66,top:84,width:13},
+ stone_b_large:{src:'../../images/tropical-shop/stone_b.png',layer:'frontplants',left:23,top:84,width:24},
+ stone_b_medium:{src:'../../images/tropical-shop/stone_b.png',layer:'frontplants',left:28,top:84,width:18},
+ stone_b_small:{src:'../../images/tropical-shop/stone_b.png',layer:'frontplants',left:33,top:84,width:13},
+ stone_c_large:{src:'../../images/tropical-shop/stone_c.png',layer:'frontplants',left:59,top:84,width:24},
+ stone_c_medium:{src:'../../images/tropical-shop/stone_c.png',layer:'frontplants',left:54,top:84,width:18},
+ stone_c_small:{src:'../../images/tropical-shop/stone_c.png',layer:'frontplants',left:49,top:84,width:13}
+};
+Object.entries(syncedDecorDefinitions).forEach(([id,spec])=>createSyncedDecor(id,spec));
+function ensureDecorPool(id,count){
+ const pool=decorPools[id]||[];if(!pool.length)return;
+ while(pool.length<count){
+  const base=pool[0],clone=base.cloneNode(true),i=pool.length;const left=parseFloat(base.style.left)||50;const top=parseFloat(base.style.top)||80;const baseWidth=parseFloat(base.style.width)||20;
+  clone.style.left=Math.max(9,Math.min(91,left+((i%5)-2)*7.5))+'%';clone.style.top=Math.max(67,Math.min(86,top-(i%3)*1.8))+'%';clone.style.width=Math.max(8,baseWidth*(1-(i%3)*.07))+'%';
+  base.parentElement.appendChild(clone);pool.push(clone);
+ }
+ pool.forEach((node,index)=>node.style.setProperty('display',index<count?'block':'none','important'));
+}
+function applyAquariumSnapshot(snapshot){
+ if(!snapshot||typeof snapshot!=='object')return;
+ aquariumSnapshot=snapshot;
+ document.body.classList.remove('aquarium-waiting');
+ Object.entries(aquariumNameMaps.fish).forEach(([name,id])=>{currentFishCounts[name]=aquariumCount('fish',id,'inTank');ensureFishPool(id,currentFishCounts[name]);});
+ Object.entries(aquariumNameMaps.plant).forEach(([name,id])=>{currentPlantCounts[name]=aquariumCount('plants',id,'inTank');ensureDecorPool(id,currentPlantCounts[name]);});
+ Object.keys(syncedDecorDefinitions).filter((id)=>id.startsWith('wood_')||id.startsWith('stone_')).forEach((id)=>ensureDecorPool(id,aquariumCount('displayItems',id,'installed')));
+ const load=Math.max(0,Math.floor(Number(snapshot.fishLoad?.current)||0)),max=Math.max(1,Math.floor(Number(snapshot.fishLoad?.max)||40));const badge=document.querySelector('.badge');badge.textContent=`飼育負荷 ${load} / ${max}`;badge.classList.toggle('load-warning',load>=max);
+ if(catalogPanel.classList.contains('show'))renderGrid();
+}
+window.addEventListener('message',(event)=>{
+ const expectedOrigin=window.location.origin;
+ if(expectedOrigin&&expectedOrigin!=='null'&&event.origin!==expectedOrigin)return;
+ if(event.source!==parent)return;
+ const data=event.data||{};
+ if(data.source==='jxj-main-game'&&data.type==='aquarium-state')applyAquariumSnapshot(data.state);
+});
+function renderTabs(){
+ tabsEl.innerHTML='';
+ Object.keys(catalog).forEach(cat=>{
+  const b=document.createElement('button');
+  b.className='tab'+(cat===activeCategory?' active':'');
+  b.textContent=cat+'（'+catalog[cat].length+'）';
+  b.onclick=()=>{activeCategory=cat;renderTabs();renderGrid();};
+  tabsEl.appendChild(b);
+ });
+}
+postAquariumMessage({type:'ready'});
 function renderGrid(){
  gridEl.innerHTML='';
  const visibleItems=catalog[activeCategory].filter((item)=>{
@@ -241,7 +322,9 @@ function renderGrid(){
   if(item.category==='水草'){const id=aquariumNameMaps.plant[item.name];return aquariumCount('plants',id,'inTank')>0;}
   if(item.category==='ディスプレイ用品'){
    if(fixedDisplayNames.has(item.name))return true;
-   const id=aquariumNameMaps.display[item.name];return aquariumCount('displayItems',id,'installed')>0;
+   const id=aquariumNameMaps.display[item.name];
+   // v0.10.802: 撤去して設置数が0になっても、所持している用品は図鑑に残して再設置できるようにする。
+   return aquariumCount('displayItems',id,'owned')>0;
   }
   return false;
  });
@@ -264,58 +347,6 @@ function renderGrid(){
     const remove=document.createElement('button');remove.textContent='1個撤去';remove.className='remove';remove.disabled=installed<1;remove.onclick=()=>postAquariumMessage({type:'display-install',id,target:installed-1});
     actions.append(add,remove);c.append(status,actions);
    }
-  }
-  const b=document.createElement('button');b.className='detail-btn';b.textContent='詳細を見る';b.onclick=()=>openDetail(item);c.appendChild(b);
-  gridEl.appendChild(c);
- });
-}
-const fishPools={};
-function registerFishNode(id,node){if(!node)return;node.dataset.aquariumSpecies=id;(fishPools[id]||(fishPools[id]=[])).push(node);}
-const baseMainFish=[...document.querySelectorAll('.mainfish>.fish')].slice(0,6);
-['neon_tetra','rummy_nose_tetra','red_phantom_tetra','platy','discus_blue_diamond','discus_red_map'].forEach((id,i)=>registerFishNode(id,baseMainFish[i]));
-document.querySelectorAll('.floorfish>.cory').forEach(node=>registerFishNode('corydoras',node));
-document.querySelectorAll('.mainfish>.blackmolly').forEach(node=>registerFishNode('black_molly',node));
-document.querySelectorAll('.mainfish>.dwarfgourami').forEach(node=>registerFishNode('dwarf_gourami',node));
-document.querySelectorAll('.mainfish>.altum').forEach(node=>registerFishNode('altum_angelfish',node));
-document.querySelectorAll('.mainfish>.lampeye').forEach(node=>registerFishNode('african_lampeye',node));
-function ensureFishPool(id,count){
- const pool=fishPools[id]||[];if(!pool.length)return;
- while(pool.length<count){const template=pool[pool.length%Math.max(1,pool.length)]||pool[0];const clone=template.cloneNode(true);const index=pool.length;clone.dataset.phase=String((Number(template.dataset.phase)||index)+index*.83);clone.dataset.y=String(Math.max(20,Math.min(68,(Number(template.dataset.y)||42)+((index%5)-2)*3)));clone.dataset.min=String(Math.max(7,(Number(template.dataset.min)||12)+(index%4)*2));clone.dataset.max=String(Math.min(93,(Number(template.dataset.max)||88)-(index%3)*2));template.parentElement.appendChild(clone);pool.push(clone);state.push({el:clone,x:+clone.dataset.min+(index*7)%35,dir:index%2?1:-1,min:+clone.dataset.min,max:+clone.dataset.max,speed:+clone.dataset.speed,y:+clone.dataset.y,phase:+(clone.dataset.phase||index)});}
- pool.forEach((node,index)=>node.style.setProperty('display',index<count?'block':'none','important'));
-}
-const allDecor=[...document.querySelectorAll('.rearplants>.decor,.midplants>.decor,.frontplants>.decor')];
-const decorPools={anacharis:[allDecor[0]],amazon_sword:[allDecor[1]],microsorum:[allDecor[2]],anubias_nana:[allDecor[3]],driftwood:[allDecor[4]],willow_moss:[allDecor[5]],layout_stone:[allDecor[6]]};
-function ensureDecorPool(id,count){const pool=decorPools[id]||[];if(!pool.length)return;while(pool.length<count){const base=pool[0],clone=base.cloneNode(true),i=pool.length;const left=parseFloat(base.style.left)||50;const top=parseFloat(base.style.top)||80;clone.style.left=Math.max(10,Math.min(90,left+((i%5)-2)*9))+'%';clone.style.top=Math.max(67,Math.min(85,top-(i%3)*2))+'%';clone.style.width=`${Math.max(10,(parseFloat(base.style.width)||20)*(1-(i%3)*.08))}%`;base.parentElement.appendChild(clone);pool.push(clone);}pool.forEach((node,index)=>node.style.setProperty('display',index<count?'block':'none','important'));}
-function applyAquariumSnapshot(snapshot){
- if(!snapshot||typeof snapshot!=='object')return;aquariumSnapshot=snapshot;document.body.classList.remove('aquarium-waiting');
- Object.entries(aquariumNameMaps.fish).forEach(([name,id])=>{currentFishCounts[name]=aquariumCount('fish',id,'inTank');ensureFishPool(id,currentFishCounts[name]);});
- Object.entries(aquariumNameMaps.plant).forEach(([name,id])=>{currentPlantCounts[name]=aquariumCount('plants',id,'inTank');ensureDecorPool(id,currentPlantCounts[name]);});
- const driftwood=aquariumCount('displayItems','driftwood','installed'),stones=aquariumCount('displayItems','layout_stone','installed');displayInstallState['流木']=driftwood>0;displayInstallState['レイアウトストーン']=stones>0;ensureDecorPool('driftwood',driftwood);ensureDecorPool('layout_stone',stones);
- const load=Math.max(0,Math.floor(Number(snapshot.fishLoad?.current)||0)),max=Math.max(1,Math.floor(Number(snapshot.fishLoad?.max)||40));const badge=document.querySelector('.badge');badge.textContent=`飼育負荷 ${load} / ${max}`;badge.classList.toggle('load-warning',load>=max);
- if(catalogPanel.classList.contains('show'))renderGrid();
-}
-window.addEventListener('message',(event)=>{if(event.origin!==window.location.origin||event.source!==parent)return;const data=event.data||{};if(data.source==='jxj-main-game'&&data.type==='aquarium-state')applyAquariumSnapshot(data.state);});
-postAquariumMessage({type:'ready'});
-
-renderTabs();renderGrid();};tabsEl.appendChild(b);})}
-function renderGrid(){
- gridEl.innerHTML='';
- catalog[activeCategory].forEach((item,i)=>{
-  const c=document.createElement('div');c.className='catalog-card';
-  const optional=item.category==='ディスプレイ用品'&&!fixedDisplayNames.has(item.name);
-  if(optional&&!displayInstallState[item.name])c.classList.add('optional-off');
-  const im=document.createElement('img');im.src=item.image;im.alt=item.name;
-  const kind=document.createElement('div');kind.className='catalog-kind';kind.textContent=item.classification;
-  const n=document.createElement('div');n.className='catalog-name';n.textContent=item.name;
-  c.append(im,kind,n);
-  const countText=currentCountText(item);
-  if(countText){const count=document.createElement('div');count.className='current-count';count.textContent=countText;c.appendChild(count);}
-  if(optional){
-   const installed=!!displayInstallState[item.name];
-   const status=document.createElement('div');status.className='install-status '+(installed?'on':'off');status.textContent=installed?'設置中':'未設置';
-   const toggle=document.createElement('button');toggle.className='install-toggle'+(installed?' remove':'');toggle.textContent=installed?'設置しない':'設置する';
-   toggle.onclick=()=>{setDisplayInstallation(item.name,!installed);renderGrid();};
-   c.append(status,toggle);
   }
   const b=document.createElement('button');b.className='detail-btn';b.textContent='詳細を見る';b.onclick=()=>openDetail(item);c.appendChild(b);
   gridEl.appendChild(c);

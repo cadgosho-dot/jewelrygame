@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.813';
+} from './game-data.js?v=0.10.814';
 
-const UI_BUILD_VERSION = '0.10.813';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.813';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.813';
+const UI_BUILD_VERSION = '0.10.814';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.814';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.814';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.813';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.814';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.813';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.813';
+} from './firebase-service.js?v=0.10.814';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.814';
 
 
 
@@ -193,6 +193,9 @@ let speedStarRunTimer = null;
 let tropicalShopQuantityHoldTimer = null;
 let tropicalShopQuantityHoldInterval = null;
 let tropicalShopQuantityHoldTriggered = false;
+let tropicalShopSwipeStart = null;
+const TROPICAL_SHOP_CATEGORIES = ['fish', 'plant', 'display'];
+const TROPICAL_SHOP_SWIPE_MIN_PX = 52;
 let childhoodFriendMealWatchdogTimer = null;
 let hungerFeedback = null;
 let hungerFeedbackTimer = null;
@@ -11335,6 +11338,81 @@ function tropicalFishShopEventAccessAllowed() {
   );
 }
 
+function tropicalShopCategoryIndex(category) {
+  const index = TROPICAL_SHOP_CATEGORIES.indexOf(String(category || ''));
+  return index >= 0 ? index : 0;
+}
+
+function setTropicalShopCategory(category, { announce = false } = {}) {
+  if (screen !== 'tropicalFishShop') return false;
+  const next = TROPICAL_SHOP_CATEGORIES.includes(category) ? category : 'fish';
+  const current = TROPICAL_SHOP_CATEGORIES.includes(screenData?.tropicalCategory) ? screenData.tropicalCategory : 'fish';
+  if (next === current) return false;
+  screenData = { ...screenData, tropicalCategory: next, tropicalResetScroll: true };
+  delete screenData.tropicalModal;
+  render();
+  if (announce) {
+    const label = { fish: '魚', plant: '水草', display: 'ディスプレイ' }[next] || '';
+    showToast(`${label}の一覧に切り替えました。`, 'info');
+  }
+  return true;
+}
+
+function moveTropicalShopCategory(direction) {
+  if (screen !== 'tropicalFishShop' || screenData?.tropicalModal) return false;
+  const current = TROPICAL_SHOP_CATEGORIES.includes(screenData?.tropicalCategory) ? screenData.tropicalCategory : 'fish';
+  const index = tropicalShopCategoryIndex(current);
+  const nextIndex = Math.max(0, Math.min(TROPICAL_SHOP_CATEGORIES.length - 1, index + direction));
+  if (nextIndex === index) return false;
+  return setTropicalShopCategory(TROPICAL_SHOP_CATEGORIES[nextIndex], { announce: true });
+}
+
+function resetTropicalFishShopScroll() {
+  if (screen !== 'tropicalFishShop') return;
+  const scroller = root.querySelector('.tropical-fish-shop-content');
+  if (scroller instanceof HTMLElement) {
+    scroller.scrollTop = 0;
+    scroller.scrollLeft = 0;
+  }
+  if (screenData?.tropicalResetScroll) delete screenData.tropicalResetScroll;
+}
+
+function bindTropicalFishShopNavigation() {
+  if (screen !== 'tropicalFishShop') return;
+  const scroller = root.querySelector('.tropical-fish-shop-content');
+  if (!(scroller instanceof HTMLElement)) return;
+
+  if (screenData?.tropicalResetScroll) resetTropicalFishShopScroll();
+
+  scroller.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+    if (event.target instanceof Element && event.target.closest('button, a, input, select, textarea, .tropical-modal')) {
+      tropicalShopSwipeStart = null;
+      return;
+    }
+    tropicalShopSwipeStart = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      time: performance.now(),
+    };
+  }, { passive: true });
+
+  scroller.addEventListener('pointerup', (event) => {
+    const start = tropicalShopSwipeStart;
+    tropicalShopSwipeStart = null;
+    if (!start || start.pointerId !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    const elapsed = performance.now() - start.time;
+    if (elapsed > 900 || Math.abs(dx) < TROPICAL_SHOP_SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy) * 1.25) return;
+    if (dx < 0) moveTropicalShopCategory(1);
+    else moveTropicalShopCategory(-1);
+  }, { passive: true });
+
+  scroller.addEventListener('pointercancel', () => { tropicalShopSwipeStart = null; }, { passive: true });
+}
+
 function renderTropicalFishShop(){
   if (!tropicalFishShopEventAccessAllowed()) {
     queueMicrotask(() => {
@@ -11342,7 +11420,7 @@ function renderTropicalFishShop(){
     });
     return `<main class="main-screen"></main>`;
   }
-  const category=['fish','plant','display'].includes(screenData?.tropicalCategory)?screenData.tropicalCategory:'fish';
+  const category=TROPICAL_SHOP_CATEGORIES.includes(screenData?.tropicalCategory)?screenData.tropicalCategory:'fish';
   const aquarium=aquariumState(); refreshAquariumLoad(aquarium);
   const label={fish:'魚',plant:'水草',display:'ディスプレイ'}[category];
   const rows=tropicalShopProducts(category).map(product=>{
@@ -11354,7 +11432,7 @@ function renderTropicalFishShop(){
   }).join('');
   const modal=screenData?.tropicalModal; let modalHtml='';
   if(modal){const product=tropicalShopFindProduct(modal.category,modal.id); if(product){const max=tropicalShopMaxQuantity(product);const qty=Math.max(1,Math.min(max,Math.floor(Number(modal.qty)||1)));modal.qty=qty;modalHtml=`<div class="tropical-modal-backdrop"><section class="tropical-modal"><button class="tropical-modal-close" data-action="tropical-shop-close-qty">×</button><div class="tropical-modal-imgbox"><img src="./assets/images/tropical-shop/${product.image}?v=${VERSION}" alt="${esc(product.name)}"></div><h2>${esc(product.name)}</h2><strong class="tropical-modal-total">${yen(product.price)} × ${qty} = ${yen(product.price*qty)}</strong><div class="tropical-qty-control"><button data-action="tropical-shop-qty" data-delta="-1" ${qty<=1?'disabled':''}>▼</button><output>${qty}</output><button data-action="tropical-shop-qty" data-delta="1" ${qty>=max?'disabled':''}>▲</button></div><small>購入可能：最大 ${max}${modal.category==='fish'?'匹':modal.category==='plant'?'株':'個'}</small><button class="primary-button full-button" data-action="tropical-shop-purchase">購入する</button></section></div>`;}}
-  return shell('熱帯魚屋', `<section class="tropical-shop-status"><b>${yen(state.game.money)}</b><span>魚の飼育負荷 ${aquarium.fishLoad.current}/${aquarium.fishLoad.max}</span><span>水草 ${aquariumPlantTotal(aquarium)}/15株</span></section><nav class="tropical-shop-tabs">${[['fish','魚'],['plant','水草'],['display','ディスプレイ']].map(([id,n])=>`<button data-action="tropical-shop-tab" data-category="${id}" class="${category===id?'active':''}">${n}</button>`).join('')}</nav><section class="tropical-product-grid" aria-label="${label}">${rows}</section>${modalHtml}`, {
+  return shell('熱帯魚屋', `<div class="tropical-shop-controls"><section class="tropical-shop-status"><b>${yen(state.game.money)}</b><span>魚の飼育負荷 ${aquarium.fishLoad.current}/${aquarium.fishLoad.max}</span><span>水草 ${aquariumPlantTotal(aquarium)}/15株</span></section><nav class="tropical-shop-tabs" aria-label="商品カテゴリ">${[['fish','魚'],['plant','水草'],['display','ディスプレイ']].map(([id,n])=>`<button data-action="tropical-shop-tab" data-category="${id}" class="${category===id?'active':''}" aria-current="${category===id?'page':'false'}">${n}</button>`).join('')}</nav><small class="tropical-shop-swipe-hint">左右にスワイプしても切替できます</small></div><section class="tropical-product-grid" aria-label="${label}" data-tropical-category="${category}">${rows}</section>${modalHtml}`, {
     help: '熱帯魚・水草・ディスプレイを選び、数量を決めて購入できます。購入品は水槽へ自動で入ります。',
     contentClass: 'tropical-fish-shop-content',
   });
@@ -12173,6 +12251,9 @@ function scheduleOkachimachiQuizBottomLayoutSync() {
 
 function setScreen(target, data = {}, push = true) {
   if (target === 'displayShop' && state && maybeStartPearlHumanEvent()) target = 'pearlHumanEvent';
+  if (target === 'tropicalFishShop' && screen !== 'tropicalFishShop') {
+    data = { ...data, tropicalResetScroll: true };
+  }
   if (target !== 'pandaMusicEvent') stopPandaMusicEventAudio();
   if (target !== 'wristFoundEvent') stopWristFoundDarkDrone();
   if (target !== 'kaitenzushi') clearKaitenzushiLoadWatch();
@@ -12636,6 +12717,7 @@ function render() {
       }
     }
     if (screen === 'oyatsuDaisukiEvent' && oyatsuDaisukiEventState().stage === 'shopVideo') queueMicrotask(bindOyatsuShopVideo);
+    if (screen === 'tropicalFishShop') queueMicrotask(bindTropicalFishShopNavigation);
     if (screen === 'main') queueMicrotask(() => maybeResumeMorningSequence());
     queueMicrotask(() => maybeShowGameClearModal());
     scheduleWinterColdTextEffect();
@@ -24846,9 +24928,8 @@ root.addEventListener('click', async (event) => {
       }
       break;
     case 'tropical-shop-tab':
-      screenData = { ...screenData, tropicalCategory: button.dataset.category || 'fish' };
-      delete screenData.tropicalModal;
-      render();
+      setTropicalShopCategory(button.dataset.category || 'fish');
+      if (screen === 'tropicalFishShop') resetTropicalFishShopScroll();
       break;
     case 'tropical-shop-open-qty':
       openTropicalShopQuantity(button.dataset.category, button.dataset.id);

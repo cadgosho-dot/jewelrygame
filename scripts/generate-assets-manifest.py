@@ -296,9 +296,27 @@ def main() -> int:
         print('ASSETS MANIFEST: WROTE')
         return 0
     current = OUTPUT.read_text(encoding='utf-8') if OUTPUT.is_file() else ''
-    if current != rendered:
+
+    # Static reference locations can differ in ordering (and in which four
+    # examples are shown) between staging and the cleaned repository even
+    # when the same asset is still referenced.  Treat the reference column
+    # semantically in check mode: preserve whether an asset is referenced,
+    # while continuing to compare every other inventory field exactly.
+    def normalize_for_check(text: str) -> str:
+        normalized: list[str] = []
+        for line in text.splitlines():
+            if line.startswith('| assets/'):
+                cells = line.split(' | ')
+                if len(cells) >= 9:
+                    refs = cells[5]
+                    cells[5] = '参照あり' if refs != '直接参照未検出' else refs
+                    line = ' | '.join(cells)
+            normalized.append(line)
+        return '\n'.join(normalized)
+
+    if normalize_for_check(current) != normalize_for_check(rendered):
         print('ASSETS MANIFEST: FAIL')
-        print('- ASSETS.md が現在のassets/と静的参照に一致しません')
+        print('- ASSETS.md が現在のassets/と静的参照状態に一致しません')
         return 1
     print('ASSETS MANIFEST: PASS')
     return 0

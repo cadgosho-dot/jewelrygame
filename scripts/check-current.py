@@ -37,6 +37,7 @@ CHECKS = [
     ('御徒町夜背景', [sys.executable, str(ROOT / 'scripts/check-okachimachi-night-background.py')]),
     ('起動診断', [sys.executable, str(ROOT / 'scripts/check-startup-diagnostics.py')]),
     ('水槽正本・再設置', [sys.executable, str(ROOT / 'scripts/check-aquarium-runtime.py')]),
+    ('熱帯魚屋カテゴリ導線', [sys.executable, str(ROOT / 'scripts/check-tropical-shop-navigation.py')]),
     ('終了時セーブ一本化', [sys.executable, str(ROOT / 'scripts/check-lifecycle-save-policy.py')]),
     ('互換DOM監視軽量化', [sys.executable, str(ROOT / 'scripts/check-hosting-guard-policy.py')]),
     ('Firebase App Check準備', [sys.executable, str(ROOT / 'scripts/check-app-check-readiness.py')]),

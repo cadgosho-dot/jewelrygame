@@ -22304,3 +22304,71 @@ body[data-screen="hospitalEvent"] .hospital-event-dialogue>span{
   }
 }
 
+
+/* v0.10.814 熱帯魚屋：スマホのカテゴリ導線を常時表示し、横スワイプ切替を許可 */
+body[data-screen="tropicalFishShop"] .tropical-fish-shop-content{
+  position:relative;
+  touch-action:pan-y;
+  overscroll-behavior-y:contain;
+}
+body[data-screen="tropicalFishShop"] .tropical-shop-controls{
+  position:sticky;
+  top:0;
+  z-index:24;
+  margin:0 0 8px;
+  padding:4px 4px 5px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:13px;
+  background:rgba(5,8,10,.72);
+  -webkit-backdrop-filter:blur(7px);
+  backdrop-filter:blur(7px);
+  box-shadow:0 5px 14px rgba(0,0,0,.28);
+}
+body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-status{
+  margin:0 0 5px;
+}
+body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-tabs{
+  margin:0;
+}
+body[data-screen="tropicalFishShop"] .tropical-shop-tabs button{
+  min-height:40px;
+  touch-action:manipulation;
+}
+body[data-screen="tropicalFishShop"] .tropical-shop-swipe-hint{
+  display:block;
+  margin:4px 0 0;
+  text-align:center;
+  font-size:10px;
+  line-height:1.25;
+  font-weight:800;
+  opacity:.82;
+}
+/* 2段ヘッダーは透明スペーサーで既に高さを確保するため、熱帯魚屋だけ旧paddingの二重加算を禁止。 */
+html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen="tropicalFishShop"]
+.screen-shell.screen-shell:not(.event-shell-no-header) > .screen-content.tropical-fish-shop-content{
+  padding-top:8px!important;
+  scroll-padding-top:8px!important;
+}
+@media (orientation:landscape) and (max-height:560px){
+  body[data-screen="tropicalFishShop"] .tropical-shop-controls{
+    margin-bottom:5px;
+    padding:2px 3px 3px;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-status{
+    gap:3px 8px;
+    margin-bottom:3px;
+    padding:3px 7px;
+    font-size:10px;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-status b{font-size:14px}
+  body[data-screen="tropicalFishShop"] .tropical-shop-tabs{gap:4px}
+  body[data-screen="tropicalFishShop"] .tropical-shop-tabs button{
+    min-height:32px;
+    padding:5px 6px;
+    font-size:11px;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-shop-swipe-hint{
+    margin-top:2px;
+    font-size:9px;
+  }
+}

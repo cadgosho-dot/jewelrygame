@@ -25703,6 +25703,12 @@ modalEl.addEventListener('click', async (event) => {
   playSfx('select');
   switch (action) {
     case 'modal-close': closeModal(); break;
+    case 'gift-cancel-confirm': {
+      const code = screenData.giftCancelCode || '';
+      closeModal();
+      await cancelGift(code);
+      break;
+    }
     case 'polishing-result-return':
       closeModal();
       if (screen !== 'polishing') setScreen('polishing', {}, false);

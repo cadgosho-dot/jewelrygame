@@ -1,0 +1,116 @@
+name: One-shot v0.10.815 release
+
+on:
+  push:
+    branches:
+      - chatgpt-release-v0.10.815
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Release branch checkout
+        uses: actions/checkout@v6
+        with:
+          ref: chatgpt-release-v0.10.815
+          fetch-depth: 0
+
+      - name: Verify release base
+        env:
+          EXPECTED_MAIN: 8d186c3eec34d06ed2e7f285defdf5f80f7709a3
+        run: |
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(cat VERSION)" = "0.10.814"
+          test "$(git hash-object js/app.js)" = "ef1d30fc90d5e3cf0fa53a8245d592ca2e87a939"
+          test "$(git hash-object assets/minigames/aquarium/index.html)" = "2f5bbebd75c585f17b5d085498c6e73611c1287c"
+
+      - name: Expand verified release payload
+        run: |
+          base64 -d .release-v815-payload.tgz.b64 > /tmp/release-v815-payload.tgz
+          test "$(sha256sum /tmp/release-v815-payload.tgz | awk '{print $1}')" = "cb5cd011630090d6a23e0af918f7c17c6fa0a38de097384f256cd42aee1574b9"
+          tar -xzf /tmp/release-v815-payload.tgz -C .
+          rm -f .release-v815-payload.tgz.b64
+
+      - name: Prepare shell and clean pending-package files
+        run: |
+          rm -rf FILES
+          rm -f APPLY_UPDATE.py CHANGE_SUMMARY.md IMPLEMENTATION.patch PACKAGE_SHA256.txt README_UPDATE.txt UPDATE_MANIFEST.json VERIFY_UPDATE.py
+          python3 - <<'PY'
+          from pathlib import Path
+          version='0.10.814'
+          p=Path('game.html')
+          s=p.read_text(encoding='utf-8')
+          link=f'  <link rel="stylesheet" href="./styles.css?v={version}">\n'
+          extra=f'  <link rel="stylesheet" href="./quiz-event-v2.css?v={version}">\n'
+          if './quiz-event-v2.css?' not in s:
+              if link not in s:
+                  raise SystemExit('styles.css link not found')
+              s=s.replace(link,link+extra,1)
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('sw.js')
+          s=p.read_text(encoding='utf-8')
+          token=f"'./quiz-event-v2.css?v={version}'"
+          if token not in s:
+              needle=f"  './manifest.webmanifest', './js/app.js?v={version}'"
+              if needle not in s:
+                  raise SystemExit('Service Worker insertion point not found')
+              s=s.replace(needle, f"  './manifest.webmanifest', {token}, './js/app.js?v={version}'", 1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Build v0.10.815 release
+        run: |
+          python3 scripts/version-sync.py --bump-patch
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('CHANGELOG.md')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('> 現行基準: **v0.10.815** / 棚卸し日: 2026-08-30','> 現行基準: **v0.10.815** / 棚卸し日: 2026-08-31',1)
+          marker='## v0.10.814 — 熱帯魚屋カテゴリ切替・スマホ操作修正\n'
+          entry='''## v0.10.815 — 水槽縦配置・プレゼント取消・3種クイズUI統一\n\n- 水槽ミニゲームの縦画面で、水槽と「観察する」操作領域を縦方向中央基準へ調整。横画面は従来配置を維持。\n- スマートフォンのプレゼント取消確認モーダルに `gift-cancel-confirm` の確定処理を接続し、「取り消す」タップ後に取消・在庫復元・保存処理へ進むよう修正。\n- ストーリーテラーのクイズイベントをV2レイアウトへ正式統一。会話・「いいとも！」・4択・正誤後会話・報酬を段階ごとに分離し、表示重複とタップ不能を解消。\n- 縦画面ではキャラクターを画面中央付近に配置し、会話の「タップして進む」を右詰め、4択を下詰めとして余白を削減。\n- 横画面ではキャラクター全体が収まるよう縮尺・位置を調整し、会話欄を横幅いっぱいに拡張、「タップして進む」を右詰めに変更。\n- 報酬UIは河童の翡翠原石と同系統の中央配置へ統一し、報酬品に小さな上下動を追加。\n- 同じV2表示基準を「通りすがりのクイズ王」と「3Dメガネ」のクイズイベントにも適用。\n- `scripts/check-aquarium-portrait-center.py`、`scripts/check-gift-cancel-modal.py`、`scripts/check-storyteller-v2-layout.py` を総合監査へ追加し、3種クイズの共通表示を回帰検査。\n- 更新適用用の一時 `FILES/`・適用スクリプト・未公開パッケージ資料は、本体反映完了に合わせて公開リポジトリから整理。\n\n'''
+          if entry not in s:
+              if marker not in s:
+                  raise SystemExit('CHANGELOG insertion point missing')
+              s=s.replace(marker,entry+marker,1)
+          p.write_text(s,encoding='utf-8')
+          for name in ('GAME_RULES.md','TODO.md'):
+              p=Path(name)
+              t=p.read_text(encoding='utf-8').replace('棚卸し日: 2026-08-30','棚卸し日: 2026-08-31',1)
+              p.write_text(t,encoding='utf-8')
+          PY
+          python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-assets-manifest.py --write
+          node --check js/app.js
+          python3 scripts/check-aquarium-portrait-center.py
+          python3 scripts/check-gift-cancel-modal.py
+          python3 scripts/check-storyteller-v2-layout.py
+
+      - name: Install browser validation environment
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: Full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: Commit verified release and fast-forward main
+        env:
+          EXPECTED_MAIN: 8d186c3eec34d06ed2e7f285defdf5f80f7709a3
+        run: |
+          rm -f .github/workflows/release-v815.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "v0.10.815 水槽・プレゼント取消・クイズUI統一"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          git push origin HEAD:main

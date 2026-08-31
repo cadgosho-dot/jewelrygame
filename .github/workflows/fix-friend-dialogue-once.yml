@@ -1,0 +1,62 @@
+name: One-off friend dialogue typo fix
+
+on:
+  push:
+    branches:
+      - fix-friend-sleep-dialogue-20260831
+
+permissions:
+  contents: write
+
+jobs:
+  fix-dialogue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            js
+            .github/workflows
+
+      - name: Replace the exact typo only
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+          old = '少し、、疲れたんじゃないですかね、、、眠寝不足かな？、、、、'
+          new = '少し、、疲れたんじゃないですかね、、、睡眠不足かな？、、、、'
+
+          old_count = text.count(old)
+          new_count = text.count(new)
+          if old_count != 1:
+              raise SystemExit(f'Expected exactly one old dialogue, found {old_count}')
+          if new_count != 0:
+              raise SystemExit(f'New dialogue already exists {new_count} time(s)')
+
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Remove this one-off workflow
+        shell: bash
+        run: rm .github/workflows/fix-friend-dialogue-once.yml
+
+      - name: Verify final branch diff
+        shell: bash
+        run: |
+          test "$(git diff --numstat -- js/app.js | awk '{print $1 ":" $2}')" = "1:1"
+          grep -Fq '少し、、疲れたんじゃないですかね、、、睡眠不足かな？、、、、' js/app.js
+          ! grep -Fq '少し、、疲れたんじゃないですかね、、、眠寝不足かな？、、、、' js/app.js
+
+      - name: Commit corrected dialogue and self-cleanup
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js .github/workflows/fix-friend-dialogue-once.yml
+          git commit -m '友達イベント1回目の睡眠不足表記を修正'
+          git push origin HEAD:fix-friend-sleep-dialogue-20260831

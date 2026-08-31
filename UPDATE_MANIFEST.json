@@ -1,49 +1,65 @@
 {
-  "baseVersion": "0.10.805",
-  "targetVersion": "0.10.806",
-  "note": "Apply added/changed files, then delete only paths listed in deleteFiles. GitHub update is intentionally deferred.",
-  "addedFiles": [
-    "EVENT_PROBABILITY_LIST.md",
-    "docs/archive/EVENT_PROBABILITY_LIST_v0.10.581.md",
-    "docs/archive/INDEX.md",
-    "docs/archive/JEWELRYxJEWELRY_#U5f15#U304d#U7d99#U304e#U8cc7#U6599.md",
-    "docs/archive/README_#U6700#U521d#U306b#U8aad#U3093#U3067#U304f#U3060#U3055#U3044.txt",
-    "docs/archive/README_FIRST.txt",
-    "docs/archive/README_UPDATE_v0.10.728.txt",
-    "docs/archive/README_UPDATE_v0.10.729.txt",
-    "docs/archive/README_v0.10.356.md",
-    "scripts/check-management-docs.py",
-    "scripts/generate-assets-manifest.py",
-    "scripts/generate-event-probability-list.py"
+  "packageType": "pending-implementation-update",
+  "createdAtJST": "2026-08-31",
+  "repository": "cadgosho-dot/jewelrygame",
+  "baseVersion": "0.10.814",
+  "targetVersion": "0.10.814",
+  "versionBumpDeferred": true,
+  "githubUpdateDeferred": true,
+  "changes": [
+    {
+      "id": "aquarium-portrait-center",
+      "summary": "水槽ミニゲームの縦画面で水槽表示を縦方向中央へ配置。横画面は変更しない。"
+    },
+    {
+      "id": "gift-cancel-modal-handler",
+      "summary": "スマートフォンのプレゼント取消確認モーダルで「取り消す」確定操作がcancelGiftへ到達するよう接続。"
+    }
   ],
   "changedFiles": [
-    "ASSETS.md",
-    "CHANGELOG.md",
-    "GAME_RULES.md",
-    "README.md",
-    "TODO.md",
-    "VERSION",
-    "auth-cache-recovery.js",
-    "auth.html",
-    "game.html",
-    "hosting-origin-guard.js",
-    "index.html",
-    "js/app.js",
-    "js/audio.js",
-    "js/firebase-service.js",
-    "js/game-data-core.js",
-    "js/game-data.js",
-    "js/memories-screen.js",
-    "scripts/check-current.py",
-    "scripts/version-sync.py",
-    "sw.js"
+    {
+      "path": "js/app.js",
+      "baseSha256": "a0614d53b9f9d410eabeab7272cf54335dd21c767e6132d9e935f0f4690d8320",
+      "resultSha256": "afccb19147492011a5d9aafc11ee4262d50e356ed4e898d49e2a5fe1d83734ef",
+      "baseGitBlobSha": "54d0aa96103423d92e6b63df12092ba943ba99d6",
+      "resultGitBlobSha": "ef1d30fc90d5e3cf0fa53a8245d592ca2e87a939",
+      "baseSize": 1406974,
+      "resultSize": 1407129
+    },
+    {
+      "path": "assets/minigames/aquarium/index.html",
+      "baseSha256": "8d7896e1a4434fa1200303fffaf605b85bdcfbe13e80193374eb04a09fa35754",
+      "resultSha256": "462abda530b3e45c66240fc7eb90a53dfecef4d05792d9d35b580e3075813374",
+      "baseGitBlobSha": "6306b914b8996279ce840684b817741c245651b2",
+      "resultGitBlobSha": "2f5bbebd75c585f17b5d085498c6e73611c1287c",
+      "baseSize": 5944128,
+      "resultSize": 5944122
+    },
+    {
+      "path": "scripts/check-current.py",
+      "baseSha256": "abb0de062daf46038c5f5508a059aad0eefb62a1f913df9bc92ad86d1117112a",
+      "resultSha256": "f470367d1cf9ae5673bef5116ef7257e5748189e6502dc44ec26297cb4f1b67e",
+      "baseGitBlobSha": "c9d28fc80be5d76d87b6d26488626fc9424a2f6b",
+      "resultGitBlobSha": "7fd900c9cf62234727e3eea4164d4860555febeb",
+      "baseSize": 5796,
+      "resultSize": 6019
+    },
+    {
+      "path": "ASSETS.md",
+      "baseSha256": "a08ee43a3d1b2e74a8f12e1ae59011d5635d0a08fdaee00daebace23fd2d8032",
+      "resultSha256": "0eef6a2e574784fdfa2d46a4da4363a80849ef888670eff62cdc43577c4be8ad",
+      "baseGitBlobSha": "b609b1ef598df3c44e8933490ff8b3548547cb80",
+      "resultGitBlobSha": "b211a67dce9bad720b53201b4bd579a42b9a4321",
+      "baseSize": 152437,
+      "resultSize": 152437
+    }
   ],
-  "deleteFiles": [
-    "EVENT_PROBABILITY_LIST_v0.10.581.md",
-    "JEWELRYxJEWELRY_#U5f15#U304d#U7d99#U304e#U8cc7#U6599.md",
-    "README_#U6700#U521d#U306b#U8aad#U3093#U3067#U304f#U3060#U3055#U3044.txt",
-    "README_FIRST.txt",
-    "README_UPDATE_v0.10.728.txt",
-    "README_UPDATE_v0.10.729.txt"
-  ]
+  "addedFiles": [
+    "scripts/check-gift-cancel-modal.py",
+    "scripts/check-aquarium-portrait-center.py"
+  ],
+  "addedFileHashes": {
+    "scripts/check-gift-cancel-modal.py": "ed70f614329acf568fc0a530a9cf1489aef3891482fc1dd541461c73f77a2707",
+    "scripts/check-aquarium-portrait-center.py": "9c64dfb146933d281704e9b5ebd64a5226c88c94d027df66696b6066c3d11cb1"
+  }
 }

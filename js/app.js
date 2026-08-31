@@ -434,7 +434,7 @@ const HOSPITAL_EVENT_CHARACTER_NAME = '友達';
 const HOSPITAL_EVENT_STAGE_ORDER = Object.freeze(['line1', 'line2', 'line3', 'line4', 'line5']);
 const HOSPITAL_EVENT_EPISODES = Object.freeze([
   Object.freeze([
-    '少し、、疲れたんじゃないですかね、、、眠寝不足かな？、、、、',
+    '少し、、疲れたんじゃないですかね、、、睡眠不足かな？、、、、',
     '大丈夫、、あなたの言うようにここはちゃんと現実です、、、、',
     'この部屋も、私も、あなたも、、、、、、',
     '、、、、、、',

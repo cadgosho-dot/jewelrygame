@@ -25,9 +25,9 @@ jobs:
         run: |
           git fetch origin main
           test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
-          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          git merge-base --is-ancestor "$EXPECTED_MAIN" HEAD
           test "$(cat VERSION)" = "0.10.815"
-          grep -Fqx "const OYATSU_DAISUKI_EVENT_CHANCE = 0.04;" <(grep -F "const OYATSU_DAISUKI_EVENT_CHANCE" js/app.js)
+          grep -Fq "const OYATSU_DAISUKI_EVENT_CHANCE = 0.04;" js/app.js
           grep -Fq "return clamp((baseRisk + acclimationRisk) * vulnerability * Math.max(0.2, Number(tankFactor) || 1), 0, 0.45);" js/app.js
           ! grep -Fq "AQUARIUM_FISH_MORTALITY_RATE_MULTIPLIER" js/app.js
 
@@ -68,29 +68,31 @@ jobs:
           )
           rules_path.write_text(rules, encoding='utf-8')
 
-          check_path = Path('scripts/check-aquarium-mortality-rate.py')
-          check_path.write_text('''#!/usr/bin/env python3
-from pathlib import Path
-import sys
-
-ROOT = Path(__file__).resolve().parents[1]
-app = (ROOT / 'js/app.js').read_text(encoding='utf-8')
-prob = (ROOT / 'EVENT_PROBABILITY_LIST.md').read_text(encoding='utf-8')
-checks = {
-    'おやつ大好きが35回に1回': 'const OYATSU_DAISUKI_EVENT_CHANCE = 1 / 35;' in app,
-    '熱帯魚死亡倍率が50%': 'const AQUARIUM_FISH_MORTALITY_RATE_MULTIPLIER = 0.5;' in app,
-    '最終死亡抽選へ倍率適用': 'return clamp((baseRisk + acclimationRisk) * vulnerability * Math.max(0.2, Number(tankFactor) || 1), 0, 0.45) * AQUARIUM_FISH_MORTALITY_RATE_MULTIPLIER;' in app,
-    '旧おやつ4%が残っていない': 'const OYATSU_DAISUKI_EVENT_CHANCE = 0.04;' not in app,
-    '確率資料が約1/35': '| おやつ大好き | **2.86%** | 約1/35 |' in prob,
-}
-failed = [name for name, ok in checks.items() if not ok]
-if failed:
-    print('AQUARIUM MORTALITY / OYATSU RATE: FAIL')
-    for name in failed:
-        print(f'- {name}')
-    sys.exit(1)
-print('AQUARIUM MORTALITY / OYATSU RATE: PASS')
-''', encoding='utf-8')
+          check_lines = [
+              '#!/usr/bin/env python3',
+              'from pathlib import Path',
+              'import sys',
+              '',
+              "ROOT = Path(__file__).resolve().parents[1]",
+              "app = (ROOT / 'js/app.js').read_text(encoding='utf-8')",
+              "prob = (ROOT / 'EVENT_PROBABILITY_LIST.md').read_text(encoding='utf-8')",
+              'checks = {',
+              "    'おやつ大好きが35回に1回': 'const OYATSU_DAISUKI_EVENT_CHANCE = 1 / 35;' in app,",
+              "    '熱帯魚死亡倍率が50%': 'const AQUARIUM_FISH_MORTALITY_RATE_MULTIPLIER = 0.5;' in app,",
+              "    '最終死亡抽選へ倍率適用': 'return clamp((baseRisk + acclimationRisk) * vulnerability * Math.max(0.2, Number(tankFactor) || 1), 0, 0.45) * AQUARIUM_FISH_MORTALITY_RATE_MULTIPLIER;' in app,",
+              "    '旧おやつ4%が残っていない': 'const OYATSU_DAISUKI_EVENT_CHANCE = 0.04;' not in app,",
+              "    '確率資料が約1/35': '| おやつ大好き | **2.86%** | 約1/35 |' in prob,",
+              '}',
+              'failed = [name for name, ok in checks.items() if not ok]',
+              'if failed:',
+              "    print('AQUARIUM MORTALITY / OYATSU RATE: FAIL')",
+              '    for name in failed:',
+              "        print(f'- {name}')",
+              '    sys.exit(1)',
+              "print('AQUARIUM MORTALITY / OYATSU RATE: PASS')",
+              '',
+          ]
+          Path('scripts/check-aquarium-mortality-rate.py').write_text('\n'.join(check_lines), encoding='utf-8')
 
           current_path = Path('scripts/check-current.py')
           current = current_path.read_text(encoding='utf-8')
@@ -109,14 +111,13 @@ print('AQUARIUM MORTALITY / OYATSU RATE: PASS')
           p = Path('CHANGELOG.md')
           s = p.read_text(encoding='utf-8')
           marker = '## v0.10.815 — 水槽縦配置・プレゼント取消・3種クイズUI統一\n'
-          entry = '''## v0.10.816 — おやつ大好き発生率・熱帯魚死亡率調整
-
-- 「おやつ大好き」の条件成立時の抽選確率を4%（約1/25）から **1/35（約2.86%）** へ変更。
-- 熱帯魚は魚種別寿命・個体差・購入直後の不安定さ・日ごとの水槽全体の揺らぎを維持したまま、各個体の最終死亡確率を従来計算値の **50%** へ調整。
-- 水草の枯死率には変更なし。
-- `scripts/check-aquarium-mortality-rate.py` を追加し、上記2設定を総合監査へ組み込んだ。
-
-'''
+          entry = (
+              '## v0.10.816 — おやつ大好き発生率・熱帯魚死亡率調整\n\n'
+              '- 「おやつ大好き」の条件成立時の抽選確率を4%（約1/25）から **1/35（約2.86%）** へ変更。\n'
+              '- 熱帯魚は魚種別寿命・個体差・購入直後の不安定さ・日ごとの水槽全体の揺らぎを維持したまま、各個体の最終死亡確率を従来計算値の **50%** へ調整。\n'
+              '- 水草の枯死率には変更なし。\n'
+              '- `scripts/check-aquarium-mortality-rate.py` を追加し、上記2設定を総合監査へ組み込んだ。\n\n'
+          )
           if entry not in s:
               if marker not in s:
                   raise SystemExit('CHANGELOG insertion marker missing')

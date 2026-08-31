@@ -38,6 +38,7 @@ CHECKS = [
     ('御徒町夜背景', [sys.executable, str(ROOT / 'scripts/check-okachimachi-night-background.py')]),
     ('起動診断', [sys.executable, str(ROOT / 'scripts/check-startup-diagnostics.py')]),
     ('水槽正本・再設置', [sys.executable, str(ROOT / 'scripts/check-aquarium-runtime.py')]),
+    ('水槽死亡率・おやつ発生率', [sys.executable, str(ROOT / 'scripts/check-aquarium-mortality-rate.py')]),
     ('水槽縦画面中央配置', [sys.executable, str(ROOT / 'scripts/check-aquarium-portrait-center.py')]),
     ('熱帯魚屋カテゴリ導線', [sys.executable, str(ROOT / 'scripts/check-tropical-shop-navigation.py')]),
     ('ストーリーテラーV2レイアウト', [sys.executable, str(ROOT / 'scripts/check-storyteller-v2-layout.py')]),

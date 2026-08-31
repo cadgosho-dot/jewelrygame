@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.815';
+} from './game-data.js?v=0.10.816';
 
-const UI_BUILD_VERSION = '0.10.815';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.815';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.815';
+const UI_BUILD_VERSION = '0.10.816';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.816';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.816';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.815';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.816';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.815';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.815';
+} from './firebase-service.js?v=0.10.816';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.816';
 
 
 
@@ -390,7 +390,7 @@ const RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE = (1 / 30) * MEAL_EVENT_RATE_MULTIPLIER;
 const RIDLEY_OKAZAKI_SOBA_EVENT_MEAL_ID = 'soba';
 const RIDLEY_OKAZAKI_SOBA_EVENT_PRICE_MULTIPLIER = 2;
 const WRIST_FOUND_EVENT_CHANCE = 1 / 200;
-const OYATSU_DAISUKI_EVENT_CHANCE = 0.04;
+const OYATSU_DAISUKI_EVENT_CHANCE = 1 / 35;
 const OYATSU_DAISUKI_EVENT_LATEST_MINUTES = 18 * 60;
 const OYATSU_TROPICAL_SHOP_INTRO_VIDEO = './assets/videos/events/oyatsu-tropical-shop-intro.mp4';
 const SPEED_STAR_EVENT_CHANCE = 1 / 100;
@@ -13356,6 +13356,8 @@ function aquariumIndividualPlantDeathChance(plantId, individual, currentDay, tan
 
 // v0.10.803: 魚は固定寿命日で機械的に消さず、個体差と日ごとの揺らぎを持つ自然死亡にする。
 // 購入直後・同日複数死亡・連日死亡を禁止する保護ルールは置かない。
+// v0.10.816: 魚の最終死亡抽選だけを従来計算値の50%へ下げ、種類別寿命・個体差・日ごとの揺らぎは維持する。
+const AQUARIUM_FISH_MORTALITY_RATE_MULTIPLIER = 0.5;
 const AQUARIUM_FISH_MORTALITY = Object.freeze({
   neon_tetra: Object.freeze({ lifespanMin: 260, lifespanMax: 760, baseRisk: 0.0014, acclimationRisk: 0.0070 }),
   rummy_nose_tetra: Object.freeze({ lifespanMin: 300, lifespanMax: 850, baseRisk: 0.0013, acclimationRisk: 0.0080 }),
@@ -13440,7 +13442,7 @@ function aquariumIndividualDeathChance(fishId, individual, currentDay, tankFacto
     ? Math.max(0, Number(profile.acclimationRisk) || 0) * Math.pow(1 - acclimationProgress, 1.35)
     : 0;
   const baseRisk = Math.max(0, Number(profile.baseRisk) || 0.0014) * ageMultiplier;
-  return clamp((baseRisk + acclimationRisk) * vulnerability * Math.max(0.2, Number(tankFactor) || 1), 0, 0.45);
+  return clamp((baseRisk + acclimationRisk) * vulnerability * Math.max(0.2, Number(tankFactor) || 1), 0, 0.45) * AQUARIUM_FISH_MORTALITY_RATE_MULTIPLIER;
 }
 
 function aquariumMortalityState(aquarium = aquariumState()) {

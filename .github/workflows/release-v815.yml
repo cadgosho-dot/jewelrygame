@@ -73,7 +73,7 @@ jobs:
           s=p.read_text(encoding='utf-8')
           s=s.replace('> 現行基準: **v0.10.815** / 棚卸し日: 2026-08-30','> 現行基準: **v0.10.815** / 棚卸し日: 2026-08-31',1)
           marker='## v0.10.814 — 熱帯魚屋カテゴリ切替・スマホ操作修正\n'
-          entry='''## v0.10.815 — 水槽縦配置・プレゼント取消・3種クイズUI統一\n\n- 水槽ミニゲームの縦画面で、水槽と「観察する」操作領域を縦方向中央基準へ調整。横画面は従来配置を維持。\n- スマートフォンのプレゼント取消確認モーダルに `gift-cancel-confirm` の確定処理を接続し、「取り消す」タップ後に取消・在庫復元・保存処理へ進むよう修正。\n- ストーリーテラーのクイズイベントをV2レイアウトへ正式統一。会話・「いいとも！」・4択・正誤後会話・報酬を段階ごとに分離し、表示重複とタップ不能を解消。\n- 縦画面ではキャラクターを画面中央付近に配置し、会話の「タップして進む」を右詰め、4択を下詰めとして余白を削減。\n- 横画面ではキャラクター全体が収まるよう縮尺・位置を調整し、会話欄を横幅いっぱいに拡張、「タップして進む」を右詰めに変更。\n- 報酬UIは河童の翡翠原石と同系統の中央配置へ統一し、報酬品に小さな上下動を追加。\n- 同じV2表示基準を「通りすがりのクイズ王」と「3Dメガネ」のクイズイベントにも適用。\n- `scripts/check-aquarium-portrait-center.py`、`scripts/check-gift-cancel-modal.py`、`scripts/check-storyteller-v2-layout.py` を総合監査へ追加し、3種クイズの共通表示を回帰検査。\n- 更新適用用の一時 `FILES/`・適用スクリプト・未公開パッケージ資料は、本体反映完了に合わせて公開リポジトリから整理。\n\n'''
+          entry='''## v0.10.815 — 水槽縦配置・プレゼント取消・3種クイズUI統一\n\n- 水槽ミニゲームの縦画面で、水槽と「観察する」操作領域を縦方向中央基準へ調整。横画面は従来配置を維持。\n- スマートフォンのプレゼント取消確認モーダルに `gift-cancel-confirm` の確定処理を接続し、「取り消す」タップ後に取消・在庫復元・保存処理へ進むよう修正。\n- ストーリーテラーのクイズイベントをV2レイアウトへ正式統一。会話・「いいとも％」・4択・正誤後会話・報酬を段階ごとに分離し、表示重複とタップ不能を解消。\n- 縦画面ではキャラクターを画面中央付近に配置し、会話の「タップして進む」を右詰め、4択を下詰めとして余白を削減。\n- 横画面ではキャラクター全体が収まるよう縮尺・位置を調整し、会話欄を横幅いっぱいに拡張、「タップして進む」を右詰めに変更。\n- 報酬UIは河童の翡翠原石と同系統の中央配置へ統一し、報酬品に小さな上下動を追加。\n- 同じV2表示基準を「通りすがりのクイズ王」と「3Dメガネ」のクイズイベントにも適用。\n- `scripts/check-aquarium-portrait-center.py`、`scripts/check-gift-cancel-modal.py`、`scripts/check-storyteller-v2-layout.py` を総合監査へ追加し、3種クイズの共通表示を回帰検査。\n- 更新適用用の一時 `FILES/`・適用スクリプト・未公開パッケージ資料は、本体反映完了に合わせて公開リポジトリから整理。\n\n'''
           if entry not in s:
               if marker not in s:
                   raise SystemExit('CHANGELOG insertion point missing')
@@ -95,6 +95,7 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check pillow playwright
           python3 -m playwright install --with-deps chromium
+          python3 scripts/generate-assets-manifest.py --write
 
       - name: Full current-build audit
         env:

@@ -1,0 +1,123 @@
+name: v0.10.824 one-time repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/repair-v010824.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 2
+
+      - name: Patch v0.10.824 integration gaps
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          # Gray-hood dialogue gained intro2b / intro3b. Keep save migration validators in sync.
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          match = re.search(r"(grayHoodAquariumEvent\s*:\s*new Set\(\[)([^\]]*)(\]\))", app)
+          if not match:
+              raise SystemExit('grayHoodAquariumEvent stage validator was not found')
+          stages = match.group(2)
+          if 'intro2b' not in stages:
+              stages, count = re.subn(r"(['\"]intro2['\"]\s*,)", r"\1'intro2b',", stages, count=1)
+              if count != 1:
+                  raise SystemExit('intro2 stage was not found in grayHoodAquariumEvent validator')
+          if 'intro3b' not in stages:
+              stages, count = re.subn(r"(['\"]intro3['\"]\s*,)", r"\1'intro3b',", stages, count=1)
+              if count != 1:
+                  raise SystemExit('intro3 stage was not found in grayHoodAquariumEvent validator')
+          app = app[:match.start()] + match.group(1) + stages + match.group(3) + app[match.end():]
+          app_path.write_text(app, encoding='utf-8')
+
+          # The battle iframe owns its battle BGM/SE, so mute the parent game's scene while it is open.
+          audio_path = Path('js/audio-scene-map.js')
+          audio = audio_path.read_text(encoding='utf-8')
+          if 'retroBattleEvent:' not in audio:
+              marker = "  oyatsuDaisukiEvent: 'okachimachi',"
+              if marker not in audio:
+                  raise SystemExit('audio scene insertion marker was not found')
+              audio = audio.replace(marker, marker + "\n  retroBattleEvent: 'silent',", 1)
+              audio_path.write_text(audio, encoding='utf-8')
+
+          # Playwright wait_for_function uses page-side eval and is blocked by the production CSP.
+          # Use CSS locator waits / explicit polling instead so the smoke test tests the app, not unsafe-eval.
+          smoke_path = Path('scripts/check-browser-smoke.py')
+          smoke = smoke_path.read_text(encoding='utf-8')
+          helper_marker = "def free_port() -> int:\n"
+          if 'def wait_screen(page, name: str' not in smoke:
+              helper = '''def wait_screen(page, name: str, timeout: int = 10_000) -> None:\n    page.locator(f'body[data-screen="{name}"]').wait_for(state='attached', timeout=timeout)\n\n\ndef wait_saved_day_advance(page, before_day: int, timeout: int = 30_000) -> None:\n    deadline = time.monotonic() + timeout / 1000\n    while time.monotonic() < deadline:\n        raw = page.evaluate(f"localStorage.getItem({json.dumps(SAVE_KEY)})")\n        if raw:\n            try:\n                if (int(json.loads(raw).get('game', {}).get('day') or 0)) > int(before_day):\n                    return\n            except (TypeError, ValueError, json.JSONDecodeError):\n                pass\n        page.wait_for_timeout(100)\n    raise RuntimeError('就寝後の保存データで翌日への進行を確認できませんでした。')\n\n\n'''
+              if helper_marker not in smoke:
+                  raise SystemExit('browser smoke helper insertion marker was not found')
+              smoke = smoke.replace(helper_marker, helper + helper_marker, 1)
+
+          replacements = {
+              "page.wait_for_function(\"document.body.dataset.screen === 'main'\", timeout=15_000)": "wait_screen(page, 'main', 15_000)",
+              "page.wait_for_function(\"document.body.dataset.screen === 'phone'\", timeout=10_000)": "wait_screen(page, 'phone', 10_000)",
+              "page.wait_for_function(\"document.body.dataset.screen === 'main'\", timeout=10_000)": "wait_screen(page, 'main', 10_000)",
+              "aquarium.wait_for_function(\"!document.body.classList.contains('aquarium-waiting')\", timeout=10_000)": "aquarium.locator('body:not(.aquarium-waiting)').wait_for(state='attached', timeout=10_000)",
+          }
+          for old, new in replacements.items():
+              smoke = smoke.replace(old, new)
+
+          sleep_wait = re.compile(
+              r"\s*page\.wait_for_function\(\n"
+              r"\s*f\"\"\"\(\) => \{\{\n"
+              r"\s*const raw = localStorage\.getItem\('\{SAVE_KEY\}'\);\n"
+              r"\s*if \(!raw\) return false;\n"
+              r"\s*try \{\{ return \(Number\(JSON\.parse\(raw\)\.game\.day\) \|\| 0\) > \{int\(before_day\)\}; \}\} catch \(_\) \{\{ return false; \}\}\n"
+              r"\s*\}\}\"\"\",\n"
+              r"\s*timeout=30_000,\n"
+              r"\s*\)"
+          )
+          smoke, count = sleep_wait.subn("\n                wait_saved_day_advance(page, before_day, 30_000)", smoke, count=1)
+          if count == 0 and 'wait_saved_day_advance(page, before_day, 30_000)' not in smoke:
+              raise SystemExit('sleep day-advance wait_for_function block was not found')
+          if 'wait_for_function(' in smoke:
+              raise SystemExit('browser smoke still contains wait_for_function')
+          smoke_path.write_text(smoke, encoding='utf-8')
+          PY
+
+      - name: Synchronize version and generated management docs
+        run: |
+          python3 scripts/version-sync.py --set 0.10.824
+          python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/version-sync.py --check
+          node --check js/app.js
+
+      - name: Install browser audit dependencies
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: Run full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: Commit repaired v0.10.824 and remove one-time workflow
+        run: |
+          rm -f .github/workflows/repair-v010824.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Repair v0.10.824 build audit"
+          git pull --rebase origin main
+          git push origin HEAD:main

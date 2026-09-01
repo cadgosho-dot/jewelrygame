@@ -49,7 +49,7 @@ jobs:
           app = app[:m.start()] + m.group(1) + stages + m.group(3) + app[m.end():]
           p.write_text(app, encoding='utf-8')
 
-          # Gray-hood: save/load normalization allowlist. This is the exact block reported by the audit.
+          # Gray-hood: save/load normalization allowlist.
           replace_once(
               'js/game-data-core.js',
               "const grayHoodStages = new Set(['idle', 'video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage', 'completed']);",
@@ -106,14 +106,15 @@ jobs:
         run: |
           python3 scripts/version-sync.py --set 0.10.824
           python3 scripts/generate-event-probability-list.py --write
-          python3 scripts/generate-assets-manifest.py --write
           python3 scripts/version-sync.py --check
           node --check js/app.js
 
-      - name: Install Chromium audit runtime
+      - name: Install Chromium audit runtime and finalize asset manifest
         run: |
           python3 -m pip install --disable-pip-version-check pillow playwright
           python3 -m playwright install --with-deps chromium
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-assets-manifest.py --check
 
       - name: Run mandatory full audit
         env:

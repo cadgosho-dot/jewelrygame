@@ -29,6 +29,24 @@ def skip_or_fail(message: str) -> int:
     return 1 if REQUIRE else 0
 
 
+def wait_screen(page, name: str, timeout: int = 10_000) -> None:
+    page.locator(f'body[data-screen="{name}"]').wait_for(state='attached', timeout=timeout)
+
+
+def wait_saved_day_advance(page, before_day: int, timeout: int = 30_000) -> None:
+    deadline = time.monotonic() + timeout / 1000
+    while time.monotonic() < deadline:
+        raw = page.evaluate(f"localStorage.getItem({json.dumps(SAVE_KEY)})")
+        if raw:
+            try:
+                if int(json.loads(raw).get('game', {}).get('day') or 0) > int(before_day):
+                    return
+            except (TypeError, ValueError, json.JSONDecodeError):
+                pass
+        page.wait_for_timeout(100)
+    raise RuntimeError('就寝後の保存データで翌日への進行を確認できませんでした。')
+
+
 def free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(('127.0.0.1', 0))
@@ -133,12 +151,12 @@ def main() -> int:
             page.locator('[data-setup-birthday-month]').select_option('4')
             page.locator('[data-setup-birthday-day]').select_option('1')
             page.locator('[data-action="confirm-player-name"]').click()
-            page.wait_for_function("document.body.dataset.screen === 'main'", timeout=15_000)
+            wait_screen(page, 'main', 15_000)
 
             page.locator('[data-action="nav"][data-screen="phone"]').click()
-            page.wait_for_function("document.body.dataset.screen === 'phone'", timeout=10_000)
+            wait_screen(page, 'phone', 10_000)
             page.locator('[data-action="back"]').first.click()
-            page.wait_for_function("document.body.dataset.screen === 'main'", timeout=10_000)
+            wait_screen(page, 'main', 10_000)
 
             saved = page.evaluate(f"() => localStorage.getItem('{SAVE_KEY}')")
             if not saved:
@@ -147,7 +165,7 @@ def main() -> int:
             page.reload(wait_until='domcontentloaded', timeout=45_000)
             page.locator('[data-action="start"]').wait_for(state='visible', timeout=45_000)
             page.locator('[data-action="start"]').click()
-            page.wait_for_function("document.body.dataset.screen === 'main'", timeout=15_000)
+            wait_screen(page, 'main', 15_000)
             if page.locator('body').get_attribute('data-screen') != 'main':
                 errors.append('再読込後に続きからメイン画面へ復帰できませんでした。')
 
@@ -190,7 +208,7 @@ def main() -> int:
             page.goto(f'{base}/game.html?preview=1', wait_until='domcontentloaded', timeout=45_000)
             page.locator('[data-action="start"]').wait_for(state='visible', timeout=45_000)
             page.locator('[data-action="start"]').click()
-            page.wait_for_function("document.body.dataset.screen === 'main'", timeout=15_000)
+            wait_screen(page, 'main', 15_000)
             sleep_button = page.locator('[data-action="sleep"]')
             if sleep_button.is_disabled():
                 debug = page.evaluate(f"""() => {{
@@ -204,14 +222,7 @@ def main() -> int:
                 sleep_button.click()
                 page.locator('[data-action="do-sleep"]').wait_for(state='visible', timeout=10_000)
                 page.locator('[data-action="do-sleep"]').click()
-                page.wait_for_function(
-                    f"""() => {{
-                      const raw = localStorage.getItem('{SAVE_KEY}');
-                      if (!raw) return false;
-                      try {{ return (Number(JSON.parse(raw).game.day) || 0) > {int(before_day)}; }} catch (_) {{ return false; }}
-                    }}""",
-                    timeout=30_000,
-                )
+                wait_saved_day_advance(page, before_day, 30_000)
 
             # Aquarium is tested directly with a real postMessage snapshot. Uninstalled-but-owned decor must remain reinstallable.
             aquarium = context.new_page()
@@ -231,7 +242,7 @@ def main() -> int:
               };
               window.postMessage({ source: 'jxj-main-game', type: 'aquarium-state', state }, window.location.origin);
             }""")
-            aquarium.wait_for_function("!document.body.classList.contains('aquarium-waiting')", timeout=10_000)
+            aquarium.locator('body:not(.aquarium-waiting)').wait_for(state='attached', timeout=10_000)
             aquarium.locator('#observe').click()
             aquarium.locator('#catalogGrid').wait_for(state='visible', timeout=10_000)
             if 'ネオンテトラ' not in aquarium.locator('#catalogGrid').inner_text():

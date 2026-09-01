@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.823** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.824** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -14,14 +14,14 @@
 
 ## 集計
 
-- 総ファイル数: **582**
-- 画像: **457**
+- 総ファイル数: **581**
+- 画像: **456**
 - 音源: **100**
 - 動画: **12**
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **459** / 直接参照未検出: **123**
+- 静的な直接参照を検出: **458** / 直接参照未検出: **123**
 
 ## 重要な由来記録
 
@@ -99,7 +99,7 @@
 | assets/audio/sfx-coin.ogg | 音源 | 8,498 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 00c558a7968fa54e70468eead72a4e66fa1c4a016fbaccef38855493d41ade48 |
 | assets/audio/sfx-dig.ogg | 音源 | 7,782 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 560287d6d3bfc7c60ab7ec1f3d62c4278f556f39a7a5fe46bf941b3bf1448e47 |
 | assets/audio/sfx-earth-dig.ogg | 音源 | 16,518 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | ff214e3b78942023d513909a76d1d64ab33e0b5ac63de1ce4ef773f0e458e0d6 |
-| assets/audio/sfx-eat.ogg | 音源 | 12,226 B | - | - | `js/app.js:15209 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
+| assets/audio/sfx-eat.ogg | 音源 | 12,226 B | - | - | `js/app.js:15372 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
 | assets/audio/sfx-error.ogg | 音源 | 4,330 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | fc3a5bbf11dd785e18c4602a8919a284f1a835ff0128b801a0a3b404e9461b97 |
 | assets/audio/sfx-explosion.ogg | 音源 | 17,805 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 07f505b8f642cc76b5eccd164648d5c54fed62429891d9bd1f813579ed30db0f |
 | assets/audio/sfx-ganesha-appear.ogg | 音源 | 18,137 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 817aa59a9f3d8b5e5d39747ade46b0138fe9a54950e763d1e78c46a05c7b2ba3 |
@@ -181,23 +181,22 @@
 | assets/images/events/indian-restaurant-manager.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:16494`<br>`js/memories-screen.js:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 631f0ea12feead34d162fc6ea58a4f61d5daf2d9464d1d5ea0f6ae40aa0b8a7f |
 | assets/images/events/ivory-loose.png | 画像 | 1071×660 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 380855753c68bef0a07755d327a53646bdbcad1e449b680c0d4b53f71ea4d810 |
 | assets/images/events/kappa.png | 画像 | 966×1384 | 縦 | あり | `js/app.js:15623`<br>`js/memories-screen.js:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 631b59b7e43f81dfcfc10cc4eda42b934166fc7e0d3b5829702d9b16406df1c0 |
-| assets/images/events/loose-shop-original-quiz-memory-original-preserved.png | 画像 | 1229×1536 | 縦 | あり | `js/memories-screen.js:31` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4d23546a6bcc448a1e242c1317c04b2a6c4022901649d1a8f5cd8dd267342325 |
 | assets/images/events/loose-shop-original-quiz-v745.png | 画像 | 1122×1402 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0dba109f376514229e843d88b4507e33dec6240f1afec50823ffde00e50032db |
-| assets/images/events/loose-shop-original-quiz-v751.png | 画像 | 1229×1536 | 縦 | あり | `memories-event-image-overrides-v751.js:5`<br>`js/app.js:279` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4d23546a6bcc448a1e242c1317c04b2a6c4022901649d1a8f5cd8dd267342325 |
+| assets/images/events/loose-shop-original-quiz-v751.png | 画像 | 1229×1536 | 縦 | あり | `memories-event-image-overrides-v751.js:5`<br>`js/app.js:279`<br>`js/memories-screen.js:31` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4d23546a6bcc448a1e242c1317c04b2a6c4022901649d1a8f5cd8dd267342325 |
 | assets/images/events/loose-shop-original-quiz.png | 画像 | 1122×1402 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0dba109f376514229e843d88b4507e33dec6240f1afec50823ffde00e50032db |
 | assets/images/events/mermaid.png | 画像 | 951×1353 | 縦 | あり | `scripts/check-regression-baseline.py:113`<br>`js/app.js:15515`<br>`js/memories-screen.js:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | be4da86134e7edf56f0628ed3270d66e8c21f21d773e23f57d06a4d4ba783b7a |
 | assets/images/events/mystery-chinese-chef.png | 画像 | 1515×1529 | 縦 | あり | `js/app.js:15493`<br>`js/memories-screen.js:34` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab16d5ba8bd38f8860952096d81ee5d07351bc9774d589527705aa1d7a5e4b6d |
-| assets/images/events/mystery-chinese-food-01.png | 画像 | 1282×688 | 横 | あり | `js/app.js:387 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5caa89f04bd8ec49a0b221efe1d2028abcdadb1c132eab062016d550f7479175 |
-| assets/images/events/mystery-chinese-food-02.png | 画像 | 903×1429 | 縦 | あり | `js/app.js:387 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 469771d2919fdf617373bdd5a0abf1cb8a5bd1cb10801cbb9a59b84e4c885010 |
+| assets/images/events/mystery-chinese-food-01.png | 画像 | 1282×688 | 横 | あり | `js/app.js:393 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5caa89f04bd8ec49a0b221efe1d2028abcdadb1c132eab062016d550f7479175 |
+| assets/images/events/mystery-chinese-food-02.png | 画像 | 903×1429 | 縦 | あり | `js/app.js:393 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 469771d2919fdf617373bdd5a0abf1cb8a5bd1cb10801cbb9a59b84e4c885010 |
 | assets/images/events/mystery-chinese-food-03.png | 画像 | 1502×1344 | 横 | あり | `scripts/generate-assets-manifest.py:47` | ユーザー提供（直近引継ぎ記録あり） | 変更禁止（色・彩度・画風・再描画） | 10fcd92ba4b362ee0af613556205e810164cb47c7b103370772dd28c9638926f |
 | assets/images/events/mystery-chinese-food-04.png | 画像 | 1528×976 | 横 | あり | `scripts/generate-assets-manifest.py:48` | ユーザー提供（直近引継ぎ記録あり） | 変更禁止（色・彩度・画風・再描画） | 55a2352b8dfb90696d8313d0e9d82b6d8090337acdc8485fd92934572d2b5d31 |
 | assets/images/events/okachimachi-invasive-turtles.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:288`<br>`js/memories-screen.js:38` | 由来記録なし | 要確認（明示許可がない限り加工しない） | eae0008b74f4090282d55a69c7bddc10300d7cde2c3b032e6be1c65304fb2159 |
 | assets/images/events/okachimachi-toll-frog.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:17086`<br>`js/memories-screen.js:35` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9ed4904933a49fcd449d3b08c76a72609ccae135c3c5e53ed1acdcd291313242 |
 | assets/images/events/one-love.png | 画像 | 1024×1536 | 縦 | あり | `sw.js:23`<br>`js/app.js:432` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2f2fa7209feed45765b9938ef98dd2d746e30bc60d1757411e2cd72458735fa8 |
-| assets/images/events/oyatsu-daisuki.png | 画像 | 975×1536 | 縦 | なし | `js/app.js:11251`<br>`js/memories-screen.js:25` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 13d8ec2951232e47ca9167fdedec8b369da1ec93549aadd8df7233fff7217e1a |
-| assets/images/events/panda-music-band-alien.png | 画像 | 1536×941 | 横 | あり | `js/app.js:364 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b9110f9ef0aae98ebc332290a245c28bc5c2cc19118879433c12fc709c3f8ce3 |
-| assets/images/events/panda-music-band-cats.png | 画像 | 1536×984 | 横 | あり | `js/app.js:365 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4691f4ae9d35b51945e89f9239431b9608ba34e723f7d27453d0d6a611bdeba2 |
-| assets/images/events/panda-music-band-horror.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:366 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63a65971e5c89075f079aa1218ad6e7a926190dfdc0f9219f1a7c6eed1cc0446 |
+| assets/images/events/oyatsu-daisuki.png | 画像 | 615×978 | 縦 | あり | `js/app.js:11251`<br>`js/memories-screen.js:25` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3767c8b114192bce348d45fb057c46dd122f3dd4f4796387afaafa14977810c2 |
+| assets/images/events/panda-music-band-alien.png | 画像 | 1536×941 | 横 | あり | `js/app.js:370 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b9110f9ef0aae98ebc332290a245c28bc5c2cc19118879433c12fc709c3f8ce3 |
+| assets/images/events/panda-music-band-cats.png | 画像 | 1536×984 | 横 | あり | `js/app.js:371 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4691f4ae9d35b51945e89f9239431b9608ba34e723f7d27453d0d6a611bdeba2 |
+| assets/images/events/panda-music-band-horror.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:372 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63a65971e5c89075f079aa1218ad6e7a926190dfdc0f9219f1a7c6eed1cc0446 |
 | assets/images/events/pazupan-miner.png | 画像 | 1229×1536 | 縦 | あり | `js/app.js:14586`<br>`js/memories-screen.js:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 51d8d6c050af2d39bea25cb964ce98fed6d4b3622d75ed837296330f6ccd32c4 |
 | assets/images/events/pazupan.png | 画像 | 1323×945 | 横 | あり | `js/app.js:14588`<br>`js/game-data-core.js:3303` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fcbbd2acf74ace29640beb494112d4b42086bb148ef812a06ccca49f0e61c3c7 |
 | assets/images/events/pearl-human.png | 画像 | 386×602 | 縦 | あり | `js/app.js:11220`<br>`js/memories-screen.js:24` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 586482842184581075c0c216328fb3adb3821972e06bd935478be47bff501274 |
@@ -237,8 +236,8 @@
 | assets/images/gems/aquamarine.png | 画像 | 473×1256 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 704c9b77401c452c0b950c475273c861fe56e4064f67bc6ae7a409aa298edad8 |
 | assets/images/gems/benitoite.png | 画像 | 1024×1024 | 正方形 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 29236bdc778bfbcf2cc7ecd2a62ccadf54febe5342ff1e9343501c9b2c0963de |
 | assets/images/gems/citrine.png | 画像 | 1086×1354 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | b2186d9a7fb8a15b34ccf927f2e9a647b75fbe99b122c059f4f780376de2f9aa |
-| assets/images/gems/diamond.png | 画像 | 1386×1064 | 横 | あり | `js/app.js:1213 (basename)`<br>`js/memories-screen.js:9 (basename)`<br>`js/game-data-core.js:3233 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 587e5de68d4c8b1545d9787b7ce59dac4ccc8ba75402631fc17a778f81713eb2 |
-| assets/images/gems/emerald.png | 画像 | 1354×1247 | 横 | あり | `js/app.js:1159 (basename)`<br>`js/game-data-core.js:3229 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 61688ec0575f2ab4bb9e5679d5b8a3daba0de3f33f44fe55b7f007a9df22da94 |
+| assets/images/gems/diamond.png | 画像 | 1386×1064 | 横 | あり | `js/app.js:1219 (basename)`<br>`js/memories-screen.js:9 (basename)`<br>`js/game-data-core.js:3233 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 587e5de68d4c8b1545d9787b7ce59dac4ccc8ba75402631fc17a778f81713eb2 |
+| assets/images/gems/emerald.png | 画像 | 1354×1247 | 横 | あり | `js/app.js:1165 (basename)`<br>`js/game-data-core.js:3229 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 61688ec0575f2ab4bb9e5679d5b8a3daba0de3f33f44fe55b7f007a9df22da94 |
 | assets/images/gems/garnet.png | 画像 | 1367×1212 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2147a9d4d5c2becdf1469e24f44c6696a060a82739e8d3bcea6d705d4af176b6 |
 | assets/images/gems/imperialtopaz.png | 画像 | 609×1196 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | f00f3e529271e3ebbe47864acbb637287f7bf21dd9c3bfc3e27476b3e93b5cdd |
 | assets/images/gems/ivory.png | 画像 | 1330×421 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 922f4f67cd80f9ed852204df409142fe6803ea9c4587394906aa79cbd68bfa0d |
@@ -532,36 +531,36 @@
 | assets/images/tools/wood-block.png | 画像 | 516×992 | 縦 | あり | `js/game-data-core.js:3862` | 受領アセット（TOOL_IMAGE_INTAKE_MANIFEST_v0.10.484.json, source=1000019168.png） | 変更禁止（原本由来。明示許可時のみ加工） | 0ce2eb5262dba281794cb0aa94a59f637272e5cf9a496fe77e5e4e55acb04287 |
 | assets/images/tropical-fish-shop-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 06c12c0c6459b14de944f22a08e01b2638a4d0668c387a033908c001e841dcd0 |
 | assets/images/tropical-fish-shop.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | d2fe5c3354d5af395c34ddd7eb35616b495a1fb79c666f992933c1ee522f35d5 |
-| assets/images/tropical-shop/fish-african-lampeye.png | 画像 | 1173×447 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e85b80a56202830bfc204533c1beacdbf855b9068dabd772307ebdf390985a57 |
-| assets/images/tropical-shop/fish-altum-angelfish.png | 画像 | 613×1005 | 縦 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | dcf3295642568276a42c5b908d6389d44ea90feab0f7f88c62aeaaf4d75c9052 |
-| assets/images/tropical-shop/fish-black-molly.png | 画像 | 1200×823 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9a8a1fe57701354850e748368803090516a843efed53950301c99d8cfea9ab59 |
-| assets/images/tropical-shop/fish-corydoras.webp | 画像 | 340×164 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b8cef9dc3fb20113ef7b02bc20c5cf4336eba6caa0a2e4bc6303549f04d27b11 |
-| assets/images/tropical-shop/fish-discus-blue-diamond.webp | 画像 | 440×396 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e0eb086a9fadf7d7cc91ef0d6979c22ec2778b06d18021c0479c8a00633c7775 |
-| assets/images/tropical-shop/fish-discus-red-map.webp | 画像 | 440×393 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 857b9b129c23b594a6b3a76495a5769239f6dafd6e7bd85a33dc3b783c699146 |
-| assets/images/tropical-shop/fish-dwarf-gourami.png | 画像 | 1087×769 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2b20b7da9147a3699558c45a7491eca9eefe71a7050232415129cb22a59c2663 |
-| assets/images/tropical-shop/fish-neon-tetra.webp | 画像 | 280×141 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e6d0847737dc088394dd284c2cf7040fe884a1c5ff55288b02515114b060a87 |
-| assets/images/tropical-shop/fish-platy.webp | 画像 | 300×175 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9344dd5803414f40a6d24703947c4740f934c6e847d15873d0d16727a64ba589 |
-| assets/images/tropical-shop/fish-red-phantom-tetra.webp | 画像 | 300×187 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 356d3dd9bf1e04984016994efe5937df0e4282a6962ce1d289f0583170fe4285 |
-| assets/images/tropical-shop/fish-rummy-nose-tetra.webp | 画像 | 280×133 | 横 | あり | `js/app.js:402 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 118018e5e07398c590f3daab50f18ae5a017558f362e8803016be8a6eb0be64e |
-| assets/images/tropical-shop/plant-amazon-pennywort.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6bb707bc405ac76c09311966f8fce3fc14dc2914a5c401ab42e3dd66ff4d8024 |
-| assets/images/tropical-shop/plant-amazon-sword.webp | 画像 | 461×480 | 縦 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 70e04317606772be15b014483427e244f252fcb0ef16a96be9478866a38dca00 |
-| assets/images/tropical-shop/plant-anacharis.webp | 画像 | 233×480 | 縦 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ef899c666f046d8fd07e27038589fbd1bdecd5bc97400b1f14b20c38bc96ab2b |
-| assets/images/tropical-shop/plant-anubias-nana.webp | 画像 | 400×276 | 横 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fb498a069a40ac1eeab1ac82e81d106e211a23c6daed9c055bbcb4bc79b1c764 |
-| assets/images/tropical-shop/plant-cabomba.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c94394326e706b5b2bcce2db63f2098785d7a050b6ce728c7fa59b6e0bde3fee |
-| assets/images/tropical-shop/plant-cryptocoryne.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bf4a2fdf239b3aeb7a6f4975ee91c0a95aa212b3eebd5ee19f6cfd80a2e78178 |
-| assets/images/tropical-shop/plant-hygrophila.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | af4fcc0fef41e07052f97fe24b47752d038b1db0eb3147a99951b582790aa11b |
-| assets/images/tropical-shop/plant-microsorum.webp | 画像 | 430×354 | 横 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c72670f05c01439e048efd3be18450781625b9eb1d358956f9d32a13877931a4 |
-| assets/images/tropical-shop/plant-vallisneria.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7007687f6c47c0901e368bf53a09f4da6976666e69bf586af70eefdfa9641810 |
-| assets/images/tropical-shop/plant-willow-moss.webp | 画像 | 420×241 | 横 | あり | `js/app.js:405 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 862d1305659ba1c45ec301a361cc3208e1e5d7436fd43b2ca56fabf5adb82a4a |
-| assets/images/tropical-shop/stone_a.png | 画像 | 1200×817 | 横 | あり | `js/app.js:409 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 68d5f0d9b9bfdbc8a8994b107c3daa97f0fd8a0b7efe882d59c56ca9d841734a |
-| assets/images/tropical-shop/stone_b.png | 画像 | 1200×812 | 横 | あり | `js/app.js:409 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e50502ac81c6de715115838c2f979c09c4158d54ffe2168647f72c32c48e0bb6 |
-| assets/images/tropical-shop/stone_c.png | 画像 | 1200×736 | 横 | あり | `js/app.js:409 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b87754a8b725dda9f88540f988cb8e18bd958f036fbf38063f33bdf79231259a |
-| assets/images/tropical-shop/wood_large_a.png | 画像 | 1200×578 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7d2877bb91db5fad8591d4e417ae57040de95501a09f71eec98a57fe587c40b6 |
-| assets/images/tropical-shop/wood_large_b.png | 画像 | 1200×710 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e84b9b10a05d1fef3a3e14aa13f2734e1e24332596bd848716a34b59a30f582a |
-| assets/images/tropical-shop/wood_medium_a.png | 画像 | 1200×1190 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 71b33eb9bcd50013f7ee2d2f0eb1bd628ed7cb266a768fd47a37c90395cb8de2 |
-| assets/images/tropical-shop/wood_medium_b.png | 画像 | 957×563 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 064a57d75297b2c8d04f849c46f29a11999ae5c815c049f011cf52c8eea57328 |
-| assets/images/tropical-shop/wood_small_a.png | 画像 | 1200×373 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5cb139e73e44cb44b1ade56ea2b48c88a6cf0509af6a3921ef5616846e3125d2 |
-| assets/images/tropical-shop/wood_small_b.png | 画像 | 1121×580 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 44812724c81d82354d96bcf33e3abbf1ddd206a85aa07f8124c8b60ac7c2e612 |
+| assets/images/tropical-shop/fish-african-lampeye.png | 画像 | 1173×447 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e85b80a56202830bfc204533c1beacdbf855b9068dabd772307ebdf390985a57 |
+| assets/images/tropical-shop/fish-altum-angelfish.png | 画像 | 613×1005 | 縦 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | dcf3295642568276a42c5b908d6389d44ea90feab0f7f88c62aeaaf4d75c9052 |
+| assets/images/tropical-shop/fish-black-molly.png | 画像 | 1200×823 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9a8a1fe57701354850e748368803090516a843efed53950301c99d8cfea9ab59 |
+| assets/images/tropical-shop/fish-corydoras.webp | 画像 | 340×164 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b8cef9dc3fb20113ef7b02bc20c5cf4336eba6caa0a2e4bc6303549f04d27b11 |
+| assets/images/tropical-shop/fish-discus-blue-diamond.webp | 画像 | 440×396 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e0eb086a9fadf7d7cc91ef0d6979c22ec2778b06d18021c0479c8a00633c7775 |
+| assets/images/tropical-shop/fish-discus-red-map.webp | 画像 | 440×393 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 857b9b129c23b594a6b3a76495a5769239f6dafd6e7bd85a33dc3b783c699146 |
+| assets/images/tropical-shop/fish-dwarf-gourami.png | 画像 | 1087×769 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2b20b7da9147a3699558c45a7491eca9eefe71a7050232415129cb22a59c2663 |
+| assets/images/tropical-shop/fish-neon-tetra.webp | 画像 | 280×141 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e6d0847737dc088394dd284c2cf7040fe884a1c5ff55288b02515114b060a87 |
+| assets/images/tropical-shop/fish-platy.webp | 画像 | 300×175 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9344dd5803414f40a6d24703947c4740f934c6e847d15873d0d16727a64ba589 |
+| assets/images/tropical-shop/fish-red-phantom-tetra.webp | 画像 | 300×187 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 356d3dd9bf1e04984016994efe5937df0e4282a6962ce1d289f0583170fe4285 |
+| assets/images/tropical-shop/fish-rummy-nose-tetra.webp | 画像 | 280×133 | 横 | あり | `js/app.js:408 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 118018e5e07398c590f3daab50f18ae5a017558f362e8803016be8a6eb0be64e |
+| assets/images/tropical-shop/plant-amazon-pennywort.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6bb707bc405ac76c09311966f8fce3fc14dc2914a5c401ab42e3dd66ff4d8024 |
+| assets/images/tropical-shop/plant-amazon-sword.webp | 画像 | 461×480 | 縦 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 70e04317606772be15b014483427e244f252fcb0ef16a96be9478866a38dca00 |
+| assets/images/tropical-shop/plant-anacharis.webp | 画像 | 233×480 | 縦 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ef899c666f046d8fd07e27038589fbd1bdecd5bc97400b1f14b20c38bc96ab2b |
+| assets/images/tropical-shop/plant-anubias-nana.webp | 画像 | 400×276 | 横 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fb498a069a40ac1eeab1ac82e81d106e211a23c6daed9c055bbcb4bc79b1c764 |
+| assets/images/tropical-shop/plant-cabomba.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c94394326e706b5b2bcce2db63f2098785d7a050b6ce728c7fa59b6e0bde3fee |
+| assets/images/tropical-shop/plant-cryptocoryne.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bf4a2fdf239b3aeb7a6f4975ee91c0a95aa212b3eebd5ee19f6cfd80a2e78178 |
+| assets/images/tropical-shop/plant-hygrophila.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | af4fcc0fef41e07052f97fe24b47752d038b1db0eb3147a99951b582790aa11b |
+| assets/images/tropical-shop/plant-microsorum.webp | 画像 | 430×354 | 横 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c72670f05c01439e048efd3be18450781625b9eb1d358956f9d32a13877931a4 |
+| assets/images/tropical-shop/plant-vallisneria.png | 画像 | 480×480 | 正方形 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7007687f6c47c0901e368bf53a09f4da6976666e69bf586af70eefdfa9641810 |
+| assets/images/tropical-shop/plant-willow-moss.webp | 画像 | 420×241 | 横 | あり | `js/app.js:411 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 862d1305659ba1c45ec301a361cc3208e1e5d7436fd43b2ca56fabf5adb82a4a |
+| assets/images/tropical-shop/stone_a.png | 画像 | 1200×817 | 横 | あり | `js/app.js:415 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 68d5f0d9b9bfdbc8a8994b107c3daa97f0fd8a0b7efe882d59c56ca9d841734a |
+| assets/images/tropical-shop/stone_b.png | 画像 | 1200×812 | 横 | あり | `js/app.js:415 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e50502ac81c6de715115838c2f979c09c4158d54ffe2168647f72c32c48e0bb6 |
+| assets/images/tropical-shop/stone_c.png | 画像 | 1200×736 | 横 | あり | `js/app.js:415 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b87754a8b725dda9f88540f988cb8e18bd958f036fbf38063f33bdf79231259a |
+| assets/images/tropical-shop/wood_large_a.png | 画像 | 1200×578 | 横 | あり | `js/app.js:414 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7d2877bb91db5fad8591d4e417ae57040de95501a09f71eec98a57fe587c40b6 |
+| assets/images/tropical-shop/wood_large_b.png | 画像 | 1200×710 | 横 | あり | `js/app.js:414 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e84b9b10a05d1fef3a3e14aa13f2734e1e24332596bd848716a34b59a30f582a |
+| assets/images/tropical-shop/wood_medium_a.png | 画像 | 1200×1190 | 横 | あり | `js/app.js:414 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 71b33eb9bcd50013f7ee2d2f0eb1bd628ed7cb266a768fd47a37c90395cb8de2 |
+| assets/images/tropical-shop/wood_medium_b.png | 画像 | 957×563 | 横 | あり | `js/app.js:414 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 064a57d75297b2c8d04f849c46f29a11999ae5c815c049f011cf52c8eea57328 |
+| assets/images/tropical-shop/wood_small_a.png | 画像 | 1200×373 | 横 | あり | `js/app.js:414 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5cb139e73e44cb44b1ade56ea2b48c88a6cf0509af6a3921ef5616846e3125d2 |
+| assets/images/tropical-shop/wood_small_b.png | 画像 | 1121×580 | 横 | あり | `js/app.js:414 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 44812724c81d82354d96bcf33e3abbf1ddd206a85aa07f8124c8b60ac7c2e612 |
 | assets/images/ui/memories-bg-landscape-v738.webp | 画像 | 960×432 | 横 | なし | `js/memories-backgrounds.js:1` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 64a384b075d935ea52ca6e32518e583f36f790dda1ef99a2c28ab6d546e91023 |
 | assets/images/ui/memories-bg-portrait-v738.webp | 画像 | 432×768 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 08fd7cf99dce71b4a4d4eed7d03e2a77d535cc88fb889e4063482d88522a876e |
 | assets/images/ui/memories-bg-portrait-v746.webp | 画像 | 432×768 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 08fd7cf99dce71b4a4d4eed7d03e2a77d535cc88fb889e4063482d88522a876e |
@@ -574,7 +573,7 @@
 | assets/minigames/aquarium/aquarium_initial_state.json | データ | 3,259 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 81dc2cc2ffd00c83a013f2084138b05a22452b11814ea1283184855b5d55b9f6 |
 | assets/minigames/aquarium/aquarium_state_manager.js | ミニゲーム/コード | 2,864 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 882150b33c2b0dfe942acf1c3d9b9e3cb8aa63c073bad156aac41db384f3c14a |
 | assets/minigames/aquarium/assets/fish/black_molly.png | 画像 | 1200×823 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9a8a1fe57701354850e748368803090516a843efed53950301c99d8cfea9ab59 |
-| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,944,602 B | - | - | `scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:220`<br>`js/app.js:15886`<br>`scripts/check-aquarium-portrait-center.py:6` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aab3555c2412f6ea25667fd60be7aeac187e44ae342e1679627b23d39fea4d06 |
+| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,944,912 B | - | - | `scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:231`<br>`js/app.js:15886`<br>`scripts/check-aquarium-portrait-center.py:6` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7a58b96156885a8c5df63dfb9d4bea2de1fa4dd0fac28e194f79e09348420eb6 |
 | assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg | 音源 | 12,226 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
 | assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg | 音源 | 907,318 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d4863f10f767ff83327e2dfdd1331c2d44e805311d6b019978761b38e083cf03 |
 | assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg | 音源 | 981,583 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e7d4be5ed5860639286901ca4fd92b2f5e8bd8bbf592d747c5cb70ec7ed153a4 |

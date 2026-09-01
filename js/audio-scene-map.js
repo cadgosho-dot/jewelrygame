@@ -280,6 +280,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   okachimachi: 'okachimachi',
   tropicalFishShop: 'tropicalFishShop',
   oyatsuDaisukiEvent: 'okachimachi',
+  retroBattleEvent: 'silent',
   speedStarEvent: 'okachimachi',
   storytellerEvent: 'okachimachi',
   clockTowerDonationEvent: 'okachimachi',

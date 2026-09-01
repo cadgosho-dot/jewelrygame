@@ -93,8 +93,8 @@ jobs:
           python3 scripts/version-sync.py --bump-patch
           python3 scripts/generate-event-probability-list.py --write
           rm .github/workflows/one-time-aquarium-floor-fix.yml
-          python3 scripts/generate-assets-manifest.py --write
           python3 -m pip install --disable-pip-version-check pillow
+          python3 scripts/generate-assets-manifest.py --write
           python3 scripts/check-current.py
 
           test "$(cat VERSION)" = "0.10.827"

@@ -47,34 +47,36 @@ jobs:
           if marker not in text:
               raise SystemExit('水槽JSの挿入位置が見つかりません')
 
-          patch_js = r'''// v0.10.827: 背面ベース画像の黒い矩形境界が床砂上へ露出する隙間だけ、既存の床砂レイヤーから複写して埋める。
-function installAquariumSubstrateSeamPatch(){
- const stage=document.querySelector('.stage');
- const substrate=document.querySelector('.subback');
- if(!stage||!substrate||stage.querySelector('.substrate-seam-patch'))return;
- const build=()=>{
-  if(stage.querySelector('.substrate-seam-patch')||!substrate.naturalWidth||!substrate.naturalHeight)return;
-  const canvas=document.createElement('canvas');
-  canvas.className='full substrate-seam-patch';
-  canvas.width=substrate.naturalWidth;
-  canvas.height=substrate.naturalHeight;
-  const ctx=canvas.getContext('2d');
-  if(!ctx)return;
-  const w=canvas.width,h=canvas.height;
-  const sx=Math.round(w*(270/900));
-  const sy=Math.round(h*(386/600));
-  const sw=Math.round(w*((646-270)/900));
-  const sh=Math.max(1,Math.round(h*(13/600)));
-  const dy=Math.round(h*(373/600));
-  ctx.drawImage(substrate,sx,sy,sw,sh,sx,dy,sw,sh);
-  const clip=stage.querySelector('.clip');
-  stage.insertBefore(canvas,clip||stage.firstChild);
- };
- if(substrate.complete)build();
- else substrate.addEventListener('load',build,{once:true});
-}
-installAquariumSubstrateSeamPatch();
-'''
+          patch_lines = [
+              '// v0.10.827: 背面ベース画像の黒い矩形境界が床砂上へ露出する隙間だけ、既存の床砂レイヤーから複写して埋める。',
+              'function installAquariumSubstrateSeamPatch(){',
+              " const stage=document.querySelector('.stage');",
+              " const substrate=document.querySelector('.subback');",
+              " if(!stage||!substrate||stage.querySelector('.substrate-seam-patch'))return;",
+              ' const build=()=>{',
+              "  if(stage.querySelector('.substrate-seam-patch')||!substrate.naturalWidth||!substrate.naturalHeight)return;",
+              "  const canvas=document.createElement('canvas');",
+              "  canvas.className='full substrate-seam-patch';",
+              '  canvas.width=substrate.naturalWidth;',
+              '  canvas.height=substrate.naturalHeight;',
+              "  const ctx=canvas.getContext('2d');",
+              '  if(!ctx)return;',
+              '  const w=canvas.width,h=canvas.height;',
+              '  const sx=Math.round(w*(270/900));',
+              '  const sy=Math.round(h*(386/600));',
+              '  const sw=Math.round(w*((646-270)/900));',
+              '  const sh=Math.max(1,Math.round(h*(13/600)));',
+              '  const dy=Math.round(h*(373/600));',
+              '  ctx.drawImage(substrate,sx,sy,sw,sh,sx,dy,sw,sh);',
+              "  const clip=stage.querySelector('.clip');",
+              '  stage.insertBefore(canvas,clip||stage.firstChild);',
+              ' };',
+              ' if(substrate.complete)build();',
+              " else substrate.addEventListener('load',build,{once:true});",
+              '}',
+              'installAquariumSubstrateSeamPatch();',
+          ]
+          patch_js = '\n'.join(patch_lines) + '\n'
           text = text.replace(marker, patch_js + marker, 1)
           aquarium.write_text(text, encoding='utf-8')
 
@@ -83,7 +85,7 @@ installAquariumSubstrateSeamPatch();
           anchor = '## v0.10.826 (2026-09-01)'
           if anchor not in log:
               raise SystemExit('CHANGELOGのv0.10.826位置が見つかりません')
-          entry = '''## v0.10.827 (2026-09-02)\n- 水槽の横画面で床砂上に見えていた、背面ベース画像の黒い矩形境界を修整。\n- 床砂画像は再生成・色変更せず、既存の床砂レイヤーから境界部分だけをCanvasへ複写する局所補正とした。魚・水草・ディスプレイ・セーブ仕様は変更しない。\n\n'''
+          entry = '## v0.10.827 (2026-09-02)\n- 水槽の横画面で床砂上に見えていた、背面ベース画像の黒い矩形境界を修整。\n- 床砂画像は再生成・色変更せず、既存の床砂レイヤーから境界部分だけをCanvasへ複写する局所補正とした。魚・水草・ディスプレイ・セーブ仕様は変更しない。\n\n'
           log = log.replace(anchor, entry + anchor, 1)
           changelog.write_text(log, encoding='utf-8')
           PY

@@ -305,9 +305,10 @@ window.addEventListener('message',(event)=>{
  if(data.source==='jxj-main-game'&&data.type==='aquarium-state')applyAquariumSnapshot(data.state);
 });
 function ownedCategoryCount(category){
- if(category==='魚')return Object.values(aquariumNameMaps.fish).reduce((sum,id)=>sum+aquariumCount('fish',id,'owned'),0);
- if(category==='水草')return Object.values(aquariumNameMaps.plant).reduce((sum,id)=>sum+aquariumCount('plants',id,'owned'),0);
- if(category==='ディスプレイ用品')return Object.values(aquariumNameMaps.display).reduce((sum,id)=>sum+aquariumCount('displayItems',id,'owned'),0);
+ // v0.10.824: タブの件数は「所持している総数」ではなく、現在所持している種類数を表示する。
+ if(category==='魚')return Object.values(aquariumNameMaps.fish).reduce((sum,id)=>sum+(aquariumCount('fish',id,'owned')>0?1:0),0);
+ if(category==='水草')return Object.values(aquariumNameMaps.plant).reduce((sum,id)=>sum+(aquariumCount('plants',id,'owned')>0?1:0),0);
+ if(category==='ディスプレイ用品')return Object.entries(aquariumNameMaps.display).reduce((sum,[name,id])=>sum+((fixedDisplayNames.has(name)||aquariumCount('displayItems',id,'owned')>0)?1:0),0);
  return 0;
 }
 function renderTabs(){
@@ -324,8 +325,8 @@ postAquariumMessage({type:'ready'});
 function renderGrid(){
  gridEl.innerHTML='';
  const visibleItems=catalog[activeCategory].filter((item)=>{
-  if(item.category==='魚'){const id=aquariumNameMaps.fish[item.name];return aquariumCount('fish',id,'inTank')>0;}
-  if(item.category==='水草'){const id=aquariumNameMaps.plant[item.name];return aquariumCount('plants',id,'inTank')>0;}
+  if(item.category==='魚'){const id=aquariumNameMaps.fish[item.name];return aquariumCount('fish',id,'owned')>0;}
+  if(item.category==='水草'){const id=aquariumNameMaps.plant[item.name];return aquariumCount('plants',id,'owned')>0;}
   if(item.category==='ディスプレイ用品'){
    if(fixedDisplayNames.has(item.name))return true;
    const id=aquariumNameMaps.display[item.name];
@@ -405,7 +406,7 @@ function detailSections(item){
  ];
 }
 function openDetail(item){document.getElementById('detailImage').src=item.image;document.getElementById('detailName').textContent=item.name;document.getElementById('detailKind').textContent=item.category+'｜'+item.classification;const meta=document.getElementById('detailMeta');meta.innerHTML='';[['分類',item.classification],['原産・由来',item.origin],['大きさ',item.size],['主な位置・泳層',item.zone],['性質・役割',item.character],['目安水温',item.temp],['水質・条件',item.water]].forEach(([k,v])=>{const d=document.createElement('div');d.className='meta-box';d.innerHTML='<b>'+k+'</b>'+v;meta.appendChild(d);});const body=document.getElementById('detailBody');body.innerHTML='';detailSections(item).forEach(([h,t])=>{const s=document.createElement('section');s.className='detail-section';const hh=document.createElement('h3');hh.textContent=h;const p=document.createElement('p');p.textContent=t;s.append(hh,p);body.appendChild(s);});overlay.classList.add('show');overlay.scrollTop=0;}
-document.querySelector('.close-detail').onclick=()=>overlay.classList.remove('show');overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('show')});const catalogPanel=document.getElementById('panel');
+document.querySelector('.close-detail').onclick=(event)=>{event.stopPropagation();overlay.classList.remove('show')};overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('show')});overlay.querySelector('.detail-sheet').addEventListener('click',e=>e.stopPropagation());const catalogPanel=document.getElementById('panel');
 if(catalogPanel.parentElement!==document.body){document.body.appendChild(catalogPanel)}
 function closeCatalog(){catalogPanel.classList.remove('show');document.documentElement.classList.remove('catalog-open');document.body.classList.remove('catalog-open')}
 document.querySelector('.close-observe').onclick=closeCatalog;

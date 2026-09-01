@@ -22408,3 +22408,56 @@ html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen="tr
   }
 }
 
+
+
+/* v0.10.824 熱帯魚屋スマホUI再調整
+   - 縦画面でヘッダー/タブ/商品カードが詰まりにくいよう再配置
+   - 商品カードを1列化して文字崩れを防止 */
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-controls{
+  top:0;
+  padding:4px 4px 6px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-status{
+  justify-content:space-between;
+  gap:4px 8px;
+  padding:6px 8px;
+  font-size:11px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-status b{
+  flex:1 0 100%;
+  text-align:center;
+  font-size:16px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-tabs{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:5px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-tabs button{
+  min-width:0;
+  min-height:38px;
+  padding:8px 4px;
+  font-size:12px;
+  white-space:nowrap;
+  letter-spacing:-.01em;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-grid{
+  grid-template-columns:1fr;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card{
+  grid-template-columns:92px minmax(0,1fr);
+  align-items:start;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card > img{
+  width:92px;
+  height:86px;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card > div{
+  gap:4px;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card strong{
+  font-size:14px;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card > button{
+  min-height:36px;
+  font-size:12px;
+}

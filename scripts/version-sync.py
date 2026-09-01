@@ -58,6 +58,7 @@ RULES = [
     Rule('game.html', 'PWA recovery cache key', qparam(r'\./auth-cache-recovery\.js'), keep_prefix),
     Rule('game.html', 'hosting-origin-guard cache key', qparam(r'\./hosting-origin-guard\.js'), keep_prefix),
     Rule('game.html', 'styles.css cache key', qparam(r'\./styles\.css'), keep_prefix),
+    Rule('game.html', 'quiz-event-v2.css cache key', qparam(r'\./quiz-event-v2\.css'), keep_prefix),
     Rule('game.html', 'app.js cache key', qparam(r'\./js/app\.js'), keep_prefix),
     Rule('game.html', 'memories-screen.js cache key', qparam(r'\./js/memories-screen\.js'), keep_prefix),
 
@@ -71,6 +72,7 @@ RULES = [
     # service worker
     Rule('sw.js', 'Service Worker VERSION', quoted_constant('VERSION'), keep_quote),
     Rule('sw.js', 'PWA recovery precache key', qparam(r'\./auth-cache-recovery\.js'), keep_prefix),
+    Rule('sw.js', 'quiz-event-v2.css precache key', qparam(r'\./quiz-event-v2\.css'), keep_prefix),
     Rule('sw.js', 'app.js precache key', qparam(r'\./js/app\.js'), keep_prefix),
     Rule('sw.js', 'audio.js precache key', qparam(r'\./js/audio\.js'), keep_prefix),
     Rule('sw.js', 'audio-scene-map.js precache key', qparam(r'\./js/audio-scene-map\.js'), keep_prefix),

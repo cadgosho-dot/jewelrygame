@@ -1,6 +1,6 @@
 # EVENT_PROBABILITY_LIST — JEWELRY×JEWELRY
 
-> 現行実装基準: **v0.10.814**
+> 現行実装基準: **v0.10.816**
 > 数値は `js/app.js` の有効な定数から自動生成する。手入力で確率を書き換えない。
 > 条件を満たした各判定での確率であり、「N回目に必ず発生」を意味しない。
 
@@ -34,7 +34,7 @@
 | 映画館 | **2.5%** | 約1/40 | 映画館の対象判定時 | `CINEMA_VISIT_EVENT_CHANCE` (`js/app.js:369`) |
 | 見習い職人・映画館 | **3%** | 約1/33.3 | 映画館の対象判定時 | `APPRENTICE_CINEMA_EVENT_CHANCE` (`js/app.js:372`) |
 | 手首を拾った | **0.5%** | 約1/200 | 御徒町の対象判定時 | `WRIST_FOUND_EVENT_CHANCE` (`js/app.js:392`) |
-| おやつ大好き | **4%** | 約1/25 | 水槽解放済み・18:00まで・1日1回など | `OYATSU_DAISUKI_EVENT_CHANCE` (`js/app.js:393`) |
+| おやつ大好き | **2.86%** | 約1/35 | 水槽解放済み・18:00まで・1日1回など | `OYATSU_DAISUKI_EVENT_CHANCE` (`js/app.js:393`) |
 | スピード・スター | **1%** | 約1/100 | 御徒町の対象判定時 | `SPEED_STAR_EVENT_CHANCE` (`js/app.js:396`) |
 | ストーリーテラー | **5%** | 約1/20 | 18:00以降などの条件を満たす時 | `STORYTELLER_EVENT_CHANCE` (`js/app.js:397`) |
 | 時計塔寄付 | **1.11%** | 約1/90 | 対象条件を満たす時 | `CLOCK_TOWER_DONATION_EVENT_CHANCE` (`js/app.js:357`) |

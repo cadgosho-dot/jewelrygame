@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.814** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.816** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -99,7 +99,7 @@
 | assets/audio/sfx-coin.ogg | 音源 | 8,498 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 00c558a7968fa54e70468eead72a4e66fa1c4a016fbaccef38855493d41ade48 |
 | assets/audio/sfx-dig.ogg | 音源 | 7,782 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 560287d6d3bfc7c60ab7ec1f3d62c4278f556f39a7a5fe46bf941b3bf1448e47 |
 | assets/audio/sfx-earth-dig.ogg | 音源 | 16,518 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | ff214e3b78942023d513909a76d1d64ab33e0b5ac63de1ce4ef773f0e458e0d6 |
-| assets/audio/sfx-eat.ogg | 音源 | 12,226 B | - | - | `js/app.js:15207 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
+| assets/audio/sfx-eat.ogg | 音源 | 12,226 B | - | - | `js/app.js:15209 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
 | assets/audio/sfx-error.ogg | 音源 | 4,330 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | fc3a5bbf11dd785e18c4602a8919a284f1a835ff0128b801a0a3b404e9461b97 |
 | assets/audio/sfx-explosion.ogg | 音源 | 17,805 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 07f505b8f642cc76b5eccd164648d5c54fed62429891d9bd1f813579ed30db0f |
 | assets/audio/sfx-ganesha-appear.ogg | 音源 | 18,137 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 817aa59a9f3d8b5e5d39747ade46b0138fe9a54950e763d1e78c46a05c7b2ba3 |
@@ -133,11 +133,11 @@
 | assets/data/metal-prices.json | データ | 144 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6dec5bbd8b752be0404055200976171fad3e66b7a89ce00010d47622e0fa45b2 |
 | assets/data/storyteller-okachimachi-quiz.json | データ | 25,964 B | - | - | `js/app.js:399` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cd726e43302f881ca11f058d2979ccaca606a143da6373f5091a9148b35a4955 |
 | assets/icons/apple-touch-icon.png | 画像 | 180×180 | 正方形 | なし | `index.html:72`<br>`game.html:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8921b6e30b95f24d0df8b10e4c1bedc8004bf6ca9ba27d9368d0e40506f35777 |
-| assets/icons/favicon.png | 画像 | 64×64 | 正方形 | なし | `index.html:71`<br>`game.html:22`<br>`about.html:24` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c44b9428e6b4965e2a4280efc717a965c4f5a441f9bc3de1af08817a2171429a |
+| assets/icons/favicon.png | 画像 | 64×64 | 正方形 | なし | `about.html:24`<br>`index.html:71`<br>`game.html:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c44b9428e6b4965e2a4280efc717a965c4f5a441f9bc3de1af08817a2171429a |
 | assets/icons/icon-192.png | 画像 | 192×192 | 正方形 | なし | `manifest.webmanifest:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8d583eaf7c7c867b014274cde4baef4e9372535a939b1cee37603ef56d47945f |
 | assets/icons/icon-512.png | 画像 | 512×512 | 正方形 | なし | `manifest.webmanifest:26` | 由来記録なし | 要確認（明示許可がない限り加工しない） | beb1bcebf7dc2da3accee3ff8a7e363e09642b7f332ea93f8f56868f2d4780f1 |
-| assets/images/backgrounds/terry-hamburger-landscape.png | 画像 | 1536×864 | 横 | なし | `js/app.js:16278` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2b16adcc1a0d7e0287ad80feb24194c77f9da5866dbfc38ad1583daa9f605fce |
-| assets/images/backgrounds/terry-hamburger-portrait.png | 画像 | 928×1536 | 縦 | なし | `js/app.js:16277` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3cbfa1535c34e0af0bc2ec2793ada1561d23471b27ce1737ae00b93175328294 |
+| assets/images/backgrounds/terry-hamburger-landscape.png | 画像 | 1536×864 | 横 | なし | `js/app.js:16280` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2b16adcc1a0d7e0287ad80feb24194c77f9da5866dbfc38ad1583daa9f605fce |
+| assets/images/backgrounds/terry-hamburger-portrait.png | 画像 | 928×1536 | 縦 | なし | `js/app.js:16279` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3cbfa1535c34e0af0bc2ec2793ada1561d23471b27ce1737ae00b93175328294 |
 | assets/images/blues-juke-exterior-portrait.webp | 画像 | 691×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2c93e5f2fa68b371226b7a5d1460d7ad7ffd40885e84d3f5f3f6d1cc0d659e36 |
 | assets/images/blues-juke-exterior.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 817ade7a3886be449c93fef43b0e75a6bb4774611b3ab7e674a226b9bbe968e8 |
 | assets/images/blues-juke-interior-portrait.webp | 画像 | 691×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 86f94e647dc2bfe82bc1da015956087f0cac62a087fe57e304a44e6eff589980 |
@@ -148,7 +148,7 @@
 | assets/images/craft-jewelry-landscape-v758.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 11e95b699673f972fdd688829e840118f8bec5ab39d86fb01966cf81af5e27be |
 | assets/images/craft-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | dcec02168a33280fb14b4c8142e2f586d0ca9d454cb871beedc68f2cef6c2981 |
 | assets/images/craft.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | d2e2f4ae00806864e32d99657c852643bd6ce12c19b53003cb81de3a40abb74c |
-| assets/images/customers/customer-placeholder.svg | 画像 | 1,444 B | - | - | `js/game-data-core.js:6793`<br>`js/app.js:19216` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e241791c854d1e5c75d44292b67c3eef95272eea7c078dcd95a196fabe8b23f6 |
+| assets/images/customers/customer-placeholder.svg | 画像 | 1,444 B | - | - | `js/app.js:19218`<br>`js/game-data-core.js:6793` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e241791c854d1e5c75d44292b67c3eef95272eea7c078dcd95a196fabe8b23f6 |
 | assets/images/display-products/case.png | 画像 | 735×940 | 縦 | あり | `js/game-data-core.js:6728` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4a53177b9ef044c6626756ea9d7ccf036a3a8216438fb6683ef076090041524c |
 | assets/images/display-products/display-supplies.png | 画像 | 816×940 | 縦 | あり | `js/game-data-core.js:6724` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e6be097a4c082a45c6ee1cce84a4819fb41767e1eb181d5e56a54007e3b865ec |
 | assets/images/display-products/showcase.png | 画像 | 940×796 | 横 | あり | `js/game-data-core.js:6720` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fb7585fc34a57131ff0970bf521d239d5aef07a42a1529ddc3d8c160d58e4d3d |
@@ -157,64 +157,64 @@
 | assets/images/display-shop-v380.webp | 画像 | 1600×900 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 38fc60f677d5fce98fc91aa0d9a1dd6aeea8f52d77837fa4a287af580685cbec |
 | assets/images/display-shop.webp | 画像 | 1600×900 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 38fc60f677d5fce98fc91aa0d9a1dd6aeea8f52d77837fa4a287af580685cbec |
 | assets/images/equipment/basic-pickaxe.png | 画像 | 1142×1480 | 縦 | あり | `js/game-data-core.js:3326` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0e00c168643ddd3d5adf648208bde58d6371e1c437583fa9bf8fe6bcccac878c |
-| assets/images/events/alien.png | 画像 | 1010×1448 | 縦 | あり | `js/memories-screen.js:28`<br>`js/app.js:15839` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2ac00d2669a0f4103226a6f27e6c35fdeb94628ab401711be5162fb8688db54d |
-| assets/images/events/amber.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:11`<br>`js/app.js:14470` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63d10cc28105cdd3179892138e349b623aaa0d6e508466e182856912851bce75 |
-| assets/images/events/antique-diamond.png | 画像 | 1069×859 | 横 | あり | `js/memories-screen.js:9`<br>`js/app.js:1213` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b48b352feec35e0e8b050d4e08de2d10fefda4edbf9217c935d89bf57c0578a4 |
-| assets/images/events/aquarium-tank.png | 画像 | 1132×684 | 横 | あり | `js/memories-screen.js:18`<br>`js/app.js:15650` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d7e88de0b63dfd70fbb266dddd2d8b3d3227d6f0d81a2384552c1a31a63091f0 |
-| assets/images/events/blues-juke/bluesman-serious.png | 画像 | 1100×1500 | 縦 | あり | `js/memories-screen.js:29`<br>`js/app.js:14359` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d13497472b4607d56f2c71931c390430e2cd4dec6a199db6587270e47587a877 |
-| assets/images/events/blues-juke/bluesman-smile.png | 画像 | 1100×1500 | 縦 | あり | `js/app.js:14360` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c5344fdd38e75825ab8cceddb644a6eb6ae3f4090f192e4fb7102162b799c708 |
-| assets/images/events/blues-juke/bluesman-stage1.png | 画像 | 1100×1500 | 縦 | あり | `js/app.js:14358` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d5ccc50074ecdb72e3ff3794b1f52eb2186be3aa449c81e7968283e9489ee2bc |
-| assets/images/events/cinema-apprentice.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:12`<br>`js/app.js:14829` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7cc324a51c79aa45449a4d1389be38316fe6f95cf34ac482f49e3255205ad99e |
-| assets/images/events/clock-tower-donation-old-woman.png | 画像 | 1003×1536 | 縦 | あり | `js/memories-screen.js:32`<br>`js/app.js:14955` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ef0966831205ba8c553dc61b90df4bfe0a23e479f50460261980ffe86eaeab63 |
-| assets/images/events/cyclops.png | 画像 | 1004×1440 | 縦 | あり | `js/memories-screen.js:16`<br>`js/app.js:15407` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7455c1759e05194bb28c007b8fb9bb53b935a502da4c16fa583b38186be949a4 |
-| assets/images/events/diamond-polishing-lap-reward.png | 画像 | 930×616 | 横 | あり | `js/memories-screen.js:37`<br>`js/app.js:16326` | 由来記録なし | 要確認（明示許可がない限り加工しない） | edda95693bbdfe37368253509496ce2adefe8fb8ff3734ae0c089d9048588b48 |
-| assets/images/events/emerald-captain-loose-set.png | 画像 | 1447×1022 | 横 | あり | `js/memories-screen.js:14`<br>`js/app.js:16208` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5b236022c2f71c150548afac024162180da821a0e1bbaf0236cb6889b6772dd5 |
-| assets/images/events/emerald-captain.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:14`<br>`js/app.js:16207` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7dc98b875f7b9fccb18dfdd6b69e2c767e1be44fb37aee18afb52ff6e105fdda |
-| assets/images/events/found-wrist.png | 画像 | 1024×1536 | 縦 | なし | `js/app.js:16787` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab5e8c01a8d96b95ac85883471f623e3a546b6222bb62c9aced538bab5c00407 |
-| assets/images/events/ganesha-tusk.png | 画像 | 1330×421 | 横 | あり | `js/memories-screen.js:17`<br>`js/app.js:15437` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 922f4f67cd80f9ed852204df409142fe6803ea9c4587394906aa79cbd68bfa0d |
-| assets/images/events/ganesha.png | 画像 | 1500×1536 | 縦 | あり | `js/memories-screen.js:17`<br>`js/app.js:15434` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e787a21d70ab58fe529946b92dfcaad3de02f5ab78153f235dad99799ad93951 |
-| assets/images/events/glab-kawahara.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:30`<br>`js/app.js:415` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c1b4ed7b7c77cd0aa05a9761cd581a254f835d11518aab5b00aaa013132bd698 |
-| assets/images/events/gray-hood-aquarium.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:18`<br>`js/app.js:15649` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a36a6018ee12d2e59fd4dde5514246cdc7f4a254aa8e72309541ec0e150103e4 |
-| assets/images/events/haunting-ghost.png | 画像 | 796×1483 | 縦 | あり | `js/memories-screen.js:20`<br>`js/app.js:15785` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c4c0b011386128ac872c241fce403c67d52f6d325c8dbb48eac1e5d171c86483 |
+| assets/images/events/alien.png | 画像 | 1010×1448 | 縦 | あり | `js/app.js:15841`<br>`js/memories-screen.js:28` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2ac00d2669a0f4103226a6f27e6c35fdeb94628ab401711be5162fb8688db54d |
+| assets/images/events/amber.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:14472`<br>`js/memories-screen.js:11` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63d10cc28105cdd3179892138e349b623aaa0d6e508466e182856912851bce75 |
+| assets/images/events/antique-diamond.png | 画像 | 1069×859 | 横 | あり | `js/app.js:1213`<br>`js/memories-screen.js:9` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b48b352feec35e0e8b050d4e08de2d10fefda4edbf9217c935d89bf57c0578a4 |
+| assets/images/events/aquarium-tank.png | 画像 | 1132×684 | 横 | あり | `js/app.js:15652`<br>`js/memories-screen.js:18` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d7e88de0b63dfd70fbb266dddd2d8b3d3227d6f0d81a2384552c1a31a63091f0 |
+| assets/images/events/blues-juke/bluesman-serious.png | 画像 | 1100×1500 | 縦 | あり | `js/app.js:14361`<br>`js/memories-screen.js:29` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d13497472b4607d56f2c71931c390430e2cd4dec6a199db6587270e47587a877 |
+| assets/images/events/blues-juke/bluesman-smile.png | 画像 | 1100×1500 | 縦 | あり | `js/app.js:14362` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c5344fdd38e75825ab8cceddb644a6eb6ae3f4090f192e4fb7102162b799c708 |
+| assets/images/events/blues-juke/bluesman-stage1.png | 画像 | 1100×1500 | 縦 | あり | `js/app.js:14360` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d5ccc50074ecdb72e3ff3794b1f52eb2186be3aa449c81e7968283e9489ee2bc |
+| assets/images/events/cinema-apprentice.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:14831`<br>`js/memories-screen.js:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7cc324a51c79aa45449a4d1389be38316fe6f95cf34ac482f49e3255205ad99e |
+| assets/images/events/clock-tower-donation-old-woman.png | 画像 | 1003×1536 | 縦 | あり | `js/app.js:14957`<br>`js/memories-screen.js:32` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ef0966831205ba8c553dc61b90df4bfe0a23e479f50460261980ffe86eaeab63 |
+| assets/images/events/cyclops.png | 画像 | 1004×1440 | 縦 | あり | `js/app.js:15409`<br>`js/memories-screen.js:16` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7455c1759e05194bb28c007b8fb9bb53b935a502da4c16fa583b38186be949a4 |
+| assets/images/events/diamond-polishing-lap-reward.png | 画像 | 930×616 | 横 | あり | `js/app.js:16328`<br>`js/memories-screen.js:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | edda95693bbdfe37368253509496ce2adefe8fb8ff3734ae0c089d9048588b48 |
+| assets/images/events/emerald-captain-loose-set.png | 画像 | 1447×1022 | 横 | あり | `js/app.js:16210`<br>`js/memories-screen.js:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5b236022c2f71c150548afac024162180da821a0e1bbaf0236cb6889b6772dd5 |
+| assets/images/events/emerald-captain.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:16209`<br>`js/memories-screen.js:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7dc98b875f7b9fccb18dfdd6b69e2c767e1be44fb37aee18afb52ff6e105fdda |
+| assets/images/events/found-wrist.png | 画像 | 1024×1536 | 縦 | なし | `js/app.js:16789` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab5e8c01a8d96b95ac85883471f623e3a546b6222bb62c9aced538bab5c00407 |
+| assets/images/events/ganesha-tusk.png | 画像 | 1330×421 | 横 | あり | `js/app.js:15439`<br>`js/memories-screen.js:17` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 922f4f67cd80f9ed852204df409142fe6803ea9c4587394906aa79cbd68bfa0d |
+| assets/images/events/ganesha.png | 画像 | 1500×1536 | 縦 | あり | `js/app.js:15436`<br>`js/memories-screen.js:17` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e787a21d70ab58fe529946b92dfcaad3de02f5ab78153f235dad99799ad93951 |
+| assets/images/events/glab-kawahara.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:415`<br>`js/memories-screen.js:30` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c1b4ed7b7c77cd0aa05a9761cd581a254f835d11518aab5b00aaa013132bd698 |
+| assets/images/events/gray-hood-aquarium.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:15651`<br>`js/memories-screen.js:18` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a36a6018ee12d2e59fd4dde5514246cdc7f4a254aa8e72309541ec0e150103e4 |
+| assets/images/events/haunting-ghost.png | 画像 | 796×1483 | 縦 | あり | `js/app.js:15787`<br>`js/memories-screen.js:20` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c4c0b011386128ac872c241fce403c67d52f6d325c8dbb48eac1e5d171c86483 |
 | assets/images/events/hospital-room-landscape.jpg | 画像 | 1536×691 | 横 | なし | `sw.js:24`<br>`scripts/generate-assets-manifest.py:45`<br>`js/app.js:11911` | ユーザー提供（直近引継ぎ記録あり） | 変更禁止（色・彩度・画風・再描画） | 2fefce1faaf179b70cd650256cccc71403cda42c23e71e47cf5380cecef30a20 |
 | assets/images/events/hospital-room-portrait.jpg | 画像 | 864×1536 | 縦 | なし | `sw.js:24`<br>`scripts/generate-assets-manifest.py:46`<br>`js/app.js:11910` | ユーザー提供（直近引継ぎ記録あり） | 変更禁止（色・彩度・画風・再描画） | 28bed29c31f8f7ef8793db120fdd78bb8d56d00e28c05795255d6124318ac0f5 |
-| assets/images/events/indian-restaurant-manager.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:37`<br>`js/app.js:16323` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 631f0ea12feead34d162fc6ea58a4f61d5daf2d9464d1d5ea0f6ae40aa0b8a7f |
+| assets/images/events/indian-restaurant-manager.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:16325`<br>`js/memories-screen.js:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 631f0ea12feead34d162fc6ea58a4f61d5daf2d9464d1d5ea0f6ae40aa0b8a7f |
 | assets/images/events/ivory-loose.png | 画像 | 1071×660 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 380855753c68bef0a07755d327a53646bdbcad1e449b680c0d4b53f71ea4d810 |
-| assets/images/events/kappa.png | 画像 | 966×1384 | 縦 | あり | `js/memories-screen.js:23`<br>`js/app.js:15458` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 631b59b7e43f81dfcfc10cc4eda42b934166fc7e0d3b5829702d9b16406df1c0 |
+| assets/images/events/kappa.png | 画像 | 966×1384 | 縦 | あり | `js/app.js:15460`<br>`js/memories-screen.js:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 631b59b7e43f81dfcfc10cc4eda42b934166fc7e0d3b5829702d9b16406df1c0 |
 | assets/images/events/loose-shop-original-quiz-v745.png | 画像 | 1122×1402 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0dba109f376514229e843d88b4507e33dec6240f1afec50823ffde00e50032db |
-| assets/images/events/loose-shop-original-quiz-v751.png | 画像 | 576×720 | 縦 | あり | `memories-event-image-overrides-v751.js:5`<br>`js/memories-screen.js:31`<br>`js/app.js:278` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d32434e9fc9dcc776e3d9c97de983e875ffed1f8e3e14b44ffa71739ce718ac4 |
+| assets/images/events/loose-shop-original-quiz-v751.png | 画像 | 576×720 | 縦 | あり | `memories-event-image-overrides-v751.js:5`<br>`js/app.js:278`<br>`js/memories-screen.js:31` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d32434e9fc9dcc776e3d9c97de983e875ffed1f8e3e14b44ffa71739ce718ac4 |
 | assets/images/events/loose-shop-original-quiz.png | 画像 | 1122×1402 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0dba109f376514229e843d88b4507e33dec6240f1afec50823ffde00e50032db |
-| assets/images/events/mermaid.png | 画像 | 951×1353 | 縦 | あり | `scripts/check-regression-baseline.py:113`<br>`js/memories-screen.js:10`<br>`js/app.js:15350` | 由来記録なし | 要確認（明示許可がない限り加工しない） | be4da86134e7edf56f0628ed3270d66e8c21f21d773e23f57d06a4d4ba783b7a |
-| assets/images/events/mystery-chinese-chef.png | 画像 | 1515×1529 | 縦 | あり | `js/memories-screen.js:34`<br>`js/app.js:15328` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab16d5ba8bd38f8860952096d81ee5d07351bc9774d589527705aa1d7a5e4b6d |
+| assets/images/events/mermaid.png | 画像 | 951×1353 | 縦 | あり | `scripts/check-regression-baseline.py:113`<br>`js/app.js:15352`<br>`js/memories-screen.js:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | be4da86134e7edf56f0628ed3270d66e8c21f21d773e23f57d06a4d4ba783b7a |
+| assets/images/events/mystery-chinese-chef.png | 画像 | 1515×1529 | 縦 | あり | `js/app.js:15330`<br>`js/memories-screen.js:34` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab16d5ba8bd38f8860952096d81ee5d07351bc9774d589527705aa1d7a5e4b6d |
 | assets/images/events/mystery-chinese-food-01.png | 画像 | 1282×688 | 横 | あり | `js/app.js:387 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5caa89f04bd8ec49a0b221efe1d2028abcdadb1c132eab062016d550f7479175 |
 | assets/images/events/mystery-chinese-food-02.png | 画像 | 903×1429 | 縦 | あり | `js/app.js:387 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 469771d2919fdf617373bdd5a0abf1cb8a5bd1cb10801cbb9a59b84e4c885010 |
 | assets/images/events/mystery-chinese-food-03.png | 画像 | 1502×1344 | 横 | あり | `scripts/generate-assets-manifest.py:47` | ユーザー提供（直近引継ぎ記録あり） | 変更禁止（色・彩度・画風・再描画） | 10fcd92ba4b362ee0af613556205e810164cb47c7b103370772dd28c9638926f |
 | assets/images/events/mystery-chinese-food-04.png | 画像 | 1528×976 | 横 | あり | `scripts/generate-assets-manifest.py:48` | ユーザー提供（直近引継ぎ記録あり） | 変更禁止（色・彩度・画風・再描画） | 55a2352b8dfb90696d8313d0e9d82b6d8090337acdc8485fd92934572d2b5d31 |
-| assets/images/events/okachimachi-invasive-turtles.png | 画像 | 1536×1024 | 横 | あり | `js/memories-screen.js:38`<br>`js/app.js:282` | 由来記録なし | 要確認（明示許可がない限り加工しない） | eae0008b74f4090282d55a69c7bddc10300d7cde2c3b032e6be1c65304fb2159 |
-| assets/images/events/okachimachi-toll-frog.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:35`<br>`js/app.js:16915` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9ed4904933a49fcd449d3b08c76a72609ccae135c3c5e53ed1acdcd291313242 |
+| assets/images/events/okachimachi-invasive-turtles.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:282`<br>`js/memories-screen.js:38` | 由来記録なし | 要確認（明示許可がない限り加工しない） | eae0008b74f4090282d55a69c7bddc10300d7cde2c3b032e6be1c65304fb2159 |
+| assets/images/events/okachimachi-toll-frog.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:16917`<br>`js/memories-screen.js:35` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9ed4904933a49fcd449d3b08c76a72609ccae135c3c5e53ed1acdcd291313242 |
 | assets/images/events/one-love.png | 画像 | 1024×1536 | 縦 | あり | `sw.js:23`<br>`js/app.js:426` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2f2fa7209feed45765b9938ef98dd2d746e30bc60d1757411e2cd72458735fa8 |
-| assets/images/events/oyatsu-daisuki.png | 画像 | 975×1536 | 縦 | なし | `js/memories-screen.js:25`<br>`js/app.js:11245` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 13d8ec2951232e47ca9167fdedec8b369da1ec93549aadd8df7233fff7217e1a |
+| assets/images/events/oyatsu-daisuki.png | 画像 | 975×1536 | 縦 | なし | `js/app.js:11245`<br>`js/memories-screen.js:25` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 13d8ec2951232e47ca9167fdedec8b369da1ec93549aadd8df7233fff7217e1a |
 | assets/images/events/panda-music-band-alien.png | 画像 | 1536×941 | 横 | あり | `js/app.js:364 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b9110f9ef0aae98ebc332290a245c28bc5c2cc19118879433c12fc709c3f8ce3 |
 | assets/images/events/panda-music-band-cats.png | 画像 | 1536×984 | 横 | あり | `js/app.js:365 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4691f4ae9d35b51945e89f9239431b9608ba34e723f7d27453d0d6a611bdeba2 |
 | assets/images/events/panda-music-band-horror.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:366 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63a65971e5c89075f079aa1218ad6e7a926190dfdc0f9219f1a7c6eed1cc0446 |
-| assets/images/events/pazupan-miner.png | 画像 | 1229×1536 | 縦 | あり | `js/memories-screen.js:22`<br>`js/app.js:14421` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 51d8d6c050af2d39bea25cb964ce98fed6d4b3622d75ed837296330f6ccd32c4 |
-| assets/images/events/pazupan.png | 画像 | 1323×945 | 横 | あり | `js/game-data-core.js:3303`<br>`js/app.js:14423` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fcbbd2acf74ace29640beb494112d4b42086bb148ef812a06ccca49f0e61c3c7 |
-| assets/images/events/pearl-human.png | 画像 | 386×602 | 縦 | あり | `js/memories-screen.js:24`<br>`js/app.js:11214` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 586482842184581075c0c216328fb3adb3821972e06bd935478be47bff501274 |
-| assets/images/events/pearl.png | 画像 | 1181×1170 | 横 | あり | `js/memories-screen.js:10`<br>`js/app.js:1219` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aa78c4aab2d7b3ec7f95708f56cc57b00be06bd5bdeac691a0bb961c05830454 |
-| assets/images/events/ridley-okazaki.png | 画像 | 1500×1024 | 横 | あり | `js/memories-screen.js:13`<br>`js/app.js:15899` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f55f05124a481cf78046966c8c742e9c88957e00b251b177ac49dbb9a5e4bcce |
-| assets/images/events/speed-star.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:26`<br>`js/app.js:11256` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f1af4a0a1f82cc36f19a48ca72a95c4f7dbe6d04dc624dc96ef7869c6e90ef92 |
-| assets/images/events/store-thief-old-woman.png | 画像 | 995×1408 | 縦 | あり | `js/memories-screen.js:21`<br>`js/app.js:18714` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e9720b4c6052237dcead769807d760324af6fff3100f0e84fc2ec10ef3d62bc2 |
+| assets/images/events/pazupan-miner.png | 画像 | 1229×1536 | 縦 | あり | `js/app.js:14423`<br>`js/memories-screen.js:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 51d8d6c050af2d39bea25cb964ce98fed6d4b3622d75ed837296330f6ccd32c4 |
+| assets/images/events/pazupan.png | 画像 | 1323×945 | 横 | あり | `js/app.js:14425`<br>`js/game-data-core.js:3303` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fcbbd2acf74ace29640beb494112d4b42086bb148ef812a06ccca49f0e61c3c7 |
+| assets/images/events/pearl-human.png | 画像 | 386×602 | 縦 | あり | `js/app.js:11214`<br>`js/memories-screen.js:24` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 586482842184581075c0c216328fb3adb3821972e06bd935478be47bff501274 |
+| assets/images/events/pearl.png | 画像 | 1181×1170 | 横 | あり | `js/app.js:1219`<br>`js/memories-screen.js:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aa78c4aab2d7b3ec7f95708f56cc57b00be06bd5bdeac691a0bb961c05830454 |
+| assets/images/events/ridley-okazaki.png | 画像 | 1500×1024 | 横 | あり | `js/app.js:15901`<br>`js/memories-screen.js:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f55f05124a481cf78046966c8c742e9c88957e00b251b177ac49dbb9a5e4bcce |
+| assets/images/events/speed-star.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:11256`<br>`js/memories-screen.js:26` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f1af4a0a1f82cc36f19a48ca72a95c4f7dbe6d04dc624dc96ef7869c6e90ef92 |
+| assets/images/events/store-thief-old-woman.png | 画像 | 995×1408 | 縦 | あり | `js/app.js:18716`<br>`js/memories-screen.js:21` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e9720b4c6052237dcead769807d760324af6fff3100f0e84fc2ec10ef3d62bc2 |
 | assets/images/events/storyteller-v745.png | 画像 | 934×1010 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 91745c970c5524778e97e2e03037bd4bea4498f503fb24279dbfc8a10dac4458 |
-| assets/images/events/storyteller-v751.png | 画像 | 720×610 | 横 | あり | `memories-event-image-overrides-v751.js:6`<br>`js/memories-screen.js:27`<br>`js/app.js:11305` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1647c369f85be086172dad41a7a8dfe96f0362d194acd92327a029c154d46cdf |
+| assets/images/events/storyteller-v751.png | 画像 | 720×610 | 横 | あり | `memories-event-image-overrides-v751.js:6`<br>`js/app.js:11305`<br>`js/memories-screen.js:27` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1647c369f85be086172dad41a7a8dfe96f0362d194acd92327a029c154d46cdf |
 | assets/images/events/storyteller.png | 画像 | 934×1010 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 91745c970c5524778e97e2e03037bd4bea4498f503fb24279dbfc8a10dac4458 |
-| assets/images/events/sushi-chef.png | 画像 | 1011×1458 | 縦 | あり | `scripts/check-regression-baseline.py:114`<br>`js/memories-screen.js:15`<br>`js/app.js:15382` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b3351ff244191b035ba94a2bc68773d09f9f25df6f23ccca1d1532f8ad48d3cd |
-| assets/images/events/tattoo-woman.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:11`<br>`js/app.js:14467` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d380a9acc450a4afd7b658fe77c23f14efef23077f043f099ab1d3ccdec1ef0a |
-| assets/images/events/terry-california.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:19`<br>`js/app.js:16279` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6405f7a63b565a59776eb3de264620a2d2b2e26282b2351adaf4a9a48d8f6d04 |
-| assets/images/events/tourist.png | 画像 | 1024×1536 | 縦 | あり | `js/memories-screen.js:33`<br>`js/app.js:15816` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a2e3c5edae6e61f2d2ab8bb6ba1cdd3a68ac364cb8628efadb046c600adc8eb6 |
-| assets/images/events/western-union-messenger.png | 画像 | 1000×1536 | 縦 | あり | `scripts/check-regression-baseline.py:112`<br>`js/memories-screen.js:9`<br>`js/app.js:14345` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7c974adc83fafaa8a109aea6ba8eb48457b4dba7010c2e2de083130d30eae113 |
-| assets/images/events/white-bunny.png | 画像 | 1007×1283 | 縦 | あり | `js/memories-screen.js:36`<br>`js/app.js:15926` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63bdc7446fb2fa885b6a61f60553268d8cdb9248da1d5eea735efa2213266b99 |
-| assets/images/events/workshop-kappa-jade-rough.png | 画像 | 1254×1254 | 正方形 | あり | `js/memories-screen.js:23`<br>`js/app.js:15545` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a5a650e96d46f26c435b43bc96a5d21b9497779750a98d051c10093e78e79e0d |
-| assets/images/events/workshop-kappa-jade.png | 画像 | 1122×1402 | 縦 | あり | `js/app.js:15553` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 02621dd81e10b9f1c272123c842c772bfa86524261820ee6824614455f2c5bc6 |
+| assets/images/events/sushi-chef.png | 画像 | 1011×1458 | 縦 | あり | `scripts/check-regression-baseline.py:114`<br>`js/app.js:15384`<br>`js/memories-screen.js:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b3351ff244191b035ba94a2bc68773d09f9f25df6f23ccca1d1532f8ad48d3cd |
+| assets/images/events/tattoo-woman.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:14469`<br>`js/memories-screen.js:11` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d380a9acc450a4afd7b658fe77c23f14efef23077f043f099ab1d3ccdec1ef0a |
+| assets/images/events/terry-california.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:16281`<br>`js/memories-screen.js:19` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6405f7a63b565a59776eb3de264620a2d2b2e26282b2351adaf4a9a48d8f6d04 |
+| assets/images/events/tourist.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:15818`<br>`js/memories-screen.js:33` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a2e3c5edae6e61f2d2ab8bb6ba1cdd3a68ac364cb8628efadb046c600adc8eb6 |
+| assets/images/events/western-union-messenger.png | 画像 | 1000×1536 | 縦 | あり | `scripts/check-regression-baseline.py:112`<br>`js/app.js:14347`<br>`js/memories-screen.js:9` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7c974adc83fafaa8a109aea6ba8eb48457b4dba7010c2e2de083130d30eae113 |
+| assets/images/events/white-bunny.png | 画像 | 1007×1283 | 縦 | あり | `js/app.js:15928`<br>`js/memories-screen.js:36` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63bdc7446fb2fa885b6a61f60553268d8cdb9248da1d5eea735efa2213266b99 |
+| assets/images/events/workshop-kappa-jade-rough.png | 画像 | 1254×1254 | 正方形 | あり | `js/app.js:15547`<br>`js/memories-screen.js:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a5a650e96d46f26c435b43bc96a5d21b9497779750a98d051c10093e78e79e0d |
+| assets/images/events/workshop-kappa-jade.png | 画像 | 1122×1402 | 縦 | あり | `js/app.js:15555` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 02621dd81e10b9f1c272123c842c772bfa86524261820ee6824614455f2c5bc6 |
 | assets/images/events/yowamushi.png | 画像 | 500×600 | 縦 | あり | `sw.js:23`<br>`js/app.js:8321` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c7c4d0eafb7180a57e29ef62d79eed2d0e728b119cfa70e2f941b08129c61bed |
 | assets/images/foods/chinese.png | 画像 | 1473×965 | 横 | あり | `js/app.js:2188` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1d765d93379fa7c00838fceb04b6fc2d451a69504b6cff3a795e9b5f7ca139c6 |
 | assets/images/foods/convenience-christmas-v776.png | 画像 | 1184×1504 | 縦 | あり | `js/app.js:2187` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 69be1c85e0bcf0b5631f6cc57adf72512d611b889afbd1ac8d61bfa7b1451ea8 |
@@ -236,12 +236,12 @@
 | assets/images/gems/aquamarine.png | 画像 | 473×1256 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 704c9b77401c452c0b950c475273c861fe56e4064f67bc6ae7a409aa298edad8 |
 | assets/images/gems/benitoite.png | 画像 | 1024×1024 | 正方形 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 29236bdc778bfbcf2cc7ecd2a62ccadf54febe5342ff1e9343501c9b2c0963de |
 | assets/images/gems/citrine.png | 画像 | 1086×1354 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | b2186d9a7fb8a15b34ccf927f2e9a647b75fbe99b122c059f4f780376de2f9aa |
-| assets/images/gems/diamond.png | 画像 | 1386×1064 | 横 | あり | `js/memories-screen.js:9 (basename)`<br>`js/game-data-core.js:3233 (basename)`<br>`js/app.js:1213 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 587e5de68d4c8b1545d9787b7ce59dac4ccc8ba75402631fc17a778f81713eb2 |
-| assets/images/gems/emerald.png | 画像 | 1354×1247 | 横 | あり | `js/game-data-core.js:3229 (basename)`<br>`js/app.js:1159 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 61688ec0575f2ab4bb9e5679d5b8a3daba0de3f33f44fe55b7f007a9df22da94 |
+| assets/images/gems/diamond.png | 画像 | 1386×1064 | 横 | あり | `js/app.js:1213 (basename)`<br>`js/memories-screen.js:9 (basename)`<br>`js/game-data-core.js:3233 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 587e5de68d4c8b1545d9787b7ce59dac4ccc8ba75402631fc17a778f81713eb2 |
+| assets/images/gems/emerald.png | 画像 | 1354×1247 | 横 | あり | `js/app.js:1159 (basename)`<br>`js/game-data-core.js:3229 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 61688ec0575f2ab4bb9e5679d5b8a3daba0de3f33f44fe55b7f007a9df22da94 |
 | assets/images/gems/garnet.png | 画像 | 1367×1212 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2147a9d4d5c2becdf1469e24f44c6696a060a82739e8d3bcea6d705d4af176b6 |
 | assets/images/gems/imperialtopaz.png | 画像 | 609×1196 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | f00f3e529271e3ebbe47864acbb637287f7bf21dd9c3bfc3e27476b3e93b5cdd |
 | assets/images/gems/ivory.png | 画像 | 1330×421 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 922f4f67cd80f9ed852204df409142fe6803ea9c4587394906aa79cbd68bfa0d |
-| assets/images/gems/jade.png | 画像 | 1404×1139 | 横 | あり | `js/memories-screen.js:35`<br>`js/app.js:15461` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7709db494758397c6f77e10352f2bb9db7ccf01bdd3350d5ca5f121f5f9b489e |
+| assets/images/gems/jade.png | 画像 | 1404×1139 | 横 | あり | `js/app.js:15463`<br>`js/memories-screen.js:35` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7709db494758397c6f77e10352f2bb9db7ccf01bdd3350d5ca5f121f5f9b489e |
 | assets/images/gems/lapislazuli.png | 画像 | 1361×1017 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e80da1d424a5d7ffdf3dcc16c94e61d93c7174142542f93546e0e0786bfbb06e |
 | assets/images/gems/moonstone.png | 画像 | 1445×1096 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | a746461111467a4f06b678e199b2002ea7227d1e40779354ff660ad968031b99 |
 | assets/images/gems/opal.png | 画像 | 1360×1163 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e41ce87609d3bbdc73173ed1e11bbefb8643014b9975c0678683b5f291e75b9a |
@@ -254,17 +254,17 @@
 | assets/images/gems/turquoise.png | 画像 | 1442×1144 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5aa51846e1410bb7e4c1670b8be16a34110d8025e7a559eeb95119b75e3bf283 |
 | assets/images/glab-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6a4540f637ad5190f086840a29adedc4a2870eead8fa48fed54eae46b4a6fef1 |
 | assets/images/glab.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7d85371c6f18d62bfcdb2365367d7136acdc073d453b84c756698b5efe5b0270 |
-| assets/images/items/body-chip.png | 画像 | 1176×564 | 横 | あり | `js/game-data-core.js:3319`<br>`js/app.js:15882` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 11dff7a83291fbb7990f291ae3d3666c222c0f79f2e216524c4f2f78c919d525 |
-| assets/images/items/bokuto.png | 画像 | 1536×1024 | 横 | あり | `js/game-data-core.js:3311`<br>`js/app.js:15821` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b90f195bab69a2748f68eb356f6faa6ffc18c761dc36a74375189c6617e8ead4 |
-| assets/images/items/burari-okachimachi-sticker.png | 画像 | 1254×1254 | 正方形 | あり | `js/game-data-core.js:3315`<br>`js/app.js:11318` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0072021a8226a1a9b95f978ecb173e57b1df70c1de40557d8408fa98d1dc8928 |
-| assets/images/items/energy-drink.png | 画像 | 584×1317 | 縦 | あり | `js/game-data-core.js:3307`<br>`js/app.js:15409` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8bf366eddcfded0681a9afc485cbd520e61ed7173be461cf3544a24049536e6e |
+| assets/images/items/body-chip.png | 画像 | 1176×564 | 横 | あり | `js/app.js:15884`<br>`js/game-data-core.js:3319` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 11dff7a83291fbb7990f291ae3d3666c222c0f79f2e216524c4f2f78c919d525 |
+| assets/images/items/bokuto.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:15823`<br>`js/game-data-core.js:3311` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b90f195bab69a2748f68eb356f6faa6ffc18c761dc36a74375189c6617e8ead4 |
+| assets/images/items/burari-okachimachi-sticker.png | 画像 | 1254×1254 | 正方形 | あり | `js/app.js:11318`<br>`js/game-data-core.js:3315` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0072021a8226a1a9b95f978ecb173e57b1df70c1de40557d8408fa98d1dc8928 |
+| assets/images/items/energy-drink.png | 画像 | 584×1317 | 縦 | あり | `js/app.js:15411`<br>`js/game-data-core.js:3307` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8bf366eddcfded0681a9afc485cbd520e61ed7173be461cf3544a24049536e6e |
 | assets/images/jewelry-items/earrings.png | 画像 | 1270×1260 | 横 | あり | `styles.css:133` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a0cdf733ad1c4517f09aaf58db21720e7b68498e53ce528e9de1ca70e052047a |
 | assets/images/jewelry-items/pendant.png | 画像 | 569×1010 | 縦 | あり | `styles.css:132` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9687fe1da2033391ca00d9be4f525b194652daf9f2491e8d0aab30dbe1512c08 |
 | assets/images/jewelry-items/ring-plain.png | 画像 | 1328×1352 | 縦 | あり | `styles.css:131` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4b8e1fd8d4c686d842a4d47710955551ec1da1c2bc8e84d65a8da450a98eb49e |
 | assets/images/jewelry-items/ring.png | 画像 | 897×1088 | 縦 | あり | `styles.css:130` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 359d2ac2a8d255b03df3037e5975b69fe6682e1affc4e9fff99149c1f62a6f8c |
-| assets/images/jewelry-shop-buy-character.png | 画像 | 986×1404 | 縦 | あり | `js/app.js:17281` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 320fbfef539fc0a152a78c9f3a8e9a16710fa3651d30529b1b604cb97835ce91 |
+| assets/images/jewelry-shop-buy-character.png | 画像 | 986×1404 | 縦 | あり | `js/app.js:17283` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 320fbfef539fc0a152a78c9f3a8e9a16710fa3651d30529b1b604cb97835ce91 |
 | assets/images/jewelry-shop-portrait.webp | 画像 | 691×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 246b245241e5a40f5df3cd78ca480d491dbc5f333bec73b12aa5c5ebf3bdb00d |
-| assets/images/jewelry-shop-sell-character.png | 画像 | 1369×1524 | 縦 | あり | `js/app.js:17283` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1be41b5bf1591c4f813196d6b697898a7beab23bd23c4f855d3647969f6777c0 |
+| assets/images/jewelry-shop-sell-character.png | 画像 | 1369×1524 | 縦 | あり | `js/app.js:17285` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1be41b5bf1591c4f813196d6b697898a7beab23bd23c4f855d3647969f6777c0 |
 | assets/images/jewelry-shop.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | a6fe84c6c1d57d02eacad10e24d87a3d3c0c09b9667e5fc55ba24d9500181c44 |
 | assets/images/loose/amber/amber.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:1377` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63d10cc28105cdd3179892138e349b623aaa0d6e508466e182856912851bce75 |
 | assets/images/loose/amethyst/emerald.png | 画像 | 232×270 | 縦 | あり | `js/app.js:1172` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a195922bea5133d3a760d10a6863f20207d8d4d8a47fa45df8c0dce40ab2ef49 |
@@ -430,7 +430,7 @@
 | assets/images/main-menu-spring.webp | 画像 | 1536×692 | 横 | なし | `sw.js:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c8aec3d6dd83ef37e3d89abbdab88752947aada66616608fa1a8c420fdedd2fb |
 | assets/images/main-menu-tanabata-portrait.webp | 画像 | 864×1536 | 縦 | なし | `sw.js:16` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 428150f6ee7d4ac16db86607ec354d2b098fb5577099d9106b89c16b8ae31554 |
 | assets/images/main-menu-tanabata.webp | 画像 | 1536×693 | 横 | なし | `sw.js:16` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e1e6f46a0f38af254fd5e182130e96aed3a3e23a5e1929cd4a8cda8ae8b9dd1c |
-| assets/images/main-menu.webp | 画像 | 1672×941 | 横 | なし | `index.html:26`<br>`about.html:18`<br>`scripts/check-pages-publish-policy.py:37`<br>`scripts/check-seo.py:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e91f1fd77e723ff49a0f6fc8512d170f15795a42f897ea845d928be647a64cda |
+| assets/images/main-menu.webp | 画像 | 1672×941 | 横 | なし | `about.html:18`<br>`index.html:26`<br>`scripts/check-regression-baseline.py:103`<br>`scripts/check-pages-publish-policy.py:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e91f1fd77e723ff49a0f6fc8512d170f15795a42f897ea845d928be647a64cda |
 | assets/images/main-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 67c66c36b52adfbf67e535a1806ee42d043669c8f1e72eeb741166a6b53f70cc |
 | assets/images/main.webp | 画像 | 1536×864 | 横 | なし | `styles.css:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | be4b239e590bc9152c53138d450130f6f85694d5d4bed8eb10ffe43a28e1f24f |
 | assets/images/meal-after18-portrait-v727.webp | 画像 | 540×960 | 縦 | なし | `sw.js:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 46b249f9c5bf68e82c9a9ddbd77e1e4f03044f8a7275c555a8b7aa923443078f |
@@ -467,7 +467,7 @@
 | assets/images/metalshop-portrait.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 01def48f984140ba70ee1cea43d461a03d6e7660fc69a0bb967387e01785e021 |
 | assets/images/metalshop.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | a12d9b65e3532d04b72a89a5e3729430612c6bddd15592511788b8e6c0786f3f |
 | assets/images/mining-portrait.webp | 画像 | 864×1536 | 縦 | なし | `scripts/check-regression-baseline.py:106` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ea6ebfce4ee04b7a9616247b1b92d5b9f62d804b78fd178dabfc1fd9026731a3 |
-| assets/images/mining-rock.png | 画像 | 600×480 | 横 | あり | `js/app.js:16465` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0014187199bf4d6aed0970f7d81550e451f6e06c4964ec9056c007906022001f |
+| assets/images/mining-rock.png | 画像 | 600×480 | 横 | あり | `js/app.js:16467` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0014187199bf4d6aed0970f7d81550e451f6e06c4964ec9056c007906022001f |
 | assets/images/mining-rocks/rock-01.png | 画像 | 1024×923 | 横 | あり | `js/app.js:1131` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2e48329a0c6a367492bc95910a61cdec72865b4b92e23751d182b0bbede7c802 |
 | assets/images/mining-rocks/rock-02.png | 画像 | 1024×926 | 横 | あり | `js/app.js:1132` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6222682b4c9ed5f0711440f53a507c8e2cce32b771af7735447724d1b856a77b |
 | assets/images/mining-rocks/rock-03.png | 画像 | 1024×601 | 横 | あり | `js/app.js:1133` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 02faf71f76db25e6019a5995cc121d85569a438198dc41f83cd79b88bcb9f7c4 |
@@ -487,16 +487,16 @@
 | assets/images/okachimachi-night-portrait.webp | 画像 | 1024×1536 | 縦 | なし | `sw.js:11`<br>`scripts/check-okachimachi-night-background.py:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 10292b3f85930a4bff01bdf68399fc87a863fcf2a50c75b62082ed9579d9def6 |
 | assets/images/okachimachi-night.webp | 画像 | 1536×768 | 横 | なし | `sw.js:11`<br>`scripts/check-okachimachi-night-background.py:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b926ee089a26f6c180e650b4dc6d10e504ec5ca9ba322df0322ad572066a2f56 |
 | assets/images/okachimachi-portrait.webp | 画像 | 864×1536 | 縦 | なし | `scripts/check-okachimachi-night-background.py:29` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8e98c290728642c38f98ac8f94e2f7f2914d3b02c2076b26a4b71386eb53ea29 |
-| assets/images/okachimachi.webp | 画像 | 1536×691 | 横 | なし | `scripts/check-regression-baseline.py:105`<br>`scripts/check-okachimachi-night-background.py:28` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cf95f05dbcace294e04afebbe0b06fc1378d26a3fc1109953aae1f2b05da1505 |
+| assets/images/okachimachi.webp | 画像 | 1536×691 | 横 | なし | `scripts/check-okachimachi-night-background.py:28`<br>`scripts/check-regression-baseline.py:105` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cf95f05dbcace294e04afebbe0b06fc1378d26a3fc1109953aae1f2b05da1505 |
 | assets/images/panda-hiroba-portrait.webp | 画像 | 971×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a82ad70f56ff456a9297e8cc9860b231438d7ada65c1c9f812a489ace990c1 |
 | assets/images/panda-hiroba.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | ee337aeeb899b8b8c2c41155d19e7552dde540d8c053e1fec2cda92922344b7a |
 | assets/images/phone.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | a95c7e448c0c030d077a3942471f45cc7279adf0f9134dc6a2afcb7c8a0b02a0 |
-| assets/images/quiz/quiz-king-normal.png | 画像 | 992×1519 | 縦 | あり | `quiz-layout-test.html:4`<br>`scripts/check-regression-baseline.py:111`<br>`js/memories-screen.js:40`<br>`js/app.js:11600` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1e51932752a2e448b141b4bea7434ee8d78a054edfa00dacd3a0cb262936c312 |
+| assets/images/quiz/quiz-king-normal.png | 画像 | 992×1519 | 縦 | あり | `quiz-layout-test.html:4`<br>`scripts/check-regression-baseline.py:111`<br>`js/app.js:11600`<br>`js/memories-screen.js:40` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1e51932752a2e448b141b4bea7434ee8d78a054edfa00dacd3a0cb262936c312 |
 | assets/images/quiz/quiz-king-player-correct.png | 画像 | 1012×1332 | 縦 | あり | `js/app.js:11598` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bec7a3b1ba18b2dde416795a11261ccc82a7a3bdfe359bdd494cef46eef9b3b3 |
 | assets/images/quiz/quiz-king-player-incorrect.png | 画像 | 1113×1519 | 縦 | あり | `js/app.js:11599` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2e7c472de743066b8ed155f8d3c19eb9b7d27c9ee21be3d1276d8afed0870cff |
 | assets/images/real-estate-portrait.webp | 画像 | 1022×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | ba9f27d980eb2637a7a8d03a257616d9ce2942e8a7fa3361d523bded87da9ecf |
 | assets/images/real-estate.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e69e27edea2254cbfdf3835c59e8b2cd75cd6f8ed42d626eb6e94e9705b81e11 |
-| assets/images/robbery-newspaper.webp | 画像 | 1536×1087 | 横 | なし | `js/app.js:14199` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 99762942cc28691c5aed3c2c4832f3cbad5b90335aab6f148af1dfe6d7b60339 |
+| assets/images/robbery-newspaper.webp | 画像 | 1536×1087 | 横 | なし | `js/app.js:14201` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 99762942cc28691c5aed3c2c4832f3cbad5b90335aab6f148af1dfe6d7b60339 |
 | assets/images/sleep-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | c82b45cb7d60701703733d966784ecd1b85525e55ea733fb3c6c25af63ce9f1b |
 | assets/images/sleep.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 26b311327c2681b303b4ca059f8573af3723379165a5c501266ecbd15293e147 |
 | assets/images/space-portrait.webp | 画像 | 711×1536 | 縦 | なし | `scripts/check-regression-baseline.py:110` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 32cd95dd2f71a062d8a682ef7b06c91b2273807345249a35262f6013385f1a9a |
@@ -573,7 +573,7 @@
 | assets/minigames/aquarium/aquarium_initial_state.json | データ | 3,259 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 81dc2cc2ffd00c83a013f2084138b05a22452b11814ea1283184855b5d55b9f6 |
 | assets/minigames/aquarium/aquarium_state_manager.js | ミニゲーム/コード | 2,864 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 882150b33c2b0dfe942acf1c3d9b9e3cb8aa63c073bad156aac41db384f3c14a |
 | assets/minigames/aquarium/assets/fish/black_molly.png | 画像 | 1200×823 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9a8a1fe57701354850e748368803090516a843efed53950301c99d8cfea9ab59 |
-| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,944,128 B | - | - | `manifest.json:88`<br>`scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:220`<br>`js/app.js:15715` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8d7896e1a4434fa1200303fffaf605b85bdcfbe13e80193374eb04a09fa35754 |
+| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,944,122 B | - | - | `scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:220`<br>`js/app.js:15717`<br>`scripts/check-aquarium-portrait-center.py:6` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 462abda530b3e45c66240fc7eb90a53dfecef4d05792d9d35b580e3075813374 |
 | assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg | 音源 | 12,226 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
 | assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg | 音源 | 907,318 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d4863f10f767ff83327e2dfdd1331c2d44e805311d6b019978761b38e083cf03 |
 | assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg | 音源 | 981,583 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e7d4be5ed5860639286901ca4fd92b2f5e8bd8bbf592d747c5cb70ec7ed153a4 |
@@ -599,7 +599,7 @@
 | assets/minigames/kaitenzushi/assets/sushi/red_250/shiromi.png | 画像 | 517×187 | 横 | あり | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7798061afc56f63fa3a395beb188f04f495d518bb2b20461fb769bd979dbd3ed |
 | assets/minigames/kaitenzushi/data/game_rules.json | データ | 666 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0645627b2dbadc1b16f76812782729df5ca3b4f6e50bb381346dd2d9089c3b99 |
 | assets/minigames/kaitenzushi/data/sushi_catalog.json | データ | 2,723 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | fa8421c136d8db8809847a7b026e3b3e9c4fbfb7ec03d8eae01505c36727ba0e |
-| assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:63`<br>`js/kaitenzushi-embedded.js:2`<br>`js/app.js:19397` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
+| assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:63`<br>`js/app.js:19399`<br>`js/kaitenzushi-embedded.js:2` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
 | assets/videos/cinema/.gitkeep | その他 | 0 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
 | assets/videos/cinema/cinema-film-01.mp4 | 動画 | 5,040,480 B | - | - | `data/cinema-event-videos.json:3 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c3dcdca3865cd5a104ee9ac9169dbeebf44616f748aed20557619a685bf5eccb |
 | assets/videos/cinema/cinema-film-02.mp4 | 動画 | 3,714,087 B | - | - | `data/cinema-event-videos.json:4 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f158a2fe9dd0e459e1386a27cc5d22cd97e1ab2360dd795c2404957d054d1c36 |

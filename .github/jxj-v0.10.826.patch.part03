@@ -1,0 +1,101 @@
+-  <script src="./auth-cache-recovery.js?v=0.10.824"></script>
+-  <script src="./hosting-origin-guard.js?v=0.10.824"></script>
++  <script src="./auth-cache-recovery.js?v=0.10.826"></script>
++  <script src="./hosting-origin-guard.js?v=0.10.826"></script>
+   <meta name="referrer" content="strict-origin-when-cross-origin">
+   <meta name="theme-color" content="#130e09">
+   <meta name="mobile-web-app-capable" content="yes">
+@@ -21,8 +21,8 @@
+   <link rel="manifest" href="./manifest.webmanifest">
+   <link rel="icon" href="./assets/icons/favicon.png">
+   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+-  <link rel="stylesheet" href="./styles.css?v=0.10.824">
+-  <link rel="stylesheet" href="./quiz-event-v2.css?v=0.10.824">
++  <link rel="stylesheet" href="./styles.css?v=0.10.826">
++  <link rel="stylesheet" href="./quiz-event-v2.css?v=0.10.826">
+ 
+   <style id="event-video-contain-v638">
+     /* v0.10.632: Event movies must always show the complete source frame.
+@@ -495,7 +495,7 @@ body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[s
+   <div id="modal-layer" class="hidden"></div>
+   <div id="sleep-curtain" aria-hidden="true"></div>
+   <div id="morning-brief" aria-live="polite"></div>
+-  <script type="module" src="./js/app.js?v=0.10.824"></script>
+-  <script type="module" src="./js/memories-screen.js?v=0.10.824"></script>
++  <script type="module" src="./js/app.js?v=0.10.826"></script>
++  <script type="module" src="./js/memories-screen.js?v=0.10.826"></script>
+ </body>
+ </html>
+diff --git a/hosting-origin-guard.js b/hosting-origin-guard.js
+index 9df9e8e..b4def8e 100644
+--- a/hosting-origin-guard.js
++++ b/hosting-origin-guard.js
+@@ -36,14 +36,14 @@
+   // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
+   (() => {
+     const script = document.createElement('script');
+-    script.src = './memories-event-image-overrides-v751.js?v=0.10.824';
++    script.src = './memories-event-image-overrides-v751.js?v=0.10.826';
+     document.head?.appendChild(script);
+   })();
+ 
+   // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
+   (() => {
+     const script = document.createElement('script');
+-    script.src = './workshop-staff-images-v754.js?v=0.10.824';
++    script.src = './workshop-staff-images-v754.js?v=0.10.826';
+     document.head?.appendChild(script);
+   })();
+ 
+diff --git a/index.html b/index.html
+index eadae76..770e819 100644
+--- a/index.html
++++ b/index.html
+@@ -4,8 +4,8 @@
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'nonce-jxj-seo' https://www.gstatic.com https://apis.google.com https://www.google.com https://www.recaptcha.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://*.googleusercontent.com; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://accounts.google.com https://*.google.com https://www.recaptcha.net https://*.gstatic.com; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com https://www.recaptcha.net; worker-src 'self' blob:; child-src 'self' blob:; manifest-src 'self'; form-action 'self' https://accounts.google.com; upgrade-insecure-requests">
+-  <script src="./auth-cache-recovery.js?v=0.10.824"></script>
+-  <script src="./hosting-origin-guard.js?v=0.10.824"></script>
++  <script src="./auth-cache-recovery.js?v=0.10.826"></script>
++  <script src="./hosting-origin-guard.js?v=0.10.826"></script>
+   <meta name="referrer" content="strict-origin-when-cross-origin">
+   <meta name="theme-color" content="#130e09">
+   <meta name="mobile-web-app-capable" content="yes">
+@@ -70,7 +70,7 @@
+   <link rel="manifest" href="./manifest.webmanifest">
+   <link rel="icon" href="./assets/icons/favicon.png">
+   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+-  <link rel="stylesheet" href="./viewport-shell.css?v=0.10.824">
++  <link rel="stylesheet" href="./viewport-shell.css?v=0.10.826">
+   <!-- v0.10.759: all seasonal main-screen backgrounds and cache-busting references synchronized. -->
+   <!-- v0.10.753: emerald captain purchase tap/save recovery deploy. -->
+ </head>
+@@ -86,13 +86,13 @@
+     <div id="device-stage">
+       <iframe
+         id="game-frame"
+-        src="./game.html?v=0.10.824"
++        src="./game.html?v=0.10.826"
+         title="JEWELRY×JEWELRY"
+         allow="autoplay; clipboard-write; identity-credentials-get"
+         referrerpolicy="strict-origin-when-cross-origin"
+       ></iframe>
+     </div>
+   </main>
+-  <script src="./viewport-shell.js?v=0.10.824"></script>
++  <script src="./viewport-shell.js?v=0.10.826"></script>
+ </body>
+ </html>
+\ No newline at end of file
+diff --git a/js/app.js b/js/app.js
+index 9ae5c05..97a4f04 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -3,20 +3,20 @@ import {
+   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
+   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
+   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
+-} from './game-data.js?v=0.10.824';
++} from './game-data.js?v=0.10.826';
+ 

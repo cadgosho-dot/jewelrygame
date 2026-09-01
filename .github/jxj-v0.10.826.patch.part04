@@ -1,0 +1,133 @@
+-const UI_BUILD_VERSION = '0.10.824';
+-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.824';
+-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.824';
++const UI_BUILD_VERSION = '0.10.826';
++import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.826';
++import { resolveAudioScene } from './audio-scene-map.js?v=0.10.826';
+ import { japaneseHolidayName } from './japan-holidays.js';
+-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.824';
++import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.826';
+ import {
+   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
+   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
+   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
+   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
+-} from './firebase-service.js?v=0.10.824';
+-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.824';
++} from './firebase-service.js?v=0.10.826';
++import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.826';
+ 
+ 
+ 
+@@ -227,6 +227,48 @@ let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Ma
+ let stopSessionWatch = null;
+ let heartbeatTimer = null;
+ let sessionTakenOver = false;
++let sessionClaimed = false;
++
++function stopSessionHeartbeat() {
++  if (!heartbeatTimer) return;
++  clearInterval(heartbeatTimer);
++  heartbeatTimer = null;
++}
++
++function handleSessionTakenOver() {
++  if (sessionTakenOver) return;
++  sessionTakenOver = true;
++  sessionClaimed = false;
++  stopSessionHeartbeat();
++  if (stopSessionWatch) {
++    stopSessionWatch();
++    stopSessionWatch = null;
++  }
++  showModal({
++    title: '別の端末でゲームが開始されました',
++    body: '<p>続けるには、この画面を再読み込みしてください。</p>',
++    confirm: '再読み込み',
++    action: 'reload-page',
++    hideCancel: true,
++  });
++}
++
++async function sendSessionHeartbeat(user) {
++  if (!user || sessionTakenOver || !sessionClaimed) return false;
++  const stillOwned = await heartbeat(user.uid, sessionId);
++  if (stillOwned === false) {
++    handleSessionTakenOver();
++    return false;
++  }
++  return stillOwned;
++}
++
++function startSessionHeartbeat(user) {
++  if (!user || heartbeatTimer || sessionTakenOver || !sessionClaimed) return;
++  heartbeatTimer = setInterval(() => {
++    void sendSessionHeartbeat(user);
++  }, 300000);
++}
+ let sleepTransitioning = false;
+ let nextDayTransitionPromise = null;
+ let morningBriefShowing = false;
+@@ -24035,11 +24077,12 @@ async function executeAccountDeletion() {
+     indexedDbSave = null;
+     indexedDbStorageReady = false;
+     if (stopSessionWatch) { stopSessionWatch(); stopSessionWatch = null; }
+-    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
++    stopSessionHeartbeat();
+     clearAllClientAccountData();
+     currentUser = null;
+     authEntryRequested = false;
+     sessionTakenOver = false;
++    sessionClaimed = false;
+     sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+     closeModal();
+     screen = 'login';
+@@ -25419,8 +25462,9 @@ async function boot() {
+       state = null;
+       navigation = [];
+       sessionTakenOver = false;
+-      if (stopSessionWatch) stopSessionWatch();
+-      if (heartbeatTimer) clearInterval(heartbeatTimer);
++      sessionClaimed = false;
++      if (stopSessionWatch) { stopSessionWatch(); stopSessionWatch = null; }
++      stopSessionHeartbeat();
+       if (!user) {
+         startupSaveReady = false;
+         const googleLoginError = takeGoogleLoginError();
+@@ -25444,13 +25488,15 @@ async function boot() {
+       screen = 'title';
+       render();
+       try {
+-        // v0.10.667: session claim is important for multi-device takeover detection, but the
+-        // Firestore write acknowledgement must not block the title screen. The watcher is
+-        // installed immediately and the claim continues in the background.
+-        void claimSession(user.uid, sessionId)
+-          .catch((error) => {
+-            console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
+-          });
++        // v0.10.826: セッション取得完了前に保存処理へ進むと、Safari/PWA/別タブが
++        // 同時に自分を所有者だと判断できるため、取得結果を確認してから監視を開始する。
++        try {
++          await claimSession(user.uid, sessionId);
++          sessionClaimed = true;
++        } catch (error) {
++          sessionClaimed = false;
++          console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
++        }
+         try {
+           indexedDbSave = await readIndexedDbSave(user.uid);
+           indexedDbStorageReady = true;
+@@ -25498,17 +25544,10 @@ async function boot() {
+           cloudSave = structuredClone(migratedLocal);
+           await persistBootDeviceStateSafely(migratedLocal, '起動時ローカル移行');
+         }
+-        stopSessionWatch = watchSession(user.uid, sessionId, () => {
+-          sessionTakenOver = true;
+-          showModal({
+-            title: '別の端末でゲームが開始されました',
+-            body: '<p>続けるには、この画面を再読み込みしてください。</p>',
+-            confirm: '再読み込み',
+-            action: 'reload-page',
+-            hideCancel: true,
+-          });
+-        });

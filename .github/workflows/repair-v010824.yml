@@ -25,25 +25,50 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import json
           import re
+          import time
 
-          # Gray-hood dialogue gained intro2b / intro3b. Keep save migration validators in sync.
+          # Gray-hood dialogue gained intro2b / intro3b. Keep the runtime active-stage set in sync.
           app_path = Path('js/app.js')
           app = app_path.read_text(encoding='utf-8')
           match = re.search(r"(grayHoodAquariumEvent\s*:\s*new Set\(\[)([^\]]*)(\]\))", app)
           if not match:
-              raise SystemExit('grayHoodAquariumEvent stage validator was not found')
+              raise SystemExit('grayHoodAquariumEvent stage validator was not found in js/app.js')
           stages = match.group(2)
           if 'intro2b' not in stages:
               stages, count = re.subn(r"(['\"]intro2['\"]\s*,)", r"\1'intro2b',", stages, count=1)
               if count != 1:
-                  raise SystemExit('intro2 stage was not found in grayHoodAquariumEvent validator')
+                  raise SystemExit('intro2 stage was not found in js/app.js grayHoodAquariumEvent validator')
           if 'intro3b' not in stages:
               stages, count = re.subn(r"(['\"]intro3['\"]\s*,)", r"\1'intro3b',", stages, count=1)
               if count != 1:
-                  raise SystemExit('intro3 stage was not found in grayHoodAquariumEvent validator')
+                  raise SystemExit('intro3 stage was not found in js/app.js grayHoodAquariumEvent validator')
           app = app[:match.start()] + match.group(1) + stages + match.group(3) + app[match.end():]
           app_path.write_text(app, encoding='utf-8')
+
+          # The save/load normalizer lives in game-data-core.js. Preserve the two newly-added dialogue stages there too.
+          core_path = Path('js/game-data-core.js')
+          core = core_path.read_text(encoding='utf-8')
+          if 'grayHoodAquariumEvent' not in core:
+              raise SystemExit('grayHoodAquariumEvent was not found in js/game-data-core.js')
+          if not ('intro2b' in core and 'intro3b' in core):
+              key_positions = [m.start() for m in re.finditer(r'grayHoodAquariumEvent', core)]
+              seq_pattern = re.compile(
+                  r"(['\"]intro1['\"]\s*,\s*['\"]intro2['\"]\s*,)\s*"
+                  r"(['\"]intro3['\"]\s*,)"
+              )
+              candidates = []
+              for seq in seq_pattern.finditer(core):
+                  distance = min(abs(seq.start() - pos) for pos in key_positions)
+                  if distance <= 6000:
+                      candidates.append((distance, seq))
+              if not candidates:
+                  raise SystemExit('grayHoodAquariumEvent intro1/intro2/intro3 stage sequence was not found in js/game-data-core.js')
+              _, seq = min(candidates, key=lambda row: row[0])
+              replacement = seq.group(1) + "'intro2b'," + seq.group(2) + "'intro3b',"
+              core = core[:seq.start()] + replacement + core[seq.end():]
+              core_path.write_text(core, encoding='utf-8')
 
           # The battle iframe owns its battle BGM/SE, so mute the parent game's scene while it is open.
           audio_path = Path('js/audio-scene-map.js')

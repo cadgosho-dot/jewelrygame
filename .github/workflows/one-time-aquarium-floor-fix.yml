@@ -6,8 +6,8 @@ on:
       - main
 
 concurrency:
-  group: jewelrygame-pages-and-metals
-  cancel-in-progress: false
+  group: jewelrygame-one-time-aquarium-floor-fix
+  cancel-in-progress: true
 
 jobs:
   patch:

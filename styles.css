@@ -22372,3 +22372,92 @@ html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen="tr
     font-size:9px;
   }
 }
+
+/* v0.10.819 灰色パーカーイベント 横画面表示調整
+   - キャラクターを拡大し上詰め
+   - セリフ枠を画面横幅いっぱいに使用 */
+@media (orientation:landscape){
+  .gray-hood-aquarium-event{
+    padding:max(8px,var(--safe-top,0px)) max(8px,var(--safe-right,0px)) max(8px,var(--safe-bottom,0px)) max(8px,var(--safe-left,0px));
+  }
+  .gray-hood-character-area{
+    inset:max(8px,var(--safe-top,0px)) 0 clamp(150px,27vh,230px);
+    align-items:flex-start;
+    justify-content:center;
+  }
+  .gray-hood-character-area img{
+    max-width:min(64vw,760px);
+    max-height:min(74dvh,620px);
+    object-position:center top;
+  }
+  .gray-hood-dialogue{
+    position:absolute;
+    left:max(8px,var(--safe-left,0px));
+    right:max(8px,var(--safe-right,0px));
+    bottom:max(8px,var(--safe-bottom,0px));
+    width:auto!important;
+    max-width:none!important;
+    margin:0!important;
+  }
+}
+
+/* v0.10.817 完成画面: 縦画面のみ完成品全体を12px下へ */
+@media (orientation:portrait) and (max-width:820px){
+  body[data-screen="completion"] .completion-jewelry-artwork{
+    transform:translateY(12px)!important;
+  }
+}
+
+
+
+/* v0.10.824 熱帯魚屋スマホUI再調整
+   - 縦画面でヘッダー/タブ/商品カードが詰まりにくいよう再配置
+   - 商品カードを1列化して文字崩れを防止 */
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-controls{
+  top:0;
+  padding:4px 4px 6px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-status{
+  justify-content:space-between;
+  gap:4px 8px;
+  padding:6px 8px;
+  font-size:11px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-controls .tropical-shop-status b{
+  flex:1 0 100%;
+  text-align:center;
+  font-size:16px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-tabs{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:5px;
+}
+html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .tropical-shop-tabs button{
+  min-width:0;
+  min-height:38px;
+  padding:8px 4px;
+  font-size:12px;
+  white-space:nowrap;
+  letter-spacing:-.01em;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-grid{
+  grid-template-columns:1fr;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card{
+  grid-template-columns:92px minmax(0,1fr);
+  align-items:start;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card > img{
+  width:92px;
+  height:86px;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card > div{
+  gap:4px;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card strong{
+  font-size:14px;
+}
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="tropicalFishShop"] .tropical-product-card > button{
+  min-height:36px;
+  font-size:12px;
+}

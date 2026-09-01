@@ -826,3 +826,41 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-rewa
     margin-top:0!important;
   }
 }
+
+/* v0.10.818: 不正解後の最終正解表示は3イベント共通で緑文字 */
+.jxj-quiz-dialogue-panel-v2.is-answer-reveal>strong{
+  color:#95d887!important;
+}
+
+/* v0.10.817 — 3Dメガネイベント回帰修正。
+   共通V2配置を維持しつつ、3Dメガネ固有アセットに必要な差分だけを適用。 */
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-area-v2,
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-dialogue-panel-v2,
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2{
+  visibility:visible!important;
+  opacity:1!important;
+}
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-gem-v2{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:min(54vw,300px)!important;
+  max-height:min(34dvh,300px)!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+}
+@media (orientation:landscape){
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-character-area-v2,
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 .jxj-quiz-character-area-v2{
+    place-items:start center!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-character-v2,
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 .jxj-quiz-character-v2{
+    object-position:center top!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-gem-v2{
+    max-width:min(26vw,270px)!important;
+    max-height:min(42dvh,250px)!important;
+  }
+}
+

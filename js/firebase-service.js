@@ -39,7 +39,7 @@ import {
 import { firebaseConfig } from './firebase-config.js';
 import { securityConfig } from './security-config.js';
 import { SAVE_KEY, chooseNewestSavedState } from './game-data-core.js';
-import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.824';
+import { readIndexedDbSave, writeIndexedDbSave } from './local-save-storage.js?v=0.10.826';
 
 const previewMode = ['localhost', '127.0.0.1'].includes(location.hostname)
   && new URLSearchParams(location.search).get('preview') === '1';
@@ -724,28 +724,35 @@ export async function claimSession(uid, sessionId) {
 export function watchSession(uid, sessionId, onTakenOver) {
   if (previewMode || !db) return () => {};
   if (unsubscribeSession) unsubscribeSession();
-  let initialized = false;
   unsubscribeSession = onSnapshot(sessionDocRef(uid), (snapshot) => {
     if (!snapshot.exists()) return;
     const active = snapshot.data();
-    if (!initialized) {
-      initialized = true;
-      return;
-    }
+    // v0.10.826: 初回スナップショットも検査する。claimSession() 完了後に
+    // 監視を開始するため、初回から別IDなら監視開始前に他画面へ奪取された状態。
     if (active?.id && active.id !== sessionId) onTakenOver(active);
   });
   return unsubscribeSession;
 }
 
 export async function heartbeat(uid, sessionId) {
-  if (previewMode || !db) return;
+  if (previewMode || !db) return true;
   try {
-    await setDoc(sessionDocRef(uid), {
-      id: sessionId,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
+    // v0.10.826: heartbeat はセッション所有者だけが更新できるようCAS化する。
+    // 旧画面がバックグラウンドから復帰しても、新しい画面のIDを上書きしない。
+    return await runTransaction(db, async (transaction) => {
+      const ref = sessionDocRef(uid);
+      const snapshot = await transaction.get(ref);
+      const active = snapshot.exists() ? snapshot.data() : null;
+      if (active?.id && active.id !== sessionId) return false;
+      transaction.set(ref, {
+        id: sessionId,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      return true;
+    });
   } catch (error) {
     console.warn('Heartbeat failed:', error);
+    return null;
   }
 }
 

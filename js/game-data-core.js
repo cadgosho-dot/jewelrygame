@@ -1,4 +1,4 @@
-export const VERSION = '0.10.824';
+export const VERSION = '0.10.826';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';

@@ -1,4 +1,4 @@
-import { AUDIO_SCENE_DEFINITIONS, AUDIO_SCENE_KEYS, audioSceneDefinition, audioSceneUsesWeather } from './audio-scene-map.js?v=0.10.824';
+import { AUDIO_SCENE_DEFINITIONS, AUDIO_SCENE_KEYS, audioSceneDefinition, audioSceneUsesWeather } from './audio-scene-map.js?v=0.10.826';
 
 const AUDIO_DIR = './assets/audio';
 

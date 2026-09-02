@@ -23,6 +23,12 @@ jobs:
           ref: tmp-v843-apply
           fetch-depth: 0
 
+      - name: Prepare audit dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check -q pillow
+
       - name: Apply v0.10.841-v0.10.843
         shell: bash
         run: |
@@ -48,7 +54,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --disable-pip-version-check -q pillow
           test "$(tr -d '\r\n' < VERSION)" = "0.10.843"
           node --check js/app.js
           python3 scripts/version-sync.py --check
@@ -67,4 +72,4 @@ jobs:
           git commit -m "Integrate workshop fixes v0.10.843"
           git push origin HEAD:tmp-v843-apply
 
-# retry after management-doc ordering correction
+# retry after ASSETS generation dependency correction

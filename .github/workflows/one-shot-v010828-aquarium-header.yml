@@ -84,15 +84,15 @@ jobs:
       - name: 一時ワークフローを最終成果物から削除
         run: rm -f .github/workflows/one-shot-v010828-aquarium-header.yml
 
-      - name: 最終状態でアセット一覧を更新・単独照合
-        run: |
-          python3 scripts/generate-assets-manifest.py --write
-          python3 scripts/generate-assets-manifest.py --check
-
-      - name: 画像・実ブラウザ検査環境を準備
+      - name: 画像・実ブラウザ検査環境を先に準備
         run: |
           python3 -m pip install --disable-pip-version-check pillow playwright
           python3 -m playwright install --with-deps chromium
+
+      - name: 最終環境でアセット一覧を更新・単独照合
+        run: |
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-assets-manifest.py --check
 
       - name: 公開前監査
         env:

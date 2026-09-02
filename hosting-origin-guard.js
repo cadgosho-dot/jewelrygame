@@ -36,14 +36,14 @@
   // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
     const script = document.createElement('script');
-    script.src = './memories-event-image-overrides-v751.js?v=0.10.830';
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.840';
     document.head?.appendChild(script);
   })();
 
   // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
   (() => {
     const script = document.createElement('script');
-    script.src = './workshop-staff-images-v754.js?v=0.10.830';
+    script.src = './workshop-staff-images-v754.js?v=0.10.840';
     document.head?.appendChild(script);
   })();
 
@@ -65,7 +65,7 @@
       body[data-screen="main"] .alien-space-main-screen>.alien-space-exit-button{
         position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 112px)!important;right:18px!important;
         z-index:240!important;pointer-events:auto!important;touch-action:manipulation!important;
-        border:1px solid rgba(255,235,188,.72)!important;border-radius:12px!important;
+        border:1.25px solid rgba(255,235,188,.72)!important;border-radius:12px!important;
         background:rgba(12,8,18,.84)!important;color:#fff0d3!important;padding:10px 14px!important;
         font:700 15px/1.15 system-ui,-apple-system,sans-serif!important;box-shadow:0 4px 18px rgba(0,0,0,.34)!important;
         -webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important

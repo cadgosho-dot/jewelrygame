@@ -98,7 +98,7 @@ body[data-screen="storytellerEvent"] .jxj-quiz-storyteller-v2.jxj-quiz-stage-dia
   -webkit-overflow-scrolling:touch!important;
   display:block!important;
   padding:12px 14px 10px!important;
-  border:1px solid rgba(255,255,255,.62)!important;
+  border:1.25px solid rgba(255,255,255,.62)!important;
   border-radius:14px!important;
   background:transparent!important;
   background-image:none!important;
@@ -140,7 +140,7 @@ body[data-screen="storytellerEvent"] .storyteller-ittomo-overlay-v12 .storytelle
   width:min(88vw,760px)!important;
   min-height:0!important;
   padding:12px 18px!important;
-  border:1px solid rgba(255,255,255,.58)!important;
+  border:1.25px solid rgba(255,255,255,.58)!important;
   background:transparent!important;
   color:#fff!important;
   font-size:clamp(3rem,14vw,6.5rem)!important;
@@ -192,7 +192,7 @@ body[data-screen="storytellerEvent"] .jxj-quiz-storyteller-v2.jxj-quiz-stage-que
   overflow:auto!important;
   -webkit-overflow-scrolling:touch!important;
   padding:9px 10px 10px!important;
-  border:1px solid rgba(255,255,255,.62)!important;
+  border:1.25px solid rgba(255,255,255,.62)!important;
   border-radius:14px!important;
   background:transparent!important;
   background-image:none!important;
@@ -222,7 +222,7 @@ body[data-screen="storytellerEvent"] .jxj-quiz-storyteller-v2.jxj-quiz-stage-que
   align-items:center!important;
   gap:.48rem!important;
   padding:.48rem .55rem!important;
-  border:1px solid rgba(255,255,255,.58)!important;
+  border:1.25px solid rgba(255,255,255,.58)!important;
   border-radius:10px!important;
   background:rgba(0,0,0,.18)!important;
   color:#fff!important;
@@ -237,7 +237,7 @@ body[data-screen="storytellerEvent"] .jxj-quiz-storyteller-v2.jxj-quiz-stage-que
   place-items:center!important;
   width:1.8rem!important;
   height:1.8rem!important;
-  border:1px solid rgba(255,255,255,.5)!important;
+  border:1.25px solid rgba(255,255,255,.5)!important;
   border-radius:50%!important;
   font-weight:1000!important;
 }
@@ -346,7 +346,7 @@ body[data-screen="storytellerEvent"] .jxj-quiz-storyteller-v2.jxj-quiz-stage-rew
   place-items:center!important;
   gap:8px!important;
   padding:14px!important;
-  border:1px solid rgba(255,255,255,.58)!important;
+  border:1.25px solid rgba(255,255,255,.58)!important;
   border-radius:16px!important;
   background:transparent!important;
   color:#fff!important;
@@ -384,7 +384,7 @@ body[data-screen="storytellerEvent"] .storyteller-loading{
   transform:translate(-50%,-50%)!important;
   width:min(86vw,520px)!important;
   padding:14px 18px!important;
-  border:1px solid rgba(255,255,255,.5)!important;
+  border:1.25px solid rgba(255,255,255,.5)!important;
   border-radius:14px!important;
   background:rgba(0,0,0,.24)!important;
   color:#fff!important;
@@ -519,7 +519,7 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-dial
   max-height:min(28vh,240px)!important;
   overflow:auto!important;
   padding:12px 14px 10px!important;
-  border:1px solid rgba(255,255,255,.62)!important;
+  border:1.25px solid rgba(255,255,255,.62)!important;
   border-radius:14px!important;
   background:rgba(0,0,0,.18)!important;
   box-shadow:none!important;
@@ -579,7 +579,7 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-ques
   gap:4px!important;
   overflow:auto!important;
   padding:8px 10px 10px!important;
-  border:1px solid rgba(255,255,255,.62)!important;
+  border:1.25px solid rgba(255,255,255,.62)!important;
   border-radius:14px!important;
   background:rgba(0,0,0,.18)!important;
   z-index:20!important;
@@ -614,7 +614,7 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answ
   align-items:center!important;
   gap:.48rem!important;
   padding:.48rem .55rem!important;
-  border:1px solid rgba(255,255,255,.58)!important;
+  border:1.25px solid rgba(255,255,255,.58)!important;
   border-radius:10px!important;
   background:rgba(0,0,0,.30)!important;
   color:#fff!important;
@@ -630,7 +630,7 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answ
   place-items:center!important;
   width:1.8rem!important;
   height:1.8rem!important;
-  border:1px solid rgba(255,255,255,.5)!important;
+  border:1.25px solid rgba(255,255,255,.5)!important;
   border-radius:50%!important;
   font-weight:1000!important;
 }
@@ -662,7 +662,7 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-rewa
   align-items:center!important;
   gap:8px!important;
   padding:16px!important;
-  border:1px solid rgba(255,255,255,.62)!important;
+  border:1.25px solid rgba(255,255,255,.62)!important;
   border-radius:16px!important;
   background:rgba(0,0,0,.22)!important;
   color:#fff!important;

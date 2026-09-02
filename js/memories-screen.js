@@ -1,6 +1,6 @@
-import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.830';
+import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.840';
 
-const VERSION = '0.10.830';
+const VERSION = '0.10.840';
 const STYLE_ID = 'jxj-memories-style-v752';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
@@ -89,22 +89,22 @@ function installStyle() {
     #${OVERLAY_ID} .memories-bg{position:absolute;inset:0;background-image:url("${MEMORIES_BG_PORTRAIT}");background-size:cover;background-position:center center;background-repeat:no-repeat;pointer-events:none;z-index:0}
     #${OVERLAY_ID} .memories-shade{position:absolute;inset:0;background:rgba(3,6,9,.06);pointer-events:none;z-index:1}
     #${OVERLAY_ID} .memories-shell{position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
-    #${OVERLAY_ID} .memories-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom:1px solid rgba(180,218,236,.45);background:transparent}
+    #${OVERLAY_ID} .memories-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom:1.25px solid rgba(180,218,236,.45);background:transparent}
     #${OVERLAY_ID} .memories-head h1{margin:0;font-size:20px;text-shadow:0 2px 6px #000}
-    #${OVERLAY_ID} .memories-close,#${LIGHTBOX_ID} .memories-lightbox-close{border:1px solid rgba(210,235,247,.68);border-radius:11px;background:rgba(9,16,22,.55);color:#fff;padding:9px 14px;font-weight:800;font-size:14px}
+    #${OVERLAY_ID} .memories-close,#${LIGHTBOX_ID} .memories-lightbox-close{border:1.25px solid rgba(210,235,247,.68);border-radius:11px;background:rgba(9,16,22,.55);color:#fff;padding:9px 14px;font-weight:800;font-size:14px}
     #${OVERLAY_ID} .memories-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 12px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain}
     #${OVERLAY_ID} .memories-list{display:grid;grid-template-columns:1fr;gap:12px;max-width:980px;margin:0 auto}
-    #${OVERLAY_ID} .memory-card{display:grid;grid-template-columns:112px 1fr;gap:12px;border:1px solid rgba(193,225,239,.55);border-radius:17px;padding:11px;background:transparent;box-shadow:0 5px 16px rgba(0,0,0,.18)}
-    #${OVERLAY_ID} .memory-person-frame{height:178px;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(193,225,239,.38);border-radius:14px;background:transparent;padding:6px}
+    #${OVERLAY_ID} .memory-card{display:grid;grid-template-columns:112px 1fr;gap:12px;border:1.25px solid rgba(193,225,239,.55);border-radius:17px;padding:11px;background:transparent;box-shadow:0 5px 16px rgba(0,0,0,.18)}
+    #${OVERLAY_ID} .memory-person-frame{height:178px;display:grid;place-items:center;overflow:hidden;border:1.25px solid rgba(193,225,239,.38);border-radius:14px;background:transparent;padding:6px}
     #${OVERLAY_ID} .memory-person{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;object-position:center center;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7));cursor:pointer}
     #${OVERLAY_ID} .memory-copy h2{margin:2px 0 7px;font-size:17px;line-height:1.35;text-shadow:0 2px 5px #000}
     #${OVERLAY_ID} .memory-copy p{margin:0;font-size:13px;line-height:1.65;color:#f2f7fa;text-shadow:0 2px 5px #000}
     #${OVERLAY_ID} .memory-encounter-count{margin-top:8px;font-size:12px;line-height:1.4;font-weight:800;color:#d8f2ff;text-shadow:0 2px 5px #000}
-    #${OVERLAY_ID} .memory-reward{margin-top:10px;padding-top:9px;border-top:1px solid rgba(193,225,239,.38);display:flex;align-items:center;gap:9px}
+    #${OVERLAY_ID} .memory-reward{margin-top:10px;padding-top:9px;border-top:1.25px solid rgba(193,225,239,.38);display:flex;align-items:center;gap:9px}
     #${OVERLAY_ID} .memory-reward-label{font-size:11px;color:#bfe8f8;font-weight:800;text-shadow:0 2px 4px #000}
-    #${OVERLAY_ID} .memory-reward-image{width:54px;height:54px;object-fit:contain;border:1px solid rgba(193,225,239,.38);border-radius:10px;background:transparent;padding:3px;cursor:pointer}
+    #${OVERLAY_ID} .memory-reward-image{width:54px;height:54px;object-fit:contain;border:1.25px solid rgba(193,225,239,.38);border-radius:10px;background:transparent;padding:3px;cursor:pointer}
     #${OVERLAY_ID} .memory-reward-name{font-size:13px;font-weight:800;text-shadow:0 2px 4px #000}
-    #${OVERLAY_ID} .memories-empty{border:1px solid rgba(193,225,239,.48);border-radius:15px;padding:18px;text-align:center;background:transparent;text-shadow:0 2px 5px #000}
+    #${OVERLAY_ID} .memories-empty{border:1.25px solid rgba(193,225,239,.48);border-radius:15px;padding:18px;text-align:center;background:transparent;text-shadow:0 2px 5px #000}
     #${LIGHTBOX_ID}{position:fixed;inset:0;z-index:16000;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));gap:14px}
     #${LIGHTBOX_ID} img{display:block;max-width:94vw;max-height:78dvh;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.7))}
     @media (orientation:landscape){

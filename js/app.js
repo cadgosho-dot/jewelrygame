@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.830';
+} from './game-data.js?v=0.10.840';
 
-const UI_BUILD_VERSION = '0.10.830';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.830';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.830';
+const UI_BUILD_VERSION = '0.10.840';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.840';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.840';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.830';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.840';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.830';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.830';
+} from './firebase-service.js?v=0.10.840';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.840';
 
 
 
@@ -5891,8 +5891,20 @@ function workshopToolStatusText(toolId, record = workshopToolRecord(toolId)) {
   return '使用可能';
 }
 
-function workshopToolImageSrc(tool) {
-  return `${tool?.image || './assets/images/tools/placeholder.svg'}?v=${VERSION}`;
+function workshopToolImageSrc(tool, versioned = true) {
+  const source = String(tool?.image || './assets/images/tools/placeholder.svg');
+  if (!versioned || source.includes('?')) return source;
+  return `${source}?v=${VERSION}`;
+}
+
+function workshopToolImageMarkup(tool, { className = 'equipment-icon equipment-image-icon', alt = '', decorative = true } = {}) {
+  const source = workshopToolImageSrc(tool);
+  const fallbackSource = workshopToolImageSrc(tool, false);
+  const fallbackSymbol = esc(tool?.symbol || '⚒');
+  return `<span class="${esc(className)}" data-workshop-tool-image-shell>
+    <img src="${esc(source)}" data-workshop-tool-image data-fallback-src="${esc(fallbackSource)}" alt="${decorative ? '' : esc(alt || `${tool?.name || '工具'}の画像`)}" decoding="async">
+    <span class="workshop-tool-image-fallback" aria-hidden="true">${fallbackSymbol}</span>
+  </span>`;
 }
 
 function showWorkshopToolDetail(toolId) {
@@ -5902,7 +5914,7 @@ function showWorkshopToolDetail(toolId) {
   showModal({
     title: tool.name,
     body: `<div class="tool-detail-modal">
-      <img src="${workshopToolImageSrc(tool)}" alt="${esc(tool.name)}の工具・設備画像">
+      ${workshopToolImageMarkup(tool, { className: 'tool-detail-image-shell', alt: `${tool.name}の工具・設備画像`, decorative: false })}
       <p>${esc(tool.detail || tool.description)}</p>
       <div class="tool-detail-meta"><span>${esc(tool.type)}</span><span>工房評価 ＋${tool.qualityPoints}</span>${record ? `<span>${esc(workshopToolStatusText(toolId, record))}</span>` : ''}</div>
     </div>`,
@@ -12246,7 +12258,8 @@ function syncScreenContentTopOffset() {
     return;
   }
 
-  const desiredGap = screen === 'polishing' ? 16 : (screen === 'meal' ? 14 : (['store', 'inventory', 'showcaseSelect', 'showcaseDetail'].includes(screen) ? 36 : (screen === 'completion' ? 20 : 8)));
+  const isDocumentGuideScreen = screen === 'looseGemGuide' || screen === 'looseCutGuide' || screen === 'metalProfessionalGuide';
+  const desiredGap = isDocumentGuideScreen ? 4 : (screen === 'polishing' ? 16 : (screen === 'meal' ? 14 : (['store', 'inventory', 'showcaseSelect', 'showcaseDetail'].includes(screen) ? 36 : (screen === 'completion' ? 20 : 8))));
   const headerBottom = visibleHeaderBottom(headerEl);
   const phoneTwoBar = document.documentElement.dataset.deviceClass === 'phone'
     && document.body.dataset.headerMode === 'two-bar';
@@ -12339,6 +12352,40 @@ function scheduleScreenContentTopOffsetSync() {
       .catch(() => {})
       .finally(() => { screenHeaderFontSyncPromise = null; });
   }
+}
+
+// v0.10.840: 工房のルース／カット／地金詳細は、前画面のスクロール位置や
+// ヘッダー再計測によるスクロールアンカーの影響を受けず、必ず文頭から開く。
+function resetWorkshopGuideDocumentScroll() {
+  const guideScreens = new Set(['looseGemGuide', 'looseCutGuide', 'metalProfessionalGuide']);
+  if (!guideScreens.has(screen)) return;
+  const apply = () => {
+    if (!guideScreens.has(screen)) return;
+    const content = root.querySelector('.screen-shell > .screen-content');
+    if (content instanceof HTMLElement) {
+      content.scrollTop = 0;
+      content.scrollLeft = 0;
+    }
+    const guidePage = root.querySelector('.loose-gem-professional-page, .loose-cut-professional-page, .metal-professional-guide-page');
+    if (guidePage instanceof HTMLElement) {
+      guidePage.scrollTop = 0;
+      guidePage.scrollLeft = 0;
+    }
+    const pageScroller = document.scrollingElement;
+    if (pageScroller) {
+      pageScroller.scrollTop = 0;
+      pageScroller.scrollLeft = 0;
+    }
+  };
+  apply();
+  requestAnimationFrame(() => {
+    syncScreenContentTopOffset();
+    apply();
+    requestAnimationFrame(apply);
+  });
+  window.setTimeout(apply, 80);
+  window.setTimeout(apply, 260);
+  if (document.fonts?.ready) document.fonts.ready.then(apply).catch(() => {});
 }
 
 
@@ -12889,6 +12936,7 @@ function render() {
     applyEventTapHintStyling();
     installEventRecoveryControl();
     scheduleScreenContentTopOffsetSync();
+    if (screen === 'looseGemGuide' || screen === 'looseCutGuide' || screen === 'metalProfessionalGuide') resetWorkshopGuideDocumentScroll();
     scheduleEventDialogueBottomLayoutSync();
     if (screen === 'phone' && state?.settings?.phoneHomeImage) {
       root.querySelector('.phone-ui.custom-home-background')?.style.setProperty('--phone-home-image', `url("${state.settings.phoneHomeImage}")`);
@@ -16788,7 +16836,7 @@ function renderGlab() {
   const catalogRow = (tool) => {
     const locked = !workshopToolUnlocked(tool);
     const visual = tool.image
-      ? `<span class="glab-row-tool-image" aria-hidden="true"><img src="${workshopToolImageSrc(tool)}" alt="" loading="lazy" decoding="async"></span>`
+      ? workshopToolImageMarkup(tool, { className: 'glab-row-tool-image' })
       : '';
     return `<button type="button" class="glab-simple-row glab-tool-row ${locked ? 'locked' : ''}" data-action="glab-tool-detail" data-id="${esc(tool.id)}">
       ${visual}
@@ -16898,7 +16946,7 @@ function renderWorkshopToolDetail() {
     <div class="split-layout">
       <section class="scene-space"></section>
       <section class="action-panel glass-panel glab-tool-detail-page workshop-owned-tool-detail-page">
-        <img src="${workshopToolImageSrc(tool)}" alt="${esc(tool.name)}の工具・設備画像">
+        ${workshopToolImageMarkup(tool, { className: 'tool-detail-image-shell', alt: `${tool.name}の工具・設備画像`, decorative: false })}
         ${renderToolBrief(tool, 'workshop-tool-guide')}
         <div class="tool-detail-meta">
           <span>${esc(tool.type)}</span>
@@ -16961,7 +17009,7 @@ function renderGlabToolDetail() {
     <div class="split-layout">
       <section class="scene-space"></section>
       <section class="action-panel glass-panel glab-tool-detail-page">
-        <img src="${workshopToolImageSrc(tool)}" alt="${esc(tool.name)}の工具・設備画像">
+        ${workshopToolImageMarkup(tool, { className: 'tool-detail-image-shell', alt: `${tool.name}の工具・設備画像`, decorative: false })}
         ${renderToolBrief(tool)}
         <div class="tool-detail-meta">
           <span>${esc(tool.type)}</span>
@@ -18001,7 +18049,7 @@ function defaultDraft(orderId = null) {
   return {
     orderId,
     item: order?.item || 'ring',
-    useLoose: order ? true : null,
+    useLoose: order ? true : false,
     gem,
     looseShape: normalizeLooseShape(gem, looseShape),
     metal: order?.metal || firstOwned(state.inventory.metals, 'silver'),
@@ -18376,7 +18424,7 @@ function renderToolEquipmentInventory() {
       const statusClass = record.status === 'available' ? 'available' : record.status === 'repairing' ? 'repairing' : 'unusable';
       const hasProvidedImage = Boolean(tool.image && !String(tool.image).includes('placeholder.svg'));
       const visual = hasProvidedImage
-        ? `<span class="equipment-icon equipment-image-icon" aria-hidden="true"><img src="${workshopToolImageSrc(tool)}" alt="" loading="lazy" decoding="async"></span>`
+        ? workshopToolImageMarkup(tool)
         : `<span class="equipment-icon" aria-hidden="true">${esc(tool.symbol || '⚒')}</span>`;
       return `<button type="button" class="equipment-row equipment-detail-button ${statusClass}" data-action="tool-detail" data-id="${esc(toolId)}">
         ${visual}
@@ -18427,7 +18475,7 @@ function renderLooseInventoryDetail() {
         <div><small>${isOriginalLoose ? 'オリジナルルース' : 'ルースの種類'}</small><h1>${esc(gem.name)}</h1>${isOriginalLoose || isPearl ? '' : `<p>${esc(shape.name)}</p>`}</div>
       </header>
       <div class="loose-detail-description-grid">
-        <section class="loose-knowledge-card"><div><h2>${isOriginalLoose ? 'ルースについて' : '石種について'}</h2><p>${esc(looseGemShortDescription(gem.id))}</p></div>${!isOriginalLoose && gemGuideAvailable ? `<button type="button" class="secondary-button loose-knowledge-button" data-action="loose-gem-guide-open" data-id="${esc(gem.id)}">プロ向け宝石学詳細</button>` : ''}</section>
+        <section class="loose-knowledge-card"><div><h2>${isOriginalLoose ? 'ルースについて' : '石種について'}</h2><p>${esc(looseGemShortDescription(gem.id))}</p></div>${!isOriginalLoose && gemGuideAvailable ? `<button type="button" class="secondary-button loose-knowledge-button" data-action="loose-gem-guide-open" data-id="${esc(gem.id)}">詳しい説明を見る</button>` : ''}</section>
         ${isOriginalLoose || isPearl ? '' : `<section class="loose-knowledge-card"><div><h2>カットについて</h2><p>${esc(LOOSE_SHAPE_DESCRIPTIONS[shapeId] || `${shape.name}の形状です。`)}</p></div><button type="button" class="secondary-button loose-knowledge-button" data-action="loose-cut-guide-open" data-shape="${esc(shapeId)}">詳しい説明を見る</button></section>`}
       </div>
       ${isOriginalLoose ? renderOriginalLooseInfoCard(gem.id) : ''}
@@ -19461,7 +19509,6 @@ function renderOrders() {
         <div><dt>予想原価</dt><dd>${yen(estimatedCost)}</dd></div>
         <div><dt>予想利益</dt><dd>${yen(estimatedProfit)}</dd></div>
         <div><dt>納期</dt><dd>${esc(deadlineText)}</dd></div>
-        <div class="wide"><dt>希望条件</dt><dd>${esc(order.desiredConditions || customer?.preferenceText || '指定なし')}</dd></div>
       </dl>
       <section class="order-material-section">
         <h3>${isCrafted ? '使用した材料' : '必要材料'}</h3>
@@ -21854,6 +21901,11 @@ function expectedQuality() {
 function confirmCraft() {
   if (!toolUsable('jewelryBench')) return showToast('ジュエリー作成には使用可能な彫金机が必要です。', 'error');
   if (!craftDraft || typeof craftDraft.useLoose !== 'boolean') return showToast('ルースを使用するか選択してください。', 'error');
+
+  // v0.10.834: 通常の「ジュエリーを作る」は確認画面を挟まず、そのまま制作して完成画面へ進む。
+  // 注文品は従来の確認フローを維持し、受注内容の誤操作を防ぐ。
+  if (!craftDraft.orderId) return craft();
+
   const hours = productionHours(craftDraft);
   const requirements = materialRequirementsFor(craftDraft);
   const craftsmanship = craftProductionProfile(craftDraft);
@@ -25830,6 +25882,17 @@ root.addEventListener('playing', (event) => {
 
 root.addEventListener('error', (event) => {
   const target = event.target instanceof Element ? event.target : null;
+  const workshopToolImage = target?.closest('img[data-workshop-tool-image]');
+  if (workshopToolImage) {
+    const fallbackSource = String(workshopToolImage.dataset.fallbackSrc || '');
+    if (fallbackSource && workshopToolImage.dataset.fallbackTried !== '1') {
+      workshopToolImage.dataset.fallbackTried = '1';
+      workshopToolImage.src = fallbackSource;
+      return;
+    }
+    workshopToolImage.closest('[data-workshop-tool-image-shell]')?.classList.add('has-image-error');
+    return;
+  }
   const glabVisitVideo = target?.closest('video[data-glab-visit-video]');
   if (glabVisitVideo) {
     glabVisitVideo.closest('.glab-visit-video-stage')?.classList.add('has-error', 'needs-start');

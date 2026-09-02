@@ -63,3 +63,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Integrate workshop fixes v0.10.843"
           git push origin HEAD:tmp-v843-apply
+
+# retry after patch correction

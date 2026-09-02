@@ -106,20 +106,56 @@ body.catalog-open .stage,body.catalog-open #observe{pointer-events:none}
 body.aquarium-waiting .mainfish .fish,body.aquarium-waiting .floorfish .fish,body.aquarium-waiting .rearplants .decor,body.aquarium-waiting .midplants .decor,body.aquarium-waiting .frontplants .decor{display:none!important}
 .badge{min-width:118px;text-align:center}.catalog-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.catalog-actions button{width:100%;font-size:12px;padding:7px}.catalog-actions button:disabled{opacity:.4}.load-warning{color:#ffd699}.required-label{font-size:12px;color:#9ff0bd;font-weight:800;padding:6px 8px;border:1px solid #44875e;border-radius:8px;background:#102a1b;text-align:center}
 </style>
-<style id="aquarium-mobile-return-clearance-v828">
-/* v0.10.828: portrait smartphone catalog/detail content must stay below the parent "スマートフォンへ戻る" control. */
+<style id="aquarium-mobile-return-clearance-v829">
+/* v0.10.829: mobile catalog/detail headers stay in normal flow below the parent return control. */
 @media (orientation:portrait) and (max-width:820px){
   #panel.show{
     padding-top:calc(96px + env(safe-area-inset-top))!important;
   }
   #panel.show .observe-head{
-    top:calc(84px + env(safe-area-inset-top))!important;
+    position:relative!important;
+    top:auto!important;
+    z-index:20!important;
+    margin:0 0 10px!important;
+    padding:0 0 10px!important;
+    background:#0d1720!important;
+  }
+  #panel.show .tabs,
+  #panel.show .catalog-grid{
+    position:relative!important;
+    z-index:1!important;
   }
   .detail-overlay.show{
     padding-top:calc(96px + env(safe-area-inset-top))!important;
   }
   .detail-overlay.show .detail-top{
-    top:calc(84px + env(safe-area-inset-top))!important;
+    position:relative!important;
+    top:auto!important;
+  }
+}
+@media (orientation:landscape) and (max-height:700px){
+  #panel.show{
+    padding-top:calc(84px + env(safe-area-inset-top))!important;
+  }
+  #panel.show .observe-head{
+    position:relative!important;
+    top:auto!important;
+    z-index:20!important;
+    margin:0 0 10px!important;
+    padding:0 0 10px!important;
+    background:#0d1720!important;
+  }
+  #panel.show .tabs,
+  #panel.show .catalog-grid{
+    position:relative!important;
+    z-index:1!important;
+  }
+  .detail-overlay.show{
+    padding-top:calc(84px + env(safe-area-inset-top))!important;
+  }
+  .detail-overlay.show .detail-top{
+    position:relative!important;
+    top:auto!important;
   }
 }
 </style>

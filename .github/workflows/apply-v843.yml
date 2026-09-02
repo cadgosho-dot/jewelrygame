@@ -41,8 +41,8 @@ jobs:
           git apply --check /tmp/v843.patch
           git apply /tmp/v843.patch
           python3 scripts/version-sync.py --set 0.10.843
-          python3 scripts/generate-assets-manifest.py --write
           python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-assets-manifest.py --write
 
       - name: Verify integrated build
         shell: bash
@@ -52,6 +52,8 @@ jobs:
           test "$(tr -d '\r\n' < VERSION)" = "0.10.843"
           node --check js/app.js
           python3 scripts/version-sync.py --check
+          python3 scripts/generate-event-probability-list.py --check
+          python3 scripts/generate-assets-manifest.py --check
           python3 scripts/check-current.py
 
       - name: Commit integrated build and remove staging files
@@ -65,4 +67,4 @@ jobs:
           git commit -m "Integrate workshop fixes v0.10.843"
           git push origin HEAD:tmp-v843-apply
 
-# retry after installing audit dependency
+# retry after management-doc ordering correction

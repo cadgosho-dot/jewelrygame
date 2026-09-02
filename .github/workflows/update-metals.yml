@@ -108,16 +108,21 @@ jobs:
                   raise SystemExit(f'{metal}の地金相場が不正なため、安全のため公開を中止します。')
           PY
 
+      - name: ASSETS一覧を公開環境基準へ同期
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow
+          python3 scripts/generate-assets-manifest.py --write
+
       - name: 更新結果をコミット
         run: |
-          if git diff --quiet -- data/metals.json; then
-            echo "価格ファイルに変更はありません。"
+          if git diff --quiet -- data/metals.json ASSETS.md; then
+            echo "地金相場・ASSETS一覧に変更はありません。"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/metals.json
-          git commit -m "地金相場を自動更新"
+          git add data/metals.json ASSETS.md
+          git commit -m "公開データを自動同期"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 

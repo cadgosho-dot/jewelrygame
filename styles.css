@@ -166,6 +166,14 @@ body:not([data-screen="main"]) .inventory-category-tabs button.active{color:var(
 .empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}.empty-state strong{display:block;color:var(--text);font-size:1.15rem;margin-bottom:.4rem}
 .gem-thumb,.gem-inline,.choice-gem{display:block;object-fit:contain}
 .gem-inline{width:44px;height:44px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.28))}
+.rough-inventory-image-button{display:grid;place-items:center;width:52px;height:52px;margin:-4px 0;padding:4px;border:1.25px solid transparent;border-radius:12px;background:transparent;color:inherit;cursor:zoom-in;touch-action:manipulation;transition:border-color .16s ease,background-color .16s ease,transform .16s ease}
+.rough-inventory-image-button:hover,.rough-inventory-image-button:focus-visible{border-color:rgba(231,192,110,.72);background:rgba(231,192,110,.09);outline:none}
+.rough-inventory-image-button:active{transform:scale(.96)}
+.rough-inventory-image-button .gem-inline{pointer-events:none}
+#modal-layer .rough-inventory-image-modal{width:min(560px,calc(100vw - 2rem))}
+#modal-layer .rough-inventory-image-preview{display:grid;justify-items:center;gap:.75rem;padding:.5rem 0 .25rem}
+#modal-layer .rough-inventory-image-preview img{display:block;width:min(72vw,360px);height:min(55vh,360px);object-fit:contain;filter:drop-shadow(0 16px 24px rgba(0,0,0,.46));user-select:none;-webkit-user-drag:none}
+#modal-layer .rough-inventory-image-preview small{font-size:.95rem;color:var(--muted);font-weight:700;text-align:center}
 .choice-visual{display:grid;place-items:center;min-height:50px}
 .choice-gem{width:46px;height:46px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.28))}
 
@@ -22612,4 +22620,11 @@ body[data-screen="metalProfessionalGuide"] .screen-content > .metal-professional
 .tool-detail-image-shell > .workshop-tool-image-fallback{
   grid-area:1/1;
   font-size:48px;
+}
+
+/* v0.10.843 完成画面: 縦画面のリング完成品だけを少し下へ */
+@media (orientation:portrait) and (max-width:820px){
+  body[data-screen="completion"] .completion-jewelry-artwork.item-ring{
+    transform:translateY(22px)!important;
+  }
 }

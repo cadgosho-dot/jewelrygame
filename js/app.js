@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.840';
+} from './game-data.js?v=0.10.843';
 
-const UI_BUILD_VERSION = '0.10.840';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.840';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.840';
+const UI_BUILD_VERSION = '0.10.843';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.843';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.843';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.840';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.843';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.840';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.840';
+} from './firebase-service.js?v=0.10.843';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.843';
 
 
 
@@ -888,7 +888,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'mystery-chinese-meal-video-start', 'event-movie-skip', 'mystery-chinese-meal-event-next', 'wrist-found-event-next', 'event-emergency-recover',
 ]);
 const HUNGER_ALLOWED_ACTIONS = new Set([
-  'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'open-finance', 'hit-rock',
+  'sleep', 'alien-emergency-sleep', 'do-sleep', 'modal-close', 'polishing-result-return', 'open-phone-item-image', 'open-rough-image', 'open-finance', 'hit-rock',
   'back', 'main', 'eat-meal', 'meal-eating-finish', 'play-kaitenzushi', 'cancel-kaitenzushi', 'next-day', 'acknowledge-robbery', 'return-okachimachi', 'ridley-okazaki-soba-event-next',
   ...EVENT_PROGRESS_ACTIONS,
 ]);
@@ -5893,8 +5893,14 @@ function workshopToolStatusText(toolId, record = workshopToolRecord(toolId)) {
 
 function workshopToolImageSrc(tool, versioned = true) {
   const source = String(tool?.image || './assets/images/tools/placeholder.svg');
-  if (!versioned || source.includes('?')) return source;
-  return `${source}?v=${VERSION}`;
+  try {
+    const url = new URL(source, document.baseURI);
+    if (versioned) url.searchParams.set('v', VERSION);
+    return url.href;
+  } catch (_) {
+    if (!versioned || source.includes('?')) return source;
+    return `${source}?v=${VERSION}`;
+  }
 }
 
 function workshopToolImageMarkup(tool, { className = 'equipment-icon equipment-image-icon', alt = '', decorative = true } = {}) {
@@ -5902,9 +5908,43 @@ function workshopToolImageMarkup(tool, { className = 'equipment-icon equipment-i
   const fallbackSource = workshopToolImageSrc(tool, false);
   const fallbackSymbol = esc(tool?.symbol || '⚒');
   return `<span class="${esc(className)}" data-workshop-tool-image-shell>
-    <img src="${esc(source)}" data-workshop-tool-image data-fallback-src="${esc(fallbackSource)}" alt="${decorative ? '' : esc(alt || `${tool?.name || '工具'}の画像`)}" decoding="async">
+    <img src="${esc(source)}" data-workshop-tool-image data-fallback-src="${esc(fallbackSource)}" data-tool-id="${esc(tool?.id || '')}" alt="${decorative ? '' : esc(alt || `${tool?.name || '工具'}の画像`)}" decoding="async">
     <span class="workshop-tool-image-fallback" aria-hidden="true">${fallbackSymbol}</span>
   </span>`;
+}
+
+async function recoverWorkshopToolImage(image) {
+  if (!(image instanceof HTMLImageElement) || image.dataset.recoveryRunning === '1') return;
+  image.dataset.recoveryRunning = '1';
+  const shell = image.closest('[data-workshop-tool-image-shell]');
+  shell?.classList.remove('has-image-error');
+  const fallbackSource = String(image.dataset.fallbackSrc || '');
+  const candidates = [];
+  if (fallbackSource) {
+    candidates.push(fallbackSource);
+    try {
+      const freshUrl = new URL(fallbackSource, document.baseURI);
+      freshUrl.searchParams.set('tool-image-recovery', `${VERSION}-${Date.now()}`);
+      candidates.push(freshUrl.href);
+    } catch (_) {}
+  }
+  for (const candidate of [...new Set(candidates.filter(Boolean))]) {
+    try {
+      const response = await fetch(candidate, { cache: 'reload', credentials: 'same-origin' });
+      if (!response.ok) continue;
+      const blob = await response.blob();
+      if (!String(blob.type || '').toLowerCase().startsWith('image/')) continue;
+      const objectUrl = URL.createObjectURL(blob);
+      image.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+      image.src = objectUrl;
+      image.dataset.recovered = '1';
+      image.dataset.recoveryRunning = '0';
+      shell?.classList.remove('has-image-error');
+      return;
+    } catch (_) {}
+  }
+  image.dataset.recoveryRunning = '0';
+  shell?.classList.add('has-image-error');
 }
 
 function showWorkshopToolDetail(toolId) {
@@ -18434,11 +18474,29 @@ function renderToolEquipmentInventory() {
     }).join('')}</div>`;
 }
 
+function showRoughInventoryImage(gemId) {
+  const gem = GEMS[gemId];
+  const owned = Number(state?.inventory?.rough?.[gemId] || 0);
+  if (!gem || owned < 1) {
+    showToast('拡大表示できる原石がありません。', 'error');
+    return;
+  }
+  const label = roughDisplayName(gemId);
+  showModal({
+    title: label,
+    body: `<div class="rough-inventory-image-preview"><img src="./assets/images/gems/${esc(gem.id)}.png?v=${VERSION}" alt="${esc(label)}" draggable="false"><small>${esc(label)}</small></div>`,
+    confirm: '閉じる',
+    action: 'modal-close',
+    hideCancel: true,
+    className: 'rough-inventory-image-modal',
+  });
+}
+
 function renderMaterialInventory(kind) {
   if (kind === 'rough') {
     const items = Object.values(GEMS).filter((gem) => Number(state.inventory.rough[gem.id] || 0) > 0);
     if (!items.length) return '<div class="empty-state"><strong>原石はありません。</strong><p>採掘で原石を入手すると、ここに表示されます。</p></div>';
-    return `<div class="inventory-single-list">${items.map((gem) => `<div class="material-row"><span class="material-name">${roughVisual(gem.id, 'gem-inline')}<span>${esc(roughDisplayName(gem.id))}</span></span><strong>${state.inventory.rough[gem.id]}個</strong></div>`).join('')}</div>`;
+    return `<div class="inventory-single-list rough-inventory-list">${items.map((gem) => `<div class="material-row rough-inventory-row"><span class="material-name"><button type="button" class="rough-inventory-image-button" data-action="open-rough-image" data-id="${esc(gem.id)}" aria-label="${esc(roughDisplayName(gem.id))}の画像を拡大表示">${roughVisual(gem.id, 'gem-inline', '')}</button><span>${esc(roughDisplayName(gem.id))}</span></span><strong>${state.inventory.rough[gem.id]}個</strong></div>`).join('')}</div>`;
   }
 
   if (kind === 'loose') {
@@ -24827,6 +24885,7 @@ root.addEventListener('click', async (event) => {
     case 'acknowledge-robbery': acknowledgeRobberyReport(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'open-phone-item-image': showPhoneItemImage(button.dataset.kind, button.dataset.id); break;
+    case 'open-rough-image': showRoughInventoryImage(button.dataset.id); break;
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;
     case 'select-mining': selectedMining = button.dataset.id; render(); break;
@@ -25890,7 +25949,7 @@ root.addEventListener('error', (event) => {
       workshopToolImage.src = fallbackSource;
       return;
     }
-    workshopToolImage.closest('[data-workshop-tool-image-shell]')?.classList.add('has-image-error');
+    void recoverWorkshopToolImage(workshopToolImage);
     return;
   }
   const glabVisitVideo = target?.closest('video[data-glab-visit-video]');

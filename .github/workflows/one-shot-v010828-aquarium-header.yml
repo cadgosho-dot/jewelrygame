@@ -1,0 +1,109 @@
+name: One-shot v0.10.828 aquarium mobile header fix
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/one-shot-v010828-aquarium-header.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-v010828-aquarium-header
+  cancel-in-progress: false
+
+jobs:
+  patch-audit-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 最新mainを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 最新mainへ追従
+        run: git pull --rebase origin main
+
+      - name: スマートフォン図鑑ヘッダーの重なりを修正
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          aquarium = Path('assets/minigames/aquarium/index.html')
+          text = aquarium.read_text(encoding='utf-8')
+          style_id = 'aquarium-mobile-return-clearance-v828'
+          if style_id not in text:
+              css = r'''
+          <style id="aquarium-mobile-return-clearance-v828">
+          /* v0.10.828: portrait smartphone catalog/detail content must stay below the parent "スマートフォンへ戻る" control. */
+          @media (orientation:portrait) and (max-width:820px){
+            #panel.show{
+              padding-top:calc(96px + env(safe-area-inset-top))!important;
+            }
+            #panel.show .observe-head{
+              top:calc(84px + env(safe-area-inset-top))!important;
+            }
+            .detail-overlay.show{
+              padding-top:calc(96px + env(safe-area-inset-top))!important;
+            }
+            .detail-overlay.show .detail-top{
+              top:calc(84px + env(safe-area-inset-top))!important;
+            }
+          }
+          </style>
+          '''
+              marker = '</head>'
+              if text.count(marker) != 1:
+                  raise SystemExit(f'aquarium index </head> count is {text.count(marker)}, expected 1')
+              text = text.replace(marker, css + marker, 1)
+              aquarium.write_text(text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          log = changelog.read_text(encoding='utf-8')
+          heading = '## v0.10.828 (2026-09-02)'
+          if heading not in log:
+              anchor = '## v0.10.827 (2026-09-02)'
+              if anchor not in log:
+                  raise SystemExit('v0.10.827 changelog anchor not found')
+              entry = (
+                  heading + '\n'
+                  '- スマートフォン縦画面の水槽観察図鑑で「スマートフォンへ戻る」が一覧タイトルと重なる問題を修正。\n'
+                  '- 魚・水草・ディスプレイ用品の詳細画面でも、画像・名称・固定ヘッダーを戻るボタンの下へ配置。横画面と水槽本体の配置は変更しない。\n\n'
+              )
+              log = log.replace(anchor, entry + anchor, 1)
+              changelog.write_text(log, encoding='utf-8')
+          PY
+
+      - name: v0.10.828へ同期
+        run: python3 scripts/version-sync.py --set 0.10.828
+
+      - name: アセット一覧を更新
+        run: python3 scripts/generate-assets-manifest.py --write
+
+      - name: 一時ワークフローを最終成果物から削除
+        run: rm -f .github/workflows/one-shot-v010828-aquarium-header.yml
+
+      - name: 画像・実ブラウザ検査環境を準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: 公開前監査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          git diff --check
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: v0.10.828をコミットしてmainへ反映
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix aquarium mobile catalog header in v0.10.828"
+          git pull --rebase origin main
+          git push origin HEAD:main

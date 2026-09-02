@@ -187,12 +187,12 @@ def refs_for(rel: str, basename: str, sources: list[tuple[Path, str]]) -> list[s
         pos = text.find(rel)
         if pos >= 0:
             line = text[:pos].count('\n') + 1
-            exact.append(f'{path.relative_to(ROOT)}:{line}')
+            exact.append(f'{path.relative_to(ROOT).as_posix()}:{line}')
             continue
         pos = text.find(basename)
         if pos >= 0:
             line = text[:pos].count('\n') + 1
-            base.append(f'{path.relative_to(ROOT)}:{line} (basename)')
+            base.append(f'{path.relative_to(ROOT).as_posix()}:{line} (basename)')
     return (exact or base)[:4]
 
 

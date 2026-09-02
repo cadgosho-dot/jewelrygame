@@ -130,7 +130,7 @@
 | assets/audio/sfx-western-union-handover.ogg | 音源 | 12,109 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | f015aed3a26a3467feff5917c37c00a677c774d739f0093aafc8d09359f79e03 |
 | assets/audio/space-ambient.mp3 | 音源 | 1,441,375 B | - | - | `js/audio-scene-map.js:32 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ed23139672691156d19c1417a7d5660c8e91f9102249bb130c9c8a2c40723aaa |
 | assets/audio/space-main-bgm.mp3 | 音源 | 1,441,375 B | - | - | `js/audio-scene-map.js:31 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bdd27f7dd0421651829b0f62776f4b7ba3e154c1e470a09db86bf6530e14d147 |
-| assets/data/metal-prices.json | データ | 151 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 36b613a869787443af89f8f6f462943c5ca6c57e152727387d1323c69e14ebc7 |
+| assets/data/metal-prices.json | データ | 144 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6dec5bbd8b752be0404055200976171fad3e66b7a89ce00010d47622e0fa45b2 |
 | assets/data/storyteller-okachimachi-quiz.json | データ | 25,964 B | - | - | `js/app.js:447` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cd726e43302f881ca11f058d2979ccaca606a143da6373f5091a9148b35a4955 |
 | assets/icons/apple-touch-icon.png | 画像 | 180×180 | 正方形 | なし | `index.html:72`<br>`game.html:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8921b6e30b95f24d0df8b10e4c1bedc8004bf6ca9ba27d9368d0e40506f35777 |
 | assets/icons/favicon.png | 画像 | 64×64 | 正方形 | なし | `about.html:24`<br>`index.html:71`<br>`game.html:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c44b9428e6b4965e2a4280efc717a965c4f5a441f9bc3de1af08817a2171429a |
@@ -573,7 +573,7 @@
 | assets/minigames/aquarium/aquarium_initial_state.json | データ | 3,259 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 81dc2cc2ffd00c83a013f2084138b05a22452b11814ea1283184855b5d55b9f6 |
 | assets/minigames/aquarium/aquarium_state_manager.js | ミニゲーム/コード | 2,864 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 882150b33c2b0dfe942acf1c3d9b9e3cb8aa63c073bad156aac41db384f3c14a |
 | assets/minigames/aquarium/assets/fish/black_molly.png | 画像 | 1200×823 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9a8a1fe57701354850e748368803090516a843efed53950301c99d8cfea9ab59 |
-| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,948,191 B | - | - | `scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:231`<br>`js/app.js:15928`<br>`scripts/check-aquarium-portrait-center.py:6` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 276451ea68398b6ec77e0c0b0a7623c4d161e001c59113319876f6541ed0522b |
+| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,947,695 B | - | - | `scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:231`<br>`js/app.js:15928`<br>`scripts/check-aquarium-portrait-center.py:6` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a2e9d5db6b5cae879de876d7eab03b80297586cb361b6fef65e3198088c52a98 |
 | assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg | 音源 | 12,226 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
 | assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg | 音源 | 907,318 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d4863f10f767ff83327e2dfdd1331c2d44e805311d6b019978761b38e083cf03 |
 | assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg | 音源 | 981,583 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e7d4be5ed5860639286901ca4fd92b2f5e8bd8bbf592d747c5cb70ec7ed153a4 |
@@ -600,7 +600,7 @@
 | assets/minigames/kaitenzushi/data/game_rules.json | データ | 666 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0645627b2dbadc1b16f76812782729df5ca3b4f6e50bb381346dd2d9089c3b99 |
 | assets/minigames/kaitenzushi/data/sushi_catalog.json | データ | 2,723 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | fa8421c136d8db8809847a7b026e3b3e9c4fbfb7ec03d8eae01505c36727ba0e |
 | assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:63`<br>`js/app.js:19610`<br>`js/kaitenzushi-embedded.js:2` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
-| assets/minigames/retro-battle/index.html | ミニゲーム/コード | 18,691,686 B | - | - | `js/app.js:329` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 66efb10ed96c27d349166c533abc1701a65fdffadaf18a66a487140f56abd245 |
+| assets/minigames/retro-battle/index.html | ミニゲーム/コード | 18,690,587 B | - | - | `js/app.js:329` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d8332ba68b6a4ce9634ac1f7746fd146b0b4cff089aeaeb5e801580c9dcd1c5b |
 | assets/videos/cinema/.gitkeep | その他 | 0 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
 | assets/videos/cinema/cinema-film-01.mp4 | 動画 | 5,040,480 B | - | - | `data/cinema-event-videos.json:3 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c3dcdca3865cd5a104ee9ac9169dbeebf44616f748aed20557619a685bf5eccb |
 | assets/videos/cinema/cinema-film-02.mp4 | 動画 | 3,714,087 B | - | - | `data/cinema-event-videos.json:4 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f158a2fe9dd0e459e1386a27cc5d22cd97e1ab2360dd795c2404957d054d1c36 |

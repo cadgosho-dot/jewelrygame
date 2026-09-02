@@ -1,0 +1,151 @@
+name: One-shot v0.10.829 aquarium catalog layout fix
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/one-shot-v010829-aquarium-layout.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-v010829-aquarium-layout
+  cancel-in-progress: false
+
+jobs:
+  patch-audit-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 最新mainを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 最新mainへ追従
+        run: git pull --rebase origin main
+
+      - name: 水槽観察図鑑の縦横ヘッダー重なりを修正
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          aquarium = Path('assets/minigames/aquarium/index.html')
+          text = aquarium.read_text(encoding='utf-8')
+
+          old_pattern = re.compile(
+              r'<style id="aquarium-mobile-return-clearance-v828">.*?</style>\s*',
+              re.S,
+          )
+          new_css = r'''<style id="aquarium-mobile-return-clearance-v829">
+          /* v0.10.829: mobile catalog/detail headers stay in normal flow below the parent return control. */
+          @media (orientation:portrait) and (max-width:820px){
+            #panel.show{
+              padding-top:calc(96px + env(safe-area-inset-top))!important;
+            }
+            #panel.show .observe-head{
+              position:relative!important;
+              top:auto!important;
+              z-index:20!important;
+              margin:0 0 10px!important;
+              padding:0 0 10px!important;
+              background:#0d1720!important;
+            }
+            #panel.show .tabs,
+            #panel.show .catalog-grid{
+              position:relative!important;
+              z-index:1!important;
+            }
+            .detail-overlay.show{
+              padding-top:calc(96px + env(safe-area-inset-top))!important;
+            }
+            .detail-overlay.show .detail-top{
+              position:relative!important;
+              top:auto!important;
+            }
+          }
+          @media (orientation:landscape) and (max-height:700px){
+            #panel.show{
+              padding-top:calc(84px + env(safe-area-inset-top))!important;
+            }
+            #panel.show .observe-head{
+              position:relative!important;
+              top:auto!important;
+              z-index:20!important;
+              margin:0 0 10px!important;
+              padding:0 0 10px!important;
+              background:#0d1720!important;
+            }
+            #panel.show .tabs,
+            #panel.show .catalog-grid{
+              position:relative!important;
+              z-index:1!important;
+            }
+            .detail-overlay.show{
+              padding-top:calc(84px + env(safe-area-inset-top))!important;
+            }
+            .detail-overlay.show .detail-top{
+              position:relative!important;
+              top:auto!important;
+            }
+          }
+          </style>
+          '''
+          text, count = old_pattern.subn(new_css, text, count=1)
+          if count != 1:
+              raise SystemExit(f'v0.10.828 mobile clearance style replacement count={count}, expected 1')
+          aquarium.write_text(text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          log = changelog.read_text(encoding='utf-8')
+          heading = '## v0.10.829 (2026-09-02)'
+          if heading not in log:
+              anchor = '## v0.10.828 (2026-09-02)'
+              if anchor not in log:
+                  raise SystemExit('v0.10.828 changelog anchor not found')
+              entry = (
+                  heading + '\n'
+                  '- スマートフォン縦画面の水槽観察図鑑で「水槽観察図鑑／閉じる」バーが魚カード上部へ重なる問題を修正。ヘッダー、タブ、一覧を通常の縦方向の流れに分離。\n'
+                  '- スマートフォン横画面でも「スマートフォンへ戻る」と「水槽観察図鑑」が重ならないよう上部余白を確保。詳細画面も同じ基準で配置し、魚カード・画像サイズ・水槽本体は変更しない。\n\n'
+              )
+              log = log.replace(anchor, entry + anchor, 1)
+              changelog.write_text(log, encoding='utf-8')
+          PY
+
+      - name: v0.10.829へ同期
+        run: python3 scripts/version-sync.py --set 0.10.829
+
+      - name: 一時ワークフローを最終成果物から削除
+        run: rm -f .github/workflows/one-shot-v010829-aquarium-layout.yml
+
+      - name: 画像・実ブラウザ検査環境を先に準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: 最終環境でアセット一覧を更新・単独照合
+        run: |
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-assets-manifest.py --check
+
+      - name: 公開前監査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+          JXJ_CHECK_WORKERS: '1'
+        run: |
+          git diff --check
+          python3 scripts/generate-assets-manifest.py --check
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: v0.10.829をコミットしてmainへ反映
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix aquarium catalog layout in v0.10.829"
+          git pull --rebase origin main
+          git push origin HEAD:main

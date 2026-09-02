@@ -84,8 +84,10 @@ jobs:
       - name: 一時ワークフローを最終成果物から削除
         run: rm -f .github/workflows/one-shot-v010828-aquarium-header.yml
 
-      - name: 最終状態でアセット一覧を更新
-        run: python3 scripts/generate-assets-manifest.py --write
+      - name: 最終状態でアセット一覧を更新・単独照合
+        run: |
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-assets-manifest.py --check
 
       - name: 画像・実ブラウザ検査環境を準備
         run: |
@@ -95,8 +97,10 @@ jobs:
       - name: 公開前監査
         env:
           JXJ_REQUIRE_BROWSER_SMOKE: '1'
+          JXJ_CHECK_WORKERS: '1'
         run: |
           git diff --check
+          python3 scripts/generate-assets-manifest.py --check
           timeout 8m python3 -u scripts/check-current.py
 
       - name: v0.10.828をコミットしてmainへ反映

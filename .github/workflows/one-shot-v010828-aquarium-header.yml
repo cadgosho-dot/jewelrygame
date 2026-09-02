@@ -81,11 +81,11 @@ jobs:
       - name: v0.10.828へ同期
         run: python3 scripts/version-sync.py --set 0.10.828
 
-      - name: アセット一覧を更新
-        run: python3 scripts/generate-assets-manifest.py --write
-
       - name: 一時ワークフローを最終成果物から削除
         run: rm -f .github/workflows/one-shot-v010828-aquarium-header.yml
+
+      - name: 最終状態でアセット一覧を更新
+        run: python3 scripts/generate-assets-manifest.py --write
 
       - name: 画像・実ブラウザ検査環境を準備
         run: |

@@ -48,6 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 -m pip install --disable-pip-version-check -q pillow
           test "$(tr -d '\r\n' < VERSION)" = "0.10.843"
           node --check js/app.js
           python3 scripts/version-sync.py --check
@@ -64,4 +65,4 @@ jobs:
           git commit -m "Integrate workshop fixes v0.10.843"
           git push origin HEAD:tmp-v843-apply
 
-# retry after generator flag correction
+# retry after installing audit dependency

@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.816';
+} from './game-data.js?v=0.10.830';
 
-const UI_BUILD_VERSION = '0.10.816';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.816';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.816';
+const UI_BUILD_VERSION = '0.10.830';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.830';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.830';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.816';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.830';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.816';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.816';
+} from './firebase-service.js?v=0.10.830';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.830';
 
 
 
@@ -227,6 +227,48 @@ let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Ma
 let stopSessionWatch = null;
 let heartbeatTimer = null;
 let sessionTakenOver = false;
+let sessionClaimed = false;
+
+function stopSessionHeartbeat() {
+  if (!heartbeatTimer) return;
+  clearInterval(heartbeatTimer);
+  heartbeatTimer = null;
+}
+
+function handleSessionTakenOver() {
+  if (sessionTakenOver) return;
+  sessionTakenOver = true;
+  sessionClaimed = false;
+  stopSessionHeartbeat();
+  if (stopSessionWatch) {
+    stopSessionWatch();
+    stopSessionWatch = null;
+  }
+  showModal({
+    title: '別の端末でゲームが開始されました',
+    body: '<p>続けるには、この画面を再読み込みしてください。</p>',
+    confirm: '再読み込み',
+    action: 'reload-page',
+    hideCancel: true,
+  });
+}
+
+async function sendSessionHeartbeat(user) {
+  if (!user || sessionTakenOver || !sessionClaimed) return false;
+  const stillOwned = await heartbeat(user.uid, sessionId);
+  if (stillOwned === false) {
+    handleSessionTakenOver();
+    return false;
+  }
+  return stillOwned;
+}
+
+function startSessionHeartbeat(user) {
+  if (!user || heartbeatTimer || sessionTakenOver || !sessionClaimed) return;
+  heartbeatTimer = setInterval(() => {
+    void sendSessionHeartbeat(user);
+  }, 300000);
+}
 let sleepTransitioning = false;
 let nextDayTransitionPromise = null;
 let morningBriefShowing = false;
@@ -251,6 +293,7 @@ let kaitenzushiReadyTimer = null;
 let kaitenzushiLoadNonce = 0;
 let okachimachiQuizSession = null;
 let looseShopOriginalQuizSession = null;
+let retroBattleSession = null;
 let okachimachiQuizQuestionsPromise = null;
 let looseShopOriginalQuizQuestionsPromise = null;
 let cinemaEventVideosPromise = null;
@@ -279,6 +322,11 @@ const LOOSE_SHOP_ORIGINAL_QUIZ_IMAGE = './assets/images/events/loose-shop-origin
 const LOOSE_SHOP_ORIGINAL_QUIZ_NAME = '3Dメガネ';
 const OKACHIMACHI_TOLL_EVENT_CHANCE = 0.025;
 const OKACHIMACHI_TOLL_EVENT_COST = 100000;
+const RETRO_BATTLE_EVENT_CHANCE = 1 / 30;
+const RETRO_BATTLE_MONEY_RATE = 0.1;
+const RETRO_BATTLE_MONEY_CAP = 1000000;
+const RETRO_BATTLE_ITEM_KEYS = Object.freeze(['pazupan', 'energyDrink']);
+const RETRO_BATTLE_DOCUMENT_URL = './assets/minigames/retro-battle/index.html';
 const OKACHIMACHI_INVASIVE_TURTLES_EVENT_IMAGE = './assets/images/events/okachimachi-invasive-turtles.png';
 const OKACHIMACHI_INVASIVE_TURTLES_EVENT_INTRO_VIDEO = './assets/videos/events/okachimachi-invasive-turtles-intro.mp4';
 const OKACHIMACHI_INVASIVE_TURTLES_EVENT_AUDIO_URL = `./assets/audio/amb-okachimachi-invasive-turtles-boombox.ogg?v=${VERSION}`;
@@ -496,7 +544,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   ganeshaTuskEvent: new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   hauntingEvent: new Set(['intro1', 'intro2', 'processing']),
   childhoodFriendEvent: new Set(['intro1', 'intro2', 'intro3', 'eating', 'postMeal']),
-  grayHoodAquariumEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage']),
+  grayHoodAquariumEvent: new Set(['video', 'intro1', 'intro2', 'intro2b', 'intro3', 'intro3b', 'reward', 'farewell', 'unlockMessage']),
   touristWoodSwordEvent: new Set(['intro1', 'route', 'reward', 'farewell']),
   terryCaliforniaEvent: new Set(['video', 'intro1', 'intro2', 'offer', 'insufficientFunds', 'declined', 'purchased']),
   alienAbductionEvent: new Set(['intro1', 'intro2', 'abducted', 'returnPending']),
@@ -11325,7 +11373,7 @@ function renderStorytellerEvent(){
   const dialogueStage=ittomoActive?'intro2':e.stage;
   const ittomoOverlay=`<div class="storyteller-ittomo-overlay-v12 ${ittomoActive?'is-active':''}"><button type="button" class="storyteller-ittomo" data-action="storyteller-event-next">いいとも！<span>タップして進む</span></button></div>`;
   return `<main class="main-screen storyteller-event-screen">${renderQuizLayoutV2Dialogue({
-    name:'ストーリーテラー', characterSrc, dialogue:lineMap[dialogueStage]||'', nextAction:'storyteller-event-next', eventClass,
+    name:e.stage==='incorrectAnswer'?'':'ストーリーテラー', characterSrc, dialogue:lineMap[dialogueStage]||'', nextAction:'storyteller-event-next', eventClass,
     answerReveal:e.stage==='incorrectAnswer', afterMarkup:ittomoOverlay,
   }).replace('jxj-quiz-dialogue-panel-v2 ', `jxj-quiz-dialogue-panel-v2 ${ittomoActive?'is-storyteller-ittomo-hidden ':''}`)}</main>`;
 }
@@ -11490,6 +11538,160 @@ async function startOkachimachiQuizIfDue(eventState) {
   }
 }
 
+function retroBattlePlayerName() {
+  return String(state?.playerName || 'あなた').trim() || 'あなた';
+}
+
+function retroBattleOwnedItemCount(itemKey) {
+  return Math.max(0, Math.floor(Number(state?.inventory?.items?.[itemKey]) || 0));
+}
+
+function retroBattleInventorySnapshot() {
+  return {
+    pazupan: retroBattleOwnedItemCount('pazupan'),
+    energyDrink: retroBattleOwnedItemCount('energyDrink'),
+  };
+}
+
+function maybeStartRetroBattleEvent() {
+  if (!state || illnessEventSuppressionActive()) return false;
+  if (Math.random() >= RETRO_BATTLE_EVENT_CHANCE) return false;
+  retroBattleSession = {
+    settled: false,
+    cleanup: null,
+  };
+  setScreen('retroBattleEvent', {}, false);
+  return true;
+}
+
+function applyRetroBattleInventoryChange(detail) {
+  const itemKey = String(detail?.itemKey || '');
+  const delta = Math.trunc(Number(detail?.delta) || 0);
+  if (!RETRO_BATTLE_ITEM_KEYS.includes(itemKey) || delta >= 0) return false;
+  state.inventory.items = state.inventory.items && typeof state.inventory.items === 'object' ? state.inventory.items : {};
+  const owned = retroBattleOwnedItemCount(itemKey);
+  if (owned <= 0) return false;
+  state.inventory.items[itemKey] = Math.max(0, owned + delta);
+  saveGame();
+  return true;
+}
+
+function syncRetroBattleInventoryFromResult(inventory) {
+  if (!inventory || typeof inventory !== 'object') return false;
+  state.inventory.items = state.inventory.items && typeof state.inventory.items === 'object' ? state.inventory.items : {};
+  let changed = false;
+  RETRO_BATTLE_ITEM_KEYS.forEach((itemKey) => {
+    if (!Object.prototype.hasOwnProperty.call(inventory, itemKey)) return;
+    const owned = retroBattleOwnedItemCount(itemKey);
+    const reported = Math.max(0, Math.floor(Number(inventory[itemKey]) || 0));
+    const next = Math.min(owned, reported);
+    if (next === owned) return;
+    state.inventory.items[itemKey] = next;
+    changed = true;
+  });
+  return changed;
+}
+
+function retroBattleMoneyChange(baseMoney) {
+  const money = Math.max(0, Math.floor(Number(baseMoney) || 0));
+  return Math.min(RETRO_BATTLE_MONEY_CAP, Math.floor(money * RETRO_BATTLE_MONEY_RATE));
+}
+
+function finishRetroBattleEvent(detail, session = retroBattleSession) {
+  if (!session || session !== retroBattleSession || session.settled) return false;
+  const result = String(detail?.result || '');
+  if (!['victory', 'defeat', 'escaped'].includes(result)) return false;
+  session.settled = true;
+  if (typeof session.cleanup === 'function') session.cleanup();
+  syncRetroBattleInventoryFromResult(detail?.inventory);
+
+  const baseMoney = Math.max(0, Math.floor(Number(state?.game?.money) || 0));
+  const amount = retroBattleMoneyChange(baseMoney);
+  if (result === 'victory') {
+    state.game.money = baseMoney + amount;
+    if (amount > 0) addFinance('御徒町・戦闘ミニゲーム勝利', amount, 0);
+    if (amount !== 0) startMoneyFeedback(amount, 1600);
+  } else if (result === 'defeat') {
+    state.game.money = Math.max(0, baseMoney - amount);
+    if (amount > 0) addFinance('御徒町・戦闘ミニゲーム敗北', 0, amount);
+    if (amount !== 0) startMoneyFeedback(-amount, 1600);
+    state.wellbeing.hunger = 0;
+    state.game.minutes = DAY_END_MINUTES;
+  }
+
+  saveGame();
+  retroBattleSession = null;
+  if (result === 'defeat') goMain();
+  else setScreen('okachimachi', {}, false);
+  return true;
+}
+
+function failRetroBattleEventLoad(error) {
+  console.error('[RetroBattle] load failed', error);
+  const session = retroBattleSession;
+  if (typeof session?.cleanup === 'function') session.cleanup();
+  retroBattleSession = null;
+  showToast('戦闘ミニゲームを読み込めませんでした。通常の御徒町へ戻ります。', 'error');
+  setScreen('okachimachi', {}, false);
+}
+
+function bindRetroBattleFrame() {
+  if (screen !== 'retroBattleEvent' || !retroBattleSession) return;
+  const session = retroBattleSession;
+  const frame = root.querySelector('iframe[data-retro-battle-frame]');
+  if (!(frame instanceof HTMLIFrameElement) || frame.dataset.retroBattleBound === '1') return;
+  frame.dataset.retroBattleBound = '1';
+
+  const start = () => {
+    if (screen !== 'retroBattleEvent' || session !== retroBattleSession || session.settled) return;
+    try {
+      const battleWindow = frame.contentWindow;
+      const battleApi = battleWindow?.RetroBattle;
+      if (!battleWindow || !battleApi || typeof battleApi.start !== 'function') {
+        throw new Error('RetroBattle API が見つかりません');
+      }
+      const inventoryHandler = (event) => {
+        if (session !== retroBattleSession || session.settled) return;
+        applyRetroBattleInventoryChange(event?.detail);
+      };
+      const endHandler = (event) => {
+        finishRetroBattleEvent(event?.detail, session);
+      };
+      battleWindow.addEventListener('retroBattleInventoryChange', inventoryHandler);
+      battleWindow.addEventListener('retroBattleEnd', endHandler);
+      session.cleanup = () => {
+        battleWindow.removeEventListener('retroBattleInventoryChange', inventoryHandler);
+        battleWindow.removeEventListener('retroBattleEnd', endHandler);
+      };
+      battleApi.start({
+        playerName: retroBattlePlayerName(),
+        inventory: retroBattleInventorySnapshot(),
+      });
+      frame.style.visibility = 'visible';
+    } catch (error) {
+      failRetroBattleEventLoad(error);
+    }
+  };
+
+  try {
+    if (frame.contentDocument?.readyState === 'complete') start();
+    else frame.addEventListener('load', start, { once: true });
+  } catch (error) {
+    failRetroBattleEventLoad(error);
+  }
+}
+
+function renderRetroBattleEvent() {
+  if (!retroBattleSession || retroBattleSession.settled) {
+    queueMicrotask(() => setScreen('okachimachi', {}, false));
+    return renderOkachimachi();
+  }
+  queueMicrotask(bindRetroBattleFrame);
+  return `<main class="retro-battle-event-host" style="position:fixed;inset:0;z-index:1200;overflow:hidden;background:#000;">
+    <iframe data-retro-battle-frame src="${RETRO_BATTLE_DOCUMENT_URL}?v=${VERSION}" title="御徒町 戦闘ミニゲーム" allow="autoplay" style="display:block;width:100%;height:100%;border:0;background:#000;visibility:hidden;"></iframe>
+  </main>`;
+}
+
 async function tryRandomOkachimachiEntryEvent(eventState) {
   // v0.10.799: 御徒町イベントは固定優先順を廃止し、外部から入るたびに判定順をシャッフルする。
   // 各イベント固有の発生率・日次制限・条件はそのまま維持し、特定イベントが常に後回しになる偏りをなくす。
@@ -11504,6 +11706,7 @@ async function tryRandomOkachimachiEntryEvent(eventState) {
     () => maybeStartOyatsuDaisukiEvent(),
     () => maybeStartSpeedStarEvent(),
     () => maybeStartStorytellerEvent(),
+    () => maybeStartRetroBattleEvent(),
   ];
   if (eventState && eventState.visitsSinceLast >= eventState.nextTriggerAt && canSpendHours(1)) {
     attempts.push(() => startOkachimachiQuizIfDue(eventState));
@@ -11924,6 +12127,7 @@ function applyCurrentBackground() {
 
 
 function audioFor(target) {
+  if (target === 'retroBattleEvent') return 'silent';
   if (target === 'oyatsuDaisukiEvent' && oyatsuDaisukiEventState().stage === 'shopVideo') return 'silent';
   const audioTarget = target === 'glabVisitVideoEvent'
     ? 'glab'
@@ -12624,6 +12828,7 @@ function render() {
       miningGame: renderMiningGame,
       miningResult: renderMiningResult,
       okachimachi: renderOkachimachi,
+      retroBattleEvent: renderRetroBattleEvent,
       okachimachiQuiz: renderOkachimachiQuiz,
       looseShopOriginalQuizEvent: renderLooseShopOriginalQuizEvent,
       okachimachiTollEvent: renderOkachimachiTollEvent,
@@ -15562,7 +15767,7 @@ function grayHoodAquariumEventState() {
   state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
   const saved = state.events.grayHoodAquariumEvent && typeof state.events.grayHoodAquariumEvent === 'object' && !Array.isArray(state.events.grayHoodAquariumEvent)
     ? state.events.grayHoodAquariumEvent : {};
-  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage']);
+  const dialogueStages = new Set(['intro1', 'intro2', 'intro2b', 'intro3', 'intro3b', 'reward', 'farewell', 'unlockMessage']);
   const validStages = new Set(['idle', 'video', ...dialogueStages, 'completed']);
   const rawStage = validStages.has(saved.stage) ? saved.stage : 'idle';
   const rawResumeStage = dialogueStages.has(saved.stageAfterVideo) ? saved.stageAfterVideo : '';
@@ -15626,7 +15831,7 @@ function retryGrayHoodAquariumIntroPlayback() {
 async function completeGrayHoodAquariumIntroVideo() {
   const e = grayHoodAquariumEventState();
   if (!e.active || e.stage !== 'video') return;
-  const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'farewell', 'unlockMessage']);
+  const dialogueStages = new Set(['intro1', 'intro2', 'intro2b', 'intro3', 'intro3b', 'reward', 'farewell', 'unlockMessage']);
   e.introVideoCompleted = true;
   e.stage = dialogueStages.has(e.stageAfterVideo) ? e.stageAfterVideo : 'intro1';
   e.stageAfterVideo = '';
@@ -15664,8 +15869,10 @@ async function advanceGrayHoodAquariumEvent({ receive = false } = {}) {
     saveGame(); render(); playSfx('success'); return;
   }
   if (e.stage === 'intro1') e.stage = 'intro2';
-  else if (e.stage === 'intro2') e.stage = 'intro3';
-  else if (e.stage === 'intro3') e.stage = 'reward';
+  else if (e.stage === 'intro2') e.stage = 'intro2b';
+  else if (e.stage === 'intro2b') e.stage = 'intro3';
+  else if (e.stage === 'intro3') e.stage = 'intro3b';
+  else if (e.stage === 'intro3b') e.stage = 'reward';
   else if (e.stage === 'farewell') e.stage = 'unlockMessage';
   else if (e.stage === 'unlockMessage') {
     e.active = false; e.completed = true; e.stage = 'completed';
@@ -15696,12 +15903,16 @@ function renderGrayHoodAquariumEvent() {
   if (e.stage === 'reward') return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event is-reward" aria-live="polite"><button type="button" class="gray-hood-aquarium-reward" data-action="gray-hood-aquarium-receive"><img src="./assets/images/events/aquarium-tank.png?v=${VERSION}" alt="水槽" draggable="false"><strong>水槽</strong><span>水槽をもらった</span></button></section></main>`;
   if (e.stage === 'unlockMessage') return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event is-unlock-message" aria-live="polite"><button type="button" class="gray-hood-aquarium-unlock-message" data-action="gray-hood-aquarium-next"><strong>スマートフォンのメニューへ「水槽」が追加されました</strong></button></section></main>`;
   const dialogue = e.stage === 'intro1'
-    ? `あ、${playerName}、久しぶり、最後に会えるなんて、私達やっぱり何かあるんだね、、`
+    ? `あ、${playerName}、、、、久しぶり、最後に会えるなんて、、、私達やっぱり何かあるんだね、、`
     : e.stage === 'intro2'
-      ? 'しばらくこの街に戻れないことになったんだ、心配しないで、物騒な内容じゃないんだ、悪いのも私じゃない、、、'
-      : e.stage === 'intro3'
-        ? `${playerName}って熱帯魚飼ってたよね？これから今住んでるとこを出るんだけど、、水槽あげようと思って綺麗にしといたんだ、、、`
-        : 'またね、どうせどこかで会うよ、、、';
+      ? 'しばらくこの街に戻れないことになったんだ、、、、心配しないで、、、物騒な内容じゃないんだ、、、、'
+      : e.stage === 'intro2b'
+        ? '悪いのも、、私じゃないよ、、、'
+        : e.stage === 'intro3'
+          ? `${playerName}って熱帯魚飼ってたよね？、、、、これから今住んでるとこを出るんだけど、、`
+          : e.stage === 'intro3b'
+            ? '使わなくなる水槽をもらってほしくて、、綺麗にしといたんだ、、、'
+            : `じゃあね、${playerName}、、、どうせどこかでまた会うよ、、私達、、、、、`;
   return `<main class="main-screen gray-hood-aquarium-event-screen"><section class="gray-hood-aquarium-event" aria-live="polite"><div class="gray-hood-character-area"><img src="./assets/images/events/gray-hood-aquarium.png?v=${VERSION}" alt="灰色パーカー" draggable="false"></div><button type="button" class="event-dialogue-card gray-hood-dialogue glass-panel" data-action="gray-hood-aquarium-next"><small>灰色パーカー</small><strong>${dialogue}</strong><span>タップして進む</span></button></section></main>`;
 }
 
@@ -16839,7 +17050,7 @@ function renderOkachimachiQuiz() {
     }), { back: false, main: false, hideHeader: true });
   }
   return shell('通りすがりのクイズ王', renderQuizLayoutV2Dialogue({
-    name:'通りすがりのクイズ王', characterSrc, dialogue:dialogueByStage[session.stage] || '', nextAction:'okachimachi-quiz-next', eventClass,
+    name:session.stage === 'incorrectAnswer' ? '' : '通りすがりのクイズ王', characterSrc, dialogue:dialogueByStage[session.stage] || '', nextAction:'okachimachi-quiz-next', eventClass,
     answerReveal:session.stage === 'incorrectAnswer',
   }), { back: false, main: false, hideHeader: true });
 }
@@ -16882,7 +17093,7 @@ function renderLooseShopOriginalQuizEvent() {
     }), { back: false, main: false, hideHeader: true });
   }
   return shell(LOOSE_SHOP_ORIGINAL_QUIZ_NAME, renderQuizLayoutV2Dialogue({
-    name:LOOSE_SHOP_ORIGINAL_QUIZ_NAME, characterSrc, dialogue:dialogueByStage[session.stage] || '', nextAction:'loose-shop-original-quiz-next', eventClass,
+    name:session.stage === 'incorrectAnswer' ? '' : LOOSE_SHOP_ORIGINAL_QUIZ_NAME, characterSrc, dialogue:dialogueByStage[session.stage] || '', nextAction:'loose-shop-original-quiz-next', eventClass,
     answerReveal:session.stage === 'incorrectAnswer',
   }), { back: false, main: false, hideHeader: true });
 }
@@ -23866,11 +24077,12 @@ async function executeAccountDeletion() {
     indexedDbSave = null;
     indexedDbStorageReady = false;
     if (stopSessionWatch) { stopSessionWatch(); stopSessionWatch = null; }
-    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    stopSessionHeartbeat();
     clearAllClientAccountData();
     currentUser = null;
     authEntryRequested = false;
     sessionTakenOver = false;
+    sessionClaimed = false;
     sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     closeModal();
     screen = 'login';
@@ -25250,8 +25462,9 @@ async function boot() {
       state = null;
       navigation = [];
       sessionTakenOver = false;
-      if (stopSessionWatch) stopSessionWatch();
-      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      sessionClaimed = false;
+      if (stopSessionWatch) { stopSessionWatch(); stopSessionWatch = null; }
+      stopSessionHeartbeat();
       if (!user) {
         startupSaveReady = false;
         const googleLoginError = takeGoogleLoginError();
@@ -25275,13 +25488,15 @@ async function boot() {
       screen = 'title';
       render();
       try {
-        // v0.10.667: session claim is important for multi-device takeover detection, but the
-        // Firestore write acknowledgement must not block the title screen. The watcher is
-        // installed immediately and the claim continues in the background.
-        void claimSession(user.uid, sessionId)
-          .catch((error) => {
-            console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
-          });
+        // v0.10.826: セッション取得完了前に保存処理へ進むと、Safari/PWA/別タブが
+        // 同時に自分を所有者だと判断できるため、取得結果を確認してから監視を開始する。
+        try {
+          await claimSession(user.uid, sessionId);
+          sessionClaimed = true;
+        } catch (error) {
+          sessionClaimed = false;
+          console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
+        }
         try {
           indexedDbSave = await readIndexedDbSave(user.uid);
           indexedDbStorageReady = true;
@@ -25329,17 +25544,10 @@ async function boot() {
           cloudSave = structuredClone(migratedLocal);
           await persistBootDeviceStateSafely(migratedLocal, '起動時ローカル移行');
         }
-        stopSessionWatch = watchSession(user.uid, sessionId, () => {
-          sessionTakenOver = true;
-          showModal({
-            title: '別の端末でゲームが開始されました',
-            body: '<p>続けるには、この画面を再読み込みしてください。</p>',
-            confirm: '再読み込み',
-            action: 'reload-page',
-            hideCancel: true,
-          });
-        });
-        heartbeatTimer = setInterval(() => heartbeat(user.uid, sessionId), 300000);
+        if (sessionClaimed) {
+          stopSessionWatch = watchSession(user.uid, sessionId, handleSessionTakenOver);
+          startSessionHeartbeat(user);
+        }
         startupSaveReady = true;
         if (phoneGameReturnRequested()) {
           state = loadGame();
@@ -25472,7 +25680,7 @@ document.addEventListener('visibilitychange', () => {
     stopWhiteBunnyEventBgm({ reset: false });
     suspendAudio();
     stopGiftStatusSyncTimer();
-    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    stopSessionHeartbeat();
     return;
   }
   processAutopilotIfDue().catch((error) => console.error(error));
@@ -25495,9 +25703,10 @@ document.addEventListener('visibilitychange', () => {
     const eventState = childhoodFriendEventState();
     if (eventState.active && eventState.stage === 'eating') scheduleChildhoodFriendMealWatchdog(1200);
   }
-  if (currentUser && !needsEmailVerification(currentUser)) {
-    heartbeat(currentUser.uid, sessionId);
-    if (!heartbeatTimer) heartbeatTimer = setInterval(() => heartbeat(currentUser.uid, sessionId), 300000);
+  if (currentUser && !needsEmailVerification(currentUser) && sessionClaimed && !sessionTakenOver) {
+    // v0.10.826: 復帰直後に所有権を確認し、旧画面が新セッションを奪い返さない。
+    void sendSessionHeartbeat(currentUser);
+    startSessionHeartbeat(currentUser);
   }
 });
 

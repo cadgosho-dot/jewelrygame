@@ -90,13 +90,14 @@ required_controller_paths = {
     ),
     '販売価格': (
         'const sellingPricePressHold = createPressHoldController({',
-        "if (sellingPriceButton && !sellingPriceButton.disabled && screen === 'showcaseDetail') sellingPricePressHold.start(sellingPriceButton);",
+        'sellingPricePressHold.start(sellingPriceButton);',
         'sellingPricePressHold.activeButton()',
         'sellingPricePressHold.finish(sellingPriceButton);',
         'sellingPricePressHold.cancel();',
         'sellingPricePressHold.handleClick(button);',
         'holdDelayMs: 420,',
         'repeatMs: 110,',
+        "canContinue: (button) => !button.disabled && screen === 'showcaseDetail',",
     ),
 }
 for label, tokens in required_controller_paths.items():
@@ -130,4 +131,4 @@ if proc.returncode != 0:
 
 print(proc.stdout, end='')
 print('PRESS HOLD INTEGRATION: PASS')
-print('地金・ルース・ディスプレイケース・販売価格の4領域をcontrollerへ分離し、各領域の既存タイミングを維持しています。')
+print('地金・ルース・ディスプレイケース・販売価格の4領域をcontrollerへ分離し、各領域の既存タイミングと販売価格の継続停止条件を維持しています。')

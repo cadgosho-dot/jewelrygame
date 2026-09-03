@@ -51,7 +51,7 @@ jobs:
           git add VERSION README.md CHANGELOG.md GAME_RULES.md ASSETS.md TODO.md EVENT_PROBABILITY_LIST.md \
             auth-cache-recovery.js auth.html game.html hosting-origin-guard.js index.html sw.js \
             js/app.js js/audio.js js/firebase-service.js js/game-data-core.js js/game-data.js js/memories-screen.js \
-            js/runtime/finished-video-cache-warm.js scripts/check-current.py scripts/check-finished-video-cache-warm.py \
-            tools/test-finished-video-cache-warm.mjs
+            js/runtime/finished-video-cache-warm.js scripts/version-sync.py scripts/check-current.py \
+            scripts/check-finished-video-cache-warm.py tools/test-finished-video-cache-warm.mjs
           git commit -m "refactor: extract finished video cache warm runtime (v0.10.855)"
           git push origin HEAD:codex/v0-10-855-extract-finished-video-cache-warm

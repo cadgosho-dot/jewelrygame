@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate quantity press/hold extraction for metal, loose and display-case controls."""
+"""Validate quantity/price press-hold extraction for the four staged control groups."""
 from __future__ import annotations
 
 import subprocess
@@ -49,6 +49,15 @@ legacy_tokens = {
         'function startDisplayCaseHold',
         'function finishDisplayCaseHold',
     ),
+    '販売価格': (
+        'sellingPriceHoldTimeout',
+        'sellingPriceHoldInterval',
+        'sellingPriceHoldButton',
+        'sellingPriceHoldTriggered',
+        'function clearSellingPriceHold',
+        'function startSellingPriceHold',
+        'function finishSellingPriceHold',
+    ),
 }
 for label, tokens in legacy_tokens.items():
     for token in tokens:
@@ -79,6 +88,16 @@ required_controller_paths = {
         'displayCaseQuantityPressHold.finish(caseButton);',
         'displayCaseQuantityPressHold.cancel();',
     ),
+    '販売価格': (
+        'const sellingPricePressHold = createPressHoldController({',
+        "if (sellingPriceButton && !sellingPriceButton.disabled && screen === 'showcaseDetail') sellingPricePressHold.start(sellingPriceButton);",
+        'sellingPricePressHold.activeButton()',
+        'sellingPricePressHold.finish(sellingPriceButton);',
+        'sellingPricePressHold.cancel();',
+        'sellingPricePressHold.handleClick(button);',
+        'holdDelayMs: 420,',
+        'repeatMs: 110,',
+    ),
 }
 for label, tokens in required_controller_paths.items():
     for token in tokens:
@@ -88,10 +107,10 @@ for label, tokens in required_controller_paths.items():
 if app.count('displayCaseQuantityPressHold.handleClick(button);') != 2:
     errors.append('app.js: ケース購入・設置の2系統がcontroller click導線へ揃っていません')
 
-# This phase migrates only the third region. Selling-price remains legacy until
-# its own isolated review.
-if 'function clearSellingPriceHold' not in app:
-    errors.append('app.js: 今回触らない販売価格領域まで変更されています')
+# Tropical-shop hold handling is a separate implementation and is intentionally
+# outside this four-group staged cleanup. Keep it untouched in this release.
+if 'function clearTropicalShopQuantityHold' not in app:
+    errors.append('app.js: 今回対象外の熱帯魚屋数量長押しまで変更されています')
 
 if errors:
     print('PRESS HOLD INTEGRATION: FAIL')
@@ -111,4 +130,4 @@ if proc.returncode != 0:
 
 print(proc.stdout, end='')
 print('PRESS HOLD INTEGRATION: PASS')
-print('地金・ルース・ケースをcontrollerへ分離し、販売価格は未変更のまま維持しています。')
+print('地金・ルース・ディスプレイケース・販売価格の4領域をcontrollerへ分離し、各領域の既存タイミングを維持しています。')

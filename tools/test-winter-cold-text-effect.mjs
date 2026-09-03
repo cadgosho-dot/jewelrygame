@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { createWinterColdTextEffect, winterColdGarbleText } from '../js/ui/winter-cold-text-effect.js';
 
-assert.equal(winterColdGarbleText('A B'), `${winterColdGarbleText('A')} ${winterColdGarbleText('B')}`);
+const spaced = winterColdGarbleText('A B');
+assert.equal(spaced.length, 3);
+assert.equal(spaced[1], ' ', 'whitespace must remain unchanged without resetting the symbol index');
 assert.equal(winterColdGarbleText(''), '');
 assert.equal(winterColdGarbleText('  '), '  ');
 assert.equal(winterColdGarbleText('宝石'), winterColdGarbleText('宝石'), 'garble must be deterministic');

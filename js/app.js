@@ -3,22 +3,22 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.850';
+} from './game-data.js?v=0.10.851';
 
-const UI_BUILD_VERSION = '0.10.850';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.850';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.850';
+const UI_BUILD_VERSION = '0.10.851';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.851';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.851';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.850';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.851';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.850';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.850';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.850';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.850';
+} from './firebase-service.js?v=0.10.851';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.851';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.851';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.851';
 
 
 
@@ -2620,10 +2620,14 @@ const metalQuantityPressHold = createPressHoldController({
   },
 });
 const loosePurchaseDraft = {};
-let looseQuantityHoldTimeout = null;
-let looseQuantityHoldInterval = null;
-let looseQuantityHoldButton = null;
-let looseQuantityHoldTriggered = false;
+const looseQuantityPressHold = createPressHoldController({
+  onTap(button) {
+    adjustLoosePurchaseQuantity(button.dataset.id, button.dataset.shape, button.dataset.delta);
+  },
+  onLongPress(button) {
+    adjustLoosePurchaseQuantityLongPress(button);
+  },
+});
 let displayCasePurchaseDraft = 1;
 let displayCaseInstallDraft = 1;
 let storeScrollRestoreToken = 0;
@@ -3316,37 +3320,6 @@ function restoreLooseShopScrollState(snapshot) {
   });
   window.setTimeout(apply, 80);
   window.setTimeout(apply, 180);
-}
-
-function clearLooseQuantityHold() {
-  if (looseQuantityHoldTimeout) window.clearTimeout(looseQuantityHoldTimeout);
-  if (looseQuantityHoldInterval) window.clearInterval(looseQuantityHoldInterval);
-  looseQuantityHoldTimeout = null;
-  looseQuantityHoldInterval = null;
-  looseQuantityHoldButton?.classList.remove('is-holding');
-  looseQuantityHoldButton = null;
-}
-
-function startLooseQuantityHold(button) {
-  clearLooseQuantityHold();
-  if (!button || button.disabled) return;
-  looseQuantityHoldButton = button;
-  looseQuantityHoldTriggered = false;
-  button.classList.add('is-holding');
-  looseQuantityHoldTimeout = window.setTimeout(() => {
-    looseQuantityHoldTriggered = true;
-    adjustLoosePurchaseQuantityLongPress(button);
-    looseQuantityHoldInterval = window.setInterval(() => {
-      adjustLoosePurchaseQuantityLongPress(button);
-    }, 65);
-  }, 320);
-}
-
-function finishLooseQuantityHold(button) {
-  const held = looseQuantityHoldButton === button && looseQuantityHoldTriggered;
-  clearLooseQuantityHold();
-  looseQuantityHoldTriggered = false;
-  if (held && button) button.dataset.skipNextClick = 'true';
 }
 
 function displayCasePurchaseMaximum() {
@@ -24221,7 +24194,7 @@ root.addEventListener('pointerdown', (event) => {
   }
   const looseButton = event.target.closest('[data-action="loose-qty-step"]');
   if (looseButton && !looseButton.disabled) {
-    startLooseQuantityHold(looseButton);
+    looseQuantityPressHold.start(looseButton);
     return;
   }
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]');
@@ -24241,8 +24214,8 @@ root.addEventListener('pointerdown', (event) => {
 root.addEventListener('pointerup', (event) => {
   const metalButton = event.target.closest('[data-action="metal-qty-step"]') || metalQuantityPressHold.activeButton();
   if (metalButton) metalQuantityPressHold.finish(metalButton);
-  const looseButton = event.target.closest('[data-action="loose-qty-step"]') || looseQuantityHoldButton;
-  if (looseButton) finishLooseQuantityHold(looseButton);
+  const looseButton = event.target.closest('[data-action="loose-qty-step"]') || looseQuantityPressHold.activeButton();
+  if (looseButton) looseQuantityPressHold.finish(looseButton);
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]') || displayCaseHoldButton;
   if (caseButton) finishDisplayCaseHold(caseButton);
   const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
@@ -24253,8 +24226,7 @@ root.addEventListener('pointerup', (event) => {
 
 root.addEventListener('pointercancel', () => {
   metalQuantityPressHold.cancel();
-  clearLooseQuantityHold();
-  looseQuantityHoldTriggered = false;
+  looseQuantityPressHold.cancel();
   clearDisplayCaseHold();
   displayCaseHoldTriggered = false;
   clearSellingPriceHold();
@@ -24269,8 +24241,7 @@ root.addEventListener('contextmenu', (event) => {
 
 window.addEventListener('blur', () => {
   metalQuantityPressHold.cancel();
-  clearLooseQuantityHold();
-  looseQuantityHoldTriggered = false;
+  looseQuantityPressHold.cancel();
   clearDisplayCaseHold();
   displayCaseHoldTriggered = false;
   clearSellingPriceHold();
@@ -24939,11 +24910,7 @@ root.addEventListener('click', async (event) => {
       break;
     case 'metal-qty-max': setMetalTradeQuantity(button.dataset.mode, button.dataset.id, metalTradeMaximum(button.dataset.mode, button.dataset.id)); syncMetalTradeCard(button.dataset.mode, button.dataset.id); break;
     case 'loose-qty-step':
-      if (button.dataset.skipNextClick === 'true') {
-        delete button.dataset.skipNextClick;
-        break;
-      }
-      adjustLoosePurchaseQuantity(button.dataset.id, button.dataset.shape, button.dataset.delta);
+      looseQuantityPressHold.handleClick(button);
       break;
     case 'display-case-qty-step':
       if (button.dataset.skipNextClick === 'true') {

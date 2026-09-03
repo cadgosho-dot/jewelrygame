@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the first quantity press/hold extraction: metal controls only."""
+"""Validate quantity press/hold extraction for metal and loose controls."""
 from __future__ import annotations
 
 import subprocess
@@ -21,34 +21,57 @@ if f"./js/ui/press-hold-controller.js?v={version}" not in sw:
 if not module_path.is_file():
     errors.append('js/ui/press-hold-controller.js がありません')
 
-for token in (
-    'metalQuantityHoldTimeout',
-    'metalQuantityHoldInterval',
-    'metalQuantityHoldButton',
-    'metalQuantityHoldTriggered',
-    'function clearMetalQuantityHold',
-    'function startMetalQuantityHold',
-    'function finishMetalQuantityHold',
-):
-    if token in app:
-        errors.append(f'app.js: 地金の旧長押し状態/関数が残っています: {token}')
+legacy_tokens = {
+    '地金': (
+        'metalQuantityHoldTimeout',
+        'metalQuantityHoldInterval',
+        'metalQuantityHoldButton',
+        'metalQuantityHoldTriggered',
+        'function clearMetalQuantityHold',
+        'function startMetalQuantityHold',
+        'function finishMetalQuantityHold',
+    ),
+    'ルース': (
+        'looseQuantityHoldTimeout',
+        'looseQuantityHoldInterval',
+        'looseQuantityHoldButton',
+        'looseQuantityHoldTriggered',
+        'function clearLooseQuantityHold',
+        'function startLooseQuantityHold',
+        'function finishLooseQuantityHold',
+    ),
+}
+for label, tokens in legacy_tokens.items():
+    for token in tokens:
+        if token in app:
+            errors.append(f'app.js: {label}の旧長押し状態/関数が残っています: {token}')
 
-required_metal = (
-    'const metalQuantityPressHold = createPressHoldController({',
-    'metalQuantityPressHold.start(metalButton);',
-    'metalQuantityPressHold.activeButton()',
-    'metalQuantityPressHold.finish(metalButton);',
-    'metalQuantityPressHold.cancel();',
-    'metalQuantityPressHold.handleClick(button);',
-)
-for token in required_metal:
-    if token not in app:
-        errors.append(f'app.js: 地金controller導線が不足しています: {token}')
+required_controller_paths = {
+    '地金': (
+        'const metalQuantityPressHold = createPressHoldController({',
+        'metalQuantityPressHold.start(metalButton);',
+        'metalQuantityPressHold.activeButton()',
+        'metalQuantityPressHold.finish(metalButton);',
+        'metalQuantityPressHold.cancel();',
+        'metalQuantityPressHold.handleClick(button);',
+    ),
+    'ルース': (
+        'const looseQuantityPressHold = createPressHoldController({',
+        'looseQuantityPressHold.start(looseButton);',
+        'looseQuantityPressHold.activeButton()',
+        'looseQuantityPressHold.finish(looseButton);',
+        'looseQuantityPressHold.cancel();',
+        'looseQuantityPressHold.handleClick(button);',
+    ),
+}
+for label, tokens in required_controller_paths.items():
+    for token in tokens:
+        if token not in app:
+            errors.append(f'app.js: {label}controller導線が不足しています: {token}')
 
-# Phase 2 is deliberately one region only. These three legacy groups must remain
-# until separately reviewed, preventing an accidental broad migration.
+# This phase migrates only the second region. Display-case and selling-price
+# groups deliberately remain legacy until their own isolated review.
 for token in (
-    'function clearLooseQuantityHold',
     'function clearDisplayCaseHold',
     'function clearSellingPriceHold',
 ):
@@ -73,4 +96,4 @@ if proc.returncode != 0:
 
 print(proc.stdout, end='')
 print('PRESS HOLD INTEGRATION: PASS')
-print('地金だけをcontrollerへ分離し、他3領域を未変更のまま維持しています。')
+print('地金・ルースをcontrollerへ分離し、ケース・販売価格は未変更のまま維持しています。')

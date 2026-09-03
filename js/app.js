@@ -3,22 +3,22 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.851';
+} from './game-data.js?v=0.10.852';
 
-const UI_BUILD_VERSION = '0.10.851';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.851';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.851';
+const UI_BUILD_VERSION = '0.10.852';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.852';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.852';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.851';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.852';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.851';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.851';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.851';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.851';
+} from './firebase-service.js?v=0.10.852';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.852';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.852';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.852';
 
 
 
@@ -2630,11 +2630,21 @@ const looseQuantityPressHold = createPressHoldController({
 });
 let displayCasePurchaseDraft = 1;
 let displayCaseInstallDraft = 1;
+const displayCaseQuantityPressHold = createPressHoldController({
+  onTap(button) {
+    if (button.dataset.action === 'display-case-qty-step') {
+      adjustDisplayCasePurchaseQuantity(button.dataset.delta);
+      return;
+    }
+    if (button.dataset.action === 'store-case-install-qty-step') {
+      adjustDisplayCaseInstallQuantity(button.dataset.delta);
+    }
+  },
+  onLongPress(button) {
+    adjustDisplayCaseQuantityLongPress(button);
+  },
+});
 let storeScrollRestoreToken = 0;
-let displayCaseHoldTimeout = null;
-let displayCaseHoldInterval = null;
-let displayCaseHoldButton = null;
-let displayCaseHoldTriggered = false;
 let sellingPriceHoldTimeout = null;
 let sellingPriceHoldInterval = null;
 let sellingPriceHoldButton = null;
@@ -3415,36 +3425,8 @@ function adjustDisplayCaseQuantityFromButton(button) {
   adjustDisplayCasePurchaseQuantity(button?.dataset?.delta);
 }
 
-function clearDisplayCaseHold() {
-  if (displayCaseHoldTimeout) window.clearTimeout(displayCaseHoldTimeout);
-  if (displayCaseHoldInterval) window.clearInterval(displayCaseHoldInterval);
-  displayCaseHoldTimeout = null;
-  displayCaseHoldInterval = null;
-  displayCaseHoldButton?.classList.remove('is-holding');
-  displayCaseHoldButton = null;
-}
 
-function startDisplayCaseHold(button) {
-  clearDisplayCaseHold();
-  if (!button || button.disabled) return;
-  displayCaseHoldButton = button;
-  displayCaseHoldTriggered = false;
-  button.classList.add('is-holding');
-  displayCaseHoldTimeout = window.setTimeout(() => {
-    displayCaseHoldTriggered = true;
-    adjustDisplayCaseQuantityLongPress(button);
-    displayCaseHoldInterval = window.setInterval(() => {
-      adjustDisplayCaseQuantityLongPress(button);
-    }, 65);
-  }, 320);
-}
 
-function finishDisplayCaseHold(button) {
-  const held = displayCaseHoldButton === button && displayCaseHoldTriggered;
-  clearDisplayCaseHold();
-  displayCaseHoldTriggered = false;
-  if (held && button) button.dataset.skipNextClick = 'true';
-}
 
 const PHONE_GAME_URL = 'https://cadgosho-dot.github.io/glab-gem-game/g-lab-gem-game-github-pages/';
 const PHONE_GAME_RETURN_KEY = `${SAVE_KEY}-phone-game-return`;
@@ -24199,7 +24181,7 @@ root.addEventListener('pointerdown', (event) => {
   }
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]');
   if (caseButton && !caseButton.disabled) {
-    startDisplayCaseHold(caseButton);
+    displayCaseQuantityPressHold.start(caseButton);
     return;
   }
   const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
@@ -24216,8 +24198,8 @@ root.addEventListener('pointerup', (event) => {
   if (metalButton) metalQuantityPressHold.finish(metalButton);
   const looseButton = event.target.closest('[data-action="loose-qty-step"]') || looseQuantityPressHold.activeButton();
   if (looseButton) looseQuantityPressHold.finish(looseButton);
-  const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]') || displayCaseHoldButton;
-  if (caseButton) finishDisplayCaseHold(caseButton);
+  const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]') || displayCaseQuantityPressHold.activeButton();
+  if (caseButton) displayCaseQuantityPressHold.finish(caseButton);
   const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
   if (tropicalButton) finishTropicalShopQuantityHold(tropicalButton);
   const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]') || sellingPriceHoldButton;
@@ -24227,8 +24209,7 @@ root.addEventListener('pointerup', (event) => {
 root.addEventListener('pointercancel', () => {
   metalQuantityPressHold.cancel();
   looseQuantityPressHold.cancel();
-  clearDisplayCaseHold();
-  displayCaseHoldTriggered = false;
+  displayCaseQuantityPressHold.cancel();
   clearSellingPriceHold();
   sellingPriceHoldTriggered = false;
   clearTropicalShopQuantityHold();
@@ -24242,8 +24223,7 @@ root.addEventListener('contextmenu', (event) => {
 window.addEventListener('blur', () => {
   metalQuantityPressHold.cancel();
   looseQuantityPressHold.cancel();
-  clearDisplayCaseHold();
-  displayCaseHoldTriggered = false;
+  displayCaseQuantityPressHold.cancel();
   clearSellingPriceHold();
   sellingPriceHoldTriggered = false;
   clearTropicalShopQuantityHold();
@@ -24913,18 +24893,10 @@ root.addEventListener('click', async (event) => {
       looseQuantityPressHold.handleClick(button);
       break;
     case 'display-case-qty-step':
-      if (button.dataset.skipNextClick === 'true') {
-        delete button.dataset.skipNextClick;
-        break;
-      }
-      adjustDisplayCasePurchaseQuantity(button.dataset.delta);
+      displayCaseQuantityPressHold.handleClick(button);
       break;
     case 'store-case-install-qty-step':
-      if (button.dataset.skipNextClick === 'true') {
-        delete button.dataset.skipNextClick;
-        break;
-      }
-      adjustDisplayCaseInstallQuantity(button.dataset.delta);
+      displayCaseQuantityPressHold.handleClick(button);
       break;
     case 'buy-metal': buyMetal(button.dataset.id); break;
     case 'sell-metal': sellMetal(button.dataset.id); break;

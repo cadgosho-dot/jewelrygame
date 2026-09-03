@@ -1,8 +1,15 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.854** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.855** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
+
+## v0.10.855
+- `js/app.js` 冒頭に直書きされていた「イベント動画再生終了後のキャッシュウォーム処理」を `js/runtime/finished-video-cache-warm.js` へ分離。
+- 従来どおり HTMLVideoElement のみ、`/assets/videos/` のみを対象とし、`fetch(..., { cache: 'force-cache', credentials: 'same-origin' })` を維持。
+- `requestIdleCallback` 使用時の2500ms timeout、未対応端末の0ms `setTimeout` fallback、`ended` イベントのcapture監視を維持。
+- 新runtime moduleを `version-sync.py` とService Worker必須キャッシュへ登録し、今後のVERSION更新でも同期対象に固定。
+- ゲーム状態、セーブ、在庫、金額、イベント発生条件、動画再生開始/停止制御には変更なし。
 
 ## v0.10.854
 - 熱帯魚屋の数量▲▼ボタンのタップ／長押しライフサイクルを `js/ui/press-hold-controller.js` へ移行。

@@ -1,5 +1,5 @@
 // Shared press/hold lifecycle for the staged quantity and selling-price step controls.
-// The four targeted groups share lifecycle management while keeping each group's timing and adjustment behavior.
+// Target groups share lifecycle management while keeping each group's timing and adjustment behavior.
 export function createPressHoldController({
   onTap,
   onLongPress,
@@ -24,7 +24,7 @@ export function createPressHoldController({
     if (holdInterval) timers.clearInterval(holdInterval);
     holdTimeout = null;
     holdInterval = null;
-    holdButton?.classList.remove(holdingClass);
+    if (holdingClass) holdButton?.classList.remove(holdingClass);
     holdButton = null;
   }
 
@@ -49,7 +49,7 @@ export function createPressHoldController({
     if (!button || button.disabled || !continuationAllowed(button)) return false;
     holdButton = button;
     holdTriggered = false;
-    button.classList.add(holdingClass);
+    if (holdingClass) button.classList.add(holdingClass);
     holdTimeout = timers.setTimeout(() => {
       if (stopIfContinuationBlocked(button)) return;
       holdTriggered = true;

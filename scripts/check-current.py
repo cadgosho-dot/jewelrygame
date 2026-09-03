@@ -32,6 +32,7 @@ CHECKS = [
     ('ショーケース画像', [sys.executable, str(ROOT / 'scripts/check-showcase-jewelry-visuals.py')]),
     ('完成画面縦余白', [sys.executable, str(ROOT / 'scripts/check-completion-portrait-header-clearance.py')]),
     ('見習い映画館中央配置', [sys.executable, str(ROOT / 'scripts/check-apprentice-cinema-center.py')]),
+    ('エメラルド班班長報酬タップ', [sys.executable, str(ROOT / 'scripts/check-emerald-captain-reward-tap.py')]),
     ('イベント構造整合', [sys.executable, str(ROOT / 'scripts/check-event-integrity.py')]),
     ('イベント保存往復', [sys.executable, str(ROOT / 'scripts/check-event-save-roundtrip.py')]),
     ('食事・クイズ復旧', [sys.executable, str(ROOT / 'scripts/check-meal-quiz-recovery.py')]),

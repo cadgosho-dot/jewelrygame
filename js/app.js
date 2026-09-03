@@ -3,20 +3,20 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.844';
+} from './game-data.js?v=0.10.848';
 
-const UI_BUILD_VERSION = '0.10.844';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.844';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.844';
+const UI_BUILD_VERSION = '0.10.848';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.848';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.848';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.844';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.848';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.844';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.844';
+} from './firebase-service.js?v=0.10.848';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.848';
 
 
 
@@ -16465,6 +16465,10 @@ async function advanceEmeraldCaptainKebabEvent() {
     saveGame();
     playSfx('emerald-captain-purchase', { gain: 0.92, rate: 1.0 });
     render();
+    // v0.10.847: エメラルド画像のタップ成功後は、購入結果表示で止まらず
+    // 必ず次の会話シーン（purchase）へ進むタイマーをここでも開始する。
+    // render側にも同じ復旧経路があり、schedule関数が既存タイマーを置換するため二重進行しない。
+    scheduleEmeraldCaptainPurchaseDialogue(1200);
     return;
   }
   if (eventState.stage === 'purchaseResult') {
@@ -16497,6 +16501,73 @@ async function advanceEmeraldCaptainKebabEvent() {
     await startEmeraldCaptainKebabMeal();
   }
 }
+
+
+// v0.10.846: エメラルド班班長 — Android/WebViewで報酬画像のタップがclickへ変換されない場合の直通経路。
+// v0.10.753の互換clickは残しつつ、showcase段階だけ pointerup / touchend から購入処理へ直接進める。
+// 段階判定を先に行うため、両経路が同じ操作で発火しても二重購入にはならない。
+let emeraldCaptainRewardDirectTapAt = 0;
+let emeraldCaptainRewardDirectTapBusy = false;
+
+function emeraldCaptainRewardButtonFromInputEvent(event) {
+  const selector = 'body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button';
+  const path = typeof event?.composedPath === 'function' ? event.composedPath() : [];
+  for (const node of path) {
+    if (node instanceof Element && node.matches?.(selector)) return node;
+    if (node instanceof Element) {
+      const closest = node.closest?.(selector);
+      if (closest) return closest;
+    }
+  }
+  const direct = event?.target instanceof Element ? event.target.closest(selector) : null;
+  if (direct) return direct;
+
+  const button = document.querySelector(selector);
+  if (!(button instanceof HTMLButtonElement)) return null;
+  const point = event?.changedTouches?.[0] || event?.touches?.[0] || event;
+  const x = Number(point?.clientX);
+  const y = Number(point?.clientY);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  // 一部WebViewでは画像上のtouch targetが親buttonから外れることがあるため、
+  // 実ボタンと画像の見た目の両方を小さな余裕付きで当たり判定する。
+  const rects = [button.getBoundingClientRect()];
+  const image = button.querySelector('img');
+  if (image instanceof HTMLImageElement) rects.push(image.getBoundingClientRect());
+  const hitPadding = 18;
+  const hit = rects.some((rect) => x >= rect.left - hitPadding && x <= rect.right + hitPadding
+    && y >= rect.top - hitPadding && y <= rect.bottom + hitPadding);
+  return hit ? button : null;
+}
+
+function activateEmeraldCaptainRewardFromDirectTouch(event) {
+  if (!state || screen !== 'emeraldCaptainKebabEvent') return;
+  const pointerType = String(event?.pointerType || '');
+  if (event?.type === 'pointerup' && pointerType === 'mouse') return;
+  const eventState = emeraldCaptainKebabEventState();
+  if (!eventState.active || eventState.stage !== 'showcase') return;
+  const button = emeraldCaptainRewardButtonFromInputEvent(event);
+  if (!button || button.disabled) return;
+
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  if (emeraldCaptainRewardDirectTapBusy || now - emeraldCaptainRewardDirectTapAt < 450) return;
+  emeraldCaptainRewardDirectTapAt = now;
+  emeraldCaptainRewardDirectTapBusy = true;
+  if (event.cancelable) event.preventDefault();
+  event.stopPropagation?.();
+
+  Promise.resolve(advanceEmeraldCaptainKebabEvent())
+    .catch((error) => {
+      console.error('エメラルド班班長イベント報酬タップ処理エラー', error);
+      showToast('エメラルドの購入処理を再試行してください。', 'warning');
+    })
+    .finally(() => {
+      emeraldCaptainRewardDirectTapBusy = false;
+    });
+}
+
+document.addEventListener('pointerup', activateEmeraldCaptainRewardFromDirectTouch, true);
+document.addEventListener('touchend', activateEmeraldCaptainRewardFromDirectTouch, { capture: true, passive: false });
 
 function renderEmeraldCaptainKebabEvent() {
   const eventState = emeraldCaptainKebabEventState();

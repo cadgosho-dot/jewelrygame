@@ -3,21 +3,22 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.849';
+} from './game-data.js?v=0.10.850';
 
-const UI_BUILD_VERSION = '0.10.849';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.849';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.849';
+const UI_BUILD_VERSION = '0.10.850';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.850';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.850';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.849';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.850';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.849';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.849';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.849';
+} from './firebase-service.js?v=0.10.850';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.850';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.850';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.850';
 
 
 
@@ -2610,10 +2611,14 @@ let metalMarket = {
   sellPerGramByMetalId: { ...METAL_MARKET_FALLBACK.sellPerGramByMetalId },
 };
 const metalTradeDraft = { buy: {}, sell: {} };
-let metalQuantityHoldTimeout = null;
-let metalQuantityHoldInterval = null;
-let metalQuantityHoldButton = null;
-let metalQuantityHoldTriggered = false;
+const metalQuantityPressHold = createPressHoldController({
+  onTap(button) {
+    adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
+  },
+  onLongPress(button) {
+    adjustMetalTradeQuantityLongPress(button);
+  },
+});
 const loosePurchaseDraft = {};
 let looseQuantityHoldTimeout = null;
 let looseQuantityHoldInterval = null;
@@ -3215,37 +3220,6 @@ function adjustMetalTradeQuantity(mode, id, delta) {
   const current = metalTradeQuantity(mode, id);
   setMetalTradeQuantity(mode, id, current + Number(delta || 0));
   syncMetalTradeCard(mode, id);
-}
-
-function clearMetalQuantityHold() {
-  if (metalQuantityHoldTimeout) window.clearTimeout(metalQuantityHoldTimeout);
-  if (metalQuantityHoldInterval) window.clearInterval(metalQuantityHoldInterval);
-  metalQuantityHoldTimeout = null;
-  metalQuantityHoldInterval = null;
-  metalQuantityHoldButton?.classList.remove('is-holding');
-  metalQuantityHoldButton = null;
-}
-
-function startMetalQuantityHold(button) {
-  clearMetalQuantityHold();
-  if (!button || button.disabled) return;
-  metalQuantityHoldButton = button;
-  metalQuantityHoldTriggered = false;
-  button.classList.add('is-holding');
-  metalQuantityHoldTimeout = window.setTimeout(() => {
-    metalQuantityHoldTriggered = true;
-    adjustMetalTradeQuantityLongPress(button);
-    metalQuantityHoldInterval = window.setInterval(() => {
-      adjustMetalTradeQuantityLongPress(button);
-    }, 65);
-  }, 320);
-}
-
-function finishMetalQuantityHold(button) {
-  const held = metalQuantityHoldButton === button && metalQuantityHoldTriggered;
-  clearMetalQuantityHold();
-  metalQuantityHoldTriggered = false;
-  if (held && button) button.dataset.skipNextClick = 'true';
 }
 
 function loosePurchaseDraftKey(id, shapeId = '') {
@@ -24242,7 +24216,7 @@ async function executeAccountDeletion() {
 root.addEventListener('pointerdown', (event) => {
   const metalButton = event.target.closest('[data-action="metal-qty-step"]');
   if (metalButton && !metalButton.disabled) {
-    startMetalQuantityHold(metalButton);
+    metalQuantityPressHold.start(metalButton);
     return;
   }
   const looseButton = event.target.closest('[data-action="loose-qty-step"]');
@@ -24265,8 +24239,8 @@ root.addEventListener('pointerdown', (event) => {
 });
 
 root.addEventListener('pointerup', (event) => {
-  const metalButton = event.target.closest('[data-action="metal-qty-step"]') || metalQuantityHoldButton;
-  if (metalButton) finishMetalQuantityHold(metalButton);
+  const metalButton = event.target.closest('[data-action="metal-qty-step"]') || metalQuantityPressHold.activeButton();
+  if (metalButton) metalQuantityPressHold.finish(metalButton);
   const looseButton = event.target.closest('[data-action="loose-qty-step"]') || looseQuantityHoldButton;
   if (looseButton) finishLooseQuantityHold(looseButton);
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]') || displayCaseHoldButton;
@@ -24278,8 +24252,7 @@ root.addEventListener('pointerup', (event) => {
 });
 
 root.addEventListener('pointercancel', () => {
-  clearMetalQuantityHold();
-  metalQuantityHoldTriggered = false;
+  metalQuantityPressHold.cancel();
   clearLooseQuantityHold();
   looseQuantityHoldTriggered = false;
   clearDisplayCaseHold();
@@ -24295,8 +24268,7 @@ root.addEventListener('contextmenu', (event) => {
 });
 
 window.addEventListener('blur', () => {
-  clearMetalQuantityHold();
-  metalQuantityHoldTriggered = false;
+  metalQuantityPressHold.cancel();
   clearLooseQuantityHold();
   looseQuantityHoldTriggered = false;
   clearDisplayCaseHold();
@@ -24963,11 +24935,7 @@ root.addEventListener('click', async (event) => {
       break;
     }
     case 'metal-qty-step':
-      if (button.dataset.skipNextClick === 'true') {
-        delete button.dataset.skipNextClick;
-        break;
-      }
-      adjustMetalTradeQuantity(button.dataset.mode, button.dataset.id, button.dataset.delta);
+      metalQuantityPressHold.handleClick(button);
       break;
     case 'metal-qty-max': setMetalTradeQuantity(button.dataset.mode, button.dataset.id, metalTradeMaximum(button.dataset.mode, button.dataset.id)); syncMetalTradeCard(button.dataset.mode, button.dataset.id); break;
     case 'loose-qty-step':

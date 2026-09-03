@@ -1,0 +1,72 @@
+name: Apply v0.10.848 cumulative fixes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-v0.10.848.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply v0.10.848 patch
+        run: python3 scripts/apply-v0.10.848.py
+
+      - name: Verify cumulative fixes
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-completion-portrait-header-clearance.py
+          python3 scripts/check-emerald-captain-reward-tap.py
+          rm -rf /tmp/jxj-site-848
+          mkdir -p /tmp/jxj-site-848
+          rsync -a ./ /tmp/jxj-site-848/ \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='_site/' \
+            --exclude='scripts/' \
+            --exclude='/tools/' \
+            --exclude='docs/' \
+            --exclude='*.md' \
+            --exclude='.firebaserc' \
+            --exclude='.gitignore' \
+            --exclude='firebase.json' \
+            --exclude='firestore.rules' \
+            --exclude='HANDOFF_MANDATORY_REGRESSION_RULES.txt' \
+            --exclude='quiz-layout-test.html'
+          python3 - <<'PY'
+          from pathlib import Path
+          expected = [
+              'bench-peg.png','buffer.png','diamond-polishing-lap.png','dividers.png',
+              'electronic-scale.png','engraving-block.png','file.png','gem-polishing-machine.png',
+              'graver.png','hammer.png','jewelry-bench.png','loupe.png','magnifier.png',
+              'milgrain-tool.png','nipper.png','piercing-saw.png','pliers.png','rolling-mill.png',
+              'rotary-tool.png','stamps.png','torch.png','ultrasonic-cleaner.png','wood-block.png',
+          ]
+          root = Path('/tmp/jxj-site-848/assets/images/tools')
+          missing = [name for name in expected if not (root / name).is_file()]
+          if missing:
+              raise SystemExit('Pages tool images missing: ' + ', '.join(missing))
+          print('Pages tool images: 23/23 PASS')
+          PY
+
+      - name: Commit and push v0.10.848
+        run: |
+          rm -f scripts/apply-v0.10.848.py .github/workflows/apply-v0.10.848.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Integrate cumulative fixes v0.10.848'
+          git pull --rebase origin main
+          git push origin HEAD:main

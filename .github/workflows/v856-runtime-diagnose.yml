@@ -1,0 +1,30 @@
+name: v0.10.856 次の小領域診断
+
+on:
+  push:
+    branches:
+      - codex/v0-10-856-next-small-runtime
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 検証ブランチを取得
+        uses: actions/checkout@v6
+        with:
+          ref: codex/v0-10-856-next-small-runtime
+          fetch-depth: 1
+
+      - name: app.js 冒頭の独立候補を表示
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          lines = Path('js/app.js').read_text(encoding='utf-8').splitlines()
+          for i, line in enumerate(lines[:320], 1):
+              print(f'{i:04d}: {line}')
+          PY

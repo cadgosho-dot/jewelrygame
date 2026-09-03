@@ -18,6 +18,7 @@ CHECKS = [
     ('PWAキャッシュ更新', [sys.executable, str(ROOT / 'scripts/check-pwa-cache-policy.py')]),
     ('遅延ロード管理', [sys.executable, str(ROOT / 'scripts/check-lazy-module-loading.py')]),
     ('終了動画キャッシュ管理', [sys.executable, str(ROOT / 'scripts/check-finished-video-cache-warm.py')]),
+    ('冬の体調不良文字効果', [sys.executable, str(ROOT / 'scripts/check-winter-cold-text-effect.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),

@@ -1,8 +1,15 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.855** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.856** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
+
+## v0.10.856
+- 冬の体調不良中に画面テキストを文字化けさせるDOM表示処理を `js/ui/winter-cold-text-effect.js` へ分離。
+- 文字列変換、元文字/属性の復元、読める操作ボタンの除外、MutationObserver監視、microtaskの重複抑止を従来どおり維持。
+- 体調不良の有効判定は `isActive` callbackとして `app.js` から注入し、新UI moduleはゲーム状態・イベント状態・セーブデータを一切保持しない構造に変更。
+- 新UI moduleをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+- 風邪イベントの発生条件、発生率、療養日数、就寝、誕生日/支払い競合復旧、セーブ、在庫、金額には変更なし。
 
 ## v0.10.855
 - `js/app.js` 冒頭に直書きされていた「イベント動画再生終了後のキャッシュウォーム処理」を `js/runtime/finished-video-cache-warm.js` へ分離。

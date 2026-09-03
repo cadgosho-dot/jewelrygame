@@ -3,22 +3,22 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.852';
+} from './game-data.js?v=0.10.853';
 
-const UI_BUILD_VERSION = '0.10.852';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.852';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.852';
+const UI_BUILD_VERSION = '0.10.853';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.853';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.853';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.852';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.853';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.852';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.852';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.852';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.852';
+} from './firebase-service.js?v=0.10.853';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.853';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.853';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.853';
 
 
 
@@ -2645,10 +2645,25 @@ const displayCaseQuantityPressHold = createPressHoldController({
   },
 });
 let storeScrollRestoreToken = 0;
-let sellingPriceHoldTimeout = null;
-let sellingPriceHoldInterval = null;
-let sellingPriceHoldButton = null;
-let sellingPriceHoldTriggered = false;
+const sellingPricePressHold = createPressHoldController({
+  onTap(button) {
+    if (!adjustShowcaseSellingPrice(button)) {
+      const branch = button.dataset.branch
+        ? state.store.branches?.find((entry) => entry.id === button.dataset.branch)
+        : currentStoreBranch();
+      const showcaseIndex = Number(button.dataset.showcase);
+      const slotIndex = Number(button.dataset.slot);
+      const slot = branchShowcases(branch)?.[showcaseIndex]?.slots?.[slotIndex];
+      if (!slot) showToast('販売価格を変更する商品が見つかりません。', 'error');
+    }
+  },
+  onLongPress(button) {
+    adjustShowcaseSellingPrice(button);
+  },
+  holdDelayMs: 420,
+  repeatMs: 110,
+  canContinue: (button) => !button.disabled && screen === 'showcaseDetail',
+});
 let phoneHomeImageDraft = '';
 
 function validPositivePrice(value) {
@@ -19276,44 +19291,8 @@ function adjustShowcaseSellingPrice(button) {
   return true;
 }
 
-function clearSellingPriceHold() {
-  if (sellingPriceHoldTimeout) window.clearTimeout(sellingPriceHoldTimeout);
-  if (sellingPriceHoldInterval) window.clearInterval(sellingPriceHoldInterval);
-  sellingPriceHoldTimeout = null;
-  sellingPriceHoldInterval = null;
-  sellingPriceHoldButton?.classList.remove('is-holding');
-  sellingPriceHoldButton = null;
-}
 
-function startSellingPriceHold(button) {
-  clearSellingPriceHold();
-  if (!button || button.disabled || screen !== 'showcaseDetail') return;
-  sellingPriceHoldButton = button;
-  sellingPriceHoldTriggered = false;
-  button.classList.add('is-holding');
-  sellingPriceHoldTimeout = window.setTimeout(() => {
-    if (sellingPriceHoldButton !== button || button.disabled || screen !== 'showcaseDetail') {
-      clearSellingPriceHold();
-      return;
-    }
-    sellingPriceHoldTriggered = true;
-    adjustShowcaseSellingPrice(button);
-    sellingPriceHoldInterval = window.setInterval(() => {
-      if (sellingPriceHoldButton !== button || button.disabled || screen !== 'showcaseDetail') {
-        clearSellingPriceHold();
-        return;
-      }
-      adjustShowcaseSellingPrice(button);
-    }, 110);
-  }, 420);
-}
 
-function finishSellingPriceHold(button) {
-  const held = sellingPriceHoldButton === button && sellingPriceHoldTriggered;
-  clearSellingPriceHold();
-  sellingPriceHoldTriggered = false;
-  if (held && button) button.dataset.skipNextClick = 'true';
-}
 
 function customerPreferenceLabel(request) {
   const preference = request?.preference || { type: 'gem', value: request?.gem };
@@ -24190,7 +24169,7 @@ root.addEventListener('pointerdown', (event) => {
     return;
   }
   const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]');
-  if (sellingPriceButton && !sellingPriceButton.disabled) startSellingPriceHold(sellingPriceButton);
+  if (sellingPriceButton && !sellingPriceButton.disabled) sellingPricePressHold.start(sellingPriceButton);
 });
 
 root.addEventListener('pointerup', (event) => {
@@ -24202,16 +24181,15 @@ root.addEventListener('pointerup', (event) => {
   if (caseButton) displayCaseQuantityPressHold.finish(caseButton);
   const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
   if (tropicalButton) finishTropicalShopQuantityHold(tropicalButton);
-  const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]') || sellingPriceHoldButton;
-  if (sellingPriceButton) finishSellingPriceHold(sellingPriceButton);
+  const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]') || sellingPricePressHold.activeButton();
+  if (sellingPriceButton) sellingPricePressHold.finish(sellingPriceButton);
 });
 
 root.addEventListener('pointercancel', () => {
   metalQuantityPressHold.cancel();
   looseQuantityPressHold.cancel();
   displayCaseQuantityPressHold.cancel();
-  clearSellingPriceHold();
-  sellingPriceHoldTriggered = false;
+  sellingPricePressHold.cancel();
   clearTropicalShopQuantityHold();
   tropicalShopQuantityHoldTriggered = false;
 });
@@ -24224,8 +24202,7 @@ window.addEventListener('blur', () => {
   metalQuantityPressHold.cancel();
   looseQuantityPressHold.cancel();
   displayCaseQuantityPressHold.cancel();
-  clearSellingPriceHold();
-  sellingPriceHoldTriggered = false;
+  sellingPricePressHold.cancel();
   clearTropicalShopQuantityHold();
   tropicalShopQuantityHoldTriggered = false;
 });
@@ -25018,19 +24995,7 @@ root.addEventListener('click', async (event) => {
     case 'place-item-in-slot': placeItemInShowcaseSlot(button.dataset.id, button.dataset.branch, Number(button.dataset.showcase), Number(button.dataset.slot)); break;
     case 'open-showcase-detail': setScreen('showcaseDetail', { branchId: button.dataset.branch, showcaseIndex: Number(button.dataset.showcase), slotIndex: Number(button.dataset.slot) }); break;
     case 'selling-price-step': {
-      if (button.dataset.skipNextClick === 'true') {
-        delete button.dataset.skipNextClick;
-        break;
-      }
-      if (!adjustShowcaseSellingPrice(button)) {
-        const branch = button.dataset.branch
-          ? state.store.branches?.find((entry) => entry.id === button.dataset.branch)
-          : currentStoreBranch();
-        const showcaseIndex = Number(button.dataset.showcase);
-        const slotIndex = Number(button.dataset.slot);
-        const slot = branchShowcases(branch)?.[showcaseIndex]?.slots?.[slotIndex];
-        if (!slot) showToast('販売価格を変更する商品が見つかりません。', 'error');
-      }
+      sellingPricePressHold.handleClick(button);
       break;
     }
     case 'selling-price-confirm': {

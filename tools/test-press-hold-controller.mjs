@@ -70,5 +70,34 @@ assert.equal(controller.start(disabled), false);
 assert.equal(controller.activeButton(), null);
 assert.deepEqual(timers.counts(), { timeouts: 0, intervals: 0 });
 
+const sellingTimers = fakeTimers();
+let sellingHolds = 0;
+let sellingActive = true;
+const sellingController = createPressHoldController({
+  onTap: () => {},
+  onLongPress: () => { sellingHolds += 1; },
+  holdDelayMs: 420,
+  repeatMs: 110,
+  canContinue: () => sellingActive,
+  timers: sellingTimers.api,
+});
+const sellingButton = fakeButton();
+assert.equal(sellingController.start(sellingButton), true);
+assert.equal(sellingTimers.fireTimeout(), 420);
+assert.equal(sellingHolds, 1);
+assert.equal(sellingTimers.fireInterval(), 110);
+assert.equal(sellingHolds, 2);
+sellingActive = false;
+assert.equal(sellingTimers.fireInterval(), 110);
+assert.equal(sellingHolds, 2);
+assert.deepEqual(sellingTimers.counts(), { timeouts: 0, intervals: 0 });
+assert.equal(sellingController.activeButton(), null);
+assert.equal(sellingButton.classList.contains('is-holding'), false);
+assert.equal(sellingController.finish(sellingButton), false);
+
+const blockedSellingButton = fakeButton();
+assert.equal(sellingController.start(blockedSellingButton), false);
+assert.equal(blockedSellingButton.classList.contains('is-holding'), false);
+
 console.log('PRESS HOLD CONTROLLER: PASS');
-console.log('320ms開始・65ms反復・長押し後クリック抑止・cancel・disabledを確認しました。');
+console.log('標準320ms/65ms、販売価格420ms/110ms、継続条件停止、長押し後クリック抑止・cancel・disabledを確認しました。');

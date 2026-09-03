@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate quantity press/hold extraction for metal and loose controls."""
+"""Validate quantity press/hold extraction for metal, loose and display-case controls."""
 from __future__ import annotations
 
 import subprocess
@@ -40,6 +40,15 @@ legacy_tokens = {
         'function startLooseQuantityHold',
         'function finishLooseQuantityHold',
     ),
+    'ディスプレイケース': (
+        'displayCaseHoldTimeout',
+        'displayCaseHoldInterval',
+        'displayCaseHoldButton',
+        'displayCaseHoldTriggered',
+        'function clearDisplayCaseHold',
+        'function startDisplayCaseHold',
+        'function finishDisplayCaseHold',
+    ),
 }
 for label, tokens in legacy_tokens.items():
     for token in tokens:
@@ -63,20 +72,26 @@ required_controller_paths = {
         'looseQuantityPressHold.cancel();',
         'looseQuantityPressHold.handleClick(button);',
     ),
+    'ディスプレイケース': (
+        'const displayCaseQuantityPressHold = createPressHoldController({',
+        'displayCaseQuantityPressHold.start(caseButton);',
+        'displayCaseQuantityPressHold.activeButton()',
+        'displayCaseQuantityPressHold.finish(caseButton);',
+        'displayCaseQuantityPressHold.cancel();',
+    ),
 }
 for label, tokens in required_controller_paths.items():
     for token in tokens:
         if token not in app:
             errors.append(f'app.js: {label}controller導線が不足しています: {token}')
 
-# This phase migrates only the second region. Display-case and selling-price
-# groups deliberately remain legacy until their own isolated review.
-for token in (
-    'function clearDisplayCaseHold',
-    'function clearSellingPriceHold',
-):
-    if token not in app:
-        errors.append(f'app.js: 今回触らない領域まで変更されています: {token}')
+if app.count('displayCaseQuantityPressHold.handleClick(button);') != 2:
+    errors.append('app.js: ケース購入・設置の2系統がcontroller click導線へ揃っていません')
+
+# This phase migrates only the third region. Selling-price remains legacy until
+# its own isolated review.
+if 'function clearSellingPriceHold' not in app:
+    errors.append('app.js: 今回触らない販売価格領域まで変更されています')
 
 if errors:
     print('PRESS HOLD INTEGRATION: FAIL')
@@ -96,4 +111,4 @@ if proc.returncode != 0:
 
 print(proc.stdout, end='')
 print('PRESS HOLD INTEGRATION: PASS')
-print('地金・ルースをcontrollerへ分離し、ケース・販売価格は未変更のまま維持しています。')
+print('地金・ルース・ケースをcontrollerへ分離し、販売価格は未変更のまま維持しています。')

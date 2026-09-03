@@ -20,11 +20,20 @@ jobs:
           ref: codex/v0-10-856-next-small-runtime
           fetch-depth: 1
 
-      - name: app.js 冒頭の独立候補を表示
+      - name: 冬文字効果の定義と依存を表示
         run: |
           python3 - <<'PY'
           from pathlib import Path
           lines = Path('js/app.js').read_text(encoding='utf-8').splitlines()
-          for i, line in enumerate(lines[:320], 1):
-              print(f'{i:04d}: {line}')
+          hits = [i for i, line in enumerate(lines) if 'WinterCold' in line or 'winterCold' in line]
+          print('HITS', [i + 1 for i in hits])
+          covered = set()
+          for hit in hits:
+              start = max(0, hit - 20)
+              end = min(len(lines), hit + 45)
+              for i in range(start, end):
+                  if i in covered:
+                      continue
+                  covered.add(i)
+                  print(f'{i+1:05d}: {lines[i]}')
           PY

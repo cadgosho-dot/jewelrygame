@@ -36,14 +36,14 @@
   // v0.10.752: 旧画面／旧キャッシュからでも、最新画像と3Dメガネ縦横表示修正を互換的に読み込む。
   (() => {
     const script = document.createElement('script');
-    script.src = './memories-event-image-overrides-v751.js?v=0.10.856';
+    script.src = './memories-event-image-overrides-v751.js?v=0.10.857';
     document.head?.appendChild(script);
   })();
 
   // v0.10.754: 雇用済みの職人スタッフ画面で、職人Lvに応じた透明PNGを表示する。
   (() => {
     const script = document.createElement('script');
-    script.src = './workshop-staff-images-v754.js?v=0.10.856';
+    script.src = './workshop-staff-images-v754.js?v=0.10.857';
     document.head?.appendChild(script);
   })();
 

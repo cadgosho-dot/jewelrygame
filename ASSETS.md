@@ -430,7 +430,7 @@
 | assets/images/main-menu-spring.webp | 画像 | 1536×692 | 横 | なし | `sw.js:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c8aec3d6dd83ef37e3d89abbdab88752947aada66616608fa1a8c420fdedd2fb |
 | assets/images/main-menu-tanabata-portrait.webp | 画像 | 864×1536 | 縦 | なし | `sw.js:16` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 428150f6ee7d4ac16db86607ec354d2b098fb5577099d9106b89c16b8ae31554 |
 | assets/images/main-menu-tanabata.webp | 画像 | 1536×693 | 横 | なし | `sw.js:16` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e1e6f46a0f38af254fd5e182130e96aed3a3e23a5e1929cd4a8cda8ae8b9dd1c |
-| assets/images/main-menu.webp | 画像 | 1672×941 | 横 | なし | `about.html:18`<br>`index.html:26`<br>`scripts/check-regression-baseline.py:103`<br>`scripts/check-pages-publish-policy.py:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e91f1fd77e723ff49a0f6fc8512d170f15795a42f897ea845d928be647a64cda |
+| assets/images/main-menu.webp | 画像 | 1672×941 | 横 | なし | `about.html:18`<br>`index.html:26`<br>`scripts/check-regression-baseline.py:103`<br>`scripts/check-pages-publish-policy.py:42` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e91f1fd77e723ff49a0f6fc8512d170f15795a42f897ea845d928be647a64cda |
 | assets/images/main-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 67c66c36b52adfbf67e535a1806ee42d043669c8f1e72eeb741166a6b53f70cc |
 | assets/images/main.webp | 画像 | 1536×864 | 横 | なし | `styles.css:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | be4b239e590bc9152c53138d450130f6f85694d5d4bed8eb10ffe43a28e1f24f |
 | assets/images/meal-after18-portrait-v727.webp | 画像 | 540×960 | 縦 | なし | `sw.js:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 46b249f9c5bf68e82c9a9ddbd77e1e4f03044f8a7275c555a8b7aa923443078f |

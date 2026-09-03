@@ -3,23 +3,24 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.855';
+} from './game-data.js?v=0.10.856';
 
-const UI_BUILD_VERSION = '0.10.855';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.855';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.855';
+const UI_BUILD_VERSION = '0.10.856';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.856';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.856';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.855';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.856';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.855';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.855';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.855';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.855';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.855';
+} from './firebase-service.js?v=0.10.856';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.856';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.856';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.856';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.856';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.856';
 
 
 
@@ -63,16 +64,8 @@ function commonLooseProfessionalSections() {
 
 installFinishedVideoCacheWarm();
 
-const winterColdOriginalText = new WeakMap();
-const winterColdOriginalAttributes = new WeakMap();
-let winterColdGarbleScheduled = false;
-const winterColdTextObserver = new MutationObserver(() => scheduleWinterColdTextEffect());
-winterColdTextObserver.observe(document.body, {
-  childList: true,
-  subtree: true,
-  characterData: true,
-  attributes: true,
-  attributeFilter: ['placeholder', 'title', 'aria-label', 'alt', 'value'],
+const winterColdTextEffect = createWinterColdTextEffect({
+  isActive: () => winterColdTextActive(),
 });
 
 let state = null;
@@ -5284,7 +5277,7 @@ function showToast(message, type = 'info', withSound = true) {
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => toastEl.classList.remove('show'), 2100);
   if (withSound) playSfx(type === 'error' ? 'error' : type === 'sale' ? 'sale' : 'select');
-  scheduleWinterColdTextEffect();
+  winterColdTextEffect.schedule();
 }
 
 function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャンセル', cancelAction = 'modal-close', confirmDisabled = false, danger = false, hideCancel = false, hideActions = false, action = '', className = '' }) {
@@ -5300,7 +5293,7 @@ function showModal({ title = '', body = '', confirm = '決定', cancel = 'キャ
       </section>
     </div>`;
   modalEl.classList.remove('hidden');
-  scheduleWinterColdTextEffect();
+  winterColdTextEffect.schedule();
 }
 
 function closeModal() {
@@ -6389,7 +6382,7 @@ function cancelWinterColdDuringBlackout({ save = false } = {}) {
     state.game.screen = 'main';
   }
   sleepCurtainEl?.classList.remove('active', 'next-day-blackout');
-  scheduleWinterColdTextEffect();
+  winterColdTextEffect.schedule();
   if (save) void saveGame();
   return true;
 }
@@ -6681,89 +6674,6 @@ function finishWinterColdRecoveryAfterNight() {
   eventState.lastCompletedSeason = eventState.seasonKey;
   eventState.recoveryNoticePending = true;
   return true;
-}
-
-function winterColdGarbleText(value) {
-  const symbols = ['譁', '縺', '繧', '莠', '蜿', '荳', '螟', '驥', '莉', '咲', '髫', '�'];
-  let index = 0;
-  return Array.from(String(value || '')).map((character) => {
-    if (/\s/u.test(character)) return character;
-    const code = character.codePointAt(0) || 0;
-    const symbol = symbols[(code + index) % symbols.length];
-    index += 1;
-    return symbol;
-  }).join('');
-}
-
-function winterColdReadableElement(element) {
-  const readableControl = element?.closest?.('[data-action="sleep"],[data-action="do-sleep"],[data-action="main"],[data-action="back"],[data-action="next-day"]');
-  return Boolean(readableControl || element?.closest?.('[data-illness-readable="true"],script,style,noscript'));
-}
-
-function applyWinterColdTextEffect() {
-  const active = winterColdTextActive();
-  document.body.toggleAttribute('data-winter-cold-active', active);
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  nodes.forEach((node) => {
-    const parent = node.parentElement;
-    const readable = winterColdReadableElement(parent);
-    const previousOriginal = winterColdOriginalText.get(node);
-    if (!active || readable) {
-      if (previousOriginal !== undefined) {
-        node.nodeValue = previousOriginal;
-        winterColdOriginalText.delete(node);
-      }
-      return;
-    }
-    const expected = previousOriginal === undefined ? '' : winterColdGarbleText(previousOriginal);
-    const original = previousOriginal !== undefined && node.nodeValue === expected
-      ? previousOriginal
-      : String(node.nodeValue || '');
-    winterColdOriginalText.set(node, original);
-    const garbled = winterColdGarbleText(original);
-    if (node.nodeValue !== garbled) node.nodeValue = garbled;
-  });
-
-  const elements = [document.body, ...document.body.querySelectorAll('[placeholder],[title],[aria-label],[alt],input[type="button"][value],input[type="submit"][value],input[type="reset"][value]')];
-  const attributes = ['placeholder', 'title', 'aria-label', 'alt', 'value'];
-  elements.forEach((element) => {
-    if (!(element instanceof Element)) return;
-    const readable = winterColdReadableElement(element);
-    let originalMap = winterColdOriginalAttributes.get(element);
-    attributes.forEach((attribute) => {
-      if (!element.hasAttribute(attribute)) return;
-      const previousOriginal = originalMap?.get(attribute);
-      if (!active || readable) {
-        if (previousOriginal !== undefined) {
-          element.setAttribute(attribute, previousOriginal);
-          originalMap.delete(attribute);
-        }
-        return;
-      }
-      if (!originalMap) {
-        originalMap = new Map();
-        winterColdOriginalAttributes.set(element, originalMap);
-      }
-      const expected = previousOriginal === undefined ? '' : winterColdGarbleText(previousOriginal);
-      const current = element.getAttribute(attribute) || '';
-      const original = previousOriginal !== undefined && current === expected ? previousOriginal : current;
-      originalMap.set(attribute, original);
-      const garbled = winterColdGarbleText(original);
-      if (current !== garbled) element.setAttribute(attribute, garbled);
-    });
-    if (originalMap && originalMap.size === 0) winterColdOriginalAttributes.delete(element);
-  });
-}
-
-function scheduleWinterColdTextEffect() {
-  if (winterColdGarbleScheduled) return;
-  winterColdGarbleScheduled = true;
-  queueMicrotask(() => {
-    winterColdGarbleScheduled = false;
-    applyWinterColdTextEffect();
-  });
 }
 
 function clearMorningBrief() {
@@ -12894,7 +12804,7 @@ function render() {
     if (screen === 'tropicalFishShop') queueMicrotask(bindTropicalFishShopNavigation);
     if (screen === 'main') queueMicrotask(() => maybeResumeMorningSequence());
     queueMicrotask(() => maybeShowGameClearModal());
-    scheduleWinterColdTextEffect();
+    winterColdTextEffect.schedule();
   } catch (error) {
     console.error('画面描画エラー', error);
     sleepCurtainEl?.classList.remove('active');

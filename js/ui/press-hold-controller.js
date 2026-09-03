@@ -1,6 +1,5 @@
-// Shared press/hold lifecycle for quantity step buttons.
-// The first adoption is intentionally limited to metal quantity controls so
-// pointer behavior can be verified before migrating other quantity regions.
+// Shared press/hold lifecycle for the staged quantity and selling-price step controls.
+// The four targeted groups share lifecycle management while keeping each group's timing and adjustment behavior.
 export function createPressHoldController({
   onTap,
   onLongPress,

@@ -185,7 +185,7 @@ jobs:
             --exclude='.github/' \
             --exclude='_site/' \
             --exclude='scripts/' \
-            --exclude='tools/' \
+            --exclude='/tools/' \
             --exclude='docs/' \
             --exclude='*.md' \
             --exclude='.firebaserc' \
@@ -194,6 +194,43 @@ jobs:
             --exclude='firestore.rules' \
             --exclude='HANDOFF_MANDATORY_REGRESSION_RULES.txt' \
             --exclude='quiz-layout-test.html'
+
+      - name: 工具・設備画像23枚の公開漏れを検査
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          expected = [
+              'bench-peg.png',
+              'buffer.png',
+              'diamond-polishing-lap.png',
+              'dividers.png',
+              'electronic-scale.png',
+              'engraving-block.png',
+              'file.png',
+              'gem-polishing-machine.png',
+              'graver.png',
+              'hammer.png',
+              'jewelry-bench.png',
+              'loupe.png',
+              'magnifier.png',
+              'milgrain-tool.png',
+              'nipper.png',
+              'piercing-saw.png',
+              'pliers.png',
+              'rolling-mill.png',
+              'rotary-tool.png',
+              'stamps.png',
+              'torch.png',
+              'ultrasonic-cleaner.png',
+              'wood-block.png',
+          ]
+          root = Path('_site/assets/images/tools')
+          missing = [name for name in expected if not (root / name).is_file()]
+          if missing:
+              raise SystemExit('GitHub Pages公開用フォルダに工具・設備画像が不足しています: ' + ', '.join(missing))
+          print(f'工具・設備画像: {len(expected)}/23 公開対象に含まれています。')
+          PY
 
       - name: GitHub Pages用ファイルをアップロード
         uses: actions/upload-pages-artifact@v4

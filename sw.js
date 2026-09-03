@@ -1,13 +1,13 @@
-const VERSION = '0.10.854';
+const VERSION = '0.10.855';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CACHE_PREFIX = 'jewelrygame-';
 const CORE_SHELL = [
-  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.854', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './quiz-event-v2.css?v=0.10.854', './js/app.js?v=0.10.854', './js/runtime/lazy-modules.js?v=0.10.854', './js/ui/press-hold-controller.js?v=0.10.854', './js/audio.js?v=0.10.854', './js/audio-scene-map.js?v=0.10.854', './js/game-data.js?v=0.10.854', './js/memories-screen.js?v=0.10.854', './js/memories-backgrounds.js?v=0.10.854', './js/daily-gems-index.js?v=0.10.854',
+  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.855', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
+  './manifest.webmanifest', './quiz-event-v2.css?v=0.10.855', './js/app.js?v=0.10.855', './js/runtime/lazy-modules.js?v=0.10.855', './js/runtime/finished-video-cache-warm.js?v=0.10.855', './js/ui/press-hold-controller.js?v=0.10.855', './js/audio.js?v=0.10.855', './js/audio-scene-map.js?v=0.10.855', './js/game-data.js?v=0.10.855', './js/memories-screen.js?v=0.10.855', './js/memories-backgrounds.js?v=0.10.855', './js/daily-gems-index.js?v=0.10.855',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.854', './js/security-config.js', './js/firebase-service.js?v=0.10.854', './js/local-save-storage.js?v=0.10.854',
+  './js/google-auth-bridge.js?v=0.10.855', './js/security-config.js', './js/firebase-service.js?v=0.10.855', './js/local-save-storage.js?v=0.10.855',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.759: seasonal main-screen backgrounds (landscape + portrait).

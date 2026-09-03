@@ -99,5 +99,23 @@ const blockedSellingButton = fakeButton();
 assert.equal(sellingController.start(blockedSellingButton), false);
 assert.equal(blockedSellingButton.classList.contains('is-holding'), false);
 
+const noClassTimers = fakeTimers();
+let noClassHolds = 0;
+const noClassController = createPressHoldController({
+  onTap: () => {},
+  onLongPress: () => { noClassHolds += 1; },
+  holdingClass: null,
+  timers: noClassTimers.api,
+});
+const noClassButton = fakeButton();
+assert.equal(noClassController.start(noClassButton), true);
+assert.equal(noClassButton.classList.contains('is-holding'), false);
+assert.equal(noClassTimers.fireTimeout(), 320);
+assert.equal(noClassHolds, 1);
+assert.equal(noClassTimers.fireInterval(), 65);
+assert.equal(noClassHolds, 2);
+assert.equal(noClassController.finish(noClassButton), true);
+assert.equal(noClassButton.classList.contains('is-holding'), false);
+
 console.log('PRESS HOLD CONTROLLER: PASS');
-console.log('標準320ms/65ms、販売価格420ms/110ms、継続条件停止、長押し後クリック抑止・cancel・disabledを確認しました。');
+console.log('標準320ms/65ms、販売価格420ms/110ms、継続条件停止、表示クラスなし、長押し後クリック抑止・cancel・disabledを確認しました。');

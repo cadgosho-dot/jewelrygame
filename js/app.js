@@ -3,22 +3,22 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.853';
+} from './game-data.js?v=0.10.854';
 
-const UI_BUILD_VERSION = '0.10.853';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.853';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.853';
+const UI_BUILD_VERSION = '0.10.854';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.854';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.854';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.853';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.854';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.853';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.853';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.853';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.853';
+} from './firebase-service.js?v=0.10.854';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.854';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.854';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.854';
 
 
 
@@ -154,9 +154,15 @@ let storytellerQuizLoadPromise = null;
 let oyatsuMovieBound = false;
 let oyatsuFadeTimer = null;
 let speedStarRunTimer = null;
-let tropicalShopQuantityHoldTimer = null;
-let tropicalShopQuantityHoldInterval = null;
-let tropicalShopQuantityHoldTriggered = false;
+const tropicalShopQuantityPressHold = createPressHoldController({
+  onTap(button) {
+    changeTropicalShopQuantity(button.dataset.delta);
+  },
+  onLongPress(button) {
+    changeTropicalShopQuantityLongPress(button.dataset.delta);
+  },
+  holdingClass: null,
+});
 let tropicalShopSwipeStart = null;
 const TROPICAL_SHOP_CATEGORIES = ['fish', 'plant', 'display'];
 const TROPICAL_SHOP_SWIPE_MIN_PX = 52;
@@ -11154,30 +11160,7 @@ function changeTropicalShopQuantity(delta) {
   const product=tropicalShopFindProduct(modal.category,modal.id); if(!product)return;
   const max=tropicalShopMaxQuantity(product); modal.qty=Math.max(1,Math.min(max,Math.floor(Number(modal.qty)||1)+Math.sign(Number(delta)||0))); syncTropicalShopQuantityModal();
 }
-function clearTropicalShopQuantityHold() {
-  if (tropicalShopQuantityHoldTimer) window.clearTimeout(tropicalShopQuantityHoldTimer);
-  if (tropicalShopQuantityHoldInterval) window.clearInterval(tropicalShopQuantityHoldInterval);
-  tropicalShopQuantityHoldTimer = null;
-  tropicalShopQuantityHoldInterval = null;
-}
-function startTropicalShopQuantityHold(button) {
-  clearTropicalShopQuantityHold();
-  if (!button || button.disabled) return;
-  tropicalShopQuantityHoldTriggered = false;
-  const delta = Number(button.dataset.delta) || 0;
-  tropicalShopQuantityHoldTimer = window.setTimeout(() => {
-    tropicalShopQuantityHoldTriggered = true;
-    changeTropicalShopQuantityLongPress(delta);
-    tropicalShopQuantityHoldInterval = window.setInterval(() => changeTropicalShopQuantityLongPress(delta), 65);
-  }, 320);
-}
-function finishTropicalShopQuantityHold(button) {
-  const held = tropicalShopQuantityHoldTriggered;
-  clearTropicalShopQuantityHold();
-  tropicalShopQuantityHoldTriggered = false;
-  if (held && button) button.dataset.skipNextClick = 'true';
-}
-function closeTropicalShopQuantity(){ if(screenData?.tropicalModal){clearTropicalShopQuantityHold();delete screenData.tropicalModal;render();} }
+function closeTropicalShopQuantity(){ if(screenData?.tropicalModal){tropicalShopQuantityPressHold.cancel();delete screenData.tropicalModal;render();} }
 function purchaseTropicalShopItem(){
   const modal=screenData?.tropicalModal; if(!modal)return; const product=tropicalShopFindProduct(modal.category,modal.id); if(!product)return;
   const max=tropicalShopMaxQuantity(product); const qty=Math.max(0,Math.min(max,Math.floor(Number(modal.qty)||0))); if(qty<1)return showToast('購入できません。','error');
@@ -24165,7 +24148,7 @@ root.addEventListener('pointerdown', (event) => {
   }
   const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
   if (tropicalButton && !tropicalButton.disabled) {
-    startTropicalShopQuantityHold(tropicalButton);
+    tropicalShopQuantityPressHold.start(tropicalButton);
     return;
   }
   const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]');
@@ -24180,7 +24163,7 @@ root.addEventListener('pointerup', (event) => {
   const caseButton = event.target.closest('[data-action="display-case-qty-step"], [data-action="store-case-install-qty-step"]') || displayCaseQuantityPressHold.activeButton();
   if (caseButton) displayCaseQuantityPressHold.finish(caseButton);
   const tropicalButton = event.target.closest('[data-action="tropical-shop-qty"]');
-  if (tropicalButton) finishTropicalShopQuantityHold(tropicalButton);
+  if (tropicalButton) tropicalShopQuantityPressHold.finish(tropicalButton);
   const sellingPriceButton = event.target.closest('[data-action="selling-price-step"]') || sellingPricePressHold.activeButton();
   if (sellingPriceButton) sellingPricePressHold.finish(sellingPriceButton);
 });
@@ -24190,8 +24173,7 @@ root.addEventListener('pointercancel', () => {
   looseQuantityPressHold.cancel();
   displayCaseQuantityPressHold.cancel();
   sellingPricePressHold.cancel();
-  clearTropicalShopQuantityHold();
-  tropicalShopQuantityHoldTriggered = false;
+  tropicalShopQuantityPressHold.cancel();
 });
 
 root.addEventListener('contextmenu', (event) => {
@@ -24203,8 +24185,7 @@ window.addEventListener('blur', () => {
   looseQuantityPressHold.cancel();
   displayCaseQuantityPressHold.cancel();
   sellingPricePressHold.cancel();
-  clearTropicalShopQuantityHold();
-  tropicalShopQuantityHoldTriggered = false;
+  tropicalShopQuantityPressHold.cancel();
 });
 
 root.addEventListener('click', async (event) => {
@@ -25167,8 +25148,7 @@ root.addEventListener('click', async (event) => {
       openTropicalShopQuantity(button.dataset.category, button.dataset.id);
       break;
     case 'tropical-shop-qty':
-      if (button.dataset.skipNextClick === 'true') delete button.dataset.skipNextClick;
-      else changeTropicalShopQuantity(button.dataset.delta);
+      tropicalShopQuantityPressHold.handleClick(button);
       break;
     case 'tropical-shop-close-qty':
       closeTropicalShopQuantity();

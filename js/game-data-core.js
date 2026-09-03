@@ -1,4 +1,4 @@
-export const VERSION = '0.10.843';
+export const VERSION = '0.10.844';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -3893,7 +3893,7 @@ export const WORKSHOP_TOOLS = {
     ] },
   },
   dividers: {
-    id: 'dividers', name: 'ケガキ（カニコンパス）', type: '工具', symbol: '⌇', price: 8000, qualityPoints: 1,
+    id: 'dividers', name: 'ケガキ・カニコンパス', type: '工具', symbol: '⌇', price: 8000, qualityPoints: 1,
     image: './assets/images/tools/dividers.png', initiallyAvailable: true, breakable: true, repairable: false,
     description: '地金へ平行線、中心、等間隔、円弧を写し、切削や穴あけ位置を決める罫書き工具です。',
     detail: '両脚の先端、支点の遊び、開き量を確認し、必要最小限の力で基準線を引きます。',
@@ -6127,7 +6127,7 @@ const MASTER_TOOL_GUIDE_ADDITIONS_V467 = {
     ]
   },
   "dividers": {
-    "overview": "ケガキ（カニコンパス）は、二本の尖端で寸法を移し、円弧、平行線、等間隔、中心位置を地金へ正確に示す測定・罫書き工具です。尖端形状、支点の抵抗、基準面、押圧を管理し、深い傷を付けず再現性のある線を作ります。",
+    "overview": "ケガキ・カニコンパスは、二本の尖端で寸法を移し、円弧、平行線、等間隔、中心位置を地金へ正確に示す測定・罫書き工具です。尖端形状、支点の抵抗、基準面、押圧を管理し、深い傷を付けず再現性のある線を作ります。",
     "sections": [
       {
         "title": "工具構造と種類",

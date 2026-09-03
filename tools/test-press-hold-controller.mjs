@@ -70,5 +70,23 @@ assert.equal(controller.start(disabled), false);
 assert.equal(controller.activeButton(), null);
 assert.deepEqual(timers.counts(), { timeouts: 0, intervals: 0 });
 
+const sellingTimers = fakeTimers();
+let sellingHolds = 0;
+const sellingController = createPressHoldController({
+  onTap: () => {},
+  onLongPress: () => { sellingHolds += 1; },
+  holdDelayMs: 420,
+  repeatMs: 110,
+  timers: sellingTimers.api,
+});
+const sellingButton = fakeButton();
+assert.equal(sellingController.start(sellingButton), true);
+assert.equal(sellingTimers.fireTimeout(), 420);
+assert.equal(sellingHolds, 1);
+assert.equal(sellingTimers.fireInterval(), 110);
+assert.equal(sellingHolds, 2);
+assert.equal(sellingController.finish(sellingButton), true);
+assert.equal(sellingButton.dataset.skipNextClick, 'true');
+
 console.log('PRESS HOLD CONTROLLER: PASS');
-console.log('320ms開始・65ms反復・長押し後クリック抑止・cancel・disabledを確認しました。');
+console.log('標準320ms/65msと販売価格420ms/110ms、長押し後クリック抑止・cancel・disabledを確認しました。');

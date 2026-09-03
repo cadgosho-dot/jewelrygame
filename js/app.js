@@ -3,20 +3,21 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.848';
+} from './game-data.js?v=0.10.849';
 
-const UI_BUILD_VERSION = '0.10.848';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.848';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.848';
+const UI_BUILD_VERSION = '0.10.849';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.849';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.849';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.848';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.849';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.848';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.848';
+} from './firebase-service.js?v=0.10.849';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.849';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.849';
 
 
 
@@ -27,70 +28,32 @@ const sleepCurtainEl = document.querySelector('#sleep-curtain');
 const morningBriefEl = document.querySelector('#morning-brief');
 
 // v0.10.611: 大容量の専門データと回転寿司HTMLは、必要な画面を開いた時だけ読み込む。
-let dailyGemsModule = null;
-let dailyGemsLoadPromise = null;
-let looseProfessionalModule = null;
-let looseProfessionalLoadPromise = null;
-let kaitenzushiEmbeddedHtml = '';
-let kaitenzushiModuleLoadPromise = null;
-
-function ensureDailyGemsLoaded() {
-  if (dailyGemsModule) return Promise.resolve(dailyGemsModule);
-  if (!dailyGemsLoadPromise) {
-    dailyGemsLoadPromise = import(`./daily-gems.js?v=${VERSION}`)
-      .then((module) => {
-        dailyGemsModule = module;
-        return module;
-      })
-      .catch((error) => {
-        dailyGemsLoadPromise = null;
-        throw error;
-      });
-  }
-  return dailyGemsLoadPromise;
-}
-
-function ensureLooseProfessionalLoaded() {
-  if (looseProfessionalModule) return Promise.resolve(looseProfessionalModule);
-  if (!looseProfessionalLoadPromise) {
-    looseProfessionalLoadPromise = import(`./loose-gem-professional.js?v=${VERSION}`)
-      .then((module) => {
-        looseProfessionalModule = module;
-        return module;
-      })
-      .catch((error) => {
-        looseProfessionalLoadPromise = null;
-        throw error;
-      });
-  }
-  return looseProfessionalLoadPromise;
-}
-
-function ensureKaitenzushiModuleLoaded() {
-  if (kaitenzushiEmbeddedHtml) return Promise.resolve(kaitenzushiEmbeddedHtml);
-  if (!kaitenzushiModuleLoadPromise) {
-    kaitenzushiModuleLoadPromise = import(`./kaitenzushi-embedded.js?v=${VERSION}`)
-      .then((module) => {
-        kaitenzushiEmbeddedHtml = String(module.KAITENZUSHI_EMBEDDED_HTML || '');
-        return kaitenzushiEmbeddedHtml;
-      })
-      .catch((error) => {
-        kaitenzushiModuleLoadPromise = null;
-        throw error;
-      });
-  }
-  return kaitenzushiModuleLoadPromise;
-}
+// v0.10.849: キャッシュと同時読込・失敗時再試行の管理だけを独立モジュールへ分離。
+const {
+  ensureDailyGemsLoaded,
+  ensureLooseProfessionalLoaded,
+  ensureKaitenzushiModuleLoaded,
+  getDailyGemsModule,
+  getLooseProfessionalModule,
+  getKaitenzushiEmbeddedHtml,
+} = createLazyModuleManager({
+  loadDailyGems: () => import(`./daily-gems.js?v=${VERSION}`),
+  loadLooseProfessional: () => import(`./loose-gem-professional.js?v=${VERSION}`),
+  loadKaitenzushiEmbedded: () => import(`./kaitenzushi-embedded.js?v=${VERSION}`),
+});
 
 function dailyGemForDate(dateLike) {
+  const dailyGemsModule = getDailyGemsModule();
   return dailyGemsModule?.dailyGemForDate?.(dateLike) || dailyGemSummaryForDate(dateLike);
 }
 
 function looseGemAdvancedData(gemId) {
+  const looseProfessionalModule = getLooseProfessionalModule();
   return looseProfessionalModule?.looseGemAdvancedData?.(gemId) || { specs: [], sections: [] };
 }
 
 function commonLooseProfessionalSections() {
+  const looseProfessionalModule = getLooseProfessionalModule();
   return Array.isArray(looseProfessionalModule?.COMMON_LOOSE_PROFESSIONAL_SECTIONS)
     ? looseProfessionalModule.COMMON_LOOSE_PROFESSIONAL_SECTIONS
     : [];
@@ -1695,6 +1658,7 @@ const COMMON_LOOSE_CUT_SECTIONS = Object.freeze([
 ]);
 
 function looseGemProfile(gemId) {
+  const dailyGemsModule = getDailyGemsModule();
   return dailyGemsModule?.DAILY_GEM_PROFILES?.[LOOSE_GEM_PROFILE_IDS[gemId]] || null;
 }
 
@@ -14504,7 +14468,7 @@ function renderRobberyReport() {
 }
 
 function renderTodayGem() {
-  if (!dailyGemsModule) {
+  if (!getDailyGemsModule()) {
     void ensureDailyGemsLoaded()
       .then(() => { if (screen === 'todayGem') render(); })
       .catch((error) => {
@@ -18625,7 +18589,7 @@ function renderLooseInventoryDetail() {
 function renderLooseGemGuide() {
   const gem = GEMS[screenData.gemId];
   const guide = gem ? GEM_LOOSE_GUIDES[gem.id] : null;
-  if (gem && guide && (!dailyGemsModule || !looseProfessionalModule)) {
+  if (gem && guide && (!getDailyGemsModule() || !getLooseProfessionalModule())) {
     void Promise.all([ensureDailyGemsLoaded(), ensureLooseProfessionalLoaded()])
       .then(() => { if (screen === 'looseGemGuide' || screen === 'looseCutGuide') render(); })
       .catch((error) => {
@@ -19792,13 +19756,13 @@ function kaitenzushiEmbeddedDocument() {
     .replaceAll('"', '&quot;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
-  return kaitenzushiEmbeddedHtml
+  return getKaitenzushiEmbeddedHtml()
     .replace('__JXJ_CONFIG__', config)
     .replace('__JXJ_ATTEMPT__', String(kaitenzushiLoadNonce));
 }
 
 function renderKaitenzushi() {
-  if (!kaitenzushiEmbeddedHtml) {
+  if (!getKaitenzushiEmbeddedHtml()) {
     void ensureKaitenzushiModuleLoaded()
       .then(() => { if (screen === 'kaitenzushi') render(); })
       .catch((error) => {

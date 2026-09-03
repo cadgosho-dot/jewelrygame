@@ -16,6 +16,7 @@ CHECKS = [
     ('回帰防止基準', [sys.executable, str(ROOT / 'scripts/check-regression-baseline.py')]),
     ('季節メイン背景', [sys.executable, str(ROOT / 'scripts/check-seasonal-main-background.py')]),
     ('PWAキャッシュ更新', [sys.executable, str(ROOT / 'scripts/check-pwa-cache-policy.py')]),
+    ('遅延ロード管理', [sys.executable, str(ROOT / 'scripts/check-lazy-module-loading.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),
     ('長期セーブ容量対策', [sys.executable, str(ROOT / 'scripts/check-save-storage-policy.py')]),

@@ -1,0 +1,240 @@
+name: 第29段階セーブ診断容量表示helper分離
+
+on:
+  push:
+    branches:
+      - 'refactor/stage29-save-diagnostic-bytes'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 作業ブランチを取得
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 2
+
+      - name: 第29段階を厳密一致で適用
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly 1 match, got {count}: {old!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          app = Path('js/app.js')
+          app_text = app.read_text(encoding='utf-8')
+          import_anchor = "import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.876';\n"
+          if app_text.count(import_anchor) != 1:
+              raise SystemExit('app.js: save diagnostic date helper import anchor mismatch')
+          app_text = app_text.replace(
+              import_anchor,
+              import_anchor + "import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.876';\n",
+              1,
+          )
+          legacy = """function formatSaveDiagnosticBytes(value) {
+            const bytes = Math.max(0, Number(value) || 0);
+            if (bytes < 1024) return `${Math.round(bytes).toLocaleString('ja-JP')} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+          }"""
+          wrapper = """function formatSaveDiagnosticBytes(value) {
+            return formatSaveDiagnosticBytesLabel(value);
+          }"""
+          if app_text.count(legacy) != 1:
+              raise SystemExit(f'app.js: legacy formatSaveDiagnosticBytes count={app_text.count(legacy)}')
+          app_text = app_text.replace(legacy, wrapper, 1)
+          app.write_text(app_text, encoding='utf-8')
+
+          Path('js/ui/save-diagnostic-bytes-label.js').write_text("""export function formatSaveDiagnosticBytesLabel(value) {
+            const bytes = Math.max(0, Number(value) || 0);
+            if (bytes < 1024) return `${Math.round(bytes).toLocaleString('ja-JP')} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+          }
+          """, encoding='utf-8')
+
+          Path('tools/test-save-diagnostic-bytes-label.mjs').write_text("""import assert from 'node:assert/strict';
+          import { formatSaveDiagnosticBytesLabel } from '../js/ui/save-diagnostic-bytes-label.js';
+
+          assert.equal(formatSaveDiagnosticBytesLabel(null), '0 B');
+          assert.equal(formatSaveDiagnosticBytesLabel('not-a-number'), '0 B');
+          assert.equal(formatSaveDiagnosticBytesLabel(-10), '0 B');
+          assert.equal(formatSaveDiagnosticBytesLabel(0), '0 B');
+          assert.equal(formatSaveDiagnosticBytesLabel(1), '1 B');
+          assert.equal(formatSaveDiagnosticBytesLabel(1023.6), '1,024 B');
+          assert.equal(formatSaveDiagnosticBytesLabel(1024), '1.0 KB');
+          assert.equal(formatSaveDiagnosticBytesLabel(1536), '1.5 KB');
+          assert.equal(formatSaveDiagnosticBytesLabel(1024 * 1024 - 1), '1024.0 KB');
+          assert.equal(formatSaveDiagnosticBytesLabel(1024 * 1024), '1.00 MB');
+          assert.equal(formatSaveDiagnosticBytesLabel(1572864), '1.50 MB');
+
+          console.log('SAVE DIAGNOSTIC BYTES LABEL UNIT: PASS');
+          """, encoding='utf-8')
+
+          checker = r'''#!/usr/bin/env python3
+          """Verify save diagnostic byte-size display stays a pure UI helper."""
+          from __future__ import annotations
+
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP_PATH = ROOT / 'js/app.js'
+          HELPER_PATH = ROOT / 'js/ui/save-diagnostic-bytes-label.js'
+          SW_PATH = ROOT / 'sw.js'
+          VS_PATH = ROOT / 'scripts/version-sync.py'
+          CURRENT_PATH = ROOT / 'scripts/check-current.py'
+
+          APP = APP_PATH.read_text(encoding='utf-8')
+          HELPER = HELPER_PATH.read_text(encoding='utf-8')
+          SW = SW_PATH.read_text(encoding='utf-8')
+          VS = VS_PATH.read_text(encoding='utf-8')
+          CURRENT = CURRENT_PATH.read_text(encoding='utf-8')
+
+          legacy_function = """function formatSaveDiagnosticBytes(value) {
+            const bytes = Math.max(0, Number(value) || 0);
+            if (bytes < 1024) return `${Math.round(bytes).toLocaleString('ja-JP')} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+          }"""
+          wrapper = """function formatSaveDiagnosticBytes(value) {
+            return formatSaveDiagnosticBytesLabel(value);
+          }"""
+
+          checks = {
+              'versioned helper import exists': f"from './ui/save-diagnostic-bytes-label.js?v={VERSION}';" in APP,
+              'app keeps thin formatSaveDiagnosticBytes wrapper': wrapper in APP,
+              'legacy implementation removed from app': legacy_function not in APP,
+              'existing formatSaveDiagnosticBytes references retained': APP.count('formatSaveDiagnosticBytes(') == 5,
+              'wrapper delegates once': APP.count('return formatSaveDiagnosticBytesLabel(value);') == 1,
+              'helper exports formatter': 'export function formatSaveDiagnosticBytesLabel(value)' in HELPER,
+              'helper keeps non-negative numeric normalization': 'Math.max(0, Number(value) || 0)' in HELPER,
+              'helper keeps byte threshold': 'if (bytes < 1024)' in HELPER,
+              'helper keeps rounded byte locale display': "Math.round(bytes).toLocaleString('ja-JP')" in HELPER,
+              'helper keeps KB precision': "(bytes / 1024).toFixed(1)" in HELPER,
+              'helper keeps MB precision': "(bytes / (1024 * 1024)).toFixed(2)" in HELPER,
+              'service worker precaches helper': f"./js/ui/save-diagnostic-bytes-label.js?v={VERSION}" in SW,
+              'version sync knows helper precache': "'save-diagnostic-bytes-label.js precache key'" in VS,
+              'version sync knows helper import': "'save-diagnostic-bytes-label.js import key'" in VS,
+              'current audit registers checker': "'セーブ診断容量表示'" in CURRENT and 'check-save-diagnostic-bytes-label.py' in CURRENT,
+          }
+
+          for forbidden in (
+              'state.', 'state =', 'saveGame', 'loadState', 'localStorage', 'sessionStorage', 'indexedDB',
+              'firebase', 'money', 'inventory', 'eventState', 'screenData', 'document.', 'window.',
+              'navigator.', 'setTimeout', 'setInterval', './assets/', 'Math.random', 'advanceTime',
+              'delete', 'write', 'readIndexedDbSave', 'writeIndexedDbSave', 'cloud',
+          ):
+              checks[f'helper has no reverse dependency: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+
+          for source in (APP_PATH, HELPER_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+
+          unit = subprocess.run(['node', 'tools/test-save-diagnostic-bytes-label.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.stderr:
+              print(unit.stderr, file=sys.stderr, end='')
+          if unit.returncode:
+              failed.append('save diagnostic bytes label unit test')
+
+          if failed:
+              print('\nSAVE DIAGNOSTIC BYTES LABEL INTEGRATION: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+
+          print('\nSAVE DIAGNOSTIC BYTES LABEL INTEGRATION: PASS')
+          print('セーブ容量診断の容量文字列だけをUI helperへ分離し、保存・復元・クラウド同期・IndexedDB・容量計測処理はapp.js側に維持しています。')
+          '''
+          checker = '\n'.join(line[10:] if line.startswith('          ') else line for line in checker.splitlines()) + '\n'
+          Path('scripts/check-save-diagnostic-bytes-label.py').write_text(checker, encoding='utf-8')
+
+          replace_once(
+              'sw.js',
+              "  './js/ui/save-diagnostic-date-label.js?v=0.10.876',\n",
+              "  './js/ui/save-diagnostic-date-label.js?v=0.10.876',\n  './js/ui/save-diagnostic-bytes-label.js?v=0.10.876',\n",
+          )
+          replace_once(
+              'scripts/version-sync.py',
+              "    Rule('sw.js', 'save-diagnostic-date-label.js precache key', qparam(r'\\./js/ui/save-diagnostic-date-label\\.js'), keep_prefix),\n",
+              "    Rule('sw.js', 'save-diagnostic-date-label.js precache key', qparam(r'\\./js/ui/save-diagnostic-date-label\\.js'), keep_prefix),\n    Rule('sw.js', 'save-diagnostic-bytes-label.js precache key', qparam(r'\\./js/ui/save-diagnostic-bytes-label\\.js'), keep_prefix),\n",
+          )
+          replace_once(
+              'scripts/version-sync.py',
+              "    Rule('js/app.js', 'save-diagnostic-date-label.js import key', qparam(r'\\./ui/save-diagnostic-date-label\\.js'), keep_prefix),\n",
+              "    Rule('js/app.js', 'save-diagnostic-date-label.js import key', qparam(r'\\./ui/save-diagnostic-date-label\\.js'), keep_prefix),\n    Rule('js/app.js', 'save-diagnostic-bytes-label.js import key', qparam(r'\\./ui/save-diagnostic-bytes-label\\.js'), keep_prefix),\n",
+          )
+          replace_once(
+              'scripts/check-current.py',
+              "    ('セーブ診断日時表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-date-label.py')]),\n",
+              "    ('セーブ診断日時表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-date-label.py')]),\n    ('セーブ診断容量表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-bytes-label.py')]),\n",
+          )
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text(encoding='utf-8')
+          marker = '## v0.10.876\n'
+          section = """## v0.10.877
+          - セーブ容量診断の容量表示だけを `js/ui/save-diagnostic-bytes-label.js` へ分離。
+          - 既存 `formatSaveDiagnosticBytes()` は薄いラッパーとして残し、1024未満の整数B・1MB未満の小数1桁KB・それ以上の小数2桁MB、および負値・不正値を0扱いにする既存規則を維持。
+          - セーブ作成・復元・クラウド同期・IndexedDB・容量計測・所持金・在庫・イベント・画像には変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          """
+          section = '\n'.join(line[10:] if line.startswith('          ') else line for line in section.splitlines()) + '\n'
+          if text.count(marker) != 1 or '## v0.10.877' in text:
+              raise SystemExit('CHANGELOG marker mismatch')
+          changelog.write_text(text.replace(marker, section + marker, 1), encoding='utf-8')
+          PY
+
+      - name: バージョンと生成資料を同期
+        run: |
+          python3 scripts/version-sync.py --set 0.10.877
+          python3 scripts/generate-event-probability-list.py --write
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 scripts/generate-assets-manifest.py --write
+          python3 -m playwright install --with-deps chromium
+
+      - name: 第29段階と全体回帰を検査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          node tools/test-save-diagnostic-bytes-label.mjs
+          python3 scripts/check-save-diagnostic-bytes-label.py
+          timeout 8m python3 -u scripts/check-current.py
+          if git diff --name-only | grep -E '^assets/images/'; then
+            echo '画像ファイル差分があるため中止します。'
+            exit 1
+          fi
+          test "$(find assets/images/tools -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 23
+          echo '画像差分: 0 / 工具・設備画像: 23/23'
+
+      - name: 一時workflowを除去して実装をコミット
+        run: |
+          git rm .github/workflows/stage29-apply.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'v0.10.877 セーブ診断容量表示をhelperへ分離'
+          git push origin HEAD:${GITHUB_REF_NAME}

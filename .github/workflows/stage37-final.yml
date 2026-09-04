@@ -1,0 +1,201 @@
+name: stage37-final
+on:
+  push:
+    branches: [refactor-stage37-final]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Apply stage37 store display name refactor
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_version = '0.10.884'
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          legacy = """function storeDisplayName() {
+            const name = String(state?.store?.name || '').trim();
+            return name || '店舗';
+          }"""
+          wrapper = """function storeDisplayName() {
+            return formatStoreDisplayName(state?.store?.name);
+          }"""
+          if app.count(legacy) != 1:
+              raise SystemExit('legacy storeDisplayName implementation count is not 1')
+          app = app.replace(legacy, wrapper, 1)
+
+          import_marker = f"import {{ formatCustomerTemplateText }} from './ui/customer-template-text.js?v={old_version}';"
+          helper_import = f"import {{ formatStoreDisplayName }} from './ui/store-display-name.js?v={old_version}';"
+          if import_marker not in app:
+              raise SystemExit('customer template helper import marker missing')
+          app = app.replace(import_marker, import_marker + '\n' + helper_import, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          Path('js/ui/store-display-name.js').write_text("""export function formatStoreDisplayName(name) {
+            const value = String(name || '').trim();
+            return value || '店舗';
+          }
+          """, encoding='utf-8')
+
+          Path('tools/test-store-display-name.mjs').write_text("""import assert from 'node:assert/strict';
+          import { formatStoreDisplayName } from '../js/ui/store-display-name.js';
+          assert.equal(formatStoreDisplayName('g-Lab.'), 'g-Lab.');
+          assert.equal(formatStoreDisplayName('  JEWELRY  '), 'JEWELRY');
+          assert.equal(formatStoreDisplayName(''), '店舗');
+          assert.equal(formatStoreDisplayName('   '), '店舗');
+          assert.equal(formatStoreDisplayName(null), '店舗');
+          assert.equal(formatStoreDisplayName(undefined), '店舗');
+          console.log('STORE DISPLAY NAME UNIT: PASS');
+          """, encoding='utf-8')
+
+          Path('scripts/check-store-display-name.py').write_text("""#!/usr/bin/env python3
+          from __future__ import annotations
+          import subprocess, sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+          HELPER = (ROOT / 'js/ui/store-display-name.js').read_text(encoding='utf-8')
+          SW = (ROOT / 'sw.js').read_text(encoding='utf-8')
+          VS = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
+          CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
+
+          checks = {
+              'versioned helper import': f\"from './ui/store-display-name.js?v={VERSION}';\" in APP,
+              'active references retained': APP.count('storeDisplayName(') == 5,
+              'state lookup stays in app': 'return formatStoreDisplayName(state?.store?.name);' in APP,
+              'legacy trim removed from app': \"const name = String(state?.store?.name || '').trim();\" not in APP,
+              'helper export': 'export function formatStoreDisplayName(name)' in HELPER,
+              'helper trim': \"const value = String(name || '').trim();\" in HELPER,
+              'helper fallback': \"return value || '店舗';\" in HELPER,
+              'service worker precache': f\"./js/ui/store-display-name.js?v={VERSION}\" in SW,
+              'version sync precache': \"'store-display-name.js precache key'\" in VS,
+              'version sync import': \"'store-display-name.js import key'\" in VS,
+              'current audit registration': \"'店舗名表示'\" in CURRENT and 'check-store-display-name.py' in CURRENT,
+          }
+          for forbidden in ('state.','state?.','ITEMS','GEMS','METALS','DESIGNS','saveGame','loadState','localStorage','sessionStorage','indexedDB','firebase','money','inventory','eventState','document.','window.','navigator.','Math.random','./assets/'):
+              checks[f'helper independent: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+
+          for source in (ROOT / 'js/app.js', ROOT / 'js/ui/store-display-name.js'):
+              result = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if result.returncode:
+                  print(result.stderr, end='')
+                  failed.append(source.name + ' syntax')
+
+          unit = subprocess.run(['node', 'tools/test-store-display-name.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.returncode:
+              print(unit.stderr, end='')
+              failed.append('unit test')
+
+          if failed:
+              print('STORE DISPLAY NAME INTEGRATION: FAIL')
+              for label in failed:
+                  print('- ' + label)
+              sys.exit(1)
+          print('STORE DISPLAY NAME INTEGRATION: PASS')
+          """, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          sw_marker = f"  './js/ui/customer-template-text.js?v={old_version}',"
+          if sw_marker not in sw:
+              raise SystemExit('service worker marker missing')
+          sw = sw.replace(sw_marker, sw_marker + f"\n  './js/ui/store-display-name.js?v={old_version}',", 1)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          vs_path = Path('scripts/version-sync.py')
+          lines = vs_path.read_text(encoding='utf-8').splitlines()
+          out = []
+          pre = False
+          imp = False
+          for line in lines:
+              out.append(line)
+              if "'customer-template-text.js precache key'" in line:
+                  out.append("    Rule('sw.js', 'store-display-name.js precache key', qparam(r'\\./js/ui/store-display-name\\.js'), keep_prefix),")
+                  pre = True
+              if "'customer-template-text.js import key'" in line:
+                  out.append("    Rule('js/app.js', 'store-display-name.js import key', qparam(r'\\./ui/store-display-name\\.js'), keep_prefix),")
+                  imp = True
+          if not (pre and imp):
+              raise SystemExit('version-sync markers missing')
+          vs_path.write_text('\n'.join(out) + '\n', encoding='utf-8')
+
+          current_path = Path('scripts/check-current.py')
+          current = current_path.read_text(encoding='utf-8')
+          current_marker = "    ('顧客テンプレート表示', [sys.executable, str(ROOT / 'scripts/check-customer-template-text.py')]),"
+          current_new = "    ('店舗名表示', [sys.executable, str(ROOT / 'scripts/check-store-display-name.py')]),"
+          if current_marker not in current:
+              raise SystemExit('check-current marker missing')
+          current_path.write_text(current.replace(current_marker, current_marker + '\n' + current_new, 1), encoding='utf-8')
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text(encoding='utf-8')
+          marker = '## v0.10.884'
+          section = """## v0.10.885
+          - 店舗名の表示整形を `js/ui/store-display-name.js` へ分離。
+          - `state.store.name` の取得は `app.js` 側に維持し、前後空白の除去と未設定時の「店舗」フォールバックだけを純粋UI helperへ移動。
+          - 店舗契約・店舗レベル・ショーケース・接客・販売・所持金・在庫・セーブ・イベント・画像には変更なし。
+          - Service Worker、`version-sync.py`、専用単体/統合検査、総合監査へ登録。
+
+          """
+          if marker not in changelog:
+              raise SystemExit('changelog marker missing')
+          changelog_path.write_text(changelog.replace(marker, section + marker, 1), encoding='utf-8')
+          PY
+
+          python3 scripts/version-sync.py --set 0.10.885
+          python3 scripts/generate-event-probability-list.py --write
+          node tools/test-store-display-name.mjs
+          python3 scripts/check-store-display-name.py
+
+      - name: Prepare real browser validation
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+          python3 scripts/generate-assets-manifest.py --write
+
+      - name: Full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: timeout 8m python3 -u scripts/check-current.py
+
+      - name: Verify no media changes and required tool images
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          base = subprocess.check_output(['git', 'rev-parse', 'HEAD^'], text=True).strip()
+          changed = subprocess.check_output(['git', 'diff', '--name-only', base], text=True).splitlines()
+          media = [p for p in changed if p.startswith('assets/') and Path(p).suffix.lower() in {'.png','.jpg','.jpeg','.webp','.gif','.svg','.mp3','.wav','.ogg','.m4a','.mp4','.webm','.mov'}]
+          if media:
+              raise SystemExit('Unexpected media changes: ' + ', '.join(media))
+          print('MEDIA DIFF: PASS — 画像・音声・動画の変更 0件')
+          expected = ['bench-peg.png','buffer.png','diamond-polishing-lap.png','dividers.png','electronic-scale.png','engraving-block.png','file.png','gem-polishing-machine.png','graver.png','hammer.png','jewelry-bench.png','loupe.png','magnifier.png','milgrain-tool.png','nipper.png','piercing-saw.png','pliers.png','rolling-mill.png','rotary-tool.png','stamps.png','torch.png','ultrasonic-cleaner.png','wood-block.png']
+          missing = [name for name in expected if not (Path('assets/images/tools') / name).is_file()]
+          if missing:
+              raise SystemExit('Missing required tool images: ' + ', '.join(missing))
+          print('TOOL IMAGES: 23/23 PASS')
+          PY
+
+      - name: Commit validated stage37 changes
+        run: |
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A ':!.github/workflows/stage37-final.yml'
+          git commit -m "v0.10.885 店舗名表示をhelperへ分離"
+          git push origin HEAD:refactor-stage37-final

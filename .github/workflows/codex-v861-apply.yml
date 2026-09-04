@@ -1,0 +1,157 @@
+name: codex v0.10.861 apply
+
+on:
+  push:
+    branches:
+      - codex/v0-10-861-gift-labels
+
+permissions:
+  contents: write
+
+jobs:
+  apply-verify-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: codex/v0-10-861-gift-labels
+          fetch-depth: 1
+      - name: Apply isolated gift label extraction
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path_str, old, new, label):
+              path = Path(path_str)
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly 1 match, got {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          app = Path('js/app.js')
+          app_text = app.read_text(encoding='utf-8')
+          import_anchor = "import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.860';"
+          if "./ui/gift-labels.js" not in app_text:
+              if app_text.count(import_anchor) != 1:
+                  raise SystemExit('app import anchor mismatch')
+              app_text = app_text.replace(
+                  import_anchor,
+                  import_anchor + "\nimport { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.860';",
+                  1,
+              )
+
+          old_category = """function giftCategoryLabel(category) {
+            return ({ rough: '原石', loose: 'ルース', item: 'アイテム', metal: '地金', jewelry: '完成品' })[category] || 'プレゼント';
+          }
+
+          """
+          old_status = """function giftStatusLabel(status) {
+            return ({ pending: '未受取', claimed: '受取済み', cancelled: '取消済み' })[status] || status || '不明';
+          }
+
+          """
+          if 'function giftCategoryLabel(category)' in app_text:
+              if app_text.count(old_category) != 1:
+                  raise SystemExit('giftCategoryLabel legacy block mismatch')
+              app_text = app_text.replace(old_category, '', 1)
+          if 'function giftStatusLabel(status)' in app_text:
+              if app_text.count(old_status) != 1:
+                  raise SystemExit('giftStatusLabel legacy block mismatch')
+              app_text = app_text.replace(old_status, '', 1)
+          app.write_text(app_text, encoding='utf-8')
+
+          sw = Path('sw.js')
+          sw_text = sw.read_text(encoding='utf-8')
+          sw_anchor = "'./js/ui/clipboard-fallback.js?v=0.10.860', './js/ui/press-hold-controller.js?v=0.10.860'"
+          if './js/ui/gift-labels.js' not in sw_text:
+              if sw_text.count(sw_anchor) != 1:
+                  raise SystemExit('sw CORE_SHELL anchor mismatch')
+              sw_text = sw_text.replace(
+                  sw_anchor,
+                  "'./js/ui/clipboard-fallback.js?v=0.10.860', './js/ui/gift-labels.js?v=0.10.860', './js/ui/press-hold-controller.js?v=0.10.860'",
+                  1,
+              )
+          sw.write_text(sw_text, encoding='utf-8')
+
+          vs = Path('scripts/version-sync.py')
+          vs_text = vs.read_text(encoding='utf-8')
+          sw_rule_anchor = "    Rule('sw.js', 'clipboard-fallback.js precache key', qparam(r'\\./js/ui/clipboard-fallback\\.js'), keep_prefix),"
+          app_rule_anchor = "    Rule('js/app.js', 'clipboard-fallback.js import key', qparam(r'\\./ui/clipboard-fallback\\.js'), keep_prefix),"
+          if "'gift-labels.js precache key'" not in vs_text:
+              if vs_text.count(sw_rule_anchor) != 1:
+                  raise SystemExit('version-sync SW anchor mismatch')
+              vs_text = vs_text.replace(
+                  sw_rule_anchor,
+                  sw_rule_anchor + "\n    Rule('sw.js', 'gift-labels.js precache key', qparam(r'\\./js/ui/gift-labels\\.js'), keep_prefix),",
+                  1,
+              )
+          if "'gift-labels.js import key'" not in vs_text:
+              if vs_text.count(app_rule_anchor) != 1:
+                  raise SystemExit('version-sync app anchor mismatch')
+              vs_text = vs_text.replace(
+                  app_rule_anchor,
+                  app_rule_anchor + "\n    Rule('js/app.js', 'gift-labels.js import key', qparam(r'\\./ui/gift-labels\\.js'), keep_prefix),",
+                  1,
+              )
+          vs.write_text(vs_text, encoding='utf-8')
+
+          current = Path('scripts/check-current.py')
+          current_text = current.read_text(encoding='utf-8')
+          check_anchor = "    ('クリップボードフォールバック', [sys.executable, str(ROOT / 'scripts/check-clipboard-fallback.py')]),"
+          gift_check = "    ('プレゼント表示ラベル', [sys.executable, str(ROOT / 'scripts/check-gift-labels.py')]),"
+          if gift_check not in current_text:
+              if current_text.count(check_anchor) != 1:
+                  raise SystemExit('check-current anchor mismatch')
+              current_text = current_text.replace(check_anchor, check_anchor + '\n' + gift_check, 1)
+          current.write_text(current_text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          changelog_text = changelog.read_text(encoding='utf-8')
+          if '## v0.10.861\n' not in changelog_text:
+              anchor = '\n\n## v0.10.860\n'
+              if changelog_text.count(anchor) != 1:
+                  raise SystemExit('CHANGELOG anchor mismatch')
+              entry = """
+
+          ## v0.10.861
+          - プレゼント画面に直書きされていたカテゴリ名・発行状態名の文字列変換だけを `js/ui/gift-labels.js` へ分離。
+          - カテゴリは原石／ルース／アイテム／地金／完成品、状態は未受取／受取済み／取消済みを従来どおり維持し、不明値のfallback挙動も変更なし。
+          - `giftPayloadSummary()` と発行済みプレゼント一覧の既存呼び出し位置は変更せず、送受信・在庫・取消・クラウド保存処理は `app.js` に維持。
+          - セーブ、認証、所持金、在庫、購入、水槽、イベント進行、日付・時間、画像assetには変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          """
+              changelog_text = changelog_text.replace(anchor, entry + anchor, 1)
+          changelog.write_text(changelog_text, encoding='utf-8')
+          PY
+
+          python3 scripts/version-sync.py --set 0.10.861
+          python3 scripts/generate-event-probability-list.py --write
+      - name: Install validation dependencies
+        shell: bash
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Validate v0.10.861
+        shell: bash
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          node --check js/app.js
+          node tools/test-gift-labels.mjs
+          python3 scripts/check-gift-labels.py
+          python3 scripts/version-sync.py --check
+          python3 scripts/generate-event-probability-list.py --check
+          timeout 8m python3 -u scripts/check-current.py
+      - name: Commit validated implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/codex-v861-apply.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "v0.10.861 プレゼント表示ラベルをUI helperへ分離"
+          git push origin HEAD:codex/v0-10-861-gift-labels

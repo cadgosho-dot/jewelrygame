@@ -1,0 +1,140 @@
+name: codex-v863-apply
+on:
+  push:
+    branches:
+      - codex/v0-10-863-tool-brief
+permissions:
+  contents: write
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply v0.10.863 tool brief extraction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_version = '0.10.862'
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+
+          import_needle = f"from './ui/craft-surface.js?v={old_version}';"
+          import_hits = [i for i, line in enumerate(app.splitlines()) if import_needle in line]
+          if len(import_hits) != 1:
+              raise SystemExit(f'craft-surface import hits={len(import_hits)}')
+          app_lines = app.splitlines()
+          insert_at = import_hits[0] + 1
+          app_lines.insert(insert_at, f"import {{ renderToolBriefMarkup }} from './ui/tool-brief.js?v={old_version}';")
+          app = '\n'.join(app_lines) + ('\n' if app.endswith('\n') else '')
+
+          old_func = """function renderToolBrief(tool, guideAction = 'glab-tool-guide') {
+            const description = String(tool?.description || '').trim();
+            const detail = String(tool?.detail || '').trim();
+            return `<section class=\"tool-brief-card\">
+              ${description ? `<p>${esc(description)}</p>` : ''}
+              ${detail && detail !== description ? `<p class=\"tool-brief-sub\">${esc(detail)}</p>` : ''}
+              <div class=\"tool-brief-actions\">
+                <button class=\"secondary-button tool-inline-guide-button\" data-action=\"${esc(guideAction)}\" data-id=\"${esc(tool.id)}\">詳しい説明を見る</button>
+              </div>
+            </section>`;
+          }"""
+          new_func = """function renderToolBrief(tool, guideAction = 'glab-tool-guide') {
+            return renderToolBriefMarkup(tool, guideAction, esc);
+          }"""
+          if app.count(old_func) != 1:
+              raise SystemExit(f'legacy renderToolBrief hits={app.count(old_func)}')
+          app = app.replace(old_func, new_func, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw_lines = sw_path.read_text(encoding='utf-8').splitlines()
+          sw_hits = [i for i, line in enumerate(sw_lines) if f'./js/ui/craft-surface.js?v={old_version}' in line]
+          if len(sw_hits) != 1:
+              raise SystemExit(f'craft-surface SW hits={len(sw_hits)}')
+          line = sw_lines[sw_hits[0]]
+          indent = line[:len(line) - len(line.lstrip())]
+          quote = "'" if "'" in line else '"'
+          sw_lines.insert(sw_hits[0] + 1, f"{indent}{quote}./js/ui/tool-brief.js?v={old_version}{quote},")
+          sw_path.write_text('\n'.join(sw_lines) + '\n', encoding='utf-8')
+
+          vs_path = Path('scripts/version-sync.py')
+          vs_lines = vs_path.read_text(encoding='utf-8').splitlines()
+          for label, new_line in [
+              ('craft-surface.js precache key', "    Rule('sw.js', 'tool-brief.js precache key', qparam(r'\\./js/ui/tool-brief\\.js'), keep_prefix),"),
+              ('craft-surface.js import key', "    Rule('js/app.js', 'tool-brief.js import key', qparam(r'\\./ui/tool-brief\\.js'), keep_prefix),"),
+          ]:
+              hits = [i for i, line in enumerate(vs_lines) if label in line]
+              if len(hits) != 1:
+                  raise SystemExit(f'{label} hits={len(hits)}')
+              vs_lines.insert(hits[0] + 1, new_line)
+          vs_path.write_text('\n'.join(vs_lines) + '\n', encoding='utf-8')
+
+          current_path = Path('scripts/check-current.py')
+          current_lines = current_path.read_text(encoding='utf-8').splitlines()
+          current_hits = [i for i, line in enumerate(current_lines) if 'check-craft-surface.py' in line]
+          if len(current_hits) != 1:
+              raise SystemExit(f'check-craft-surface registration hits={len(current_hits)}')
+          current_lines.insert(current_hits[0] + 1, "    ('工具説明UI', [sys.executable, str(ROOT / 'scripts/check-tool-brief.py')]),")
+          current_path.write_text('\n'.join(current_lines) + '\n', encoding='utf-8')
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text(encoding='utf-8')
+          marker = '\n## v0.10.862\n'
+          if changelog.count(marker) != 1:
+              raise SystemExit(f'changelog marker hits={changelog.count(marker)}')
+          entry = """
+## v0.10.863
+- 工房・g-Lab.の工具詳細画面で共通利用している工具説明カードのHTML生成だけを `js/ui/tool-brief.js` へ分離。
+- 説明文のtrim、補足文の重複抑止、詳しい説明ボタン、`data-action`・工具IDのHTMLエスケープを従来どおり維持。
+- 既存 `renderToolBrief()` は薄いラッパーとして残し、従来の `esc` をcallback注入することで既存2画面の呼び出し位置と表示内容を変更しない構造にした。
+- 購入・修理・所持状態・価格・時間判定・画面遷移・工具画像・セーブ・認証・在庫・水槽・イベント処理には変更なし。
+- 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+
+"""
+          changelog = changelog.replace(marker, '\n' + entry + '## v0.10.862\n', 1)
+          changelog_path.write_text(changelog, encoding='utf-8')
+          PY
+      - name: Synchronize version and generated docs
+        run: |
+          python3 scripts/version-sync.py --set 0.10.863
+          python3 scripts/generate-event-probability-list.py --write
+      - name: Remove temporary workflow before audit
+        run: rm .github/workflows/codex-v863-apply.yml
+      - name: Install validation dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Validate focused extraction
+        run: |
+          node --check js/app.js
+          node --check js/ui/tool-brief.js
+          node tools/test-tool-brief.mjs
+          python3 scripts/check-tool-brief.py
+          python3 scripts/version-sync.py --check
+          python3 scripts/generate-event-probability-list.py --check
+      - name: Run full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: python3 scripts/check-current.py
+      - name: Guard final diff
+        run: |
+          if git status --short | grep -E 'assets/images|\.(png|jpg|jpeg|webp|gif)$'; then
+            echo 'Image change detected; refusing cleanup commit.'
+            exit 1
+          fi
+          if test -e .github/workflows/codex-v863-apply.yml; then
+            echo 'Temporary workflow still exists.'
+            exit 1
+          fi
+          git status --short
+      - name: Commit validated v0.10.863
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'refactor: extract tool brief presenter for v0.10.863 [skip ci]'
+          git push

@@ -35,6 +35,7 @@ CHECKS = [
     ('工房スタッフ品質説明', [sys.executable, str(ROOT / 'scripts/check-workshop-staff-quality-description.py')]),
     ('工房ルース表示名', [sys.executable, str(ROOT / 'scripts/check-workshop-loose-display-name.py')]),
     ('地金相場日付表示', [sys.executable, str(ROOT / 'scripts/check-metal-market-date-label.py')]),
+    ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),

@@ -32,6 +32,7 @@ CHECKS = [
     ('ルースカット表示ラベル', [sys.executable, str(ROOT / 'scripts/check-loose-shape-label.py')]),
     ('原石表示ラベル', [sys.executable, str(ROOT / 'scripts/check-rough-display-name.py')]),
     ('残り時間表示ラベル', [sys.executable, str(ROOT / 'scripts/check-time-remaining-label.py')]),
+    ('工房スタッフ品質説明', [sys.executable, str(ROOT / 'scripts/check-workshop-staff-quality-description.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),

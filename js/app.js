@@ -3,36 +3,37 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.868';
+} from './game-data.js?v=0.10.869';
 
-const UI_BUILD_VERSION = '0.10.868';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.868';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.868';
+const UI_BUILD_VERSION = '0.10.869';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.869';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.869';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.868';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.869';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.868';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.868';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.868';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.868';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.868';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.868';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.868';
-import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.868';
-import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.868';
-import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.868';
-import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.868';
-import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.868';
-import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.868';
-import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.868';
-import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.868';
-import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.868';
-import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.868';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.868';
+} from './firebase-service.js?v=0.10.869';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.869';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.869';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.869';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.869';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.869';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.869';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.869';
+import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.869';
+import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.869';
+import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.869';
+import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.869';
+import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.869';
+import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.869';
+import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.869';
+import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.869';
+import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.869';
+import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.869';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.869';
 
 
 
@@ -12369,12 +12370,7 @@ function goMain() {
 }
 
 function timeRemainingLabel(minutes) {
-  const remaining = Math.max(0, Math.round(Number(minutes) || 0));
-  const hours = Math.floor(remaining / 60);
-  const restMinutes = remaining % 60;
-  if (hours > 0 && restMinutes > 0) return `あと${hours}時間${restMinutes}分`;
-  if (hours > 0) return `あと${hours}時間`;
-  return `あと${restMinutes}分`;
+  return formatTimeRemainingLabel(minutes);
 }
 
 function gameTimePanel() {

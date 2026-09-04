@@ -1,34 +1,261 @@
-name: stage35-inspect
+name: stage35-apply
 on:
   push:
     branches: [refactor-stage35-inspect]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect customer preference label
+        with:
+          fetch-depth: 2
+      - name: Apply stage35 customer preference label refactor
         run: |
           python3 - <<'PY'
-          import re
           from pathlib import Path
-          lines = Path('js/app.js').read_text(encoding='utf-8').splitlines()
-          name = 'customerPreferenceLabel'
-          refs = [i for i,line in enumerate(lines,1) if re.search(r'\b'+name+r'\s*\(', line)]
-          print('refs:', refs)
-          start = refs[0]
-          depth = 0
-          begun = False
-          for j in range(start, min(len(lines), start + 40) + 1):
-              line = lines[j-1]
-              print(f'{j}: {line}')
-              for ch in line:
-                  if ch == '{':
-                      depth += 1; begun = True
-                  elif ch == '}':
-                      depth -= 1
-              if begun and depth == 0:
-                  break
+
+          old_version = '0.10.882'
+          new_version = '0.10.883'
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+
+          legacy = """function customerPreferenceLabel(request) {
+            const preference = request?.preference || { type: 'gem', value: request?.gem };
+            if (preference.label) return String(preference.label);
+            if (preference.type === 'metal') return METALS[preference.value]?.name || '地金指定';
+            if (preference.type === 'design') return DESIGNS[preference.value]?.name || 'デザイン指定';
+            if (preference.type === 'color') return String(preference.value || '色指定');
+            return GEMS[preference.value]?.name || '石指定';
+          }"""
+          wrapper = """function customerPreferenceLabel(request) {
+            const preference = request?.preference || { type: 'gem', value: request?.gem };
+            if (preference.label) return formatCustomerPreferenceLabel(preference);
+            let resolvedName = '';
+            if (preference.type === 'metal') resolvedName = METALS[preference.value]?.name || '';
+            else if (preference.type === 'design') resolvedName = DESIGNS[preference.value]?.name || '';
+            else if (preference.type !== 'color') resolvedName = GEMS[preference.value]?.name || '';
+            return formatCustomerPreferenceLabel(preference, resolvedName);
+          }"""
+          if app.count(legacy) != 1:
+              raise SystemExit('legacy customerPreferenceLabel implementation count is not 1')
+          app = app.replace(legacy, wrapper, 1)
+
+          marker = f"import {{ formatNotificationDateLabel }} from './ui/notification-date-label.js?v={old_version}';"
+          new_import = f"import {{ formatCustomerPreferenceLabel }} from './ui/customer-preference-label.js?v={old_version}';"
+          if marker not in app:
+              raise SystemExit('notification date label import marker not found')
+          app = app.replace(marker, marker + '\n' + new_import, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          Path('js/ui/customer-preference-label.js').write_text("""export function formatCustomerPreferenceLabel(preference = {}, resolvedName = '') {
+            if (preference?.label) return String(preference.label);
+            if (preference?.type === 'metal') return resolvedName || '地金指定';
+            if (preference?.type === 'design') return resolvedName || 'デザイン指定';
+            if (preference?.type === 'color') return String(preference?.value || '色指定');
+            return resolvedName || '石指定';
+          }
+          """, encoding='utf-8')
+
+          Path('tools/test-customer-preference-label.mjs').write_text("""import assert from 'node:assert/strict';
+          import { formatCustomerPreferenceLabel } from '../js/ui/customer-preference-label.js';
+
+          assert.equal(formatCustomerPreferenceLabel({ label: '明示希望', type: 'metal', value: 'gold' }, '金'), '明示希望');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'metal', value: 'gold' }, 'K18'), 'K18');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'metal', value: 'unknown' }, ''), '地金指定');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'design', value: 'classic' }, 'クラシック'), 'クラシック');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'design', value: 'unknown' }, ''), 'デザイン指定');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'color', value: '青' }, 'unused'), '青');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'color', value: '' }, ''), '色指定');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'gem', value: 'ruby' }, 'ルビー'), 'ルビー');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'other', value: 'ruby' }, 'ルビー'), 'ルビー');
+          assert.equal(formatCustomerPreferenceLabel({ type: 'gem', value: 'unknown' }, ''), '石指定');
+          console.log('CUSTOMER PREFERENCE LABEL UNIT: PASS');
+          """, encoding='utf-8')
+
+          Path('scripts/check-customer-preference-label.py').write_text("""#!/usr/bin/env python3
+          \"\"\"Verify customer preference display stays a pure UI helper.\"\"\"
+          from __future__ import annotations
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP_PATH = ROOT / 'js/app.js'
+          HELPER_PATH = ROOT / 'js/ui/customer-preference-label.js'
+          SW_PATH = ROOT / 'sw.js'
+          VS_PATH = ROOT / 'scripts/version-sync.py'
+          CURRENT_PATH = ROOT / 'scripts/check-current.py'
+          APP = APP_PATH.read_text(encoding='utf-8')
+          HELPER = HELPER_PATH.read_text(encoding='utf-8')
+          SW = SW_PATH.read_text(encoding='utf-8')
+          VS = VS_PATH.read_text(encoding='utf-8')
+          CURRENT = CURRENT_PATH.read_text(encoding='utf-8')
+
+          legacy = \"\"\"function customerPreferenceLabel(request) {
+            const preference = request?.preference || { type: 'gem', value: request?.gem };
+            if (preference.label) return String(preference.label);
+            if (preference.type === 'metal') return METALS[preference.value]?.name || '地金指定';
+            if (preference.type === 'design') return DESIGNS[preference.value]?.name || 'デザイン指定';
+            if (preference.type === 'color') return String(preference.value || '色指定');
+            return GEMS[preference.value]?.name || '石指定';
+          }\"\"\"
+          wrapper = \"\"\"function customerPreferenceLabel(request) {
+            const preference = request?.preference || { type: 'gem', value: request?.gem };
+            if (preference.label) return formatCustomerPreferenceLabel(preference);
+            let resolvedName = '';
+            if (preference.type === 'metal') resolvedName = METALS[preference.value]?.name || '';
+            else if (preference.type === 'design') resolvedName = DESIGNS[preference.value]?.name || '';
+            else if (preference.type !== 'color') resolvedName = GEMS[preference.value]?.name || '';
+            return formatCustomerPreferenceLabel(preference, resolvedName);
+          }\"\"\"
+
+          checks = {
+              'versioned helper import exists': f\"from './ui/customer-preference-label.js?v={VERSION}';\" in APP,
+              'app keeps thin customerPreferenceLabel wrapper': wrapper in APP,
+              'legacy implementation removed from app': legacy not in APP,
+              'customerPreferenceLabel remains actively referenced': APP.count('customerPreferenceLabel(') == 2,
+              'explicit label short-circuit remains': 'if (preference.label) return formatCustomerPreferenceLabel(preference);' in APP,
+              'metal lookup remains in app': "METALS[preference.value]?.name" in wrapper,
+              'design lookup remains in app': "DESIGNS[preference.value]?.name" in wrapper,
+              'gem lookup remains in app': "GEMS[preference.value]?.name" in wrapper,
+              'helper exports formatter': 'export function formatCustomerPreferenceLabel(preference = {}, resolvedName = \'\')' in HELPER,
+              'helper keeps metal fallback': "return resolvedName || '地金指定'" in HELPER,
+              'helper keeps design fallback': "return resolvedName || 'デザイン指定'" in HELPER,
+              'helper keeps color fallback': "return String(preference?.value || '色指定')" in HELPER,
+              'helper keeps gem fallback': "return resolvedName || '石指定'" in HELPER,
+              'service worker precaches helper': f\"./js/ui/customer-preference-label.js?v={VERSION}\" in SW,
+              'version sync knows helper precache': \"'customer-preference-label.js precache key'\" in VS,
+              'version sync knows helper import': \"'customer-preference-label.js import key'\" in VS,
+              'current audit registers checker': \"'顧客希望表示'\" in CURRENT and 'check-customer-preference-label.py' in CURRENT,
+          }
+          for forbidden in (
+              'state.', 'state =', 'METALS', 'DESIGNS', 'GEMS', 'CUSTOMERS', 'saveGame', 'loadState',
+              'localStorage', 'sessionStorage', 'indexedDB', 'firebase', 'money', 'inventory', 'eventState',
+              'screenData', 'document.', 'window.', 'navigator.', 'setTimeout', 'setInterval', './assets/',
+              'Math.random', 'advanceTime', 'sell', 'purchase', 'budget', 'order', 'cloud',
+          ):
+              checks[f'helper has no reverse dependency: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+          for source in (APP_PATH, HELPER_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+          unit = subprocess.run(['node', 'tools/test-customer-preference-label.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.stderr:
+              print(unit.stderr, file=sys.stderr, end='')
+          if unit.returncode:
+              failed.append('customer preference label unit test')
+          if failed:
+              print('\\nCUSTOMER PREFERENCE LABEL INTEGRATION: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+          print('\\nCUSTOMER PREFERENCE LABEL INTEGRATION: PASS')
+          print('顧客希望のデータ参照はapp.js側に維持し、表示種別とフォールバック文字列の選択だけをUI helperへ分離しています。')
+          """, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          sw_marker = f"  './js/ui/notification-date-label.js?v={old_version}',"
+          sw_new = f"  './js/ui/customer-preference-label.js?v={old_version}',"
+          if sw_marker not in sw:
+              raise SystemExit('notification date label precache marker not found')
+          sw = sw.replace(sw_marker, sw_marker + '\n' + sw_new, 1)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          vs_path = Path('scripts/version-sync.py')
+          vs = vs_path.read_text(encoding='utf-8')
+          lines = vs.splitlines()
+          out = []
+          inserted_precache = False
+          inserted_import = False
+          for line in lines:
+              out.append(line)
+              if "'notification-date-label.js precache key'" in line:
+                  out.append("    Rule('sw.js', 'customer-preference-label.js precache key', qparam(r'\\./js/ui/customer-preference-label\\.js'), keep_prefix),")
+                  inserted_precache = True
+              if "'notification-date-label.js import key'" in line:
+                  out.append("    Rule('js/app.js', 'customer-preference-label.js import key', qparam(r'\\./ui/customer-preference-label\\.js'), keep_prefix),")
+                  inserted_import = True
+          if not (inserted_precache and inserted_import):
+              raise SystemExit('version-sync notification date label markers not both found')
+          vs_path.write_text('\n'.join(out) + '\n', encoding='utf-8')
+
+          current_path = Path('scripts/check-current.py')
+          current = current_path.read_text(encoding='utf-8')
+          current_marker = "    ('通知日付表示', [sys.executable, str(ROOT / 'scripts/check-notification-date-label.py')]),"
+          current_new = "    ('顧客希望表示', [sys.executable, str(ROOT / 'scripts/check-customer-preference-label.py')]),"
+          if current_marker not in current:
+              raise SystemExit('check-current notification date label marker not found')
+          current = current.replace(current_marker, current_marker + '\n' + current_new, 1)
+          current_path.write_text(current, encoding='utf-8')
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text(encoding='utf-8')
+          marker = '## v0.10.882'
+          section = """## v0.10.883
+          - 店頭接客の「優先する希望」表示選択を `js/ui/customer-preference-label.js` へ分離。
+          - 既存 `customerPreferenceLabel()` は薄いラッパーとして残し、METALS / DESIGNS / GEMS のデータ参照は `app.js` 側に維持。明示ラベル・地金・デザイン・色・石の表示規則と既存フォールバックだけをhelperへ移動。
+          - 顧客生成・接客判定・商品提案・予算・販売・所持金・在庫・セーブ・イベント・画像には変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          """
+          if marker not in changelog:
+              raise SystemExit('CHANGELOG v0.10.882 marker not found')
+          changelog = changelog.replace(marker, section + marker, 1)
+          changelog_path.write_text(changelog, encoding='utf-8')
           PY
+
+          python3 scripts/version-sync.py --set 0.10.883
+          python3 scripts/generate-event-probability-list.py --write
+          node tools/test-customer-preference-label.mjs
+          python3 scripts/check-customer-preference-label.py
+      - name: Prepare real browser validation
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+          python3 scripts/generate-assets-manifest.py --write
+      - name: Full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 8m python3 -u scripts/check-current.py
+      - name: Verify no media changes and required tool images
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          base = 'abcf1838d29da369cdc900034ce6c6340aac5e8d'
+          changed = subprocess.check_output(['git', 'diff', '--name-only', base], text=True).splitlines()
+          media = [p for p in changed if p.startswith('assets/') and Path(p).suffix.lower() in {'.png','.jpg','.jpeg','.webp','.gif','.svg','.mp3','.wav','.ogg','.m4a','.mp4','.webm','.mov'}]
+          if media:
+              raise SystemExit('Unexpected media changes: ' + ', '.join(media))
+          print('MEDIA DIFF: PASS — 画像・音声・動画の変更 0件')
+          expected = [
+              'bench-peg.png','buffer.png','diamond-polishing-lap.png','dividers.png','electronic-scale.png','engraving-block.png','file.png','gem-polishing-machine.png','graver.png','hammer.png','jewelry-bench.png','loupe.png','magnifier.png','milgrain-tool.png','nipper.png','piercing-saw.png','pliers.png','rolling-mill.png','rotary-tool.png','stamps.png','torch.png','ultrasonic-cleaner.png','wood-block.png',
+          ]
+          root = Path('assets/images/tools')
+          missing = [name for name in expected if not (root / name).is_file()]
+          if missing:
+              raise SystemExit('Missing required tool images: ' + ', '.join(missing))
+          print(f'TOOL IMAGES: {len(expected)}/23 PASS')
+          PY
+      - name: Remove temporary workflow and commit
+        run: |
+          rm .github/workflows/stage35-inspect.yml
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A
+          git commit -m "v0.10.883 顧客希望表示をhelperへ分離"
+          git push origin HEAD:refactor-stage35-inspect

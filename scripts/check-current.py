@@ -43,6 +43,7 @@ CHECKS = [
     ('誕生日日本語表示', [sys.executable, str(ROOT / 'scripts/check-birthday-japanese-label.py')]),
     ('ゲーム内日付表示', [sys.executable, str(ROOT / 'scripts/check-game-date-label.py')]),
     ('収支履歴日付表示', [sys.executable, str(ROOT / 'scripts/check-finance-row-date-label.py')]),
+    ('通知日付表示', [sys.executable, str(ROOT / 'scripts/check-notification-date-label.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

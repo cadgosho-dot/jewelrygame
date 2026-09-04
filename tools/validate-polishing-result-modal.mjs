@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+const modalPresenterPath = path.join(ROOT, 'js/ui/modal-presenter.js');
+const modalPresenter = fs.existsSync(modalPresenterPath) ? fs.readFileSync(modalPresenterPath, 'utf8') : '';
+const modalContract = `${app}\n${modalPresenter}`;
 const errors = [];
 
 const requireText = (text, marker, label) => {
@@ -12,7 +15,7 @@ const requireText = (text, marker, label) => {
 };
 
 requireText(app, 'hideActions = false', 'モーダル操作欄の非表示オプション');
-requireText(app, "${hideActions ? '' : `<div class=\"modal-actions\">", '操作欄の条件付き描画');
+requireText(modalContract, "${hideActions ? '' : `<div class=\"modal-actions\">", '操作欄の条件付き描画');
 requireText(app, 'class="polishing-result-loose-visual"', '完成ルースの独立表示枠');
 requireText(app, 'class="secondary-button polishing-result-return-button"', 'ルース下の戻るボタン');
 requireText(app, 'data-action="polishing-result-return">戻る</button>', '戻るボタンの表示と動作');

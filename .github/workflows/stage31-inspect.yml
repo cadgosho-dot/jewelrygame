@@ -19,8 +19,6 @@ jobs:
           from pathlib import Path
 
           VERSION='0.10.878'
-          NEXT='0.10.879'
-          root=Path('.')
           assert Path('VERSION').read_text(encoding='utf-8').strip() == VERSION
 
           def replace_once(path, old, new):
@@ -192,11 +190,18 @@ jobs:
           print('media changes:', media)
           if media:
               raise SystemExit('Unexpected media changes: '+', '.join(media))
+          expected = [
+              'bench-peg.png', 'buffer.png', 'diamond-polishing-lap.png', 'dividers.png',
+              'electronic-scale.png', 'engraving-block.png', 'file.png', 'gem-polishing-machine.png',
+              'graver.png', 'hammer.png', 'jewelry-bench.png', 'loupe.png', 'magnifier.png',
+              'milgrain-tool.png', 'nipper.png', 'piercing-saw.png', 'pliers.png', 'rolling-mill.png',
+              'rotary-tool.png', 'stamps.png', 'torch.png', 'ultrasonic-cleaner.png', 'wood-block.png',
+          ]
           tools=Path('assets/images/tools')
-          count=sum(1 for p in tools.glob('*') if p.is_file())
-          print(f'tool image files present: {count}')
-          if count != 23:
-              raise SystemExit(f'Expected 23 tool images, found {count}')
+          missing=[name for name in expected if not (tools/name).is_file()]
+          if missing:
+              raise SystemExit('Missing expected tool images: '+', '.join(missing))
+          print(f'expected tool images present: {len(expected)}/23')
           PY
 
       - name: Remove temporary workflow and commit

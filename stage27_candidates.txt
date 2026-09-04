@@ -1,0 +1,293 @@
+VERSION=0.10.874
+CANDIDATES=39
+
+--- jewelryDisplayBranch | line=4867 | lines=3 | refs=2
+function jewelryDisplayBranch(itemId) {
+  return showcaseLocationForJewelry(itemId)?.branch || null;
+}
+
+--- normalizeAquariumObservationName | line=13805 | lines=3 | refs=21
+function normalizeAquariumObservationName(value) {
+  return String(value || '').replace(/[\s・･（）()\[\]【】「」『』]/g, '').toLowerCase();
+}
+
+--- okachimachiQuizPlayerName | line=11569 | lines=3 | refs=2
+function okachimachiQuizPlayerName() {
+  return String(state?.playerName || 'あなた').trim() || 'あなた';
+}
+
+--- pearlHumanPlayerName | line=11051 | lines=3 | refs=2
+function pearlHumanPlayerName() {
+  return String(state?.playerName || 'あなた').trim() || 'あなた';
+}
+
+--- retroBattlePlayerName | line=11359 | lines=3 | refs=2
+function retroBattlePlayerName() {
+  return String(state?.playerName || 'あなた').trim() || 'あなた';
+}
+
+--- westernUnionPlayerName | line=7166 | lines=3 | refs=2
+function westernUnionPlayerName() {
+  return String(state?.playerName || '君').trim() || '君';
+}
+
+--- adjustDisplayCaseInstallQuantity | line=3431 | lines=4 | refs=4
+function adjustDisplayCaseInstallQuantity(delta) {
+  setDisplayCaseInstallQuantity(displayCaseInstallQuantity() + Number(delta || 0));
+  syncDisplayCaseInstallCard();
+}
+
+--- adjustDisplayCasePurchaseQuantity | line=3391 | lines=4 | refs=4
+function adjustDisplayCasePurchaseQuantity(delta) {
+  setDisplayCasePurchaseQuantity(displayCasePurchaseQuantity() + Number(delta || 0));
+  syncDisplayCasePurchaseCard();
+}
+
+--- customerTemplateText | line=13138 | lines=4 | refs=4
+function customerTemplateText(template, request = {}) {
+  const itemLabel = ITEMS[request.item]?.name || 'ジュエリー';
+  return String(template || '').replace(/\{item\}/g, itemLabel);
+}
+
+--- financeRowDateLabel | line=14200 | lines=4 | refs=2
+function financeRowDateLabel(dayNumber) {
+  const date = gameDateForDay(dayNumber);
+  return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+--- normalizeMysteryChineseMealImageName | line=15020 | lines=4 | refs=4
+function normalizeMysteryChineseMealImageName(value) {
+  const name = String(value || '').trim().replace(/\\/g, '/').split('/').pop() || '';
+  return MYSTERY_CHINESE_MEAL_EVENT_IMAGES.includes(name) ? name : '';
+}
+
+--- notificationDateLabel | line=14205 | lines=4 | refs=2
+function notificationDateLabel(dayNumber) {
+  const date = gameDateForDay(dayNumber);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+--- phoneItemEffectText | line=20576 | lines=4 | refs=2
+function phoneItemEffectText(item, beforeHunger, afterHunger) {
+  if (Number(item?.effect?.hunger) > 0) return `空腹度 ${beforeHunger} → ${afterHunger}`;
+  return '効果が発動しました。';
+}
+
+--- sleepRestrictionMessage | line=5944 | lines=4 | refs=3
+function sleepRestrictionMessage() {
+  if (isAlienAbducted()) return '宇宙では19時になるまで寝られません。空腹度が0の場合は、すぐに休めます。';
+  return '19時になるまで寝られません。空腹で選べる食事がない場合は、19時前でも寝られます。';
+}
+
+--- storeDisplayName | line=4828 | lines=4 | refs=5
+function storeDisplayName() {
+  const name = String(state?.store?.name || '').trim();
+  return name || '店舗';
+}
+
+--- displayCasePurchaseQuantity | line=3368 | lines=5 | refs=6
+function displayCasePurchaseQuantity() {
+  const maximum = displayCasePurchaseMaximum();
+  const initial = Number.isFinite(Number(displayCasePurchaseDraft)) ? displayCasePurchaseDraft : 1;
+  return setDisplayCasePurchaseQuantity(maximum > 0 ? Math.max(1, initial) : 0);
+}
+
+--- formatAutosaveTime | line=3899 | lines=5 | refs=1
+function formatAutosaveTime(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+--- formatSaveDiagnosticDate | line=21143 | lines=5 | refs=2
+function formatSaveDiagnosticDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('ja-JP');
+}
+
+--- gameDateLabel | line=6082 | lines=5 | refs=10
+function gameDateLabel(dayNumber = state?.game?.day || 1) {
+  const date = gameDateForDay(dayNumber);
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）`;
+}
+
+--- installStatusText | line=3590 | lines=5 | refs=2
+function installStatusText() {
+  if (isStandaloneApp()) return 'ホーム画面へ追加済みです。';
+  if (deferredInstallPrompt || shellInstallAvailable) return 'この端末へ直接追加できます。ブラウザのメニューを開く必要はありません。';
+  return '追加ボタンを押してください。直接追加できない環境では、Chromeで開くボタンを表示します。';
+}
+
+--- looseDisplayLabel | line=1460 | lines=5 | refs=19
+function looseDisplayLabel(gemId, shapeId, { suffix = false } = {}) {
+  const gemName = GEMS[gemId]?.name || 'ルース';
+  if (gemId === 'pearl') return `${gemName}${suffix ? 'ルース' : ''}`;
+  return `${gemName}・${looseShapeLabel(shapeId)}${suffix ? 'ルース' : ''}`;
+}
+
+--- normalizeCinemaEventVideoName | line=14536 | lines=5 | refs=8
+function normalizeCinemaEventVideoName(value) {
+  const name = String(value || '').trim().replace(/\\/g, '/').split('/').pop() || '';
+  if (!name || name === '.' || name === '..' || !/\.(mp4|webm|ogg|mov)$/i.test(name)) return '';
+  return name;
+}
+
+--- setDisplayCasePurchaseQuantity | line=3362 | lines=5 | refs=3
+function setDisplayCasePurchaseQuantity(value) {
+  const maximum = displayCasePurchaseMaximum();
+  displayCasePurchaseDraft = Math.max(0, Math.min(maximum, Math.floor(Number(value) || 0)));
+  return displayCasePurchaseDraft;
+}
+
+--- winterColdTextActive | line=6332 | lines=5 | refs=7
+function winterColdTextActive() {
+  if (!state) return false;
+  const eventState = winterColdEventState();
+  return eventState.active && eventState.stage === 'sick';
+}
+
+--- autopilotSettingStatusText | line=22779 | lines=6 | refs=2
+function autopilotSettingStatusText() {
+  if (!state?.settings?.autopilotEnabled) return 'オフの間は自動進行しません。オンにした当日は進まず、翌日から1日ずつ進みます。オンの間はメイン画面からスマートフォンだけ操作できます。';
+  const autopilot = ensureAutopilotState();
+  const lastDate = autopilot?.lastRealDate ? autopilot.lastRealDate.replace(/-/g, '/') : '本日から開始';
+  return `稼働中・最終判定 ${lastDate}・累計 ${Math.max(0, Number(autopilot?.totalDays) || 0)}日。ゲームを閉じていた日も、次回起動時に経過日数分を進めます。メイン画面ではスマートフォンだけ操作できます。`;
+}
+
+--- canAcquireAquariumDisplay | line=13733 | lines=6 | refs=2
+function canAcquireAquariumDisplay(id, quantity = 1) {
+  const def = aquariumDisplayDefinition(id), row = aquariumState().displayItems?.[id], qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  if (!def || !row) return aquariumLimitResult(false, 'unknown');
+  if (row.owned + qty > def.ownedMax) return aquariumLimitResult(false, 'limit', AQUARIUM_CONFIG.rules.messages.displayLimit);
+  return aquariumLimitResult(true);
+}
+
+--- formatSaveDiagnosticBytes | line=21136 | lines=6 | refs=4
+function formatSaveDiagnosticBytes(value) {
+  const bytes = Math.max(0, Number(value) || 0);
+  if (bytes < 1024) return `${Math.round(bytes).toLocaleString('ja-JP')} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+--- parseSaveText | line=3911 | lines=6 | refs=5
+function parseSaveText(raw) {
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (!isSaveStateCandidate(parsed)) throw new Error('セーブデータの必須項目がありません。');
+  return parsed;
+}
+
+--- tryRandomNamedEventStarters | line=11323 | lines=6 | refs=2
+function tryRandomNamedEventStarters(entries) {
+  for (const entry of shuffleEventAttempts(entries)) {
+    if (entry?.start?.()) return String(entry.id || 'event');
+  }
+  return '';
+}
+
+--- adjustDisplayCaseQuantityFromButton | line=3436 | lines=7 | refs=1
+function adjustDisplayCaseQuantityFromButton(button) {
+  if (button?.dataset?.action === 'store-case-install-qty-step') {
+    adjustDisplayCaseInstallQuantity(button.dataset.delta);
+    return;
+  }
+  adjustDisplayCasePurchaseQuantity(button?.dataset?.delta);
+}
+
+--- adjustDisplayCaseQuantityLongPress | line=3236 | lines=7 | refs=2
+function adjustDisplayCaseQuantityLongPress(button) {
+  const installing = button?.dataset?.action === 'store-case-install-qty-step';
+  const current = installing ? displayCaseInstallQuantity() : displayCasePurchaseQuantity();
+  const delta = longPressQuantityDelta(current, button?.dataset?.delta);
+  if (installing) adjustDisplayCaseInstallQuantity(delta);
+  else adjustDisplayCasePurchaseQuantity(delta);
+}
+
+--- saveDiagnosticsCapacityLabel | line=21170 | lines=7 | refs=2
+function saveDiagnosticsCapacityLabel(projectedCount, maxCount) {
+  if (maxCount <= 0) return '確認不能';
+  if (projectedCount > maxCount) return 'クラウド上限超過';
+  if (projectedCount === maxCount) return '上限付近';
+  if (projectedCount >= Math.ceil(maxCount * 0.8)) return '注意';
+  return '余裕あり';
+}
+
+--- setAquariumDisplayInstalled | line=13771 | lines=7 | refs=2
+function setAquariumDisplayInstalled(id, target) {
+  const aquarium = aquariumState(), def = aquariumDisplayDefinition(id), row = aquarium.displayItems?.[id]; if (!def || !row || def.required) return aquariumLimitResult(false, 'required');
+  const next = Math.max(0, Math.floor(Number(target) || 0));
+  if (next > def.installedMax || next > row.owned) return aquariumLimitResult(false, 'limit', next > row.owned ? '所持数が不足しています' : AQUARIUM_CONFIG.rules.messages.displayLimit);
+  if (row.installed === next) return aquariumLimitResult(true);
+  row.installed = next; aquarium.lastSyncRevision += 1; return aquariumLimitResult(true);
+}
+
+--- customerPreferenceLabel | line=19120 | lines=8 | refs=2
+function customerPreferenceLabel(request) {
+  const preference = request?.preference || { type: 'gem', value: request?.gem };
+  if (preference.label) return String(preference.label);
+  if (preference.type === 'metal') return METALS[preference.value]?.name || '地金指定';
+  if (preference.type === 'design') return DESIGNS[preference.value]?.name || 'デザイン指定';
+  if (preference.type === 'color') return String(preference.value || '色指定');
+  return GEMS[preference.value]?.name || '石指定';
+}
+
+--- calendarDateLabelFromKey | line=6185 | lines=9 | refs=2
+function calendarDateLabelFromKey(key) {
+  const match = String(key || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return '';
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
+  if (Number.isNaN(date.getTime())) return '';
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+  const holidayName = japaneseHolidayName(date);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）${holidayName ? `・${holidayName}` : ''}`;
+}
+
+--- renderDisplayProductVisual | line=17561 | lines=9 | refs=6
+function renderDisplayProductVisual(product, extraClass = '') {
+  const classes = ['display-product-visual'];
+  if (product?.id) classes.push(`display-product-${product.id}`);
+  if (extraClass) classes.push(extraClass);
+  if (product?.image) {
+    return `<span class="${classes.join(' ')}"><img src="${product.image}" alt="${esc(product.name)}" loading="lazy" decoding="async"></span>`;
+  }
+  return `<span class="material-chip" aria-hidden="true">${esc(product?.symbol || '')}</span>`;
+}
+
+--- storeNameEntry | line=5137 | lines=9 | refs=1
+function storeNameEntry(buttonAction, buttonLabel) {
+  return `
+    <label class="name-entry-field">
+      <span>店舗名</span>
+      <input id="store-name-input" type="text" maxlength="30" autocomplete="organization" enterkeyhint="done" placeholder="店舗名を入力">
+    </label>
+    <p class="small-note">契約した店舗は「店舗1」「店舗2」「店舗3」として選択できます。</p>
+    <button class="primary-button full-button" data-action="${buttonAction}">${buttonLabel}</button>`;
+}
+
+--- orderDisplayStatus | line=13276 | lines=10 | refs=3
+function orderDisplayStatus(order) {
+  if (order?.status === '期限切れ') return '期限切れ';
+  if (order?.status === '完成') return '納品可能';
+  if (order?.status === '受注') {
+    const requirements = orderRequirements(order);
+    const feasibility = orderFeasibility(order);
+    return requirements.enoughMetal && requirements.enoughLoose && feasibility.artisanReady && feasibility.equipmentReady ? '製作可能' : '未製作';
+  }
+  return order?.status || '未製作';
+}
+
+--- headerHelpText | line=12392 | lines=11 | refs=2
+function headerHelpText(screenName) {
+  const descriptions = {
+    mining: '採掘場所を選び、表示された時間を使って原石を探します。',
+    workshop: '原石研磨、ジュエリー製作、在庫、工具・設備を確認できます。',
+    store: 'ショーケース、販売価格、接客、受注品など店舗の運営を行います。',
+    okachimachi: '地金屋、ルース屋、g-Lab.など御徒町の施設を利用できます。',
+    phone: '通知、プロフィール、カレンダー、収支、アイテム、プレゼント、スマホゲーム、AI、設定を利用できます。',
+    todayGem: 'ゲーム内の日付に応じた宝石学情報を確認できます。',
+  };
+  return descriptions[screenName] || '';
+}

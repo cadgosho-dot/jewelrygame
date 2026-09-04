@@ -11,27 +11,29 @@ jobs:
       - uses: actions/checkout@v4
       - name: Inspect active pure display candidates
         run: |
+          echo 'stage31 inspection second push'
           python3 - <<'PY'
           from pathlib import Path
           import re
           p=Path('js/app.js')
           lines=p.read_text(encoding='utf-8').splitlines()
-          print('=== SAVE DIAGNOSTICS AREA ===')
+          print('=== BIRTHDAY LABEL REFERENCES ===')
+          for i,line in enumerate(lines,1):
+              if 'birthdayJapaneseLabel' in line:
+                  print(f'{i:05d}: {line}')
+          print('\n=== SAVE DIAGNOSTICS AREA ===')
           for i in range(21070, min(21360,len(lines))+1):
               print(f'{i:05d}: {lines[i-1]}')
           print('\n=== SMALL DISPLAY-LIKE FUNCTION DEFINITIONS ===')
           text='\n'.join(lines)
           pat=re.compile(r'(?m)^function\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{')
           matches=list(pat.finditer(text))
-          starts=[m.start() for m in matches]+[len(text)]
-          for idx,m in enumerate(matches):
+          for m in matches:
               name=m.group(1)
               if not re.search(r'(format|label|text|name|title|description|display|message|caption|summary)', name, re.I):
                   continue
               line=text.count('\n',0,m.start())+1
-              # conservative brace scan to obtain function body length
-              pos=m.end(); depth=1
-              in_s=in_d=in_t=False; esc=False
+              pos=m.end(); depth=1; in_s=in_d=in_t=False; esc=False
               while pos < len(text) and depth:
                   c=text[pos]
                   if esc: esc=False
@@ -53,7 +55,6 @@ jobs:
               length=endline-line+1
               calls=len(re.findall(r'\b'+re.escape(name)+r'\s*\(', text))
               if length <= 18:
-                  body='\n'.join(lines[line-1:endline])
                   print(f'--- {name} line={line} lines={length} occurrences={calls} ---')
-                  print(body)
+                  print('\n'.join(lines[line-1:endline]))
           PY

@@ -23,6 +23,7 @@ CHECKS = [
     ('モーダル表示管理', [sys.executable, str(ROOT / 'scripts/check-modal-presenter.py')]),
     ('自動セーブ状態表示', [sys.executable, str(ROOT / 'scripts/check-autosave-status-presenter.py')]),
     ('クリップボードフォールバック', [sys.executable, str(ROOT / 'scripts/check-clipboard-fallback.py')]),
+    ('プレゼント表示ラベル', [sys.executable, str(ROOT / 'scripts/check-gift-labels.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),

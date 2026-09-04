@@ -12,7 +12,7 @@ APP_PATH = ROOT / 'js/app.js'
 FB = FB_PATH.read_text(encoding='utf-8')
 APP = APP_PATH.read_text(encoding='utf-8')
 GIFT = FB[FB.index('export async function createGiftCode'):FB.index('export function giftErrorMessage')]
-APP_GIFT_PERSIST = APP[APP.index('function persistTransactionalGiftState'):APP.index('function giftStatusLabel')]
+APP_GIFT_PERSIST = APP[APP.index('function persistTransactionalGiftState'):APP.index('function pendingGiftOutboxEntries')]
 
 checks = {
     'gift reads current saveMeta/current generation': 'readGiftCloudBase(uid)' in GIFT,

@@ -38,8 +38,13 @@ jobs:
                   n = line[i+1] if i + 1 < len(line) else ''
                   if in_block:
                       if c == '*' and n == '/':
-                          in_block = False; i += 2; continue
-                      i += 1; continue
+                          in_block = False
+                          out.extend('  ')
+                          i += 2
+                          continue
+                      out.append(' ')
+                      i += 1
+                      continue
                   if quote:
                       if escape:
                           escape = False
@@ -48,14 +53,25 @@ jobs:
                       elif c == quote:
                           quote = None
                       out.append(' ')
-                      i += 1; continue
+                      i += 1
+                      continue
                   if c == '/' and n == '*':
-                      in_block = True; i += 2; continue
+                      in_block = True
+                      out.extend('  ')
+                      i += 2
+                      continue
                   if c == '/' and n == '/':
+                      out.extend(' ' * (len(line) - i))
                       break
                   if c in ('\"', "'", '`'):
-                      quote = c; out.append(' '); i += 1; continue
-                  out.append(c); i += 1
+                      quote = c
+                      out.append(' ')
+                      i += 1
+                      continue
+                  out.append(c)
+                  i += 1
+              if len(out) < len(line):
+                  out.extend(' ' * (len(line) - len(out)))
               return ''.join(out), in_block
 
           funcs = []
@@ -64,20 +80,33 @@ jobs:
               m = start_re.match(line)
               if not m:
                   continue
-              depth = 0
-              started = False
               in_block = False
+              paren_depth = 0
+              saw_open_paren = False
+              body_started = False
+              brace_depth = 0
               end = None
-              for j in range(idx, min(len(lines), idx + 120)):
+              for j in range(idx, min(len(lines), idx + 160)):
                   clean, in_block = strip_js(lines[j], in_block)
-                  for ch in clean:
-                      if ch == '{':
-                          depth += 1; started = True
-                      elif ch == '}' and started:
-                          depth -= 1
-                          if depth == 0:
-                              end = j
-                              break
+                  start_col = m.end() - 1 if j == idx else 0
+                  for ch in clean[start_col:]:
+                      if not body_started:
+                          if ch == '(':
+                              paren_depth += 1
+                              saw_open_paren = True
+                          elif ch == ')' and saw_open_paren:
+                              paren_depth -= 1
+                          elif ch == '{' and saw_open_paren and paren_depth == 0:
+                              body_started = True
+                              brace_depth = 1
+                      else:
+                          if ch == '{':
+                              brace_depth += 1
+                          elif ch == '}':
+                              brace_depth -= 1
+                              if brace_depth == 0:
+                                  end = j
+                                  break
                   if end is not None:
                       break
               if end is None:
@@ -97,7 +126,7 @@ jobs:
               print(f'--- {name} lines={start}-{end} span={span} ---')
               print(body)
               shown += 1
-              if shown >= 40:
+              if shown >= 50:
                   break
           print(f'LOW_RISK_SHOWN={shown}')
           print('=== OTHER SHORTEST FUNCTIONS ===')

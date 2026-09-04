@@ -40,6 +40,7 @@ CHECKS = [
     ('セーブ診断日時表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-date-label.py')]),
     ('セーブ診断容量表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-bytes-label.py')]),
     ('セーブ診断容量判定表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-capacity-label.py')]),
+    ('誕生日日本語表示', [sys.executable, str(ROOT / 'scripts/check-birthday-japanese-label.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

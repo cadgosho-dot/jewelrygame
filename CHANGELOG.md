@@ -1,12 +1,17 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.878** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.879** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
 
 
 
+## v0.10.879
+- 誕生日の日本語表示変換だけを `js/ui/birthday-japanese-label.js` へ分離。
+- 既存 `birthdayJapaneseLabel()` は薄いラッパーとして残し、誕生日値の `normalizeBirthday()` 正規化は `app.js` 側に維持。正規化済み `MM-DD` を `M月D日` と表示する既存規則だけをhelperへ移動。
+- 誕生日の保存・削除・カレンダー判定・プレイヤー名・セーブ・所持金・在庫・イベント・画像には変更なし。
+- 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
 ## v0.10.878
 - セーブ容量診断の容量判定表示だけを `js/ui/save-diagnostic-capacity-label.js` へ分離。
 - 既存 `saveDiagnosticsCapacityLabel()` は薄いラッパーとして残し、「確認不能」「クラウド上限超過」「上限付近」「注意」「余裕あり」の既存判定規則を維持。

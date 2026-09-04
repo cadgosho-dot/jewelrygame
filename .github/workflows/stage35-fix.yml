@@ -1,0 +1,32 @@
+name: stage35-fix
+on:
+  push:
+    branches: [refactor-stage35-inspect]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Fix checker quoting and self-remove
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/stage35-inspect.yml')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          replaced = False
+          for i, line in enumerate(lines):
+              if "'helper exports formatter':" in line:
+                  lines[i] = "              'helper exports formatter': \"export function formatCustomerPreferenceLabel(preference = {}, resolvedName = '')\" in HELPER,"
+                  replaced = True
+          if not replaced:
+              raise SystemExit('checker line not found')
+          path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+          rm .github/workflows/stage35-fix.yml
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A
+          git commit -m "temp: fix stage35 checker quoting"
+          git push origin HEAD:refactor-stage35-inspect

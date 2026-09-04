@@ -1,0 +1,124 @@
+name: v0.10.860 UI seam diagnosis
+
+on:
+  push:
+    branches:
+      - codex/v0-10-860-diagnose
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose small UI-only seams in app.js
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+          lines = text.splitlines()
+          print(f'APP_LINES={len(lines)} APP_BYTES={len(text.encode("utf-8"))}')
+
+          starts = []
+          patterns = [
+              re.compile(r'^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\('),
+              re.compile(r'^\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\([^;]*=>\s*\{'),
+              re.compile(r'^\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?[A-Za-z_$][\w$]*\s*=>\s*\{'),
+          ]
+          for i, line in enumerate(lines):
+              for pat in patterns:
+                  m = pat.search(line)
+                  if m:
+                      starts.append((i, m.group(1)))
+                      break
+
+          def function_end(start):
+              brace = 0
+              seen = False
+              in_block = False
+              in_single = in_double = in_template = False
+              escape = False
+              for j in range(start, min(len(lines), start + 220)):
+                  s = lines[j]
+                  k = 0
+                  in_line = False
+                  while k < len(s):
+                      c = s[k]
+                      n = s[k+1] if k+1 < len(s) else ''
+                      if in_line:
+                          break
+                      if in_block:
+                          if c == '*' and n == '/':
+                              in_block = False; k += 2; continue
+                          k += 1; continue
+                      if escape:
+                          escape = False; k += 1; continue
+                      if (in_single or in_double or in_template) and c == '\\':
+                          escape = True; k += 1; continue
+                      if not (in_single or in_double or in_template):
+                          if c == '/' and n == '/': in_line = True; break
+                          if c == '/' and n == '*': in_block = True; k += 2; continue
+                      if not (in_double or in_template) and c == "'": in_single = not in_single; k += 1; continue
+                      if not (in_single or in_template) and c == '"': in_double = not in_double; k += 1; continue
+                      if not (in_single or in_double) and c == '`': in_template = not in_template; k += 1; continue
+                      if not (in_single or in_double or in_template):
+                          if c == '{': brace += 1; seen = True
+                          elif c == '}':
+                              brace -= 1
+                              if seen and brace == 0:
+                                  return j
+                      k += 1
+              return min(len(lines)-1, start + 219)
+
+          ui_tokens = [
+              'textContent', 'innerHTML', 'classList', '.hidden', '.dataset',
+              'setAttribute(', 'removeAttribute(', 'createElement(', 'appendChild(',
+              'replaceChildren(', '.style.', 'setTimeout(', 'clearTimeout('
+          ]
+          banned_tokens = [
+              'indexedDB', 'localStorage', 'cloud', 'auth', 'login', 'continueGame',
+              'inventory', 'money', 'purchase', 'aquarium', 'fish', 'wither',
+              'eventProgress', 'eventState', 'routeTo', 'navigate', 'renderMain',
+              'advanceDay', 'hunger', 'sleep', 'birthday', 'payment', 'orderProgress'
+          ]
+          risky_name = re.compile(r'(save|auth|login|inventory|money|purchase|aquarium|fish|event|route|render|day|hunger|sleep|birthday|payment|order)', re.I)
+
+          candidates = []
+          for start, name in starts:
+              end = function_end(start)
+              length = end - start + 1
+              if length > 140:
+                  continue
+              body = '\n'.join(lines[start:end+1])
+              ui_hits = sum(body.count(t) for t in ui_tokens)
+              banned_hits = sum(body.lower().count(t.lower()) for t in banned_tokens)
+              name_penalty = 4 if risky_name.search(name) else 0
+              score = ui_hits * 3 - banned_hits * 7 - name_penalty - max(0, length - 80) // 10
+              if ui_hits >= 2 and banned_hits <= 2:
+                  candidates.append((score, ui_hits, banned_hits, length, start, end, name))
+
+          candidates.sort(reverse=True)
+          print('\n=== TOP SMALL UI SEAM CANDIDATES ===')
+          for rank, row in enumerate(candidates[:18], 1):
+              score, ui_hits, banned_hits, length, start, end, name = row
+              print(f'\n### CANDIDATE {rank}: {name} lines={start+1}-{end+1} len={length} ui={ui_hits} banned={banned_hits} score={score}')
+              lo = max(start, start)
+              hi = min(end, start + 54)
+              for ln in range(lo, hi + 1):
+                  print(f'{ln+1:6}: {lines[ln]}')
+              if hi < end:
+                  print('      ...')
+
+          print('\n=== DIRECT SMALL DISPLAY FUNCTIONS ===')
+          name_rx = re.compile(r'(show|hide|update|sync|status|badge|indicator|overlay|notice|message|label|tooltip|progress|flash)', re.I)
+          direct = [r for r in candidates if name_rx.search(r[-1])]
+          for row in direct[:15]:
+              score, ui_hits, banned_hits, length, start, end, name = row
+              print(f'{name}: {start+1}-{end+1} len={length} ui={ui_hits} banned={banned_hits} score={score}')
+          PY

@@ -1,9 +1,16 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.859** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.860** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
+
+## v0.10.860
+- Clipboard APIが使えない場合の一時`textarea`によるコピー処理だけを `js/ui/clipboard-fallback.js` へ分離。
+- `readonly`、画面外固定配置、選択範囲、`document.execCommand('copy')`、成功/失敗の真偽値を従来どおり維持。
+- プレゼントコードとAI相談用データの既存2呼び出しは変更せず、コピー判断・通知・効果音・振動は `app.js` に残した。
+- セーブ、認証、所持金、在庫、購入、水槽、イベント進行、画面遷移、画像assetには変更なし。
+- 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
 
 ## v0.10.859
 - 自動セーブ状態表示のDOM生成・表示・自動非表示処理を `js/ui/autosave-status-presenter.js` へ分離。

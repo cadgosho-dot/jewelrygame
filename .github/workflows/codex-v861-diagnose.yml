@@ -1,0 +1,56 @@
+name: codex v0.10.861 diagnose
+
+on:
+  push:
+    branches:
+      - codex/v0-10-861-diagnose
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Extract low-risk app.js candidates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+          lines = text.splitlines()
+          starts = []
+          rx = re.compile(r'^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
+          for i, line in enumerate(lines):
+              m = rx.match(line)
+              if m:
+                  starts.append((i, m.group(1)))
+
+          banned = re.compile(r'\b(?:state|save|auth|firebase|indexeddb|localstorage|money|inventory|purchase|aquarium|fish|plant|event|order|date|time|hunger|sleep|birthday|payment|cloud|revision|screen|route|navigate|render|modal|toast|audio|bgm|sfx|weather|customer|staff|mining)\b', re.I)
+          preferred = re.compile(r'(?:format|normalize|escape|clamp|copy|text|label|class|style|dom|element|image|url|html|scroll|focus|select|clipboard)', re.I)
+          results = []
+          for idx, (start, name) in enumerate(starts):
+              end = starts[idx+1][0] if idx + 1 < len(starts) else len(lines)
+              segment = '\n'.join(lines[start:end])
+              length = end - start
+              refs = len(re.findall(rf'\b{re.escape(name)}\b', text))
+              risk_hits = sorted(set(m.group(0).lower() for m in banned.finditer(segment)))
+              pref = bool(preferred.search(name) or preferred.search(segment[:500]))
+              if 2 <= length <= 45 and refs <= 8 and len(risk_hits) <= 1:
+                  score = (20 if pref else 0) + max(0, 45-length) + max(0, 8-refs)*2 - len(risk_hits)*12
+                  results.append((score, start+1, end, length, refs, name, risk_hits, segment))
+
+          results.sort(reverse=True)
+          print(f'APP LINES: {len(lines)} / FUNCTION DECLARATIONS: {len(starts)}')
+          print('=== LOW-RISK CANDIDATES ===')
+          for rank, item in enumerate(results[:30], 1):
+              score, start, end, length, refs, name, risks, segment = item
+              print(f'[{rank}] {name} lines={start}-{end} span={length} refs={refs} score={score} risks={risks}')
+              preview = '\n'.join(segment.splitlines()[:18])
+              print(preview)
+              print('---')
+          PY

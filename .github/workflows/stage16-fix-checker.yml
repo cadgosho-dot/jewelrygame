@@ -1,0 +1,33 @@
+name: stage16-fix-checker
+on:
+  push:
+    branches:
+      - jxj-stage16-v0.10.864
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: jxj-stage16-v0.10.864
+          fetch-depth: 1
+      - name: Narrow checker to the exact legacy function
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/stage16-implement.yml')
+          text = path.read_text(encoding='utf-8')
+          old = "    'legacy formatter body removed from app': 'const branchNumber = Math.max(1, Number(number) || 1);' not in APP,"
+          new = "    'legacy storeBranchLabel implementation removed from app': \"function storeBranchLabel(number = 1) {\\n  const branchNumber = Math.max(1, Number(number) || 1);\\n  return `店舗${branchNumber}`;\\n}\" not in APP,"
+          if text.count(old) != 1:
+              raise SystemExit(f'checker target count={text.count(old)}, expected=1')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          git rm .github/workflows/stage16-fix-checker.yml
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add .github/workflows/stage16-implement.yml
+          git commit -m "一時検査: 第16段階checkerを旧関数単位へ限定"
+          git push origin HEAD:jxj-stage16-v0.10.864

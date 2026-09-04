@@ -47,6 +47,7 @@ CHECKS = [
     ('顧客希望表示', [sys.executable, str(ROOT / 'scripts/check-customer-preference-label.py')]),
     ('顧客テンプレート表示', [sys.executable, str(ROOT / 'scripts/check-customer-template-text.py')]),
     ('店舗名表示', [sys.executable, str(ROOT / 'scripts/check-store-display-name.py')]),
+    ('職人称号表示', [sys.executable, str(ROOT / 'scripts/check-artisan-title.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

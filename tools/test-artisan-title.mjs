@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { formatArtisanTitle } from '../js/ui/artisan-title.js';
+const titles = Object.fromEntries(Array.from({ length: 20 }, (_, index) => [index + 1, `称号${index + 1}`]));
+assert.equal(formatArtisanTitle(1, titles), '称号1');
+assert.equal(formatArtisanTitle(7.9, titles), '称号7');
+assert.equal(formatArtisanTitle(20, titles), '称号20');
+assert.equal(formatArtisanTitle(99, titles), '称号20');
+assert.equal(formatArtisanTitle(0, titles), '称号1');
+assert.equal(formatArtisanTitle(-5, titles), '称号1');
+assert.equal(formatArtisanTitle('abc', titles), '称号1');
+console.log('ARTISAN TITLE UNIT: PASS');

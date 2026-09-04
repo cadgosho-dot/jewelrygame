@@ -1,0 +1,28 @@
+name: stage34-inspect
+on:
+  push:
+    branches: [refactor-stage34-inspect]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect notification date label
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          lines = text.splitlines()
+          name = 'notificationDateLabel'
+          pat = re.compile(r'\b'+re.escape(name)+r'\s*\(')
+          refs = [i for i,line in enumerate(lines,1) if pat.search(line)]
+          print('refs:', refs)
+          for line_no in refs:
+              start=max(1,line_no-4); end=min(len(lines),line_no+5)
+              print(f'--- context L{start}-L{end} ---')
+              for j in range(start,end+1):
+                  print(f'{j}: {lines[j-1]}')
+          PY

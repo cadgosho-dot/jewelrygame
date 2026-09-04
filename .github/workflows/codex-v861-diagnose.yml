@@ -13,30 +13,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Compare safest candidates
+      - name: Find stable gift persistence boundary
         shell: bash
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
-
-          path = Path('js/app.js')
-          text = path.read_text(encoding='utf-8')
+          text = Path('js/app.js').read_text(encoding='utf-8')
           lines = text.splitlines()
-          targets = ['giftStatusLabel', 'giftCategoryLabel', 'clampViewportValue']
-          for name in targets:
-              print(f'=== {name} ===')
-              hits = []
-              rx = re.compile(rf'\b{re.escape(name)}\b')
-              for i, line in enumerate(lines):
-                  if rx.search(line):
-                      hits.append(i)
-              print(f'occurrences={len(hits)}')
-              for hit in hits:
-                  lo = max(0, hit - 8)
-                  hi = min(len(lines), hit + 10)
-                  print(f'--- context lines {lo+1}-{hi} ---')
-                  for j in range(lo, hi):
-                      print(f'{j+1:05d}: {lines[j]}')
-              print()
+          start = next(i for i, line in enumerate(lines) if 'function persistTransactionalGiftState' in line)
+          print(f'persistTransactionalGiftState starts at {start+1}')
+          count = 0
+          for i in range(start, min(len(lines), start + 160)):
+              m = re.match(r'^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(', lines[i])
+              if m:
+                  print(f'{i+1}: {m.group(1)}')
+                  count += 1
+                  if count >= 8:
+                      break
+          print('--- context ---')
+          for i in range(max(0, start-3), min(len(lines), start+80)):
+              print(f'{i+1:05d}: {lines[i]}')
           PY

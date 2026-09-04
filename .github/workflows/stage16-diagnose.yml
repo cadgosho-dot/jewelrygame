@@ -1,0 +1,52 @@
+name: stage16-diagnose
+on:
+  push:
+    branches:
+      - jxj-stage16-diagnose-20260904
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose low-risk app.js candidates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('js/app.js')
+          text = p.read_text(encoding='utf-8')
+          lines = text.splitlines()
+          pat = re.compile(r'^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
+          danger = re.compile(r'localStorage|indexedDB|firebase|auth|save|load|money|inventory|aquarium|fish|plant|event|order|date|time|hunger|sleep|route|navigate|screen|location|fetch\(|addEventListener|removeEventListener|setTimeout|setInterval|document\.|window\.', re.I)
+          prefer = re.compile(r'format|label|markup|html|text|name|title|display|normalize|map|describe|brief|present', re.I)
+          funcs=[]
+          i=0
+          while i < len(lines):
+            m=pat.match(lines[i])
+            if not m:
+              i+=1; continue
+            name=m.group(1)
+            start=i
+            depth=0
+            seen=False
+            j=i
+            while j < len(lines):
+              line=lines[j]
+              for ch in re.sub(r'//.*$', '', line):
+                if ch=='{': depth+=1; seen=True
+                elif ch=='}': depth-=1
+              if seen and depth<=0:
+                break
+              j+=1
+            body='\n'.join(lines[start:j+1])
+            n=j-start+1
+            funcs.append((0 if prefer.search(name) else 1, bool(danger.search(body)), n, start+1, j+1, name, body))
+            i=max(j+1,i+1)
+          candidates=[f for f in funcs if not f[1] and f[2] <= 35]
+          candidates.sort(key=lambda x:(x[0], x[2], x[3]))
+          print(f'APP_LINES={len(lines)} FUNCTIONS={len(funcs)} LOW_RISK_SMALL={len(candidates)}')
+          for idx,f in enumerate(candidates[:40],1):
+            _,_,n,s,e,name,body=f
+            print(f'\n=== CANDIDATE {idx}: {name} lines {s}-{e} ({n}) ===')
+            print(body)
+          PY

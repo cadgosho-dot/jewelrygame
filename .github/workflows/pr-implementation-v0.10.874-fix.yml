@@ -1,0 +1,57 @@
+name: v0.10.874 第26段階 再検証
+on:
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  implement-and-validate:
+    if: github.head_ref == 'codex/v0.10.874-metal-price-date-label'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 第26段階ブランチを取得
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: 実装して棚卸し順序を修正
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import textwrap
+
+          old = Path('.github/workflows/pr-implementation-v0.10.874.yml')
+          fix = Path('.github/workflows/pr-implementation-v0.10.874-fix.yml')
+          text = old.read_text(encoding='utf-8')
+          marker = "          python3 - <<'PY'\n"
+          start = text.index(marker) + len(marker)
+          end = text.index("\n          PY\n", start)
+          source = textwrap.dedent(text[start:end])
+          exec(compile(source, str(old), 'exec'), {'__name__': '__main__'})
+
+          if fix.exists():
+              fix.unlink()
+          subprocess.run(['python3', 'scripts/generate-assets-manifest.py', '--write'], check=True)
+          subprocess.run(['python3', 'scripts/version-sync.py', '--check'], check=True)
+          PY
+      - name: 画像・実ブラウザ検査環境を準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: 第26段階の総合監査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 10m python3 -u scripts/check-current.py
+      - name: 検証済み変更をPRブランチへ反映
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m 'v0.10.874 地金価格日時表示をhelperへ分離' -m '地金相場の最終更新日時表示だけをUI helperへ分離します。価格・前日比・履歴・キャッシュ・売買・所持金・在庫・セーブ・イベント・画像は変更しません。'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Scan small low-risk app helpers
+      - name: Compare safest candidate dependencies
         shell: bash
         run: |
           python3 - <<'PY'
@@ -22,62 +22,24 @@ jobs:
 
           text = Path('js/app.js').read_text(encoding='utf-8')
           lines = text.splitlines()
-          fn_re = re.compile(r'^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
-          risk_terms = [
-              'save','load','auth','login','logout','firebase','cloud','indexeddb','localstorage',
-              'money','inventory','purchase','buy','sell','aquarium','fish','plant','event','order',
-              'date','time','hunger','sleep','birthday','payment','route','screen','navigate','modal',
-              'viewport','scale','zoom','camera','background','weather','session','gift','state =',
-              'state.','migrate','customer','employee','staff','robbery','mining','rough','loose','metal',
-              'jewelry','workshop','store','meal','quiz','audio','sound','video','phone','calendar'
+          targets = [
+              'validFinancePeriod',
+              'mainStatusHeader',
+              'installStatusText',
+              'craftSurfaceParts',
+              'craftSurfaceFinishId',
+              'renderToolBrief',
           ]
-
-          def function_end(start):
-              depth = 0
-              seen = False
-              in_str = None
-              esc = False
-              for i in range(start, len(lines)):
-                  line = lines[i]
-                  for ch in line:
-                      if in_str:
-                          if esc:
-                              esc = False
-                          elif ch == '\\':
-                              esc = True
-                          elif ch == in_str:
-                              in_str = None
-                          continue
-                      if ch in "'\"`":
-                          in_str = ch
-                          continue
-                      if ch == '{':
-                          depth += 1; seen = True
-                      elif ch == '}':
-                          depth -= 1
-                  if seen and depth <= 0:
-                      return i
-              return start
-
-          candidates = []
-          for i, line in enumerate(lines):
-              m = fn_re.match(line)
-              if not m:
-                  continue
-              name = m.group(1)
-              end = function_end(i)
-              body = '\n'.join(lines[i:end+1])
-              length = end - i + 1
-              occ = len(re.findall(rf'\b{re.escape(name)}\b', text))
-              low = (name + '\n' + body).lower()
-              risks = sorted({term for term in risk_terms if term in low})
-              if length <= 18 and not risks:
-                  candidates.append((length, occ, i+1, end+1, name, body))
-
-          candidates.sort(key=lambda x: (x[0], x[1], x[4].lower()))
-          print(f'LOW_RISK_CANDIDATES={len(candidates)}')
-          for length, occ, start, end, name, body in candidates[:60]:
-              print(f'=== {name} lines={start}-{end} len={length} occurrences={occ} ===')
-              print(body)
+          for name in targets:
+              print(f'=== {name} ===')
+              rx = re.compile(rf'\b{re.escape(name)}\b')
+              hits = [i for i, line in enumerate(lines) if rx.search(line)]
+              print(f'occurrences={len(hits)}')
+              for hit in hits:
+                  lo = max(0, hit - 5)
+                  hi = min(len(lines), hit + 7)
+                  print(f'--- context {lo+1}-{hi} ---')
+                  for j in range(lo, hi):
+                      print(f'{j+1:05d}: {lines[j]}')
               print()
           PY

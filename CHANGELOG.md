@@ -1,12 +1,17 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.879** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.880** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
 
 
 
+## v0.10.880
+- ゲーム内日付の日本語表示変換だけを `js/ui/game-date-label.js` へ分離。
+- 既存 `gameDateLabel()` は薄いラッパーとして残し、ゲーム内日付を算出する `gameDateForDay()` は `app.js` 側に維持。Dateを `YYYY年M月D日（曜）` と表示する既存規則だけをhelperへ移動。
+- ゲーム内日付・時間進行・曜日判定・イベント・セーブ・所持金・在庫・画像には変更なし。
+- 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
 ## v0.10.879
 - 誕生日の日本語表示変換だけを `js/ui/birthday-japanese-label.js` へ分離。
 - 既存 `birthdayJapaneseLabel()` は薄いラッパーとして残し、誕生日値の `normalizeBirthday()` 正規化は `app.js` 側に維持。正規化済み `MM-DD` を `M月D日` と表示する既存規則だけをhelperへ移動。

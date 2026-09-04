@@ -23,17 +23,27 @@ jobs:
       - name: 第30段階を適用
         run: python3 tools/apply-stage30.py
 
-      - name: 文字列入力の既存比較仕様をテストへ反映
+      - name: 回帰テスト期待値と統合チェック生成を補正
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('tools/test-save-diagnostic-capacity-label.mjs')
-          text = path.read_text(encoding='utf-8')
+
+          unit_path = Path('tools/test-save-diagnostic-capacity-label.mjs')
+          unit = unit_path.read_text(encoding='utf-8')
           old = "assert.equal(formatSaveDiagnosticCapacityLabel('8', '10'), '注意');"
           new = "assert.equal(formatSaveDiagnosticCapacityLabel('8', '10'), 'クラウド上限超過');"
-          if text.count(old) != 1:
+          if unit.count(old) != 1:
               raise SystemExit('文字列比較テストの補正対象が見つかりません。')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          unit_path.write_text(unit.replace(old, new, 1), encoding='utf-8')
+
+          integration_path = Path('scripts/check-save-diagnostic-capacity-label.py')
+          integration = integration_path.read_text(encoding='utf-8')
+          bad = "print('" + "\n" + "SAVE DIAGNOSTIC CAPACITY LABEL INTEGRATION:"
+          good = "print('" + "\\n" + "SAVE DIAGNOSTIC CAPACITY LABEL INTEGRATION:"
+          count = integration.count(bad)
+          if count != 2:
+              raise SystemExit(f'統合チェック改行の補正対象が2件ではありません: {count}')
+          integration_path.write_text(integration.replace(bad, good), encoding='utf-8')
           PY
 
       - name: 検証環境を準備

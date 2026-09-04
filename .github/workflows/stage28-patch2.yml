@@ -1,0 +1,24 @@
+name: stage28-patch2
+on:
+  push:
+    branches:
+      - codex/v0.10.876-save-diagnostic-date-label
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: codex/v0.10.876-save-diagnostic-date-label
+          fetch-depth: 1
+      - name: patch
+        run: |
+          python3 -c "from pathlib import Path; p=Path('.github/workflows/stage28-implement.yml'); t=p.read_text(encoding='utf-8'); old='          python3 scripts/generate-assets-manifest.py --write\\n'; new=old+'          python3 scripts/generate-event-probability-list.py --write\\n'; assert t.count(old)==1; p.write_text(t.replace(old,new,1), encoding='utf-8')"
+          rm -f .github/workflows/stage28-patch2.yml
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A
+          git commit -m "第28段階のイベント確率資料同期を追加"
+          git push origin HEAD:codex/v0.10.876-save-diagnostic-date-label

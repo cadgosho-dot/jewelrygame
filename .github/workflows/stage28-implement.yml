@@ -1,0 +1,246 @@
+name: v0.10.876 第28段階 実装・検証
+
+on:
+  push:
+    branches:
+      - codex/v0.10.876-save-diagnostic-date-label
+
+permissions:
+  contents: write
+
+jobs:
+  implement-and-validate:
+    if: github.event.head_commit.message != 'v0.10.876 セーブ診断日時表示をhelperへ分離'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 第28段階ブランチを取得
+        uses: actions/checkout@v6
+        with:
+          ref: codex/v0.10.876-save-diagnostic-date-label
+          fetch-depth: 1
+
+      - name: セーブ診断日時表示helperを実装
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          version = (root / 'VERSION').read_text(encoding='utf-8').strip()
+          if version != '0.10.875':
+              raise SystemExit(f'開始VERSIONが想定外です: {version}')
+
+          app_path = root / 'js/app.js'
+          app = app_path.read_text(encoding='utf-8')
+          legacy = """function formatSaveDiagnosticDate(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('ja-JP');
+          }"""
+          wrapper = """function formatSaveDiagnosticDate(value) {
+            return formatSaveDiagnosticDateLabel(value);
+          }"""
+          if app.count(legacy) != 1:
+              raise SystemExit('formatSaveDiagnosticDate() の既存実装を一意に確認できません。')
+          app = app.replace(legacy, wrapper, 1)
+
+          import_anchor = "import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.875';\n"
+          new_import = "import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.875';\n"
+          if app.count(import_anchor) != 1:
+              raise SystemExit('app.js のimport挿入位置を確認できません。')
+          app = app.replace(import_anchor, import_anchor + new_import, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          helper = """export function formatSaveDiagnosticDateLabel(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('ja-JP');
+          }
+          """
+          (root / 'js/ui/save-diagnostic-date-label.js').write_text(helper, encoding='utf-8')
+
+          sw_path = root / 'sw.js'
+          sw = sw_path.read_text(encoding='utf-8')
+          sw_anchor = "  './js/ui/phone-item-effect-text.js?v=0.10.875',\n"
+          sw_line = "  './js/ui/save-diagnostic-date-label.js?v=0.10.875',\n"
+          if sw.count(sw_anchor) != 1:
+              raise SystemExit('sw.js のprecache挿入位置を確認できません。')
+          sw = sw.replace(sw_anchor, sw_anchor + sw_line, 1)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          vs_path = root / 'scripts/version-sync.py'
+          vs = vs_path.read_text(encoding='utf-8')
+          precache_pattern = r"(?m)^(\s*Rule\('sw\.js', 'phone-item-effect-text\.js precache key'.*\),\s*)$"
+          import_pattern = r"(?m)^(\s*Rule\('js/app\.js', 'phone-item-effect-text\.js import key'.*\),\s*)$"
+          precache_line = "    Rule('sw.js', 'save-diagnostic-date-label.js precache key', qparam(r'\\./js/ui/save-diagnostic-date-label\\.js'), keep_prefix),"
+          import_line = "    Rule('js/app.js', 'save-diagnostic-date-label.js import key', qparam(r'\\./ui/save-diagnostic-date-label\\.js'), keep_prefix),"
+          vs, n1 = re.subn(precache_pattern, lambda m: m.group(1) + '\n' + precache_line, vs, count=1)
+          vs, n2 = re.subn(import_pattern, lambda m: m.group(1) + '\n' + import_line, vs, count=1)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit(f'version-sync.py への登録に失敗しました: precache={n1}, import={n2}')
+          vs_path.write_text(vs, encoding='utf-8')
+
+          current_path = root / 'scripts/check-current.py'
+          current = current_path.read_text(encoding='utf-8')
+          current_anchor = "    ('スマホアイテム効果表示', [sys.executable, str(ROOT / 'scripts/check-phone-item-effect-text.py')]),\n"
+          current_line = "    ('セーブ診断日時表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-date-label.py')]),\n"
+          if current.count(current_anchor) != 1:
+              raise SystemExit('check-current.py の検査追加位置を確認できません。')
+          current = current.replace(current_anchor, current_anchor + current_line, 1)
+          current_path.write_text(current, encoding='utf-8')
+
+          unit = """import assert from 'node:assert/strict';
+          import { formatSaveDiagnosticDateLabel } from '../js/ui/save-diagnostic-date-label.js';
+
+          assert.equal(formatSaveDiagnosticDateLabel(null), '—');
+          assert.equal(formatSaveDiagnosticDateLabel(''), '—');
+          assert.equal(formatSaveDiagnosticDateLabel('not-a-date'), '—');
+          const iso = '2026-09-04T13:05:06.000Z';
+          assert.equal(formatSaveDiagnosticDateLabel(iso), new Date(iso).toLocaleString('ja-JP'));
+          const numeric = 1788527106000;
+          assert.equal(formatSaveDiagnosticDateLabel(numeric), new Date(numeric).toLocaleString('ja-JP'));
+
+          console.log('SAVE DIAGNOSTIC DATE LABEL TEST: PASS');
+          """
+          (root / 'tools/test-save-diagnostic-date-label.mjs').write_text(unit, encoding='utf-8')
+
+          checker = r'''#!/usr/bin/env python3
+          """Verify save diagnostic date display stays a pure UI helper."""
+          from __future__ import annotations
+
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP_PATH = ROOT / 'js/app.js'
+          HELPER_PATH = ROOT / 'js/ui/save-diagnostic-date-label.js'
+          SW_PATH = ROOT / 'sw.js'
+          VS_PATH = ROOT / 'scripts/version-sync.py'
+          CURRENT_PATH = ROOT / 'scripts/check-current.py'
+
+          APP = APP_PATH.read_text(encoding='utf-8')
+          HELPER = HELPER_PATH.read_text(encoding='utf-8')
+          SW = SW_PATH.read_text(encoding='utf-8')
+          VS = VS_PATH.read_text(encoding='utf-8')
+          CURRENT = CURRENT_PATH.read_text(encoding='utf-8')
+
+          legacy_function = """function formatSaveDiagnosticDate(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('ja-JP');
+          }"""
+          wrapper = """function formatSaveDiagnosticDate(value) {
+            return formatSaveDiagnosticDateLabel(value);
+          }"""
+
+          checks = {
+              'versioned helper import exists': f"from './ui/save-diagnostic-date-label.js?v={VERSION}';" in APP,
+              'app keeps thin formatSaveDiagnosticDate wrapper': wrapper in APP,
+              'legacy implementation removed from app': legacy_function not in APP,
+              'existing formatSaveDiagnosticDate references retained': APP.count('formatSaveDiagnosticDate(') == 2,
+              'wrapper delegates once': APP.count('return formatSaveDiagnosticDateLabel(value);') == 1,
+              'helper exports formatter': 'export function formatSaveDiagnosticDateLabel(value)' in HELPER,
+              'helper keeps empty fallback': "if (!value) return '—';" in HELPER,
+              'helper keeps invalid-date fallback': "Number.isNaN(date.getTime()) ? '—'" in HELPER,
+              'helper keeps ja-JP locale': "date.toLocaleString('ja-JP')" in HELPER,
+              'service worker precaches helper': f"./js/ui/save-diagnostic-date-label.js?v={VERSION}" in SW,
+              'version sync knows helper precache': "'save-diagnostic-date-label.js precache key'" in VS,
+              'version sync knows helper import': "'save-diagnostic-date-label.js import key'" in VS,
+              'current audit registers checker': "'セーブ診断日時表示'" in CURRENT and 'check-save-diagnostic-date-label.py' in CURRENT,
+          }
+
+          for forbidden in (
+              'state.', 'state =', 'saveGame', 'loadState', 'localStorage', 'sessionStorage', 'indexedDB',
+              'firebase', 'money', 'inventory', 'eventState', 'screenData', 'document.', 'window.',
+              'navigator.', 'setTimeout', 'setInterval', './assets/', 'Math.random', 'advanceTime',
+              'delete', 'write', 'readIndexedDbSave', 'writeIndexedDbSave', 'cloud',
+          ):
+              checks[f'helper has no reverse dependency: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+
+          for source in (APP_PATH, HELPER_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+
+          unit = subprocess.run(['node', 'tools/test-save-diagnostic-date-label.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.stderr:
+              print(unit.stderr, file=sys.stderr, end='')
+          if unit.returncode:
+              failed.append('save diagnostic date label unit test')
+
+          if failed:
+              print('\nSAVE DIAGNOSTIC DATE LABEL INTEGRATION: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+
+          print('\nSAVE DIAGNOSTIC DATE LABEL INTEGRATION: PASS')
+          print('セーブ容量診断に表示する日時文字列だけをUI helperへ分離し、保存・復元・クラウド同期・IndexedDB処理はapp.js側に維持しています。')
+          '''
+          checker = '\n'.join(line[10:] if line.startswith('          ') else line for line in checker.splitlines()) + '\n'
+          (root / 'scripts/check-save-diagnostic-date-label.py').write_text(checker, encoding='utf-8')
+
+          changelog_path = root / 'CHANGELOG.md'
+          changelog = changelog_path.read_text(encoding='utf-8')
+          marker = '\n## v0.10.875\n'
+          entry = """
+
+          ## v0.10.876
+          - セーブ容量診断で保存日時を日本語ロケール表示へ整える純粋な文字列変換だけを `js/ui/save-diagnostic-date-label.js` へ分離。
+          - 既存 `formatSaveDiagnosticDate()` は薄いラッパーとして残し、空値・不正日時の「—」表示と `ja-JP` の既存表示規則、既存1か所の呼び出し位置を維持。
+          - セーブ作成・復元・クラウド同期・IndexedDB・容量計算・所持金・在庫・イベント・画像には変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          """
+          entry = '\n'.join(line[10:] if line.startswith('          ') else line for line in entry.splitlines())
+          if changelog.count(marker) != 1:
+              raise SystemExit('CHANGELOGの挿入位置を確認できません。')
+          changelog = changelog.replace(marker, entry + marker, 1)
+          changelog_path.write_text(changelog, encoding='utf-8')
+          PY
+
+          python3 scripts/version-sync.py --set 0.10.876
+
+      - name: 画像・実ブラウザ検査環境を準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: 管理資料を現行コードへ同期
+        run: |
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-event-probability-list.py --write
+
+      - name: 第28段階の専用・総合監査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/check-save-diagnostic-date-label.py
+          timeout 8m python3 -u scripts/check-current.py
+          git fetch origin main --depth=1
+          IMAGE_DIFF="$(git diff --name-only origin/main -- | grep -Ei '\.(png|jpe?g|webp|gif|svg|avif|bmp|ico)$' || true)"
+          if [ -n "$IMAGE_DIFF" ]; then
+            echo "画像ファイル差分が検出されました:"
+            echo "$IMAGE_DIFF"
+            exit 1
+          fi
+          echo 'IMAGE FILE DIFF: 0'
+
+      - name: 検証済み変更をブランチへ反映
+        run: |
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A -- ':!.github/workflows/stage28-implement.yml'
+          git commit -m "v0.10.876 セーブ診断日時表示をhelperへ分離"
+          git push origin HEAD:codex/v0.10.876-save-diagnostic-date-label

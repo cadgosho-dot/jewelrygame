@@ -1,0 +1,253 @@
+name: v0.10.875 第27段階 実装・検証
+on:
+  push:
+    branches:
+      - codex/v0.10.875-phone-item-effect-text
+permissions:
+  contents: write
+jobs:
+  implement-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 第27段階ブランチを取得
+        uses: actions/checkout@v6
+        with:
+          ref: codex/v0.10.875-phone-item-effect-text
+          fetch-depth: 0
+      - name: スマホアイテム効果表示helperを実装
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          ROOT = Path('.')
+          NEW_VERSION = '0.10.875'
+          WORKFLOW = ROOT / '.github/workflows/stage27-implement.yml'
+
+          def read(path):
+              return (ROOT / path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              target = ROOT / path
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(text, encoding='utf-8')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label}: expected 1 match, got {count}')
+              return text.replace(old, new, 1)
+
+          def insert_after_line(text, needle, new_line, label):
+              lines = text.splitlines()
+              matches = [i for i, line in enumerate(lines) if needle in line]
+              if len(matches) != 1:
+                  raise RuntimeError(f'{label}: expected 1 matching line, got {len(matches)}')
+              lines.insert(matches[0] + 1, new_line)
+              suffix = '\n' if text.endswith('\n') else ''
+              return '\n'.join(lines) + suffix
+
+          helper_path = ROOT / 'js/ui/phone-item-effect-text.js'
+          checker_path = ROOT / 'scripts/check-phone-item-effect-text.py'
+          test_path = ROOT / 'tools/test-phone-item-effect-text.mjs'
+          for path in (helper_path, checker_path, test_path):
+              if path.exists():
+                  raise RuntimeError(f'already exists: {path}')
+
+          app = read('js/app.js')
+          app = insert_after_line(
+              app,
+              "import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=",
+              "import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.874';",
+              'app helper import',
+          )
+          legacy = """function phoneItemEffectText(item, beforeHunger, afterHunger) {
+            if (Number(item?.effect?.hunger) > 0) return `空腹度 ${beforeHunger} → ${afterHunger}`;
+            return '効果が発動しました。';
+          }"""
+          wrapper = """function phoneItemEffectText(item, beforeHunger, afterHunger) {
+            return formatPhoneItemEffectText(item, beforeHunger, afterHunger);
+          }"""
+          app = replace_once(app, legacy, wrapper, 'phoneItemEffectText wrapper')
+          write('js/app.js', app)
+
+          write('js/ui/phone-item-effect-text.js', """export function formatPhoneItemEffectText(item, beforeHunger, afterHunger) {
+            if (Number(item?.effect?.hunger) > 0) return `空腹度 ${beforeHunger} → ${afterHunger}`;
+            return '効果が発動しました。';
+          }
+          """)
+
+          write('tools/test-phone-item-effect-text.mjs', """import assert from 'node:assert/strict';
+          import { formatPhoneItemEffectText } from '../js/ui/phone-item-effect-text.js';
+
+          assert.equal(formatPhoneItemEffectText({ effect: { hunger: 1 } }, 3, 4), '空腹度 3 → 4');
+          assert.equal(formatPhoneItemEffectText({ effect: { hunger: '2' } }, 0, 2), '空腹度 0 → 2');
+          assert.equal(formatPhoneItemEffectText({ effect: { hunger: 0 } }, 3, 3), '効果が発動しました。');
+          assert.equal(formatPhoneItemEffectText({ effect: { hunger: -1 } }, 3, 2), '効果が発動しました。');
+          assert.equal(formatPhoneItemEffectText({}, 3, 3), '効果が発動しました。');
+          assert.equal(formatPhoneItemEffectText(null, 3, 3), '効果が発動しました。');
+
+          console.log('PHONE ITEM EFFECT TEXT TEST: PASS');
+          """)
+
+          write('scripts/check-phone-item-effect-text.py', r'''#!/usr/bin/env python3
+          """Verify phone item effect feedback stays a pure UI helper."""
+          from __future__ import annotations
+
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP_PATH = ROOT / 'js/app.js'
+          HELPER_PATH = ROOT / 'js/ui/phone-item-effect-text.js'
+          SW_PATH = ROOT / 'sw.js'
+          VS_PATH = ROOT / 'scripts/version-sync.py'
+          CURRENT_PATH = ROOT / 'scripts/check-current.py'
+
+          APP = APP_PATH.read_text(encoding='utf-8')
+          HELPER = HELPER_PATH.read_text(encoding='utf-8')
+          SW = SW_PATH.read_text(encoding='utf-8')
+          VS = VS_PATH.read_text(encoding='utf-8')
+          CURRENT = CURRENT_PATH.read_text(encoding='utf-8')
+
+          legacy_function = """function phoneItemEffectText(item, beforeHunger, afterHunger) {
+            if (Number(item?.effect?.hunger) > 0) return `空腹度 ${beforeHunger} → ${afterHunger}`;
+            return '効果が発動しました。';
+          }"""
+          wrapper = """function phoneItemEffectText(item, beforeHunger, afterHunger) {
+            return formatPhoneItemEffectText(item, beforeHunger, afterHunger);
+          }"""
+
+          checks = {
+              'versioned helper import exists': f"from './ui/phone-item-effect-text.js?v={VERSION}';" in APP,
+              'app keeps thin phoneItemEffectText wrapper': wrapper in APP,
+              'legacy implementation removed from app': legacy_function not in APP,
+              'existing phoneItemEffectText references retained': APP.count('phoneItemEffectText(') == 2,
+              'wrapper delegates once': APP.count('return formatPhoneItemEffectText(item, beforeHunger, afterHunger);') == 1,
+              'helper exports formatter': 'export function formatPhoneItemEffectText(item, beforeHunger, afterHunger)' in HELPER,
+              'helper keeps positive hunger condition': 'Number(item?.effect?.hunger) > 0' in HELPER,
+              'helper keeps hunger transition text': '空腹度 ${beforeHunger} → ${afterHunger}' in HELPER,
+              'helper keeps generic effect text': "return '効果が発動しました。';" in HELPER,
+              'service worker precaches helper': f"./js/ui/phone-item-effect-text.js?v={VERSION}" in SW,
+              'version sync knows helper precache': "'phone-item-effect-text.js precache key'" in VS,
+              'version sync knows helper import': "'phone-item-effect-text.js import key'" in VS,
+              'current audit registers checker': "'スマホアイテム効果表示'" in CURRENT and 'check-phone-item-effect-text.py' in CURRENT,
+          }
+
+          for forbidden in (
+              'state.', 'state =', 'saveGame', 'localStorage', 'sessionStorage', 'indexedDB', 'firebase',
+              'money', 'inventory', 'aquarium', 'eventState', 'screenData', 'document.', 'window.',
+              'navigator.', 'setTimeout', 'setInterval', './assets/', 'Math.random', 'advanceTime',
+              'adjust', 'remove', 'consume', 'useItem', 'hunger =', 'hunger +=', 'hunger -=',
+          ):
+              checks[f'helper has no reverse dependency: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+
+          for source in (APP_PATH, HELPER_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+
+          unit = subprocess.run(['node', 'tools/test-phone-item-effect-text.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.stderr:
+              print(unit.stderr, file=sys.stderr, end='')
+          if unit.returncode:
+              failed.append('phone item effect text unit test')
+
+          if failed:
+              print('\nPHONE ITEM EFFECT TEXT INTEGRATION: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+
+          print('\nPHONE ITEM EFFECT TEXT INTEGRATION: PASS')
+          print('スマートフォンでアイテム使用後に出す効果表示文言だけをUI helperへ分離し、所持数・空腹度計算・アイテム効果発動・セーブ処理はapp.js側に維持しています。')
+          ''')
+
+          sw = read('sw.js')
+          sw = insert_after_line(
+              sw,
+              "'./js/ui/metal-price-date-label.js?v=",
+              "  './js/ui/phone-item-effect-text.js?v=0.10.874',",
+              'service worker helper precache',
+          )
+          write('sw.js', sw)
+
+          vs = read('scripts/version-sync.py')
+          vs = insert_after_line(
+              vs,
+              "'metal-price-date-label.js precache key'",
+              "    Rule('sw.js', 'phone-item-effect-text.js precache key', qparam(r'\\./js/ui/phone-item-effect-text\\.js'), keep_prefix),",
+              'version sync precache rule',
+          )
+          vs = insert_after_line(
+              vs,
+              "'metal-price-date-label.js import key'",
+              "    Rule('js/app.js', 'phone-item-effect-text.js import key', qparam(r'\\./ui/phone-item-effect-text\\.js'), keep_prefix),",
+              'version sync import rule',
+          )
+          write('scripts/version-sync.py', vs)
+
+          current = read('scripts/check-current.py')
+          current = insert_after_line(
+              current,
+              "('地金価格日時表示',",
+              "    ('スマホアイテム効果表示', [sys.executable, str(ROOT / 'scripts/check-phone-item-effect-text.py')]),",
+              'current audit checker',
+          )
+          write('scripts/check-current.py', current)
+
+          changelog = read('CHANGELOG.md')
+          if '## v0.10.875' in changelog:
+              raise RuntimeError('CHANGELOG already contains v0.10.875')
+          entry = """## v0.10.875
+          - スマートフォンでアイテム使用後に表示する効果文言だけを `js/ui/phone-item-effect-text.js` へ分離。
+          - 既存 `phoneItemEffectText()` は薄いラッパーとして残し、空腹度回復時の「空腹度 ○ → ○」と、それ以外の「効果が発動しました。」という既存表示を維持。
+          - アイテム所持数・空腹度計算・効果発動・所持金・セーブ・イベント・画像には変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+
+          """
+          changelog = replace_once(changelog, '## v0.10.874\n', entry + '## v0.10.874\n', 'CHANGELOG insertion')
+          write('CHANGELOG.md', changelog)
+
+          subprocess.run(['python3', 'scripts/version-sync.py', '--set', NEW_VERSION], check=True)
+          subprocess.run(['python3', 'scripts/generate-event-probability-list.py', '--write'], check=True)
+          subprocess.run(['python3', 'scripts/version-sync.py', '--check'], check=True)
+
+          if WORKFLOW.exists():
+              WORKFLOW.unlink()
+          PY
+      - name: 画像・実ブラウザ検査環境を準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: ASSETS棚卸しを公開環境と同じ条件で確定
+        run: |
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-assets-manifest.py --check
+          python3 scripts/version-sync.py --check
+      - name: 第27段階の総合監査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 10m python3 -u scripts/check-current.py
+      - name: 検証済み変更をブランチへ反映
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m 'v0.10.875 スマホアイテム効果表示をhelperへ分離' -m 'スマートフォンでアイテム使用後に出す表示文言だけをUI helperへ分離します。所持数・空腹度計算・効果発動・所持金・セーブ・イベント・画像は変更しません。'
+          git push origin HEAD:codex/v0.10.875-phone-item-effect-text

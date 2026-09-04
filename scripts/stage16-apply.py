@@ -135,12 +135,12 @@ if unit.returncode:
     failed.append('store branch label unit test')
 
 if failed:
-    print('\nSTORE BRANCH LABEL INTEGRATION: FAIL')
+    print('\\nSTORE BRANCH LABEL INTEGRATION: FAIL')
     for label in failed:
         print(f'- {label}')
     sys.exit(1)
 
-print('\nSTORE BRANCH LABEL INTEGRATION: PASS')
+print('\\nSTORE BRANCH LABEL INTEGRATION: PASS')
 print('店舗番号の表示文字列変換だけをUI helperへ分離し、店舗状態・所持金・在庫・販売・画面遷移はapp.js側に維持しています。')
 """, encoding='utf-8')
 

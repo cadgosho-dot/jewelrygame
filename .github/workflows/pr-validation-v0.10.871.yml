@@ -1,0 +1,28 @@
+name: v0.10.871 一時PR検証
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 検証対象を取得
+        uses: actions/checkout@v6
+
+      - name: 画像・実ブラウザ検査環境を準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: 現行ビルド検査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 8m python3 -u scripts/check-current.py

@@ -29,6 +29,7 @@ CHECKS = [
     ('店舗番号表示ラベル', [sys.executable, str(ROOT / 'scripts/check-store-branch-label.py')]),
     ('表示倍率クランプ', [sys.executable, str(ROOT / 'scripts/check-viewport-clamp.py')]),
     ('食事時間不足メッセージ', [sys.executable, str(ROOT / 'scripts/check-meal-time-message.py')]),
+    ('ルースカット表示ラベル', [sys.executable, str(ROOT / 'scripts/check-loose-shape-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),

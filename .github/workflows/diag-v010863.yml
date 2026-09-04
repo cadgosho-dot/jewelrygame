@@ -3,25 +3,42 @@ on:
   push:
     branches:
       - cleanup-v0.10.863-tool-brief
+    paths-ignore:
+      - diag-v010863-output.txt
+permissions:
+  contents: write
 jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect renderToolBrief and version
+      - name: Capture renderToolBrief diagnostic
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('js/app.js')
-          lines=p.read_text(encoding='utf-8').splitlines()
-          needles=['renderToolBrief','VERSION']
-          for needle in needles:
-              print(f'=== {needle} ===')
-              hits=[i for i,l in enumerate(lines) if needle in l]
-              print('hits', [i+1 for i in hits])
+          p = Path('js/app.js')
+          lines = p.read_text(encoding='utf-8').splitlines()
+          out = []
+          for needle in ['renderToolBrief', 'function esc', 'const esc', 'VERSION']:
+              out.append(f'=== {needle} ===')
+              hits = [i for i, line in enumerate(lines) if needle in line]
+              out.append('hits ' + repr([i + 1 for i in hits]))
               for i in hits:
-                  a=max(0,i-12); b=min(len(lines),i+28)
-                  print(f'--- lines {a+1}-{b} ---')
-                  for n in range(a,b):
-                      print(f'{n+1}: {lines[n]}')
+                  a = max(0, i - 14)
+                  b = min(len(lines), i + 36)
+                  out.append(f'--- lines {a + 1}-{b} ---')
+                  for n in range(a, b):
+                      out.append(f'{n + 1}: {lines[n]}')
+          Path('diag-v010863-output.txt').write_text('\n'.join(out) + '\n', encoding='utf-8')
           PY
+      - name: Commit diagnostic output
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add diag-v010863-output.txt
+          if git diff --cached --quiet; then
+            echo 'No diagnostic change'
+          else
+            git commit -m 'chore: capture v0.10.863 diagnostic output'
+            git push
+          fi

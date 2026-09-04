@@ -1,0 +1,148 @@
+name: codex v0.10.862 apply
+
+on:
+  push:
+    branches:
+      - codex/v0-10-862-craft-surface
+
+permissions:
+  contents: write
+
+jobs:
+  apply-verify-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: codex/v0-10-862-craft-surface
+          fetch-depth: 1
+      - name: Apply isolated craft surface extraction
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app = Path('js/app.js')
+          text = app.read_text(encoding='utf-8')
+          import_anchor = "import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.861';"
+          new_import = "import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.861';"
+          if "./ui/craft-surface.js" not in text:
+              if text.count(import_anchor) != 1:
+                  raise SystemExit('app import anchor mismatch')
+              text = text.replace(import_anchor, import_anchor + '\n' + new_import, 1)
+
+          old_parts = """function craftSurfaceParts(finishId = 'mirror') {
+            switch (finishId) {
+              case 'matte': return { base: 'matte', decorated: false };
+              case 'decorated': return { base: null, decorated: true };
+              case 'mirrorDecorated': return { base: 'mirror', decorated: true };
+              case 'matteDecorated': return { base: 'matte', decorated: true };
+              case 'mirror':
+              default: return { base: 'mirror', decorated: false };
+            }
+          }
+
+          """
+          old_finish = """function craftSurfaceFinishId(base, decorated) {
+            if (decorated && base === 'mirror') return 'mirrorDecorated';
+            if (decorated && base === 'matte') return 'matteDecorated';
+            if (decorated) return 'decorated';
+            if (base === 'matte') return 'matte';
+            return 'mirror';
+          }
+
+          """
+          if 'function craftSurfaceParts(' in text:
+              if text.count(old_parts) != 1:
+                  raise SystemExit('craftSurfaceParts legacy block mismatch')
+              text = text.replace(old_parts, '', 1)
+          if 'function craftSurfaceFinishId(' in text:
+              if text.count(old_finish) != 1:
+                  raise SystemExit('craftSurfaceFinishId legacy block mismatch')
+              text = text.replace(old_finish, '', 1)
+          app.write_text(text, encoding='utf-8')
+
+          sw = Path('sw.js')
+          text = sw.read_text(encoding='utf-8')
+          anchor = "'./js/ui/gift-labels.js?v=0.10.861', './js/ui/press-hold-controller.js?v=0.10.861'"
+          if './js/ui/craft-surface.js' not in text:
+              if text.count(anchor) != 1:
+                  raise SystemExit('sw anchor mismatch')
+              text = text.replace(anchor, "'./js/ui/gift-labels.js?v=0.10.861', './js/ui/craft-surface.js?v=0.10.861', './js/ui/press-hold-controller.js?v=0.10.861'", 1)
+          sw.write_text(text, encoding='utf-8')
+
+          vs = Path('scripts/version-sync.py')
+          text = vs.read_text(encoding='utf-8')
+          sw_anchor = "    Rule('sw.js', 'gift-labels.js precache key', qparam(r'\\./js/ui/gift-labels\\.js'), keep_prefix),"
+          app_anchor = "    Rule('js/app.js', 'gift-labels.js import key', qparam(r'\\./ui/gift-labels\\.js'), keep_prefix),"
+          sw_rule = "    Rule('sw.js', 'craft-surface.js precache key', qparam(r'\\./js/ui/craft-surface\\.js'), keep_prefix),"
+          app_rule = "    Rule('js/app.js', 'craft-surface.js import key', qparam(r'\\./ui/craft-surface\\.js'), keep_prefix),"
+          if "'craft-surface.js precache key'" not in text:
+              if text.count(sw_anchor) != 1:
+                  raise SystemExit('version-sync sw anchor mismatch')
+              text = text.replace(sw_anchor, sw_anchor + '\n' + sw_rule, 1)
+          if "'craft-surface.js import key'" not in text:
+              if text.count(app_anchor) != 1:
+                  raise SystemExit('version-sync app anchor mismatch')
+              text = text.replace(app_anchor, app_anchor + '\n' + app_rule, 1)
+          vs.write_text(text, encoding='utf-8')
+
+          current = Path('scripts/check-current.py')
+          text = current.read_text(encoding='utf-8')
+          anchor = "    ('プレゼント表示ラベル', [sys.executable, str(ROOT / 'scripts/check-gift-labels.py')]),"
+          row = "    ('表面仕上げUI変換', [sys.executable, str(ROOT / 'scripts/check-craft-surface.py')]),"
+          if row not in text:
+              if text.count(anchor) != 1:
+                  raise SystemExit('check-current anchor mismatch')
+              text = text.replace(anchor, anchor + '\n' + row, 1)
+          current.write_text(text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text(encoding='utf-8')
+          if '## v0.10.862\n' not in text:
+              anchor = '\n\n## v0.10.861\n'
+              if text.count(anchor) != 1:
+                  raise SystemExit('CHANGELOG anchor mismatch')
+              entry = """
+
+          ## v0.10.862
+          - 工房の制作画面に直書きされていた表面仕上げIDの相互変換だけを `js/ui/craft-surface.js` へ分離。
+          - 鏡面／つや消し／装飾あり／鏡面+装飾／つや消し+装飾の既存対応と、不明IDを鏡面へ戻すfallbackを従来どおり維持。
+          - 制作画面の表示と表面選択クリックの既存呼び出し位置は変更せず、`craftDraft` の更新・制作確定・完成品生成は `app.js` に維持。
+          - セーブ、認証、所持金、在庫、購入、水槽、イベント進行、日付・時間、画像assetには変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          """
+              text = text.replace(anchor, entry + anchor, 1)
+          changelog.write_text(text, encoding='utf-8')
+          PY
+
+          python3 scripts/version-sync.py --set 0.10.862
+          python3 scripts/generate-event-probability-list.py --write
+      - name: Install validation dependencies
+        shell: bash
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Validate v0.10.862
+        shell: bash
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          node --check js/app.js
+          node --check js/ui/craft-surface.js
+          node tools/test-craft-surface.mjs
+          python3 scripts/check-craft-surface.py
+          python3 scripts/version-sync.py --check
+          python3 scripts/generate-event-probability-list.py --check
+          timeout 8m python3 -u scripts/check-current.py
+      - name: Commit validated implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/codex-v862-apply.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "v0.10.862 表面仕上げUI変換をhelperへ分離"
+          git push origin HEAD:codex/v0-10-862-craft-surface

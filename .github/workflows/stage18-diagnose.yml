@@ -1,0 +1,56 @@
+name: stage18-diagnose
+on:
+  push:
+    branches: [jxj-stage18-diagnose-20260904]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Extract small low-risk function candidates
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+          lines = text.splitlines()
+          forbidden = (
+              'state.', 'state =', 'saveGame', 'localStorage', 'sessionStorage', 'indexedDB',
+              'firebase', 'money', 'inventory', 'aquarium', 'eventState', 'Event', 'screenData',
+              'document.', 'window.', 'navigator.', 'setTimeout', 'setInterval', 'playSfx',
+              'switchAudio', 'render(', 'render\(', 'showModal', 'showToast', 'location.',
+              'currentScreen', 'goTo', 'advance', 'order', 'purchase', 'customer', 'hunger',
+              'day', 'date', 'hour', 'minute', 'birthday', 'unpaid', 'sleep', 'weather',
+          )
+          found = []
+          decl = re.compile(r'^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
+          for i, line in enumerate(lines):
+              m = decl.match(line)
+              if not m:
+                  continue
+              name = m.group(1)
+              end = None
+              for j in range(i, min(len(lines), i + 13)):
+                  if j > i and re.match(r'^\s*}\s*$', lines[j]):
+                      end = j
+                      break
+              if end is None:
+                  continue
+              body = '\n'.join(lines[i:end+1])
+              low = body.lower()
+              if any(tok.lower() in low for tok in forbidden):
+                  continue
+              refs = len(re.findall(r'\b' + re.escape(name) + r'\s*\(', text))
+              found.append((end-i+1, refs, i+1, name, body))
+          found.sort(key=lambda x: (x[0], x[1], x[3]))
+          print('STAGE18 SMALL LOW-RISK CANDIDATES')
+          print(f'COUNT={len(found)}')
+          for length, refs, line_no, name, body in found[:40]:
+              print('\n' + '='*72)
+              print(f'{name} line={line_no} lines={length} refs={refs}')
+              print(body)
+          PY

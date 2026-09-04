@@ -1,0 +1,31 @@
+name: stage35-inspect
+on:
+  push:
+    branches: [refactor-stage35-inspect]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect active label helpers
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          lines = text.splitlines()
+          names = []
+          for m in re.finditer(r'(?m)^function\s+([A-Za-z0-9_$]+Label)\s*\(', text):
+              names.append(m.group(1))
+          print('LABEL FUNCTIONS:', len(names))
+          for name in names:
+              refs = [i for i,line in enumerate(lines,1) if re.search(r'\b'+re.escape(name)+r'\s*\(', line)]
+              print(f'\n=== {name} refs={refs} ===')
+              for line_no in refs[:4]:
+                  start=max(1,line_no-2); end=min(len(lines),line_no+5)
+                  print(f'--- L{start}-L{end} ---')
+                  for j in range(start,end+1):
+                      print(f'{j}: {lines[j-1]}')
+          PY

@@ -1,8 +1,16 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.857** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.858** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
+
+## v0.10.858
+- `showModal()` / 通常の `closeModal()` に直書きされていたモーダルDOM表示・消去処理を `js/ui/modal-presenter.js` へ分離。
+- 既存のタイトル、本文HTML、confirm/cancel、danger、hideCancel、hideActions、confirmDisabled、className、`do-sleep` の `data-illness-readable` を従来どおり維持。
+- HTMLエスケープは既存 `esc` をcallback注入し、本文だけは従来どおりHTMLとして表示するため、既存モーダル内容を変更しない。
+- `closeModal()` 後のゲームクリア表示判定・誕生日強制休息判定は `app.js` に残し、復旧/自動進行経路の直接 `modalEl` リセットも未変更。
+- 新UI moduleをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+- セーブ、在庫、所持金、画面遷移、イベント条件、confirm/cancel実行ロジックには変更なし。
 
 ## v0.10.857
 - `showToast()` に直書きされていたトーストのDOM表示処理を `js/ui/toast-presenter.js` へ分離。

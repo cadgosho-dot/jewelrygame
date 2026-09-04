@@ -1,32 +1,234 @@
-name: stage33-inspect
+name: stage33-apply
 on:
   push:
     branches: [refactor-stage33-inspect]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Inspect finance and notification date labels
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Apply stage33 finance row date label refactor
         run: |
           python3 - <<'PY'
-          import re
           from pathlib import Path
-          text = Path('js/app.js').read_text(encoding='utf-8')
-          lines = text.splitlines()
-          for name in ('financeRowDateLabel', 'notificationDateLabel'):
-              print(f'===== {name} =====')
-              refs=[]
-              pat=re.compile(r'\b'+re.escape(name)+r'\s*\(')
-              for i,line in enumerate(lines,1):
-                  if pat.search(line):
-                      refs.append(i)
-              print('refs:', refs)
-              for line_no in refs:
-                  start=max(1,line_no-3); end=min(len(lines),line_no+4)
-                  print(f'--- context L{start}-L{end} ---')
-                  for j in range(start,end+1):
-                      print(f'{j}: {lines[j-1]}')
+
+          root = Path('.')
+          version = (root / 'VERSION').read_text(encoding='utf-8').strip()
+          if version != '0.10.880':
+              raise SystemExit(f'Unexpected base VERSION: {version}')
+
+          app_path = root / 'js/app.js'
+          app = app_path.read_text(encoding='utf-8')
+          import_anchor = "import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.880';\n"
+          new_import = import_anchor + "import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.880';\n"
+          if import_anchor not in app:
+              raise SystemExit('game date helper import anchor not found')
+          if 'formatFinanceRowDateLabel' in app:
+              raise SystemExit('finance row helper already present')
+          app = app.replace(import_anchor, new_import, 1)
+
+          old_function = """function financeRowDateLabel(dayNumber) {
+            const date = gameDateForDay(dayNumber);
+            return `${date.getMonth() + 1}月${date.getDate()}日`;
+          }"""
+          new_function = """function financeRowDateLabel(dayNumber) {
+            return formatFinanceRowDateLabel(gameDateForDay(dayNumber));
+          }"""
+          if old_function not in app:
+              raise SystemExit('legacy financeRowDateLabel implementation not found')
+          app = app.replace(old_function, new_function, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          helper_path = root / 'js/ui/finance-row-date-label.js'
+          helper_path.write_text("""export function formatFinanceRowDateLabel(date) {
+            return `${date.getMonth() + 1}月${date.getDate()}日`;
+          }
+          """, encoding='utf-8')
+
+          sw_path = root / 'sw.js'
+          sw = sw_path.read_text(encoding='utf-8')
+          sw_anchor = "  './js/ui/game-date-label.js?v=0.10.880',\n"
+          if sw_anchor not in sw:
+              raise SystemExit('SW game-date anchor not found')
+          sw = sw.replace(sw_anchor, sw_anchor + "  './js/ui/finance-row-date-label.js?v=0.10.880',\n", 1)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          vs_path = root / 'scripts/version-sync.py'
+          vs = vs_path.read_text(encoding='utf-8')
+          sw_rule = "    Rule('sw.js', 'game-date-label.js precache key', qparam(r'\\./js/ui/game-date-label\\.js'), keep_prefix),\n"
+          app_rule = "    Rule('js/app.js', 'game-date-label.js import key', qparam(r'\\./ui/game-date-label\\.js'), keep_prefix),\n"
+          if sw_rule not in vs or app_rule not in vs:
+              raise SystemExit('version-sync game-date anchors not found')
+          vs = vs.replace(sw_rule, sw_rule + "    Rule('sw.js', 'finance-row-date-label.js precache key', qparam(r'\\./js/ui/finance-row-date-label\\.js'), keep_prefix),\n", 1)
+          vs = vs.replace(app_rule, app_rule + "    Rule('js/app.js', 'finance-row-date-label.js import key', qparam(r'\\./ui/finance-row-date-label\\.js'), keep_prefix),\n", 1)
+          vs_path.write_text(vs, encoding='utf-8')
+
+          current_path = root / 'scripts/check-current.py'
+          current = current_path.read_text(encoding='utf-8')
+          current_anchor = "    ('ゲーム内日付表示', [sys.executable, str(ROOT / 'scripts/check-game-date-label.py')]),\n"
+          if current_anchor not in current:
+              raise SystemExit('check-current game-date anchor not found')
+          current = current.replace(current_anchor, current_anchor + "    ('収支履歴日付表示', [sys.executable, str(ROOT / 'scripts/check-finance-row-date-label.py')]),\n", 1)
+          current_path.write_text(current, encoding='utf-8')
+
+          test_path = root / 'tools/test-finance-row-date-label.mjs'
+          test_path.write_text("""import assert from 'node:assert/strict';
+          import { formatFinanceRowDateLabel } from '../js/ui/finance-row-date-label.js';
+
+          const fakeDate = (monthIndex, day) => ({
+            getMonth: () => monthIndex,
+            getDate: () => day,
+          });
+
+          assert.equal(formatFinanceRowDateLabel(fakeDate(0, 1)), '1月1日');
+          assert.equal(formatFinanceRowDateLabel(fakeDate(8, 5)), '9月5日');
+          assert.equal(formatFinanceRowDateLabel(fakeDate(11, 31)), '12月31日');
+          console.log('FINANCE ROW DATE LABEL UNIT: PASS');
+          """, encoding='utf-8')
+
+          checker_path = root / 'scripts/check-finance-row-date-label.py'
+          checker_path.write_text(r'''#!/usr/bin/env python3
+          """Verify finance-row date display stays a pure UI helper."""
+          from __future__ import annotations
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP_PATH = ROOT / 'js/app.js'
+          HELPER_PATH = ROOT / 'js/ui/finance-row-date-label.js'
+          SW_PATH = ROOT / 'sw.js'
+          VS_PATH = ROOT / 'scripts/version-sync.py'
+          CURRENT_PATH = ROOT / 'scripts/check-current.py'
+          APP = APP_PATH.read_text(encoding='utf-8')
+          HELPER = HELPER_PATH.read_text(encoding='utf-8')
+          SW = SW_PATH.read_text(encoding='utf-8')
+          VS = VS_PATH.read_text(encoding='utf-8')
+          CURRENT = CURRENT_PATH.read_text(encoding='utf-8')
+
+          legacy_function = """function financeRowDateLabel(dayNumber) {
+            const date = gameDateForDay(dayNumber);
+            return `${date.getMonth() + 1}月${date.getDate()}日`;
+          }"""
+          wrapper = """function financeRowDateLabel(dayNumber) {
+            return formatFinanceRowDateLabel(gameDateForDay(dayNumber));
+          }"""
+
+          checks = {
+              'versioned helper import exists': f"from './ui/finance-row-date-label.js?v={VERSION}';" in APP,
+              'app keeps thin financeRowDateLabel wrapper': wrapper in APP,
+              'legacy implementation removed from app': legacy_function not in APP,
+              'financeRowDateLabel remains actively referenced': APP.count('financeRowDateLabel(') >= 2,
+              'game-date calculation remains in app wrapper': 'formatFinanceRowDateLabel(gameDateForDay(dayNumber))' in APP,
+              'wrapper delegates once': APP.count('return formatFinanceRowDateLabel(gameDateForDay(dayNumber));') == 1,
+              'helper exports formatter': 'export function formatFinanceRowDateLabel(date)' in HELPER,
+              'helper keeps Japanese month/day display': '`${date.getMonth() + 1}月${date.getDate()}日`' in HELPER,
+              'service worker precaches helper': f"./js/ui/finance-row-date-label.js?v={VERSION}" in SW,
+              'version sync knows helper precache': "'finance-row-date-label.js precache key'" in VS,
+              'version sync knows helper import': "'finance-row-date-label.js import key'" in VS,
+              'current audit registers checker': "'収支履歴日付表示'" in CURRENT and 'check-finance-row-date-label.py' in CURRENT,
+          }
+          for forbidden in (
+              'state.', 'state =', 'gameDateForDay', 'saveGame', 'loadState', 'localStorage',
+              'sessionStorage', 'indexedDB', 'firebase', 'money', 'inventory', 'eventState',
+              'screenData', 'document.', 'window.', 'navigator.', 'setTimeout', 'setInterval',
+              './assets/', 'Math.random', 'advanceTime', 'delete', 'write', 'cloud',
+          ):
+              checks[f'helper has no reverse dependency: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+          for source in (APP_PATH, HELPER_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+          unit = subprocess.run(['node', 'tools/test-finance-row-date-label.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.stderr:
+              print(unit.stderr, file=sys.stderr, end='')
+          if unit.returncode:
+              failed.append('finance row date label unit test')
+          if failed:
+              print('\nFINANCE ROW DATE LABEL INTEGRATION: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+          print('\nFINANCE ROW DATE LABEL INTEGRATION: PASS')
+          print('ゲーム内日付の算出はapp.js側に維持し、収支履歴用のDateをM月D日表示へ変える処理だけをUI helperへ分離しています。')
+          '''.replace('          ', ''), encoding='utf-8')
+
+          changelog_path = root / 'CHANGELOG.md'
+          changelog = changelog_path.read_text(encoding='utf-8')
+          anchor = '\n## v0.10.880\n'
+          entry = """
+          ## v0.10.881
+          - スマホ収支履歴の日付表示変換だけを `js/ui/finance-row-date-label.js` へ分離。
+          - 既存 `financeRowDateLabel()` は薄いラッパーとして残し、ゲーム内日付を算出する `gameDateForDay()` は `app.js` 側に維持。Dateを `M月D日` と表示する既存規則だけをhelperへ移動。
+          - 収支データ・金額計算・ゲーム内日付・通知・セーブ・所持金・在庫・イベント・画像には変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          """.replace('          ', '')
+          if anchor not in changelog:
+              raise SystemExit('CHANGELOG anchor not found')
+          changelog = changelog.replace(anchor, '\n' + entry + '## v0.10.880\n', 1)
+          changelog_path.write_text(changelog, encoding='utf-8')
           PY
+
+          python3 scripts/version-sync.py --set 0.10.881
+          node tools/test-finance-row-date-label.mjs
+          python3 scripts/check-finance-row-date-label.py
+
+      - name: Prepare real browser validation
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-assets-manifest.py --write
+          python3 -m playwright install --with-deps chromium
+
+      - name: Full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: Verify no media changes and required tool images
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          base = '7de94d29ca0802396e574f61cc5f79cd6c1cab3d'
+          names = subprocess.check_output(['git', 'diff', '--name-only', base, '--'], text=True).splitlines()
+          media_ext = {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.mp3', '.wav', '.ogg', '.mp4', '.webm', '.mov'}
+          media = [name for name in names if Path(name).suffix.lower() in media_ext]
+          if media:
+              raise SystemExit('画像・音声・動画に変更があります: ' + ', '.join(media))
+          print('画像・音声・動画の変更: 0件')
+
+          expected = [
+              'bench-peg.png','buffer.png','diamond-polishing-lap.png','dividers.png','electronic-scale.png','engraving-block.png','file.png','gem-polishing-machine.png','graver.png','hammer.png','jewelry-bench.png','loupe.png','magnifier.png','milgrain-tool.png','nipper.png','piercing-saw.png','pliers.png','rolling-mill.png','rotary-tool.png','stamps.png','torch.png','ultrasonic-cleaner.png','wood-block.png',
+          ]
+          root = Path('assets/images/tools')
+          missing = [name for name in expected if not (root / name).is_file()]
+          if missing:
+              raise SystemExit('正式工具画像が不足しています: ' + ', '.join(missing))
+          print(f'正式工具画像: {len(expected)}/23')
+          PY
+
+      - name: Remove temporary workflow and commit
+        run: |
+          rm .github/workflows/stage33-inspect.yml
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A
+          git commit -m "v0.10.881 収支履歴日付表示をhelperへ分離"
+          git push origin HEAD:refactor-stage33-inspect

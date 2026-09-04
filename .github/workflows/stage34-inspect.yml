@@ -18,7 +18,6 @@ jobs:
           from pathlib import Path
 
           old_version = '0.10.881'
-          new_version = '0.10.882'
           app_path = Path('js/app.js')
           app = app_path.read_text(encoding='utf-8')
 
@@ -29,10 +28,8 @@ jobs:
           wrapper = """function notificationDateLabel(dayNumber) {
             return formatNotificationDateLabel(gameDateForDay(dayNumber));
           }"""
-          if legacy not in app:
-              raise SystemExit('legacy notificationDateLabel implementation not found exactly once')
-          if app.count(legacy) != 1:
-              raise SystemExit('legacy notificationDateLabel implementation count is not 1')
+          if legacy not in app or app.count(legacy) != 1:
+              raise SystemExit('legacy notificationDateLabel implementation mismatch')
           app = app.replace(legacy, wrapper, 1)
 
           finance_import = f"import {{ formatFinanceRowDateLabel }} from './ui/finance-row-date-label.js?v={old_version}';"
@@ -191,12 +188,12 @@ jobs:
 
           python3 scripts/version-sync.py --set 0.10.882
           python3 scripts/generate-event-probability-list.py --write
-          python3 scripts/generate-assets-manifest.py --write
           node tools/test-notification-date-label.mjs
           python3 scripts/check-notification-date-label.py
       - name: Prepare real browser validation
         run: |
           python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 scripts/generate-assets-manifest.py --write
           python3 -m playwright install --with-deps chromium
       - name: Full current-build audit
         env:

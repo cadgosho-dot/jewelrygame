@@ -19,6 +19,14 @@ jobs:
       - name: Apply exact stage 17 patch
         run: |
           python3 scripts/stage17-apply.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/check-viewport-clamp.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace("print('" + chr(10) + "VIEWPORT CLAMP INTEGRATION: FAIL')", r"print('\nVIEWPORT CLAMP INTEGRATION: FAIL')")
+          text = text.replace("print('" + chr(10) + "VIEWPORT CLAMP INTEGRATION: PASS')", r"print('\nVIEWPORT CLAMP INTEGRATION: PASS')")
+          path.write_text(text, encoding='utf-8')
+          PY
           python3 scripts/version-sync.py --set 0.10.865
           python3 scripts/generate-event-probability-list.py --write
           git rm scripts/stage17-apply.py

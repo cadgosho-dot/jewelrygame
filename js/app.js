@@ -3,45 +3,46 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.877';
+} from './game-data.js?v=0.10.878';
 
-const UI_BUILD_VERSION = '0.10.877';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.877';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.877';
+const UI_BUILD_VERSION = '0.10.878';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.878';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.878';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.877';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.878';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.877';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.877';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.877';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.877';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.877';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.877';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.877';
-import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.877';
-import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.877';
-import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.877';
-import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.877';
-import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.877';
-import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.877';
-import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.877';
-import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.877';
-import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.877';
-import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.877';
-import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.877';
-import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.877';
-import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.877';
-import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.877';
-import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.877';
-import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.877';
-import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.877';
-import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.877';
-import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.877';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.877';
+} from './firebase-service.js?v=0.10.878';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.878';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.878';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.878';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.878';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.878';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.878';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.878';
+import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.878';
+import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.878';
+import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.878';
+import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.878';
+import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.878';
+import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.878';
+import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.878';
+import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.878';
+import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.878';
+import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.878';
+import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.878';
+import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.878';
+import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.878';
+import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.878';
+import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.878';
+import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.878';
+import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.878';
+import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.878';
+import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.878';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.878';
 
 
 
@@ -21165,11 +21166,7 @@ function buildSaveDiagnosticsSnapshot() {
 }
 
 function saveDiagnosticsCapacityLabel(projectedCount, maxCount) {
-  if (maxCount <= 0) return '確認不能';
-  if (projectedCount > maxCount) return 'クラウド上限超過';
-  if (projectedCount === maxCount) return '上限付近';
-  if (projectedCount >= Math.ceil(maxCount * 0.8)) return '注意';
-  return '余裕あり';
+  return formatSaveDiagnosticCapacityLabel(projectedCount, maxCount);
 }
 
 async function showSaveDiagnostics() {

@@ -1,28 +1,233 @@
-name: stage34-inspect
+name: stage34-apply
 on:
   push:
     branches: [refactor-stage34-inspect]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect notification date label
+        with:
+          fetch-depth: 2
+      - name: Apply stage34 notification date label refactor
         run: |
           python3 - <<'PY'
-          import re
           from pathlib import Path
-          text = Path('js/app.js').read_text(encoding='utf-8')
-          lines = text.splitlines()
-          name = 'notificationDateLabel'
-          pat = re.compile(r'\b'+re.escape(name)+r'\s*\(')
-          refs = [i for i,line in enumerate(lines,1) if pat.search(line)]
-          print('refs:', refs)
-          for line_no in refs:
-              start=max(1,line_no-4); end=min(len(lines),line_no+5)
-              print(f'--- context L{start}-L{end} ---')
-              for j in range(start,end+1):
-                  print(f'{j}: {lines[j-1]}')
+
+          old_version = '0.10.881'
+          new_version = '0.10.882'
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+
+          legacy = """function notificationDateLabel(dayNumber) {
+            const date = gameDateForDay(dayNumber);
+            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+          }"""
+          wrapper = """function notificationDateLabel(dayNumber) {
+            return formatNotificationDateLabel(gameDateForDay(dayNumber));
+          }"""
+          if legacy not in app:
+              raise SystemExit('legacy notificationDateLabel implementation not found exactly once')
+          if app.count(legacy) != 1:
+              raise SystemExit('legacy notificationDateLabel implementation count is not 1')
+          app = app.replace(legacy, wrapper, 1)
+
+          finance_import = f"import {{ formatFinanceRowDateLabel }} from './ui/finance-row-date-label.js?v={old_version}';"
+          notification_import = f"import {{ formatNotificationDateLabel }} from './ui/notification-date-label.js?v={old_version}';"
+          if finance_import not in app:
+              raise SystemExit('finance row date label import marker not found')
+          app = app.replace(finance_import, finance_import + '\n' + notification_import, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          Path('js/ui/notification-date-label.js').write_text("""export function formatNotificationDateLabel(date) {
+            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+          }
+          """, encoding='utf-8')
+
+          Path('tools/test-notification-date-label.mjs').write_text("""import assert from 'node:assert/strict';
+          import { formatNotificationDateLabel } from '../js/ui/notification-date-label.js';
+
+          const fakeDate = (year, monthIndex, day) => ({
+            getFullYear: () => year,
+            getMonth: () => monthIndex,
+            getDate: () => day,
+          });
+
+          assert.equal(formatNotificationDateLabel(fakeDate(2026, 8, 5)), '2026年9月5日');
+          assert.equal(formatNotificationDateLabel(fakeDate(2027, 0, 1)), '2027年1月1日');
+          assert.equal(formatNotificationDateLabel(fakeDate(2028, 1, 29)), '2028年2月29日');
+          console.log('NOTIFICATION DATE LABEL UNIT: PASS');
+          """, encoding='utf-8')
+
+          Path('scripts/check-notification-date-label.py').write_text("""#!/usr/bin/env python3
+          \"\"\"Verify notification date display stays a pure UI helper.\"\"\"
+          from __future__ import annotations
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP_PATH = ROOT / 'js/app.js'
+          HELPER_PATH = ROOT / 'js/ui/notification-date-label.js'
+          SW_PATH = ROOT / 'sw.js'
+          VS_PATH = ROOT / 'scripts/version-sync.py'
+          CURRENT_PATH = ROOT / 'scripts/check-current.py'
+          APP = APP_PATH.read_text(encoding='utf-8')
+          HELPER = HELPER_PATH.read_text(encoding='utf-8')
+          SW = SW_PATH.read_text(encoding='utf-8')
+          VS = VS_PATH.read_text(encoding='utf-8')
+          CURRENT = CURRENT_PATH.read_text(encoding='utf-8')
+
+          legacy_function = \"\"\"function notificationDateLabel(dayNumber) {
+            const date = gameDateForDay(dayNumber);
+            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+          }\"\"\"
+          wrapper = \"\"\"function notificationDateLabel(dayNumber) {
+            return formatNotificationDateLabel(gameDateForDay(dayNumber));
+          }\"\"\"
+
+          checks = {
+              'versioned helper import exists': f\"from './ui/notification-date-label.js?v={VERSION}';\" in APP,
+              'app keeps thin notificationDateLabel wrapper': wrapper in APP,
+              'legacy implementation removed from app': legacy_function not in APP,
+              'notificationDateLabel remains actively referenced': APP.count('notificationDateLabel(') == 2,
+              'game-date calculation remains in app wrapper': 'formatNotificationDateLabel(gameDateForDay(dayNumber))' in APP,
+              'wrapper delegates once': APP.count('return formatNotificationDateLabel(gameDateForDay(dayNumber));') == 1,
+              'helper exports formatter': 'export function formatNotificationDateLabel(date)' in HELPER,
+              'helper keeps Japanese year/month/day display': '${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日' in HELPER,
+              'service worker precaches helper': f\"./js/ui/notification-date-label.js?v={VERSION}\" in SW,
+              'version sync knows helper precache': \"'notification-date-label.js precache key'\" in VS,
+              'version sync knows helper import': \"'notification-date-label.js import key'\" in VS,
+              'current audit registers checker': \"'通知日付表示'\" in CURRENT and 'check-notification-date-label.py' in CURRENT,
+          }
+          for forbidden in (
+              'state.', 'state =', 'gameDateForDay', 'saveGame', 'loadState', 'localStorage',
+              'sessionStorage', 'indexedDB', 'firebase', 'money', 'inventory', 'eventState',
+              'screenData', 'document.', 'window.', 'navigator.', 'setTimeout', 'setInterval',
+              './assets/', 'Math.random', 'advanceTime', 'delete', 'write', 'cloud',
+          ):
+              checks[f'helper has no reverse dependency: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+          for source in (APP_PATH, HELPER_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+          unit = subprocess.run(['node', 'tools/test-notification-date-label.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.stderr:
+              print(unit.stderr, file=sys.stderr, end='')
+          if unit.returncode:
+              failed.append('notification date label unit test')
+          if failed:
+              print('\\nNOTIFICATION DATE LABEL INTEGRATION: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+          print('\\nNOTIFICATION DATE LABEL INTEGRATION: PASS')
+          print('ゲーム内日付の算出はapp.js側に維持し、通知用Dateを日本語年月日表示へ変える処理だけをUI helperへ分離しています。')
+          """, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          sw_marker = f"  './js/ui/finance-row-date-label.js?v={old_version}',"
+          sw_new = f"  './js/ui/notification-date-label.js?v={old_version}',"
+          if sw_marker not in sw:
+              raise SystemExit('finance row date label precache marker not found')
+          sw = sw.replace(sw_marker, sw_marker + '\n' + sw_new, 1)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          vs_path = Path('scripts/version-sync.py')
+          vs = vs_path.read_text(encoding='utf-8')
+          lines = vs.splitlines()
+          out = []
+          inserted_precache = False
+          inserted_import = False
+          for line in lines:
+              out.append(line)
+              if "'finance-row-date-label.js precache key'" in line:
+                  out.append("    Rule('sw.js', 'notification-date-label.js precache key', qparam(r'\\./js/ui/notification-date-label\\.js'), keep_prefix),")
+                  inserted_precache = True
+              if "'finance-row-date-label.js import key'" in line:
+                  out.append("    Rule('js/app.js', 'notification-date-label.js import key', qparam(r'\\./ui/notification-date-label\\.js'), keep_prefix),")
+                  inserted_import = True
+          if not (inserted_precache and inserted_import):
+              raise SystemExit('version-sync finance row date label markers not both found')
+          vs_path.write_text('\n'.join(out) + '\n', encoding='utf-8')
+
+          current_path = Path('scripts/check-current.py')
+          current = current_path.read_text(encoding='utf-8')
+          current_marker = "    ('収支履歴日付表示', [sys.executable, str(ROOT / 'scripts/check-finance-row-date-label.py')]),"
+          current_new = "    ('通知日付表示', [sys.executable, str(ROOT / 'scripts/check-notification-date-label.py')]),"
+          if current_marker not in current:
+              raise SystemExit('check-current finance row date label marker not found')
+          current = current.replace(current_marker, current_marker + '\n' + current_new, 1)
+          current_path.write_text(current, encoding='utf-8')
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text(encoding='utf-8')
+          marker = '## v0.10.881'
+          section = """## v0.10.882
+          - スマホ通知の日付表示変換だけを `js/ui/notification-date-label.js` へ分離。
+          - 既存 `notificationDateLabel()` は薄いラッパーとして残し、ゲーム内日付を算出する `gameDateForDay()` は `app.js` 側に維持。Dateを `YYYY年M月D日` と表示する既存規則だけをhelperへ移動。
+          - 通知データ・通知遷移・未払い導線・ゲーム内日付・セーブ・所持金・在庫・イベント・画像には変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          """
+          if marker not in changelog:
+              raise SystemExit('CHANGELOG v0.10.881 marker not found')
+          changelog = changelog.replace(marker, section + marker, 1)
+          changelog_path.write_text(changelog, encoding='utf-8')
           PY
+
+          python3 scripts/version-sync.py --set 0.10.882
+          python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-assets-manifest.py --write
+          node tools/test-notification-date-label.mjs
+          python3 scripts/check-notification-date-label.py
+      - name: Prepare real browser validation
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 8m python3 -u scripts/check-current.py
+      - name: Verify no media changes and required tool images
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          base = subprocess.check_output(['git', 'rev-parse', 'HEAD^'], text=True).strip()
+          changed = subprocess.check_output(['git', 'diff', '--name-only', base], text=True).splitlines()
+          media = [p for p in changed if p.startswith('assets/') and Path(p).suffix.lower() in {'.png','.jpg','.jpeg','.webp','.gif','.svg','.mp3','.wav','.ogg','.mp4','.webm'}]
+          if media:
+              raise SystemExit('Unexpected media changes: ' + ', '.join(media))
+          print('MEDIA DIFF: PASS — 画像・音声・動画の変更 0件')
+          expected = [
+              'bench-peg.png','buffer.png','diamond-polishing-lap.png','dividers.png','electronic-scale.png','engraving-block.png','file.png','gem-polishing-machine.png','graver.png','hammer.png','jewelry-bench.png','loupe.png','magnifier.png','milgrain-tool.png','nipper.png','piercing-saw.png','pliers.png','rolling-mill.png','rotary-tool.png','stamps.png','torch.png','ultrasonic-cleaner.png','wood-block.png',
+          ]
+          root = Path('assets/images/tools')
+          missing = [name for name in expected if not (root / name).is_file()]
+          if missing:
+              raise SystemExit('Missing required tool images: ' + ', '.join(missing))
+          print(f'TOOL IMAGES: {len(expected)}/23 PASS')
+          PY
+      - name: Remove temporary workflow and commit
+        run: |
+          rm .github/workflows/stage34-inspect.yml
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A
+          git commit -m "v0.10.882 通知日付表示をhelperへ分離"
+          git push origin HEAD:refactor-stage34-inspect

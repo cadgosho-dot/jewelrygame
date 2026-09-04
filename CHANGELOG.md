@@ -1,12 +1,18 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.887** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.888** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
 
 
 
+
+## v0.10.888
+- ホーム画面追加案内の最終表示文言選択を `js/ui/install-status-text.js` へ分離。
+- `isStandaloneApp()`、`deferredInstallPrompt`、`shellInstallAvailable` による実環境判定は `app.js` 側に維持し、表示文言の選択だけを純粋UI helperへ移動。
+- PWA導線、インストール判定、ゲーム状態、売買、在庫、セーブ、イベント、画像には変更なし。
+- Service Worker、`version-sync.py`、専用単体/統合検査、総合監査へ登録。
 
 ## v0.10.887
 - ルース表示名の文字列合成を `js/ui/loose-display-label.js` へ分離。

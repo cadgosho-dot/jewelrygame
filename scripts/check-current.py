@@ -49,6 +49,7 @@ CHECKS = [
     ('店舗名表示', [sys.executable, str(ROOT / 'scripts/check-store-display-name.py')]),
     ('職人称号表示', [sys.executable, str(ROOT / 'scripts/check-artisan-title.py')]),
     ('ルース表示名', [sys.executable, str(ROOT / 'scripts/check-loose-display-label.py')]),
+    ('ホーム画面追加表示', [sys.executable, str(ROOT / 'scripts/check-install-status-text.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

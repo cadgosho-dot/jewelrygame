@@ -23,6 +23,7 @@ jobs:
         run: |
           python3 tools/apply-v0-10-860.py
           python3 scripts/version-sync.py --set 0.10.860
+          python3 scripts/generate-event-probability-list.py --write
 
       - name: Static and dedicated checks
         run: |
@@ -30,6 +31,7 @@ jobs:
           node --check js/ui/clipboard-fallback.js
           python3 scripts/version-sync.py --check
           python3 scripts/check-clipboard-fallback.py
+          python3 scripts/generate-event-probability-list.py --check
           git diff --check
 
       - name: Prepare real-browser audit
@@ -50,7 +52,7 @@ jobs:
           test "$(cat VERSION)" = "0.10.860"
           git status --short
           git diff --stat
-          git diff -- js/app.js sw.js scripts/version-sync.py scripts/check-current.py CHANGELOG.md
+          git diff -- js/app.js sw.js scripts/version-sync.py scripts/check-current.py CHANGELOG.md EVENT_PROBABILITY_LIST.md
 
       - name: Commit validated v0.10.860
         run: |

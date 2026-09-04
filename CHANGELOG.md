@@ -1,8 +1,16 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.858** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.859** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
+
+
+## v0.10.859
+- 自動セーブ状態表示のDOM生成・表示・自動非表示処理を `js/ui/autosave-status-presenter.js` へ分離。
+- `autosave-status` 要素、`data-autosave-status`、`role=status`、`aria-live=polite`、通常表示2200msを従来どおり維持。
+- `showAutosaveStatus()` の呼び出し口は `app.js` に残し、既存の保存処理からの呼び出し箇所を変更しない構造にした。
+- IndexedDB、localStorage、クラウド保存、保存成否判定、エラー文言、save fingerprint、セーブデータには変更なし。
+- 新UI moduleをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
 
 ## v0.10.858
 - `showModal()` / 通常の `closeModal()` に直書きされていたモーダルDOM表示・消去処理を `js/ui/modal-presenter.js` へ分離。

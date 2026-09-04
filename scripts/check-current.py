@@ -38,6 +38,7 @@ CHECKS = [
     ('地金価格日時表示', [sys.executable, str(ROOT / 'scripts/check-metal-price-date-label.py')]),
     ('スマホアイテム効果表示', [sys.executable, str(ROOT / 'scripts/check-phone-item-effect-text.py')]),
     ('セーブ診断日時表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-date-label.py')]),
+    ('セーブ診断容量表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-bytes-label.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

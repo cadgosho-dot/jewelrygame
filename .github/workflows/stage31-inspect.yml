@@ -1,60 +1,214 @@
-name: stage31-inspect
+name: stage31-apply
 on:
   push:
     branches: [refactor-stage31-inspect]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect active pure display candidates
+        with:
+          fetch-depth: 0
+      - name: Apply stage31 birthday display helper
         run: |
-          echo 'stage31 inspection second push'
+          python3 -m pip install --disable-pip-version-check pillow
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          p=Path('js/app.js')
-          lines=p.read_text(encoding='utf-8').splitlines()
-          print('=== BIRTHDAY LABEL REFERENCES ===')
-          for i,line in enumerate(lines,1):
-              if 'birthdayJapaneseLabel' in line:
-                  print(f'{i:05d}: {line}')
-          print('\n=== SAVE DIAGNOSTICS AREA ===')
-          for i in range(21070, min(21360,len(lines))+1):
-              print(f'{i:05d}: {lines[i-1]}')
-          print('\n=== SMALL DISPLAY-LIKE FUNCTION DEFINITIONS ===')
-          text='\n'.join(lines)
-          pat=re.compile(r'(?m)^function\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{')
-          matches=list(pat.finditer(text))
-          for m in matches:
-              name=m.group(1)
-              if not re.search(r'(format|label|text|name|title|description|display|message|caption|summary)', name, re.I):
-                  continue
-              line=text.count('\n',0,m.start())+1
-              pos=m.end(); depth=1; in_s=in_d=in_t=False; esc=False
-              while pos < len(text) and depth:
-                  c=text[pos]
-                  if esc: esc=False
-                  elif c=='\\': esc=True
-                  elif in_s:
-                      if c=="'": in_s=False
-                  elif in_d:
-                      if c=='"': in_d=False
-                  elif in_t:
-                      if c=='`': in_t=False
-                  else:
-                      if c=="'": in_s=True
-                      elif c=='"': in_d=True
-                      elif c=='`': in_t=True
-                      elif c=='{': depth+=1
-                      elif c=='}': depth-=1
-                  pos+=1
-              endline=text.count('\n',0,pos)+1
-              length=endline-line+1
-              calls=len(re.findall(r'\b'+re.escape(name)+r'\s*\(', text))
-              if length <= 18:
-                  print(f'--- {name} line={line} lines={length} occurrences={calls} ---')
-                  print('\n'.join(lines[line-1:endline]))
+
+          VERSION='0.10.878'
+          NEXT='0.10.879'
+          root=Path('.')
+          assert Path('VERSION').read_text(encoding='utf-8').strip() == VERSION
+
+          def replace_once(path, old, new):
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              count=text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one anchor, got {count}: {old[:100]!r}')
+              p.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          helper = """export function formatBirthdayJapaneseLabel(birthday) {
+            if (!birthday) return '';
+            return `${Number(birthday.slice(0, 2))}月${Number(birthday.slice(3, 5))}日`;
+          }
+          """.replace('          ','')
+          Path('js/ui/birthday-japanese-label.js').write_text(helper,encoding='utf-8')
+
+          import_anchor = f"import {{ formatSaveDiagnosticCapacityLabel }} from './ui/save-diagnostic-capacity-label.js?v={VERSION}';\n"
+          import_new = import_anchor + f"import {{ formatBirthdayJapaneseLabel }} from './ui/birthday-japanese-label.js?v={VERSION}';\n"
+          replace_once('js/app.js', import_anchor, import_new)
+
+          legacy = """function birthdayJapaneseLabel(value = configuredBirthday()) {
+            const birthday = normalizeBirthday(value);
+            if (!birthday) return '';
+            return `${Number(birthday.slice(0, 2))}月${Number(birthday.slice(3, 5))}日`;
+          }""".replace('          ','')
+          wrapper = """function birthdayJapaneseLabel(value = configuredBirthday()) {
+            return formatBirthdayJapaneseLabel(normalizeBirthday(value));
+          }""".replace('          ','')
+          replace_once('js/app.js', legacy, wrapper)
+
+          sw_anchor = f"  './js/ui/save-diagnostic-capacity-label.js?v={VERSION}',\n"
+          replace_once('sw.js', sw_anchor, sw_anchor + f"  './js/ui/birthday-japanese-label.js?v={VERSION}',\n")
+
+          vs_pre = "    Rule('sw.js', 'save-diagnostic-capacity-label.js precache key', qparam(r'\\./js/ui/save-diagnostic-capacity-label\\.js'), keep_prefix),\n"
+          vs_imp = "    Rule('js/app.js', 'save-diagnostic-capacity-label.js import key', qparam(r'\\./ui/save-diagnostic-capacity-label\\.js'), keep_prefix),\n"
+          replace_once('scripts/version-sync.py', vs_pre, vs_pre + "    Rule('sw.js', 'birthday-japanese-label.js precache key', qparam(r'\\./js/ui/birthday-japanese-label\\.js'), keep_prefix),\n")
+          replace_once('scripts/version-sync.py', vs_imp, vs_imp + "    Rule('js/app.js', 'birthday-japanese-label.js import key', qparam(r'\\./ui/birthday-japanese-label\\.js'), keep_prefix),\n")
+
+          current_anchor = "    ('セーブ診断容量判定表示', [sys.executable, str(ROOT / 'scripts/check-save-diagnostic-capacity-label.py')]),\n"
+          replace_once('scripts/check-current.py', current_anchor, current_anchor + "    ('誕生日日本語表示', [sys.executable, str(ROOT / 'scripts/check-birthday-japanese-label.py')]),\n")
+
+          unit = """import assert from 'node:assert/strict';
+          import { formatBirthdayJapaneseLabel } from '../js/ui/birthday-japanese-label.js';
+
+          assert.equal(formatBirthdayJapaneseLabel('12-24'), '12月24日');
+          assert.equal(formatBirthdayJapaneseLabel('01-05'), '1月5日');
+          assert.equal(formatBirthdayJapaneseLabel('02-29'), '2月29日');
+          assert.equal(formatBirthdayJapaneseLabel(''), '');
+          assert.equal(formatBirthdayJapaneseLabel(null), '');
+          console.log('BIRTHDAY JAPANESE LABEL UNIT: PASS');
+          """.replace('          ','')
+          Path('tools/test-birthday-japanese-label.mjs').write_text(unit,encoding='utf-8')
+
+          checker = '''#!/usr/bin/env python3
+          """Verify birthday Japanese display stays a pure UI helper."""
+          from __future__ import annotations
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP_PATH = ROOT / 'js/app.js'
+          HELPER_PATH = ROOT / 'js/ui/birthday-japanese-label.js'
+          SW_PATH = ROOT / 'sw.js'
+          VS_PATH = ROOT / 'scripts/version-sync.py'
+          CURRENT_PATH = ROOT / 'scripts/check-current.py'
+          APP = APP_PATH.read_text(encoding='utf-8')
+          HELPER = HELPER_PATH.read_text(encoding='utf-8')
+          SW = SW_PATH.read_text(encoding='utf-8')
+          VS = VS_PATH.read_text(encoding='utf-8')
+          CURRENT = CURRENT_PATH.read_text(encoding='utf-8')
+
+          legacy_function = """function birthdayJapaneseLabel(value = configuredBirthday()) {
+            const birthday = normalizeBirthday(value);
+            if (!birthday) return '';
+            return `${Number(birthday.slice(0, 2))}月${Number(birthday.slice(3, 5))}日`;
+          }"""
+          wrapper = """function birthdayJapaneseLabel(value = configuredBirthday()) {
+            return formatBirthdayJapaneseLabel(normalizeBirthday(value));
+          }"""
+
+          checks = {
+              'versioned helper import exists': f"from './ui/birthday-japanese-label.js?v={VERSION}';" in APP,
+              'app keeps thin birthdayJapaneseLabel wrapper': wrapper in APP,
+              'legacy implementation removed from app': legacy_function not in APP,
+              'birthdayJapaneseLabel remains actively referenced': APP.count('birthdayJapaneseLabel(') >= 3,
+              'normalization remains in app wrapper': 'formatBirthdayJapaneseLabel(normalizeBirthday(value))' in APP,
+              'wrapper delegates once': APP.count('return formatBirthdayJapaneseLabel(normalizeBirthday(value));') == 1,
+              'helper exports formatter': 'export function formatBirthdayJapaneseLabel(birthday)' in HELPER,
+              'helper keeps empty-label rule': "if (!birthday) return '';" in HELPER,
+              'helper keeps month/day display': '月${Number(birthday.slice(3, 5))}日' in HELPER,
+              'service worker precaches helper': f"./js/ui/birthday-japanese-label.js?v={VERSION}" in SW,
+              'version sync knows helper precache': "'birthday-japanese-label.js precache key'" in VS,
+              'version sync knows helper import': "'birthday-japanese-label.js import key'" in VS,
+              'current audit registers checker': "'誕生日日本語表示'" in CURRENT and 'check-birthday-japanese-label.py' in CURRENT,
+          }
+          for forbidden in (
+              'state.', 'state =', 'configuredBirthday', 'normalizeBirthday', 'saveGame', 'loadState',
+              'localStorage', 'sessionStorage', 'indexedDB', 'firebase', 'money', 'inventory',
+              'eventState', 'screenData', 'document.', 'window.', 'navigator.', 'setTimeout',
+              'setInterval', './assets/', 'Math.random', 'advanceTime', 'delete', 'write', 'cloud',
+          ):
+              checks[f'helper has no reverse dependency: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+          for source in (APP_PATH, HELPER_PATH):
+              syntax = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if syntax.returncode:
+                  failed.append(f'{source.name} JavaScript syntax')
+                  print(syntax.stdout)
+                  print(syntax.stderr)
+          unit = subprocess.run(['node', 'tools/test-birthday-japanese-label.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.stderr:
+              print(unit.stderr, file=sys.stderr, end='')
+          if unit.returncode:
+              failed.append('birthday Japanese label unit test')
+          if failed:
+              print('\\nBIRTHDAY JAPANESE LABEL INTEGRATION: FAIL')
+              for label in failed:
+                  print(f'- {label}')
+              sys.exit(1)
+          print('\\nBIRTHDAY JAPANESE LABEL INTEGRATION: PASS')
+          print('誕生日の正規化はapp.js側に維持し、正規化済みMM-DDをM月D日へ変える表示処理だけをUI helperへ分離しています。')
+          '''.replace('          ','')
+          Path('scripts/check-birthday-japanese-label.py').write_text(checker,encoding='utf-8')
+
+          change_anchor = '## v0.10.878\n'
+          change_entry = '''## v0.10.879
+          - 誕生日の日本語表示変換だけを `js/ui/birthday-japanese-label.js` へ分離。
+          - 既存 `birthdayJapaneseLabel()` は薄いラッパーとして残し、誕生日値の `normalizeBirthday()` 正規化は `app.js` 側に維持。正規化済み `MM-DD` を `M月D日` と表示する既存規則だけをhelperへ移動。
+          - 誕生日の保存・削除・カレンダー判定・プレイヤー名・セーブ・所持金・在庫・イベント・画像には変更なし。
+          - 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
+          '''.replace('          ','')
+          replace_once('CHANGELOG.md', change_anchor, change_entry + change_anchor)
           PY
+
+          python3 scripts/version-sync.py --set 0.10.879
+          python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-assets-manifest.py --write
+          node tools/test-birthday-japanese-label.mjs
+          python3 scripts/check-birthday-japanese-label.py
+
+      - name: Prepare real browser validation
+        run: |
+          python3 -m pip install --disable-pip-version-check playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: Full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: Verify no media behavior assets changed
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          changed=subprocess.check_output(['git','diff','--name-only'],text=True).splitlines()
+          media_ext={'.png','.jpg','.jpeg','.webp','.gif','.svg','.mp3','.wav','.ogg','.m4a','.mp4','.webm','.mov'}
+          media=[p for p in changed if Path(p).suffix.lower() in media_ext]
+          print('changed files:', len(changed))
+          print('media changes:', media)
+          if media:
+              raise SystemExit('Unexpected media changes: '+', '.join(media))
+          tools=Path('assets/images/tools')
+          count=sum(1 for p in tools.glob('*') if p.is_file())
+          print(f'tool image files present: {count}')
+          if count != 23:
+              raise SystemExit(f'Expected 23 tool images, found {count}')
+          PY
+
+      - name: Remove temporary workflow and commit
+        run: |
+          rm -f .github/workflows/stage31-inspect.yml
+          git config user.name 'cadgosho-dot'
+          git config user.email 'cadgosho@gmail.com'
+          git add -A
+          git status --short
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+            exit 1
+          fi
+          git commit -m 'v0.10.879 誕生日日本語表示をhelperへ分離'
+          git push origin HEAD:refactor-stage31-inspect

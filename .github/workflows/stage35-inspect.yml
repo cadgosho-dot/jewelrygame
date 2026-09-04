@@ -9,23 +9,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect active label helpers
+      - name: Inspect customer preference label
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
-          text = Path('js/app.js').read_text(encoding='utf-8')
-          lines = text.splitlines()
-          names = []
-          for m in re.finditer(r'(?m)^function\s+([A-Za-z0-9_$]+Label)\s*\(', text):
-              names.append(m.group(1))
-          print('LABEL FUNCTIONS:', len(names))
-          for name in names:
-              refs = [i for i,line in enumerate(lines,1) if re.search(r'\b'+re.escape(name)+r'\s*\(', line)]
-              print(f'\n=== {name} refs={refs} ===')
-              for line_no in refs[:4]:
-                  start=max(1,line_no-2); end=min(len(lines),line_no+5)
-                  print(f'--- L{start}-L{end} ---')
-                  for j in range(start,end+1):
-                      print(f'{j}: {lines[j-1]}')
+          lines = Path('js/app.js').read_text(encoding='utf-8').splitlines()
+          name = 'customerPreferenceLabel'
+          refs = [i for i,line in enumerate(lines,1) if re.search(r'\b'+name+r'\s*\(', line)]
+          print('refs:', refs)
+          start = refs[0]
+          depth = 0
+          begun = False
+          for j in range(start, min(len(lines), start + 40) + 1):
+              line = lines[j-1]
+              print(f'{j}: {line}')
+              for ch in line:
+                  if ch == '{':
+                      depth += 1; begun = True
+                  elif ch == '}':
+                      depth -= 1
+              if begun and depth == 0:
+                  break
           PY

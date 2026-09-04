@@ -2,6 +2,7 @@ name: stage37-inspect
 on:
   push:
     branches: [refactor-stage37-inspect]
+# trigger inspection
 jobs:
   inspect:
     runs-on: ubuntu-latest

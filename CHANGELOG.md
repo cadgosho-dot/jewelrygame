@@ -1,12 +1,17 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.877** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.878** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
 
 
 
+## v0.10.878
+- セーブ容量診断の容量判定表示だけを `js/ui/save-diagnostic-capacity-label.js` へ分離。
+- 既存 `saveDiagnosticsCapacityLabel()` は薄いラッパーとして残し、「確認不能」「クラウド上限超過」「上限付近」「注意」「余裕あり」の既存判定規則を維持。
+- セーブ作成・復元・クラウド同期・IndexedDB・容量計測・所持金・在庫・イベント・画像には変更なし。
+- 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
 ## v0.10.877
 - セーブ容量診断の容量表示だけを `js/ui/save-diagnostic-bytes-label.js` へ分離。
 - 既存 `formatSaveDiagnosticBytes()` は薄いラッパーとして残し、1024未満の整数B・1MB未満の小数1桁KB・それ以上の小数2桁MB、および負値・不正値を0扱いにする既存規則を維持。

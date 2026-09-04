@@ -1,0 +1,53 @@
+name: stage32-inspect
+on:
+  push:
+    branches: [refactor-stage32-inspect]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find actively used small display helpers
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          lines = text.splitlines()
+          starts=[]
+          for i,line in enumerate(lines):
+              m=re.match(r'\s*function\s+([A-Za-z_$][\w$]*)\s*\(', line)
+              if m:
+                  starts.append((i,m.group(1)))
+
+          display_words=('label','display','text','message','name','description','title','format','summary','caption')
+          forbidden=('state.','state =','saveGame','loadState','localStorage','sessionStorage','indexedDB','firebase','document.','window.','navigator.','setTimeout','setInterval','Math.random','advanceTime','inventory','money +=','money -=','screenData','eventState')
+          candidates=[]
+          for idx,name in starts:
+              depth=0
+              started=False
+              end=idx
+              for j in range(idx, min(len(lines), idx+80)):
+                  line=lines[j]
+                  # good enough for compact helper discovery; final candidate is manually reviewed
+                  for ch in line:
+                      if ch=='{': depth+=1; started=True
+                      elif ch=='}': depth-=1
+                  if started and depth<=0:
+                      end=j
+                      break
+              body='\n'.join(lines[idx:end+1])
+              length=end-idx+1
+              count=len(re.findall(r'\b'+re.escape(name)+r'\s*\(', text))
+              lname=name.lower()
+              if count >= 2 and length <= 18 and any(w in lname for w in display_words) and not any(f in body for f in forbidden):
+                  candidates.append((length,-count,idx+1,name,count,body))
+
+          print('STAGE32 ACTIVE DISPLAY CANDIDATES')
+          for length,negcount,line_no,name,count,body in sorted(candidates)[:40]:
+              print(f'\n--- {name} @L{line_no} refs={count} lines={length} ---')
+              print(body)
+          PY

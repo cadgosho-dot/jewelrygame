@@ -1,12 +1,18 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.880** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.881** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
 
 
 
+
+## v0.10.881
+- スマホ収支履歴の日付表示変換だけを `js/ui/finance-row-date-label.js` へ分離。
+- 既存 `financeRowDateLabel()` は薄いラッパーとして残し、ゲーム内日付を算出する `gameDateForDay()` は `app.js` 側に維持。Dateを `M月D日` と表示する既存規則だけをhelperへ移動。
+- 収支データ・金額計算・ゲーム内日付・通知・セーブ・所持金・在庫・イベント・画像には変更なし。
+- 新UI helperをService Workerと `version-sync.py` へ正式登録し、専用単体/統合検査を総合監査へ追加。
 ## v0.10.880
 - ゲーム内日付の日本語表示変換だけを `js/ui/game-date-label.js` へ分離。
 - 既存 `gameDateLabel()` は薄いラッパーとして残し、ゲーム内日付を算出する `gameDateForDay()` は `app.js` 側に維持。Dateを `YYYY年M月D日（曜）` と表示する既存規則だけをhelperへ移動。

@@ -1,0 +1,113 @@
+name: stage17-diagnose
+on:
+  push:
+    branches:
+      - jxj-stage17-v0.10.865
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: jxj-stage17-v0.10.865
+      - name: Scan short low-risk functions
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('js/app.js')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          forbidden = (
+              'state.', 'state =', 'saveGame', 'localStorage', 'indexedDB', 'firebase',
+              'document.', 'window.', 'screenData', 'eventState', 'money', 'inventory',
+              'aquarium', 'setTimeout', 'setInterval', 'addEventListener', 'querySelector',
+              'innerHTML', 'classList', 'playSfx', 'showToast', 'showModal', 'closeModal',
+              'navigate', 'render', 'await ', 'fetch(', 'Math.random', './assets/'
+          )
+
+          def strip_js(line, in_block):
+              out = []
+              i = 0
+              quote = None
+              escape = False
+              while i < len(line):
+                  c = line[i]
+                  n = line[i+1] if i + 1 < len(line) else ''
+                  if in_block:
+                      if c == '*' and n == '/':
+                          in_block = False; i += 2; continue
+                      i += 1; continue
+                  if quote:
+                      if escape:
+                          escape = False
+                      elif c == '\\':
+                          escape = True
+                      elif c == quote:
+                          quote = None
+                      out.append(' ')
+                      i += 1; continue
+                  if c == '/' and n == '*':
+                      in_block = True; i += 2; continue
+                  if c == '/' and n == '/':
+                      break
+                  if c in ('\"', "'", '`'):
+                      quote = c; out.append(' '); i += 1; continue
+                  out.append(c); i += 1
+              return ''.join(out), in_block
+
+          funcs = []
+          start_re = re.compile(r'^\s*function\s+([A-Za-z_$][\w$]*)\s*\(')
+          for idx, line in enumerate(lines):
+              m = start_re.match(line)
+              if not m:
+                  continue
+              depth = 0
+              started = False
+              in_block = False
+              end = None
+              for j in range(idx, min(len(lines), idx + 120)):
+                  clean, in_block = strip_js(lines[j], in_block)
+                  for ch in clean:
+                      if ch == '{':
+                          depth += 1; started = True
+                      elif ch == '}' and started:
+                          depth -= 1
+                          if depth == 0:
+                              end = j
+                              break
+                  if end is not None:
+                      break
+              if end is None:
+                  continue
+              body = '\n'.join(lines[idx:end+1])
+              span = end - idx + 1
+              lowrisk = span <= 14 and not any(token in body for token in forbidden)
+              funcs.append((0 if lowrisk else 1, span, idx+1, end+1, m.group(1), body))
+
+          funcs.sort(key=lambda x: (x[0], x[1], x[2]))
+          print(f'TOTAL_FUNCTIONS={len(funcs)}')
+          print('=== LOW-RISK SHORT CANDIDATES ===')
+          shown = 0
+          for risk, span, start, end, name, body in funcs:
+              if risk != 0:
+                  continue
+              print(f'--- {name} lines={start}-{end} span={span} ---')
+              print(body)
+              shown += 1
+              if shown >= 40:
+                  break
+          print(f'LOW_RISK_SHOWN={shown}')
+          print('=== OTHER SHORTEST FUNCTIONS ===')
+          shown = 0
+          for risk, span, start, end, name, body in funcs:
+              if risk == 0:
+                  continue
+              print(f'--- {name} lines={start}-{end} span={span} ---')
+              print(body)
+              shown += 1
+              if shown >= 20:
+                  break
+          PY

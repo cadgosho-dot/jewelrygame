@@ -1,0 +1,61 @@
+name: stage21-final-validate
+on:
+  push:
+    branches: [jxj-stage21-v0.10.869]
+    paths: [stage21-final-trigger.txt]
+permissions:
+  contents: write
+jobs:
+  implement-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: jxj-stage21-v0.10.869
+          fetch-depth: 0
+      - name: Apply exact stage 21 patch
+        run: |
+          test "$(git merge-base HEAD fcaa1e4f921ba107014aaa07647c7ffc2fd47531)" = 'fcaa1e4f921ba107014aaa07647c7ffc2fd47531'
+          python3 scripts/stage21-apply.py
+          python3 scripts/version-sync.py --set 0.10.869
+          python3 scripts/generate-event-probability-list.py --write
+      - name: Commit implementation tree
+        run: |
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git rm scripts/stage21-apply.py
+          git add -A
+          echo '=== staged files ==='
+          git diff --cached --name-only
+          if git diff --cached --name-only | grep -Ei '\.(png|jpe?g|webp|gif)$'; then
+            echo 'Image diff detected; aborting.' >&2
+            exit 1
+          fi
+          git commit -m "v0.10.869 残り時間表示ラベルをhelperへ分離"
+      - name: Dedicated checks
+        run: |
+          node --check js/app.js
+          node --check js/ui/time-remaining-label.js
+          node tools/test-time-remaining-label.mjs
+          python3 scripts/check-time-remaining-label.py
+          python3 scripts/version-sync.py --check
+          python3 scripts/generate-event-probability-list.py --check
+      - name: Prepare browser audit
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Full current audit with browser smoke
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: timeout 8m python3 -u scripts/check-current.py
+      - name: Verify exact diff and push
+        run: |
+          echo '=== diff from exact main baseline ==='
+          git diff --name-only fcaa1e4f921ba107014aaa07647c7ffc2fd47531 HEAD
+          if git diff --name-only fcaa1e4f921ba107014aaa07647c7ffc2fd47531 HEAD | grep -Ei '\.(png|jpe?g|webp|gif)$'; then
+            echo 'Image diff detected; aborting.' >&2
+            exit 1
+          fi
+          test "$(cat VERSION)" = '0.10.869'
+          test ! -e scripts/stage21-apply.py
+          git push origin HEAD:jxj-stage21-v0.10.869

@@ -1,0 +1,205 @@
+name: stage39-final
+on:
+  push:
+    branches: [refactor-stage39-final]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Apply stage39 loose display label refactor
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_version = '0.10.886'
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          legacy = """function looseDisplayLabel(gemId, shapeId, { suffix = false } = {}) {
+            const gemName = GEMS[gemId]?.name || 'ルース';
+            if (gemId === 'pearl') return `${gemName}${suffix ? 'ルース' : ''}`;
+            return `${gemName}・${looseShapeLabel(shapeId)}${suffix ? 'ルース' : ''}`;
+          }"""
+          wrapper = """function looseDisplayLabel(gemId, shapeId, { suffix = false } = {}) {
+            const gemName = GEMS[gemId]?.name || 'ルース';
+            const shapeLabel = gemId === 'pearl' ? '' : looseShapeLabel(shapeId);
+            return formatLooseDisplayLabel(gemId, gemName, shapeLabel, { suffix });
+          }"""
+          if app.count(legacy) != 1:
+              raise SystemExit('legacy looseDisplayLabel implementation count is not 1')
+          app = app.replace(legacy, wrapper, 1)
+
+          import_marker = f"import {{ formatArtisanTitle }} from './ui/artisan-title.js?v={old_version}';"
+          helper_import = f"import {{ formatLooseDisplayLabel }} from './ui/loose-display-label.js?v={old_version}';"
+          if import_marker not in app:
+              raise SystemExit('artisan title helper import marker missing')
+          app = app.replace(import_marker, import_marker + '\n' + helper_import, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          Path('js/ui/loose-display-label.js').write_text("""export function formatLooseDisplayLabel(gemId, gemName, shapeLabel, { suffix = false } = {}) {
+            if (gemId === 'pearl') return `${gemName}${suffix ? 'ルース' : ''}`;
+            return `${gemName}・${shapeLabel}${suffix ? 'ルース' : ''}`;
+          }
+          """, encoding='utf-8')
+
+          Path('tools/test-loose-display-label.mjs').write_text("""import assert from 'node:assert/strict';
+          import { formatLooseDisplayLabel } from '../js/ui/loose-display-label.js';
+          assert.equal(formatLooseDisplayLabel('diamond', 'ダイヤモンド', 'ラウンド'), 'ダイヤモンド・ラウンド');
+          assert.equal(formatLooseDisplayLabel('diamond', 'ダイヤモンド', 'ラウンド', { suffix: true }), 'ダイヤモンド・ラウンドルース');
+          assert.equal(formatLooseDisplayLabel('pearl', '真珠', 'ラウンド'), '真珠');
+          assert.equal(formatLooseDisplayLabel('pearl', '真珠', 'ラウンド', { suffix: true }), '真珠ルース');
+          assert.equal(formatLooseDisplayLabel('unknown', 'ルース', 'オーバル'), 'ルース・オーバル');
+          console.log('LOOSE DISPLAY LABEL UNIT: PASS');
+          """, encoding='utf-8')
+
+          Path('scripts/check-loose-display-label.py').write_text("""#!/usr/bin/env python3
+          from __future__ import annotations
+          import subprocess, sys
+          from pathlib import Path
+
+          ROOT = Path(__file__).resolve().parents[1]
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+          APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+          HELPER = (ROOT / 'js/ui/loose-display-label.js').read_text(encoding='utf-8')
+          SW = (ROOT / 'sw.js').read_text(encoding='utf-8')
+          VS = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
+          CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
+
+          checks = {
+              'versioned helper import': f\"from './ui/loose-display-label.js?v={VERSION}';\" in APP,
+              'active references retained': APP.count('looseDisplayLabel(') == 19,
+              'gem lookup stays in app': \"const gemName = GEMS[gemId]?.name || 'ルース';\" in APP,
+              'shape lookup stays in app': \"const shapeLabel = gemId === 'pearl' ? '' : looseShapeLabel(shapeId);\" in APP,
+              'thin wrapper delegates': 'return formatLooseDisplayLabel(gemId, gemName, shapeLabel, { suffix });' in APP,
+              'legacy pearl formatting removed from app': \"if (gemId === 'pearl') return `${gemName}${suffix ? 'ルース' : ''}`;\" not in APP,
+              'helper export': 'export function formatLooseDisplayLabel(gemId, gemName, shapeLabel, { suffix = false } = {})' in HELPER,
+              'helper pearl rule': \"if (gemId === 'pearl') return `${gemName}${suffix ? 'ルース' : ''}`;\" in HELPER,
+              'helper shaped rule': \"return `${gemName}・${shapeLabel}${suffix ? 'ルース' : ''}`;\" in HELPER,
+              'service worker precache': f\"./js/ui/loose-display-label.js?v={VERSION}\" in SW,
+              'version sync precache': \"'loose-display-label.js precache key'\" in VS,
+              'version sync import': \"'loose-display-label.js import key'\" in VS,
+              'current audit registration': \"'ルース表示名'\" in CURRENT and 'check-loose-display-label.py' in CURRENT,
+          }
+          for forbidden in ('state.','state?.','GEMS','LOOSE_SHAPES','looseShapeLabel','ITEMS','METALS','DESIGNS','saveGame','loadState','localStorage','sessionStorage','indexedDB','firebase','money','inventory','eventState','document.','window.','navigator.','Math.random','./assets/'):
+              checks[f'helper independent: {forbidden}'] = forbidden not in HELPER
+
+          failed = []
+          for label, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + label)
+              if not ok:
+                  failed.append(label)
+
+          for source in (ROOT / 'js/app.js', ROOT / 'js/ui/loose-display-label.js'):
+              result = subprocess.run(['node', '--check', str(source)], cwd=ROOT, text=True, capture_output=True)
+              if result.returncode:
+                  print(result.stderr, end='')
+                  failed.append(source.name + ' syntax')
+
+          unit = subprocess.run(['node', 'tools/test-loose-display-label.mjs'], cwd=ROOT, text=True, capture_output=True)
+          print(unit.stdout, end='')
+          if unit.returncode:
+              print(unit.stderr, end='')
+              failed.append('unit test')
+
+          if failed:
+              print('LOOSE DISPLAY LABEL INTEGRATION: FAIL')
+              for label in failed:
+                  print('- ' + label)
+              sys.exit(1)
+          print('LOOSE DISPLAY LABEL INTEGRATION: PASS')
+          """, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          sw_marker = f"  './js/ui/artisan-title.js?v={old_version}',"
+          if sw_marker not in sw:
+              raise SystemExit('service worker marker missing')
+          sw = sw.replace(sw_marker, sw_marker + f"\n  './js/ui/loose-display-label.js?v={old_version}',", 1)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          vs_path = Path('scripts/version-sync.py')
+          lines = vs_path.read_text(encoding='utf-8').splitlines()
+          out = []
+          pre = False
+          imp = False
+          for line in lines:
+              out.append(line)
+              if "'artisan-title.js precache key'" in line:
+                  out.append("    Rule('sw.js', 'loose-display-label.js precache key', qparam(r'\\./js/ui/loose-display-label\\.js'), keep_prefix),")
+                  pre = True
+              if "'artisan-title.js import key'" in line:
+                  out.append("    Rule('js/app.js', 'loose-display-label.js import key', qparam(r'\\./ui/loose-display-label\\.js'), keep_prefix),")
+                  imp = True
+          if not (pre and imp):
+              raise SystemExit('version-sync markers missing')
+          vs_path.write_text('\n'.join(out) + '\n', encoding='utf-8')
+
+          current_path = Path('scripts/check-current.py')
+          current = current_path.read_text(encoding='utf-8')
+          current_marker = "    ('職人称号表示', [sys.executable, str(ROOT / 'scripts/check-artisan-title.py')]),"
+          current_new = "    ('ルース表示名', [sys.executable, str(ROOT / 'scripts/check-loose-display-label.py')]),"
+          if current_marker not in current:
+              raise SystemExit('check-current marker missing')
+          current_path.write_text(current.replace(current_marker, current_marker + '\n' + current_new, 1), encoding='utf-8')
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text(encoding='utf-8')
+          marker = '## v0.10.886'
+          section = """## v0.10.887
+          - ルース表示名の文字列合成を `js/ui/loose-display-label.js` へ分離。
+          - `GEMS` の宝石名参照と `looseShapeLabel()` の形状名解決は `app.js` 側に維持し、真珠の形状名省略と「ルース」接尾辞の付与だけを純粋UI helperへ移動。
+          - 研磨・ルース在庫・注文条件・製作条件・価格・所持金・セーブ・イベント・画像には変更なし。
+          - Service Worker、`version-sync.py`、専用単体/統合検査、総合監査へ登録。
+
+          """
+          if marker not in changelog:
+              raise SystemExit('changelog marker missing')
+          changelog_path.write_text(changelog.replace(marker, section + marker, 1), encoding='utf-8')
+          PY
+
+          python3 scripts/version-sync.py --set 0.10.887
+          python3 scripts/generate-event-probability-list.py --write
+          node tools/test-loose-display-label.mjs
+          python3 scripts/check-loose-display-label.py
+
+      - name: Prepare real browser validation
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+          python3 scripts/generate-assets-manifest.py --write
+
+      - name: Full current-build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: timeout 8m python3 -u scripts/check-current.py
+
+      - name: Verify no media changes and required tool images
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          base = subprocess.check_output(['git', 'rev-parse', 'HEAD^'], text=True).strip()
+          changed = subprocess.check_output(['git', 'diff', '--name-only', base], text=True).splitlines()
+          media = [p for p in changed if p.startswith('assets/') and Path(p).suffix.lower() in {'.png','.jpg','.jpeg','.webp','.gif','.svg','.mp3','.wav','.ogg','.m4a','.mp4','.webm','.mov'}]
+          if media:
+              raise SystemExit('Unexpected media changes: ' + ', '.join(media))
+          print('MEDIA DIFF: PASS — 画像・音声・動画の変更 0件')
+          expected = ['bench-peg.png','buffer.png','diamond-polishing-lap.png','dividers.png','electronic-scale.png','engraving-block.png','file.png','gem-polishing-machine.png','graver.png','hammer.png','jewelry-bench.png','loupe.png','magnifier.png','milgrain-tool.png','nipper.png','piercing-saw.png','pliers.png','rolling-mill.png','rotary-tool.png','stamps.png','torch.png','ultrasonic-cleaner.png','wood-block.png']
+          missing = [name for name in expected if not (Path('assets/images/tools') / name).is_file()]
+          if missing:
+              raise SystemExit('Missing required tool images: ' + ', '.join(missing))
+          print('TOOL IMAGES: 23/23 PASS')
+          PY
+
+      - name: Commit validated stage39 changes
+        run: |
+          git config user.name "cadgosho-dot"
+          git config user.email "cadgosho@gmail.com"
+          git add -A ':!.github/workflows/stage39-final.yml'
+          git commit -m "v0.10.887 ルース表示名をhelperへ分離"
+          git push origin HEAD:refactor-stage39-final

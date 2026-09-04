@@ -26,6 +26,7 @@ CHECKS = [
     ('プレゼント表示ラベル', [sys.executable, str(ROOT / 'scripts/check-gift-labels.py')]),
     ('表面仕上げUI変換', [sys.executable, str(ROOT / 'scripts/check-craft-surface.py')]),
     ('工具説明UI', [sys.executable, str(ROOT / 'scripts/check-tool-brief.py')]),
+    ('店舗番号表示ラベル', [sys.executable, str(ROOT / 'scripts/check-store-branch-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),

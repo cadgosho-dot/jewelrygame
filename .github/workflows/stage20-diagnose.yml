@@ -1,0 +1,74 @@
+name: stage20-diagnose
+on:
+  push:
+    branches: [jxj-stage20-diagnose-20260904]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Extract safest tiny function candidates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          lines = text.splitlines()
+          decl = re.compile(r'^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
+          forbidden = (
+              'state', 'save', 'storage', 'firebase', 'money', 'inventory', 'aquarium',
+              'event', 'document', 'window', 'navigator', 'settimeout', 'setinterval',
+              'playsfx', 'render(', 'showmodal', 'showtoast', 'location', 'screen',
+              'goto', 'advance', 'order', 'purchase', 'customer', 'hunger', 'sleep',
+              'weather', 'birthday', 'unpaid', 'currentuser', 'random', 'math.random',
+          )
+          found = []
+          for i, line in enumerate(lines):
+              m = decl.match(line)
+              if not m:
+                  continue
+              name = m.group(1)
+              paren = 0
+              signature_done = False
+              body_depth = 0
+              started = False
+              end = None
+              for j in range(i, min(len(lines), i + 16)):
+                  for ch in lines[j]:
+                      if not signature_done:
+                          if ch == '(':
+                              paren += 1
+                          elif ch == ')':
+                              paren -= 1
+                              if paren == 0:
+                                  signature_done = True
+                          continue
+                      if ch == '{':
+                          body_depth += 1
+                          started = True
+                      elif ch == '}':
+                          body_depth -= 1
+                  if started and body_depth == 0:
+                      end = j
+                      break
+              if end is None or end - i + 1 > 8:
+                  continue
+              body = '\n'.join(lines[i:end+1])
+              low = body.lower()
+              if any(tok in low for tok in forbidden):
+                  continue
+              refs = len(re.findall(r'\b' + re.escape(name) + r'\s*\(', text))
+              calls = re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(', '\n'.join(lines[i+1:end]))
+              external_calls = [c for c in calls if c not in {name, 'String', 'Number', 'Boolean', 'Object', 'Array', 'Math'}]
+              found.append((len(external_calls), end-i+1, refs, i+1, name, body, external_calls))
+          found.sort(key=lambda x: (x[0], x[1], x[2], x[4]))
+          print('STAGE20 SAFEST CANDIDATES')
+          print(f'COUNT={len(found)}')
+          for external_count, length, refs, line_no, name, body, calls in found[:45]:
+              print('\n' + '='*72)
+              print(f'{name} line={line_no} lines={length} refs={refs} external_calls={calls}')
+              print(body)
+          PY

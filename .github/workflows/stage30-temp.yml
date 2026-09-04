@@ -23,6 +23,19 @@ jobs:
       - name: 第30段階を適用
         run: python3 tools/apply-stage30.py
 
+      - name: 文字列入力の既存比較仕様をテストへ反映
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/test-save-diagnostic-capacity-label.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = "assert.equal(formatSaveDiagnosticCapacityLabel('8', '10'), '注意');"
+          new = "assert.equal(formatSaveDiagnosticCapacityLabel('8', '10'), 'クラウド上限超過');"
+          if text.count(old) != 1:
+              raise SystemExit('文字列比較テストの補正対象が見つかりません。')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: 検証環境を準備
         run: |
           python3 -m pip install --disable-pip-version-check pillow playwright

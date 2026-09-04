@@ -1,4 +1,4 @@
-// Pure display labels for the gift UI. Game state, inventory and gift processing stay in app.js.
+// Pure display labels for the gift UI. Game state and gift processing stay in app.js.
 const CATEGORY_LABELS = Object.freeze({
   rough: '原石',
   loose: 'ルース',

@@ -21,6 +21,7 @@ CHECKS = [
     ('冬の体調不良文字効果', [sys.executable, str(ROOT / 'scripts/check-winter-cold-text-effect.py')]),
     ('トースト表示管理', [sys.executable, str(ROOT / 'scripts/check-toast-presenter.py')]),
     ('モーダル表示管理', [sys.executable, str(ROOT / 'scripts/check-modal-presenter.py')]),
+    ('自動セーブ状態表示', [sys.executable, str(ROOT / 'scripts/check-autosave-status-presenter.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),
     ('検索・SEO公開', [sys.executable, str(ROOT / 'scripts/check-seo.py')]),

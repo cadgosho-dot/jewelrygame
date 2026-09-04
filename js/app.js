@@ -3,26 +3,27 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.858';
+} from './game-data.js?v=0.10.859';
 
-const UI_BUILD_VERSION = '0.10.858';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.858';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.858';
+const UI_BUILD_VERSION = '0.10.859';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.859';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.859';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.858';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.859';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.858';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.858';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.858';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.858';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.858';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.858';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.858';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.858';
+} from './firebase-service.js?v=0.10.859';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.859';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.859';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.859';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.859';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.859';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.859';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.859';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.859';
 
 
 
@@ -72,6 +73,7 @@ const winterColdTextEffect = createWinterColdTextEffect({
 
 const toastPresenter = createToastPresenter({ element: toastEl });
 const modalPresenter = createModalPresenter({ element: modalEl, escapeHtml: esc });
+const autosaveStatusPresenter = createAutosaveStatusPresenter();
 
 let state = null;
 globalThis.__JXJ_MEMORIES_STATE__ = () => state ? structuredClone({ events: state.events, inventory: state.inventory, game: state.game, memories: state.memories }) : null;
@@ -171,14 +173,12 @@ let saveQueue = Promise.resolve();
 let autosaveTimer = null;
 let autosavePending = false;
 let autosaveLastReason = '';
-let autosaveStatusHideTimer = null;
 let lastSavedFingerprint = '';
 let lastCloudSavedFingerprint = '';
 let lastLifecycleLocalFingerprint = '';
 let cloudSaveFailureActive = false;
 let lastSuccessfulSaveAt = '';
 const AUTOSAVE_DELAY_MS = 450;
-const AUTOSAVE_STATUS_HIDE_MS = 2200;
 let saveRecoveryNotice = null;
 let saveRecoveryDetails = null;
 let sessionId = globalThis.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -3885,35 +3885,8 @@ function saveStateFingerprint(value = state) {
   }
 }
 
-function ensureAutosaveStatusElement() {
-  let element = document.querySelector('[data-autosave-status]');
-  if (element) return element;
-  element = document.createElement('div');
-  element.className = 'autosave-status';
-  element.dataset.autosaveStatus = 'idle';
-  element.setAttribute('role', 'status');
-  element.setAttribute('aria-live', 'polite');
-  element.hidden = true;
-  document.body.appendChild(element);
-  return element;
-}
-
 function showAutosaveStatus(mode, text, { persistent = false } = {}) {
-  const element = ensureAutosaveStatusElement();
-  if (autosaveStatusHideTimer) {
-    clearTimeout(autosaveStatusHideTimer);
-    autosaveStatusHideTimer = null;
-  }
-  element.dataset.autosaveStatus = String(mode || 'idle');
-  element.textContent = String(text || '');
-  element.hidden = !text;
-  if (!persistent && text) {
-    autosaveStatusHideTimer = window.setTimeout(() => {
-      element.hidden = true;
-      element.dataset.autosaveStatus = 'idle';
-      autosaveStatusHideTimer = null;
-    }, AUTOSAVE_STATUS_HIDE_MS);
-  }
+  autosaveStatusPresenter.show(mode, text, { persistent });
 }
 
 function formatAutosaveTime(value) {

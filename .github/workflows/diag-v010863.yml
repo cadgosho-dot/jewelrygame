@@ -1,0 +1,27 @@
+name: diag-v010863
+on:
+  push:
+    branches:
+      - cleanup-v0.10.863-tool-brief
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect renderToolBrief and version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('js/app.js')
+          lines=p.read_text(encoding='utf-8').splitlines()
+          needles=['renderToolBrief','VERSION']
+          for needle in needles:
+              print(f'=== {needle} ===')
+              hits=[i for i,l in enumerate(lines) if needle in l]
+              print('hits', [i+1 for i in hits])
+              for i in hits:
+                  a=max(0,i-12); b=min(len(lines),i+28)
+                  print(f'--- lines {a+1}-{b} ---')
+                  for n in range(a,b):
+                      print(f'{n+1}: {lines[n]}')
+          PY

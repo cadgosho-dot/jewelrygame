@@ -1,0 +1,32 @@
+name: stage33-inspect
+on:
+  push:
+    branches: [refactor-stage33-inspect]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect finance and notification date labels
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          lines = text.splitlines()
+          for name in ('financeRowDateLabel', 'notificationDateLabel'):
+              print(f'===== {name} =====')
+              refs=[]
+              pat=re.compile(r'\b'+re.escape(name)+r'\s*\(')
+              for i,line in enumerate(lines,1):
+                  if pat.search(line):
+                      refs.append(i)
+              print('refs:', refs)
+              for line_no in refs:
+                  start=max(1,line_no-3); end=min(len(lines),line_no+4)
+                  print(f'--- context L{start}-L{end} ---')
+                  for j in range(start,end+1):
+                      print(f'{j}: {lines[j-1]}')
+          PY

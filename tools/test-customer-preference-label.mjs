@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { formatCustomerPreferenceLabel } from '../js/ui/customer-preference-label.js';
+assert.equal(formatCustomerPreferenceLabel({ label: '明示希望', type: 'metal', value: 'gold' }, '金'), '明示希望');
+assert.equal(formatCustomerPreferenceLabel({ type: 'metal', value: 'gold' }, 'K18'), 'K18');
+assert.equal(formatCustomerPreferenceLabel({ type: 'metal', value: 'unknown' }, ''), '地金指定');
+assert.equal(formatCustomerPreferenceLabel({ type: 'design', value: 'classic' }, 'クラシック'), 'クラシック');
+assert.equal(formatCustomerPreferenceLabel({ type: 'design', value: 'unknown' }, ''), 'デザイン指定');
+assert.equal(formatCustomerPreferenceLabel({ type: 'color', value: '青' }, ''), '青');
+assert.equal(formatCustomerPreferenceLabel({ type: 'color', value: '' }, ''), '色指定');
+assert.equal(formatCustomerPreferenceLabel({ type: 'gem', value: 'ruby' }, 'ルビー'), 'ルビー');
+assert.equal(formatCustomerPreferenceLabel({ type: 'other', value: 'ruby' }, 'ルビー'), 'ルビー');
+assert.equal(formatCustomerPreferenceLabel({ type: 'gem', value: 'unknown' }, ''), '石指定');
+console.log('CUSTOMER PREFERENCE LABEL UNIT: PASS');

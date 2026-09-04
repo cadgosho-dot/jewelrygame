@@ -1,6 +1,6 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.882** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.883** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
@@ -8,6 +8,11 @@
 
 
 
+## v0.10.883
+- 店頭接客の「優先する希望」表示選択を `js/ui/customer-preference-label.js` へ分離。
+- `METALS` / `DESIGNS` / `GEMS` のデータ参照は `app.js` 側に維持し、明示ラベル・地金・デザイン・色・石の表示規則と既存フォールバックだけをhelperへ移動。
+- 顧客生成・接客判定・商品提案・予算・販売・所持金・在庫・セーブ・イベント・画像には変更なし。
+- Service Worker、`version-sync.py`、専用単体/統合検査、総合監査へ登録。
 ## v0.10.882
 - スマホ通知の日付表示変換だけを `js/ui/notification-date-label.js` へ分離。
 - 既存 `notificationDateLabel()` は薄いラッパーとして残し、ゲーム内日付を算出する `gameDateForDay()` は `app.js` 側に維持。Dateを `YYYY年M月D日` と表示する既存規則だけをhelperへ移動。

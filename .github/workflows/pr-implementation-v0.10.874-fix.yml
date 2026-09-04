@@ -34,13 +34,16 @@ jobs:
 
           if fix.exists():
               fix.unlink()
-          subprocess.run(['python3', 'scripts/generate-assets-manifest.py', '--write'], check=True)
           subprocess.run(['python3', 'scripts/version-sync.py', '--check'], check=True)
           PY
       - name: 画像・実ブラウザ検査環境を準備
         run: |
           python3 -m pip install --disable-pip-version-check pillow playwright
           python3 -m playwright install --with-deps chromium
+      - name: 画像解析環境でASSETS棚卸しを確定
+        run: |
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-assets-manifest.py --check
       - name: 第26段階の総合監査
         env:
           JXJ_REQUIRE_BROWSER_SMOKE: '1'

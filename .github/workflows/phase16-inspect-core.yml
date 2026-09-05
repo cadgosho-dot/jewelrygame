@@ -1,0 +1,88 @@
+name: Phase16 Inspect Core Candidates
+
+on:
+  push:
+    branches:
+      - phase16-core-protection-v0.10.905
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: phase16-core-protection-v0.10.905
+      - name: Inspect unprotected core candidates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('.')
+          app = (root/'js/app.js').read_text(encoding='utf-8')
+
+          def extract_functions(src):
+              pat = re.compile(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z0-9_$]+)\s*\([^)]*\)\s*\{')
+              out=[]
+              for m in pat.finditer(src):
+                  i=m.end()-1; depth=0; q=None; esc=False; tpl=False
+                  j=i
+                  while j < len(src):
+                      c=src[j]
+                      if q:
+                          if esc: esc=False
+                          elif c=='\\': esc=True
+                          elif c==q: q=None
+                      else:
+                          if c in "'\"`": q=c
+                          elif c=='{': depth+=1
+                          elif c=='}':
+                              depth-=1
+                              if depth==0:
+                                  out.append((m.group(1), src[m.start():j+1], src.count('\n',0,m.start())+1))
+                                  break
+                      j+=1
+              return out
+
+          protected=set()
+          for p in (root/'scripts').glob('check-*-regression.py'):
+              txt=p.read_text(encoding='utf-8',errors='ignore')
+              protected.update(re.findall(r"function\s+([A-Za-z0-9_$]+)\s*\(", txt))
+              protected.update(re.findall(r"extract[^\n]*?['\"]([A-Za-z0-9_$]+)['\"]", txt))
+          # known protected functions whose checker may not expose a literal function token
+          protected.update(['settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal','polishRough','finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct','confirmJewelryShopTrade','buyWorkshopTool','repairWorkshopTool'])
+
+          weights={
+              'state.game.money':6,'addFinance(':5,'saveGame(':4,'spendHours(':4,'spendMinutes(':4,'advanceTime(':3,
+              'inventory':3,'state.store':3,'state.aquarium':3,'state.game':2,'showToast(':1,'render(':1,
+              'notifications':2,'state.daily':2,'customer':2,'order':2,'rent':2,'property':3,'purchase':2,'sell':2,'buy':2,
+          }
+          rows=[]
+          for name,body,line in extract_functions(app):
+              if name in protected: continue
+              score=sum(w*body.count(k) for k,w in weights.items())
+              mutation = bool(re.search(r'state\.[A-Za-z0-9_$?.\[\]"\'`]+\s*(?:\+\+|--|[+\-*/]?=)', body))
+              if score>=7 and mutation:
+                  rows.append((score,name,line,body))
+          rows.sort(reverse=True)
+          report=[]
+          report.append('# Phase16 core candidates')
+          report.append(f'protected known: {sorted(protected)}')
+          report.append('')
+          for score,name,line,body in rows[:25]:
+              report.append(f'## {name} line {line} score {score}')
+              report.append('```js')
+              report.extend(body.splitlines()[:120])
+              if len(body.splitlines())>120: report.append('// ... truncated ...')
+              report.append('```')
+              report.append('')
+          (root/'_phase16-core-candidates.md').write_text('\n'.join(report), encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add _phase16-core-candidates.md
+          git commit -m "Phase16 candidate inspection" || exit 0
+          git push origin HEAD:phase16-core-protection-v0.10.905

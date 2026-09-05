@@ -8,65 +8,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Rank unprotected state-changing functions
+      - name: Print target functions
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           text = Path('js/app.js').read_text(encoding='utf-8')
-          protected = {
-            'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal',
-            'polishRough','finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct',
-            'confirmJewelryShopTrade','buyWorkshopTool','repairWorkshopTool','rentNextStore',
-            'processMonthlyFixedCosts'
-          }
-          def extract(start):
-            brace = text.find('{', start)
-            if brace < 0: return ''
-            depth = 0; quote = None; esc = False; line_comment=False; block_comment=False
-            i = brace
+          def extract(name):
+            m = re.search(rf'(?m)^function\s+{re.escape(name)}\s*\(', text)
+            if not m: return None, None
+            start=m.start(); brace=text.find('{', start)
+            depth=0; quote=None; esc=False; line_comment=False; block_comment=False
+            i=brace
             while i < len(text):
-              c = text[i]; n = text[i+1] if i+1 < len(text) else ''
+              c=text[i]; n=text[i+1] if i+1 < len(text) else ''
               if line_comment:
-                if c == '\n': line_comment=False
+                if c=='\n': line_comment=False
               elif block_comment:
-                if c == '*' and n == '/': block_comment=False; i += 1
+                if c=='*' and n=='/': block_comment=False; i+=1
               elif quote:
                 if esc: esc=False
-                elif c == '\\': esc=True
-                elif c == quote: quote=None
+                elif c=='\\': esc=True
+                elif c==quote: quote=None
               else:
-                if c == '/' and n == '/': line_comment=True; i += 1
-                elif c == '/' and n == '*': block_comment=True; i += 1
+                if c=='/' and n=='/': line_comment=True; i+=1
+                elif c=='/' and n=='*': block_comment=True; i+=1
                 elif c in "'\"`": quote=c
-                elif c == '{': depth += 1
-                elif c == '}':
-                  depth -= 1
-                  if depth == 0: return text[start:i+1]
-              i += 1
-            return text[start:]
-          rows=[]
-          pat=re.compile(r'(?m)^function\s+([A-Za-z_$][\w$]*)\s*\(')
-          for m in pat.finditer(text):
-            name=m.group(1)
-            if name in protected: continue
-            body=extract(m.start())
-            score=0; hits=[]
-            weights=[
-              ('saveGame',7),('addFinance',6),('state.game.money',6),('spendHours',5),('advanceTime',5),
-              ('unpaid',5),('suspended',5),('employee',4),('staff',4),('hire',4),('fire',4),('dismiss',4),
-              ('rent',4),('salary',4),('wage',4),('purchase',3),('sell',3),('inventory',3),('.push(',2),('.splice(',2),
-              ('notification',2),('showToast',1),('render()',1)
-            ]
-            low=body.lower()
-            for token,w in weights:
-              cnt=low.count(token.lower())
-              if cnt:
-                score += min(cnt,3)*w; hits.append(f'{token}:{cnt}')
-            if 'state.' in body: score += 4
-            if score >= 12:
-              line=text.count('\n',0,m.start())+1
-              rows.append((score,line,name,len(body.splitlines()),', '.join(hits[:10])))
-          for row in sorted(rows, reverse=True)[:60]:
-            print('CANDIDATE score=%d line=%d name=%s lines=%d hits=%s' % row)
+                elif c=='{': depth+=1
+                elif c=='}':
+                  depth-=1
+                  if depth==0:
+                    return text.count('\n',0,start)+1, text[start:i+1]
+              i+=1
+            return text.count('\n',0,start)+1, text[start:]
+          for name in ['outstandingPaymentTargets','applyOutstandingPayment','payFixedCost','processHomeRent','ensureOutstandingCosts','outstandingCostTotal']:
+            line, body=extract(name)
+            print(f'===== {name} line={line} =====')
+            print(body if body else 'NOT_FOUND')
           PY

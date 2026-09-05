@@ -58,6 +58,7 @@ CHECKS = [
     ('地金購入処理保護', [sys.executable, str(ROOT / 'scripts/check-buy-metal-regression.py')]),
     ('地金売却処理保護', [sys.executable, str(ROOT / 'scripts/check-sell-metal-regression.py')]),
     ('原石研磨処理保護', [sys.executable, str(ROOT / 'scripts/check-polish-rough-regression.py')]),
+    ('採掘結果確定処理保護', [sys.executable, str(ROOT / 'scripts/check-finish-mining-rock-regression.py')]),
     ('ルース購入処理保護', [sys.executable, str(ROOT / 'scripts/check-purchase-regression.py')]),
     ('ルース売却処理保護', [sys.executable, str(ROOT / 'scripts/check-sell-loose-regression.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),

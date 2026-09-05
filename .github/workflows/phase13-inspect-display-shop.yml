@@ -6,41 +6,108 @@ on:
       - phase13-display-shop-regression-v0.10.902
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   inspect:
+    if: github.event.head_commit.message != 'phase13 inspection output'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           ref: phase13-display-shop-regression-v0.10.902
           fetch-depth: 1
-      - name: Inspect current display-shop purchase code
+      - name: Extract current display-shop purchase code
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
+
           text = Path('js/app.js').read_text(encoding='utf-8')
           lines = text.splitlines()
-          needles = ['150000', '50000', 'ディスプレイ', 'ショーケース', 'displayShop', 'showcase', 'displaySuppl', 'caseStock', 'caseCount']
-          hits=[]
-          for i,line in enumerate(lines,1):
-              if any(n.lower() in line.lower() for n in needles):
-                  hits.append(i)
-          print('HITS', hits[:200])
-          printed=set()
-          for i in hits[:120]:
-              lo=max(1,i-18); hi=min(len(lines),i+18)
-              key=(lo,hi)
-              if key in printed: continue
-              printed.add(key)
-              print(f'--- CONTEXT {lo}-{hi} ---')
-              for n in range(lo,hi+1):
-                  print(f'{n}: {lines[n-1]}')
-          print('--- FUNCTION NAMES ---')
-          for m in re.finditer(r'function\s+([A-Za-z0-9_$]+)\s*\(', text):
-              name=m.group(1)
-              if any(k in name.lower() for k in ['display','showcase','case','shop']):
-                  print(name)
+          needles = [
+              '150000', '50000', 'ディスプレイ', 'ショーケース',
+              'displayShop', 'showcase', 'displaySuppl', 'caseStock', 'caseCount'
+          ]
+          hit_lines = [i for i, line in enumerate(lines, 1)
+                       if any(n.lower() in line.lower() for n in needles)]
+
+          starts = []
+          for m in re.finditer(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z0-9_$]+)\s*\([^\n]*\)\s*\{', text):
+              starts.append((m.start(), m.end() - 1, m.group(1)))
+
+          def line_of(pos):
+              return text.count('\n', 0, pos) + 1
+
+          def function_extent(open_brace_pos):
+              depth = 0
+              quote = None
+              escape = False
+              i = open_brace_pos
+              while i < len(text):
+                  c = text[i]
+                  if quote:
+                      if escape:
+                          escape = False
+                      elif c == '\\':
+                          escape = True
+                      elif c == quote:
+                          quote = None
+                  else:
+                      if c in "'\"`":
+                          quote = c
+                      elif c == '{':
+                          depth += 1
+                      elif c == '}':
+                          depth -= 1
+                          if depth == 0:
+                              return i
+                  i += 1
+              return len(text) - 1
+
+          out = []
+          out.append('BASE SOURCE: js/app.js on feature branch created from main 29669841431dd3338c9326784106105320d67f8d')
+          out.append('HIT LINES: ' + ', '.join(map(str, hit_lines[:300])))
+          out.append('')
+
+          # Context around every meaningful hit.
+          merged = []
+          for ln in hit_lines:
+              lo, hi = max(1, ln - 12), min(len(lines), ln + 12)
+              if merged and lo <= merged[-1][1] + 1:
+                  merged[-1] = (merged[-1][0], max(merged[-1][1], hi))
+              else:
+                  merged.append((lo, hi))
+          for lo, hi in merged[:80]:
+              out.append(f'--- CONTEXT {lo}-{hi} ---')
+              out.extend(f'{n}: {lines[n-1]}' for n in range(lo, hi + 1))
+              out.append('')
+
+          # Full functions that contain any hit line.
+          seen = set()
+          for start_pos, brace_pos, name in starts:
+              end_pos = function_extent(brace_pos)
+              start_ln, end_ln = line_of(start_pos), line_of(end_pos)
+              if any(start_ln <= h <= end_ln for h in hit_lines):
+                  key = (start_ln, end_ln, name)
+                  if key in seen:
+                      continue
+                  seen.add(key)
+                  out.append(f'=== FULL FUNCTION {name} L{start_ln}-L{end_ln} ===')
+                  out.extend(f'{n}: {lines[n-1]}' for n in range(start_ln, end_ln + 1))
+                  out.append('')
+
+          out.append('=== DISPLAY/SHOWCASE/SHOP/CASE FUNCTION NAMES ===')
+          for start_pos, brace_pos, name in starts:
+              if any(k in name.lower() for k in ['display', 'showcase', 'shop', 'case']):
+                  out.append(f'{name} @ L{line_of(start_pos)}')
+
+          Path('_phase13-display-shop-inspection.txt').write_text('\n'.join(out) + '\n', encoding='utf-8')
           PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add _phase13-display-shop-inspection.txt
+          if ! git diff --cached --quiet; then
+            git commit -m 'phase13 inspection output'
+            git push origin HEAD:phase13-display-shop-regression-v0.10.902
+          fi

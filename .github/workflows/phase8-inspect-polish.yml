@@ -1,4 +1,4 @@
-name: phase8 inspect polishRough
+name: phase8 verify polishRough
 
 on:
   push:
@@ -6,19 +6,12 @@ on:
       - phase8-protect-polish-rough-v010897
 
 jobs:
-  inspect:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: polishRough現行処理を表示
+      - name: 原石研磨回帰テスト
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          app = Path('js/app.js').read_text(encoding='utf-8')
-          start = app.index('function polishRough()')
-          end = app.index('function qualityProbabilities()', start)
-          block = app[start:end]
-          print('=== POLISH_ROUGH_BEGIN ===')
-          print(block)
-          print('=== POLISH_ROUGH_END ===')
-          PY
+          node --check tools/test-polish-rough-regression.mjs
+          node tools/test-polish-rough-regression.mjs
+          python3 scripts/check-polish-rough-regression.py

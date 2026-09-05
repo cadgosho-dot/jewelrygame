@@ -1,0 +1,46 @@
+name: Phase13 Inspect Display Shop
+
+on:
+  push:
+    branches:
+      - phase13-display-shop-regression-v0.10.902
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: phase13-display-shop-regression-v0.10.902
+          fetch-depth: 1
+      - name: Inspect current display-shop purchase code
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          lines = text.splitlines()
+          needles = ['150000', '50000', 'ディスプレイ', 'ショーケース', 'displayShop', 'showcase', 'displaySuppl', 'caseStock', 'caseCount']
+          hits=[]
+          for i,line in enumerate(lines,1):
+              if any(n.lower() in line.lower() for n in needles):
+                  hits.append(i)
+          print('HITS', hits[:200])
+          printed=set()
+          for i in hits[:120]:
+              lo=max(1,i-18); hi=min(len(lines),i+18)
+              key=(lo,hi)
+              if key in printed: continue
+              printed.add(key)
+              print(f'--- CONTEXT {lo}-{hi} ---')
+              for n in range(lo,hi+1):
+                  print(f'{n}: {lines[n-1]}')
+          print('--- FUNCTION NAMES ---')
+          for m in re.finditer(r'function\s+([A-Za-z0-9_$]+)\s*\(', text):
+              name=m.group(1)
+              if any(k in name.lower() for k in ['display','showcase','case','shop']):
+                  print(name)
+          PY

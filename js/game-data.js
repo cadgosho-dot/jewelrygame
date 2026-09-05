@@ -3,7 +3,7 @@
 // 大容量の既存ゲームデータ本体は game-data-core.js に保持し、内容を変更せず再利用する。
 import * as core from './game-data-core.js';
 
-export const VERSION = '0.10.892';
+export const VERSION = '0.10.893';
 export * from './game-data-core.js';
 
 // v0.10.753 balance hotfix:

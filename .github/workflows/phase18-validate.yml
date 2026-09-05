@@ -1,0 +1,16 @@
+name: Phase18 Validate Outstanding Payment
+on:
+  push:
+    branches: [phase18-outstanding-payment-protection]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Stage18 protection
+        run: |
+          node --check js/app.js
+          node --check tools/test-outstanding-payment-regression.mjs
+          node tools/test-outstanding-payment-regression.mjs
+          python3 scripts/check-outstanding-payment-regression.py

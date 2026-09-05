@@ -1,0 +1,44 @@
+name: Phase24 Formal Sync v0.10.913
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Register Stage24 checker and sync version
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/check-current.py')
+          text = p.read_text(encoding='utf-8')
+          needle = "    ('店舗ディスプレイ管理処理保護', [sys.executable, str(ROOT / 'scripts/check-store-display-management-regression.py')]),\n"
+          insert = needle + "    ('注文取消・作り直し処理保護', [sys.executable, str(ROOT / 'scripts/check-order-cancel-remake-regression.py')]),\n"
+          if 'check-order-cancel-remake-regression.py' not in text:
+              if needle not in text:
+                  raise SystemExit('Stage24 insertion point not found')
+              text = text.replace(needle, insert, 1)
+              p.write_text(text, encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --set 0.10.913
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-order-cancel-remake-regression.py
+      - name: Commit formal sync and self-delete
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/phase24-sync-v010913.yml
+          git add -A
+          git commit -m "v0.10.913 第24段階正式同期"
+          git push origin HEAD:main

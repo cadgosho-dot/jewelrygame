@@ -172,7 +172,7 @@ function testFishPurchaseProtectsAquariumMoneyAccountingAndFeedback() {
   assert.deepEqual(h.calls.notifications, [['テトラを購入しました', '2匹を水槽へ入れました。', 'special']]);
   assert.equal(h.calls.saves, 1);
   assert.deepEqual(h.calls.feedback, [[-200, 1200]]);
-  assert.deepEqual(h.calls.sfx, [['coin', { gain: 0.86 }]]);
+  assert.deepEqual(plain(h.calls.sfx), [['coin', { gain: 0.86 }]]);
   assert.deepEqual(h.calls.vibrations, [[28]]);
   assert.equal(h.calls.renders, 1);
   assert.equal('tropicalModal' in h.screenData, false);

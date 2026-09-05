@@ -1,0 +1,49 @@
+name: Temporary v0.10.891 version sync repair
+
+on:
+  push:
+    branches:
+      - fix/version-sync-v0.10.891
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout sync branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/version-sync-v0.10.891
+          fetch-depth: 1
+
+      - name: Synchronize all active version references
+        run: |
+          python3 scripts/version-sync.py --set 0.10.891
+          python3 scripts/version-sync.py --check
+          git status --short
+
+      - name: Install audit dependencies
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: Validate synchronized build
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          timeout 10m python3 -u scripts/check-current.py
+
+      - name: Commit every synchronized tracked file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/tmp-version-sync-v0.10.891.yml
+          git add -A
+          echo '--- committed paths ---'
+          git status --short
+          git diff --cached --name-only
+          git commit -m "v0.10.891 公開バージョン参照を完全同期"
+          git push origin HEAD:fix/version-sync-v0.10.891

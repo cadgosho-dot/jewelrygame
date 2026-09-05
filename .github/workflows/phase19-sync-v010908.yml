@@ -1,0 +1,47 @@
+name: Phase19 Formal Sync v0.10.908
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Register Stage19 checker and sync version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/check-current.py')
+          text = p.read_text(encoding='utf-8')
+          needle = "    ('未払い固定費支払い処理保護', [sys.executable, str(ROOT / 'scripts/check-outstanding-payment-regression.py')]),\n"
+          insert = needle + "    ('熱帯魚屋購入処理保護', [sys.executable, str(ROOT / 'scripts/check-tropical-shop-purchase-regression.py')]),\n"
+          if 'check-tropical-shop-purchase-regression.py' not in text:
+              if needle not in text:
+                  raise SystemExit('Stage19 insertion point not found')
+              text = text.replace(needle, insert, 1)
+              p.write_text(text, encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --set 0.10.908
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-tropical-shop-purchase-regression.py
+      - name: Commit formal sync and self-delete
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/phase19-sync-v010908.yml
+          git add -A
+          git commit -m "v0.10.908 第19段階正式同期"
+          git push origin HEAD:main

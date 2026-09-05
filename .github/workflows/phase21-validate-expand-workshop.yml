@@ -1,0 +1,20 @@
+name: Phase21 Validate Expand Workshop
+
+on:
+  push:
+    branches:
+      - phase21-expand-workshop-protection
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Stage21 protection
+        run: |
+          node --check tools/test-expand-workshop-regression.mjs
+          node tools/test-expand-workshop-regression.mjs
+          python3 scripts/check-expand-workshop-regression.py

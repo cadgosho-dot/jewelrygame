@@ -8,41 +8,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Print target functions
+      - name: Print outstanding payment callers
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-          text = Path('js/app.js').read_text(encoding='utf-8')
-          def extract(name):
-            m = re.search(rf'(?m)^function\s+{re.escape(name)}\s*\(', text)
-            if not m: return None, None
-            start=m.start(); brace=text.find('{', start)
-            depth=0; quote=None; esc=False; line_comment=False; block_comment=False
-            i=brace
-            while i < len(text):
-              c=text[i]; n=text[i+1] if i+1 < len(text) else ''
-              if line_comment:
-                if c=='\n': line_comment=False
-              elif block_comment:
-                if c=='*' and n=='/': block_comment=False; i+=1
+          text=Path('js/app.js').read_text(encoding='utf-8')
+          pat=re.compile(r'(?m)^function\s+([A-Za-z_$][\w$]*)\s*\(')
+          def extract(start):
+            brace=text.find('{',start); depth=0; quote=None; esc=False; lc=False; bc=False; i=brace
+            if brace<0:return ''
+            while i<len(text):
+              c=text[i]; n=text[i+1] if i+1<len(text) else ''
+              if lc:
+                if c=='\n': lc=False
+              elif bc:
+                if c=='*' and n=='/': bc=False; i+=1
               elif quote:
                 if esc: esc=False
                 elif c=='\\': esc=True
                 elif c==quote: quote=None
               else:
-                if c=='/' and n=='/': line_comment=True; i+=1
-                elif c=='/' and n=='*': block_comment=True; i+=1
+                if c=='/' and n=='/': lc=True; i+=1
+                elif c=='/' and n=='*': bc=True; i+=1
                 elif c in "'\"`": quote=c
                 elif c=='{': depth+=1
                 elif c=='}':
                   depth-=1
-                  if depth==0:
-                    return text.count('\n',0,start)+1, text[start:i+1]
+                  if depth==0:return text[start:i+1]
               i+=1
-            return text.count('\n',0,start)+1, text[start:]
-          for name in ['outstandingPaymentTargets','applyOutstandingPayment','payFixedCost','processHomeRent','ensureOutstandingCosts','outstandingCostTotal']:
-            line, body=extract(name)
-            print(f'===== {name} line={line} =====')
-            print(body if body else 'NOT_FOUND')
+            return text[start:]
+          for m in pat.finditer(text):
+            body=extract(m.start()); name=m.group(1)
+            if 'applyOutstandingPayment(' in body or 'outstandingPaymentTargets(' in body:
+              print(f'===== CALLER {name} line={text.count(chr(10),0,m.start())+1} =====')
+              print(body)
           PY

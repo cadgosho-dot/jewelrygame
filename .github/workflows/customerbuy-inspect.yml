@@ -1,0 +1,72 @@
+name: customerbuy-inspect
+on:
+  push:
+    branches: [protect-customerbuy-inspect]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect customerBuy and related tests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          app = Path('js/app.js').read_text(encoding='utf-8')
+          lines = app.splitlines()
+
+          def extract(name):
+              pat = re.compile(rf'^\s*(?:async\s+)?function\s+{re.escape(name)}\s*\([^)]*\)\s*\{{')
+              for i,line in enumerate(lines):
+                  if not pat.match(line):
+                      continue
+                  depth=0; seen=False
+                  for j in range(i,len(lines)):
+                      s=lines[j]
+                      depth += s.count('{')-s.count('}')
+                      if '{' in s: seen=True
+                      if seen and depth<=0:
+                          return i+1,j+1,'\n'.join(lines[i:j+1])
+              return None
+
+          rec=extract('customerBuy')
+          print('=== customerBuy ===')
+          print(rec[2] if rec else 'NOT FOUND')
+          print('\n=== refs/call sites ===')
+          for no,line in enumerate(lines,1):
+              if 'customerBuy' in line:
+                  print(f'{no}: {line}')
+          if rec:
+              body=rec[2]
+              calls=[]
+              for name in re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(', body):
+                  if name not in calls and name not in {'if','for','while','switch','catch','Math','Number','String','Boolean','Array','Object','Date','Set','Map'}:
+                      calls.append(name)
+              print('\n=== direct calls ===')
+              print('\n'.join(calls))
+              print('\n=== short dependency definitions ===')
+              for name in calls:
+                  dep=extract(name)
+                  if dep and dep[1]-dep[0]+1 <= 90:
+                      print(f'--- {name} L{dep[0]}-L{dep[1]} ---')
+                      print(dep[2])
+
+          print('\n=== existing tests/checkers around customer buying/sales/inventory ===')
+          terms=['customerBuy','顧客購入','販売','customer buy','proposedItemIds','activeRequest']
+          for root in [Path('tools'),Path('scripts')]:
+              for p in sorted(root.glob('*')):
+                  if not p.is_file():
+                      continue
+                  try: txt=p.read_text(encoding='utf-8')
+                  except Exception: continue
+                  hits=[]
+                  for no,line in enumerate(txt.splitlines(),1):
+                      if any(t.lower() in line.lower() for t in terms):
+                          hits.append((no,line))
+                  if hits:
+                      print(f'--- {p} ---')
+                      for no,line in hits[:80]: print(f'{no}: {line}')
+          PY

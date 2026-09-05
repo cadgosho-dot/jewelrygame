@@ -119,7 +119,7 @@ function testSuccessfulFirstStoreRental() {
   assert.deepEqual(h.calls.notifications[0], ['店舗を契約しました', '第1号店が店舗画面から選択できるようになりました。']);
   assert.equal(h.calls.save, 1);
   assert.deepEqual(h.calls.toast.at(-1), ['第1号店を契約しました。', 'info', false]);
-  assert.deepEqual(h.calls.screens[0], ['realEstate', {}, false]);
+  assert.deepEqual(plain(h.calls.screens[0]), ['realEstate', {}, false]);
   assert.equal(h.calls.spend.length, 0);
 }
 
@@ -156,7 +156,7 @@ function testSuccessfulAdditionalStoreRental() {
   assert.deepEqual(plain(h.state.store.branches[1].employee), { id: 'employee-2', level: 1 });
   assert.deepEqual(h.calls.finance[0], ['g-Lab. 第2号店を契約', 0, 20000]);
   assert.equal(h.calls.save, 1);
-  assert.deepEqual(h.calls.screens[0], ['realEstate', {}, false]);
+  assert.deepEqual(plain(h.calls.screens[0]), ['realEstate', {}, false]);
   assert.equal(h.calls.spend.length, 0);
 }
 

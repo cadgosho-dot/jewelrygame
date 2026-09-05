@@ -1,0 +1,24 @@
+name: Phase13 Validate Display Shop Purchase
+
+on:
+  push:
+    branches:
+      - phase13-display-shop-regression-v0.10.902
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: phase13-display-shop-regression-v0.10.902
+          fetch-depth: 1
+      - name: Validate Stage13 protection
+        run: |
+          node --check js/app.js
+          node --check tools/test-buy-display-product-regression.mjs
+          node tools/test-buy-display-product-regression.mjs
+          python3 scripts/check-buy-display-product-regression.py

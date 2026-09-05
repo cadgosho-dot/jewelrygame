@@ -1,0 +1,22 @@
+name: Phase24 Validate Order Cancel Remake
+on:
+  push:
+    branches: [phase24-order-cancel-remake-regression-v0.10.913]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Validate Stage24 protection
+        shell: bash
+        run: |
+          node --check js/app.js
+          node --check tools/test-order-cancel-remake-regression.mjs
+          node tools/test-order-cancel-remake-regression.mjs
+          python3 scripts/check-order-cancel-remake-regression.py
+          git diff --exit-code 4599f8f518e0f78310b9f584225a42121dc52bce -- js/app.js
+          echo "APP.JS UNCHANGED: PASS"

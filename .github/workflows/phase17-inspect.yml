@@ -1,0 +1,66 @@
+name: Phase17 Inspect Core Candidates
+on:
+  push:
+    branches: [phase17-inspect]
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect state-changing functions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          protected = {
+            'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal',
+            'polishRough','finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct',
+            'confirmJewelryShopTrade','buyWorkshopTool','repairWorkshopTool','rentNextStore'
+          }
+
+          def extract(start):
+            brace = text.find('{', start)
+            if brace < 0: return ''
+            depth = 0
+            quote = None
+            esc = False
+            i = brace
+            while i < len(text):
+              c = text[i]
+              if quote:
+                if esc: esc = False
+                elif c == '\\': esc = True
+                elif c == quote: quote = None
+              else:
+                if c in "'\"`": quote = c
+                elif c == '{': depth += 1
+                elif c == '}':
+                  depth -= 1
+                  if depth == 0: return text[start:i+1]
+              i += 1
+            return text[start:]
+
+          mutation_terms = [
+            'state.','saveGame(','spendHours(','spendMinutes(','advanceTime(','addFinance(',
+            'money +=','money -=','.push(','.splice(','delete ','showToast(','notify','notification',
+            'inventory','employees','staff','rent','salary','unpaid','order','purchase','sell','buy'
+          ]
+          candidates = []
+          for m in re.finditer(r'(?m)^function\s+([A-Za-z_$][\w$]*)\s*\(', text):
+            name = m.group(1)
+            if name in protected: continue
+            body = extract(m.start())
+            score = sum(body.count(t) for t in mutation_terms)
+            hard = sum(body.count(t) for t in ['state.','saveGame(','addFinance(','money +=','money -='])
+            if hard or score >= 4:
+              line = text.count('\n', 0, m.start()) + 1
+              preview = ' '.join(body.split())[:280]
+              candidates.append((hard, score, len(body), line, name, preview))
+          candidates.sort(reverse=True)
+          print('CANDIDATE_COUNT', len(candidates))
+          for hard, score, size, line, name, preview in candidates[:100]:
+            print(f'{name}\tline={line}\thard={hard}\tscore={score}\tsize={size}\t{preview}')
+          PY

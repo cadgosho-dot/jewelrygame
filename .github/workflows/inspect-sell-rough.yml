@@ -1,0 +1,60 @@
+name: Inspect sellRough current body
+
+on:
+  push:
+    branches:
+      - protect-sell-rough-stage12
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: protect-sell-rough-stage12
+      - name: Extract sellRough body
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path('js/app.js').read_text(encoding='utf-8')
+          markers = ['function sellRough(', 'sellRough(']
+          start = next((src.find(m) for m in markers if src.find(m) >= 0), -1)
+          if start < 0:
+              raise SystemExit('sellRough not found')
+          brace = src.find('{', start)
+          if brace < 0:
+              raise SystemExit('opening brace not found')
+          depth = 0
+          quote = None
+          esc = False
+          end = None
+          i = brace
+          while i < len(src):
+              c = src[i]
+              if quote:
+                  if esc:
+                      esc = False
+                  elif c == '\\':
+                      esc = True
+                  elif c == quote:
+                      quote = None
+              else:
+                  if c in ('\"', "'", '`'):
+                      quote = c
+                  elif c == '{':
+                      depth += 1
+                  elif c == '}':
+                      depth -= 1
+                      if depth == 0:
+                          end = i + 1
+                          break
+              i += 1
+          if end is None:
+              raise SystemExit('closing brace not found')
+          print('=== SELL_ROUGH_BEGIN ===')
+          print(src[start:end])
+          print('=== SELL_ROUGH_END ===')
+          PY

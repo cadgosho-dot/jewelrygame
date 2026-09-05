@@ -262,7 +262,7 @@ function testCaseMultiInstallAndMaximum() {
   full.api.installDisplayProduct('case');
   assert.equal(full.state.store.displayInventory.case, 4);
   assert.equal(full.calls.saves, 0);
-  assert.deepEqual(full.calls.toasts, [['この店舗にはケースを50個まで設置できます。', 'error']]);
+  assert.deepEqual(full.calls.toasts, [['設置するケース数を選択してください。', 'error']]);
   assertNoTimeOrMoneyCost(full);
 }
 
@@ -327,9 +327,11 @@ function testMoveShowcaseItemPreservesSellingPrice() {
   assert.equal(h.calls.renders, 1);
   assertNoTimeOrMoneyCost(h);
 
-  const same = makeHarness({ jewelry: [{ ...item, displayBranchNumber: 1 }], branch1Showcases: [showcase('s1', [sourceSlot, null, null, null, null])], branch2Showcases: [showcase('s2')] });
+  const sameItem = { id: 'j-5', status: 'displayed', displayBranchNumber: 1, recommendedPrice: 20000 };
+  const sameSlot = { jewelryId: sameItem.id, sellingPrice: 27000 };
+  const same = makeHarness({ jewelry: [sameItem], branch1Showcases: [showcase('s1', [sameSlot, null, null, null, null])], branch2Showcases: [showcase('s2')] });
   const before = plain(same.state);
-  same.api.moveShowcaseItem(item.id, 1);
+  same.api.moveShowcaseItem(sameItem.id, 1);
   assert.deepEqual(plain(same.state), before);
   assert.equal(same.calls.saves, 0);
   assertNoTimeOrMoneyCost(same);
@@ -346,7 +348,8 @@ function testSellingPriceAdjustmentIsDraftOnlyAndFloored() {
   assert.equal(h.calls.preview.length, 1);
   assertNoTimeOrMoneyCost(h);
 
-  const floor = makeHarness({ screen: 'showcaseDetail', jewelry: [item], branch1Showcases: [showcase('s1', [{ jewelryId: item.id, sellingPrice: 1000 }, null, null, null, null])] });
+  const floorItem = { id: 'j-floor', status: 'displayed', displayBranchNumber: 1, recommendedPrice: 1000 };
+  const floor = makeHarness({ screen: 'showcaseDetail', jewelry: [floorItem], branch1Showcases: [showcase('s1', [{ jewelryId: floorItem.id, sellingPrice: 1000 }, null, null, null, null])] });
   const down = { disabled: false, dataset: { branch: 'store-1', showcase: '0', slot: '0', delta: '-1' } };
   assert.equal(floor.api.adjustShowcaseSellingPrice(down), false);
   assert.equal(floor.branch1.showcases[0].slots[0].sellingPrice, 1000);
@@ -366,8 +369,10 @@ function testSellingPriceConfirmCommitsPendingPrice() {
   assert.equal(h.calls.preview.length, 1);
   assertNoTimeOrMoneyCost(h);
 
-  const same = makeHarness({ screen: 'showcaseDetail', screenData: { pendingSellingPrice: 10000 }, jewelry: [item], branch1Showcases: [showcase('s1', [{ jewelryId: item.id, sellingPrice: 10000 }, null, null, null, null])] });
-  same.api.confirmSellingPrice(button);
+  const sameItem = { id: 'j-8', status: 'displayed', displayBranchNumber: 1, recommendedPrice: 10000 };
+  const same = makeHarness({ screen: 'showcaseDetail', screenData: { pendingSellingPrice: 10000 }, jewelry: [sameItem], branch1Showcases: [showcase('s1', [{ jewelryId: sameItem.id, sellingPrice: 10000 }, null, null, null, null])] });
+  const sameButton = { dataset: { branch: 'store-1', showcase: '0', slot: '0' } };
+  same.api.confirmSellingPrice(sameButton);
   assert.equal(same.calls.saves, 0);
   assertNoTimeOrMoneyCost(same);
 }

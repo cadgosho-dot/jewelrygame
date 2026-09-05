@@ -1,0 +1,63 @@
+name: v0.10.899 ルース売却処理保護を正式同期
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync-phase10:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: v0.10.899へ同期して一回限りワークフローを除去
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/check-current.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = "    ('ルース購入処理保護', [sys.executable, str(ROOT / 'scripts/check-purchase-regression.py')]),\n"
+          addition = "    ('ルース売却処理保護', [sys.executable, str(ROOT / 'scripts/check-sell-loose-regression.py')]),\n"
+          if addition not in text:
+              if anchor not in text:
+                  raise SystemExit('check-current.py の登録位置を確認できません。')
+              text = text.replace(anchor, anchor + addition, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+          current_version="$(cat VERSION)"
+          if [ "$current_version" = "0.10.898" ]; then
+            python3 scripts/version-sync.py --set 0.10.899
+          elif [ "$current_version" = "0.10.899" ]; then
+            echo "VERSIONはすでに0.10.899です。"
+          else
+            echo "期待したVERSION 0.10.898 / 0.10.899ではないため、安全のため停止します。"
+            exit 1
+          fi
+
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-sell-loose-regression.py
+
+          git rm .github/workflows/phase10-sync-v010899.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "v0.10.899 ルース売却処理保護を正式同期"
+          git pull --rebase origin main
+          git push origin HEAD:main

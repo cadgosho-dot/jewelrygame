@@ -3,56 +3,56 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.890';
+} from './game-data.js?v=0.10.891';
 
-const UI_BUILD_VERSION = '0.10.890';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.890';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.890';
+const UI_BUILD_VERSION = '0.10.891';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.891';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.891';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.890';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.891';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.890';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.890';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.890';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.890';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.890';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.890';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.890';
-import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.890';
-import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.890';
-import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.890';
-import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.890';
-import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.890';
-import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.890';
-import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.890';
-import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.890';
-import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.890';
-import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.890';
-import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.890';
-import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.890';
-import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.890';
-import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.890';
-import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.890';
-import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.890';
-import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.890';
-import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.890';
-import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.890';
-import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.890';
-import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.890';
-import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.890';
-import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.890';
-import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.890';
-import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.890';
-import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.890';
-import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.890';
-import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.890';
-import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.890';
-import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.890';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.890';
+} from './firebase-service.js?v=0.10.891';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.891';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.891';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.891';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.891';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.891';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.891';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.891';
+import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.891';
+import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.891';
+import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.891';
+import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.891';
+import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.891';
+import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.891';
+import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.891';
+import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.891';
+import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.891';
+import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.891';
+import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.891';
+import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.891';
+import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.891';
+import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.891';
+import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.891';
+import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.891';
+import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.891';
+import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.891';
+import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.891';
+import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.891';
+import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.891';
+import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.891';
+import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.891';
+import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.891';
+import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.891';
+import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.891';
+import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.891';
+import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.891';
+import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.891';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.891';
 
 
 
@@ -25259,6 +25259,28 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+
+// v0.10.891: 起動中のクラウド確認が応答待ちのままでも、正常な端末セーブを使って継続できるようにする。
+// Firebase自体は無効化せず、起動時の補助的なクラウド待機だけに上限時間を設ける。
+const STARTUP_CLOUD_TIMEOUT_MS = 4000;
+
+function startupCloudTimeoutError(label) {
+  const error = new Error(`${label}が${Math.round(STARTUP_CLOUD_TIMEOUT_MS / 1000)}秒以内に完了しませんでした。端末保存を優先して継続します。`);
+  error.code = 'jxj/startup-cloud-timeout';
+  return error;
+}
+
+function withStartupCloudTimeout(promise, label, timeoutMs = STARTUP_CLOUD_TIMEOUT_MS) {
+  let timerId = null;
+  const waitMs = Math.max(1, Number(timeoutMs) || STARTUP_CLOUD_TIMEOUT_MS);
+  const timeout = new Promise((_, reject) => {
+    timerId = window.setTimeout(() => reject(startupCloudTimeoutError(label)), waitMs);
+  });
+  return Promise.race([Promise.resolve(promise), timeout]).finally(() => {
+    if (timerId !== null) window.clearTimeout(timerId);
+  });
+}
+
 async function boot() {
   // v0.10.670: show the real title shell immediately. The start button stays disabled
   // until authentication and local/cloud save selection are complete.
@@ -25303,13 +25325,6 @@ async function boot() {
         // v0.10.826: セッション取得完了前に保存処理へ進むと、Safari/PWA/別タブが
         // 同時に自分を所有者だと判断できるため、取得結果を確認してから監視を開始する。
         try {
-          await claimSession(user.uid, sessionId);
-          sessionClaimed = true;
-        } catch (error) {
-          sessionClaimed = false;
-          console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
-        }
-        try {
           indexedDbSave = await readIndexedDbSave(user.uid);
           indexedDbStorageReady = true;
         } catch (error) {
@@ -25317,9 +25332,22 @@ async function boot() {
           indexedDbStorageReady = false;
           console.warn('IndexedDBの端末セーブを読み込めませんでした。旧localStorage／クラウドから継続します。', error);
         }
+        try {
+          await withStartupCloudTimeout(
+            claimSession(user.uid, sessionId),
+            'クラウドセッション確認',
+          );
+          sessionClaimed = true;
+        } catch (error) {
+          sessionClaimed = false;
+          console.warn('セッション取得のクラウド確認に失敗しました。端末保存を優先して継続します。', error);
+        }
         let cloudLoadError = null;
         try {
-          cloudSave = await loadState(user.uid);
+          cloudSave = await withStartupCloudTimeout(
+            loadState(user.uid),
+            'クラウドセーブ読み込み',
+          );
         } catch (error) {
           // v0.10.774: クラウドの現行チャンクが欠損・破損していても、
           // 先に読み込めた正常な端末セーブがあればそちらから起動を継続する。

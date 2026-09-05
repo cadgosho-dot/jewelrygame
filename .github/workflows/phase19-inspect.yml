@@ -1,4 +1,4 @@
-name: Phase19 Inspect Core Candidates
+name: Phase19 Inspect Core Candidate
 
 on:
   push:
@@ -13,96 +13,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect unprotected transactional functions
+      - name: Extract current tropical shop transaction
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
-
           text = Path('js/app.js').read_text(encoding='utf-8')
 
-          protected = {
-              'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal',
-              'polishRough','finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct',
-              'confirmJewelryShopTrade','buyWorkshopTool','repairWorkshopTool','rentNextStore',
-              'processMonthlyFixedCosts','outstandingPaymentTargets','totalOutstandingBusinessCost',
-              'outstandingPaymentTarget','applyOutstandingPayment','payOutstandingBusinessCostItem',
-              'payOutstandingBusinessCosts',
-          }
-
-          def extract(start):
+          def extract(name):
+              m = re.search(rf'(?m)^function\s+{re.escape(name)}\s*\(', text)
+              if not m:
+                  print(f'NOT FOUND: {name}')
+                  return ''
+              start = m.start()
               brace = text.find('{', start)
-              if brace < 0:
-                  return None
-              depth = 0
-              i = brace
-              quote = None
-              esc = False
-              template_depth = 0
+              depth = 0; i = brace; quote = None; esc = False
               while i < len(text):
                   c = text[i]
                   if quote:
-                      if esc:
-                          esc = False
-                      elif c == '\\':
-                          esc = True
-                      elif quote == '`' and c == '$' and i + 1 < len(text) and text[i+1] == '{':
-                          template_depth += 1
-                          i += 1
-                      elif quote == '`' and c == '}' and template_depth:
-                          template_depth -= 1
-                      elif c == quote and (quote != '`' or template_depth == 0):
-                          quote = None
+                      if esc: esc = False
+                      elif c == '\\': esc = True
+                      elif c == quote: quote = None
                   else:
-                      if c in "'\"`":
-                          quote = c
+                      if c in "'\"`": quote = c
                       elif c == '/' and i + 1 < len(text) and text[i+1] == '/':
-                          j = text.find('\n', i + 2)
-                          i = len(text) if j < 0 else j
-                          continue
+                          j = text.find('\n', i+2); i = len(text) if j < 0 else j; continue
                       elif c == '/' and i + 1 < len(text) and text[i+1] == '*':
-                          j = text.find('*/', i + 2)
-                          i = len(text) if j < 0 else j + 1
-                      elif c == '{':
-                          depth += 1
+                          j = text.find('*/', i+2); i = len(text) if j < 0 else j+1
+                      elif c == '{': depth += 1
                       elif c == '}':
                           depth -= 1
                           if depth == 0:
-                              return text[start:i+1]
+                              body = text[start:i+1]
+                              line = text.count('\n', 0, start) + 1
+                              print(f'===== {name} line={line} size={len(body)} =====')
+                              print(body)
+                              return body
                   i += 1
-              return None
+              return ''
 
-          rows = []
-          patterns = {
-              'money_mut': r'state\.game\.money\s*(?:[+\-*/]?=)',
-              'save': r'\bsaveGame\s*\(',
-              'finance': r'\baddFinance\s*\(',
-              'time': r'\b(?:spendHours|advanceTime|canSpendHours|canSpendMinutes)\s*\(',
-              'inventory': r'\b(?:inventory|roughInventory|looseInventory|displayInventory|aquarium)\b',
-              'staff': r'\b(?:employee|staff|workshopStaff|storeStaff)\b',
-              'debt': r'\b(?:unpaid|outstanding|suspended)\b',
-          }
-          weights = {'money_mut':5,'save':3,'finance':3,'time':2,'inventory':2,'staff':1,'debt':2}
-
-          for m in re.finditer(r'(?m)^function\s+([A-Za-z_$][\w$]*)\s*\(', text):
-              name = m.group(1)
-              body = extract(m.start())
-              if not body or name in protected:
-                  continue
-              hits = [key for key, pat in patterns.items() if re.search(pat, body)]
-              score = sum(weights[k] for k in hits)
-              if score >= 5:
-                  line = text.count('\n', 0, m.start()) + 1
-                  rows.append((score, line, name, hits, len(body)))
-
-          rows.sort(key=lambda x: (-x[0], x[1]))
-          print('PHASE19 CORE CANDIDATES')
-          print(f'count={len(rows)}')
-          for score, line, name, hits, size in rows[:80]:
-              print(f'{score:02d} line={line:05d} size={size:05d} {name} :: {",".join(hits)}')
-
-          print('\nDIRECT MONEY MUTATORS')
-          for score, line, name, hits, size in rows:
-              if 'money_mut' in hits:
-                  print(f'line={line:05d} {name} :: {",".join(hits)}')
+          body = extract('purchaseTropicalShopItem')
+          names = sorted(set(re.findall(r'\b([A-Za-z_$][\w$]*)\s*\(', body)))
+          print('\nCALLED NAMES:', ', '.join(names))
+          for name in ['tropicalShopItemById','tropicalShopQuantity','ensureAquariumState','tropicalShopMaxQuantity','tropicalShopCategoryForItem']:
+              extract(name)
           PY

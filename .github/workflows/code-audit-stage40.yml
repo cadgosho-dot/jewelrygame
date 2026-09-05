@@ -7,91 +7,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Audit remaining app.js complexity
+      - name: Audit selected high-risk functions
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           text=Path('js/app.js').read_text(encoding='utf-8')
           lines=text.splitlines()
-          print(f'APP_LINES={len(lines)}')
-          print(f'APP_BYTES={len(text.encode("utf-8"))}')
-          print(f'IMPORT_COUNT={sum(1 for l in lines if l.startswith("import "))}')
-          print(f'UI_HELPER_FILES={len(list(Path("js/ui").glob("*.js")))}')
-
-          funcs=[]
-          pat=re.compile(r'^(\s*)function\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{')
-          i=0
-          while i < len(lines):
-              m=pat.match(lines[i])
-              if not m:
-                  i+=1; continue
-              name=m.group(2); start=i; depth=0; seen=False; end=i
-              for j in range(i,len(lines)):
+          names=['render','settleDay','runEventEmergencySettlement','customerBuy','saveGame','renderStore','renderOrders','scheduleCustomerVisit','deliverOrder','craft']
+          def extract(name):
+              pat=re.compile(rf'^\s*function\s+{re.escape(name)}\s*\([^)]*\)\s*\{{')
+              start=None
+              for i,l in enumerate(lines):
+                  if pat.match(l): start=i; break
+              if start is None: return None
+              depth=0; seen=False; end=start
+              for j in range(start,len(lines)):
                   s=lines[j].split('//',1)[0]
                   depth += s.count('{')-s.count('}')
                   if '{' in s: seen=True
                   if seen and depth<=0:
                       end=j; break
-              body='\n'.join(lines[start:end+1])
-              refs=text.count(name+'(')
-              rules={
-                'STATE':[r'\bstate\b'],
-                'SAVE':[r'saveGame',r'saveState',r'persist',r'localStorage',r'indexedDB',r'firebase',r'cloud'],
-                'MONEY':[r'\bmoney\b',r'finance',r'revenue',r'cost',r'price',r'payment',r'unpaid'],
-                'INVENTORY':[r'inventory',r'stock',r'loose',r'metalStock',r'materials'],
-                'EVENT':[r'eventState',r'Event',r'event',r'イベント'],
-                'TIME':[r'advanceTime',r'gameTime',r'currentTime',r'\bday\b',r'\bhour\b'],
-                'RANDOM':[r'Math\.random',r'random',r'rng'],
-                'DOM':[r'document\.',r'innerHTML',r'querySelector',r'getElementById',r'render'],
-                'MEDIA':[r'audio',r'video',r'BGM',r'bgm',r'playSound',r'playSE'],
-                'NAV':[r'navigate',r'location\.',r'history\.',r'screen'],
+              return start+1,end+1,'\n'.join(lines[start:end+1])
+          for name in names:
+              item=extract(name)
+              if not item:
+                  print(f'=== {name}: NOT FOUND ==='); continue
+              start,end,body=item
+              metrics={
+                'state_refs':len(re.findall(r'\bstate\b',body)),
+                'state_assignments':len(re.findall(r'\bstate(?:\?\.)?(?:\.[A-Za-z_$][\w$]*)+\s*(?:\+\+|--|[+\-*/]?=)',body)),
+                'save_calls':len(re.findall(r'\bsaveGame\s*\(',body)),
+                'advance_time_calls':len(re.findall(r'\badvanceTime\s*\(',body)),
+                'random_refs':len(re.findall(r'Math\.random|\brandom\w*\s*\(',body,re.I)),
+                'render_calls':len(re.findall(r'\brender[A-Za-z0-9_$]*\s*\(',body)),
+                'money_refs':len(re.findall(r'\bmoney\b|finance|revenue|payment|price|cost',body,re.I)),
+                'inventory_refs':len(re.findall(r'inventory|stock|materials|\bloose\b',body,re.I)),
+                'event_refs':len(re.findall(r'eventState|\bevent\b|Event',body)),
               }
-              tags=[]
-              for tag,regs in rules.items():
-                  if any(re.search(r,body,re.I) for r in regs): tags.append(tag)
-              funcs.append((end-start+1,name,start+1,end+1,refs,','.join(tags) or '-'))
-              i=end+1
-
-          print(f'FUNCTION_DECLS={len(funcs)}')
-          print('\n=== TOP 35 FUNCTIONS BY LENGTH ===')
-          for length,name,start,end,refs,tags in sorted(funcs, reverse=True)[:35]:
-              print(f'{length:4d} lines | {name} | L{start}-L{end} | refs={refs} | {tags}')
-
-          print('\n=== HIGH-RISK FUNCTIONS ===')
-          scored=[]
-          for rec in funcs:
-              length,name,start,end,refs,tags=rec
-              ts=set(tags.split(',')) if tags!='-' else set()
-              core=ts & {'STATE','SAVE','MONEY','INVENTORY','EVENT','TIME','RANDOM','MEDIA'}
-              if length>=30 and len(core)>=3:
-                  score=len(core)*10+min(length,200)/10
-                  scored.append((score,rec))
-          for score,rec in sorted(scored,reverse=True)[:30]:
-              length,name,start,end,refs,tags=rec
-              print(f'score={score:5.1f} | {length:4d} lines | {name} | L{start}-L{end} | refs={refs} | {tags}')
-
-          print('\n=== STATE+DOM MIXED >=40 ===')
-          for rec in sorted(funcs,reverse=True):
-              length,name,start,end,refs,tags=rec
-              ts=set(tags.split(',')) if tags!='-' else set()
-              if length>=40 and {'STATE','DOM'} <= ts:
-                  print(f'{length:4d} lines | {name} | L{start}-L{end} | refs={refs} | {tags}')
-
-          print('\n=== POSSIBLY UNUSED refs=1 ===')
-          for length,name,start,end,refs,tags in sorted(funcs,key=lambda x:x[2]):
-              if refs==1:
-                  print(f'{length:4d} lines | {name} | L{start}-L{end} | {tags}')
-
-          print('\n=== PLAYER NAME NORMALIZATION DUPLICATION ===')
-          for no,line in enumerate(lines,1):
-              if 'playerName' in line and 'trim()' in line and 'String(' in line:
-                  print(f'L{no}: {line.strip()}')
-
-          print('\n=== MODULE SIZE SNAPSHOT ===')
-          for p in sorted(Path('js').glob('*.js')):
-              print(f'{len(p.read_text(encoding="utf-8").splitlines()):5d} {p.as_posix()}')
-          print('--- ui helpers ---')
-          for p in sorted(Path('js/ui').glob('*.js')):
-              print(f'{len(p.read_text(encoding="utf-8").splitlines()):5d} {p.as_posix()}')
+              calls=[]
+              seen=set()
+              for m in re.finditer(r'\b([A-Za-z_$][\w$]*)\s*\(',body):
+                  c=m.group(1)
+                  if c in {'if','for','while','switch','function','Math','String','Number','Boolean','Array','Object','Date','Set','Map'}: continue
+                  if c not in seen:
+                      seen.add(c); calls.append(c)
+              print(f'=== {name} L{start}-L{end} lines={end-start+1} refs={text.count(name+"(")} ===')
+              print('METRICS ' + ' '.join(f'{k}={v}' for k,v in metrics.items()))
+              print('CALLS ' + ', '.join(calls[:40]))
+              print('STATE PATHS ' + ', '.join(sorted(set(re.findall(r'\bstate(?:\?\.)?((?:\.[A-Za-z_$][\w$]*){1,4})',body)))[:30]))
           PY

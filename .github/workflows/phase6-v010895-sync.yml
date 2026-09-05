@@ -1,0 +1,55 @@
+name: v0.10.895 中核処理保護・一回限り正式同期
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  sync-once:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: mainを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: v0.10.895へ正式同期
+        run: |
+          set -euo pipefail
+          if [ "$(cat VERSION)" != "0.10.894" ]; then
+            echo "期待した開始VERSION 0.10.894ではないため、安全のため停止します。"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/check-current.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = "    ('ジュエリー制作処理保護', [sys.executable, str(ROOT / 'scripts/check-craft-regression.py')]),\n"
+          addition = "    ('地金購入処理保護', [sys.executable, str(ROOT / 'scripts/check-buy-metal-regression.py')]),\n"
+          if addition not in text:
+              if anchor not in text:
+                  raise SystemExit('check-current.py の登録位置を確認できません。')
+              text = text.replace(anchor, anchor + addition, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+          python3 scripts/version-sync.py --set 0.10.895
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-buy-metal-regression.py
+
+          rm .github/workflows/phase6-v010895-sync.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "v0.10.895 地金購入処理保護を正式同期"
+          git pull --rebase origin main
+          git push origin HEAD:main

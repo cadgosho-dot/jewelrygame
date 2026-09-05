@@ -8,23 +8,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Locate actual payment UI and handlers
+      - name: Print exact current outstanding payment core
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           text=Path('js/app.js').read_text(encoding='utf-8')
-          lines=text.splitlines()
-          for token in ['pay-outstanding-all','pay-outstanding','select-outstanding-target','set-outstanding-amount','現在、未払いはありません。']:
-            print(f'===== OCCURRENCES {token} =====')
-            for i,line in enumerate(lines,1):
-              if token in line:
-                print(f'{i}: {line}')
-                lo=max(1,i-12); hi=min(len(lines),i+12)
-                for j in range(lo,hi+1): print(f'{j}: {lines[j-1]}')
-          print('===== FUNCTION NAMES containing outstanding/payment =====')
-          for m in re.finditer(r'(?m)^function\s+([A-Za-z_$][\w$]*)\s*\([^\n]*\)\s*\{', text):
-            name=m.group(1)
-            if 'outstanding' in name.lower() or 'payment' in name.lower() or 'phone' in name.lower():
-              print(text.count('\n',0,m.start())+1, repr(text[m.start():text.find('\n',m.start())]))
+          def extract(name):
+            m=re.search(rf'(?m)^function\s+{re.escape(name)}\s*\([^\n]*\)\s*\{{',text)
+            if not m:return None
+            start=m.start(); brace=text.find('{',start); depth=0; quote=None; esc=False; lc=False; bc=False; i=brace
+            while i<len(text):
+              c=text[i]; n=text[i+1] if i+1<len(text) else ''
+              if lc:
+                if c=='\n': lc=False
+              elif bc:
+                if c=='*' and n=='/': bc=False; i+=1
+              elif quote:
+                if esc: esc=False
+                elif c=='\\': esc=True
+                elif c==quote: quote=None
+              else:
+                if c=='/' and n=='/': lc=True; i+=1
+                elif c=='/' and n=='*': bc=True; i+=1
+                elif c in "'\"`": quote=c
+                elif c=='{': depth+=1
+                elif c=='}':
+                  depth-=1
+                  if depth==0:return text[start:i+1]
+              i+=1
+            return text[start:]
+          for name in ['outstandingPaymentTargets','totalOutstandingBusinessCost','outstandingPaymentTarget','applyOutstandingPayment','payOutstandingBusinessCostItem','payOutstandingBusinessCosts','automaticPaymentCapacity']:
+            print(f'===== {name} =====')
+            print(extract(name) or 'NOT_FOUND')
           PY

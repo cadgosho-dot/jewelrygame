@@ -1,320 +1,63 @@
-PHASE15 WORKSHOP TOOL COMPACT INSPECTION
-FUNCTION 975: function repairLegacyTransientEventDeadlocksV462({ save = false } = {}) {
-FUNCTION 1124: function repairEventProgressStates(targetState = state) {
-FUNCTION 3244: function adjustLoosePurchaseQuantityLongPress(button) {
-FUNCTION 3269: function loosePurchaseDraftKey(id, shapeId = '') {
-FUNCTION 3273: function loosePurchaseMaximum(id, shapeId = '') {
-FUNCTION 3280: function setLoosePurchaseQuantity(id, shapeId, value) {
-FUNCTION 3288: function loosePurchaseQuantity(id, shapeId = '') {
-FUNCTION 3297: function loosePurchaseTotalMarkup(id, shapeId, quantity) {
-FUNCTION 3302: function syncLoosePurchaseCard(id, shapeId = '') {
-FUNCTION 3320: function adjustLoosePurchaseQuantity(id, shapeId, delta) {
-FUNCTION 3365: function displayCasePurchaseMaximum() {
-FUNCTION 3376: function setDisplayCasePurchaseQuantity(value) {
-FUNCTION 3382: function displayCasePurchaseQuantity() {
-FUNCTION 3388: function syncDisplayCasePurchaseCard() {
-FUNCTION 3405: function adjustDisplayCasePurchaseQuantity(delta) {
-FUNCTION 4367: function storeStaffPurchaseBonus(branchNumber = state?.store?.branchNumber || 1) {
-FUNCTION 4388: function workshopStaffState() {
-FUNCTION 4409: function workshopStaffDefinition(staff = workshopStaffState()) {
-FUNCTION 4413: function workshopStaffNextDefinition(staff = workshopStaffState()) {
-FUNCTION 4417: function workshopStaffHoliday(date = gameDate()) {
-FUNCTION 4422: function workshopStaffHolidayReason(date = gameDate()) {
-FUNCTION 4430: function workshopStaffQualityRoll(definition = workshopStaffDefinition()) {
-FUNCTION 4439: function workshopStaffQualityDescription(definition = workshopStaffDefinition()) {
-FUNCTION 4443: function workshopStaffCraftCandidates(maxEffectiveMinutes) {
-FUNCTION 4491: function workshopStaffCraftOne(maxEffectiveMinutes, definition = workshopStaffDefinition()) {
-FUNCTION 4528: function processWorkshopStaffElapsedTime(beforeMinutes, afterMinutes) {
-FUNCTION 4554: function settleWorkshopStaffDay() {
-FUNCTION 4610: function resetWorkshopStaffDaily() {
-FUNCTION 4796: function workshopOperating() {
-FUNCTION 5406: function workshopToolRecord(toolId) {
-FUNCTION 5410: function toolOwned(toolId) {
-FUNCTION 5415: function toolUsable(toolId) {
-FUNCTION 5421: function craftRelevantToolWeights(draft = {}) {
-FUNCTION 5634: function workshopToolUnlockConditionsMet(tool) {
-FUNCTION 5666: function workshopToolUnlocked(toolOrId) {
-FUNCTION 5671: function workshopToolCatalogVisible(tool) {
-FUNCTION 5675: function workshopToolUnlockLevel(tool) {
-FUNCTION 5680: function workshopToolRepairPrice(toolId) {
-FUNCTION 5685: function workshopToolFailureDueDay(toolId, fromDay = state.game.day) {
-FUNCTION 5697: function createWorkshopToolRecord(toolId, acquiredDay = state.game.day) {
-FUNCTION 5707: function syncLegacyToolFlags() {
-FUNCTION 5715: function workshopQualityPoints() {
-FUNCTION 5722: function workshopLevel() {
-FUNCTION 5726: function workshopLevelRequirement(level = workshopLevel() + 1) {
-FUNCTION 5730: function cumulativeWorkshopRequiredTools(level = workshopLevel() + 1) {
-FUNCTION 5736: function workshopUpgradeStatus() {
-FUNCTION 5753: function workshopExpansionCost() {
-FUNCTION 5757: function addWorkshopActiveHours(hours) {
-FUNCTION 5763: function applyWorkshopLevelPenalty(levels = 1, reason = '工房の機能が低下しました') {
-FUNCTION 5772: function workshopToolStatusText(toolId, record = workshopToolRecord(toolId)) {
-FUNCTION 5779: function workshopToolImageSrc(tool, versioned = true) {
-FUNCTION 5791: function workshopToolImageMarkup(tool, { className = 'equipment-icon equipment-image-icon', alt = '', decorative = true } = {}) {
-FUNCTION 5801: async function recoverWorkshopToolImage(image) {
-FUNCTION 5835: function showWorkshopToolDetail(toolId) {
-FUNCTION 5850: function checkWorkshopToolFailure() {
-FUNCTION 5869: function processCompletedWorkshopRepairs() {
-FUNCTION 6378: function repairIllnessBirthdayDeadlock({ save = false } = {}) {
-FUNCTION 6460: function repairIllnessPaymentBirthdayOverlapV481({ save = false } = {}) {
-FUNCTION 6508: function repairChildhoodFriendEventDeadlock({ save = false, force = false } = {}) {
-FUNCTION 6728: function repairMorningOverlapDeadlockV475({ save = false } = {}) {
-FUNCTION 7684: function workshopKappaJadeEventState() {
-FUNCTION 7703: function resumeWorkshopKappaJadeEvent() {
-FUNCTION 7710: function maybeStartWorkshopKappaJadeEvent() {
-FUNCTION 7737: function receiveWorkshopKappaJadeReward() {
-FUNCTION 7752: function advanceWorkshopKappaJadeEvent() {
-FUNCTION 7829: function oneLoveFixedPurchasePrice(id) {
-FUNCTION 7837: function captureOneLoveMetalPurchasePrices() {
-FUNCTION 9447: function buyTerryCaliforniaBenitoite() {
-FUNCTION 9520: function repairAlienSpaceDeadlockV463({ forceMain = false } = {}) {
-FUNCTION 11048: function purchaseTropicalShopItem(){
-FUNCTION 11732: function workshopLooseDisplayName(gem, shape) {
-FUNCTION 12171: function resetWorkshopGuideDocumentScroll() {
-FUNCTION 13233: function orderRequiredTools(orderLike = {}) {
-FUNCTION 15585: function renderWorkshopKappaJadeEvent() {
-FUNCTION 16080: function applyEmeraldCaptainKebabPurchase() {
-FUNCTION 16095: function clearEmeraldCaptainPurchaseResultTimer() {
-FUNCTION 16100: function scheduleEmeraldCaptainPurchaseDialogue(delay = 1200) {
-FUNCTION 16769: function renderToolBrief(tool, guideAction = 'glab-tool-guide') {
-FUNCTION 16773: function renderToolLearningGuide(tool) {
-FUNCTION 16801: function renderWorkshopToolDetail() {
-FUNCTION 16832: function renderWorkshopToolGuide() {
-FUNCTION 16843: function renderGlabToolDetail() {
-FUNCTION 16892: function renderGlabToolGuide() {
-FUNCTION 17364: function jewelryShopPurchaseRecommendedPrice(purchasePrice) {
-FUNCTION 17714: function renderWorkshop() {
-FUNCTION 17766: function workshopStaffUnlockStatus() {
-FUNCTION 17788: function renderWorkshopStaff() {
-FUNCTION 18264: function renderToolEquipmentInventory() {
-FUNCTION 20816: function aiWorkshopToolRows() {
-FUNCTION 21461: function buyMetal(id) {
-FUNCTION 21505: function purchase(kind, id, shapeId = '') {
-FUNCTION 21585: function buyWorkshopTool(toolId) {
-FUNCTION 21604: function repairWorkshopTool(toolId) {
-FUNCTION 21624: function buyJewelryBench() { buyWorkshopTool('jewelryBench'); }
-FUNCTION 21625: function buyPolishingMachine() { buyWorkshopTool('polishingMachine'); }
-FUNCTION 21901: function customerBuy(customerId, itemId) {
-FUNCTION 22199: function confirmWorkshopExpansion() {
-FUNCTION 22210: function expandWorkshop() {
-FUNCTION 22304: function buyDisplayProduct(productId) {
-FUNCTION 22852: function autopilotBuyTool(toolId, summary, reserve = 2000) {
-FUNCTION 22869: function autopilotRepairTools(summary) {
-FUNCTION 22887: function autopilotBuyMetal(metalId, targetWeight, summary) {
-FUNCTION 22906: function autopilotBuyLoose(gemId, shapeId, targetQuantity, summary) {
+PHASE15 EXACT WORKSHOP TOOL FUNCTIONS
 
-KEYWORD CONTEXT
-1: import {
-2:   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
-3:   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
-4:   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
-5:   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-3399:   const total = card.querySelector('[data-display-case-total]');
-3400:   if (total) total.textContent = `合計：${yen(quantity * DISPLAY_SHOP_PRODUCTS.case.price)}`;
-3401:   const submit = card.querySelector('[data-action="buy-display-product"][data-id="case"]');
-3402:   if (submit) submit.disabled = quantity < 1 || !canSpendHours(1);
-3403: }
-5422:   const weights = new Map();
-5423:   const add = (toolId, weight) => {
-5424:     if (!WORKSHOP_TOOLS[toolId]) return;
-5425:     const amount = Math.max(0, Number(weight) || 0);
-5426:     if (!amount) return;
-5557:       usableCount += 1;
-5558:     } else {
-5559:       missing.push({ toolId, weight, name: WORKSHOP_TOOLS[toolId]?.name || toolId, owned: toolOwned(toolId) });
-5560:     }
-5561:   }
-5665: 
-5666: function workshopToolUnlocked(toolOrId) {
-5667:   const tool = typeof toolOrId === 'string' ? WORKSHOP_TOOLS[toolOrId] : toolOrId;
-5668:   return Boolean(tool && (tool.initiallyAvailable || workshopToolUnlockConditionsMet(tool)));
-5669: }
-5679: 
-5680: function workshopToolRepairPrice(toolId) {
-5681:   const price = Number(WORKSHOP_TOOLS[toolId]?.price || 0);
-5682:   return Math.max(1000, Math.round((price * 0.60) / 1000) * 1000);
-5683: }
-5684: 
-5685: function workshopToolFailureDueDay(toolId, fromDay = state.game.day) {
-5686:   const definition = WORKSHOP_TOOLS[toolId];
-5687:   if (!definition?.breakable) return null;
-5688:   const prices = Object.values(WORKSHOP_TOOLS).filter((tool) => tool.breakable && tool.price > 0).map((tool) => tool.price);
-5689:   const minimumPrice = Math.min(...prices);
-5690:   const maximumPrice = Math.max(...prices);
-5716:   return Object.entries(state?.tools?.items || {}).reduce((total, [toolId, record]) => {
-5717:     if (!record || record.status !== 'available') return total;
-5718:     return total + Math.max(0, Number(WORKSHOP_TOOLS[toolId]?.qualityPoints) || 0);
-5719:   }, 0);
-5720: }
-5834: 
-5835: function showWorkshopToolDetail(toolId) {
-5836:   const tool = WORKSHOP_TOOLS[toolId];
-5837:   if (!tool) return;
-5838:   const record = workshopToolRecord(toolId);
-5850: function checkWorkshopToolFailure() {
-5851:   const dueTools = Object.entries(state?.tools?.items || {}).filter(([toolId, record]) => {
-5852:     const definition = WORKSHOP_TOOLS[toolId];
-5853:     return Boolean(record && record.status === 'available' && definition?.breakable && Number(record.failureDueDay || Infinity) <= state.game.day);
-5854:   });
-5855:   if (!dueTools.length) return '';
-5856:   const [toolId, record] = dueTools[Math.floor(Math.random() * dueTools.length)];
-5857:   const definition = WORKSHOP_TOOLS[toolId];
-5858:   if (definition.repairable) {
-5859:     record.status = 'unusable';
-5871:   for (const [toolId, record] of Object.entries(state?.tools?.items || {})) {
-5872:     if (!record || record.status !== 'repairing' || Number(record.repairCompleteDay || Infinity) > state.game.day) continue;
-5873:     const tool = WORKSHOP_TOOLS[toolId];
-5874:     record.status = 'available';
-5875:     record.repairCompleteDay = null;
-6249:     .filter(([, record]) => record?.status === 'repairing' && Number(record.repairCompleteDay) >= state.game.day)
-6250:     .filter(([, record]) => dateKey(gameDateForDay(record.repairCompleteDay)) === key)
-6251:     .forEach(([toolId]) => events.push(`${WORKSHOP_TOOLS[toolId]?.name || '工具'}の修理完了`));
-6252: 
-6253:   events.push(...scheduledBusinessPaymentsForDate(date));
-13232: 
-13233: function orderRequiredTools(orderLike = {}) {
-13234:   const tools = Array.isArray(orderLike.requiredTools) ? orderLike.requiredTools.filter((toolId) => WORKSHOP_TOOLS[toolId]) : [];
-13235:   return tools.length ? [...new Set(tools)] : ['jewelryBench'];
-13236: }
-13265:   const reasons = [];
-13266:   if (!artisanReady) reasons.push(`職人Lv.${requiredArtisanLevel}が必要`);
-13267:   if (!equipmentReady) reasons.push(`必要設備：${requiredTools.map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId).join('、')}`);
-13268:   if (!materialsObtainable) reasons.push('材料をゲーム内で入手できない');
-13269:   return { possible: artisanReady && equipmentReady && materialsObtainable, difficulty, requiredArtisanLevel, requiredTools, artisanReady, equipmentReady, materialsObtainable, reasons };
-16698: 
-16699: function renderGlab() {
-16700:   const catalogTools = Object.values(WORKSHOP_TOOLS)
-16701:     .filter(workshopToolCatalogVisible)
-16702:     .filter((tool) => !workshopToolRecord(tool.id))
-16706:     tools: catalogTools.filter((tool) => workshopToolUnlockLevel(tool) === level),
-16707:   }));
-16708:   const repairTools = Object.values(WORKSHOP_TOOLS).filter((tool) => {
-16709:     const record = workshopToolRecord(tool.id);
-16710:     return Boolean(tool.repairable && record && ['unusable', 'repairing'].includes(record.status));
-16725:     const status = record?.status === 'repairing'
-16726:       ? workshopToolStatusText(tool.id, record)
-16727:       : `修理費 ${yen(workshopToolRepairPrice(tool.id))}`;
-16728:     return `<button type="button" class="glab-simple-row repair" data-action="glab-tool-detail" data-id="${esc(tool.id)}">
-16729:       <span class="glab-row-name">${esc(tool.name)}</span>
-16741:       <section class="scene-space"></section>
-16742:       <section class="action-panel glass-panel glab-catalog-panel">
-16743:         ${repairTools.length ? `<section class="glab-catalog-group glab-repair-group"><h2>修理・故障</h2><div class="glab-simple-list">${repairTools.map(repairRow).join('')}</div></section>` : ''}
-16744:         ${catalogMarkup}
-16745:         <div class="button-stack">
-16800: 
-16801: function renderWorkshopToolDetail() {
-16802:   const tool = WORKSHOP_TOOLS[screenData.toolId];
-16803:   const record = workshopToolRecord(screenData.toolId);
-16804:   if (!tool || !record) return shell('工具・設備', '<section class="center-card glass-panel"><p>所持している工具・設備の情報を確認できません。</p></section>');
-16831: 
-16832: function renderWorkshopToolGuide() {
-16833:   const tool = WORKSHOP_TOOLS[screenData.toolId];
-16834:   const record = workshopToolRecord(screenData.toolId);
-16835:   if (!tool || !record) return shell('工具・設備の詳細', '<section class="center-card glass-panel"><p>詳細情報を確認できません。</p></section>');
-16842: 
-16843: function renderGlabToolDetail() {
-16844:   const tool = WORKSHOP_TOOLS[screenData.toolId];
-16845:   if (!tool) return shell('工具・設備', '<section class="center-card glass-panel"><p>商品情報を確認できません。</p></section>');
-16846:   const record = workshopToolRecord(tool.id);
-16856:       ${unlocked && shortage > 0 ? `<div class="glab-funds-shortage"><span>購入するには、所持金が</span><strong>${yen(shortage)}不足しています</strong></div>` : ''}
-16857:       ${unlocked ? '' : '<div class="glab-unlock-message"><strong>未解放</strong></div>'}
-16858:       <button class="primary-button full-button" data-action="buy-workshop-tool" data-id="${esc(tool.id)}" ${unlocked && affordable && hasTime ? '' : 'disabled'}>${unlocked ? '購入する' : '未解放'}</button>
-16859:       ${unlocked && !hasTime ? '<p class="error-text">今日は購入手続きをする時間がありません。</p>' : ''}`;
-16860:   } else if (record.status === 'unusable' && tool.repairable) {
-16863:     const repairShortage = Math.max(0, repairPrice - state.game.money);
-16864:     actionArea = `
-16865:       <div class="glab-detail-price"><span>修理費</span><strong>${yen(repairPrice)}</strong></div>
-16866:       ${repairShortage > 0 ? `<div class="glab-funds-shortage"><span>修理を依頼するには、所持金が</span><strong>${yen(repairShortage)}不足しています</strong></div>` : ''}
-16867:       <p class="small-note">修理には7日かかり、受付に1時間使います。</p>
-16868:       <button class="primary-button full-button" data-action="repair-workshop-tool" data-id="${esc(tool.id)}" ${repairAffordable && hasTime ? '' : 'disabled'}>修理を依頼する</button>
-16869:       ${hasTime ? '' : '<p class="error-text">今日は修理を依頼する時間がありません。</p>'}`;
-16870:   } else if (record.status === 'repairing') {
-16891: 
-16892: function renderGlabToolGuide() {
-16893:   const tool = WORKSHOP_TOOLS[screenData.toolId];
-16894:   if (!tool) return shell('工具・設備の詳細', '<section class="center-card glass-panel"><p>詳細情報を確認できません。</p></section>');
-16895:   return shell(`${tool.name}の詳細`, `
-17188:           <button type="button" class="metal-stepper-button metal-stepper-down" data-action="metal-qty-step" data-mode="${mode}" data-id="${product.id}" data-delta="-1" aria-label="${esc(product.name)}を1g減らす。長押しで連続減少" ${quantity <= 0 ? 'disabled' : ''}>▼</button>
-17189:         </span>
-17190:         <button class="primary-button metal-inline-purchase" data-action="buy-metal" data-id="${product.id}" ${disabled ? 'disabled' : ''}>購入</button>
-17191:       </div>` : `<div class="metal-quantity-area">
-17192:         <div class="metal-quantity-input"><span>売却重量</span><span class="metal-vertical-stepper" aria-label="重量を増減">
-17610:           </span>
-17611:           <strong class="display-case-total" data-display-case-total>合計：${yen(quantity * product.price)}</strong>
-17612:           <button class="primary-button full-button" data-action="buy-display-product" data-id="case" ${caseDisabled ? 'disabled' : ''}>購入する</button>
-17613:         </div>
-17614:       </article>`;
-17620:       </div>
-17621:       <strong>${yen(product.price)}</strong>
-17622:       <button class="primary-button" data-action="buy-display-product" data-id="${esc(product.id)}" ${disabled ? 'disabled' : ''}>購入する</button>
-17623:     </article>`;
-17624:   }).join('');
-17801:   const shiftHours = `${clock(WORKSHOP_STAFF_SHIFT_START_MINUTES)}～${clock(WORKSHOP_STAFF_SHIFT_END_MINUTES)}`;
-17802:   if (!staff.hired && !unlock.unlocked) {
-17803:     return shell('職人スタッフ', `<section class="wide-panel glass-panel workshop-staff-panel"><h1>職人スタッフ（未解放）</h1><p>次の条件をすべて達成すると雇用できます。契約金・紹介料はありません。</p><ul class="condition-list">${unlock.conditions.map((condition) => `<li class="${condition.met ? 'condition-met' : 'condition-unmet'}"><strong>${condition.met ? '達成' : '未達成'}</strong><span>${esc(condition.label)}</span><em>${typeof condition.current === 'number' ? condition.current.toLocaleString('ja-JP') : esc(condition.current)}／${typeof condition.target === 'number' ? condition.target.toLocaleString('ja-JP') : esc(condition.target)}</em></li>`).join('')}</ul>${unlock.missingTools.length ? `<p class="small-note">不足設備：${unlock.missingTools.map((id) => esc(WORKSHOP_TOOLS[id]?.name || id)).join('、')}</p>` : ''}<button class="secondary-button full-button" data-action="back">戻る</button></section>`, { help: '職人スタッフは厳しい制作・工房・店舗実績を満たした後に、契約金なしで雇用できます。' });
-17804:   }
-17805:   if (holiday) {
-18173:       ${Array.isArray(jewelry.craftsmanshipTags) && jewelry.craftsmanshipTags.length ? `<p class="small-note">加工タグ：${jewelry.craftsmanshipTags.map((tag) => esc(tag)).join('・')}</p>` : ''}
-18174:       ${Array.isArray(jewelry.craftsmanshipKnowledge) && jewelry.craftsmanshipKnowledge.length ? `<p class="small-note">活用した加工知識：${jewelry.craftsmanshipKnowledge.map((name) => esc(name)).join('・')}</p>` : ''}
-18175:       ${screenData.toolFailure ? `<div class="tool-break-alert"><strong>${esc(screenData.toolFailure)}が壊れました</strong><span>${WORKSHOP_TOOLS[Object.keys(WORKSHOP_TOOLS).find((id) => WORKSHOP_TOOLS[id].name === screenData.toolFailure)]?.repairable ? 'g-Lab.で修理を依頼できます。' : '工房からなくなりました。g-Lab.で再購入できます。'}</span></div>` : ''}
-18176:       <div class="button-stack">${completionActions}</div>
-18177:     </section>`, isPendingOrderDelivery ? { back: false, main: false } : { main: true });
-18265:   const items = Object.entries(state?.tools?.items || {})
-18266:     .filter(([, record]) => Boolean(record))
-18267:     .map(([toolId, record]) => ({ toolId, record, tool: WORKSHOP_TOOLS[toolId] }))
-18268:     .filter((entry) => entry.tool);
-18269:   if (!items.length) return '<div class="empty-state"><strong>工具・設備はありません。</strong><p>g-Lab.で彫金机や宝石研磨用平面研磨盤などを購入すると、ここに表示されます。</p></div>';
-19305:     if (!requirements.enoughLoose) missingRows.push(`${looseDisplayLabel(order.gem, order.looseShape, { suffix: true })} ${requirements.missingLooseQuantity}個`);
-19306:     if (!feasibility.artisanReady) missingRows.push(`職人Lv.${feasibility.requiredArtisanLevel}`);
-19307:     if (!feasibility.equipmentReady) missingRows.push(...feasibility.requiredTools.filter((toolId) => !toolUsable(toolId)).map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId));
-19308:     const orderContent = `${looseDisplayLabel(order.gem, order.looseShape)}を使った${DESIGNS[order.design]?.name || ''}${ITEMS[order.item].name}`;
-19309:     const image = customer?.image || './assets/images/customers/customer-placeholder.svg';
-20796:     difficulty: orderDifficulty(order).label,
-20797:     requiredArtisanLevel: Number(order.requiredArtisanLevel) || orderDifficulty(order).artisanLevel,
-20798:     requiredEquipment: orderRequiredTools(order).map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId),
-20799:     displayStatus: orderDisplayStatus(order),
-20800:     budget: Number(order.budget) || 0,
-20818:     .filter(([, record]) => Boolean(record))
-20819:     .map(([toolId, record]) => {
-20820:       const tool = WORKSHOP_TOOLS[toolId];
-20821:       return {
-20822:         id: toolId,
-20873:     description: location.description,
-20874:   }));
-20875:   const visibleToolCatalog = Object.values(WORKSHOP_TOOLS)
-20876:     .filter((tool) => workshopToolUnlocked(tool) || toolOwned(tool.id))
-20877:     .map((tool) => ({
-21584: 
-21585: function buyWorkshopTool(toolId) {
-21586:   const tool = WORKSHOP_TOOLS[toolId];
-21587:   if (!tool || !workshopToolUnlocked(tool)) return showToast('現在は購入できません。', 'error');
-21588:   if (toolOwned(toolId)) return showToast(`${tool.name}はすでに所持しています。`);
-21603: 
-21604: function repairWorkshopTool(toolId) {
-21605:   const tool = WORKSHOP_TOOLS[toolId];
-21606:   const record = workshopToolRecord(toolId);
-21607:   if (!tool?.repairable || !record || record.status !== 'unusable') return showToast('修理を依頼できる状態ではありません。', 'error');
-21608:   const price = workshopToolRepairPrice(toolId);
-21609:   if (state.game.money < price) return showToast('修理費が足りません。', 'error');
-21610:   if (!canSpendHours(1)) return showToast('今日は修理を依頼する時間がありません。', 'error');
-21611:   state.game.money -= price;
-21978:   const difficulty = feasibility.difficulty;
-21979:   const figures = orderEstimatedFigures(request);
-21980:   const toolsLabel = feasibility.requiredTools.map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId).join('、');
-21981:   showModal({
-21982:     title: '注文内容を確認',
-22203:   showModal({
-22204:     title: `工房をレベル${status.requirement.level}へ拡張しますか？`,
-22205:     body: `<ul class="condition-list">${conditionRows}</ul>${status.missingTools?.length ? `<p>不足：${status.missingTools.map((id) => esc(WORKSHOP_TOOLS[id]?.name || id)).join('、')}</p>` : ''}<p>拡張費：${yen(status.cost)}</p>${status.alreadyPaid ? '<p>この段階の拡張費は支払い済みです。</p>' : ''}`,
-22206:     confirm: '拡張する', cancel: 'やめる', action: 'expand-workshop', confirmDisabled: !status.complete,
-22207:   });
-22851: 
-22852: function autopilotBuyTool(toolId, summary, reserve = 2000) {
-22853:   const tool = WORKSHOP_TOOLS[toolId];
-22854:   if (!tool || toolOwned(toolId) || !workshopToolUnlocked(tool)) return false;
-22855:   if (!okachimachiFacilityAvailability('glab').open) return false;
-22869: function autopilotRepairTools(summary) {
-22870:   for (const [toolId, record] of Object.entries(state.tools?.items || {})) {
-22871:     const tool = WORKSHOP_TOOLS[toolId];
-22872:     if (!tool?.repairable || !record || record.status !== 'unusable') continue;
-22873:     const price = workshopToolRepairPrice(toolId);
+========================================================================
+
+function workshopToolRepairPrice(toolId) {
+  const price = Number(WORKSHOP_TOOLS[toolId]?.price || 0);
+  return Math.max(1000, Math.round((price * 0.60) / 1000) * 1000);
+}
+
+========================================================================
+
+function createWorkshopToolRecord(toolId, acquiredDay = state.game.day) {
+  return {
+    id: toolId,
+    status: 'available',
+    acquiredDay: Math.max(1, Number(acquiredDay) || state.game.day),
+    failureDueDay: workshopToolFailureDueDay(toolId, acquiredDay),
+    repairCompleteDay: null,
+  };
+}
+
+========================================================================
+
+function buyWorkshopTool(toolId) {
+  const tool = WORKSHOP_TOOLS[toolId];
+  if (!tool || !workshopToolUnlocked(tool)) return showToast('現在は購入できません。', 'error');
+  if (toolOwned(toolId)) return showToast(`${tool.name}はすでに所持しています。`);
+  if (state.game.money < tool.price) return showToast(`${tool.name}を購入する所持金が足りません。`, 'error');
+  if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
+  state.game.money -= tool.price;
+  startMoneyFeedback(-tool.price);
+  spendHours(1);
+  state.tools.items[toolId] = createWorkshopToolRecord(toolId);
+  syncLegacyToolFlags();
+  addFinance(`g-Lab.で${tool.name}を購入`, 0, tool.price);
+  if (toolId === 'jewelryBench') addNotification('彫金机を購入しました', '工房でジュエリーを制作できるようになりました。');
+  if (toolId === 'polishingMachine') addNotification('宝石研磨用平面研磨機を購入しました', '工房で原石をルースへ研磨できるようになりました。');
+  saveGame();
+  showToast(`${tool.name}を購入しました。`, 'info', false);
+  render();
+}
+
+========================================================================
+
+function repairWorkshopTool(toolId) {
+  const tool = WORKSHOP_TOOLS[toolId];
+  const record = workshopToolRecord(toolId);
+  if (!tool?.repairable || !record || record.status !== 'unusable') return showToast('修理を依頼できる状態ではありません。', 'error');
+  const price = workshopToolRepairPrice(toolId);
+  if (state.game.money < price) return showToast('修理費が足りません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は修理を依頼する時間がありません。', 'error');
+  state.game.money -= price;
+  startMoneyFeedback(-price);
+  spendHours(1);
+  record.status = 'repairing';
+  record.repairCompleteDay = state.game.day + 7;
+  record.failureDueDay = null;
+  addFinance(`g-Lab.へ${tool.name}の修理を依頼`, 0, price);
+  addNotification(`${tool.name}を修理へ出しました`, `${gameDateLabel(record.repairCompleteDay)}に修理が完了する予定です。`);
+  saveGame();
+  showToast(`${tool.name}を修理へ出しました。`, 'info', false);
+  render();
+}

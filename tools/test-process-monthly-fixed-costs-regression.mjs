@@ -153,7 +153,7 @@ function testGracePeriodsSkipCosts() {
   assert.deepEqual(report, { month: '2026-03', workshop: 0, rents: [], paid: 0, unpaid: 0 });
   assert.equal(h.state.business.lastProcessedMonth, '2026-03');
   assert.deepEqual(h.calls.notifications, [['月初の固定費', '2026-03分の固定費 Y0を支払いました。', 'info']]);
-  assert.deepEqual(h.state.tools.morningMessages, []);
+  assert.deepEqual(plain(h.state.tools.morningMessages), []);
 }
 
 function testUnpaidCostsSuspendWorkshopAndStore() {

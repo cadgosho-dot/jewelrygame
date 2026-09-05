@@ -7,9 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect purchase core
+      - name: Validate phase9 purchase protection
         run: |
-          echo '=== PURCHASE CONTEXT ==='
-          sed -n '21490,21545p' js/app.js
-          echo '=== PURCHASE CALL SITES ==='
-          grep -nE 'purchase\(' js/app.js || true
+          set -euo pipefail
+          node --check tools/test-purchase-regression.mjs
+          node tools/test-purchase-regression.mjs
+          python3 scripts/check-purchase-regression.py
+          git diff db18180682df83487b4297364953ba1980b80162 -- js/app.js

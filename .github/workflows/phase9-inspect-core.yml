@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: List app function definitions
+      - name: Inspect purchase core
         run: |
-          echo '=== FUNCTION DEFINITIONS ==='
-          grep -nE '^[[:space:]]*(async[[:space:]]+)?function[[:space:]]+[A-Za-z0-9_]+' js/app.js || true
-          echo '=== MONEY / INVENTORY / TIME CANDIDATES ==='
-          grep -nE 'function[[:space:]]+(buy|sell|purchase|pay|eat|sleep|mine|collect|repair|use|hire|fire|open|close|start|finish|advance|.*Order|.*Customer|.*Shop|.*Store|.*Inventory)[A-Za-z0-9_]*' js/app.js || true
+          echo '=== PURCHASE CONTEXT ==='
+          sed -n '21490,21545p' js/app.js
+          echo '=== PURCHASE CALL SITES ==='
+          grep -nE 'purchase\(' js/app.js || true

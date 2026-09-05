@@ -56,6 +56,7 @@ CHECKS = [
     ('注文受付処理保護', [sys.executable, str(ROOT / 'scripts/check-confirm-order-regression.py')]),
     ('ジュエリー制作処理保護', [sys.executable, str(ROOT / 'scripts/check-craft-regression.py')]),
     ('地金購入処理保護', [sys.executable, str(ROOT / 'scripts/check-buy-metal-regression.py')]),
+    ('地金売却処理保護', [sys.executable, str(ROOT / 'scripts/check-sell-metal-regression.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

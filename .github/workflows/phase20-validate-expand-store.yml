@@ -1,0 +1,21 @@
+name: Phase20 Validate Store Expansion
+
+on:
+  push:
+    branches:
+      - phase20-store-expansion-protection
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Stage20 protection
+        run: |
+          node --check js/app.js
+          node --check tools/test-expand-store-regression.mjs
+          node tools/test-expand-store-regression.mjs
+          python3 scripts/check-expand-store-regression.py

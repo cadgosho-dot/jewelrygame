@@ -1,0 +1,26 @@
+name: phase10 verify
+
+on:
+  push:
+    branches:
+      - phase10-sell-loose-regression-v0.10.899
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: 専用回帰テストと本体未変更を確認
+        run: |
+          set -euo pipefail
+          node --check tools/test-sell-loose-regression.mjs
+          python3 scripts/check-sell-loose-regression.py
+          git fetch --depth=1 origin 9a927cb809deddfa4922d70eaf19fc72c2d73fa9
+          test -z "$(git diff --name-only 9a927cb809deddfa4922d70eaf19fc72c2d73fa9...HEAD -- js/app.js)"
+          echo "PHASE10 VERIFY: PASS"

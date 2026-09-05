@@ -1,0 +1,47 @@
+name: Phase13 Formal Sync v0.10.902
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Register Stage13 checker and sync version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/check-current.py')
+          text = p.read_text(encoding='utf-8')
+          entry = "    ('ディスプレイ屋購入処理保護', [sys.executable, str(ROOT / 'scripts/check-buy-display-product-regression.py')]),\n"
+          anchor = "    ('原石売却処理保護', [sys.executable, str(ROOT / 'scripts/check-sell-rough-regression.py')]),\n"
+          if entry not in text:
+              if anchor not in text:
+                  raise SystemExit('registration anchor not found')
+              text = text.replace(anchor, anchor + entry, 1)
+              p.write_text(text, encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --set 0.10.902
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-buy-display-product-regression.py
+      - name: Commit formal sync and self-delete
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/phase13-sync-v010902.yml
+          git add -A
+          git commit -m 'v0.10.902 第13段階正式同期'
+          git push origin main

@@ -1,0 +1,55 @@
+name: 第12段階 sellRough 正式同期
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: mainを取得
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 第12段階を正式登録
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/check-current.py')
+          text = path.read_text(encoding='utf-8')
+          entry = "    ('原石売却処理保護', [sys.executable, str(ROOT / 'scripts/check-sell-rough-regression.py')]),\n"
+          if 'check-sell-rough-regression.py' not in text:
+              anchor = "    ('ルース売却処理保護', [sys.executable, str(ROOT / 'scripts/check-sell-loose-regression.py')]),\n"
+              if anchor not in text:
+                  raise SystemExit('check-current.py insertion anchor not found')
+              text = text.replace(anchor, anchor + entry, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+          python3 scripts/version-sync.py --set 0.10.901
+          python3 scripts/version-sync.py --check
+          node --check tools/test-sell-rough-regression.mjs
+          node tools/test-sell-rough-regression.mjs
+          python3 scripts/check-sell-rough-regression.py
+
+      - name: one-shot workflowを削除してmainへ同期
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/phase12-sync-v010901.yml
+          git add -A
+          git status --short
+          git commit -m "v0.10.901 第12段階 sellRough 保護を正式同期"
+          git push origin HEAD:main

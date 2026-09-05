@@ -76,6 +76,8 @@ CHECKS = [
     ('食事・クイズ復旧', [sys.executable, str(ROOT / 'scripts/check-meal-quiz-recovery.py')]),
     ('御徒町夜背景', [sys.executable, str(ROOT / 'scripts/check-okachimachi-night-background.py')]),
     ('起動診断', [sys.executable, str(ROOT / 'scripts/check-startup-diagnostics.py')]),
+    ('起動クラウド無応答復旧', [sys.executable, str(ROOT / 'scripts/check-startup-cloud-timeout.py')]),
+    ('起動クラウド無応答・実ブラウザ', [sys.executable, str(ROOT / 'scripts/check-startup-cloud-timeout-browser.py')]),
     ('水槽正本・再設置', [sys.executable, str(ROOT / 'scripts/check-aquarium-runtime.py')]),
     ('水槽死亡率・おやつ発生率', [sys.executable, str(ROOT / 'scripts/check-aquarium-mortality-rate.py')]),
     ('水槽縦画面中央配置', [sys.executable, str(ROOT / 'scripts/check-aquarium-portrait-center.py')]),

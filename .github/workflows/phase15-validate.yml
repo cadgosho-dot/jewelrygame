@@ -1,0 +1,25 @@
+name: Phase15 Validate Workshop Tool Trade
+
+on:
+  push:
+    branches:
+      - phase15-workshop-tool-regression-v0.10.904
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: phase15-workshop-tool-regression-v0.10.904
+          fetch-depth: 0
+      - name: Validate Stage15 protection
+        run: |
+          node --check js/app.js
+          node --check tools/test-workshop-tool-trade-regression.mjs
+          node tools/test-workshop-tool-trade-regression.mjs
+          python3 scripts/check-workshop-tool-trade-regression.py
+          python3 scripts/version-sync.py --check

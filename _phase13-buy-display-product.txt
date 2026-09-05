@@ -1,0 +1,45 @@
+function buyDisplayProduct(productId) {
+  const product = DISPLAY_SHOP_PRODUCTS[productId];
+  if (!product) return;
+  const availability = okachimachiFacilityAvailability('displayShop');
+  if (!availability.open) return showToast(availability.reason, 'error');
+  const quantity = productId === 'case' ? displayCasePurchaseQuantity() : 1;
+  if (quantity < 1) return showToast('購入する数量を選択してください。', 'error');
+  if (product.purchaseLimit) {
+    const owned = Math.max(0, Number(state.store.displayInventory?.[productId]) || 0);
+    const installed = productId === 'case' ? storeCaseRemaining(currentStoreBranch()) : 0;
+    if (owned + installed + quantity > Number(product.purchaseLimit)) return showToast(`${product.name}は現在、未設置分と設置中を合わせて${product.purchaseLimit}個まで保有できます。`, 'error');
+  }
+  const totalPrice = product.price * quantity;
+  if (state.game.money < totalPrice) return showToast('購入費が足りません。', 'error');
+  if (!canSpendHours(1)) return showToast('今日は購入手続きをする時間がありません。', 'error');
+  state.game.money -= totalPrice;
+  startMoneyFeedback(-totalPrice);
+  spendHours(1);
+  state.store.displayInventory[productId] = Math.max(0, Number(state.store.displayInventory[productId]) || 0) + quantity;
+  addFinance(`${product.name}を${quantity}個購入`, 0, totalPrice);
+  if (productId === 'case') displayCasePurchaseDraft = 1;
+  saveGame();
+  showToast(`${product.name}を${quantity}個購入しました。`);
+  render();
+}
+
+--- DISPLAY_SHOP_PRODUCTS CONTEXT ---
+
+function displayCasePurchaseMaximum() {
+  const product = DISPLAY_SHOP_PRODUCTS.case;
+  if (!product) return 0;
+  const inventory = state.store.displayInventory || {};
+  const owned = Math.max(0, Math.floor(Number(inventory.case) || 0));
+  const installed = Math.max(0, Math.floor(Number(storeCaseRemaining(currentStoreBranch())) || 0));
+  const limitRemaining = Math.max(0, Math.floor(Number(product.purchaseLimit) || 0) - owned - installed);
+  const affordable = Math.max(0, Math.floor(Number(state.game.money || 0) / Math.max(1, Number(product.price) || 1)));
+  return Math.max(0, Math.min(limitRemaining, affordable));
+}
+
+function setDisplayCasePurchaseQuantity(value) {
+  const maximum = displayCasePurchaseMaximum();
+  displayCasePurchaseDraft = Math.max(0, Math.min(maximum, Math.floor(Number(value) || 0)));
+  return displayCasePurchaseDraft;
+}
+

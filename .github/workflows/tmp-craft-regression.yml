@@ -1,0 +1,45 @@
+name: Temporary craft regression release
+
+on:
+  push:
+    branches:
+      - codex/v0-10-894-craft-regression
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout regression branch
+        uses: actions/checkout@v6
+        with:
+          ref: codex/v0-10-894-craft-regression
+          fetch-depth: 1
+
+      - name: Prepare version and audit registration
+        run: python3 tools/tmp-prepare-craft-regression.py
+
+      - name: Install audit dependencies
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: Validate craft protection
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-craft-regression.py
+          timeout 10m python3 -u scripts/check-current.py
+
+      - name: Commit validated release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/tmp-craft-regression.yml tools/tmp-prepare-craft-regression.py
+          git add -A
+          git commit -m "v0.10.894 ジュエリー制作処理の回帰テストを追加"
+          git push origin HEAD:codex/v0-10-894-craft-regression

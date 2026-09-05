@@ -13,4 +13,6 @@ jobs:
           node --check tools/test-purchase-regression.mjs
           node tools/test-purchase-regression.mjs
           python3 scripts/check-purchase-regression.py
-          git diff db18180682df83487b4297364953ba1980b80162 -- js/app.js
+          git fetch --depth=1 origin db18180682df83487b4297364953ba1980b80162
+          test -z "$(git diff db18180682df83487b4297364953ba1980b80162 -- js/app.js)"
+          echo "APP LOGIC DIFF: PASS (js/app.js unchanged)"

@@ -1,0 +1,53 @@
+name: phase11 inspect core candidates
+
+on:
+  push:
+    branches:
+      - phase11-inspect-v0.10.900
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: phase11-inspect-v0.10.900
+      - name: 未保護の原石・採掘系中核処理を抽出
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          starts = list(re.finditer(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(', text))
+          protected = {'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal','polishRough','purchase','sellLoose'}
+          needles = ('rough', 'mining', 'mine', '採掘', '原石')
+          print('APP_BYTES', len(text.encode('utf-8')))
+          print('FUNCTIONS', len(starts))
+          print('=== CANDIDATES ===')
+          for i, m in enumerate(starts):
+              name = m.group(1)
+              end = starts[i+1].start() if i+1 < len(starts) else len(text)
+              body = text[m.start():end]
+              low = body.lower()
+              if name in protected:
+                  continue
+              if not any(n.lower() in low for n in needles):
+                  continue
+              score = sum(token in body for token in (
+                  'state.inventory', 'state.game.money', 'spendHours(', 'spendMinutes(',
+                  'advanceTime(', 'saveGame(', 'addFinance(', 'render(', 'toast('
+              ))
+              if score < 2:
+                  continue
+              print(f'\n--- {name} score={score} chars={len(body)} ---')
+              print(body[:12000])
+          print('\n=== DIRECT ROUGH MUTATIONS ===')
+          for pat in (r'state\.inventory\.rough[^\n]*', r'adjustRough[^\n]*', r'roughOwned[^\n]*'):
+              for mm in re.finditer(pat, text):
+                  prev = max((s for s in starts if s.start() <= mm.start()), key=lambda x:x.start(), default=None)
+                  print((prev.group(1) if prev else '<top-level>') + ': ' + mm.group(0)[:500])
+          PY

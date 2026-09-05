@@ -1,0 +1,18 @@
+name: Phase23 Validate Store Display Management
+on:
+  push:
+    branches: [phase23-protect-store-display]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Stage23 protection
+        shell: bash
+        run: |
+          node --check js/app.js
+          node --check tools/test-store-display-management-regression.mjs
+          node tools/test-store-display-management-regression.mjs
+          python3 scripts/check-store-display-management-regression.py

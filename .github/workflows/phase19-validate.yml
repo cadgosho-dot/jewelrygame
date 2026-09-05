@@ -1,0 +1,21 @@
+name: Phase19 Validate Tropical Shop Purchase
+
+on:
+  push:
+    branches:
+      - phase19-tropical-shop-protection
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Syntax and regression checks
+        run: |
+          node --check js/app.js
+          node --check tools/test-tropical-shop-purchase-regression.mjs
+          node tools/test-tropical-shop-purchase-regression.mjs
+          python3 scripts/check-tropical-shop-purchase-regression.py

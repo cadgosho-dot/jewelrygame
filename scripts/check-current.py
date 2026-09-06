@@ -77,6 +77,7 @@ CHECKS = [
     ('スタッフ運用・職人スタッフ自動制作処理保護', [sys.executable, str(ROOT / 'scripts/check-staff-operations-regression.py')]),
     ('スマホアイテム・装備処理保護', [sys.executable, str(ROOT / 'scripts/check-phone-item-equipment-regression.py')]),
     ('固定費自動支払い・自宅家賃処理保護', [sys.executable, str(ROOT / 'scripts/check-home-rent-regression.py')]),
+    ('自動操縦処理保護', [sys.executable, str(ROOT / 'scripts/check-autopilot-regression.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

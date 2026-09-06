@@ -1,0 +1,44 @@
+name: phase32 core discovery
+
+on:
+  push:
+    branches:
+      - phase32-core-discovery
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: 未保護候補を抽出
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          app = Path('js/app.js').read_text(encoding='utf-8')
+          check = Path('scripts/check-current.py').read_text(encoding='utf-8')
+          names = re.findall(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(', app)
+          keywords = ('gift','present','loan','borrow','gacha','aquarium','robber','insurance','repair','rent','house','home','claim','receive','reward','purchase','buy','sell','pay','complete','process','install','remove','move','trade')
+          print('=== CANDIDATE FUNCTIONS ===')
+          for name in names:
+              low=name.lower()
+              if any(k in low for k in keywords):
+                  print(name)
+          print('=== MONEY MUTATOR FUNCTIONS ===')
+          starts=[]
+          for m in re.finditer(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(', app):
+              starts.append((m.start(),m.group(1)))
+          for i,(start,name) in enumerate(starts):
+              end=starts[i+1][0] if i+1<len(starts) else len(app)
+              body=app[start:end]
+              if ('state.game.money +=' in body or 'state.game.money -=' in body) and name not in check:
+                  print(name)
+          print('=== GIFT/PRESENT CONTEXT ===')
+          for pat in ('gift','present','プレゼント'):
+              hits=[m.start() for m in re.finditer(pat,app,re.I)]
+              print(pat, len(hits))
+              for pos in hits[:8]:
+                  line=app.count('\n',0,pos)+1
+                  print(line, app[pos:pos+160].replace('\n',' '))
+          PY

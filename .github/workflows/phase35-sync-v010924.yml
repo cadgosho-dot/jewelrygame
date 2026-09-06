@@ -1,0 +1,87 @@
+name: Phase35 Formal Sync v0.10.924
+
+on:
+  push:
+    branches: [main, phase35-core-protection]
+    paths:
+      - '.github/workflows/phase35-sync-v010924.yml'
+      - 'tools/test-remove-jewelry-regression.mjs'
+      - 'scripts/check-remove-jewelry-regression.py'
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+jobs:
+  validate-feature:
+    if: github.ref_name == 'phase35-core-protection'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare browser audit
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Validate finished jewelry removal protection
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-remove-jewelry-regression.py
+          python3 scripts/check-current.py
+
+  formal-sync:
+    if: github.ref_name == 'main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Register protection and synchronize version
+        run: |
+          test "$(tr -d '\n' < VERSION)" = '0.10.923'
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/check-current.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = "    ('共通時間消費処理保護', [sys.executable, str(ROOT / 'scripts/check-spend-minutes-regression.py')]),"
+          assert text.count(anchor) == 1
+          assert 'check-remove-jewelry-regression.py' not in text
+          text = text.replace(anchor, anchor + "\n    ('完成品除去処理保護', [sys.executable, str(ROOT / 'scripts/check-remove-jewelry-regression.py')]),")
+          path.write_text(text, encoding='utf-8')
+          path = Path('CHANGELOG.md')
+          text = path.read_text(encoding='utf-8')
+          marker = '\n## v0.10.'
+          position = text.index(marker)
+          entry = '\n## v0.10.924\n- 中核処理保護・第35段階：店頭販売・卸販売・盗難などで共通利用する `removeJewelry()` の完成品除去処理を動的回帰テストと静的検査で固定。\n- 全支店ショーケース参照除去、sold状態、除去日、販売価格/利益/支店/経路、盗難理由、表示支店情報削除、店舗表示同期、欠損在庫時の参照掃除を検証。\n- ゲーム処理・販売仕様・価格・在庫上限・店舗仕様・イベント・画像・音声・セーブ形式の変更なし。\n'
+          assert '## v0.10.924' not in text
+          path.write_text(text[:position] + entry + text[position:], encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --bump-patch
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-remove-jewelry-regression.py
+      - name: Verify sync only changes version references in app
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          before = subprocess.check_output(['git', 'show', 'HEAD:js/app.js'], text=True)
+          after = Path('js/app.js').read_text(encoding='utf-8')
+          expected = before.replace('?v=0.10.923', '?v=0.10.924').replace("const UI_BUILD_VERSION = '0.10.923';", "const UI_BUILD_VERSION = '0.10.924';")
+          assert after == expected
+          assert not subprocess.check_output(['git', 'diff', '--name-only', '--', 'assets/'], text=True).strip()
+          PY
+      - name: Commit formal sync and remove this one-shot workflow
+        run: |
+          git rm .github/workflows/phase35-sync-v010924.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git commit -m 'v0.10.924 第35段階正式同期'
+          git push origin HEAD:main

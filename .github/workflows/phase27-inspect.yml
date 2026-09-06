@@ -13,56 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect home-rent payment core
+      - name: Inspect home-rent constants
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           src = Path('js/app.js').read_text(encoding='utf-8')
-
-          def extract_function(name):
-              m = re.search(r'\bfunction\s+' + re.escape(name) + r'\s*\([^)]*\)\s*\{', src)
-              if not m:
-                  return None
-              start = m.start(); brace = src.find('{', m.start()); i = brace; depth = 0
-              quote = None; esc = False; line_comment = False; block_comment = False; template = False
-              while i < len(src):
-                  ch = src[i]; nxt = src[i+1] if i+1 < len(src) else ''
-                  if line_comment:
-                      if ch == '\n': line_comment = False
-                  elif block_comment:
-                      if ch == '*' and nxt == '/': block_comment = False; i += 1
-                  elif quote:
-                      if esc: esc = False
-                      elif ch == '\\': esc = True
-                      elif ch == quote: quote = None
-                  elif template:
-                      if esc: esc = False
-                      elif ch == '\\': esc = True
-                      elif ch == '`': template = False
-                  else:
-                      if ch == '/' and nxt == '/': line_comment = True; i += 1
-                      elif ch == '/' and nxt == '*': block_comment = True; i += 1
-                      elif ch in ('\"', "'"): quote = ch
-                      elif ch == '`': template = True
-                      elif ch == '{': depth += 1
-                      elif ch == '}':
-                          depth -= 1
-                          if depth == 0: return src[start:i+1]
-                  i += 1
-              return None
-
-          for name in ['automaticPaymentCapacity','payFixedCost','processHomeRent','settleDay']:
-              print(f'\n===== {name} =====')
-              body = extract_function(name)
-              print(body if body else 'NOT FOUND')
-
-          print('\n===== processHomeRent occurrences =====')
-          for m in re.finditer(r'processHomeRent\s*\(', src):
-              line = src.count('\n', 0, m.start()) + 1
-              lo = max(0, src.rfind('\n', 0, m.start()-180))
-              hi = src.find('\n', m.end()+180)
-              if hi < 0: hi = min(len(src), m.end()+180)
-              print(f'LINE {line}: {src[lo:hi].strip()}')
+          for name in ['HOME_MONTHLY_RENT','MIN_LIVING_CASH_RESERVE']:
+              print(f'===== {name} =====')
+              for m in re.finditer(r'^(?:const|let|var)\s+' + re.escape(name) + r'\s*=.*$', src, re.M):
+                  print(m.group(0))
+                  print('line', src.count('\n', 0, m.start()) + 1)
+          for name in ['automaticPaymentCapacity','payFixedCost','processHomeRent']:
+              print(name, 'occurrences', len(re.findall(r'\b' + re.escape(name) + r'\s*\(', src)))
           PY

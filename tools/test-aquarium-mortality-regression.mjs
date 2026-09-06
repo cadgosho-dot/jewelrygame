@@ -91,6 +91,7 @@ function harness(options = {}) {
     ensureAquariumPlantIndividuals: (value) => value,
     aquariumMortalityState: (value) => value.mortality,
     aquariumDailyMortalityFactor: () => options.tankFactor ?? 1,
+    aquariumDailyPlantMortalityFactor: () => options.plantTankFactor ?? options.tankFactor ?? 1,
     aquariumIndividualDeathChance: (...args) => {
       calls.push(['fish-chance', ...plain(args)]);
       return options.fishChance ?? 0;

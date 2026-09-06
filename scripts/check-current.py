@@ -74,6 +74,7 @@ CHECKS = [
     ('店舗レベルアップ処理保護', [sys.executable, str(ROOT / 'scripts/check-upgrade-store-level-regression.py')]),
     ('店舗ディスプレイ管理処理保護', [sys.executable, str(ROOT / 'scripts/check-store-display-management-regression.py')]),
     ('注文取消・作り直し処理保護', [sys.executable, str(ROOT / 'scripts/check-order-cancel-remake-regression.py')]),
+    ('スタッフ運用・職人スタッフ自動制作処理保護', [sys.executable, str(ROOT / 'scripts/check-staff-operations-regression.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

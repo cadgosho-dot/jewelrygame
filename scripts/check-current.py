@@ -80,6 +80,7 @@ CHECKS = [
     ('自動操縦処理保護', [sys.executable, str(ROOT / 'scripts/check-autopilot-regression.py')]),
     ('通常食事処理保護', [sys.executable, str(ROOT / 'scripts/check-manual-meal-regression.py')]),
     ('回転寿司開始・会計処理保護', [sys.executable, str(ROOT / 'scripts/check-kaitenzushi-regression.py')]),
+    ('水槽死亡・枯死確定処理保護', [sys.executable, str(ROOT / 'scripts/check-aquarium-mortality-regression.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

@@ -69,7 +69,7 @@ jobs:
               out.append(text[start:end])
 
           def extract_case(label):
-              pattern = re.compile(rf"^(?P<indent>\s*)case ['\"]{re.escape(label)}['\"]:\s*$", re.M)
+              pattern = re.compile(rf"^(?P<indent>\s*)case ['\"]{re.escape(label)}['\"]:\s*\{{?\s*$", re.M)
               m = pattern.search(text)
               if not m:
                   out.append(f'CASE {label}: NOT FOUND')
@@ -81,29 +81,33 @@ jobs:
               out.append(f'===== CASE {label} line {line_no(m.start())} =====')
               out.append(text[m.start():end].rstrip())
 
-          extract_function('workshopStaffCraftOne')
-          for label in [
-              'hire-workshop-staff',
-              'hire-employee',
-              'toggle-workshop-staff-working',
-              'toggle-store-staff-working',
-              'toggle-employee-working',
-              'toggle-workshop-staff',
+          for name in [
+              'workshopStaffState',
+              'workshopStaffDefinition',
+              'workshopStaffHoliday',
+              'workshopStaffCraftCandidates',
+              'workshopStaffQualityRoll',
+              'workshopStaffCraftOne',
+              'storeBranchEmployee',
+              'storeEmployeeAvailable',
           ]:
+              extract_function(name)
+
+          for label in ['hire-workshop-staff', 'hire-employee']:
               extract_case(label)
 
-          out.append('===== STAFF-RELATED CASE LABELS =====')
-          for idx, line in enumerate(lines, 1):
-              if re.search(r"case ['\"][^'\"]*(?:staff|employee)[^'\"]*['\"]:", line, re.I):
-                  out.append(f'{idx}: {line.strip()}')
+          out.append('===== INPUT CHANGE STAFF BLOCKS =====')
+          for needle in ['[data-action="employee-working"]', '[data-action="workshop-staff-working"]']:
+              for idx, line in enumerate(lines, 1):
+                  if needle in line:
+                      lo = max(1, idx - 3); hi = min(len(lines), idx + 14)
+                      out.append(f'--- {needle} around line {idx} ---')
+                      out.extend(f'{j}: {lines[j-1]}' for j in range(lo, hi + 1))
 
-          out.append('===== STAFF WORKING MUTATION CONTEXTS =====')
+          out.append('===== STAFF UI/ACTION REFERENCES =====')
           for idx, line in enumerate(lines, 1):
-              low = line.lower()
-              if ('working' in low and ('employee' in low or 'workshopstaff' in low or 'workshop staff' in low)):
-                  lo = max(1, idx - 4); hi = min(len(lines), idx + 4)
-                  out.append(f'--- around line {idx} ---')
-                  out.extend(f'{j}: {lines[j-1]}' for j in range(lo, hi + 1))
+              if any(token in line for token in ['hire-workshop-staff', 'hire-employee', 'employee-working', 'workshop-staff-working']):
+                  out.append(f'{idx}: {line.strip()}')
 
           Path('tmp').mkdir(exist_ok=True)
           Path('tmp/phase25-inspect-output.txt').write_text('\n'.join(out) + '\n', encoding='utf-8')
@@ -113,5 +117,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tmp/phase25-inspect-output.txt
-          git commit -m "tmp: 第25段階スタッフ処理を抽出" || exit 0
+          git commit -m "tmp: 第25段階スタッフ処理を再抽出" || exit 0
           git push origin HEAD:phase25-staff-operations-regression-v0.10.914

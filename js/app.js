@@ -3,56 +3,56 @@ import {
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.923';
+} from './game-data.js?v=0.10.924';
 
-const UI_BUILD_VERSION = '0.10.923';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.923';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.923';
+const UI_BUILD_VERSION = '0.10.924';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.924';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.924';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.923';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.924';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.923';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.923';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.923';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.923';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.923';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.923';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.923';
-import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.923';
-import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.923';
-import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.923';
-import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.923';
-import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.923';
-import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.923';
-import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.923';
-import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.923';
-import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.923';
-import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.923';
-import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.923';
-import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.923';
-import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.923';
-import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.923';
-import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.923';
-import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.923';
-import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.923';
-import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.923';
-import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.923';
-import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.923';
-import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.923';
-import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.923';
-import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.923';
-import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.923';
-import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.923';
-import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.923';
-import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.923';
-import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.923';
-import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.923';
-import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.923';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.923';
+} from './firebase-service.js?v=0.10.924';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.924';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.924';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.924';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.924';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.924';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.924';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.924';
+import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.924';
+import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.924';
+import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.924';
+import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.924';
+import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.924';
+import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.924';
+import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.924';
+import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.924';
+import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.924';
+import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.924';
+import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.924';
+import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.924';
+import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.924';
+import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.924';
+import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.924';
+import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.924';
+import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.924';
+import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.924';
+import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.924';
+import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.924';
+import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.924';
+import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.924';
+import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.924';
+import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.924';
+import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.924';
+import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.924';
+import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.924';
+import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.924';
+import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.924';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.924';
 
 
 

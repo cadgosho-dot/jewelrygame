@@ -194,7 +194,7 @@ function testEnergyDrinkSpecialEffects() {
   assert.equal(h.calls.saves, 1);
   assert.deepEqual(plain(h.calls.sfx), [['drink'], ['success', { gain: 0.72 }]]);
   assert.deepEqual(h.calls.timeouts, [260]);
-  assert.deepEqual(h.calls.vibrations, [[[25, 22, 48]]]);
+  assert.deepEqual(plain(h.calls.vibrations), [[[25, 22, 48]]]);
   assert.deepEqual(plain(h.calls.feedback), [['エナジードリンクを使いました', 'energyDrink:2->5', '⚡']]);
   assert.equal(h.calls.renders, 1);
 }

@@ -1,0 +1,106 @@
+name: Phase27 Inspect
+
+on:
+  push:
+    branches:
+      - phase27-inspect
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect unprotected state-changing functions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          src = Path('js/app.js').read_text(encoding='utf-8')
+
+          def extract_function(name):
+              m = re.search(r'\bfunction\s+' + re.escape(name) + r'\s*\([^)]*\)\s*\{', src)
+              if not m:
+                  return None
+              start = m.start()
+              brace = src.find('{', m.start())
+              i = brace
+              depth = 0
+              quote = None
+              esc = False
+              line_comment = False
+              block_comment = False
+              template = False
+              while i < len(src):
+                  ch = src[i]
+                  nxt = src[i+1] if i+1 < len(src) else ''
+                  if line_comment:
+                      if ch == '\n': line_comment = False
+                  elif block_comment:
+                      if ch == '*' and nxt == '/':
+                          block_comment = False; i += 1
+                  elif quote:
+                      if esc: esc = False
+                      elif ch == '\\': esc = True
+                      elif ch == quote: quote = None
+                  elif template:
+                      if esc: esc = False
+                      elif ch == '\\': esc = True
+                      elif ch == '`': template = False
+                  else:
+                      if ch == '/' and nxt == '/': line_comment = True; i += 1
+                      elif ch == '/' and nxt == '*': block_comment = True; i += 1
+                      elif ch in ('\"', "'"): quote = ch
+                      elif ch == '`': template = True
+                      elif ch == '{': depth += 1
+                      elif ch == '}':
+                          depth -= 1
+                          if depth == 0:
+                              return src[start:i+1]
+                  i += 1
+              return None
+
+          protected = {
+              'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal',
+              'polishRough','finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct',
+              'confirmJewelryShopTrade','buyWorkshopTool','repairWorkshopTool','rentNextStore',
+              'processMonthlyFixedCosts','applyOutstandingPayment','payOutstandingBusinessCostItem',
+              'payOutstandingBusinessCosts','purchaseTropicalShopItem','expandStore','expandWorkshop',
+              'upgradeStoreLevel','installDisplayProduct','placeItem','placeItemInShowcaseSlot',
+              'removeShowcase','moveShowcaseItem','adjustShowcaseSellingPrice','confirmCancelOrder',
+              'cancelOrder','remakeOrderFromCompletion','workshopStaffCraftCandidates',
+              'workshopStaffQualityRoll','workshopStaffCraftOne','usePhoneItem','togglePhoneEquipment'
+          }
+
+          rows = []
+          for m in re.finditer(r'\bfunction\s+([A-Za-z_$][\w$]*)\s*\(', src):
+              name = m.group(1)
+              body = extract_function(name)
+              if not body or name in protected:
+                  continue
+              score = 0
+              weights = {
+                  'state.': 4, 'saveGame(': 8, 'advanceTime(': 7, 'addFinance(': 6,
+                  'money': 3, 'inventory': 3, 'unpaid': 4, 'suspended': 4,
+                  '.push(': 2, '= true': 1, '= false': 1, 'delete ': 3,
+                  'setScreen(': 2, 'render(': 2, 'addNotification(': 2
+              }
+              for token, w in weights.items():
+                  score += body.count(token) * w
+              if score >= 8:
+                  line = src.count('\n', 0, m.start()) + 1
+                  rows.append((score, line, name, len(body)))
+
+          rows.sort(reverse=True)
+          print('HEAD CANDIDATE RANKING')
+          for score, line, name, size in rows[:60]:
+              print(f'{score:4d} line={line:5d} size={size:6d} {name}')
+
+          for name in ['payFixedCost','processHomeRent','runAutopilotDay','autopilotPayOutstandingCosts','eatMeal','sleepToNextDay']:
+              body = extract_function(name)
+              print(f'\n===== {name} =====')
+              print(body if body else 'NOT FOUND')
+          PY

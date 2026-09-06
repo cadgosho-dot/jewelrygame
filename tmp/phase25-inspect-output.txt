@@ -1,3 +1,90 @@
+===== FUNCTION workshopStaffState line 4388 =====
+function workshopStaffState() {
+  if (!state) return { hired: false, everHired: false, working: true, workDays: 0, workMinutesBank: 0, workedMinutesToday: 0, craftedToday: [] };
+  const source = state.workshopStaff && typeof state.workshopStaff === 'object' && !Array.isArray(state.workshopStaff)
+    ? state.workshopStaff
+    : {};
+  const workDays = Math.max(0, Math.floor(Number(source.workDays) || 0));
+  const evolutionStage = workshopStaffGrowthForWorkDays(workDays).level >= 4 ? 2 : 1;
+  state.workshopStaff = {
+    hired: Boolean(source.hired),
+    everHired: Boolean(source.everHired || source.hired),
+    working: source.working !== false,
+    workDays,
+    workMinutesBank: Math.max(0, Number(source.workMinutesBank) || 0),
+    workedMinutesToday: Math.max(0, Math.floor(Number(source.workedMinutesToday) || 0)),
+    craftedToday: Array.isArray(source.craftedToday) ? source.craftedToday.slice(-20) : [],
+    wageUnpaid: Math.max(0, Math.floor(Number(source.wageUnpaid) || 0)),
+    evolutionStage,
+  };
+  return state.workshopStaff;
+}
+===== FUNCTION workshopStaffDefinition line 4409 =====
+function workshopStaffDefinition(staff = workshopStaffState()) {
+  return workshopStaffGrowthForWorkDays(staff?.workDays);
+}
+===== FUNCTION workshopStaffHoliday line 4417 =====
+function workshopStaffHoliday(date = gameDate()) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return false;
+  return date.getDay() === 0 || date.getDay() === 6 || Boolean(japaneseHolidayName(date));
+}
+===== FUNCTION workshopStaffCraftCandidates line 4443 =====
+function workshopStaffCraftCandidates(maxEffectiveMinutes) {
+  const maxMinutes = Math.max(0, Number(maxEffectiveMinutes) || 0);
+  if (maxMinutes < 120 || !workshopOperating() || !toolUsable('jewelryBench')) return [];
+  const storedCount = state.inventory.jewelry.filter((item) => item.status !== 'sold').length;
+  if (storedCount >= state.inventory.capacity) return [];
+
+  const candidates = [];
+  const plainCandidates = [];
+  const looseCandidates = [];
+  const itemIds = Object.keys(ITEMS);
+  const designIds = Object.keys(DESIGNS);
+  const finishIds = Object.keys(FINISHES);
+  const metalIds = Object.keys(METALS);
+  const availableLooseVariants = [];
+  for (const gemId of Object.keys(GEMS)) {
+    for (const shapeId of looseShapeIdsForGem(gemId)) {
+      if (looseAvailableQuantity(gemId, shapeId) > 0) availableLooseVariants.push({ gemId, shapeId });
+    }
+  }
+
+  for (const item of itemIds) {
+    for (const design of designIds) {
+      for (const finish of finishIds) {
+        const hours = productionHours({ item, design, finish });
+        if (hours * 60 > maxMinutes + 1e-9) continue;
+        for (const metal of metalIds) {
+          const plainDraft = { orderId: null, item, useLoose: false, gem: 'amethyst', looseShape: 'round', metal, design, finish };
+          const plainRequirements = materialRequirementsFor(plainDraft);
+          if (plainRequirements.enoughMetal) plainCandidates.push({ draft: plainDraft, hours, requirements: plainRequirements, usesLoose: false });
+          for (const variant of availableLooseVariants) {
+            const looseDraft = { orderId: null, item, useLoose: true, gem: variant.gemId, looseShape: variant.shapeId, metal, design, finish };
+            const looseRequirements = materialRequirementsFor(looseDraft);
+            if (looseRequirements.enoughMetal && looseRequirements.enoughLoose) {
+              looseCandidates.push({ draft: looseDraft, hours, requirements: looseRequirements, usesLoose: true });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (looseCandidates.length && plainCandidates.length) {
+    const preferLoose = Math.random() < 0.7;
+    candidates.push(...(preferLoose ? looseCandidates : plainCandidates));
+  } else candidates.push(...looseCandidates, ...plainCandidates);
+  return candidates;
+}
+===== FUNCTION workshopStaffQualityRoll line 4430 =====
+function workshopStaffQualityRoll(definition = workshopStaffDefinition()) {
+  const premiumChance = Math.max(0, Math.min(1, Number(definition?.premiumChance) || 0));
+  const goodChance = Math.max(0, Math.min(1 - premiumChance, Number(definition?.goodChance) || 0));
+  const roll = Math.random();
+  if (roll < premiumChance) return 'premium';
+  if (roll < premiumChance + goodChance) return 'good';
+  return 'standard';
+}
 ===== FUNCTION workshopStaffCraftOne line 4491 =====
 function workshopStaffCraftOne(maxEffectiveMinutes, definition = workshopStaffDefinition()) {
   const candidates = workshopStaffCraftCandidates(maxEffectiveMinutes);
@@ -35,88 +122,57 @@ function workshopStaffCraftOne(maxEffectiveMinutes, definition = workshopStaffDe
   if (brokenToolName) addNotification(`${brokenToolName}が故障しました`, '職人スタッフの制作後に故障しました。修理が完了するまで自動制作は止まります。', 'warning');
   return { jewelry, hours, brokenToolName };
 }
-CASE hire-workshop-staff: NOT FOUND
-CASE hire-employee: NOT FOUND
-CASE toggle-workshop-staff-working: NOT FOUND
-CASE toggle-store-staff-working: NOT FOUND
-CASE toggle-employee-working: NOT FOUND
-CASE toggle-workshop-staff: NOT FOUND
-===== STAFF-RELATED CASE LABELS =====
-24857: case 'hire-workshop-staff': {
-24875: case 'hire-employee': {
-===== STAFF WORKING MUTATION CONTEXTS =====
---- around line 4359 ---
-4355:     ? branchOrNumber
-4356:     : storeBranchByNumber(Math.max(1, Number(branchOrNumber) || 1));
-4357:   if (!branch || !storeBranchOperating(branch) || !storeEmployeeAvailable(branch)) return null;
-4358:   const employee = storeBranchEmployee(branch);
-4359:   if (!employee.hired || !employee.working || Math.max(0, Number(employee.wageUnpaid) || 0) > 0) return null;
-4360:   return employee;
-4361: }
-4362: 
-4363: function customerProposalMinutes() {
---- around line 4373 ---
-4369:   return employee ? Number(storeStaffDefinition(employee).purchaseBonus) || 0 : 0;
-4370: }
-4371: 
-4372: function storeStaffCustomerVisitBonus(employee) {
-4373:   if (!employee?.hired || !employee?.working) return 0;
-4374:   return Number(storeStaffDefinition(employee).customerVisitBonus) || 0;
-4375: }
-4376: 
-4377: function storeStaffVisitorBonus(employee) {
---- around line 4378 ---
-4374:   return Number(storeStaffDefinition(employee).customerVisitBonus) || 0;
-4375: }
-4376: 
-4377: function storeStaffVisitorBonus(employee) {
-4378:   if (!employee?.hired || !employee?.working) return 0;
-4379:   return Math.max(0, Math.floor(Number(storeStaffDefinition(employee).visitorBonus) || 0));
-4380: }
-4381: 
-4382: function storeStaffSaleBonus(employee) {
---- around line 4383 ---
-4379:   return Math.max(0, Math.floor(Number(storeStaffDefinition(employee).visitorBonus) || 0));
-4380: }
-4381: 
-4382: function storeStaffSaleBonus(employee) {
-4383:   if (!employee?.hired || !employee?.working) return 0;
-4384:   return Number(storeStaffDefinition(employee).saleBonus) || 0;
-4385: }
-4386: 
-4387: 
---- around line 19406 ---
-19402:         <p>${esc(STORE_EMPLOYEE_CANDIDATES[branch.number]?.profile || `${branchName}専属の店舗スタッフです。`)}</p>
-19403:         <article class="candidate-card"><strong>勤務日数 ${workDays}日</strong><p>${esc(growthText)}</p><strong>現在の効果</strong><p>${esc(currentEffect)}</p><strong>現在の日当 ${yen(dailyWage)}</strong></article>
-19404:         ${wageUnpaid ? `<section class="tool-break-alert"><strong>給与未払いのため出勤停止中です</strong><span>未払い ${yen(wageUnpaid)}をスマートフォンの収支画面から支払ってください。</span></section>` : ''}
-19405:         <p>店舗に配置して実際に営業した日は、1日の終わりに現在レベルの日当を支払います。</p>
-19406:         <label class="toggle-row"><span>店舗に配置する</span><input type="checkbox" data-action="employee-working" ${employee.working ? 'checked' : ''} ${wageUnpaid ? 'disabled' : ''}></label>` : `
-19407:         <h1>店舗スタッフを1人雇えます。</h1>
-19408:         <article class="candidate-card"><h2>${esc(employee.name)}</h2><p>${esc(STORE_EMPLOYEE_CANDIDATES[branch.number]?.profile || `${branchName}専属の店舗スタッフです。`)}</p><p class="success-text">販売力 Lv.1（見習い）</p><p>${esc(currentEffect)}</p><small>配置して働いた日数に応じて成長します。初日当：${yen(STORE_STAFF_GROWTH_LEVELS[0].dailyWage)}</small></article>
-19409:         <button class="primary-button full-button" data-action="hire-employee">雇う</button>`}
-19410:     </section>`, { help: '店舗スタッフは店舗ごとに1人雇えます。スタッフ不在でも営業できますが、ショーケース販売・来店人数・通常客の来店・接客購入率が大きく下がります。配置中は販売力が大幅に上がり、働いた日数による成長でさらに強化されます。' });
---- around line 23376 ---
-23372:   state.daily.sold.push(...sold);
-23373: 
-23374:   const staffEffects = [];
-23375:   for (const { branch, employee, openMinutes } of branchDayStats) {
-23376:     if (!employee?.hired || !employee.working || openMinutes <= 0 || Math.max(0, Number(employee.wageUnpaid) || 0) > 0) continue;
-23377:     const beforeDefinition = storeStaffDefinition(employee);
-23378:     const salary = Math.max(0, Math.floor(Number(beforeDefinition.dailyWage) || 5000));
-23379:     const wageResult = payFixedCost(`${storeBranchDisplayName(branch)} ${employee.name}さんの給与`, salary, (unpaid) => {
-23380:       employee.wageUnpaid = Math.max(0, Number(employee.wageUnpaid) || 0) + unpaid;
---- around line 24881 ---
-24877:       if (!branch || !storeEmployeeAvailable(branch)) { showToast('この店舗では店舗スタッフを雇えません。', 'error'); break; }
-24878:       const employee = storeBranchEmployee(branch);
-24879:       employee.hired = true;
-24880:       employee.workDays = 0;
-24881:       employee.working = true;
-24882:       employee.wageUnpaid = 0;
-24883:       // 店舗内の店舗スタッフ雇用では、御徒町の人材紹介を解放しない。
-24884:       state.facilities.recruitment = false;
-24885:       saveGame();
---- around line 25096 ---
-25092:     preparePhoneHomeImage(target.files?.[0]);
+===== FUNCTION storeBranchEmployee line 4325 =====
+function storeBranchEmployee(branch = currentStoreBranch()) {
+  if (!branch) return normalizedStoreEmployee(state?.employee, 1);
+  const branchNumber = Math.max(1, Number(branch.number) || 1);
+  const actualBranch = storeBranchByNumber(branchNumber) || branch;
+  actualBranch.employee = normalizedStoreEmployee(actualBranch.employee, branchNumber, branchNumber === 1 ? state?.employee : null);
+  if (branchNumber === 1) state.employee = actualBranch.employee;
+  return actualBranch.employee;
+}
+===== FUNCTION storeEmployeeAvailable line 4334 =====
+function storeEmployeeAvailable(branch = currentStoreBranch()) {
+  if (!branch) return false;
+  return Number(branch.number) >= 2 || Boolean(state?.store?.expanded);
+}
+===== CASE hire-workshop-staff line 24857 =====
+    case 'hire-workshop-staff': {
+      if (workshopStaffHoliday(gameDate())) { showToast('土日祝日は職人スタッフを設定できません。', 'error'); break; }
+      const unlock = workshopStaffUnlockStatus();
+      if (!unlock.unlocked) { showToast('職人スタッフの解放条件を満たしていません。', 'error'); break; }
+      const staff = workshopStaffState();
+      staff.hired = true;
+      staff.everHired = true;
+      staff.working = true;
+      staff.workDays = 0;
+      staff.workMinutesBank = 0;
+      staff.workedMinutesToday = 0;
+      staff.craftedToday = [];
+      staff.wageUnpaid = 0;
+      saveGame();
+      showToast('職人スタッフを雇いました。');
+      render();
+      break;
+    }
+===== CASE hire-employee line 24875 =====
+    case 'hire-employee': {
+      const branch = currentStoreBranch();
+      if (!branch || !storeEmployeeAvailable(branch)) { showToast('この店舗では店舗スタッフを雇えません。', 'error'); break; }
+      const employee = storeBranchEmployee(branch);
+      employee.hired = true;
+      employee.workDays = 0;
+      employee.working = true;
+      employee.wageUnpaid = 0;
+      // 店舗内の店舗スタッフ雇用では、御徒町の人材紹介を解放しない。
+      state.facilities.recruitment = false;
+      saveGame();
+      showToast(`${storeBranchDisplayName(branch)}で店舗スタッフの${employee.name}さんを雇いました。`);
+      render();
+      break;
+    }
+===== INPUT CHANGE STAFF BLOCKS =====
+--- [data-action="employee-working"] around line 25096 ---
 25093:     target.value = '';
 25094:     return;
 25095:   }
@@ -125,17 +181,6 @@ CASE toggle-workshop-staff: NOT FOUND
 25098:     if (branch) storeBranchEmployee(branch).working = target.checked;
 25099:     saveGame();
 25100:     render();
---- around line 25098 ---
-25094:     return;
-25095:   }
-25096:   if (target.matches('[data-action="employee-working"]')) {
-25097:     const branch = currentStoreBranch();
-25098:     if (branch) storeBranchEmployee(branch).working = target.checked;
-25099:     saveGame();
-25100:     render();
-25101:     return;
-25102:   }
---- around line 25105 ---
 25101:     return;
 25102:   }
 25103:   if (target.matches('[data-action="workshop-staff-working"]')) {
@@ -145,7 +190,13 @@ CASE toggle-workshop-staff: NOT FOUND
 25107:       return;
 25108:     }
 25109:     workshopStaffState().working = target.checked;
---- around line 25109 ---
+25110:     saveGame();
+--- [data-action="workshop-staff-working"] around line 25103 ---
+25100:     render();
+25101:     return;
+25102:   }
+25103:   if (target.matches('[data-action="workshop-staff-working"]')) {
+25104:     if (workshopStaffHoliday(gameDate())) {
 25105:       target.checked = workshopStaffState().working;
 25106:       showToast('土日祝日は職人スタッフを設定できません。', 'error');
 25107:       return;
@@ -155,3 +206,16 @@ CASE toggle-workshop-staff: NOT FOUND
 25111:     render();
 25112:     return;
 25113:   }
+25114:   if (target.matches('[data-setting]')) {
+25115:     const titleMode = target.dataset.titleMode === 'true';
+25116:     if (!titleMode && screen === 'phone' && phoneTab === 'settings') {
+25117:       playSfx('select');
+===== STAFF UI/ACTION REFERENCES =====
+17829: <label class="toggle-row"><span>出勤させる</span><input type="checkbox" data-action="workshop-staff-working" ${staff.working ? 'checked' : ''} ${wageUnpaid ? 'disabled' : ''}></label>` : `
+17837: <button class="primary-button full-button" data-action="hire-workshop-staff">雇う</button>`}
+19406: <label class="toggle-row"><span>店舗に配置する</span><input type="checkbox" data-action="employee-working" ${employee.working ? 'checked' : ''} ${wageUnpaid ? 'disabled' : ''}></label>` : `
+19409: <button class="primary-button full-button" data-action="hire-employee">雇う</button>`}
+24857: case 'hire-workshop-staff': {
+24875: case 'hire-employee': {
+25096: if (target.matches('[data-action="employee-working"]')) {
+25103: if (target.matches('[data-action="workshop-staff-working"]')) {

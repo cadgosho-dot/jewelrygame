@@ -86,6 +86,7 @@ CHECKS = [
     ('共通時間消費処理保護', [sys.executable, str(ROOT / 'scripts/check-spend-minutes-regression.py')]),
     ('完成品除去処理保護', [sys.executable, str(ROOT / 'scripts/check-remove-jewelry-regression.py')]),
     ('就寝・翌日遷移処理保護', [sys.executable, str(ROOT / 'scripts/check-sleep-transition-regression.py')]),
+    ('顧客来店管理処理保護', [sys.executable, str(ROOT / 'scripts/check-customer-visit-regression.py')]),
     ('地金重量表示', [sys.executable, str(ROOT / 'scripts/check-metal-weight-label.py')]),
     ('数量長押し管理', [sys.executable, str(ROOT / 'scripts/check-press-hold-controller.py')]),
     ('Pages公開対象', [sys.executable, str(ROOT / 'scripts/check-pages-publish-policy.py')]),

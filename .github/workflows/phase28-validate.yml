@@ -1,0 +1,14 @@
+name: Phase28 Validate
+on:
+  push:
+    branches: [phase28-autopilot-protection]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate autopilot protection
+        run: |
+          node tools/test-autopilot-regression.mjs
+          python3 scripts/check-autopilot-regression.py
+          python3 scripts/version-sync.py --check

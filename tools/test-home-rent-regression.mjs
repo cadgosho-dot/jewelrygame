@@ -206,7 +206,7 @@ function testHomeRentFullPayment() {
   assert.equal(h.state.business.lastProcessedHomeRentMonth, '2026-09');
   assert.deepEqual(plain(h.state.business.homeRentReports), [plain(report)]);
   assert.deepEqual(h.calls.finance, [['2026-09 自宅家賃', 0, 30000]]);
-  assert.deepEqual(h.state.tools.morningMessages, ['自宅家賃 ¥30000を支払いました。']);
+  assert.deepEqual(plain(h.state.tools.morningMessages), ['自宅家賃 ¥30000を支払いました。']);
   assert.deepEqual(h.calls.notifications, [['自宅家賃支払日', '自宅家賃 ¥30000を支払いました。', 'info']]);
 }
 
@@ -226,7 +226,7 @@ function testHomeRentPartialPaymentAccumulatesUnpaidAndKeepsReserve() {
   assert.equal(h.state.business.homeRentUnpaid, 20000);
   assert.deepEqual(h.calls.finance, [['2026-09 自宅家賃', 0, 15000]]);
   const message = '自宅家賃 ¥30000のうち¥15000を支払い、¥15000が未払いです。生活費¥10000は残しています。';
-  assert.deepEqual(h.state.tools.morningMessages, [message]);
+  assert.deepEqual(plain(h.state.tools.morningMessages), [message]);
   assert.deepEqual(h.calls.notifications, [['自宅家賃支払日', message, 'warning']]);
 }
 

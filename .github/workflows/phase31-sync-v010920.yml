@@ -1,0 +1,87 @@
+name: Phase31 Formal Sync v0.10.920
+
+on:
+  push:
+    branches: [main, phase31-customer-sale-protection]
+    paths:
+      - '.github/workflows/phase31-sync-v010920.yml'
+      - 'tools/test-customer-sale-regression.mjs'
+      - 'scripts/check-customer-sale-regression.py'
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+jobs:
+  validate-feature:
+    if: github.ref_name == 'phase31-customer-sale-protection'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare browser audit
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Validate customer sale protection
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-customer-sale-regression.py
+          python3 scripts/check-current.py
+
+  formal-sync:
+    if: github.ref_name == 'main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Register protection and synchronize version
+        run: |
+          test "$(tr -d '\n' < VERSION)" = '0.10.919'
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/check-current.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = "    ('回転寿司開始・会計処理保護', [sys.executable, str(ROOT / 'scripts/check-kaitenzushi-regression.py')]),"
+          assert text.count(anchor) == 1
+          assert 'check-customer-sale-regression.py' not in text
+          text = text.replace(anchor, anchor + "\n    ('店舗接客・完成品販売保護', [sys.executable, str(ROOT / 'scripts/check-customer-sale-regression.py')]),")
+          path.write_text(text, encoding='utf-8')
+          path = Path('CHANGELOG.md')
+          text = path.read_text(encoding='utf-8')
+          marker = '\n## v0.10.'
+          position = text.index(marker)
+          entry = '\n## v0.10.920\n- 中核処理保護・第31段階：店舗接客で完成品を提案・販売する customerBuy() の現行挙動を動的回帰テストと静的検査で固定。\n- 接客可否・展示状態・希望確認・提案2点上限・営業時間、購入成立時の所持金・店舗売上・利益・顧客関係・ケース消費・保存、非成立時の再提案と19:00終了導線を検証。\n- ゲーム処理・仕様・価格・イベント・画像・音声・セーブ形式の変更なし。\n'
+          assert '## v0.10.920' not in text
+          path.write_text(text[:position] + entry + text[position:], encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --bump-patch
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-customer-sale-regression.py
+      - name: Verify sync only changes version references in app
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          before = subprocess.check_output(['git', 'show', 'HEAD:js/app.js'], text=True)
+          after = Path('js/app.js').read_text(encoding='utf-8')
+          expected = before.replace('?v=0.10.919', '?v=0.10.920').replace("const UI_BUILD_VERSION = '0.10.919';", "const UI_BUILD_VERSION = '0.10.920';")
+          assert after == expected
+          assert not subprocess.check_output(['git', 'diff', '--name-only', '--', 'assets/'], text=True).strip()
+          PY
+      - name: Commit formal sync and remove this one-shot workflow
+        run: |
+          git rm .github/workflows/phase31-sync-v010920.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git commit -m 'v0.10.920 第31段階正式同期'
+          git push origin HEAD:main

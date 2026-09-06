@@ -61,7 +61,12 @@ checks = {
         'eventState.lastHungerBefore = before;', 'eventState.lastHungerAfter = state.wellbeing.hunger;',
         "state.game.screen = 'sushiChefEvent';", "setScreen('sushiChefEvent', {}, false);",
     ]),
-    'regular settlement saves then clears session': complete.index("state.game.screen = 'main';") < complete.index('saveGame();') < complete.index('kaitenzushiSession = null;'),
+    'regular settlement saves then clears session': (
+        complete.count("state.game.screen = 'main';") == 1
+        and complete.count('saveGame();') == 2
+        and complete.count('kaitenzushiSession = null;') == 2
+        and complete.index("state.game.screen = 'main';") < complete.rindex('saveGame();') < complete.rindex('kaitenzushiSession = null;')
+    ),
     'zero plate exit remains no-meal path': "showToast('何も食べずにお店を出ました。', 'info', false);" in complete,
     'message source and frame are authenticated': all(token in message for token in [
         "if (screen !== 'kaitenzushi' || !kaitenzushiSession) return;",

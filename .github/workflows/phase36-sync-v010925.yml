@@ -1,0 +1,87 @@
+name: Phase36 Formal Sync v0.10.925
+
+on:
+  push:
+    branches: [main, phase36-sleep-transition-protection]
+    paths:
+      - '.github/workflows/phase36-sync-v010925.yml'
+      - 'tools/test-sleep-transition-regression.mjs'
+      - 'scripts/check-sleep-transition-regression.py'
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+jobs:
+  validate-feature:
+    if: github.ref_name == 'phase36-sleep-transition-protection'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare browser audit
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Validate sleep transition protection
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-sleep-transition-regression.py
+          python3 scripts/check-current.py
+
+  formal-sync:
+    if: github.ref_name == 'main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Register protection and synchronize version
+        run: |
+          test "$(tr -d '\n' < VERSION)" = '0.10.924'
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/check-current.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = "    ('完成品除去処理保護', [sys.executable, str(ROOT / 'scripts/check-remove-jewelry-regression.py')]),"
+          assert text.count(anchor) == 1
+          assert 'check-sleep-transition-regression.py' not in text
+          text = text.replace(anchor, anchor + "\n    ('就寝・翌日遷移処理保護', [sys.executable, str(ROOT / 'scripts/check-sleep-transition-regression.py')]),")
+          path.write_text(text, encoding='utf-8')
+          path = Path('CHANGELOG.md')
+          text = path.read_text(encoding='utf-8')
+          marker = '\n## v0.10.'
+          position = text.index(marker)
+          entry = '\n## v0.10.925\n- 中核処理保護・第36段階：就寝開始から翌日確定までを統括する `beginSleepTransition()` を動的回帰テストと静的検査で固定。\n- 二重実行防止、19時前の就寝制限、早期就寝許可、暗転、端末復旧チェックポイント、就寝/宇宙音声、`settleDay()` 委譲、日次収支フィードバック、失敗時ロールバック、ロック解除を検証。\n- ゲーム内時間・就寝条件・日次処理・価格・在庫・イベント・画像・音声仕様・セーブ形式の変更なし。\n'
+          assert '## v0.10.925' not in text
+          path.write_text(text[:position] + entry + text[position:], encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --bump-patch
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-sleep-transition-regression.py
+      - name: Verify sync only changes version references in app
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          before = subprocess.check_output(['git', 'show', 'HEAD:js/app.js'], text=True)
+          after = Path('js/app.js').read_text(encoding='utf-8')
+          expected = before.replace('?v=0.10.924', '?v=0.10.925').replace("const UI_BUILD_VERSION = '0.10.924';", "const UI_BUILD_VERSION = '0.10.925';")
+          assert after == expected
+          assert not subprocess.check_output(['git', 'diff', '--name-only', '--', 'assets/'], text=True).strip()
+          PY
+      - name: Commit formal sync and remove this one-shot workflow
+        run: |
+          git rm .github/workflows/phase36-sync-v010925.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git commit -m 'v0.10.925 第36段階正式同期'
+          git push origin HEAD:main

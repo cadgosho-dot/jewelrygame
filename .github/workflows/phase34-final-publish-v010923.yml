@@ -1,0 +1,127 @@
+name: Phase34 Final Publish v0.10.923
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phase34-final-publish-v010923.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Remove one-shot workflow before final build
+        run: |
+          test "$(tr -d '\n' < VERSION)" = '0.10.923'
+          git rm .github/workflows/phase34-final-publish-v010923.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'v0.10.923 最終公開同期'
+          git push origin HEAD:main
+
+  validate-build:
+    permissions:
+      contents: read
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate final main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Prepare browser audit
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Run current build audit
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/version-sync.py --check
+          timeout 8m python3 -u scripts/check-current.py
+
+  build-pages:
+    permissions:
+      contents: read
+      pages: read
+    needs: [validate-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout final main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Show final publish head
+        run: git log -1 --format=%H
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Build publish folder
+        run: |
+          mkdir -p _site
+          rsync -a ./ _site/ \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='_site/' \
+            --exclude='scripts/' \
+            --exclude='/tools/' \
+            --exclude='docs/' \
+            --exclude='*.md' \
+            --exclude='.firebaserc' \
+            --exclude='.gitignore' \
+            --exclude='firebase.json' \
+            --exclude='firestore.rules' \
+            --exclude='HANDOFF_MANDATORY_REGRESSION_RULES.txt' \
+            --exclude='quiz-layout-test.html'
+      - name: Verify 23 tool images
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          expected = [
+              'bench-peg.png', 'buffer.png', 'diamond-polishing-lap.png', 'dividers.png',
+              'electronic-scale.png', 'engraving-block.png', 'file.png', 'gem-polishing-machine.png',
+              'graver.png', 'hammer.png', 'jewelry-bench.png', 'loupe.png', 'magnifier.png',
+              'milgrain-tool.png', 'nipper.png', 'piercing-saw.png', 'pliers.png', 'rolling-mill.png',
+              'rotary-tool.png', 'stamps.png', 'torch.png', 'ultrasonic-cleaner.png', 'wood-block.png',
+          ]
+          root = Path('_site/assets/images/tools')
+          missing = [name for name in expected if not (root / name).is_file()]
+          if missing:
+              raise SystemExit('GitHub Pages公開用フォルダに工具・設備画像が不足しています: ' + ', '.join(missing))
+          print(f'工具・設備画像: {len(expected)}/23 公開対象に含まれています。')
+          PY
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy-pages:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    needs: [build-pages]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy final v0.10.923
+        id: deployment
+        uses: actions/deploy-pages@v4

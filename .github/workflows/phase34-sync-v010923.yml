@@ -47,7 +47,7 @@ jobs:
         run: |
           test "$(tr -d '\n' < VERSION)" = '0.10.922'
           python3 - <<'PY'
-          from pathlib import import Path
+          from pathlib import Path
           path = Path('scripts/check-current.py')
           text = path.read_text(encoding='utf-8')
           anchor = "    ('プレゼント取引制御処理保護', [sys.executable, str(ROOT / 'scripts/check-gift-transaction-regression.py')]),"

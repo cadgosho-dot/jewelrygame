@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/runner/work/jewelrygame/jewelrygame/scripts/check-emerald-captain-kebab-meal-regression.py", line 125, in <module>
+    'time precedes meal completion': finish.index('spendMealTime();') < finish.index('eventState.mealCompleted = true;'),
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: substring not found
+EXIT_CODE=1

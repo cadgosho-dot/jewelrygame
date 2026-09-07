@@ -1,0 +1,87 @@
+name: Phase42 Formal Sync v0.10.931
+
+on:
+  push:
+    branches: [main, protect-stage42]
+    paths:
+      - '.github/workflows/phase42-sync-v010931.yml'
+      - 'tools/test-artisan-progression-regression.mjs'
+      - 'scripts/check-artisan-progression-regression.py'
+
+concurrency:
+  group: jewelrygame-pages-and-metals
+  cancel-in-progress: false
+
+jobs:
+  validate-feature:
+    if: github.ref_name == 'protect-stage42'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare browser audit
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Validate artisan progression protection
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-artisan-progression-regression.py
+          python3 scripts/check-current.py
+
+  formal-sync:
+    if: github.ref_name == 'main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Register protection and synchronize version
+        run: |
+          test "$(tr -d '\n' < VERSION)" = '0.10.930'
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/check-current.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = "    ('セーブ読込・復旧処理保護', [sys.executable, str(ROOT / 'scripts/check-load-game-regression.py')]),"
+          assert text.count(anchor) == 1
+          assert 'check-artisan-progression-regression.py' not in text
+          text = text.replace(anchor, anchor + "\n    ('職人成長・レベル補正処理保護', [sys.executable, str(ROOT / 'scripts/check-artisan-progression-regression.py')]),")
+          path.write_text(text, encoding='utf-8')
+          path = Path('CHANGELOG.md')
+          text = path.read_text(encoding='utf-8')
+          marker = '\n## v0.10.'
+          position = text.index(marker)
+          entry = '\n## v0.10.931\n- 中核処理保護・第42段階：研磨・ジュエリー制作で共通利用する職人経験値加算 `addArtisanXp()` と、職人レベル算出・低下・回復処理を動的回帰テストと静的検査で固定。\n- 経験値の正規化と積算、レベル再計算、最高到達レベル、レベル変化通知、補正値1〜2段階制限、回復時の0下限を検証。\n- ゲーム仕様・価格・在庫・イベント・画像・音声・セーブ形式・クラウド保存形式の変更なし。\n'
+          assert '## v0.10.931' not in text
+          path.write_text(text[:position] + entry + text[position:], encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --bump-patch
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-artisan-progression-regression.py
+      - name: Verify sync only changes version references in app
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          before = subprocess.check_output(['git', 'show', 'HEAD:js/app.js'], text=True)
+          after = Path('js/app.js').read_text(encoding='utf-8')
+          expected = before.replace('?v=0.10.930', '?v=0.10.931').replace("const UI_BUILD_VERSION = '0.10.930';", "const UI_BUILD_VERSION = '0.10.931';")
+          assert after == expected
+          assert not subprocess.check_output(['git', 'diff', '--name-only', '--', 'assets/'], text=True).strip()
+          PY
+      - name: Commit formal sync and remove this one-shot workflow
+        run: |
+          git rm .github/workflows/phase42-sync-v010931.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -u
+          git commit -m 'v0.10.931 第42段階正式同期'
+          git push origin HEAD:main

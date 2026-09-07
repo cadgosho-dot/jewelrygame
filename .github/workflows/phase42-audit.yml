@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Extract shortlisted candidates
+      - name: Inspect artisan progression usage
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -36,13 +36,16 @@ jobs:
             }
             return null;
           }
-          const candidates = [
-            'addArtisanXp','grantProcessingKnowledge','installDisplayProduct',
-            'processCompletedWorkshopRepairs','unlockMiningLocationsIfNeeded',
-            'syncRetroBattleInventoryFromResult','applyArtisanLevelPenalty','recoverArtisanLevelPenalty'
-          ];
-          for (const name of candidates) {
+          for (const name of ['artisanLevelForXp','addArtisanXp','applyArtisanLevelPenalty','recoverArtisanLevelPenalty']) {
             console.log(`===== ${name} =====`);
             console.log(extract(name) || 'NOT FOUND');
           }
+          for (const needle of ['addArtisanXp(', 'applyArtisanLevelPenalty(', 'recoverArtisanLevelPenalty(']) {
+            console.log(`===== CALLS ${needle} =====`);
+            app.split('\n').forEach((line, i) => {
+              if (line.includes(needle) && !line.trimStart().startsWith('function ')) console.log(`${i + 1}: ${line.trim()}`);
+            });
+          }
           NODE
+          echo '===== EXISTING TEST/CHECK REFERENCES ====='
+          grep -R -n -E 'addArtisanXp|applyArtisanLevelPenalty|recoverArtisanLevelPenalty' scripts tools || true

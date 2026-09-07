@@ -1,4 +1,5 @@
 name: Phase46 Formal Sync v0.10.935
+# Re-run feature validation after production-function extractor fix.
 
 on:
   push:

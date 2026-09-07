@@ -103,3 +103,5 @@ for name in sorted(set(focus_names + ['advanceEmeraldCaptainKebabEvent'])):
 
 OUT.write_text('\n'.join(lines) + '\n', encoding='utf-8')
 print('\n'.join(lines[:120]))
+
+# Stage47 audit retrigger marker.

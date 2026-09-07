@@ -1,5 +1,6 @@
 name: Phase46 Formal Sync v0.10.935
 # Final feature validation after lightweight regression and static checks passed.
+# Revalidated after removing the temporary stage46 audit report.
 
 on:
   push:

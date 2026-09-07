@@ -14,41 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Scan unprotected state-mutating functions
+      - name: Extract save core functions
         shell: python
         run: |
           from pathlib import Path
           import re
-
           src = Path('js/app.js').read_text(encoding='utf-8')
-          protected = {
-            'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal','polishRough',
-            'finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct','confirmJewelryShopTrade',
-            'buyWorkshopTool','repairWorkshopTool','rentNextStore','processMonthlyFixedCosts',
-            'outstandingPaymentTargets','totalOutstandingBusinessCost','outstandingPaymentTarget','applyOutstandingPayment',
-            'payOutstandingBusinessCostItem','payOutstandingBusinessCosts','tropicalShopMaxQuantity','purchaseTropicalShopItem',
-            'storeExpansionConditions','expansionEligible','expandStore','workshopLevel','workshopLevelRequirement',
-            'cumulativeWorkshopRequiredTools','workshopUpgradeStatus','expandWorkshop','storeLevel','storeRating',
-            'storeLevelRequirement','storeUpgradeStatus','syncStoreLevel','upgradeStoreLevel','removeGiftFromGameState',
-            'addGiftToGameState','restoreGiftToGameState','createGiftFromDraft','claimGiftPreview','cancelGift','spendMinutes',
-            'spendHours','removeJewelry','beginSleepTransition','startCustomerVisit','clearCustomerVisitsForIllness',
-            'scheduleCustomerVisit'
-          }
-          # phase 23-30 group members are also protected by dedicated checkers; use checker text as a source of names.
-          for p in Path('scripts').glob('check-*-regression.py'):
-            try:
-              t = p.read_text(encoding='utf-8')
-            except Exception:
-              continue
-            protected.update(re.findall(r"extract_function\([^,]+,\s*['\"]([A-Za-z_$][\w$]*)['\"]", t))
-            protected.update(re.findall(r"extractFunction\([^,]+,\s*['\"]([A-Za-z_$][\w$]*)['\"]", t))
 
-          def extract(start):
+          def extract(name):
+            m = re.search(r'(?m)^\s*(?:async\s+)?function\s+' + re.escape(name) + r'\s*\(', src)
+            if not m:
+              print(f'NOT_FOUND:{name}')
+              return ''
+            start = m.start()
             brace = src.find('{', start)
-            if brace < 0: return ''
             depth = 0; i = brace; quote = None; esc = False; line_comment=False; block_comment=False
             while i < len(src):
-              c = src[i]; n = src[i+1] if i+1 < len(src) else ''
+              c=src[i]; n=src[i+1] if i+1 < len(src) else ''
               if line_comment:
                 if c == '\n': line_comment=False
               elif block_comment:
@@ -68,28 +50,7 @@ jobs:
               i += 1
             return ''
 
-          rows=[]
-          pat=re.compile(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
-          for m in pat.finditer(src):
-            name=m.group(1)
-            if name in protected: continue
-            body=extract(m.start())
-            if not body: continue
-            score=0
-            for token,w in [
-              ('state.',6),('.money',5),('money',2),('inventory',4),('save',4),('checkpoint',4),
-              ('order',3),('customer',3),('branch',3),('day',2),('currentMinutes',3),('hunger',2),
-              ('push(',2),('splice(',3),('delete ',3),('localStorage',5),('cloud',5),('status',2)
-            ]:
-              score += body.count(token)*w
-            # direct state writes are especially relevant
-            score += len(re.findall(r'\bstate(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])\s*(?:=|\+=|-=|\+\+|--)', body))*12
-            score += len(re.findall(r'\b(?:game|branch|customer|order|item|jewelry)\.[A-Za-z_$][\w$]*\s*(?:=|\+=|-=|\+\+|--)', body))*4
-            if score:
-              compact=' '.join(body.split())
-              rows.append((score,name,len(body),compact[:900]))
-          rows.sort(reverse=True)
-          print('PHASE38_AUDIT_BEGIN')
-          for score,name,size,snip in rows[:100]:
-            print(f'[{score:04d}] {name} bytes={size} :: {snip}')
-          print('PHASE38_AUDIT_END')
+          for name in ['saveGame','saveLocalBackup','saveStateFingerprint','showAutosaveStatus']:
+            print(f'PHASE38_SOURCE_BEGIN:{name}')
+            print(extract(name))
+            print(f'PHASE38_SOURCE_END:{name}')

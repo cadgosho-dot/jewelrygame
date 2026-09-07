@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Protect Emerald Captain kebab meal settlement without changing gameplay."""
 from pathlib import Path
+import re
 import subprocess
 import sys
 
@@ -12,13 +13,12 @@ SYNC = ROOT / '.github/workflows/phase46-sync-v010935.yml'
 
 
 def section(name: str) -> str:
-    marker = f'function {name}('
-    async_marker = f'async function {name}('
-    starts = [i for i in (APP.find(marker), APP.find(async_marker)) if i >= 0]
-    if len(starts) != 1:
+    pattern = re.compile(rf'(?m)^\s*(?:async\s+)?function\s+{re.escape(name)}\s*\(')
+    matches = list(pattern.finditer(APP))
+    if len(matches) != 1:
         raise AssertionError(f'{name}: expected exactly one declaration')
-    start = starts[0]
-    brace = APP.find('{', start)
+    start = matches[0].start()
+    brace = APP.find('{', matches[0].end())
     if brace < 0:
         raise AssertionError(f'{name}: opening brace not found')
     depth = 0
@@ -82,7 +82,7 @@ checks = {
     'start state snapshot retained': 'stateBeforeMeal = structuredClone(state);' in start,
     'start asset preload retained': 'await preloadEmeraldCaptainMealAssets();' in start,
     'start full hunger guard retained': "if (before >= 7) throw new Error('空腹度は満タンです。');" in start,
-    'start repeated meal guard retained': 'state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID' in start,
+    'start repeated meal guard retained': 'state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === EMERAL_CAPTAIN_KEBAB_EVENT_MEAL_ID' in start,
     'start funds guard retained': "if (state.game.money < meal.price) throw new Error('所持金が足りません。');" in start,
     'start hunger snapshot retained': 'if (!eventState.hungerBefore) eventState.hungerBefore = before;' in start,
     'start payment retained': 'state.game.money -= meal.price;' in start,

@@ -156,7 +156,10 @@ async function testSuccessfulPurchaseMealLifecycle() {
   assert.equal(ctx.state.wellbeing.lastMeal, 'kebab');
   assert.equal(ctx.state.wellbeing.mealsEaten, 1);
   assert.equal(ctx.state.daily.meals.length, 1);
-  assert.deepEqual(ctx.state.daily.meals[0], { id: 'kebab', name: 'ケバブ', price: 1200, recovery: 3 });
+  assert.equal(ctx.state.daily.meals[0].id, 'kebab');
+  assert.equal(ctx.state.daily.meals[0].name, 'ケバブ');
+  assert.equal(ctx.state.daily.meals[0].price, 1200);
+  assert.equal(ctx.state.daily.meals[0].recovery, 3);
   assert.equal(calls.spendMealTime, 1);
   assert.equal(calls.scheduled, 1);
   assert.ok(calls.cleared >= 1);

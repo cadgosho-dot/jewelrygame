@@ -31,6 +31,10 @@ function extractFunction(name) {
 
 const source = extractFunction('addFinance');
 
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function harness(options = {}) {
   const calls = [];
   let nextId = 0;
@@ -75,7 +79,7 @@ function testIncomeEntryRecordsCurrentDayAndDailyIncome() {
   const h = harness({ day: 12, dailyIncome: 3000, dailyExpense: 400 });
   h.ctx.addFinance('店頭販売', 12500, 0);
   assert.equal(h.state.finance.length, 1);
-  assert.deepEqual(h.state.finance[0], {
+  assert.deepEqual(plain(h.state.finance[0]), {
     id: 'finance-1',
     day: 12,
     label: '店頭販売',
@@ -92,7 +96,7 @@ function testExpenseEntryRecordsCurrentDayAndDailyExpense() {
   const h = harness({ day: 5, finance: existing, dailyIncome: 100, dailyExpense: 250 });
   h.ctx.addFinance('材料購入', 0, 1800);
   assert.equal(h.state.finance.length, 2);
-  assert.deepEqual(h.state.finance[1], {
+  assert.deepEqual(plain(h.state.finance[1]), {
     id: 'finance-1',
     day: 5,
     label: '材料購入',
@@ -116,7 +120,7 @@ function testMixedEntryUpdatesBothDailyTotals() {
 function testDefaultAmountsAreZeroAndTotalsStayUnchanged() {
   const h = harness({ day: 8, dailyIncome: 700, dailyExpense: 900 });
   h.ctx.addFinance('記録のみ');
-  assert.deepEqual(h.state.finance[0], {
+  assert.deepEqual(plain(h.state.finance[0]), {
     id: 'finance-1',
     day: 8,
     label: '記録のみ',

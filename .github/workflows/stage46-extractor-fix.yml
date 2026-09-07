@@ -1,0 +1,46 @@
+name: Stage46 Extractor Fix
+
+on:
+  push:
+    branches: [protect-stage46]
+    paths:
+      - '.github/workflows/stage46-extractor-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: protect-stage46
+          fetch-depth: 1
+      - name: Fix production function extraction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/test-emerald-captain-kebab-meal-regression.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = "  const brace = APP.indexOf('{', match.index);\n  assert.ok(brace >= 0, `${name}: opening brace not found`);"
+          new = "  const lineEnd = APP.indexOf('\\n', match.index);\n  const brace = APP.lastIndexOf('{', lineEnd);\n  assert.ok(brace >= match.index, `${name}: opening brace not found`);"
+          assert text.count(old) == 1
+          path.write_text(text.replace(old, new), encoding='utf-8')
+
+          path = Path('scripts/check-emerald-captain-kebab-meal-regression.py')
+          text = path.read_text(encoding='utf-8')
+          old = "    start = matches[0].start()\n    brace = APP.find('{', matches[0].end())\n    if brace < 0:\n        raise AssertionError(f'{name}: opening brace not found')"
+          new = "    start = matches[0].start()\n    line_end = APP.find('\\n', start)\n    if line_end < 0:\n        line_end = len(APP)\n    brace = APP.rfind('{', matches[0].end(), line_end)\n    if brace < 0:\n        raise AssertionError(f'{name}: opening brace not found')"
+          assert text.count(old) == 1
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+      - name: Commit fix and remove one-shot workflow
+        run: |
+          git rm .github/workflows/stage46-extractor-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/test-emerald-captain-kebab-meal-regression.mjs scripts/check-emerald-captain-kebab-meal-regression.py
+          git commit -m '第46段階 デフォルト引数対応の関数抽出修正'
+          git push origin HEAD:protect-stage46

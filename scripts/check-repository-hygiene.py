@@ -55,6 +55,22 @@ for rel, expected in expected_counts.items():
     if count != expected:
         errors.append(f'{rel}: 保存件数 {count}（期待 {expected}）')
 
+# app.js is legacy-heavy and intentionally frozen at the final spaghetti-code cleanup baseline.
+# New gameplay/events/facilities should be added as dedicated modules instead of growing app.js.
+# Bug fixes and wiring changes remain allowed as long as app.js does not exceed this baseline.
+APP_JS_MAX_BYTES = 1_411_760
+app_js = ROOT / 'js/app.js'
+if not app_js.is_file():
+    errors.append('js/app.js がありません。')
+else:
+    app_js_size = app_js.stat().st_size
+    if app_js_size > APP_JS_MAX_BYTES:
+        errors.append(
+            'js/app.js が再肥大化しています: '
+            f'{app_js_size:,} bytes（上限 {APP_JS_MAX_BYTES:,} bytes）。'
+            '新機能・イベント・施設・特殊処理は専用モジュールへ分離してください。'
+        )
+
 if errors:
     print('REPOSITORY HYGIENE: FAIL')
     for error in errors:
@@ -62,3 +78,4 @@ if errors:
     sys.exit(1)
 
 print('REPOSITORY HYGIENE: PASS')
+print(f'app.js size guard: {app_js.stat().st_size:,}/{APP_JS_MAX_BYTES:,} bytes')

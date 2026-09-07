@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Extract unprotected core candidates
+      - name: Extract shortlisted candidates
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -37,26 +37,12 @@ jobs:
             return null;
           }
           const candidates = [
-            'mine','adjustLooseInventory','repairBrokenEquipment',
-            'claimCurrentDailyLogin','maybeGrantDailyLogin',
-            'adjustAquariumFish','adjustAquariumPlant'
+            'addArtisanXp','grantProcessingKnowledge','installDisplayProduct',
+            'processCompletedWorkshopRepairs','unlockMiningLocationsIfNeeded',
+            'syncRetroBattleInventoryFromResult','applyArtisanLevelPenalty','recoverArtisanLevelPenalty'
           ];
           for (const name of candidates) {
-            const src=extract(name);
             console.log(`===== ${name} =====`);
-            console.log(src || 'NOT FOUND');
+            console.log(extract(name) || 'NOT FOUND');
           }
-          console.log('===== HIGH MUTATION FUNCTIONS =====');
-          const fnRe=/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g;
-          const rows=[]; let m;
-          while ((m=fnRe.exec(app))) {
-            const name=m[1], src=extract(name); if(!src) continue;
-            const score=(src.match(/state\.[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?\s*(?:=|\+=|-=|\+\+|--)/g)||[]).length
-              +(src.match(/\.push\s*\(/g)||[]).length
-              +(src.match(/\.splice\s*\(/g)||[]).length
-              +(src.match(/delete\s+state\./g)||[]).length;
-            if(score>=2) rows.push({name,score,len:src.length});
-          }
-          rows.sort((a,b)=>b.score-a.score||b.len-a.len);
-          console.log(rows.slice(0,120).map(x=>`${x.score}\t${x.len}\t${x.name}`).join('\n'));
           NODE

@@ -1,0 +1,48 @@
+name: Phase 38 save source audit
+
+on:
+  push:
+    branches: [phase38-core-protection]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract save source
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          src = Path('js/app.js').read_text(encoding='utf-8')
+          def extract(name):
+            m = re.search(r'(?m)^\s*(?:async\s+)?function\s+' + re.escape(name) + r'\s*\(', src)
+            if not m: return ''
+            start=m.start(); brace=src.find('{',start); depth=0; i=brace; quote=None; esc=False; line=False; block=False
+            while i < len(src):
+              c=src[i]; n=src[i+1] if i+1 < len(src) else ''
+              if line:
+                if c=='\n': line=False
+              elif block:
+                if c=='*' and n=='/': block=False; i+=1
+              elif quote:
+                if esc: esc=False
+                elif c=='\\': esc=True
+                elif c==quote: quote=None
+              else:
+                if c=='/' and n=='/': line=True; i+=1
+                elif c=='/' and n=='*': block=True; i+=1
+                elif c in "'\"`": quote=c
+                elif c=='{': depth+=1
+                elif c=='}':
+                  depth-=1
+                  if depth==0: return src[start:i+1]
+              i+=1
+            return ''
+          for name in ['saveGame','saveLocalBackup','saveStateFingerprint']:
+            print('SOURCE_BEGIN:'+name)
+            print(extract(name))
+            print('SOURCE_END:'+name)

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/runner/work/jewelrygame/jewelrygame/scripts/check-emerald-captain-kebab-meal-regression.py", line 79, in <module>
+    start = section('startEmeraldCaptainKebabMeal')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/jewelrygame/jewelrygame/scripts/check-emerald-captain-kebab-meal-regression.py", line 26, in section
+    raise AssertionError(f'{name}: opening brace not found')
+AssertionError: startEmeraldCaptainKebabMeal: opening brace not found
+EXIT_CODE=1

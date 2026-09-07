@@ -9,7 +9,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
 
 function extractFunction(name) {
-  const re = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\([^)]*\\)\\s*\\{`, 'm');
+  const re = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, 'm');
   const match = re.exec(APP);
   assert.ok(match, `${name}: production definition not found`);
   const brace = APP.indexOf('{', match.index);

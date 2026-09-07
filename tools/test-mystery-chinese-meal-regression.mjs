@@ -60,11 +60,7 @@ function extractFunction(name) {
 
 const COST = 4200;
 const MEAL = { id: 'chinese', name: '中華料理', price: COST, recovery: 3 };
-const source = `
-const MYSTERY_CHINESE_MEAL_EVENT_COST = ${COST};
-const MEALS = { chinese: ${JSON.stringify(MEAL)} };
-${extractFunction('applyMysteryChineseMeal')}
-`;
+const source = `${extractFunction('applyMysteryChineseMeal')}`;
 
 function createHarness({
   active = true,
@@ -94,6 +90,7 @@ function createHarness({
   };
   const ctx = {
     state,
+    MYSTERY_CHINESE_MEAL_EVENT_COST: COST,
     MEALS: includeMeal ? { chinese: MEAL } : {},
     mysteryChineseMealEventState: () => eventState,
     showToast: (...args) => toasts.push(args),

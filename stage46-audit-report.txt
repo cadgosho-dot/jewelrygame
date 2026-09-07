@@ -1,0 +1,74 @@
+===== startEmeraldCaptainKebabMeal =====
+SCORE=96 LINES=47
+
+async function startEmeraldCaptainKebabMeal() {
+  const eventState = emeraldCaptainKebabEventState();
+  if (!eventState.active || !['purchase', 'eating'].includes(eventState.stage) || mealTransitioning) return;
+  const meal = MEALS[EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID];
+  mealTransitioning = true;
+  let stateBeforeMeal = null;
+  try {
+    stateBeforeMeal = structuredClone(state);
+    await preloadEmeraldCaptainMealAssets();
+    if (!eventState.mealPaid) {
+      const before = hungerLevel();
+      if (before >= 7) throw new Error('空腹度は満タンです。');
+      if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID) throw new Error('同じ食事は連続で選べません。');
+      if (state.game.money < meal.price) throw new Error('所持金が足りません。');
+      if (!eventState.hungerBefore) eventState.hungerBefore = before;
+      state.game.money -= meal.price;
+      addFinance(`${meal.name}で食事`, 0, meal.price);
+      startMoneyFeedback(-meal.price, 1200);
+      eventState.mealPaid = true;
+    }
+    eventState.stage = 'eating';
+    state.game.screen = 'emeraldCaptainKebabEvent';
+    saveGame();
+    render();
+    scheduleEmeraldCaptainMealWatchdog();
+    await waitForNextPaintWithTimeout();
+    await wait(420);
+    if (emeraldCaptainKebabEventState().stage !== 'eating') return;
+    playSfx('emerald-captain-eat');
+    await wait(2080);
+    finishEmeraldCaptainKebabMeal();
+  } catch (error) {
+    console.error('エメラルド班班長ケバブイベント食事処理エラー', error);
+    clearEmeraldCaptainMealWatchdog();
+    if (stateBeforeMeal) state = stateBeforeMeal;
+    const e = emeraldCaptainKebabEventState();
+    e.active = false;
+    e.stage = 'completed';
+    saveGame();
+    goMain();
+    render();
+    showToast('ケバブイベントを安全に終了し、メイン画面へ戻りました。', 'warning');
+  } finally {
+    mealTransitioning = false;
+  }
+}
+
+===== finishEmeraldCaptainKebabMeal =====
+SCORE=0 LINES=2
+
+function finishEmeraldCaptainKebabMeal({ manual = false }
+
+===== receiveYowamushiRoseQuartzReward =====
+SCORE=197 LINES=17
+
+function receiveYowamushiRoseQuartzReward() {
+  const eventState = yowamushiRoseQuartzEventState();
+  if (!eventState.active || eventState.stage !== 'reward') return;
+  if (!eventState.rewardGranted) {
+    state.inventory.loose = state.inventory.loose && typeof state.inventory.loose === 'object' ? state.inventory.loose : {};
+    state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] = state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] && typeof state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] === 'object' ? state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID] : {};
+    state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID] = Math.max(0, Math.floor(Number(state.inventory.loose[YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID][YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID]) || 0)) + 1;
+    eventState.rewardGranted = true;
+    addNotification('ローズクォーツを手に入れました', '工房のルースへ追加されました。', 'special');
+  }
+  eventState.stage = 'outro1';
+  saveGame();
+  playSfx('success', { gain: 0.78, rate: 1.08 });
+  vibrate([24, 36, 54]);
+  render();
+}

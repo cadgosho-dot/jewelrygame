@@ -1,0 +1,34 @@
+name: Stage46 Diagnostic 2
+
+on:
+  push:
+    branches: [protect-stage46]
+    paths:
+      - '.github/workflows/stage46-diagnostic2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: protect-stage46
+          fetch-depth: 1
+      - name: Capture checker output
+        run: |
+          set +e
+          python3 scripts/check-emerald-captain-kebab-meal-regression.py > stage46-diagnostic2.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> stage46-diagnostic2.txt
+          set -e
+      - name: Save report and remove one-shot workflow
+        run: |
+          git rm .github/workflows/stage46-diagnostic2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add stage46-diagnostic2.txt
+          git commit -m '第46段階 再検査失敗内容を記録'
+          git push origin HEAD:protect-stage46

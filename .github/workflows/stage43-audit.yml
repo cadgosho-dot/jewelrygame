@@ -8,17 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: 未保護中核処理を監査
+      - name: 現行未保護中核処理をランキング
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           src=Path('js/app.js').read_text(encoding='utf-8')
           checks='\n'.join(p.read_text(encoding='utf-8',errors='ignore') for p in Path('scripts').glob('check-*.py'))
-          wanted=['resolveRobberyEvent','maybeSpawnRobbery','claimCurrentDailyLogin','maybeGrantDailyLogin','adjustLooseInventory','repairBrokenEquipment','unlockMiningLocation','adjustAquariumFish','adjustAquariumPlant','installDisplayProduct','mine']
-          def extract(name):
-              m=re.search(r'function\s+'+re.escape(name)+r'\s*\([^)]*\)\s*\{',src)
-              if not m:return None
+          def extract_at(m):
               i=src.find('{',m.start()); depth=0; quote=None; esc=False; line=False; block=False
               for j in range(i,len(src)):
                   c=src[j]; n=src[j+1] if j+1<len(src) else ''
@@ -40,11 +37,21 @@ jobs:
                   elif c=='}':
                       depth-=1
                       if depth==0:return src[m.start():j+1]
-              return None
-          for name in wanted:
-              body=extract(name)
-              print('\n'+'='*70)
-              print(name, 'FOUND' if body else 'MISSING', 'CHECK_MENTION=', name in checks)
-              if body:
-                  print(body[:12000])
+              return ''
+          funcs=[]
+          for m in re.finditer(r'function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{',src):
+              name=m.group(1); body=extract_at(m)
+              if not body or name in checks: continue
+              score=0
+              weights=[('state.',6),('saveGame(',8),('inventory',5),('money',5),('finance',5),('spendHours(',6),('spendMinutes(',6),('.push(',3),('.splice(',4),('= true',2),('= false',2),('events',4),('store.',4),('aquarium',4),('equipment',4),('rough',3),('loose',3),('jewelry',3),('Date.now(',2)]
+              for token,w in weights: score += body.count(token)*w
+              if len(body)>500: score += 2
+              if len(body)>1500: score += 2
+              if score>0: funcs.append((score,name,body))
+          funcs.sort(reverse=True)
+          print('TOP UNPROTECTED FUNCTIONS')
+          for score,name,body in funcs[:40]: print(f'{score:4d} {name:45s} len={len(body)}')
+          print('\nTOP BODIES')
+          for score,name,body in funcs[:14]:
+              print('\n'+'='*80); print(f'{name} SCORE={score} LEN={len(body)}'); print(body[:10000])
           PY

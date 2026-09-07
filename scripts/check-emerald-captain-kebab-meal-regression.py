@@ -13,7 +13,7 @@ SYNC = ROOT / '.github/workflows/phase46-sync-v010935.yml'
 
 
 def section(name: str) -> str:
-    pattern = re.compile(rf'(?m)^\s*(?:async\s+)?function\s+{re.escape(name)}\s*\(')
+    pattern = re.compile(rf'(?m)^[ \t]*(?:async[ \t]+)?function[ \t]+{re.escape(name)}[ \t]*\(')
     matches = list(pattern.finditer(APP))
     if len(matches) != 1:
         raise AssertionError(f'{name}: expected exactly one declaration')

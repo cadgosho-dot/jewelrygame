@@ -1,0 +1,33 @@
+name: Stage47 Core Audit
+
+on:
+  push:
+    branches: [protect-stage47]
+    paths:
+      - 'scripts/stage47-audit.py'
+      - '.github/workflows/stage47-audit.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: protect-stage47
+          fetch-depth: 1
+      - name: Scan unprotected mutating functions
+        run: python3 scripts/stage47-audit.py
+      - name: Commit audit report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add stage47-audit.txt
+          if git diff --cached --quiet; then
+            echo 'audit report unchanged'
+            exit 0
+          fi
+          git commit -m '第47段階 未保護中核処理監査結果'
+          git push origin HEAD:protect-stage47

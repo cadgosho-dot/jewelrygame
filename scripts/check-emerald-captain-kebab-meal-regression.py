@@ -82,7 +82,7 @@ checks = {
     'start state snapshot retained': 'stateBeforeMeal = structuredClone(state);' in start,
     'start asset preload retained': 'await preloadEmeraldCaptainMealAssets();' in start,
     'start full hunger guard retained': "if (before >= 7) throw new Error('空腹度は満タンです。');" in start,
-    'start repeated meal guard retained': 'state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === EMERAL_CAPTAIN_KEBAB_EVENT_MEAL_ID' in start,
+    'start repeated meal guard retained': 'state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID' in start,
     'start funds guard retained': "if (state.game.money < meal.price) throw new Error('所持金が足りません。');" in start,
     'start hunger snapshot retained': 'if (!eventState.hungerBefore) eventState.hungerBefore = before;' in start,
     'start payment retained': 'state.game.money -= meal.price;' in start,

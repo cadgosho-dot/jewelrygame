@@ -1,0 +1,73 @@
+name: Stage45 Audit
+
+on:
+  push:
+    branches: [protect-stage45]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Rank unprotected stateful functions
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          src = Path('js/app.js').read_text(encoding='utf-8')
+          current = Path('scripts/check-current.py').read_text(encoding='utf-8')
+          funcs = []
+          pat = re.compile(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
+          for m in pat.finditer(src):
+              name = m.group(1)
+              i = src.find('{', m.end())
+              if i < 0:
+                  continue
+              depth = 0
+              j = i
+              quote = None
+              esc = False
+              while j < len(src):
+                  c = src[j]
+                  if quote:
+                      if esc:
+                          esc = False
+                      elif c == '\\':
+                          esc = True
+                      elif c == quote:
+                          quote = None
+                  else:
+                      if c in ('\"', "'", '`'):
+                          quote = c
+                      elif c == '{':
+                          depth += 1
+                      elif c == '}':
+                          depth -= 1
+                          if depth == 0:
+                              j += 1
+                              break
+                  j += 1
+              body = src[m.start():j]
+              score = 0
+              weights = {
+                  'state.': 8, 'saveGame(': 7, 'addFinance(': 8, 'spendHours(': 7,
+                  'spendMinutes(': 7, '.push(': 3, '.splice(': 4, '.filter(': 2,
+                  'money': 5, 'inventory': 5, 'rough': 3, 'loose': 3, 'jewelry': 3,
+                  'event': 3, 'customer': 3, 'order': 3, 'aquarium': 3,
+                  'daily': 2, 'reward': 4, 'repair': 4, 'claim': 4, 'purchase': 4,
+                  'removeJewelry(': 8, 'addItem(': 5, 'adjust': 3,
+              }
+              for token, w in weights.items():
+                  score += body.count(token) * w
+              protected = name in current
+              if score >= 12 and not protected:
+                  funcs.append((score, len(body.splitlines()), name))
+          funcs.sort(reverse=True)
+          print('TOP UNPROTECTED STATEFUL FUNCTIONS')
+          for score, lines, name in funcs[:50]:
+              print(f'{score:4d} {lines:4d} {name}')
+          PY

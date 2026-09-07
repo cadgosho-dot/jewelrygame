@@ -135,8 +135,12 @@ function testInsufficientFundsAdvancesOnlyToInsufficientFunds() {
   assert.equal(h.feedback.length, 0);
   assert.equal(h.notifications.length, 0);
   assert.equal(h.saves.length, 1);
-  assert.deepEqual(h.sfx, [['alarm', { gain: 0.52, rate: 0.92 }]]);
-  assert.deepEqual(h.vibrations, [[38]]);
+  assert.equal(h.sfx.length, 1);
+  assert.equal(h.sfx[0][0], 'alarm');
+  assert.equal(h.sfx[0][1].gain, 0.52);
+  assert.equal(h.sfx[0][1].rate, 0.92);
+  assert.equal(h.vibrations.length, 1);
+  assert.equal(h.vibrations[0][0], 38);
   assert.equal(h.renders.length, 1);
 }
 
@@ -157,12 +161,18 @@ function testExactFundsPurchaseDeductsAndGrantsOnce() {
   ]]);
   assert.equal(h.saves.length, 1);
   assert.deepEqual(h.toasts, [['ベニトアイトを手に入れた', 'success', false]]);
-  assert.deepEqual(h.sfx, [
-    ['coin', { gain: 0.92, rate: 1.02 }],
-    ['loose-sparkle', { gain: 1.08 }],
-  ]);
+  assert.equal(h.sfx.length, 2);
+  assert.equal(h.sfx[0][0], 'coin');
+  assert.equal(h.sfx[0][1].gain, 0.92);
+  assert.equal(h.sfx[0][1].rate, 1.02);
+  assert.equal(h.sfx[1][0], 'loose-sparkle');
+  assert.equal(h.sfx[1][1].gain, 1.08);
   assert.deepEqual(h.timeouts, [120]);
-  assert.deepEqual(h.vibrations, [[[24, 24, 52]]]);
+  assert.equal(h.vibrations.length, 1);
+  assert.equal(h.vibrations[0].length, 1);
+  assert.equal(h.vibrations[0][0][0], 24);
+  assert.equal(h.vibrations[0][0][1], 24);
+  assert.equal(h.vibrations[0][0][2], 52);
   assert.equal(h.renders.length, 1);
 }
 

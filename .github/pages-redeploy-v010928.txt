@@ -1,0 +1,3 @@
+JEWELRY×JEWELRY v0.10.928
+GitHub Pages redeploy trigger after duplicate-artifact retry failure.
+No game, asset, save, cloud, or public-site content changes.

@@ -12,32 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Rank truly unprotected action functions
+      - name: Inspect stage45 candidate bodies
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
-
           src = Path('js/app.js').read_text(encoding='utf-8')
-          protected = {
-            'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal',
-            'polishRough','finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct',
-            'confirmJewelryShopTrade','buyWorkshopTool','repairWorkshopTool','rentNextStore',
-            'processMonthlyFixedCosts','outstandingPaymentTargets','totalOutstandingBusinessCost',
-            'outstandingPaymentTarget','applyOutstandingPayment','payOutstandingBusinessCostItem',
-            'payOutstandingBusinessCosts','tropicalShopMaxQuantity','purchaseTropicalShopItem',
-            'storeExpansionConditions','expansionEligible','expandStore','workshopLevel',
-            'workshopLevelRequirement','cumulativeWorkshopRequiredTools','workshopUpgradeStatus',
-            'expandWorkshop','storeLevel','storeRating','storeLevelRequirement','storeUpgradeStatus',
-            'syncStoreLevel','upgradeStoreLevel','spendMinutes','spendHours','removeJewelry',
-            'beginSleepTransition','startCustomerVisit','clearCustomerVisitsForIllness',
-            'scheduleCustomerVisit','saveGame','runEventEmergencySettlement','addFinance','loadGame',
-            'addArtisanXp','buyTerryCaliforniaBenitoite','applyMysteryChineseMeal','completeKaitenzushi',
-            'autopilotDeliverCompletedOrders','autopilotCraftJewelry'
-          }
-          action = re.compile(r'^(?:add|apply|begin|buy|cancel|claim|complete|confirm|consume|create|deliver|finish|grant|handle|maybe|mine|pay|process|purchase|receive|remove|repair|resolve|restore|schedule|sell|settle|spend|start|sync|take|trigger|update|use|withdraw)', re.I)
+          names = [
+            'maybeTriggerRobberyEvent',
+            'startEmeraldCaptainKebabMeal',
+            'finishEmeraldCaptainKebabMeal',
+            'receiveYowamushiRoseQuartzReward',
+          ]
           pat = re.compile(r'(?m)^\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(')
-
           def body_for(m):
               i = src.find('{', m.end())
               if i < 0: return ''
@@ -57,39 +44,12 @@ jobs:
                               j += 1; break
                   j += 1
               return src[m.start():j]
-
-          rows = []
-          for m in pat.finditer(src):
-              name = m.group(1)
-              if name in protected or not action.search(name):
+          matches = {m.group(1): m for m in pat.finditer(src)}
+          for name in names:
+              m = matches.get(name)
+              print(f'\n===== {name} =====')
+              if not m:
+                  print('NOT FOUND')
                   continue
-              body = body_for(m)
-              if not body: continue
-              score = 0
-              for token, w in {
-                'state.':8, 'saveGame(':7, 'addFinance(':8, 'spendHours(':7, 'spendMinutes(':7,
-                '.push(':3, '.splice(':4, 'money':5, 'inventory':5, 'rough':3, 'loose':3,
-                'jewelry':3, 'event':3, 'customer':3, 'order':3, 'aquarium':3, 'daily':2,
-                'reward':4, 'repair':4, 'claim':4, 'purchase':4, 'removeJewelry(':8, 'addItem(':5,
-                'adjust':3, 'owned':3, 'count':2, 'history':3, 'status':2
-              }.items():
-                  score += body.count(token) * w
-              if score >= 10:
-                  mut = []
-                  for token in ('addFinance(', 'saveGame(', 'spendHours(', 'spendMinutes(', 'removeJewelry(', 'addItem(', '.push(', '.splice('):
-                      if token in body: mut.append(token)
-                  rows.append((score, len(body.splitlines()), name, ','.join(mut)))
-          rows.sort(reverse=True)
-          print('ACTION-LIKE UNPROTECTED CANDIDATES')
-          for score, lines, name, mut in rows[:80]:
-              print(f'{score:4d} {lines:4d} {name:48s} {mut}')
-          print('\nHIGH-INTEREST BODIES')
-          for score, lines, name, mut in rows[:12]:
-              if name.lower().startswith(('render','handle')):
-                  continue
-              m = next((x for x in pat.finditer(src) if x.group(1)==name), None)
-              if not m: continue
-              body = body_for(m)
-              print(f'\n===== {name} score={score} lines={lines} =====')
-              print(body[:12000])
+              print(body_for(m))
           PY

@@ -1,0 +1,78 @@
+name: Stage 39 audit
+on:
+  push:
+    branches: [protect-stage39]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Extract unprotected stateful function candidates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          src = Path('app.js').read_text(encoding='utf-8')
+          protected = {
+            'settleDay','customerBuy','deliverOrder','confirmOrder','craft','buyMetal','sellMetal','polishRough','finishMiningRock','purchase','sellLoose','sellRough','buyDisplayProduct','confirmJewelryShopTrade','buyWorkshopTool','repairWorkshopTool','rentNextStore','processMonthlyFixedCosts','outstandingPaymentTargets','totalOutstandingBusinessCost','outstandingPaymentTarget','applyOutstandingPayment','payOutstandingBusinessCostItem','payOutstandingBusinessCosts','tropicalShopMaxQuantity','purchaseTropicalShopItem','storeExpansionConditions','expansionEligible','expandStore','workshopLevel','workshopLevelRequirement','cumulativeWorkshopRequiredTools','workshopUpgradeStatus','expandWorkshop','storeLevel','storeRating','storeLevelRequirement','storeUpgradeStatus','syncStoreLevel','upgradeStoreLevel','normalizeSellingPrice','storeMaximumShowcases','branchShowcases','installedShowcaseCount','storeMaximumDisplaySupplies','storeDisplaySuppliesInstalled','mirrorCurrentStoreDisplay','findEmptyShowcasePosition','showcaseLocationForJewelry','displayCaseInstallMaximum','setDisplayCaseInstallQuantity','displayCaseInstallQuantity','showcaseSellingPrice','adjustShowcaseSellingPrice','placeItem','placeItemInShowcaseSlot','removeShowcase','moveShowcaseItem','installDisplayProduct','confirmCancelOrder','cancelOrder','remakeOrderFromCompletion','workshopStaffCraftCandidates','workshopStaffQualityRoll','workshopStaffCraftOne','usePhoneItem','togglePhoneEquipment','automaticPaymentCapacity','payFixedCost','processHomeRent','eatMeal','startKaitenzushi','finishKaitenzushi','aquariumProcessFishMortality','aquariumProcessPlantWither','removeGiftInventory','addGiftInventory','restoreGiftInventory','createGift','claimGift','cancelGift','spendMinutes','spendHours','removeJewelry','beginSleepTransition','startCustomerVisit','clearCustomerVisitsForIllness','scheduleCustomerVisit','saveGame'
+          }
+
+          def extract_body(start):
+            i = src.find('{', start)
+            if i < 0: return None, None
+            depth = 0
+            quote = None
+            esc = False
+            line_comment = False
+            block_comment = False
+            j = i
+            while j < len(src):
+              c = src[j]
+              n = src[j+1] if j+1 < len(src) else ''
+              if line_comment:
+                if c == '\n': line_comment = False
+                j += 1; continue
+              if block_comment:
+                if c == '*' and n == '/': block_comment = False; j += 2; continue
+                j += 1; continue
+              if quote:
+                if esc: esc = False
+                elif c == '\\': esc = True
+                elif c == quote: quote = None
+                j += 1; continue
+              if c == '/' and n == '/': line_comment = True; j += 2; continue
+              if c == '/' and n == '*': block_comment = True; j += 2; continue
+              if c in "'\"`": quote = c; j += 1; continue
+              if c == '{': depth += 1
+              elif c == '}':
+                depth -= 1
+                if depth == 0: return src[i+1:j], j+1
+              j += 1
+            return None, None
+
+          pat = re.compile(r'\b(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{')
+          rows = []
+          weights = {
+            'state.':8, 'state?.':8, 'saveGame(':10, 'money':5, 'inventory':6,
+            '.push(':3, '.splice(':5, 'delete ':6, 'localStorage':8, 'indexedDB':8,
+            'firebase':8, 'cloud':7, 'advanceTime(':8, 'spendMinutes(':8, 'spendHours(':8,
+            'recordFinance':8, 'addNotification':5, 'status =':4, 'hunger':4,
+            'daily.':3, 'orders':4, 'jewelry':4, 'rough':3, 'loose':3, 'metal':3,
+            'aquarium':4, 'customer':3, 'store':2, 'workshop':2, 'gift':4,
+          }
+          for m in pat.finditer(src):
+            name = m.group(1)
+            body, end = extract_body(m.start())
+            if body is None or name in protected: continue
+            score = sum(body.count(k) * w for k,w in weights.items())
+            if score < 8: continue
+            snippet = re.sub(r'\s+', ' ', body[:500]).strip()
+            rows.append((score, len(body), name, snippet))
+          rows.sort(reverse=True)
+          print(f'FUNCTION_DECLARATIONS={len(list(pat.finditer(src)))}')
+          print(f'CANDIDATES={len(rows)}')
+          for score, length, name, snippet in rows[:140]:
+            print(f'CANDIDATE score={score:4d} len={length:6d} name={name} :: {snippet}')
+          PY

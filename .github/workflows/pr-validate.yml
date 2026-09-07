@@ -1,0 +1,40 @@
+name: PR総合検査
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-pr:
+    name: validate-pr
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 検証対象を取得
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: 画像・実ブラウザ検査環境を準備
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: PR総合検査
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          echo "Python: $(python3 --version)"
+          echo "Node: $(node --version)"
+          timeout 8m python3 -u scripts/check-current.py
+
+      - name: 検査通過を記録
+        run: |
+          echo "PR VALIDATION: PASS — mainへの統合候補です。"

@@ -12,8 +12,9 @@ function extractFunction(name) {
   const re = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, 'm');
   const match = re.exec(APP);
   assert.ok(match, `${name}: production definition not found`);
-  const brace = APP.indexOf('{', match.index);
-  assert.ok(brace >= 0, `${name}: opening brace not found`);
+  const lineEnd = APP.indexOf('\n', match.index);
+  const brace = APP.lastIndexOf('{', lineEnd);
+  assert.ok(brace >= match.index, `${name}: opening brace not found`);
   let depth = 0;
   let quote = null;
   let escaped = false;

@@ -18,7 +18,10 @@ def section(name: str) -> str:
     if len(matches) != 1:
         raise AssertionError(f'{name}: expected exactly one declaration')
     start = matches[0].start()
-    brace = APP.find('{', matches[0].end())
+    line_end = APP.find('\n', start)
+    if line_end < 0:
+        line_end = len(APP)
+    brace = APP.rfind('{', matches[0].end(), line_end)
     if brace < 0:
         raise AssertionError(f'{name}: opening brace not found')
     depth = 0

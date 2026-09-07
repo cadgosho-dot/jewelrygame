@@ -28,6 +28,7 @@ jobs:
         env:
           JXJ_REQUIRE_BROWSER_SMOKE: '1'
         run: |
+          test ! -e .github/workflows/phase42-audit.yml
           python3 scripts/version-sync.py --check
           python3 scripts/check-artisan-progression-regression.py
           python3 scripts/check-current.py

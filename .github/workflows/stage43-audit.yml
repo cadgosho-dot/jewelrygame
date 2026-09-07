@@ -1,0 +1,50 @@
+name: stage43-audit
+on:
+  push:
+    branches: [protect-stage43]
+    paths: ['.github/workflows/stage43-audit.yml']
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: 未保護中核処理を監査
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          src=Path('js/app.js').read_text(encoding='utf-8')
+          checks='\n'.join(p.read_text(encoding='utf-8',errors='ignore') for p in Path('scripts').glob('check-*.py'))
+          wanted=['resolveRobberyEvent','maybeSpawnRobbery','claimCurrentDailyLogin','maybeGrantDailyLogin','adjustLooseInventory','repairBrokenEquipment','unlockMiningLocation','adjustAquariumFish','adjustAquariumPlant','installDisplayProduct','mine']
+          def extract(name):
+              m=re.search(r'function\s+'+re.escape(name)+r'\s*\([^)]*\)\s*\{',src)
+              if not m:return None
+              i=src.find('{',m.start()); depth=0; quote=None; esc=False; line=False; block=False
+              for j in range(i,len(src)):
+                  c=src[j]; n=src[j+1] if j+1<len(src) else ''
+                  if line:
+                      if c=='\n': line=False
+                      continue
+                  if block:
+                      if c=='*' and n=='/': block=False
+                      continue
+                  if quote:
+                      if esc: esc=False
+                      elif c=='\\': esc=True
+                      elif c==quote: quote=None
+                      continue
+                  if c=='/' and n=='/': line=True; continue
+                  if c=='/' and n=='*': block=True; continue
+                  if c in "'\"`": quote=c; continue
+                  if c=='{': depth+=1
+                  elif c=='}':
+                      depth-=1
+                      if depth==0:return src[m.start():j+1]
+              return None
+          for name in wanted:
+              body=extract(name)
+              print('\n'+'='*70)
+              print(name, 'FOUND' if body else 'MISSING', 'CHECK_MENTION=', name in checks)
+              if body:
+                  print(body[:12000])
+          PY

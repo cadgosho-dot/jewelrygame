@@ -4,6 +4,6 @@ export const securityConfig = Object.freeze({
   appCheck: Object.freeze({
     enabled: true,
     provider: 'recaptcha-enterprise',
-    siteKey: '6LcqkK8tAAAAABSMwRe-ZziKkx-jpOmu82I3O7S4',
+    siteKey: '6Le20a8tAAAAAMEb_b8exhYF7h4_A7u20CYMIV0z',
   }),
 });

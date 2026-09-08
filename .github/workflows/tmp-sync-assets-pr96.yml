@@ -1,0 +1,38 @@
+name: PR96 assets manifest sync
+
+on:
+  push:
+    branches:
+      - feature/space-gunkan-march-bgm
+
+permissions:
+  contents: write
+
+jobs:
+  sync-assets:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Install manifest dependency
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: Regenerate ASSETS.md
+        run: python3 scripts/generate-assets-manifest.py --write
+
+      - name: Commit generated manifest only
+        run: |
+          if git diff --quiet -- ASSETS.md; then
+            echo "ASSETS.md already synchronized"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ASSETS.md
+          git commit -m "宇宙BGM差し替えに合わせてASSETS管理表を同期"
+          git push origin HEAD:${GITHUB_REF_NAME}

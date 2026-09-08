@@ -19206,7 +19206,7 @@ function renderCustomer() {
   const customerOpening = `${playerGreeting}${storeGreeting}${customerProfile.opening}`;
   const showingProducts = customerState.wishesHeard && screenData.view === 'products';
   const requestDetails = customerState.wishesHeard ? `
-    <article class="request-card customer-wish-card">
+    <article class="request-card customer-wish-card" aria-label="お客様の希望：${esc(customerPreferenceLabel(request))}">
       <small>お客様の希望</small>
       <dl class="customer-wish-list">
         <div><dt>商品種類</dt><dd>${esc(ITEMS[request.item]?.name || '指定なし')}</dd></div>
@@ -19234,8 +19234,8 @@ function renderCustomer() {
         <div class="customer-service-choices">
           ${customerState.wishesHeard ? `
             <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>
-            <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>
             <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>
+            <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>
           ` : `<button class="primary-button" data-action="hear-customer-wishes" data-customer="${customerId}">希望を聞く</button>`}
         </div>
         ${customerState.wishesHeard ? `<p class="small-note">オーダー制作：受注 ${yen(orderFigures.price)} ／ 利益 ${yen(orderFigures.estimatedProfit)} ／ 納期${orderOffer.difficulty.days}日</p>` : ''}

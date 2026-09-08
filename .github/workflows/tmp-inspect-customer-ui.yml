@@ -1,4 +1,4 @@
-name: Temporary customer UI inspection
+name: Temporary customer UI simplification
 
 on:
   push:
@@ -6,39 +6,121 @@ on:
       - feature/simplify-customer-service-ui
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  simplify:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect customer UI source
+      - name: Simplify customer service UI only
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          text = Path('js/app.js').read_text(encoding='utf-8')
-          lines = text.splitlines()
-          needles = [
-              'function renderCustomer()',
-              'function renderCustomerProfile',
-              '注文内容を確認',
-              'オーダー制作で受け付ける',
-              '希望を聞く',
-              '接客傾向',
-              '受注金額',
-          ]
-          for needle in needles:
-              print('\n' + '=' * 90)
-              print('NEEDLE:', needle)
-              hits = [i for i, line in enumerate(lines) if needle in line]
-              print('HITS:', [i + 1 for i in hits])
-              for i in hits[:5]:
-                  start = max(0, i - 45)
-                  end = min(len(lines), i + 120)
-                  for n in range(start, end):
-                      print(f'{n+1:06d}: {lines[n]}')
-                  print('-' * 90)
+          import re
+
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          def replace_once(old, new, label):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, got {count}')
+              text = text.replace(old, new, 1)
+
+          confirm_start = text.index('function confirmOrder(customerId) {')
+          confirm_end = text.index('\nfunction declineOrderOffer(customerId) {', confirm_start)
+          confirm_before = text[confirm_start:confirm_end]
+
+          replace_once(
+              '    <p class="customer-profile-traits"><b>接客傾向</b><span>${esc(profile.traits)}</span></p>\n',
+              '',
+              'remove duplicated customer tendency from profile',
+          )
+
+          replace_once(
+              '''  const salesStaff = activeStoreStaff(customerState.visitingBranchNumber);\n  const canAcceptThisOrder = customerState.wishesHeard && activeOrders < activeOrderLimit && canSpendStoreMinutes(30);\n''',
+              '''  const salesStaff = activeStoreStaff(customerState.visitingBranchNumber);\n  const orderOffer = orderFeasibility(request);\n  const orderFigures = orderEstimatedFigures(request);\n  const canAcceptThisOrder = customerState.wishesHeard && activeOrders < activeOrderLimit && canSpendStoreMinutes(30) && orderOffer.possible;\n''',
+              'add concise order offer state',
+          )
+
+          replace_once(
+              '''  const requestDetails = customerState.wishesHeard ? `\n    <article class="request-card customer-wish-card">\n      <small>お客様の希望</small>\n      <dl class="customer-wish-list">\n        <div><dt>商品種類</dt><dd>${esc(ITEMS[request.item]?.name || '指定なし')}</dd></div>\n        <div><dt>予算</dt><dd>${yen(request.budget)}</dd></div>\n        <div><dt>優先する希望</dt><dd>${esc(customerPreferenceLabel(request))}</dd></div>\n      </dl>\n    </article>` : '<p class="small-note">まず希望を聞くと、商品種類・予算・最優先の希望が分かります。</p>';\n''',
+              '''  const requestDetails = customerState.wishesHeard ? `\n    <article class="request-card customer-wish-card">\n      <small>お客様の希望</small>\n      <dl class="customer-wish-list">\n        <div><dt>商品種類</dt><dd>${esc(ITEMS[request.item]?.name || '指定なし')}</dd></div>\n        <div><dt>石</dt><dd>${esc(looseDisplayLabel(request.gem, normalizeLooseShape(request.gem, request.looseShape)))}</dd></div>\n        <div><dt>地金</dt><dd>${esc(METALS[request.metal]?.name || '指定なし')}</dd></div>\n        <div><dt>デザイン</dt><dd>${esc(DESIGNS[request.design]?.name || '指定なし')}</dd></div>\n        <div><dt>予算</dt><dd>${yen(request.budget)}</dd></div>\n      </dl>\n    </article>` : '';\n''',
+              'simplify customer wish summary',
+          )
+
+          replace_once(
+              '        ${customerProfileCardMarkup(customerProfile)}\n',
+              '',
+              'remove profile duplication from customer dialog',
+          )
+
+          replace_once(
+              '''        <div class="customer-service-choices">\n          <button class="primary-button" data-action="hear-customer-wishes" data-customer="${customerId}" ${customerState.wishesHeard ? 'disabled' : ''}>${customerState.wishesHeard ? '希望を確認済み' : '希望を聞く'}</button>\n          <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>\n          <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>\n          <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>\n        </div>\n''',
+              '''        <div class="customer-service-choices">\n          ${customerState.wishesHeard ? `\n            <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>\n            <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>\n            <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>\n          ` : `<button class="primary-button" data-action="hear-customer-wishes" data-customer="${customerId}">希望を聞く</button>`}\n        </div>\n        ${customerState.wishesHeard ? `<p class="small-note">オーダー制作：受注 ${yen(orderFigures.price)} ／ 利益 ${yen(orderFigures.estimatedProfit)} ／ 納期${orderOffer.difficulty.days}日</p>` : ''}\n        ${customerState.wishesHeard && !orderOffer.possible ? `<p class="error-text">${esc(orderOffer.reasons.join('・') || '現在はオーダー制作を受け付けられません。')}</p>` : ''}\n''',
+              'simplify customer action choices',
+          )
+
+          accept_start = text.index('function acceptOrder(customerId) {')
+          accept_end = text.index('\nfunction confirmOrder(customerId) {', accept_start)
+          accept = text[accept_start:accept_end]
+          pattern = re.compile(
+              r"  const feasibility = orderFeasibility\(request\);\n"
+              r"  const difficulty = feasibility\.difficulty;\n"
+              r"  const figures = orderEstimatedFigures\(request\);\n"
+              r"  const toolsLabel = .*?\n"
+              r"  showModal\(\{.*?\n  \}\);\n",
+              re.DOTALL,
+          )
+          replacement = (
+              "  const feasibility = orderFeasibility(request);\n"
+              "  if (!feasibility.possible) return showToast(feasibility.reasons.join('・') || '現在はこの注文を製作できません。', 'error');\n"
+              "  return confirmOrder(customerId);\n"
+          )
+          accept_new, count = pattern.subn(replacement, accept, count=1)
+          if count != 1:
+              raise SystemExit(f'remove final order confirmation: expected 1 match, got {count}')
+          text = text[:accept_start] + accept_new + text[accept_end:]
+
+          confirm_start = text.index('function confirmOrder(customerId) {')
+          confirm_end = text.index('\nfunction declineOrderOffer(customerId) {', confirm_start)
+          if text[confirm_start:confirm_end] != confirm_before:
+              raise SystemExit('confirmOrder changed unexpectedly')
+
+          render_start = text.index('function renderCustomer() {')
+          render_end = text.index('\nfunction orderCustomerProfile(', render_start)
+          render = text[render_start:render_end]
+          for label in ['商品種類', '<dt>石</dt>', '<dt>地金</dt>', '<dt>デザイン</dt>', '<dt>予算</dt>']:
+              if label not in render:
+                  raise SystemExit(f'missing concise request field: {label}')
+          if 'customerProfileCardMarkup(customerProfile)' in render:
+              raise SystemExit('profile duplication still exists in renderCustomer')
+          if 'まず希望を聞くと' in render:
+              raise SystemExit('old explanatory duplication still exists')
+
+          accept_start = text.index('function acceptOrder(customerId) {')
+          accept_end = text.index('\nfunction confirmOrder(customerId) {', accept_start)
+          accept = text[accept_start:accept_end]
+          if '注文内容を確認' in accept or 'showModal({' in accept:
+              raise SystemExit('final confirmation modal still exists in acceptOrder')
+          if 'return confirmOrder(customerId);' not in accept:
+              raise SystemExit('acceptOrder does not proceed directly to existing order acceptance')
+
+          if text == original:
+              raise SystemExit('no changes made')
+          path.write_text(text, encoding='utf-8')
           PY
+          node --check js/app.js
+          git diff --check -- js/app.js
+      - name: Commit customer UI change only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/app.js
+          git commit -m "接客画面を簡潔化して受注確認を省略"
+          git push origin HEAD:${GITHUB_REF_NAME}

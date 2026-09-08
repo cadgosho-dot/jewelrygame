@@ -1,0 +1,71 @@
+name: 3Dメガネ携帯確認修正
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  fix-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply only requested confirmation fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('preview/3d-glasses-event-layout.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_css = """  .question-panel .answers{margin-top:8px!important}\n  .dialogue-character img{max-width:92vw!important;max-height:56dvh!important}\n  .reward{width:min(78vw,500px);height:min(56dvh,420px)}"""
+          new_css = """  .question-panel .answers{margin-top:8px!important}\n  .dialogue-layout{display:block!important}\n  .dialogue-character{position:absolute!important;left:50%!important;right:auto!important;top:max(42px,var(--safe-top))!important;bottom:132px!important;width:min(92vw,460px)!important;min-height:0!important;transform:translateX(-50%)!important;display:flex!important;align-items:flex-end!important;justify-content:center!important;overflow:hidden!important;padding-bottom:0!important}\n  .dialogue-character img{max-width:92vw!important;max-height:56dvh!important}\n  .dialogue-panel{position:absolute!important;left:7px!important;right:7px!important;bottom:max(14px,calc(var(--safe-bottom) + 9px))!important;width:auto!important;max-height:34dvh!important;margin:0!important;overflow-y:auto!important}\n  .reward{width:min(78vw,500px);height:min(56dvh,420px)}"""
+          if old_css not in s:
+              raise SystemExit('portrait dialogue CSS target not found')
+          s = s.replace(old_css, new_css, 1)
+
+          old_answer = """function answer(i){if(mode!=='question')return;mode='answered';const ok=i===question.answerIndex;[...$('answers').children].forEach((b,n)=>{b.disabled=true;if(n===question.answerIndex)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});const info=$('answer-info');info.hidden=false;info.innerHTML='';const answerText=question.answer||question.choices[question.answerIndex]||'';const line=document.createElement('span');line.className='correct-line';line.textContent=`正解は${answerText}でした`;info.appendChild(line);if(question.explanation){const ex=document.createElement('span');ex.className='explanation';ex.textContent=question.explanation;info.appendChild(ex)};setTimeout(()=>{if(ok)say(correctText,'correct-dialogue');else say(wrongText,'wrong-dialogue')},650)}"""
+          new_answer = """async function answer(i){if(mode!=='question')return;mode='answered';const ok=i===question.answerIndex;[...$('answers').children].forEach((b,n)=>{b.disabled=true;if(n===question.answerIndex)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});if(ok){await loadReward();show('reward');mode='reward';return}const answerText=question.answer||question.choices[question.answerIndex]||'';say(`正解は${answerText}でした`,'wrong-answer')}"""
+          if old_answer not in s:
+              raise SystemExit('answer flow target not found')
+          s = s.replace(old_answer, new_answer, 1)
+
+          s = s.replace(" if(mode==='correct-dialogue'){await loadReward();show('reward');mode='reward';return}\n", '', 1)
+          s = s.replace(" if(mode==='wrong-dialogue'){const answerText=question.answer||question.choices[question.answerIndex]||'';say(`正解は${answerText}でした`,'wrong-answer');return}\n", '', 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Verify requested behavior only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('preview/3d-glasses-event-layout.html').read_text(encoding='utf-8')
+          checks = {
+            'portrait character fixed': 'position:absolute!important;left:50%!important;right:auto!important;top:max(42px,var(--safe-top))!important;bottom:132px!important' in s,
+            'correct goes straight to reward': "if(ok){await loadReward();show('reward');mode='reward';return}" in s,
+            'wrong shows correct answer': "say(`正解は${answerText}でした`,'wrong-answer')" in s,
+            'old correct dialogue path removed': "mode==='correct-dialogue'" not in s,
+            'old wrong dialogue path removed': "mode==='wrong-dialogue'" not in s,
+          }
+          for k,v in checks.items(): print(('OK ' if v else 'NG ')+k)
+          if not all(checks.values()): raise SystemExit('verification failed')
+          PY
+
+      - name: Remove one-time workflow and commit
+        run: |
+          rm -f .github/workflows/preview-3d-glasses-confirm-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview/3d-glasses-event-layout.html .github/workflows/preview-3d-glasses-confirm-fix.yml
+          git commit -m "3Dメガネ携帯確認の人物位置固定と正誤進行修正"
+          git pull --rebase origin main
+          git push origin HEAD:main

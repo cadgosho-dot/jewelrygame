@@ -46,7 +46,10 @@ button{font:inherit;color:#fff;cursor:pointer}
   .character-cell img{max-width:96vw!important;max-height:100%!important;object-position:center bottom!important}
   .question-panel{grid-column:1;grid-row:2;align-self:end!important;height:auto!important;max-height:46dvh!important;padding:8px;gap:5px;overflow-y:auto}
   .question-panel .answers{margin-top:8px!important}
+  .dialogue-layout{display:block!important}
+  .dialogue-character{position:absolute!important;left:50%!important;right:auto!important;top:max(42px,var(--safe-top))!important;bottom:132px!important;width:min(92vw,460px)!important;min-height:0!important;transform:translateX(-50%)!important;display:flex!important;align-items:flex-end!important;justify-content:center!important;overflow:hidden!important;padding-bottom:0!important}
   .dialogue-character img{max-width:92vw!important;max-height:56dvh!important}
+  .dialogue-panel{position:absolute!important;left:7px!important;right:7px!important;bottom:max(14px,calc(var(--safe-bottom) + 9px))!important;width:auto!important;max-height:34dvh!important;margin:0!important;overflow-y:auto!important}
   .reward{width:min(78vw,500px);height:min(56dvh,420px)}
   .reward .gem-box img{max-width:56vw;max-height:36dvh}
 }
@@ -95,14 +98,12 @@ function say(text,nextMode){$('dialogue-text').textContent=text;mode=nextMode;sh
 async function loadQuestion(){try{const r=await fetch('../data/jewelry_quiz_50_verified_2026-08-10.json',{cache:'no-store'});const j=await r.json();const qs=Array.isArray(j?.questions)?j.questions:[];if(qs.length)question=qs[Math.floor(Math.random()*qs.length)]}catch{}questionLoaded=true}
 async function loadReward(){try{const mod=await import('../js/game-data.js');const list=Object.values(mod.GEMS||{}).filter(g=>g&&g.originalLoose&&specialIds.includes(g.id));if(list.length)reward=list[Math.floor(Math.random()*list.length)]}catch{}if(!reward)reward={id:'morning-pearl',name:'光の真珠',originalLooseBaseShape:'pearl'};const shape=shapeById[reward.id]||reward.originalLooseBaseShape||'oval';$('reward-img').src=`../assets/images/loose/${reward.id}/${shape}.png`;$('reward-img').alt=reward.name||'';$('reward-title').textContent=`${reward.name||''}をもらいました`}
 function renderQuestion(){show('question');$('question-text').textContent=question.question;$('answer-info').hidden=true;$('answer-info').innerHTML='';const box=$('answers');box.innerHTML='';question.choices.forEach((choice,i)=>{const b=document.createElement('button');b.type='button';b.className='answer';b.innerHTML=`<span>${String.fromCharCode(65+i)}</span><strong></strong>`;b.querySelector('strong').textContent=choice;b.addEventListener('click',()=>answer(i));box.appendChild(b)});mode='question'}
-function answer(i){if(mode!=='question')return;mode='answered';const ok=i===question.answerIndex;[...$('answers').children].forEach((b,n)=>{b.disabled=true;if(n===question.answerIndex)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});const info=$('answer-info');info.hidden=false;info.innerHTML='';const answerText=question.answer||question.choices[question.answerIndex]||'';const line=document.createElement('span');line.className='correct-line';line.textContent=`正解は${answerText}でした`;info.appendChild(line);if(question.explanation){const ex=document.createElement('span');ex.className='explanation';ex.textContent=question.explanation;info.appendChild(ex)};setTimeout(()=>{if(ok)say(correctText,'correct-dialogue');else say(wrongText,'wrong-dialogue')},650)}
+async function answer(i){if(mode!=='question')return;mode='answered';const ok=i===question.answerIndex;[...$('answers').children].forEach((b,n)=>{b.disabled=true;if(n===question.answerIndex)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});if(ok){await loadReward();show('reward');mode='reward';return}const answerText=question.answer||question.choices[question.answerIndex]||'';say(`正解は${answerText}でした`,'wrong-answer')}
 $('dialogue-next').addEventListener('click',async()=>{
  if(mode==='intro'){
    if(introIndex<intro.length-1){introIndex++;$('dialogue-text').textContent=intro[introIndex];return}
    if(!questionLoaded)await loadQuestion();renderQuestion();return
  }
- if(mode==='correct-dialogue'){await loadReward();show('reward');mode='reward';return}
- if(mode==='wrong-dialogue'){const answerText=question.answer||question.choices[question.answerIndex]||'';say(`正解は${answerText}でした`,'wrong-answer');return}
  if(mode==='wrong-answer'){show('finished');mode='finished';return}
  if(mode==='farewell'){show('finished');mode='finished'}
 });

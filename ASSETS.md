@@ -129,7 +129,7 @@
 | assets/audio/sfx-western-union-arrival.ogg | 音源 | 21,102 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | f2411126cc315c7dae49903f80ac20e1264c4363469dec2f40982d011c4c38ec |
 | assets/audio/sfx-western-union-handover.ogg | 音源 | 12,109 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | f015aed3a26a3467feff5917c37c00a677c774d739f0093aafc8d09359f79e03 |
 | assets/audio/space-ambient.mp3 | 音源 | 1,441,375 B | - | - | `js/audio-scene-map.js:32 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ed23139672691156d19c1417a7d5660c8e91f9102249bb130c9c8a2c40723aaa |
-| assets/audio/space-main-bgm.mp3 | 音源 | 1,441,375 B | - | - | `js/audio-scene-map.js:31 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bdd27f7dd0421651829b0f62776f4b7ba3e154c1e470a09db86bf6530e14d147 |
+| assets/audio/space-main-bgm.mp3 | 音源 | 4,148,169 B | - | - | `js/audio-scene-map.js:31 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0249e6f845edb76a91b5d392e0e342085f6bfddf66b86da0771633252b7eae0c |
 | assets/data/metal-prices.json | データ | 144 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6dec5bbd8b752be0404055200976171fad3e66b7a89ce00010d47622e0fa45b2 |
 | assets/data/storyteller-okachimachi-quiz.json | データ | 25,964 B | - | - | `js/app.js:434` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cd726e43302f881ca11f058d2979ccaca606a143da6373f5091a9148b35a4955 |
 | assets/icons/apple-touch-icon.png | 画像 | 180×180 | 正方形 | なし | `index.html:73`<br>`game.html:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8921b6e30b95f24d0df8b10e4c1bedc8004bf6ca9ba27d9368d0e40506f35777 |

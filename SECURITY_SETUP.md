@@ -2,7 +2,7 @@
 
 コードだけで実装できる安全対策は反映済みです。下記の管理画面設定はGitHub・Firebase管理権限が必要なため、初回のみ手動で行ってください。
 
-**現在のApp Check状態:** コード側の初期化・不完全設定拒否は実装済みですが、reCAPTCHA Enterpriseのsite keyが未登録のため `enabled: false` です。site key取得前に有効化しないでください。
+**現在のApp Check状態（2026-09-08）:** `jewelrygame` プロジェクトで `jewelrygame-web` のスコアベースreCAPTCHA Enterpriseキーを作成し、Firebaseの `jewelrygame web` アプリへ登録済みです。許可ドメインは `cadgosho-dot.github.io`、トークンの有効期間（TTL）は7日（168時間）。公開site keyを `js/security-config.js` に設定し、コード側を `enabled: true` にしました。Firestore・Authenticationの **Enforceは未適用** のまま、公開後の正規リクエストを確認します。請求先・クレジットカードは追加していません。
 
 ## 1. GitHubアカウント
 
@@ -15,7 +15,7 @@
 
 ## 2. Firebase App Check（課金先を登録しない無料運用）
 
-1. Google CloudでreCAPTCHA Enterpriseのサイトキーを作成する。ドメインは `cadgosho-dot.github.io`。
+1. Google CloudでreCAPTCHA Enterpriseのサイトキーを作成する。ドメインは `cadgosho-dot.github.io`。Cloud Consoleが開けない場合は、[公式手順](https://docs.cloud.google.com/recaptcha/docs/create-key-website)の [reCAPTCHA専用管理画面](https://www.google.com/recaptcha/admin/create) から、既存の `jewelrygame` プロジェクトを選び、スコアベース（v3）で作成できる。
 2. **Essentialsを使用し、Google Cloudの請求先・クレジットカードをこのプロジェクトへ登録しない。** Essentialsは組織全体で月10,000 assessmentsまで無料。
 3. Firebase Console → App Check → WebアプリをreCAPTCHA Enterpriseで登録する。
 4. App CheckトークンのTTLは、無料枠を長く保つため最初は**7日**にする。短いTTLほど安全性は少し上がる一方、assessment回数が増える。

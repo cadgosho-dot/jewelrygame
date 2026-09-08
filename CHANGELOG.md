@@ -1,12 +1,17 @@
 # CHANGELOG — JEWELRY×JEWELRY
 
-> 現行基準: **v0.10.935** / 棚卸し日: 2026-08-31
+> 現行基準: **v0.10.936** / 棚卸し日: 2026-08-31
 > 正本バージョンはリポジトリ直下の `VERSION`。今後は `scripts/version-sync.py` を使って有効なビルド参照を同期する。
 > **新規更新は「1更新 = 1つの変更目的」を原則**とし、依頼箇所以外は変更しない。
 
 
 
 
+
+## v0.10.936
+- Firebase App Check：登録済みreCAPTCHA Enterpriseの公開site keyを設定し、既存のクライアント初期化を有効化。
+- 許可ドメインは `cadgosho-dot.github.io`、トークン有効期間は7日。Firestore・AuthenticationのEnforceは未適用のまま、請求先・カード追加なしで監視を開始する準備を完了。
+- SECURITY_SETUP.mdに登録状態と公式の専用管理画面からの作成手順を記録。ゲーム仕様・画像・音声・セーブ形式の変更なし。
 
 ## v0.10.935
 - 中核処理保護・第46段階：エメラルド班班長イベントのケバブ食事開始 `startEmeraldCaptainKebabMeal()` と食事完了 `finishEmeraldCaptainKebabMeal()` を動的回帰テストと静的検査で固定。

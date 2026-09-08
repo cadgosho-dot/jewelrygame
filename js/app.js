@@ -13200,7 +13200,6 @@ function customerProfileCardMarkup(profile = {}) {
       <div class="wide"><dt>好み</dt><dd>${esc(profile.preference)}</dd></div>
       <div class="wide"><dt>予算の考え方</dt><dd>${esc(profile.budgetStyle)}</dd></div>
     </dl>
-    <p class="customer-profile-traits"><b>接客傾向</b><span>${esc(profile.traits)}</span></p>
   </article>`;
 }
 
@@ -19193,7 +19192,9 @@ function renderCustomer() {
   const activeOrderLimit = orderLimit();
   const proposalMinutes = customerProposalMinutes();
   const salesStaff = activeStoreStaff(customerState.visitingBranchNumber);
-  const canAcceptThisOrder = customerState.wishesHeard && activeOrders < activeOrderLimit && canSpendStoreMinutes(30);
+  const orderOffer = orderFeasibility(request);
+  const orderFigures = orderEstimatedFigures(request);
+  const canAcceptThisOrder = customerState.wishesHeard && activeOrders < activeOrderLimit && canSpendStoreMinutes(30) && orderOffer.possible;
   const canProposeProduct = customerState.wishesHeard && proposedIds.length < 2 && candidates.some(({ item }) => !proposedIds.includes(item.id)) && canSpendStoreMinutes(proposalMinutes);
   const playerGreeting = state.playerName ? `${state.playerName}さん、こんにちは。` : '';
   const storeGreeting = state.store.name
@@ -19205,14 +19206,16 @@ function renderCustomer() {
   const customerOpening = `${playerGreeting}${storeGreeting}${customerProfile.opening}`;
   const showingProducts = customerState.wishesHeard && screenData.view === 'products';
   const requestDetails = customerState.wishesHeard ? `
-    <article class="request-card customer-wish-card">
+    <article class="request-card customer-wish-card" aria-label="お客様の希望：${esc(customerPreferenceLabel(request))}">
       <small>お客様の希望</small>
       <dl class="customer-wish-list">
         <div><dt>商品種類</dt><dd>${esc(ITEMS[request.item]?.name || '指定なし')}</dd></div>
+        <div><dt>石</dt><dd>${esc(looseDisplayLabel(request.gem, normalizeLooseShape(request.gem, request.looseShape)))}</dd></div>
+        <div><dt>地金</dt><dd>${esc(METALS[request.metal]?.name || '指定なし')}</dd></div>
+        <div><dt>デザイン</dt><dd>${esc(DESIGNS[request.design]?.name || '指定なし')}</dd></div>
         <div><dt>予算</dt><dd>${yen(request.budget)}</dd></div>
-        <div><dt>優先する希望</dt><dd>${esc(customerPreferenceLabel(request))}</dd></div>
       </dl>
-    </article>` : '<p class="small-note">まず希望を聞くと、商品種類・予算・最優先の希望が分かります。</p>';
+    </article>` : '';
   const productList = showingProducts ? `
     <section class="customer-product-proposal">
       <div class="customer-proposal-heading"><h2>店頭商品を提案</h2><span>提案 ${proposedIds.length}／2点</span></div>
@@ -19226,15 +19229,17 @@ function renderCustomer() {
     <div class="customer-layout ${showingProducts ? 'customer-products-open' : ''}">
       <section class="customer-stage"><div class="customer-placeholder"><span>人物画像</span><small>後から透過画像を重ねられます</small></div></section>
       <section class="dialog-panel glass-panel">
-        ${customerProfileCardMarkup(customerProfile)}
         <p class="dialog-text">${esc(customerOpening)}</p>
         ${requestDetails}
         <div class="customer-service-choices">
-          <button class="primary-button" data-action="hear-customer-wishes" data-customer="${customerId}" ${customerState.wishesHeard ? 'disabled' : ''}>${customerState.wishesHeard ? '希望を確認済み' : '希望を聞く'}</button>
-          <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>
-          <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>
-          <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>
+          ${customerState.wishesHeard ? `
+            <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>
+            <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>
+            <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>
+          ` : `<button class="primary-button" data-action="hear-customer-wishes" data-customer="${customerId}">希望を聞く</button>`}
         </div>
+        ${customerState.wishesHeard ? `<p class="small-note">オーダー制作：受注 ${yen(orderFigures.price)} ／ 利益 ${yen(orderFigures.estimatedProfit)} ／ 納期${orderOffer.difficulty.days}日</p>` : ''}
+        ${customerState.wishesHeard && !orderOffer.possible ? `<p class="error-text">${esc(orderOffer.reasons.join('・') || '現在はオーダー制作を受け付けられません。')}</p>` : ''}
         ${salesStaff
           ? `<p class="success-text">店舗スタッフ効果：接客購入率＋${10 + Math.round(storeStaffPurchaseBonus(customerState.visitingBranchNumber) * 100)}ポイント</p>`
           : '<p class="small-note">店舗スタッフ不在：接客購入率が10ポイント下がります。</p>'}
@@ -21975,28 +21980,8 @@ function acceptOrder(customerId) {
   if (!canSpendStoreMinutes(30)) return showToast('店舗営業時間内に注文相談を完了できません。', 'error');
   const request = activeCustomerRequest(customerId);
   const feasibility = orderFeasibility(request);
-  const difficulty = feasibility.difficulty;
-  const figures = orderEstimatedFigures(request);
-  const toolsLabel = feasibility.requiredTools.map((toolId) => WORKSHOP_TOOLS[toolId]?.name || toolId).join('、');
-  showModal({
-    title: '注文内容を確認',
-    body: `<dl class="order-offer-grid">
-      <div><dt>商品種類</dt><dd>${esc(ITEMS[request.item]?.name || '不明')}</dd></div>
-      <div><dt>石</dt><dd>${esc(looseDisplayLabel(request.gem, normalizeLooseShape(request.gem, request.looseShape)))}</dd></div>
-      <div><dt>地金</dt><dd>${esc(METALS[request.metal]?.name || '不明')}</dd></div>
-      <div><dt>デザイン</dt><dd>${esc(DESIGNS[request.design]?.name || '不明')}</dd></div>
-      <div><dt>受注金額</dt><dd>${yen(figures.price)}</dd></div>
-      <div><dt>予想原価</dt><dd>${yen(figures.estimatedCost)}</dd></div>
-      <div><dt>予想利益</dt><dd>${yen(figures.estimatedProfit)}</dd></div>
-      <div><dt>納期</dt><dd>${difficulty.days}日後</dd></div>
-      <div><dt>必要職人レベル</dt><dd>Lv.${feasibility.requiredArtisanLevel}</dd></div>
-      <div><dt>必要設備</dt><dd>${esc(toolsLabel)}</dd></div>
-      <div><dt>材料入手</dt><dd>${feasibility.materialsObtainable ? '可能' : '不可能'}</dd></div>
-      <div class="wide"><dt>製作可能</dt><dd class="${feasibility.possible ? 'possible' : 'impossible'}">${feasibility.possible ? 'はい' : `いいえ（${esc(feasibility.reasons.join('・'))}）`}</dd></div>
-    </dl>`,
-    confirm: '受注する', cancel: '今回は断る', cancelAction: `decline-order:${customerId}`,
-    confirmDisabled: !feasibility.possible, action: `confirm-order:${customerId}`, className: 'order-offer-modal',
-  });
+  if (!feasibility.possible) return showToast(feasibility.reasons.join('・') || '現在はこの注文を製作できません。', 'error');
+  return confirmOrder(customerId);
 }
 
 function confirmOrder(customerId) {

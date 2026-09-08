@@ -41,11 +41,11 @@ button{font:inherit;color:#fff;cursor:pointer}
 .end-card .box{width:min(88vw,520px);padding:22px 18px;border:1px solid var(--line);border-radius:18px;background:rgba(10,8,7,.38);box-shadow:0 8px 28px rgba(0,0,0,.3);text-align:center;color:#fff}.end-card h2{margin:0 0 10px}.end-card p{margin:0 0 16px;line-height:1.55}.end-card button{border:1px solid var(--line);border-radius:10px;padding:10px 15px;background:rgba(20,15,11,.58);color:#fff!important;font-weight:900}
 @media (orientation:portrait),(max-aspect-ratio:1/1){
   .bg-screen{background-image:linear-gradient(rgba(0,0,0,.09),rgba(0,0,0,.18)),url('../assets/images/loose-shop-portrait-v385.webp')}
-  .question-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:6px;padding:max(4px,var(--safe-top)) 6px max(14px,calc(var(--safe-bottom) + 10px))}
+  .question-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:4px;padding:max(4px,var(--safe-top)) 6px max(14px,calc(var(--safe-bottom) + 10px))}
   .character-cell{grid-column:1;grid-row:1;align-items:flex-start!important;padding-top:clamp(38px,5vh,64px)!important}
   .character-cell img{max-width:96vw!important;max-height:100%!important;object-position:center bottom!important}
-  .question-panel{grid-column:1;grid-row:2;align-self:end;padding:8px;gap:5px;max-height:46dvh}
-  .question-panel .answers{margin-top:4px!important}
+  .question-panel{grid-column:1;grid-row:2;align-self:end!important;height:auto!important;max-height:46dvh!important;padding:8px;gap:5px;overflow-y:auto}
+  .question-panel .answers{margin-top:8px!important}
   .dialogue-character img{max-width:92vw!important;max-height:56dvh!important}
   .reward{width:min(78vw,500px);height:min(56dvh,420px)}
   .reward .gem-box img{max-width:56vw;max-height:36dvh}

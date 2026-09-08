@@ -52,7 +52,7 @@ function scheduleWorkshopStaffLegacyLevelRepair() {
   if (typeof globalThis.document === 'undefined') return;
   const repair = () => repairWorkshopStaffLegacyLevelDisplay(globalThis.document);
   if (typeof globalThis.queueMicrotask === 'function') globalThis.queueMicrotask(repair);
-  else if (typeof globalThis.setTimeout === 'function') globalThis.setTimeout(repair, 0);
+  else Promise.resolve().then(repair);
 }
 
 export function formatWorkshopStaffQualityDescription(definition) {

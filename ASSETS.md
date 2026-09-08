@@ -21,7 +21,7 @@
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **459** / 直接参照未検出: **122**
+- 静的な直接参照を検出: **458** / 直接参照未検出: **123**
 
 ## 重要な由来記録
 
@@ -182,8 +182,8 @@
 | assets/images/events/ivory-loose.png | 画像 | 1071×660 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 380855753c68bef0a07755d327a53646bdbcad1e449b680c0d4b53f71ea4d810 |
 | assets/images/events/kappa.png | 画像 | 966×1384 | 縦 | あり | `js/app.js:15517`<br>`js/memories-screen.js:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 631b59b7e43f81dfcfc10cc4eda42b934166fc7e0d3b5829702d9b16406df1c0 |
 | assets/images/events/loose-shop-original-quiz-v745.png | 画像 | 1122×1402 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0dba109f376514229e843d88b4507e33dec6240f1afec50823ffde00e50032db |
-| assets/images/events/loose-shop-original-quiz-v751.png | 画像 | 1229×1536 | 縦 | あり | `memories-event-image-overrides-v751.js:5`<br>`js/app.js:308`<br>`js/memories-screen.js:31` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4d23546a6bcc448a1e242c1317c04b2a6c4022901649d1a8f5cd8dd267342325 |
-| assets/images/events/loose-shop-original-quiz.png | 画像 | 1122×1402 | 縦 | あり | `preview/3d-glasses-event-layout.html:27` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0dba109f376514229e843d88b4507e33dec6240f1afec50823ffde00e50032db |
+| assets/images/events/loose-shop-original-quiz-v751.png | 画像 | 1229×1536 | 縦 | あり | `memories-event-image-overrides-v751.js:5`<br>`js/app.js:308`<br>`js/memories-screen.js:31`<br>`preview/3d-glasses-event-layout.html:29` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4d23546a6bcc448a1e242c1317c04b2a6c4022901649d1a8f5cd8dd267342325 |
+| assets/images/events/loose-shop-original-quiz.png | 画像 | 1122×1402 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0dba109f376514229e843d88b4507e33dec6240f1afec50823ffde00e50032db |
 | assets/images/events/mermaid.png | 画像 | 951×1353 | 縦 | あり | `scripts/check-regression-baseline.py:113`<br>`js/app.js:15409`<br>`js/memories-screen.js:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | be4da86134e7edf56f0628ed3270d66e8c21f21d773e23f57d06a4d4ba783b7a |
 | assets/images/events/mystery-chinese-chef.png | 画像 | 1515×1529 | 縦 | あり | `js/app.js:15387`<br>`js/memories-screen.js:34` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab16d5ba8bd38f8860952096d81ee5d07351bc9774d589527705aa1d7a5e4b6d |
 | assets/images/events/mystery-chinese-food-01.png | 画像 | 1282×688 | 横 | あり | `js/app.js:422 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5caa89f04bd8ec49a0b221efe1d2028abcdadb1c132eab062016d550f7479175 |

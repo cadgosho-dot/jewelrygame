@@ -1,0 +1,44 @@
+name: Temporary customer UI inspection
+
+on:
+  push:
+    branches:
+      - feature/simplify-customer-service-ui
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect customer UI source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('js/app.js').read_text(encoding='utf-8')
+          lines = text.splitlines()
+          needles = [
+              'function renderCustomer()',
+              'function renderCustomerProfile',
+              '注文内容を確認',
+              'オーダー制作で受け付ける',
+              '希望を聞く',
+              '接客傾向',
+              '受注金額',
+          ]
+          for needle in needles:
+              print('\n' + '=' * 90)
+              print('NEEDLE:', needle)
+              hits = [i for i, line in enumerate(lines) if needle in line]
+              print('HITS:', [i + 1 for i in hits])
+              for i in hits[:5]:
+                  start = max(0, i - 45)
+                  end = min(len(lines), i + 120)
+                  for n in range(start, end):
+                      print(f'{n+1:06d}: {lines[n]}')
+                  print('-' * 90)
+          PY

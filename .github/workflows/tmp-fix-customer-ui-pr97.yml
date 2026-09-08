@@ -1,0 +1,71 @@
+name: Temporary PR97 customer UI compatibility fix
+
+on:
+  push:
+    branches:
+      - feature/simplify-customer-service-ui
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apply minimal compatibility fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+
+          old_article = '<article class="request-card customer-wish-card">'
+          new_article = '<article class="request-card customer-wish-card" aria-label="お客様の希望：${esc(customerPreferenceLabel(request))}">'
+          count = text.count(old_article)
+          if count != 1:
+              raise SystemExit(f'request card match count: {count}')
+          text = text.replace(old_article, new_article, 1)
+
+          old_buttons = '''            <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>\n            <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>\n            <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>'''
+          new_buttons = '''            <button class="secondary-button" data-action="open-customer-products" data-customer="${customerId}" ${canProposeProduct ? '' : 'disabled'}>店頭商品を提案</button>\n            <button class="text-button" data-action="ignore-customer" data-id="${customerId}">注文を受けない</button>\n            <button class="secondary-button" data-action="accept-order" data-customer="${customerId}" ${canAcceptThisOrder ? '' : 'disabled'}>オーダー制作で受け付ける</button>'''
+          count = text.count(old_buttons)
+          if count != 1:
+              raise SystemExit(f'button block match count: {count}')
+          text = text.replace(old_buttons, new_buttons, 1)
+
+          if text.count('customerPreferenceLabel(') != 2:
+              raise SystemExit(f'customerPreferenceLabel active references: {text.count("customerPreferenceLabel(")}')
+
+          customer_start = text.index('function renderCustomer()')
+          customer_end = text.index('function orderCustomerProfile', customer_start)
+          customer = text[customer_start:customer_end]
+          decline = customer.index('data-action="ignore-customer"')
+          order = customer.index('data-action="accept-order"')
+          if not (decline >= 0 and order >= 0 and decline < order):
+              raise SystemExit('decline button is not before order button')
+
+          accept_start = text.index('function acceptOrder(customerId) {')
+          accept_end = text.index('\nfunction confirmOrder(customerId) {', accept_start)
+          accept = text[accept_start:accept_end]
+          if '注文内容を確認' in accept or 'showModal({' in accept:
+              raise SystemExit('final order confirmation unexpectedly present')
+          if 'return confirmOrder(customerId);' not in accept:
+              raise SystemExit('direct order acceptance missing')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+          node --check js/app.js
+          git diff --check -- js/app.js
+          python3 scripts/check-customer-preference-label.py
+          node tools/validate-store-customer-indicator.mjs
+      - name: Commit app change only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/app.js
+          git commit -m "接客UIを既存回帰基準へ最小調整"
+          git push origin HEAD:${GITHUB_REF_NAME}

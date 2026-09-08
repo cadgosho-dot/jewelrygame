@@ -3,38 +3,75 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>JEWELRY×JEWELRY｜3Dメガネイベント確認</title>
+<meta name="theme-color" content="#0b0906">
+<title>3Dメガネ クイズイベント確認</title>
 <style>
-:root{--safe-top:max(8px,env(safe-area-inset-top));--safe-right:max(8px,env(safe-area-inset-right));--safe-bottom:max(8px,env(safe-area-inset-bottom));--safe-left:max(8px,env(safe-area-inset-left));--gold:#e7bd67;--text:#fff7e9;--line:rgba(232,191,104,.48)}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b0806;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif}button{font:inherit}
-body{position:relative;background:#0b0806 url('../assets/images/loose-shop-v385.webp') center/cover no-repeat}body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.03),rgba(0,0,0,.04) 55%,rgba(0,0,0,.18))}
-#root{position:absolute;inset:0;z-index:1;overflow:hidden}.stage{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;isolation:isolate;text-shadow:0 2px 6px rgba(0,0,0,.96),0 0 10px rgba(0,0,0,.72)}
-.event-end{position:fixed;z-index:80;left:max(8px,var(--safe-left));top:max(8px,var(--safe-top));border:1px solid rgba(255,255,255,.48);border-radius:9px;padding:7px 11px;background:rgba(15,11,8,.66);color:#fff;font-weight:800;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
-.character-area{min-width:0;min-height:0;overflow:hidden;pointer-events:none}.character{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;object-position:center bottom;user-select:none;pointer-events:none;filter:drop-shadow(0 14px 24px rgba(0,0,0,.54))}
-.dialogue-panel,.question-panel{border:1px solid var(--line);border-radius:18px}.dialogue-panel{background:transparent!important;box-shadow:0 6px 20px rgba(0,0,0,.22)!important;display:flex;flex-direction:column;gap:7px;cursor:pointer}.question-panel{background:rgba(0,0,0,.22)!important;box-shadow:inset 0 0 28px rgba(0,0,0,.26)!important;display:flex;flex-direction:column;gap:6px;overflow:auto}
-.name{display:block;width:100%;margin:0;color:var(--gold);font-size:clamp(.74rem,3vw,.92rem);font-weight:900;line-height:1.2;text-align:left}.dialogue-text{display:block;font-size:clamp(.94rem,4vw,1.12rem);font-weight:800;line-height:1.5}.tap{display:block;align-self:flex-end;margin-top:1px;color:#d4d8da;font-size:.78rem;font-weight:800;line-height:1.15;animation:tap 1.35s ease-in-out infinite}@keyframes tap{0%,100%{transform:translateY(0);opacity:.72}50%{transform:translateY(-3px);opacity:1}}
-.kicker{align-self:flex-start;display:inline-flex;width:auto;padding:.22rem .58rem;border:1px solid rgba(231,189,103,.48);border-radius:999px;color:var(--gold);font-size:.68rem;font-weight:900;line-height:1.1;letter-spacing:.08em}.question-panel h2{margin:0;font-size:clamp(.87rem,4vw,1.06rem);line-height:1.34}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%;margin-top:auto}.answer{min-width:0;min-height:50px;display:grid;grid-template-columns:1.7rem minmax(0,1fr);align-items:center;gap:.42rem;padding:.42rem .5rem;border:1px solid rgba(232,191,104,.42);border-radius:11px;background:rgba(18,14,11,.18)!important;color:#fff;text-align:left;box-shadow:inset 0 0 12px rgba(0,0,0,.12)}.answer>span{display:grid;place-items:center;width:1.7rem;height:1.7rem;border:1px solid rgba(255,255,255,.55);border-radius:50%;font-size:.78rem;font-weight:900}.answer strong{font-size:clamp(.74rem,3.2vw,.92rem);line-height:1.25;overflow-wrap:anywhere}.answer:disabled{opacity:1}.answer.correct{border-color:rgba(111,230,142,.95);box-shadow:inset 0 0 18px rgba(70,180,100,.2)}.answer.wrong{opacity:.58}
-.answer-info{margin-top:7px;padding:9px 10px;border-top:1px solid rgba(255,255,255,.14);font-size:.8rem;line-height:1.45}.correct-line{color:#7ee596;font-weight:900}.explanation{display:block;margin-top:4px;color:#f4eee2}
-.reward-stage,.finished-stage{display:grid;place-items:center;padding:calc(var(--safe-top) + 42px) 12px calc(var(--safe-bottom) + 14px)}.reward{width:min(82vw,510px);min-height:min(54dvh,420px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:1px solid var(--line);border-radius:20px;background:transparent;color:#fff;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.24);text-shadow:0 2px 7px #000;cursor:pointer}.gem-box{display:grid;place-items:center;width:min(58vw,300px);height:min(34dvh,280px)}.gem-box img{display:block;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45))}.reward strong{font-size:clamp(1.05rem,4.5vw,1.4rem);line-height:1.4}.reward small{font-weight:800;opacity:.82}.finished-card{width:min(88vw,520px);padding:22px 18px;border:1px solid var(--line);border-radius:18px;background:rgba(10,8,7,.38);box-shadow:0 8px 28px rgba(0,0,0,.3);text-align:center}.finished-card h2{margin:0 0 10px;font-size:1.25rem}.finished-card p{margin:0 0 16px;line-height:1.55}.restart{border:1px solid var(--line);border-radius:10px;padding:10px 15px;background:rgba(20,15,11,.58);color:#fff;font-weight:900}
-@media (orientation:portrait),(max-aspect-ratio:1/1){body{background-image:url('../assets/images/loose-shop-portrait-v385.webp')}.dialogue-stage{display:block!important;padding:0!important}.dialogue-stage>.character-area{position:absolute!important;z-index:1!important;left:50%!important;top:max(42px,var(--safe-top))!important;bottom:132px!important;width:min(92vw,460px)!important;transform:translateX(-50%)!important;display:flex!important;align-items:flex-end!important;justify-content:center!important;overflow:hidden!important}.dialogue-stage .character{max-width:min(92vw,430px)!important;max-height:56dvh!important;object-position:center bottom!important}.dialogue-stage>.dialogue-panel{position:absolute!important;z-index:20!important;left:7px!important;right:7px!important;bottom:max(14px,calc(var(--safe-bottom) + 9px))!important;top:auto!important;width:auto!important;max-height:34dvh!important;margin:0!important;padding:12px 14px!important;overflow-y:auto!important}.question-stage{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,47%) minmax(0,53%)!important;gap:4px!important;padding:max(4px,var(--safe-top)) 6px max(14px,calc(var(--safe-bottom) + 10px))!important}.question-stage>.character-area{position:relative!important;grid-column:1!important;grid-row:1!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;padding-top:clamp(38px,5vh,64px)!important;overflow:hidden!important;z-index:1!important}.question-stage .character{max-width:96vw!important;max-height:100%!important;object-position:center bottom!important}.question-stage>.question-panel{position:relative!important;grid-column:1!important;grid-row:2!important;align-self:stretch!important;max-height:100%!important;z-index:20!important;padding:8px!important;gap:5px!important}}
-@media (orientation:landscape),(min-aspect-ratio:1/1){.dialogue-stage{display:block!important;padding:0!important}.dialogue-stage>.character-area{position:absolute!important;z-index:1!important;left:0!important;right:0!important;top:max(4px,var(--safe-top))!important;bottom:clamp(104px,26dvh,150px)!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;overflow:visible!important}.dialogue-stage .character{max-width:min(48vw,560px)!important;max-height:100%!important;object-position:center top!important}.dialogue-stage>.dialogue-panel{position:absolute!important;z-index:20!important;left:8px!important;right:8px!important;bottom:max(6px,var(--safe-bottom))!important;top:auto!important;max-height:34dvh!important;margin:0!important;padding:12px 14px!important;overflow-y:auto!important}.question-stage{display:grid!important;grid-template-columns:minmax(180px,38%) minmax(0,62%)!important;grid-template-rows:minmax(0,1fr)!important;gap:7px!important;padding:5px 7px!important}.question-stage>.character-area{position:relative!important;grid-column:1!important;grid-row:1!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;overflow:hidden!important;z-index:1!important}.question-stage .character{max-width:100%!important;max-height:100%!important;object-position:center top!important}.question-stage>.question-panel{position:relative!important;grid-column:2!important;grid-row:1!important;align-self:stretch!important;width:100%!important;height:100%!important;max-height:100%!important;z-index:20!important;overflow-y:auto!important;padding:9px 10px!important}.question-panel h2{font-size:clamp(.78rem,2.6vh,.96rem)}.answer{min-height:44px;padding:.32rem .42rem}}
-/* hidden は orientation 側の display:...!important より必ず優先させる */
-#root .stage[hidden]{display:none!important}
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--line:rgba(225,183,91,.74);--gold:#e7bd67}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090806;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Yu Gothic",Meiryo,sans-serif}
+button{font:inherit;color:#fff;cursor:pointer}
+#event-root{position:fixed;inset:0;overflow:hidden}
+.stage{position:absolute;inset:0;display:none;overflow:hidden;text-shadow:0 2px 6px rgba(0,0,0,.96),0 0 10px rgba(0,0,0,.72)}
+.stage.active{display:block}
+.bg-screen{background-image:linear-gradient(rgba(0,0,0,.09),rgba(0,0,0,.18)),url('../assets/images/loose-shop-v385.webp');background-size:cover;background-position:center center}
+.event-end{position:fixed;z-index:1000;top:max(4px,var(--safe-top));left:max(5px,var(--safe-left));border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:7px 11px;background:rgba(15,11,8,.66);color:#fff!important;font-weight:800;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.dialogue-layout{position:absolute;inset:0;display:grid;grid-template-rows:minmax(0,1fr) auto;padding:0}
+.dialogue-character{min-height:0;display:flex;align-items:flex-end;justify-content:center;overflow:visible;padding-bottom:clamp(8px,1.2vh,16px);pointer-events:none}
+.dialogue-character img{display:block;max-width:92vw;max-height:56dvh;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 14px 24px rgba(0,0,0,.54))}
+.dialogue-panel{margin:0 7px max(14px,calc(var(--safe-bottom) + 9px));padding:12px 14px;border:1px solid var(--line);border-radius:18px;background:transparent!important;box-shadow:0 6px 20px rgba(0,0,0,.22)!important;color:#fff!important;display:flex;flex-direction:column;gap:7px;text-align:left}
+.name{display:block;color:var(--gold);font-size:clamp(.74rem,3vw,.92rem);font-weight:900;line-height:1.2;text-align:left}
+#dialogue-text{display:block;color:#fff!important;font-size:clamp(.94rem,4vw,1.12rem);font-weight:800;line-height:1.5}
+.tap{display:block;align-self:flex-end;color:#fff!important;font-size:.78rem;font-weight:800;line-height:1.15;animation:tap 1.35s ease-in-out infinite}
+@keyframes tap{0%,100%{transform:translateY(0);opacity:.72}50%{transform:translateY(-3px);opacity:1}}
+.question-layout{position:absolute;inset:0;display:grid;grid-template-columns:minmax(180px,38%) minmax(0,62%);grid-template-rows:minmax(0,1fr);gap:7px;padding:5px 7px}
+.character-cell{min-width:0;min-height:0;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;padding-top:4px;pointer-events:none}
+.character-cell img{display:block;max-width:100%;max-height:100%;object-fit:contain;object-position:center top;filter:drop-shadow(0 14px 24px rgba(0,0,0,.54))}
+.question-panel{min-width:0;min-height:0;align-self:stretch;padding:9px 10px;border:1px solid var(--line);border-radius:18px;background:rgba(0,0,0,.22)!important;box-shadow:inset 0 0 28px rgba(0,0,0,.26)!important;color:#fff!important;display:flex;flex-direction:column;gap:6px;overflow:auto}
+.kicker{align-self:flex-start;display:inline-flex;width:auto;padding:.22rem .58rem;border:1px solid rgba(231,189,103,.48);border-radius:999px;color:var(--gold);font-size:.68rem;font-weight:900;line-height:1.1;letter-spacing:.08em}
+#question-text{margin:0;color:#fff!important;font-size:clamp(.78rem,2.6vh,.96rem);line-height:1.34}
+.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%;margin-top:auto}
+.answer{min-width:0;min-height:44px;display:grid;grid-template-columns:1.7rem minmax(0,1fr);align-items:center;gap:.42rem;padding:.32rem .42rem;border:1px solid rgba(232,191,104,.42);border-radius:11px;background:rgba(18,14,11,.18)!important;color:#fff!important;text-align:left;box-shadow:inset 0 0 12px rgba(0,0,0,.12)}
+.answer>span{display:grid;place-items:center;width:1.7rem;height:1.7rem;border:1px solid rgba(255,255,255,.55);border-radius:50%;font-size:.78rem;font-weight:900;color:#fff!important}
+.answer strong{font-size:clamp(.74rem,3.2vw,.92rem);line-height:1.25;overflow-wrap:anywhere;color:#fff!important}
+.answer:disabled{opacity:1}.answer.correct{border-color:rgba(111,230,142,.95);box-shadow:inset 0 0 18px rgba(70,180,100,.2)}.answer.wrong{opacity:.58}
+.answer-info{margin-top:7px;padding:9px 10px;border-top:1px solid rgba(255,255,255,.14);font-size:.8rem;line-height:1.45;color:#fff!important}.correct-line{color:#7ee596!important;font-weight:900}.explanation{display:block;margin-top:4px;color:#fff!important}
+.reward-wrap,.end-card{position:absolute;inset:0;display:grid;place-items:center;padding:calc(var(--safe-top) + 42px) 12px calc(var(--safe-bottom) + 14px)}
+.reward{width:min(82vw,510px);min-height:min(54dvh,420px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:1px solid var(--line);border-radius:20px;background:transparent;color:#fff!important;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.24);text-shadow:0 2px 7px #000}
+.gem-box{display:grid;place-items:center;width:min(58vw,300px);height:min(34dvh,280px)}.gem-box img{display:block;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45))}.reward strong,.reward small{color:#fff!important}.reward strong{font-size:clamp(1.05rem,4.5vw,1.4rem);line-height:1.4}.reward small{font-weight:800;opacity:.82}
+.end-card .box{width:min(88vw,520px);padding:22px 18px;border:1px solid var(--line);border-radius:18px;background:rgba(10,8,7,.38);box-shadow:0 8px 28px rgba(0,0,0,.3);text-align:center;color:#fff}.end-card h2{margin:0 0 10px}.end-card p{margin:0 0 16px;line-height:1.55}.end-card button{border:1px solid var(--line);border-radius:10px;padding:10px 15px;background:rgba(20,15,11,.58);color:#fff!important;font-weight:900}
+@media (orientation:portrait),(max-aspect-ratio:1/1){
+  .bg-screen{background-image:linear-gradient(rgba(0,0,0,.09),rgba(0,0,0,.18)),url('../assets/images/loose-shop-portrait-v385.webp')}
+  .question-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,47%) minmax(0,53%);gap:4px;padding:max(4px,var(--safe-top)) 6px max(14px,calc(var(--safe-bottom) + 10px))}
+  .character-cell{grid-column:1;grid-row:1;align-items:flex-start!important;padding-top:clamp(38px,5vh,64px)!important}
+  .character-cell img{max-width:96vw!important;max-height:100%!important;object-position:center bottom!important}
+  .question-panel{grid-column:1;grid-row:2;padding:8px;gap:5px}
+  .dialogue-character img{max-width:92vw!important;max-height:56dvh!important}
+  .reward{width:min(78vw,500px);height:min(56dvh,420px)}
+  .reward .gem-box img{max-width:56vw;max-height:36dvh}
+}
 </style>
 </head>
 <body data-screen="looseShopOriginalQuizEvent">
-<button id="eventEnd" class="event-end" type="button">イベント終了</button>
-<div id="root">
-<section id="dialogueStage" class="stage dialogue-stage">
-  <div class="character-area"><img class="character" src="../assets/images/events/loose-shop-original-quiz-v751.png" alt="3Dメガネ"></div>
-  <button id="dialoguePanel" class="dialogue-panel" type="button" aria-label="タップして進む"><span class="name">3Dメガネ</span><strong id="dialogueText" class="dialogue-text"></strong><span class="tap">タップして進む</span></button>
+<div id="event-root">
+<section id="dialogue" class="stage active bg-screen">
+  <button class="event-end" data-end>イベント終了</button>
+  <div class="dialogue-layout">
+    <div class="dialogue-character"><img src="../assets/images/events/loose-shop-original-quiz-v751.png" alt="3Dメガネ"></div>
+    <button class="dialogue-panel" id="dialogue-next" type="button"><span class="name">3Dメガネ</span><strong id="dialogue-text"></strong><small class="tap">タップして進む</small></button>
+  </div>
 </section>
-<section id="questionStage" class="stage question-stage" hidden>
-  <div class="character-area"><img class="character" src="../assets/images/events/loose-shop-original-quiz-v751.png" alt="3Dメガネ"></div>
-  <div class="question-panel"><span class="name">3Dメガネ</span><span class="kicker">4択クイズ</span><h2 id="questionText"></h2><div id="answers" class="answers"></div><div id="answerInfo" class="answer-info" hidden></div></div>
+<section id="question" class="stage bg-screen">
+  <button class="event-end" data-end>イベント終了</button>
+  <div class="question-layout">
+    <div class="character-cell"><img src="../assets/images/events/loose-shop-original-quiz-v751.png" alt="3Dメガネ"></div>
+    <section class="question-panel"><div class="name">3Dメガネ</div><div class="kicker">4択クイズ</div><h2 id="question-text"></h2><div class="answers" id="answers"></div><div class="answer-info" id="answer-info" hidden></div></section>
+  </div>
 </section>
-<section id="rewardStage" class="stage reward-stage" hidden><button id="rewardNext" class="reward" type="button"><span class="gem-box"><img id="rewardImg" alt=""></span><strong id="rewardTitle"></strong><small>タップして進む</small></button></section>
-<section id="finishedStage" class="stage finished-stage" hidden><div class="finished-card"><h2>イベント終了</h2><p>3Dメガネのイベントを最後まで確認しました。<br>実ゲームではルース屋へ戻ります。</p><button id="restart" class="restart" type="button">最初から確認する</button></div></section>
+<section id="reward" class="stage bg-screen">
+  <button class="event-end" data-end>イベント終了</button>
+  <div class="reward-wrap"><button class="reward" id="reward-next" type="button"><span class="gem-box"><img id="reward-img" src="" alt=""></span><strong id="reward-title"></strong><small>タップして進む</small></button></div>
+</section>
+<section id="finished" class="stage bg-screen"><div class="end-card"><div class="box"><h2>イベント終了</h2><p>確認用イベントを最後までプレイしました。<br>実ゲームではルース屋へ戻ります。</p><button id="restart" type="button">最初から確認する</button></div></div></section>
 </div>
 <script type="module">
 const intro=[
@@ -49,17 +86,30 @@ const farewell='試作品はまだまだあるんだ！また来てくれよ、�
 const fallbackQuestion={id:1,difficultyLabel:'初級',category:'誕生石',question:'日本ジュエリー協会（JJA）の現行リストで、4月の誕生石の一つは？',choices:['エメラルド','ダイヤモンド','ルビー','アクアマリン'],answerIndex:1,answer:'ダイヤモンド',explanation:'JJAの現行リストでは、4月の誕生石はダイヤモンドとモルガナイトです。'};
 const shapeById={'arabesque-peridot':'oval','atelier-amethyst':'oval','bite-mecha-moon':'oval','burst-opal':'oval','cubist-ruby':'pear','marble-diamond':'round','melting-topaz':'round','morning-pearl':'pearl','outside-diamond':'round','pop-diamond':'round','sky-tourmaline':'emerald','starry-sapphire':'oval','street-stone':'oval','water-garden-emerald':'emerald','wave-aquamarine':'oval'};
 const specialIds=Object.keys(shapeById);
-const el=id=>document.getElementById(id);const dStage=el('dialogueStage'),qStage=el('questionStage'),rStage=el('rewardStage'),fStage=el('finishedStage');
-let introIndex=0,mode='intro',question=fallbackQuestion,reward=null;
-function only(stage){[dStage,qStage,rStage,fStage].forEach(x=>x.hidden=x!==stage)}
-function say(text,nextMode){only(dStage);el('dialogueText').textContent=text;mode=nextMode}
-async function loadQuestion(){try{const r=await fetch('../data/jewelry_quiz_50_verified_2026-08-10.json',{cache:'no-store'});const j=await r.json();const qs=Array.isArray(j?.questions)?j.questions:[];if(qs.length)question=qs[Math.floor(Math.random()*qs.length)]}catch{} }
-async function loadReward(){try{const mod=await import('../js/game-data.js?v=0.10.936');const list=Object.values(mod.GEMS||{}).filter(g=>g&&g.originalLoose&&specialIds.includes(g.id));if(list.length)reward=list[Math.floor(Math.random()*list.length)]}catch{}if(!reward)reward={id:'morning-pearl',name:'光の真珠',originalLooseBaseShape:'pearl'};const shape=shapeById[reward.id]||reward.originalLooseBaseShape||'oval';el('rewardImg').src=`../assets/images/loose/${reward.id}/${shape}.png`;el('rewardImg').alt=reward.name||'';el('rewardTitle').textContent=`${reward.name||''}をもらいました`}
-function renderQuestion(){only(qStage);el('questionText').textContent=question.question;el('answerInfo').hidden=true;el('answerInfo').textContent='';const box=el('answers');box.innerHTML='';question.choices.forEach((choice,i)=>{const b=document.createElement('button');b.type='button';b.className='answer';b.innerHTML=`<span>${String.fromCharCode(65+i)}</span><strong></strong>`;b.querySelector('strong').textContent=choice;b.addEventListener('click',()=>answer(i));box.appendChild(b)});mode='question'}
-function answer(i){if(mode!=='question')return;mode='answered';const ok=i===question.answerIndex;[...el('answers').children].forEach((b,n)=>{b.disabled=true;if(n===question.answerIndex)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});const info=el('answerInfo');info.hidden=false;info.innerHTML='';const line=document.createElement('span');line.className='correct-line';line.textContent=`正解は${question.answer}でした`;info.appendChild(line);if(question.explanation){const ex=document.createElement('span');ex.className='explanation';ex.textContent=question.explanation;info.appendChild(ex)};setTimeout(()=>{if(ok)say(correctText,'correct-dialogue');else say(wrongText,'wrong-dialogue')},650)}
-el('dialoguePanel').addEventListener('click',async()=>{if(mode==='intro'){introIndex++;if(introIndex<intro.length){el('dialogueText').textContent=intro[introIndex]}else{await loadQuestion();renderQuestion()}}else if(mode==='correct-dialogue'){await loadReward();only(rStage);mode='reward'}else if(mode==='wrong-dialogue'){say(`正解は${question.answer}でした`,'wrong-answer')}else if(mode==='wrong-answer'){finish()}else if(mode==='farewell'){finish()}});
-el('rewardNext').addEventListener('click',()=>say(farewell,'farewell'));el('eventEnd').addEventListener('click',finish);el('restart').addEventListener('click',start);
-function finish(){only(fStage);mode='finished'}function start(){introIndex=0;question=fallbackQuestion;reward=null;el('dialogueText').textContent=intro[0];only(dStage);mode='intro'}start();
+const $=id=>document.getElementById(id);
+const stages=[...document.querySelectorAll('.stage')];
+let introIndex=0,mode='intro',question=fallbackQuestion,reward=null,questionLoaded=false;
+function show(id){stages.forEach(s=>s.classList.toggle('active',s.id===id))}
+function say(text,nextMode){$('dialogue-text').textContent=text;mode=nextMode;show('dialogue')}
+async function loadQuestion(){try{const r=await fetch('../data/jewelry_quiz_50_verified_2026-08-10.json',{cache:'no-store'});const j=await r.json();const qs=Array.isArray(j?.questions)?j.questions:[];if(qs.length)question=qs[Math.floor(Math.random()*qs.length)]}catch{}questionLoaded=true}
+async function loadReward(){try{const mod=await import('../js/game-data.js');const list=Object.values(mod.GEMS||{}).filter(g=>g&&g.originalLoose&&specialIds.includes(g.id));if(list.length)reward=list[Math.floor(Math.random()*list.length)]}catch{}if(!reward)reward={id:'morning-pearl',name:'光の真珠',originalLooseBaseShape:'pearl'};const shape=shapeById[reward.id]||reward.originalLooseBaseShape||'oval';$('reward-img').src=`../assets/images/loose/${reward.id}/${shape}.png`;$('reward-img').alt=reward.name||'';$('reward-title').textContent=`${reward.name||''}をもらいました`}
+function renderQuestion(){show('question');$('question-text').textContent=question.question;$('answer-info').hidden=true;$('answer-info').innerHTML='';const box=$('answers');box.innerHTML='';question.choices.forEach((choice,i)=>{const b=document.createElement('button');b.type='button';b.className='answer';b.innerHTML=`<span>${String.fromCharCode(65+i)}</span><strong></strong>`;b.querySelector('strong').textContent=choice;b.addEventListener('click',()=>answer(i));box.appendChild(b)});mode='question'}
+function answer(i){if(mode!=='question')return;mode='answered';const ok=i===question.answerIndex;[...$('answers').children].forEach((b,n)=>{b.disabled=true;if(n===question.answerIndex)b.classList.add('correct');else if(n===i)b.classList.add('wrong')});const info=$('answer-info');info.hidden=false;info.innerHTML='';const answerText=question.answer||question.choices[question.answerIndex]||'';const line=document.createElement('span');line.className='correct-line';line.textContent=`正解は${answerText}でした`;info.appendChild(line);if(question.explanation){const ex=document.createElement('span');ex.className='explanation';ex.textContent=question.explanation;info.appendChild(ex)};setTimeout(()=>{if(ok)say(correctText,'correct-dialogue');else say(wrongText,'wrong-dialogue')},650)}
+$('dialogue-next').addEventListener('click',async()=>{
+ if(mode==='intro'){
+   if(introIndex<intro.length-1){introIndex++;$('dialogue-text').textContent=intro[introIndex];return}
+   if(!questionLoaded)await loadQuestion();renderQuestion();return
+ }
+ if(mode==='correct-dialogue'){await loadReward();show('reward');mode='reward';return}
+ if(mode==='wrong-dialogue'){const answerText=question.answer||question.choices[question.answerIndex]||'';say(`正解は${answerText}でした`,'wrong-answer');return}
+ if(mode==='wrong-answer'){show('finished');mode='finished';return}
+ if(mode==='farewell'){show('finished');mode='finished'}
+});
+$('reward-next').addEventListener('click',()=>say(farewell,'farewell'));
+document.querySelectorAll('[data-end]').forEach(b=>b.addEventListener('click',()=>{show('finished');mode='finished'}));
+$('restart').addEventListener('click',start);
+function start(){introIndex=0;question=fallbackQuestion;reward=null;questionLoaded=false;$('dialogue-text').textContent=intro[0];show('dialogue');mode='intro';loadQuestion()}
+start();
 </script>
 </body>
 </html>

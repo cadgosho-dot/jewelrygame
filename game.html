@@ -488,6 +488,246 @@ body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[s
 }
 </style>
 
+<style id="three-d-glasses-event-layout-fix-20260909">
+/* 3Dメガネイベント限定。縦で人物/セリフを必ず表示し、横は人物を上詰め、4択は人物と分離する。 */
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2,
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-area-v2,
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-character-v2,
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-dialogue-panel-v2,
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2 {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 {
+    position: absolute !important;
+    inset: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-template-rows: minmax(0,1fr) auto !important;
+    gap: 4px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: max(4px,var(--safe-top)) 6px max(8px,var(--safe-bottom)) !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 > .jxj-quiz-character-area-v2 {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: min(92vw,430px) !important;
+    max-height: min(66dvh,760px) !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center bottom !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 > .jxj-quiz-dialogue-panel-v2 {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    width: auto !important;
+    max-height: 30dvh !important;
+    margin: 0 !important;
+    transform: none !important;
+    overflow-y: auto !important;
+    z-index: 20 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 {
+    position: absolute !important;
+    inset: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    grid-template-rows: minmax(0,42%) minmax(0,58%) !important;
+    gap: 5px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: max(4px,var(--safe-top)) 6px max(8px,var(--safe-bottom)) !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 > .jxj-quiz-character-area-v2 {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    max-width: min(78vw,390px) !important;
+    max-height: 100% !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center bottom !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 > .jxj-quiz-question-panel-v2 {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    align-self: stretch !important;
+    width: auto !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+    overflow-y: auto !important;
+    z-index: 20 !important;
+  }
+}
+
+@media (orientation: landscape), (min-aspect-ratio: 1/1) {
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 > .jxj-quiz-character-area-v2 {
+    position: absolute !important;
+    inset: max(4px,var(--safe-top)) 0 clamp(112px,24dvh,160px) 0 !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+    z-index: 1 !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: min(48vw,560px) !important;
+    max-height: 100% !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center top !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 > .jxj-quiz-dialogue-panel-v2 {
+    position: absolute !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(6px,var(--safe-bottom)) !important;
+    top: auto !important;
+    width: auto !important;
+    max-height: min(27dvh,150px) !important;
+    margin: 0 !important;
+    transform: none !important;
+    overflow-y: auto !important;
+    z-index: 20 !important;
+  }
+
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 {
+    position: absolute !important;
+    inset: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0,40%) minmax(0,60%) !important;
+    grid-template-rows: minmax(0,1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: max(4px,var(--safe-top)) max(8px,var(--safe-right)) max(4px,var(--safe-bottom)) max(8px,var(--safe-left)) !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 > .jxj-quiz-character-area-v2 {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 .jxj-quiz-character-v2 {
+    position: relative !important;
+    inset: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    object-fit: contain !important;
+    object-position: center top !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 > .jxj-quiz-question-panel-v2 {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    align-self: stretch !important;
+    width: auto !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+    overflow-y: auto !important;
+    z-index: 20 !important;
+  }
+
+  /* 旧DOMクラスが残る端末でも、人物を上詰め・クイズを左右分離する。 */
+  body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event.quiz-bottom-safe-layout:not(.quiz-stage-question):not(.quiz-stage-reward) > .quiz-bottom-safe-character {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event.quiz-bottom-safe-layout:not(.quiz-stage-question):not(.quiz-stage-reward) > .quiz-bottom-safe-character > .quiz-character-image {
+    position: relative !important;
+    inset: auto !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    max-height: calc(100dvh - 150px) !important;
+    margin: 0 auto !important;
+    object-position: center top !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event.quiz-stage-question.quiz-bottom-safe-layout > .quiz-bottom-safe-character {
+    align-items: flex-start !important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .loose-shop-original-quiz-event.quiz-stage-question.quiz-bottom-safe-layout > .quiz-bottom-safe-character > .quiz-character-image {
+    object-position: center top !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <div id="background-layer" aria-hidden="true"></div>

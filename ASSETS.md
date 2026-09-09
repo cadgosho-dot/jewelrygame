@@ -198,7 +198,7 @@
 | assets/images/events/panda-music-band-cats.png | 画像 | 1536×984 | 横 | あり | `js/app.js:400 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4691f4ae9d35b51945e89f9239431b9608ba34e723f7d27453d0d6a611bdeba2 |
 | assets/images/events/panda-music-band-horror.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:401 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63a65971e5c89075f079aa1218ad6e7a926190dfdc0f9219f1a7c6eed1cc0446 |
 | assets/images/events/pazupan-miner.png | 画像 | 1229×1536 | 縦 | あり | `js/app.js:14487`<br>`js/memories-screen.js:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 51d8d6c050af2d39bea25cb964ce98fed6d4b3622d75ed837296330f6ccd32c4 |
-| assets/images/events/pazupan.png | 画像 | 1323×945 | 横 | あり | `js/app.js:14489`<br>`js/game-data-core.js:3303` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fcbbd2acf74ace29640beb494112d4b42086bb148ef812a06ccca49f0e61c3c7 |
+| assets/images/events/pazupan.png | 画像 | 1323×945 | 横 | あり | `js/app.js:14489`<br>`js/memories-screen.js:22`<br>`js/game-data-core.js:3303` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fcbbd2acf74ace29640beb494112d4b42086bb148ef812a06ccca49f0e61c3c7 |
 | assets/images/events/pearl-human.png | 画像 | 386×602 | 縦 | あり | `js/app.js:11089`<br>`js/memories-screen.js:24` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 586482842184581075c0c216328fb3adb3821972e06bd935478be47bff501274 |
 | assets/images/events/pearl.png | 画像 | 1181×1170 | 横 | あり | `js/app.js:1254`<br>`js/memories-screen.js:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aa78c4aab2d7b3ec7f95708f56cc57b00be06bd5bdeac691a0bb961c05830454 |
 | assets/images/events/ridley-okazaki.png | 画像 | 1500×1024 | 横 | あり | `js/app.js:15971`<br>`js/memories-screen.js:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f55f05124a481cf78046966c8c742e9c88957e00b251b177ac49dbb9a5e4bcce |
@@ -254,10 +254,10 @@
 | assets/images/gems/turquoise.png | 画像 | 1442×1144 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5aa51846e1410bb7e4c1670b8be16a34110d8025e7a559eeb95119b75e3bf283 |
 | assets/images/glab-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6a4540f637ad5190f086840a29adedc4a2870eead8fa48fed54eae46b4a6fef1 |
 | assets/images/glab.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7d85371c6f18d62bfcdb2365367d7136acdc073d453b84c756698b5efe5b0270 |
-| assets/images/items/body-chip.png | 画像 | 1176×564 | 横 | あり | `js/app.js:15954`<br>`js/game-data-core.js:3319` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 11dff7a83291fbb7990f291ae3d3666c222c0f79f2e216524c4f2f78c919d525 |
-| assets/images/items/bokuto.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:15893`<br>`js/game-data-core.js:3311` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b90f195bab69a2748f68eb356f6faa6ffc18c761dc36a74375189c6617e8ead4 |
+| assets/images/items/body-chip.png | 画像 | 1176×564 | 横 | あり | `js/app.js:15954`<br>`js/memories-screen.js:28`<br>`js/game-data-core.js:3319` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 11dff7a83291fbb7990f291ae3d3666c222c0f79f2e216524c4f2f78c919d525 |
+| assets/images/items/bokuto.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:15893`<br>`js/memories-screen.js:33`<br>`js/game-data-core.js:3311` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b90f195bab69a2748f68eb356f6faa6ffc18c761dc36a74375189c6617e8ead4 |
 | assets/images/items/burari-okachimachi-sticker.png | 画像 | 1254×1254 | 正方形 | あり | `js/app.js:11193`<br>`js/game-data-core.js:3315` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0072021a8226a1a9b95f978ecb173e57b1df70c1de40557d8408fa98d1dc8928 |
-| assets/images/items/energy-drink.png | 画像 | 584×1317 | 縦 | あり | `js/app.js:15475`<br>`js/game-data-core.js:3307` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8bf366eddcfded0681a9afc485cbd520e61ed7173be461cf3544a24049536e6e |
+| assets/images/items/energy-drink.png | 画像 | 584×1317 | 縦 | あり | `js/app.js:15475`<br>`js/memories-screen.js:16`<br>`js/game-data-core.js:3307` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8bf366eddcfded0681a9afc485cbd520e61ed7173be461cf3544a24049536e6e |
 | assets/images/jewelry-items/earrings.png | 画像 | 1270×1260 | 横 | あり | `styles.css:133` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a0cdf733ad1c4517f09aaf58db21720e7b68498e53ce528e9de1ca70e052047a |
 | assets/images/jewelry-items/pendant.png | 画像 | 569×1010 | 縦 | あり | `styles.css:132` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9687fe1da2033391ca00d9be4f525b194652daf9f2491e8d0aab30dbe1512c08 |
 | assets/images/jewelry-items/ring-plain.png | 画像 | 1328×1352 | 縦 | あり | `styles.css:131` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4b8e1fd8d4c686d842a4d47710955551ec1da1c2bc8e84d65a8da450a98eb49e |
@@ -285,7 +285,7 @@
 | assets/images/loose/aquamarine/trilliant.png | 画像 | 365×403 | 縦 | あり | `js/app.js:1221` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c9e89119bd32323c3328cc7ddb4c371f0916f1b26dc5bba2b2b78920eb21204d |
 | assets/images/loose/arabesque-peridot/oval.png | 画像 | 1098×1417 | 縦 | あり | `js/app.js:1447` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2f4e778c808c97dfabb3ef11fe41259bc258bc81748ee6ace413fbe5e2d5af53 |
 | assets/images/loose/atelier-amethyst/oval.png | 画像 | 1247×1037 | 横 | あり | `js/app.js:1452` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 446681ec115c1127f6cdb81568ed3e27ad7c2a0678424c47fa73701a45c446d0 |
-| assets/images/loose/benitoite/oval.png | 画像 | 1024×1024 | 正方形 | あり | `js/app.js:1437` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 29236bdc778bfbcf2cc7ecd2a62ccadf54febe5342ff1e9343501c9b2c0963de |
+| assets/images/loose/benitoite/oval.png | 画像 | 1024×1024 | 正方形 | あり | `js/app.js:1437`<br>`js/memories-screen.js:19` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 29236bdc778bfbcf2cc7ecd2a62ccadf54febe5342ff1e9343501c9b2c0963de |
 | assets/images/loose/bite-mecha-moon/oval.png | 画像 | 160×168 | 縦 | あり | `js/app.js:1454` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b14e4ba37de739af5b500514684a248e3490312e2c28e40722b3ca1f0f6f4c38 |
 | assets/images/loose/blackDiamond/round.png | 画像 | 1395×1110 | 横 | あり | `js/app.js:1242` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c7d484e280a5e9c9f8040ce7cb0a07e626ec9bb503e17362e4d2eeb3de8cef71 |
 | assets/images/loose/burst-opal/oval.png | 画像 | 1221×1280 | 縦 | あり | `js/app.js:1444` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5b35e69927c520d20f45c73a3243c6ac731cde60cd2534adba30560cb0aa449c |

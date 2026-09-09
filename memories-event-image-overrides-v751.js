@@ -9,7 +9,7 @@
     portrait: './assets/images/loose-shop-portrait-v385.webp',
     landscape: './assets/images/loose-shop-v385.webp',
   };
-  const LOOSE_QUIZ_STYLE_ID = 'loose-quiz-display-fix-v938';
+  const LOOSE_QUIZ_STYLE_ID = 'loose-quiz-display-fix-v937';
 
   const setImage = (img, src) => {
     if (!(img instanceof HTMLImageElement) || !src) return;

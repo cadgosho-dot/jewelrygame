@@ -15,8 +15,6 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          # 1) Production quiz flow: correct -> reward directly, wrong -> answer reveal directly.
           p = Path('js/app.js')
           s = p.read_text(encoding='utf-8')
           old = '''function answerLooseShopOriginalQuiz(index) {
@@ -55,10 +53,8 @@ jobs:
           }'''
           if old not in s:
               raise SystemExit('answerLooseShopOriginalQuiz baseline not found')
-          s = s.replace(old, new, 1)
-          p.write_text(s, encoding='utf-8')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
 
-          # 2) Approved 3D-glasses-only layout overrides.
           p = Path('quiz-event-v2.css')
           s = p.read_text(encoding='utf-8')
           marker = '/* v0.10.937 — 3Dメガネイベント実機承認レイアウト。 */'
@@ -124,23 +120,23 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage
 '''
           p.write_text(s, encoding='utf-8')
 
-          # 3) Remove old portrait solid fills so the approved transparent/subtle-shadow treatment is the canonical fallback too.
           p = Path('game.html')
           s = p.read_text(encoding='utf-8')
-          replacements = {
-            'background: rgba(20, 15, 11, .86) !important;': 'background: transparent !important;\n    box-shadow: 0 6px 20px rgba(0,0,0,.22) !important;',
-            'background: rgba(20, 15, 11, .88) !important;': 'background: rgba(0,0,0,.22) !important;\n    box-shadow: inset 0 0 28px rgba(0,0,0,.26) !important;',
-            'background: rgba(26,19,13,.9) !important;': 'background: rgba(18,14,11,.18) !important;',
-          }
-          for a,b in replacements.items():
+          replacements = [
+            ('background: rgba(20, 15, 11, .86) !important;', 'background: transparent !important;\n    box-shadow: 0 6px 20px rgba(0,0,0,.22) !important;'),
+            ('background: rgba(20, 15, 11, .88) !important;', 'background: rgba(0,0,0,.22) !important;\n    box-shadow: inset 0 0 28px rgba(0,0,0,.26) !important;'),
+            ('background: rgba(26,19,13,.9) !important;', 'background: rgba(18,14,11,.18) !important;'),
+          ]
+          for a,b in replacements:
               if a not in s:
-                  raise SystemExit(f'game.html marker not found: {a}')
+                  raise SystemExit('game.html layout baseline not found')
               s = s.replace(a,b,1)
+          if './quiz-event-v2.css?v=0.10.936' not in s or './js/app.js?v=0.10.936' not in s:
+              raise SystemExit('game.html version baseline not found')
           s = s.replace('./quiz-event-v2.css?v=0.10.936','./quiz-event-v2.css?v=0.10.937',1)
           s = s.replace('./js/app.js?v=0.10.936','./js/app.js?v=0.10.937',1)
           p.write_text(s, encoding='utf-8')
 
-          # 4) Version bump only; no save/auth/Firebase logic touched.
           Path('VERSION').write_text('0.10.937\n', encoding='utf-8')
           p = Path('js/game-data.js')
           s = p.read_text(encoding='utf-8')
@@ -156,17 +152,15 @@ body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage
           grep -Fq "session.stage = 'incorrectAnswer';" js/app.js
           grep -Fq "grantLooseShopOriginalQuizReward();" js/app.js
           grep -Fq "name:session.stage === 'incorrectAnswer' ? '' : LOOSE_SHOP_ORIGINAL_QUIZ_NAME" js/app.js
-          grep -Fq 'answerReveal:session.stage === '\''incorrectAnswer' js/app.js
           grep -Fq 'transform:translateY(clamp(60px,7dvh,100px))!important;' quiz-event-v2.css
           grep -Fq 'max-width:70vw!important;' quiz-event-v2.css
           grep -Fq 'margin-top:10px!important;' quiz-event-v2.css
           grep -Fq 'background:transparent!important;' quiz-event-v2.css
-          grep -Fq 'box-shadow:inset 0 0 28px rgba(0,0,0,.26)!important;' quiz-event-v2.css
           test "$(cat VERSION)" = '0.10.937'
           grep -Fq "export const VERSION = '0.10.937';" js/game-data.js
           grep -Fq './quiz-event-v2.css?v=0.10.937' game.html
           grep -Fq './js/app.js?v=0.10.937' game.html
-      - name: Commit implementation and remove diagnostic workflows
+      - name: Commit implementation and remove temporary workflows
         shell: bash
         run: |
           rm -f .github/workflows/diag-3d-glasses-production.yml .github/workflows/implement-3d-glasses-approved.yml

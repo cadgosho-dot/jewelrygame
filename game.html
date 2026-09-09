@@ -22,7 +22,7 @@
   <link rel="icon" href="./assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css?v=0.10.936">
-  <link rel="stylesheet" href="./quiz-event-v2.css?v=0.10.936">
+  <link rel="stylesheet" href="./quiz-event-v2.css?v=0.10.937">
 
   <style id="event-video-contain-v638">
     /* v0.10.632: Event movies must always show the complete source frame.
@@ -397,7 +397,8 @@ body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[s
     overflow-y: auto !important;
     border: 1.25px solid var(--line) !important;
     border-radius: 12px !important;
-    background: rgba(20, 15, 11, .86) !important;
+    background: transparent !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,.22) !important;
     color: var(--text) !important;
     text-align: left !important;
   }
@@ -440,7 +441,8 @@ body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[s
     overflow-y: auto !important;
     border: 1.25px solid var(--line) !important;
     border-radius: 12px !important;
-    background: rgba(20, 15, 11, .88) !important;
+    background: rgba(0,0,0,.22) !important;
+    box-shadow: inset 0 0 28px rgba(0,0,0,.26) !important;
     color: var(--text) !important;
   }
 
@@ -473,7 +475,7 @@ body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[s
     padding: .34rem .42rem !important;
     border: 1.25px solid rgba(232,191,104,.38) !important;
     border-radius: 9px !important;
-    background: rgba(26,19,13,.9) !important;
+    background: rgba(18,14,11,.18) !important;
     color: var(--text) !important;
     text-align: left !important;
   }
@@ -495,7 +497,7 @@ body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[s
   <div id="modal-layer" class="hidden"></div>
   <div id="sleep-curtain" aria-hidden="true"></div>
   <div id="morning-brief" aria-live="polite"></div>
-  <script type="module" src="./js/app.js?v=0.10.936"></script>
+  <script type="module" src="./js/app.js?v=0.10.937"></script>
   <script type="module" src="./js/memories-screen.js?v=0.10.936"></script>
 </body>
 </html>

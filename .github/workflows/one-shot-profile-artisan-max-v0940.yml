@@ -1,0 +1,87 @@
+name: one-shot profile artisan max v0.10.940
+
+on:
+  push:
+    branches:
+      - fix/profile-artisan-maximum-label-v0940
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 対象branchを取得
+        uses: actions/checkout@v6
+        with:
+          ref: fix/profile-artisan-maximum-label-v0940
+          fetch-depth: 0
+
+      - name: プロフィール表示だけを修正
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          old = '<span>${esc(artisanTitle(progress.artisanLevel))}・最高Lv.${Math.max(progress.artisanLevel, Number(state.artisan.peakLevel) || 1)}</span>'
+          new = '<span>${esc(artisanTitle(progress.artisanLevel))}・最高到達 Lv.${Math.max(progress.artisanLevel, Number(state.artisan.peakLevel) || 1)}／最大 Lv.20</span>'
+          count = app.count(old)
+          if count != 1:
+              raise SystemExit(f'profile artisan label target count must be 1, got {count}')
+          app_path.write_text(app.replace(old, new, 1), encoding='utf-8')
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text(encoding='utf-8')
+          basis_old = '> 現行基準: **v0.10.939** / 棚卸し日: 2026-08-31'
+          basis_new = '> 現行基準: **v0.10.940** / 棚卸し日: 2026-08-31'
+          if basis_old not in changelog:
+              raise SystemExit('CHANGELOG current basis marker not found')
+          changelog = changelog.replace(basis_old, basis_new, 1)
+          marker = '## v0.10.939\n'
+          entry = (
+              '## v0.10.940\n'
+              '- スマホのプレイヤープロフィールで、職人欄の過去最高レベル表示を「最高到達 Lv.X／最大 Lv.20」に変更し、Lv.13などが上限に見える誤解を防止。\n'
+              '- 職人経験値、現在レベル、過去最高レベル、称号、品質確率、注文条件、セーブ形式は変更なし。Firebase App Check・Authentication・Firestore・セーブ／ロード・クラウド保存処理も変更なし。\n\n'
+          )
+          if '## v0.10.940\n' in changelog:
+              raise SystemExit('v0.10.940 already exists in CHANGELOG')
+          if marker not in changelog:
+              raise SystemExit('v0.10.939 marker not found in CHANGELOG')
+          changelog = changelog.replace(marker, entry + marker, 1)
+          changelog_path.write_text(changelog, encoding='utf-8')
+          PY
+
+      - name: VERSIONを0.10.940へ正式同期
+        run: |
+          python3 scripts/version-sync.py --set 0.10.940
+          python3 scripts/version-sync.py --check
+
+      - name: 対象表示と構文を検査
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          app = Path('js/app.js').read_text(encoding='utf-8')
+          expected = '最高到達 Lv.${Math.max(progress.artisanLevel, Number(state.artisan.peakLevel) || 1)}／最大 Lv.20'
+          if app.count(expected) != 1:
+              raise SystemExit('updated profile artisan label was not found exactly once')
+          if '・最高Lv.${Math.max(progress.artisanLevel, Number(state.artisan.peakLevel) || 1)}</span>' in app:
+              raise SystemExit('old ambiguous profile artisan label remains')
+          print('PROFILE ARTISAN MAX LABEL: PASS')
+          PY
+          node --check js/app.js
+
+      - name: 一時ワークフローを削除してbranchへ確定
+        shell: bash
+        run: |
+          rm -f .github/workflows/one-shot-profile-artisan-max-v0940.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git commit -m 'v0.10.940 職人の最高到達レベル表示を明確化'
+          git push origin HEAD:fix/profile-artisan-maximum-label-v0940

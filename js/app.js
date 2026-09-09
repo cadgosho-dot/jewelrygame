@@ -11746,11 +11746,19 @@ function answerLooseShopOriginalQuiz(index) {
   if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex > 3) return;
   session.selectedIndex = selectedIndex;
   const correct = selectedIndex === session.question.answerIndex;
-  session.stage = correct ? 'correct' : 'incorrect';
+  if (correct) {
+    session.stage = 'correct';
+    persistQuizSession('looseShop');
+    playSfx('quiz-correct', { gain: 1 });
+    vibrate([35, 45, 80]);
+    grantLooseShopOriginalQuizReward();
+    return;
+  }
+  session.stage = 'incorrectAnswer';
   persistQuizSession('looseShop', { save: true });
   render();
-  playSfx(correct ? 'quiz-correct' : 'quiz-incorrect', { gain: 1 });
-  vibrate(correct ? [35, 45, 80] : 110);
+  playSfx('quiz-incorrect', { gain: 1 });
+  vibrate(110);
 }
 
 function grantLooseShopOriginalQuizReward({ renderAfter = true, saveAfter = true } = {}) {

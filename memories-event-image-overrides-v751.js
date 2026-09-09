@@ -9,7 +9,7 @@
     portrait: './assets/images/loose-shop-portrait-v385.webp',
     landscape: './assets/images/loose-shop-v385.webp',
   };
-  const LOOSE_QUIZ_STYLE_ID = 'loose-quiz-display-fix-v937';
+  const LOOSE_QUIZ_STYLE_ID = 'loose-quiz-display-fix-v938';
 
   const setImage = (img, src) => {
     if (!(img instanceof HTMLImageElement) || !src) return;
@@ -158,7 +158,49 @@
         position:absolute!important;z-index:20!important;left:50%!important;right:auto!important;top:auto!important;
         bottom:max(6px,env(safe-area-inset-bottom,0px))!important;width:min(92vw,980px)!important;max-height:min(28vh,150px)!important;
         margin:0!important;padding:8px 12px 7px!important;transform:translateX(-50%)!important;overflow-y:auto!important
-      }`;
+      }
+
+      /* v0.10.938 3Dメガネ承認済み横画面4択UI */
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2>.jxj-quiz-question-panel-v2{
+        align-self:stretch!important;height:100%!important;max-height:none!important;
+        display:grid!important;grid-template-columns:1fr auto auto 1fr!important;
+        grid-template-rows:auto auto auto!important;align-content:center!important;
+        column-gap:clamp(10px,1.2vw,20px)!important;row-gap:clamp(8px,1.4vh,14px)!important;
+        padding:clamp(14px,2vh,22px) clamp(14px,1.5vw,24px)!important;overflow-y:auto!important
+      }
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2>.jxj-quiz-name-v2{
+        grid-column:2!important;grid-row:1!important;justify-self:end!important;align-self:center!important;
+        font-size:clamp(1.15rem,2.4vw,1.65rem)!important;line-height:1.1!important
+      }
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2>.jxj-quiz-kicker-v2{
+        grid-column:3!important;grid-row:1!important;justify-self:start!important;align-self:center!important;
+        margin:0!important;padding:.34rem .78rem!important;font-size:clamp(.92rem,1.75vw,1.22rem)!important;line-height:1.1!important
+      }
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2>.jxj-quiz-question-v2{
+        grid-column:1/-1!important;grid-row:2!important;margin:0!important;text-align:center!important;
+        font-size:clamp(1.08rem,2.05vw,1.48rem)!important;line-height:1.35!important
+      }
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2>.jxj-quiz-answer-grid-v2{
+        grid-column:1/-1!important;grid-row:3!important;margin-top:clamp(5px,1vh,10px)!important;
+        gap:clamp(8px,1.3vh,14px) clamp(10px,1vw,16px)!important
+      }
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-v2{
+        min-height:clamp(60px,12vh,92px)!important;
+        grid-template-columns:clamp(2.05rem,3.8vw,2.8rem) minmax(0,1fr)!important;
+        gap:clamp(.5rem,1vw,.8rem)!important;padding:clamp(.52rem,1.3vh,.82rem) clamp(.65rem,1vw,.95rem)!important;
+        border-radius:14px!important
+      }
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-v2>span{
+        width:clamp(2.05rem,3.8vw,2.8rem)!important;height:clamp(2.05rem,3.8vw,2.8rem)!important;
+        font-size:clamp(.95rem,1.7vw,1.28rem)!important
+      }
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-answer-v2 strong{
+        font-size:clamp(1.02rem,1.85vw,1.34rem)!important;line-height:1.3!important
+      }
+      body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-dialogue-panel-v2.is-answer-reveal strong{
+        color:#4fc56a!important
+      }
+`;
     document.head?.appendChild(style);
   };
 

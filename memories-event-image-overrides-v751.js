@@ -106,7 +106,7 @@
       html[data-loose-quiz-orientation="portrait"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 .jxj-quiz-character-v2{
         position:relative!important;inset:auto!important;display:block!important;
         width:auto!important;height:auto!important;max-width:96vw!important;max-height:100%!important;
-        margin:0 auto!important;transform:none!important;object-fit:contain!important;object-position:center bottom!important
+        margin:0 auto!important;transform:translateY(clamp(60px,7dvh,100px))!important;object-fit:contain!important;object-position:center bottom!important
       }
       html[data-loose-quiz-orientation="portrait"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2>.jxj-quiz-question-panel-v2{
         position:relative!important;z-index:20!important;inset:auto!important;transform:none!important;

@@ -1,0 +1,21 @@
+name: diag 3D glasses production
+on:
+  push:
+    branches: [fix/3d-glasses-production-implementation-20260909]
+    paths: ['.github/workflows/diag-3d-glasses-production.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate production event implementation
+        shell: bash
+        run: |
+          echo '=== app.js loose/3D matches ==='
+          grep -nE -C 8 '3Dメガネ|jewelry_quiz_50_verified_2026-08-10|looseShopOriginal|originalLoose' js/app.js | head -n 500 || true
+          echo '=== quiz-event loose section ==='
+          grep -nE -C 5 'jxj-quiz-loose-v2|looseShopOriginalQuizEvent' quiz-event-v2.css | head -n 500 || true
+          echo '=== game.html references ==='
+          grep -nE 'quiz-event-v2|app.js|loose|event' game.html | head -n 120 || true

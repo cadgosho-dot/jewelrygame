@@ -1,0 +1,43 @@
+name: 3Dメガネ縦画面4択キャラクター位置修正
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preview-3d-glasses-portrait-character-lower.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply only requested portrait quiz character position fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('preview/3d-glasses-event-layout.html')
+          s = p.read_text(encoding='utf-8')
+          old = ".character-cell img{max-width:96vw!important;max-height:100%!important;object-position:center bottom!important}"
+          new = ".character-cell img{max-width:96vw!important;max-height:100%!important;object-position:center bottom!important;transform:translateY(clamp(60px,7dvh,100px))!important}"
+          if old not in s:
+              raise SystemExit('portrait quiz character marker not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Verify requested change only
+        shell: bash
+        run: |
+          grep -Fq "transform:translateY(clamp(60px,7dvh,100px))!important" preview/3d-glasses-event-layout.html
+      - name: Remove one-time workflow and commit
+        shell: bash
+        run: |
+          rm -f .github/workflows/preview-3d-glasses-portrait-character-lower.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add preview/3d-glasses-event-layout.html .github/workflows/preview-3d-glasses-portrait-character-lower.yml
+          git commit -m '3Dメガネ縦画面4択のキャラクター位置を下げる'
+          git push

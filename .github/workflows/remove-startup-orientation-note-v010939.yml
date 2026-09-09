@@ -61,6 +61,7 @@ jobs:
           python3 scripts/version-sync.py --bump-patch
           node --check js/app.js
           python3 scripts/version-sync.py --check
+          python3 -m pip install --disable-pip-version-check pillow
           python3 scripts/check-regression-baseline.py
           if grep -Fq 'このゲームは横画面でのプレイをおすすめしています。' js/app.js; then
             echo 'startup orientation recommendation still exists' >&2

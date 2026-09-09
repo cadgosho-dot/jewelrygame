@@ -1,0 +1,40 @@
+name: 3Dメガネ確認用の緑文字を一度だけ調整
+
+on:
+  workflow_run:
+    workflows: ["地金相場更新とGitHub Pages公開"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  adjust:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: 確認用ページの緑文字だけを濃くする
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('preview/3d-glasses-event-layout.html')
+          text = path.read_text(encoding='utf-8')
+          old = '#7ee596'
+          new = '#4fc56a'
+          count = text.count(old)
+          if count != 2:
+              raise SystemExit(f'expected exactly 2 color occurrences, found {count}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+      - name: 一時ワークフローを削除
+        run: rm .github/workflows/adjust-3d-preview-green-once.yml
+      - name: 変更をmainへ反映
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview/3d-glasses-event-layout.html .github/workflows/adjust-3d-preview-green-once.yml
+          git commit -m "3Dメガネ確認用の正解緑文字を少し濃く調整"
+          git push origin HEAD:main

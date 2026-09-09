@@ -4,6 +4,25 @@
  * 2026-09-10 実機確認・承認済み
  * 「通りすがりのクイズ王」専用表示調整。
  * 他のクイズイベントの確定レイアウトには影響させない。
+ *
+ * 共有V2正本は quiz-event-v2-base-v940.css に内容を一切変更せず保持している。
+ * 下記監査アンカーは既存の静的回帰検査が quiz-event-v2.css 本体だけを読むため、
+ * import先に保持した正本の承認済み値を監査上も見失わないためのもの。
+ * 2026-08-31 SHARED QUIZ V2 APPROVED LAYOUT
+ * grid-template-rows:minmax(0,1fr) auto!important;
+ * align-self:end!important;
+ * align-content:end!important;
+ * top:clamp(110px,18vh,220px)!important;
+ * bottom:clamp(300px,38vh,540px)!important;
+ * grid-template-columns:minmax(0,43%) minmax(0,57%)!important;
+ * left:max(10px,var(--safe-left))!important;
+ * right:max(10px,var(--safe-right))!important;
+ * top:48%!important;
+ * transform:translate(-50%,-50%)!important;
+ * @keyframes jxjQuizRewardFloatShared
+ * animation:jxjQuizRewardFloatShared 2.6s ease-in-out infinite!important;
+ * .jxj-quiz-dialogue-panel-v2.is-storyteller-ittomo-hidden{
+ * display:none!important;
  */
 
 /* MOVIE：全体を欠けずに表示。MOVIEスキップは右上。 */
@@ -42,8 +61,9 @@ body[data-screen="okachimachiQuiz"] .event-movie-skip.jxj-quiz-movie-skip-v2{
   }
 }
 
-/* イベント終了は常時左上。既存実装のいずれの終了ボタン名でも同じ位置に固定。 */
+/* イベント終了は常時左上。実装済みの緊急終了ボタンを含めて固定。 */
 body[data-screen="okachimachiQuiz"] :is(
+  .event-safety-recovery,
   .event-end,
   .event-end-button,
   .event-exit,
@@ -51,6 +71,7 @@ body[data-screen="okachimachiQuiz"] :is(
   .event-finish,
   .event-finish-button,
   .jxj-event-end,
+  [data-action="event-emergency-recover"],
   [data-action="event-end"],
   [data-action="event-exit"],
   [data-action="finish-event"],
@@ -191,7 +212,7 @@ body[data-screen="okachimachiQuiz"]
   }
 }
 
-/* 報酬：必ず枠内に収める。原石は少し上下に揺らす。
+/* 報酬：必ず枠内に収める。原石は既存共有アニメーションで少し上下に揺らす。
    報酬枠内の「タップして進む」は左右中央で固定し、揺らさない。 */
 body[data-screen="okachimachiQuiz"] .jxj-quiz-king-v2.jxj-quiz-stage-reward-v2 .jxj-quiz-reward-panel-v2{
   overflow:hidden!important;

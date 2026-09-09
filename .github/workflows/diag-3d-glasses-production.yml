@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect exact production event blocks
+      - name: Inspect render and css blocks
         shell: bash
         run: |
-          echo '=== app.js 11735-11855 ==='
-          sed -n '11735,11855p' js/app.js
-          echo '=== render loose matches ==='
-          grep -nE 'renderLooseShopOriginal|incorrectAnswer|jxj-quiz-loose-v2' js/app.js | tail -n 160 || true
+          echo '=== render 16970-17030 ==='
+          sed -n '16970,17030p' js/app.js
+          echo '=== quiz css 487-885 ==='
+          sed -n '487,885p' quiz-event-v2.css

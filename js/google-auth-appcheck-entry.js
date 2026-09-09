@@ -22,6 +22,11 @@ function validAppCheckConfig() {
     && !config.siteKey.includes('REPLACE_WITH_');
 }
 
+function bridgeModuleUrl() {
+  const script = Array.from(document.scripts).find((node) => node.dataset?.bridgeVersion);
+  return script?.dataset?.bridgeVersion || './google-auth-bridge.js';
+}
+
 const app = initializeApp(effectiveFirebaseConfig());
 
 // Authenticationも、他のFirebaseサービスと同様にApp Check初期化後に開始する。
@@ -34,4 +39,4 @@ if (validAppCheckConfig()) {
   throw new Error('App Checkの設定が不完全です。SECURITY_SETUP.mdを確認してください。');
 }
 
-await import('./google-auth-bridge.js?v=0.10.936');
+await import(bridgeModuleUrl());

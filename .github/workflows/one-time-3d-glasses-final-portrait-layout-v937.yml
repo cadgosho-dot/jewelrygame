@@ -1,0 +1,71 @@
+name: 3Dメガネ最終縦画面4択配置を本番反映
+
+on:
+  push:
+    branches:
+      - 'fix/3d-glasses-final-portrait-layout-v937'
+    paths:
+      - '.github/workflows/one-time-3d-glasses-final-portrait-layout-v937.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-final-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/3d-glasses-final-portrait-layout-v937
+
+      - name: Apply only approved portrait quiz character offset
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('memories-event-image-overrides-v751.js')
+          text = path.read_text(encoding='utf-8')
+
+          selector = 'html[data-loose-quiz-orientation="portrait"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-question-v2 .jxj-quiz-character-v2{'
+          start = text.find(selector)
+          if start < 0:
+              raise SystemExit('portrait quiz character selector not found')
+          end = text.find('\n      }', start)
+          if end < 0:
+              raise SystemExit('portrait quiz character rule end not found')
+          rule = text[start:end]
+          old = 'margin:0 auto!important;transform:none!important;object-fit:contain!important;object-position:center bottom!important'
+          new = 'margin:0 auto!important;transform:translateY(clamp(60px,7dvh,100px))!important;object-fit:contain!important;object-position:center bottom!important'
+          if old not in rule:
+              raise SystemExit('expected portrait quiz character transform marker not found')
+          rule = rule.replace(old, new, 1)
+          text = text[:start] + rule + text[end:]
+          path.write_text(text, encoding='utf-8')
+
+          version = Path('VERSION')
+          current = version.read_text(encoding='utf-8').strip()
+          if current != '0.10.936':
+              raise SystemExit(f'unexpected VERSION: {current}')
+          version.write_text('0.10.937\n', encoding='utf-8')
+          PY
+
+      - name: Verify minimal production-only change
+        shell: bash
+        run: |
+          grep -Fq 'transform:translateY(clamp(60px,7dvh,100px))!important' memories-event-image-overrides-v751.js
+          test "$(cat VERSION)" = '0.10.937'
+          node --check memories-event-image-overrides-v751.js
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf 'VERSION\nmemories-event-image-overrides-v751.js' | sort)"
+          test "$changed" = "$expected"
+
+      - name: Commit implementation and remove one-time workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/one-time-3d-glasses-final-portrait-layout-v937.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add VERSION memories-event-image-overrides-v751.js .github/workflows/one-time-3d-glasses-final-portrait-layout-v937.yml
+          git commit -m '3Dメガネ縦画面4択の最終配置を本番反映'
+          git push origin HEAD:fix/3d-glasses-final-portrait-layout-v937

@@ -22,6 +22,7 @@ button{font:inherit;color:#fff;cursor:pointer}
 .name{display:block;color:var(--gold);font-size:clamp(.74rem,3vw,.92rem);font-weight:900;line-height:1.2;text-align:left}
 #dialogue-text{display:block;color:#fff!important;font-size:clamp(.94rem,4vw,1.12rem);font-weight:800;line-height:1.5}
 #dialogue-text.wrong-answer-text{color:#7ee596!important}
+.dialogue-panel.wrong-answer-mode .name{display:none!important}
 .tap{display:block;align-self:flex-end;color:#fff!important;font-size:.78rem;font-weight:800;line-height:1.15;animation:tap 1.35s ease-in-out infinite}
 @keyframes tap{0%,100%{transform:translateY(0);opacity:.72}50%{transform:translateY(-3px);opacity:1}}
 .question-layout{position:absolute;inset:0;display:grid;grid-template-columns:minmax(180px,38%) minmax(0,62%);grid-template-rows:minmax(0,1fr);gap:7px;padding:5px 7px}
@@ -95,7 +96,7 @@ const $=id=>document.getElementById(id);
 const stages=[...document.querySelectorAll('.stage')];
 let introIndex=0,mode='intro',question=fallbackQuestion,reward=null,questionLoaded=false;
 function show(id){stages.forEach(s=>s.classList.toggle('active',s.id===id))}
-function say(text,nextMode){$('dialogue-text').classList.toggle('wrong-answer-text',nextMode==='wrong-answer');$('dialogue-text').textContent=text;mode=nextMode;show('dialogue')}
+function say(text,nextMode){const wrongAnswer=nextMode==='wrong-answer';$('dialogue-text').classList.toggle('wrong-answer-text',wrongAnswer);$('dialogue-next').classList.toggle('wrong-answer-mode',wrongAnswer);$('dialogue-text').textContent=text;mode=nextMode;show('dialogue')}
 async function loadQuestion(){try{const r=await fetch('../data/jewelry_quiz_50_verified_2026-08-10.json',{cache:'no-store'});const j=await r.json();const qs=Array.isArray(j?.questions)?j.questions:[];if(qs.length)question=qs[Math.floor(Math.random()*qs.length)]}catch{}questionLoaded=true}
 async function loadReward(){try{const mod=await import('../js/game-data.js');const list=Object.values(mod.GEMS||{}).filter(g=>g&&g.originalLoose&&specialIds.includes(g.id));if(list.length)reward=list[Math.floor(Math.random()*list.length)]}catch{}if(!reward)reward={id:'morning-pearl',name:'光の真珠',originalLooseBaseShape:'pearl'};const shape=shapeById[reward.id]||reward.originalLooseBaseShape||'oval';$('reward-img').src=`../assets/images/loose/${reward.id}/${shape}.png`;$('reward-img').alt=reward.name||'';$('reward-title').textContent=`${reward.name||''}をもらいました`}
 function renderQuestion(){show('question');$('question-text').textContent=question.question;$('answer-info').hidden=true;$('answer-info').innerHTML='';const box=$('answers');box.innerHTML='';question.choices.forEach((choice,i)=>{const b=document.createElement('button');b.type='button';b.className='answer';b.innerHTML=`<span>${String.fromCharCode(65+i)}</span><strong></strong>`;b.querySelector('strong').textContent=choice;b.addEventListener('click',()=>answer(i));box.appendChild(b)});mode='question'}
@@ -111,7 +112,7 @@ $('dialogue-next').addEventListener('click',async()=>{
 $('reward-next').addEventListener('click',()=>say(farewell,'farewell'));
 document.querySelectorAll('[data-end]').forEach(b=>b.addEventListener('click',()=>{show('finished');mode='finished'}));
 $('restart').addEventListener('click',start);
-function start(){introIndex=0;question=fallbackQuestion;reward=null;questionLoaded=false;$('dialogue-text').classList.remove('wrong-answer-text');$('dialogue-text').textContent=intro[0];show('dialogue');mode='intro';loadQuestion()}
+function start(){introIndex=0;question=fallbackQuestion;reward=null;questionLoaded=false;$('dialogue-text').classList.remove('wrong-answer-text');$('dialogue-next').classList.remove('wrong-answer-mode');$('dialogue-text').textContent=intro[0];show('dialogue');mode='intro';loadQuestion()}
 start();
 </script>
 </body>

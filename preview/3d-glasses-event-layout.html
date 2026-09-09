@@ -21,7 +21,7 @@ button{font:inherit;color:#fff;cursor:pointer}
 .dialogue-panel{margin:0 7px max(14px,calc(var(--safe-bottom) + 9px));padding:12px 14px;border:1px solid var(--line);border-radius:18px;background:transparent!important;box-shadow:0 6px 20px rgba(0,0,0,.22)!important;color:#fff!important;display:flex;flex-direction:column;gap:7px;text-align:left}
 .name{display:block;color:var(--gold);font-size:clamp(.74rem,3vw,.92rem);font-weight:900;line-height:1.2;text-align:left}
 #dialogue-text{display:block;color:#fff!important;font-size:clamp(.94rem,4vw,1.12rem);font-weight:800;line-height:1.5}
-#dialogue-text.wrong-answer-text{color:#7ee596!important}
+#dialogue-text.wrong-answer-text{color:#4fc56a!important}
 .dialogue-panel.wrong-answer-mode .name{display:none!important}
 .tap{display:block;align-self:flex-end;color:#fff!important;font-size:.78rem;font-weight:800;line-height:1.15;animation:tap 1.35s ease-in-out infinite}
 @keyframes tap{0%,100%{transform:translateY(0);opacity:.72}50%{transform:translateY(-3px);opacity:1}}
@@ -36,7 +36,7 @@ button{font:inherit;color:#fff;cursor:pointer}
 .answer>span{display:grid;place-items:center;width:1.7rem;height:1.7rem;border:1px solid rgba(255,255,255,.55);border-radius:50%;font-size:.78rem;font-weight:900;color:#fff!important}
 .answer strong{font-size:clamp(.74rem,3.2vw,.92rem);line-height:1.25;overflow-wrap:anywhere;color:#fff!important}
 .answer:disabled{opacity:1}.answer.correct{border-color:rgba(111,230,142,.95);box-shadow:inset 0 0 18px rgba(70,180,100,.2)}.answer.wrong{opacity:.58}
-.answer-info{margin-top:7px;padding:9px 10px;border-top:1px solid rgba(255,255,255,.14);font-size:.8rem;line-height:1.45;color:#fff!important}.correct-line{color:#7ee596!important;font-weight:900}.explanation{display:block;margin-top:4px;color:#fff!important}
+.answer-info{margin-top:7px;padding:9px 10px;border-top:1px solid rgba(255,255,255,.14);font-size:.8rem;line-height:1.45;color:#fff!important}.correct-line{color:#4fc56a!important;font-weight:900}.explanation{display:block;margin-top:4px;color:#fff!important}
 .reward-wrap,.end-card{position:absolute;inset:0;display:grid;place-items:center;padding:calc(var(--safe-top) + 42px) 12px calc(var(--safe-bottom) + 14px)}
 .reward{width:min(82vw,510px);min-height:min(54dvh,420px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:1px solid var(--line);border-radius:20px;background:transparent;color:#fff!important;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.24);text-shadow:0 2px 7px #000}
 .gem-box{display:grid;place-items:center;width:min(58vw,300px);height:min(34dvh,280px)}.gem-box img{display:block;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45))}.reward strong,.reward small{color:#fff!important}.reward strong{font-size:clamp(1.05rem,4.5vw,1.4rem);line-height:1.4}.reward small{font-weight:800;opacity:.82}

@@ -23,11 +23,11 @@ jobs:
           s = p.read_text(encoding='utf-8')
 
           old_css = "#dialogue-text.wrong-answer-text{color:#7ee596!important}\n"
-          new_css = old_css + ".dialogue-panel.wrong-answer-mode .name{display:none!important}\n"
+          hide_name_css = ".dialogue-panel.wrong-answer-mode .name{display:none!important}\n"
           if old_css not in s:
               raise SystemExit('green wrong-answer CSS marker not found')
-          if '.dialogue-panel.wrong-answer-mode .name{display:none!important}' not in s:
-              s = s.replace(old_css, new_css, 1)
+          if hide_name_css.strip() not in s:
+              s = s.replace(old_css, old_css + hide_name_css, 1)
 
           old_say = "function say(text,nextMode){$('dialogue-text').classList.toggle('wrong-answer-text',nextMode==='wrong-answer');$('dialogue-text').textContent=text;mode=nextMode;show('dialogue')}"
           new_say = "function say(text,nextMode){const wrongAnswer=nextMode==='wrong-answer';$('dialogue-text').classList.toggle('wrong-answer-text',wrongAnswer);$('dialogue-next').classList.toggle('wrong-answer-mode',wrongAnswer);$('dialogue-text').textContent=text;mode=nextMode;show('dialogue')}"
@@ -35,7 +35,7 @@ jobs:
               raise SystemExit('say() marker not found')
           s = s.replace(old_say, new_say, 1)
 
-          old_start = "function start(){introIndex=0;question=fallbackQuestion;reward=null;questionLoaded=false;$('dialogue-text').textContent=intro[0];show('dialogue');mode='intro';loadQuestion()}"
+          old_start = "function start(){introIndex=0;question=fallbackQuestion;reward=null;questionLoaded=false;$('dialogue-text').classList.remove('wrong-answer-text');$('dialogue-text').textContent=intro[0];show('dialogue');mode='intro';loadQuestion()}"
           new_start = "function start(){introIndex=0;question=fallbackQuestion;reward=null;questionLoaded=false;$('dialogue-text').classList.remove('wrong-answer-text');$('dialogue-next').classList.remove('wrong-answer-mode');$('dialogue-text').textContent=intro[0];show('dialogue');mode='intro';loadQuestion()}"
           if old_start not in s:
               raise SystemExit('start() marker not found')
@@ -50,7 +50,7 @@ jobs:
           grep -Fq ".dialogue-panel.wrong-answer-mode .name{display:none!important}" preview/3d-glasses-event-layout.html
           grep -Fq "classList.toggle('wrong-answer-mode',wrongAnswer)" preview/3d-glasses-event-layout.html
           grep -Fq "if(ok){await loadReward();show('reward');mode='reward';return}" preview/3d-glasses-event-layout.html
-          grep -Fq 'say(`正解は${answerText}でした`,`wrong-answer`)' preview/3d-glasses-event-layout.html || grep -Fq "say(\`正解は\${answerText}でした\`,'wrong-answer')" preview/3d-glasses-event-layout.html
+          grep -Fq "say(\`正解は\${answerText}でした\`,'wrong-answer')" preview/3d-glasses-event-layout.html
       - name: Remove one-time workflow and commit
         shell: bash
         run: |

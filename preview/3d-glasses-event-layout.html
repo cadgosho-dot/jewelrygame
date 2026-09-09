@@ -41,6 +41,13 @@ button{font:inherit;color:#fff;cursor:pointer}
 .reward{width:min(82vw,510px);min-height:min(54dvh,420px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:1px solid var(--line);border-radius:20px;background:transparent;color:#fff!important;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.24);text-shadow:0 2px 7px #000}
 .gem-box{display:grid;place-items:center;width:min(58vw,300px);height:min(34dvh,280px)}.gem-box img{display:block;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45))}.reward strong,.reward small{color:#fff!important}.reward strong{font-size:clamp(1.05rem,4.5vw,1.4rem);line-height:1.4}.reward small{font-weight:800;opacity:.82}
 .end-card .box{width:min(88vw,520px);padding:22px 18px;border:1px solid var(--line);border-radius:18px;background:rgba(10,8,7,.38);box-shadow:0 8px 28px rgba(0,0,0,.3);text-align:center;color:#fff}.end-card h2{margin:0 0 10px}.end-card p{margin:0 0 16px;line-height:1.55}.end-card button{border:1px solid var(--line);border-radius:10px;padding:10px 15px;background:rgba(20,15,11,.58);color:#fff!important;font-weight:900}
+@media (orientation:landscape) and (min-aspect-ratio:1/1){
+  .dialogue-layout{display:block!important}
+  .dialogue-character{position:absolute!important;left:50%!important;right:auto!important;top:max(24px,var(--safe-top))!important;bottom:-8px!important;width:min(92vw,760px)!important;min-height:0!important;transform:translateX(-50%)!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;overflow:visible!important;padding-bottom:0!important;z-index:2!important}
+  .dialogue-character img{width:auto!important;max-width:70vw!important;max-height:88dvh!important;object-position:center top!important}
+  .dialogue-panel{position:absolute!important;left:7px!important;right:7px!important;bottom:max(10px,calc(var(--safe-bottom) + 6px))!important;width:auto!important;margin:0!important;z-index:3!important}
+  .question-panel .answers{margin-top:10px!important}
+}
 @media (orientation:portrait),(max-aspect-ratio:1/1){
   .bg-screen{background-image:linear-gradient(rgba(0,0,0,.09),rgba(0,0,0,.18)),url('../assets/images/loose-shop-portrait-v385.webp')}
   .question-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:4px;padding:max(4px,var(--safe-top)) 6px max(14px,calc(var(--safe-bottom) + 10px))}

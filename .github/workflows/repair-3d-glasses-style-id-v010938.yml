@@ -1,0 +1,53 @@
+name: Repair 3D Glasses style id v0.10.938
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/repair-3d-glasses-style-id-v010938.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Restore protected style id only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin main
+          test "$(tr -d '\r\n' < VERSION)" = "0.10.938"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('memories-event-image-overrides-v751.js')
+          text = path.read_text(encoding='utf-8')
+          old = "const LOOSE_QUIZ_STYLE_ID = 'loose-quiz-display-fix-v938';"
+          new = "const LOOSE_QUIZ_STYLE_ID = 'loose-quiz-display-fix-v937';"
+          if text.count(old) != 1:
+              raise SystemExit('unexpected v938 style id count')
+          text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          node --check memories-event-image-overrides-v751.js
+          python3 scripts/check-storyteller-v2-layout.py
+          python3 scripts/version-sync.py --check
+
+      - name: Commit repair and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/repair-3d-glasses-style-id-v010938.yml
+          git add memories-event-image-overrides-v751.js
+          git commit -m "v0.10.938 3Dメガネ専用UI識別子を回帰検査基準へ復帰"
+          git push origin HEAD:main

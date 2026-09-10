@@ -15,9 +15,9 @@ RING = ROOT / 'assets/images/events/wolf-boy-ring.png'
 VIDEO = ROOT / 'assets/videos/wolf-boy-ring-event.mp4'
 
 EXPECTED_SHA256 = {
-    CHARACTER: 'd96c5a4299bfe42c65cc05f5cb861f5be7b72e3986f40807157573439520c128',
-    RING: 'd0f428c3ee409bb39bba6f3fd9fa69729762bdab15ffe986185a1f278d79b7ff',
-    VIDEO: 'e19c6d8d64023ad1b475d3dac049b8f27963b2f1ebdc6a0144c444b78a8695e6',
+    CHARACTER: 'a7bee4bf8ec075552b2765692b349e2e71c696d4fd92771bbc73fd3dac2798c4',
+    RING: 'ea631c473bd48a395d5771dc588b3e21d1320b5231dc192a1f12c63d8d051299',
+    VIDEO: 'd3bbf7df02d6af0ec55065341ce507fc954edc2a7ed982ec42e850062b5090ef',
 }
 
 DIALOGUES = [
@@ -86,10 +86,17 @@ def main() -> None:
         actual = sha256(path)
         require(actual == expected, f'{path.relative_to(ROOT)} の内容が承認済みアセットと一致しません: {actual}')
 
-    require(CHARACTER.read_bytes().startswith(b'\x89PNG\r\n\x1a\n'), '狼少年画像がPNGではありません')
-    require(RING.read_bytes().startswith(b'\x89PNG\r\n\x1a\n'), '指輪画像がPNGではありません')
+    character_head = CHARACTER.read_bytes()[:32]
+    ring_head = RING.read_bytes()[:32]
+    require(character_head.startswith(b'\x89PNG\r\n\x1a\n'), '狼少年画像がPNGではありません')
+    require(ring_head.startswith(b'\x89PNG\r\n\x1a\n'), '指輪画像がPNGではありません')
+    require(len(character_head) > 25 and character_head[25] in (4, 6), '狼少年画像に透明アルファチャンネルがありません')
+    require(len(ring_head) > 25 and ring_head[25] in (4, 6), '指輪画像に透明アルファチャンネルがありません')
+    require(CHARACTER.stat().st_size > 100_000, '狼少年画像が不完全です')
+    require(RING.stat().st_size > 100_000, '指輪画像が不完全です')
     video_head = VIDEO.read_bytes()[:32]
     require(b'ftyp' in video_head, 'イベント動画がMP4ではありません')
+    require(VIDEO.stat().st_size > 1_000_000, 'イベント動画が不完全です')
 
     print('OK: 狼少年・指輪イベントの発生条件・登録済みセリフ・通常イベントUI・承認済みアセットを確認しました。')
 

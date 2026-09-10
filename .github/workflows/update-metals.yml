@@ -1,256 +1,208 @@
-name: 地金相場更新とGitHub Pages公開
+name: 母親・執事イベント一時実装
 
 on:
   push:
     branches:
-      - main
-  schedule:
-    # GitHub ActionsのcronはUTC。日本時間の平日9:43と14:17。
-    - cron: '43 0 * * 1-5'
-    - cron: '17 5 * * 1-5'
-  workflow_dispatch:
+      - feature/wolf-mother-butler-event
 
-concurrency:
-  group: jewelrygame-pages-and-metals
-  cancel-in-progress: false
+permissions:
+  contents: write
 
 jobs:
-  update-metals:
-    permissions:
-      contents: write
+  apply-event:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: リポジトリを取得
         uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: Push前の正常な相場履歴を引き継ぐ
-        if: github.event_name == 'push'
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
-          GH_TOKEN: ${{ github.token }}
+      - name: Node.jsを準備
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Pythonを準備
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: イベント連携処理を追加
+        shell: bash
         run: |
-          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            echo "比較できるPush前コミットがないため、履歴引き継ぎを省略します。"
-            exit 0
-          fi
-          if ! curl --fail --silent --show-error --location --retry 3 \
-            -H "Accept: application/vnd.github.raw+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/data/metals.json?ref=${BEFORE_SHA}" \
-            --output /tmp/metals-before-push.json; then
-            echo "Push前の地金相場ファイルを取得できなかったため、履歴引き継ぎを省略します。"
-            exit 0
-          fi
           python3 - <<'PY'
-          import json
           from pathlib import Path
 
-          current_path = Path('data/metals.json')
-          previous_path = Path('/tmp/metals-before-push.json')
-          try:
-              current = json.loads(current_path.read_text(encoding='utf-8'))
-              previous = json.loads(previous_path.read_text(encoding='utf-8'))
-          except (OSError, json.JSONDecodeError):
-              print('履歴引き継ぎ用JSONを読み取れなかったため省略します。')
-              raise SystemExit(0)
+          app = Path('js/app.js')
+          text = app.read_text(encoding='utf-8')
+          if '__JXJ_EVENT_STATE_HELPERS__' not in text:
+              anchor = "\nlet screen = 'loading';"
+              pos = text.find(anchor, text.find('globalThis.__JXJ_MEMORIES_RECORD__'))
+              if pos < 0:
+                  raise SystemExit('app.js helper insertion point not found')
+              helper = r'''
+          globalThis.__JXJ_EVENT_STATE_HELPERS__ = {
+            patchEventState(eventKey, patch) {
+              try {
+                if (!state || !patch || typeof patch !== 'object' || Array.isArray(patch)) return null;
+                const key = String(eventKey || '').trim();
+                if (!key) return null;
+                state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+                const previous = state.events[key] && typeof state.events[key] === 'object' && !Array.isArray(state.events[key]) ? state.events[key] : {};
+                state.events[key] = { ...previous, ...patch };
+                void saveGame();
+                return structuredClone(state.events[key]);
+              } catch (error) {
+                console.warn('[EventStateHelpers] patchEventState failed', error);
+                return null;
+              }
+            },
+            grantMetalIgnoreCapacity(metalKey, amount, options = {}) {
+              try {
+                if (!state?.inventory?.metals) return { ok:false, reason:'state-unavailable' };
+                const key = String(metalKey || '').trim();
+                if (!key || !(key in state.inventory.metals)) return { ok:false, reason:'unknown-metal' };
+                const delta = Math.max(0, Number(amount) || 0);
+                if (!(delta > 0)) return { ok:false, reason:'invalid-amount' };
+                const before = Math.max(0, Number(state.inventory.metals[key]) || 0);
+                const after = before + delta;
+                state.inventory.metals[key] = after;
+                const message = String(options.message || '').trim();
+                if (message) {
+                  try { showToast(message, String(options.type || 'success'), options.withSound !== false); } catch (_) {}
+                }
+                void saveGame();
+                return { ok:true, key, amount:delta, before, after };
+              } catch (error) {
+                console.warn('[EventStateHelpers] grantMetalIgnoreCapacity failed', error);
+                return { ok:false, reason:'exception' };
+              }
+            },
+          };
+          '''
+              text = text[:pos] + '\n' + helper.strip('\n') + text[pos:]
+              app.write_text(text, encoding='utf-8')
 
-          previous_spot = previous.get('spotPerGram') or {}
-          previous_is_live = (
-              previous.get('status') == 'live'
-              and all(isinstance(previous_spot.get(key), (int, float)) and previous_spot[key] > 0
-                      for key in ('gold', 'silver', 'platinum'))
-          )
-          if current.get('status') != 'live' and previous_is_live:
-              current_path.write_text(
-                  json.dumps(previous, ensure_ascii=False, indent=2) + '\n',
-                  encoding='utf-8',
-              )
-              print('Push前の正常な相場・前日比・履歴を引き継ぎました。')
-          else:
-              print('現在の相場JSONをそのまま更新基準にします。')
+          bootstrap = Path('js/event-bootstrap.js')
+          boot = bootstrap.read_text(encoding='utf-8')
+          import_line = "import './wolf-mother-butler-event.js?v=0.10.941';"
+          if import_line not in boot:
+              boot = boot.rstrip() + '\n' + import_line + '\n'
+              bootstrap.write_text(boot, encoding='utf-8')
           PY
 
-      - name: Metals.Devから価格を取得して計算
-        # ゲーム本体のpushではAPI枠を消費しない。定期実行・手動実行時だけ取得する。
-        if: github.event_name != 'push'
-        env:
-          METALS_DEV_API_KEY: ${{ secrets.METALS_DEV_API_KEY }}
+      - name: VERSIONと管理文書を同期
+        shell: bash
         run: |
-          cp data/metals.json /tmp/metals-before-api.json
-          if [ -z "$METALS_DEV_API_KEY" ]; then
-            echo "::warning::METALS_DEV_API_KEYが未設定です。既存の正常な地金相場を使ってPages公開を続行します。"
-            exit 0
-          fi
-          echo "::add-mask::$METALS_DEV_API_KEY"
-          if ! python3 scripts/update-metals.py; then
-            echo "::warning::Metals.Devから地金相場を取得できませんでした。既存の正常な地金相場へ戻してPages公開を続行します。"
-            cp /tmp/metals-before-api.json data/metals.json
-          fi
-
-      - name: 公開に使う地金相場JSONを検証
-        run: |
-          python3 -m json.tool data/metals.json > /dev/null
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          data = json.loads(Path('data/metals.json').read_text(encoding='utf-8'))
-          if data.get('status') != 'live':
-              raise SystemExit('既存の地金相場もlive状態ではないため、安全のため公開を中止します。')
-          spot = data.get('spotPerGram') or {}
-          for metal in ('gold', 'silver', 'platinum'):
-              value = spot.get(metal)
-              if not isinstance(value, (int, float)) or value <= 0:
-                  raise SystemExit(f'{metal}の地金相場が不正なため、安全のため公開を中止します。')
-          PY
-
-      - name: ASSETS一覧を公開環境基準へ同期
-        run: |
-          python3 -m pip install --disable-pip-version-check pillow
+          python3 scripts/version-sync.py --set 0.10.941
           python3 scripts/generate-assets-manifest.py --write
-
-      - name: 更新結果をコミット
-        run: |
-          if git diff --quiet -- data/metals.json ASSETS.md; then
-            echo "地金相場・ASSETS一覧に変更はありません。"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/metals.json ASSETS.md
-          git commit -m "公開データを自動同期"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-
-  validate-build:
-    permissions:
-      contents: read
-    if: needs.update-metals.result == 'success'
-    needs:
-      - update-metals
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: 検証する最新版を取得
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 1
-
-      - name: 画像・実ブラウザ検査環境を準備
-        run: |
-          python3 -m pip install --disable-pip-version-check pillow playwright
-          python3 -m playwright install --with-deps chromium
-
-      - name: 公開前の現行ビルド検査
-        env:
-          JXJ_REQUIRE_BROWSER_SMOKE: '1'
-        run: |
-          echo "Python: $(python3 --version)"
-          echo "Node: $(node --version)"
-          timeout 8m python3 -u scripts/check-current.py
-
-      - name: 検査通過を記録
-        run: |
-          echo "CURRENT BUILD AUDIT: PASS — GitHub Pages公開を許可します。"
-
-  build-pages:
-    permissions:
-      contents: read
-      pages: read
-    if: needs.validate-build.result == 'success'
-    needs:
-      - validate-build
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: 公開する最新版を取得
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 1
-
-      - name: GitHub Pagesを設定
-        uses: actions/configure-pages@v5
-
-      - name: 公開用フォルダを作成
-        run: |
-          mkdir -p _site
-          rsync -a ./ _site/ \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='_site/' \
-            --exclude='scripts/' \
-            --exclude='/tools/' \
-            --exclude='docs/' \
-            --exclude='*.md' \
-            --exclude='.firebaserc' \
-            --exclude='.gitignore' \
-            --exclude='firebase.json' \
-            --exclude='firestore.rules' \
-            --exclude='HANDOFF_MANDATORY_REGRESSION_RULES.txt' \
-            --exclude='quiz-layout-test.html'
-
-      - name: 工具・設備画像23枚の公開漏れを検査
-        run: |
+          python3 scripts/generate-event-probability-list.py --write
           python3 - <<'PY'
           from pathlib import Path
-
-          expected = [
-              'bench-peg.png',
-              'buffer.png',
-              'diamond-polishing-lap.png',
-              'dividers.png',
-              'electronic-scale.png',
-              'engraving-block.png',
-              'file.png',
-              'gem-polishing-machine.png',
-              'graver.png',
-              'hammer.png',
-              'jewelry-bench.png',
-              'loupe.png',
-              'magnifier.png',
-              'milgrain-tool.png',
-              'nipper.png',
-              'piercing-saw.png',
-              'pliers.png',
-              'rolling-mill.png',
-              'rotary-tool.png',
-              'stamps.png',
-              'torch.png',
-              'ultrasonic-cleaner.png',
-              'wood-block.png',
-          ]
-          root = Path('_site/assets/images/tools')
-          missing = [name for name in expected if not (root / name).is_file()]
-          if missing:
-              raise SystemExit('GitHub Pages公開用フォルダに工具・設備画像が不足しています: ' + ', '.join(missing))
-          print(f'工具・設備画像: {len(expected)}/23 公開対象に含まれています。')
+          p = Path('CHANGELOG.md')
+          text = p.read_text(encoding='utf-8')
+          line = '- 狼少年イベントの7日後以降、店舗入店時にランダム発生する「狼・執事イベント」を追加。承認済み通常イベントUI、指定動画・透過PNGを使用し、報酬K18 20gは地金保管上限を超えても加算する。'
+          if line not in text:
+              rows = text.splitlines()
+              insert_at = 1 if rows else 0
+              rows.insert(insert_at, '')
+              rows.insert(insert_at + 1, line)
+              p.write_text('\n'.join(rows).rstrip() + '\n', encoding='utf-8')
           PY
 
-      - name: GitHub Pages用ファイルをアップロード
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: _site
+      - name: 専用回帰検査を追加
+        shell: bash
+        run: |
+          cat > scripts/check-wolf-mother-butler-event.py <<'PY'
+          #!/usr/bin/env python3
+          from pathlib import Path
+          import struct
+          import sys
 
-  deploy-pages:
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    if: always() && needs.build-pages.result == 'success'
-    needs:
-      - build-pages
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: GitHub Pagesへ公開
-        id: deployment
-        uses: actions/deploy-pages@v4
+          ROOT = Path(__file__).resolve().parents[1]
+          module = (ROOT / 'js/wolf-mother-butler-event.js').read_text(encoding='utf-8')
+          app = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+          bootstrap = (ROOT / 'js/event-bootstrap.js').read_text(encoding='utf-8')
+
+          required = [
+              "const DAYS_AFTER_WOLF_BOY = 7;",
+              "const TRIGGER_CHANCE = 0.30;",
+              "const REWARD_METAL_KEY = 'gold';",
+              "const REWARD_AMOUNT = 20;",
+              "speaker:'執事'",
+              "speaker:'狼'",
+              '失礼いたします、、こちらで先日、坊ちゃまが指輪を作っていただいたと聞きまして、、、狼のマスクをした羊の子供です、、、',
+              'おまえが、あの指輪を作った職人か？、、、',
+              '坊ちゃまが、大変お世話になったようでございます、、、',
+              '奥様は、たいそう喜んでおられました、、、、ありがとうございました、、、',
+              '黙れ、、、',
+              '今日はどの程度の店か見に来ただけだ、、、、\\nあと、、、まだ支払いも済ませていないようだな、、、あの恥知らずが、、、、',
+              'こちらをお収めください、、、、',
+              '今後私の身につけるものは全てこの店に任せる、、、また来る、、、、',
+              'それでは、失礼致します、、、',
+              'kappa-jade-event-screen',
+              'visit-character-event kappa-jade-event',
+              'event-dialogue-card visit-event-dialogue glass-panel',
+              'kappa-jade-reward-button',
+              'タップして進む',
+              'K18　20g',
+              'タップして受け取る',
+              "document.body.dataset.screen = 'workshopKappaJadeEvent'",
+              "Math.random() >= TRIGGER_CHANCE",
+          ]
+          missing = [item for item in required if item not in module]
+          if missing:
+              print('WOLF MOTHER BUTLER EVENT: FAIL')
+              for item in missing:
+                  print('-', item)
+              raise SystemExit(1)
+
+          helper_start = app.find('globalThis.__JXJ_EVENT_STATE_HELPERS__')
+          helper_end = app.find("let screen = 'loading';", helper_start)
+          helper = app[helper_start:helper_end]
+          if helper_start < 0 or 'grantMetalIgnoreCapacity' not in helper or 'const after = before + delta;' not in helper:
+              raise SystemExit('WOLF MOTHER BUTLER EVENT: FAIL - capacity bypass helper missing')
+          if 'metalStorageLimit' in helper or 'metalCapacity' in helper:
+              raise SystemExit('WOLF MOTHER BUTLER EVENT: FAIL - reward helper must not apply storage limit')
+          if "import './wolf-mother-butler-event.js?v=0.10.941';" not in bootstrap:
+              raise SystemExit('WOLF MOTHER BUTLER EVENT: FAIL - bootstrap import missing')
+
+          for rel in ('assets/images/events/wolf-mother.png', 'assets/images/events/sheep-butler.png'):
+              data = (ROOT / rel).read_bytes()
+              if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+                  raise SystemExit(f'WOLF MOTHER BUTLER EVENT: FAIL - {rel} is not PNG')
+              width, height = struct.unpack('>II', data[16:24])
+              if width < 500 or height < 600:
+                  raise SystemExit(f'WOLF MOTHER BUTLER EVENT: FAIL - {rel} too small')
+          video = ROOT / 'assets/videos/events/wolf-mother-butler-event.mp4'
+          if not video.is_file() or video.stat().st_size < 100_000:
+              raise SystemExit('WOLF MOTHER BUTLER EVENT: FAIL - event video missing')
+
+          print('WOLF MOTHER BUTLER EVENT: PASS')
+          PY
+          chmod +x scripts/check-wolf-mother-butler-event.py
+
+      - name: 変更を検査
+        shell: bash
+        run: |
+          node --check js/app.js
+          node --check js/event-bootstrap.js
+          node --check js/wolf-mother-butler-event.js
+          python3 scripts/check-wolf-mother-butler-event.py
+          python3 scripts/generate-assets-manifest.py --check
+          python3 scripts/generate-event-probability-list.py --check
+          test -z "$(git diff origin/main -- styles.css quiz-event-v2.css quiz-event-v2-base-v940.css)" || { echo '固定UI CSSが変更されています'; exit 1; }
+          test -z "$(git diff origin/main -- js/firebase-service.js js/google-auth-bridge.js js/firebase-config.js)" || { echo 'Firebase/Auth系が変更されています'; exit 1; }
+
+      - name: 一時ワークフローを元へ戻してコミット
+        shell: bash
+        run: |
+          git checkout origin/main -- .github/workflows/update-metals.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'v0.10.941 狼・執事イベント実装'
+          git push origin HEAD:${{ github.ref_name }}

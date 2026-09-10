@@ -13,7 +13,7 @@ const STORE_BG_LANDSCAPE = './assets/images/store.webp';
 const STORE_BG_PORTRAIT = './assets/images/store-portrait.webp';
 const MIN_DAY = 366;
 const TRIGGER_CHANCE = 0.30;
-const BLACKOUT_MS = 2000;
+const BLACKOUT_MS = 5000;
 
 const DIALOGUES = Object.freeze({
   intro1: 'こんにちは、、ここ、指輪を作ってくれる店なんですか？、、',

@@ -17,22 +17,36 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Restore approved wolf-boy character from transfer chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_COMMIT=b613e6d269a127d857fce2e79b3e0d32911fade5
+          TMP_FILE="$(mktemp)"
+          for part in 00 01 02; do
+            git show "${SOURCE_COMMIT}:tmp/wolf-boy-assets/character.part.${part}"
+          done | tr -d '\r\n' | base64 --decode > "$TMP_FILE"
+          ACTUAL="$(sha256sum "$TMP_FILE" | awk '{print $1}')"
+          EXPECTED="d96c5a4299bfe42c65cc05f5cb861f5be7b72e3986f40807157573439520c128"
+          test "$ACTUAL" = "$EXPECTED" || { echo "Character SHA mismatch: $ACTUAL"; exit 1; }
+          mv "$TMP_FILE" assets/images/events/wolf-boy.png
+
       - name: Verify approved wolf-boy event and assets
         run: python3 scripts/check-wolf-boy-ring-event.py
 
       - name: Regenerate assets manifest
         run: python3 scripts/generate-assets-manifest.py --write
 
-      - name: Commit generated manifest and remove temporary workflow
+      - name: Commit repaired asset, generated manifest and remove temporary workflow
         shell: bash
         run: |
           rm -f .github/workflows/wolf-boy-prepare.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ASSETS.md .github/workflows/wolf-boy-prepare.yml
+          git add assets/images/events/wolf-boy.png ASSETS.md .github/workflows/wolf-boy-prepare.yml
           if git diff --cached --quiet; then
             echo "No generated changes."
             exit 0
           fi
-          git commit -m "狼少年イベントのアセット棚卸しを更新"
+          git commit -m "狼少年イベント正式アセットを復元し棚卸しを更新"
           git push

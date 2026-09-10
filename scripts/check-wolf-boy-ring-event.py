@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / 'js/wolf-boy-ring-event.js'
 BOOTSTRAP = ROOT / 'js/event-bootstrap.js'
+MEMORIES_BG = ROOT / 'js/memories-backgrounds.js'
 HOTFIX = ROOT / 'js/wolf-boy-ring-event-hotfix.js'
-GAME_HTML = ROOT / 'game.html'
 CHARACTER = ROOT / 'assets/images/events/wolf-boy.png'
 RING = ROOT / 'assets/images/events/wolf-boy-ring.png'
 VIDEO = ROOT / 'assets/videos/wolf-boy-ring-event.mp4'
@@ -42,11 +42,12 @@ def sha256(path: Path) -> str:
 def main() -> None:
     require(MODULE.exists(), 'wolf-boy-ring-event.js がありません')
     require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')
+    require(MEMORIES_BG.exists(), 'memories-backgrounds.js がありません')
     require(not HOTFIX.exists(), '一時 hotfix が残っています')
 
     source = MODULE.read_text(encoding='utf-8')
     bootstrap = BOOTSTRAP.read_text(encoding='utf-8')
-    game_html = GAME_HTML.read_text(encoding='utf-8')
+    memories_bg = MEMORIES_BG.read_text(encoding='utf-8')
 
     require("const MIN_DAY = 366;" in source, '1年以上の発生条件が固定されていません')
     require("const TRIGGER_CHANCE = 0.30;" in source, '店舗入店時30%条件が固定されていません')
@@ -78,7 +79,7 @@ def main() -> None:
 
     require("import './wolf-boy-ring-event.js?v=0.10.940';" in bootstrap, 'イベント起動口が本体を読み込んでいません')
     require('wolf-boy-ring-event-hotfix' not in bootstrap, 'event-bootstrap に hotfix 参照が残っています')
-    require('<script type="module" src="./js/event-bootstrap.js?v=0.10.940"></script>' in game_html, 'game.html にイベント起動口がありません')
+    require("import './event-bootstrap.js?v=0.10.940';" in memories_bg, '既存の起動経路からイベント起動口が読み込まれていません')
 
     for path, expected in EXPECTED_SHA256.items():
         require(path.exists(), f'{path.relative_to(ROOT)} がありません')

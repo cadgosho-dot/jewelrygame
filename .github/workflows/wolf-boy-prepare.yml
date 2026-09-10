@@ -1,0 +1,38 @@
+name: Wolf Boy Event Prepare
+
+on:
+  push:
+    branches:
+      - feature/wolf-boy-ring-event
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify approved wolf-boy event and assets
+        run: python3 scripts/check-wolf-boy-ring-event.py
+
+      - name: Regenerate assets manifest
+        run: python3 scripts/generate-assets-manifest.py --write
+
+      - name: Commit generated manifest and remove temporary workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/wolf-boy-prepare.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ASSETS.md .github/workflows/wolf-boy-prepare.yml
+          if git diff --cached --quiet; then
+            echo "No generated changes."
+            exit 0
+          fi
+          git commit -m "狼少年イベントのアセット棚卸しを更新"
+          git push

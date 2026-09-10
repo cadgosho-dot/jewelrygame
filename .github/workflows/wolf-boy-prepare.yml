@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Restore approved wolf-boy character from transfer chunks
+      - name: Compare wolf-boy character pixels
         shell: bash
         run: |
           set -euo pipefail
@@ -26,27 +26,15 @@ jobs:
           for part in 00 01 02; do
             git show "${SOURCE_COMMIT}:tmp/wolf-boy-assets/character.part.${part}"
           done | tr -d '\r\n' | base64 --decode > "$TMP_FILE"
-          ACTUAL="$(sha256sum "$TMP_FILE" | awk '{print $1}')"
-          EXPECTED="d96c5a4299bfe42c65cc05f5cb861f5be7b72e3986f40807157573439520c128"
-          test "$ACTUAL" = "$EXPECTED" || { echo "Character SHA mismatch: $ACTUAL"; exit 1; }
-          mv "$TMP_FILE" assets/images/events/wolf-boy.png
+          python3 - "$TMP_FILE" assets/images/events/wolf-boy.png <<'PY'
+          import hashlib, sys
+          from PIL import Image
+          expected = '35f3fceb4c02c70715d4faf04222d7f1f4562524270da87f6a5f442df6e1588a'
+          for label, path in [('history', sys.argv[1]), ('current', sys.argv[2])]:
+              im = Image.open(path).convert('RGBA')
+              h = hashlib.sha256(im.tobytes()).hexdigest()
+              print(f'{label}: size={im.size} rgba_sha256={h} exact_approved_pixels={h == expected}')
+          PY
 
-      - name: Verify approved wolf-boy event and assets
-        run: python3 scripts/check-wolf-boy-ring-event.py
-
-      - name: Regenerate assets manifest
-        run: python3 scripts/generate-assets-manifest.py --write
-
-      - name: Commit repaired asset, generated manifest and remove temporary workflow
-        shell: bash
-        run: |
-          rm -f .github/workflows/wolf-boy-prepare.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/images/events/wolf-boy.png ASSETS.md .github/workflows/wolf-boy-prepare.yml
-          if git diff --cached --quiet; then
-            echo "No generated changes."
-            exit 0
-          fi
-          git commit -m "狼少年イベント正式アセットを復元し棚卸しを更新"
-          git push
+      - name: Stop after diagnostic
+        run: echo "Pixel comparison completed; no production files changed."

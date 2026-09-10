@@ -51,7 +51,7 @@ def main() -> None:
 
     require("const MIN_DAY = 366;" in source, '1年以上の発生条件が固定されていません')
     require("const TRIGGER_CHANCE = 0.30;" in source, '店舗入店時30%条件が固定されていません')
-    require("const BLACKOUT_MS = 2000;" in source, '暗転2秒が固定されていません')
+    require("const BLACKOUT_MS = 5000;" in source, '暗転5秒が固定されていません')
     require("const MEMORY_KEY = 'wolfBoyRingEvent';" in source, '一度だけ発生の記録キーがありません')
     require("memoryAlreadySeen(snapshot)" in source, '既発生チェックがありません')
     require("Math.random() >= TRIGGER_CHANCE" in source, '30%抽選処理がありません')

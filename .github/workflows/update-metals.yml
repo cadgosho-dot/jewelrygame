@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feature/wolf-mother-butler-event
+    paths:
+      - '.jxj-run-wmb'
 
 permissions:
   contents: write
@@ -30,7 +32,16 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: イベント連携処理を追加
+      - name: 指定BGMをゲーム用ファイルへ復元
+        shell: bash
+        run: |
+          mkdir -p assets/audio
+          test -d .tmp/wolf-mother-butler-bgm
+          cat .tmp/wolf-mother-butler-bgm/part-*.b64 | tr -d '\r\n' | base64 --decode > assets/audio/teeth_behind_the_glass.mp3
+          test "$(wc -c < assets/audio/teeth_behind_the_glass.mp3)" -gt 1000000
+          rm -rf .tmp/wolf-mother-butler-bgm
+
+      - name: イベント連携処理と専用BGM制御を追加
         shell: bash
         run: |
           python3 - <<'PY'
@@ -91,12 +102,102 @@ jobs:
           import_line = "import './wolf-mother-butler-event.js?v=0.10.941';"
           if import_line not in boot:
               boot = boot.rstrip() + '\n' + import_line + '\n'
-              bootstrap.write_text(boot, encoding='utf-8')
+          bootstrap.write_text(boot, encoding='utf-8')
+
+          event_path = Path('js/wolf-mother-butler-event.js')
+          event = event_path.read_text(encoding='utf-8')
+          old_import = "import { suspendAudio, resumeAudio, playSfx, vibrate } from './audio.js?v=0.10.941';"
+          new_import = "import { suspendAudio, resumeAudio, suspendBgm, resumeBgm, playSfx, vibrate } from './audio.js?v=0.10.941';"
+          if old_import in event:
+              event = event.replace(old_import, new_import, 1)
+          elif new_import not in event:
+              raise SystemExit('wolf-mother-butler audio import not found')
+
+          video_line = "const VIDEO_URL = './assets/videos/events/wolf-mother-butler-event.mp4';"
+          bgm_line = "const EVENT_BGM_URL = './assets/audio/teeth_behind_the_glass.mp3';"
+          if bgm_line not in event:
+              event = event.replace(video_line, video_line + '\n' + bgm_line, 1)
+
+          if 'let eventBgm = null;' not in event:
+              event = event.replace('let videoEl = null;', 'let videoEl = null;\nlet eventBgm = null;', 1)
+
+          if 'function startEventBgm()' not in event:
+              marker = '\nfunction render() {'
+              audio_helpers = r'''
+          function eventBgmSettings() {
+            const stateSnapshot = snapshot();
+            const settings = stateSnapshot?.settings || stateSnapshot?.game?.settings || {};
+            const muted = Boolean(settings.bgmMuted || settings.externalAudioPriority);
+            const raw = Number(settings.bgmVolume);
+            return {
+              muted,
+              volume: Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 0.35,
+            };
+          }
+
+          function startEventBgm() {
+            if (!eventBgm) {
+              eventBgm = new Audio(EVENT_BGM_URL);
+              eventBgm.loop = true;
+              eventBgm.preload = 'auto';
+            }
+            const settings = eventBgmSettings();
+            eventBgm.volume = settings.muted ? 0 : settings.volume;
+            if (!settings.muted) eventBgm.play().catch(() => {});
+          }
+
+          function stopEventBgm() {
+            if (!eventBgm) return;
+            try { eventBgm.pause(); } catch (_) {}
+            try { eventBgm.currentTime = 0; } catch (_) {}
+            eventBgm = null;
+          }
+
+          async function restoreNormalAudio() {
+            try { await resumeAudio(); } catch (_) {}
+            try { await resumeBgm(); } catch (_) {}
+          }
+          '''
+              if marker not in event:
+                  raise SystemExit('wolf-mother-butler render marker not found')
+              event = event.replace(marker, '\n' + audio_helpers.strip('\n') + marker, 1)
+
+          old_cleanup = "  restoreBodyStoreScreen();\n  resumeAudio().catch(() => {});"
+          new_cleanup = "  restoreBodyStoreScreen();\n  stopEventBgm();\n  restoreNormalAudio();"
+          if old_cleanup in event:
+              event = event.replace(old_cleanup, new_cleanup, 1)
+          elif new_cleanup not in event:
+              raise SystemExit('wolf-mother-butler cleanup marker not found')
+
+          old_start = "  suspendAudio();\n  render();\n  if (stage !== 'movie') resumeAudio().catch(() => {});"
+          new_start = "  suspendAudio();\n  suspendBgm();\n  startEventBgm();\n  render();\n  if (stage !== 'movie') resumeAudio().catch(() => {});"
+          if old_start in event:
+              event = event.replace(old_start, new_start, 1)
+          elif new_start not in event:
+              raise SystemExit('wolf-mother-butler start marker not found')
+
+          click_marker = "  const action = button.dataset.wmbAction;"
+          click_retry = "  const action = button.dataset.wmbAction;\n  if (eventBgm?.paused && !eventBgmSettings().muted) eventBgm.play().catch(() => {});"
+          if click_retry not in event:
+              if click_marker not in event:
+                  raise SystemExit('wolf-mother-butler click marker not found')
+              event = event.replace(click_marker, click_retry, 1)
+
+          event_path.write_text(event, encoding='utf-8')
           PY
 
       - name: VERSIONと管理文書を同期
         shell: bash
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          for rel in ('js/event-bootstrap.js', 'js/memories-backgrounds.js', 'js/wolf-boy-ring-event.js', 'js/wolf-mother-butler-event.js'):
+              p = Path(rel)
+              if not p.is_file():
+                  continue
+              text = p.read_text(encoding='utf-8')
+              p.write_text(text.replace('?v=0.10.940', '?v=0.10.941'), encoding='utf-8')
+          PY
           python3 scripts/version-sync.py --set 0.10.941
           python3 scripts/generate-assets-manifest.py --write
           python3 scripts/generate-event-probability-list.py --write
@@ -104,7 +205,7 @@ jobs:
           from pathlib import Path
           p = Path('CHANGELOG.md')
           text = p.read_text(encoding='utf-8')
-          line = '- 狼少年イベントの7日後以降、店舗入店時にランダム発生する「狼・執事イベント」を追加。承認済み通常イベントUI、指定動画・透過PNGを使用し、報酬K18 20gは地金保管上限を超えても加算する。'
+          line = '- 狼少年イベントの7日後以降、店舗入店時にランダム発生する「狼・執事イベント」を追加。承認済み通常イベントUI、指定動画・透過PNGを使用し、イベント開始動画から終了まで専用BGM「teeth_behind_the_glass」をループ再生する。終了時は通常BGMへ復帰し、報酬K18 20gは地金保管上限を超えても加算する。'
           if line not in text:
               rows = text.splitlines()
               insert_at = 1 if rows else 0
@@ -120,7 +221,6 @@ jobs:
           #!/usr/bin/env python3
           from pathlib import Path
           import struct
-          import sys
 
           ROOT = Path(__file__).resolve().parents[1]
           module = (ROOT / 'js/wolf-mother-butler-event.js').read_text(encoding='utf-8')
@@ -132,6 +232,7 @@ jobs:
               "const TRIGGER_CHANCE = 0.30;",
               "const REWARD_METAL_KEY = 'gold';",
               "const REWARD_AMOUNT = 20;",
+              "const EVENT_BGM_URL = './assets/audio/teeth_behind_the_glass.mp3';",
               "speaker:'執事'",
               "speaker:'狼'",
               '失礼いたします、、こちらで先日、坊ちゃまが指輪を作っていただいたと聞きまして、、、狼のマスクをした羊の子供です、、、',
@@ -152,6 +253,11 @@ jobs:
               'タップして受け取る',
               "document.body.dataset.screen = 'workshopKappaJadeEvent'",
               "Math.random() >= TRIGGER_CHANCE",
+              'eventBgm.loop = true;',
+              'suspendBgm();',
+              'startEventBgm();',
+              'stopEventBgm();',
+              'restoreNormalAudio();',
           ]
           missing = [item for item in required if item not in module]
           if missing:
@@ -180,6 +286,9 @@ jobs:
           video = ROOT / 'assets/videos/events/wolf-mother-butler-event.mp4'
           if not video.is_file() or video.stat().st_size < 100_000:
               raise SystemExit('WOLF MOTHER BUTLER EVENT: FAIL - event video missing')
+          bgm = ROOT / 'assets/audio/teeth_behind_the_glass.mp3'
+          if not bgm.is_file() or bgm.stat().st_size < 1_000_000:
+              raise SystemExit('WOLF MOTHER BUTLER EVENT: FAIL - event BGM missing')
 
           print('WOLF MOTHER BUTLER EVENT: PASS')
           PY
@@ -192,6 +301,7 @@ jobs:
           node --check js/event-bootstrap.js
           node --check js/wolf-mother-butler-event.js
           python3 scripts/check-wolf-mother-butler-event.py
+          python3 scripts/version-sync.py --check
           python3 scripts/generate-assets-manifest.py --check
           python3 scripts/generate-event-probability-list.py --check
           test -z "$(git diff origin/main -- styles.css quiz-event-v2.css quiz-event-v2-base-v940.css)" || { echo '固定UI CSSが変更されています'; exit 1; }
@@ -200,9 +310,10 @@ jobs:
       - name: 一時ワークフローを元へ戻してコミット
         shell: bash
         run: |
+          rm -f .jxj-run-wmb
           git checkout origin/main -- .github/workflows/update-metals.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'v0.10.941 狼・執事イベント実装'
+          git commit -m 'v0.10.941 狼・執事イベント＋専用BGM実装'
           git push origin HEAD:${{ github.ref_name }}

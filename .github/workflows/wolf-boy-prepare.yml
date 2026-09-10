@@ -14,30 +14,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Pillow for pixel diagnostics
-        run: python3 -m pip install --quiet pillow
-
-      - name: Compare wolf-boy character pixels
+      - name: Print current asset hashes
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE_COMMIT=b613e6d269a127d857fce2e79b3e0d32911fade5
-          TMP_FILE="$(mktemp)"
-          for part in 00 01 02; do
-            git show "${SOURCE_COMMIT}:tmp/wolf-boy-assets/character.part.${part}"
-          done | tr -d '\r\n' | base64 --decode > "$TMP_FILE"
-          python3 - "$TMP_FILE" assets/images/events/wolf-boy.png <<'PY'
-          import hashlib, sys
-          from PIL import Image
-          expected = '35f3fceb4c02c70715d4faf04222d7f1f4562524270da87f6a5f442df6e1588a'
-          for label, path in [('history', sys.argv[1]), ('current', sys.argv[2])]:
-              im = Image.open(path).convert('RGBA')
-              h = hashlib.sha256(im.tobytes()).hexdigest()
-              print(f'{label}: size={im.size} rgba_sha256={h} exact_approved_pixels={h == expected}')
-          PY
-
-      - name: Stop after diagnostic
-        run: echo "Pixel comparison completed; no production files changed."
+          sha256sum assets/images/events/wolf-boy.png
+          sha256sum assets/images/events/wolf-boy-ring.png
+          sha256sum assets/videos/wolf-boy-ring-event.mp4
+          wc -c assets/images/events/wolf-boy.png assets/images/events/wolf-boy-ring.png assets/videos/wolf-boy-ring-event.mp4

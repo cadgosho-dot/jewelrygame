@@ -17,6 +17,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Pillow for pixel diagnostics
+        run: python3 -m pip install --quiet pillow
+
       - name: Compare wolf-boy character pixels
         shell: bash
         run: |

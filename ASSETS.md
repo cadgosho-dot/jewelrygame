@@ -14,14 +14,14 @@
 
 ## 集計
 
-- 総ファイル数: **581**
-- 画像: **456**
+- 総ファイル数: **584**
+- 画像: **458**
 - 音源: **100**
-- 動画: **12**
+- 動画: **13**
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **458** / 直接参照未検出: **123**
+- 静的な直接参照を検出: **462** / 直接参照未検出: **122**
 
 ## 重要な由来記録
 
@@ -33,7 +33,7 @@
 
 | パス | 種別 | サイズ/画素 | 横縦 | 透明 | 使用場所（静的検出） | 由来 | 加工可否 | SHA-256 |
 |---|---|---:|---|---|---|---|---|---|
-| assets/audio/amb-craft.ogg | 音源 | 935,503 B | - | - | `tools/test-audio-transitions.mjs:58 (basename)`<br>`js/audio-scene-map.js:47 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2c29c50bd6d87ea721e5577b0281c0c429f23ac70c2f5ccd20096d48ccc54612 |
+| assets/audio/amb-craft.ogg | 音源 | 935,503 B | - | - | `js/wolf-boy-ring-event.js:11` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2c29c50bd6d87ea721e5577b0281c0c429f23ac70c2f5ccd20096d48ccc54612 |
 | assets/audio/amb-displayShop.ogg | 音源 | 690,138 B | - | - | `js/audio-scene-map.js:62 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 746316abd2b0db2664c5fb6278f76e216ec4bb94d8f782c61e0a42803c8264c3 |
 | assets/audio/amb-glab.ogg | 音源 | 935,503 B | - | - | `js/audio-scene-map.js:87 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2c29c50bd6d87ea721e5577b0281c0c429f23ac70c2f5ccd20096d48ccc54612 |
 | assets/audio/amb-hospital-clock.wav | 音源 | 176,444 B | - | - | `sw.js:50` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3f63dbe400e9c51c3183d14748bd4d5f354e1cfc8693248d8a5e0c4b78e53438 |
@@ -213,6 +213,8 @@
 | assets/images/events/tourist.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:15888`<br>`js/memories-screen.js:33` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a2e3c5edae6e61f2d2ab8bb6ba1cdd3a68ac364cb8628efadb046c600adc8eb6 |
 | assets/images/events/western-union-messenger.png | 画像 | 1000×1536 | 縦 | あり | `scripts/check-regression-baseline.py:112`<br>`js/app.js:14411`<br>`js/memories-screen.js:9` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7c974adc83fafaa8a109aea6ba8eb48457b4dba7010c2e2de083130d30eae113 |
 | assets/images/events/white-bunny.png | 画像 | 1007×1283 | 縦 | あり | `js/app.js:15998`<br>`js/memories-screen.js:36` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63bdc7446fb2fa885b6a61f60553268d8cdb9248da1d5eea735efa2213266b99 |
+| assets/images/events/wolf-boy-ring.png | 画像 | 1483×1132 | 横 | あり | `js/wolf-boy-ring-event.js:8`<br>`scripts/check-wolf-boy-ring-event.py:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ea631c473bd48a395d5771dc588b3e21d1320b5231dc192a1f12c63d8d051299 |
+| assets/images/events/wolf-boy.png | 画像 | 1024×1549 | 縦 | あり | `js/wolf-boy-ring-event.js:7`<br>`scripts/check-wolf-boy-ring-event.py:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a7bee4bf8ec075552b2765692b349e2e71c696d4fd92771bbc73fd3dac2798c4 |
 | assets/images/events/workshop-kappa-jade-rough.png | 画像 | 1254×1254 | 正方形 | あり | `js/app.js:15611`<br>`js/memories-screen.js:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a5a650e96d46f26c435b43bc96a5d21b9497779750a98d051c10093e78e79e0d |
 | assets/images/events/workshop-kappa-jade.png | 画像 | 1122×1402 | 縦 | あり | `js/app.js:15619` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 02621dd81e10b9f1c272123c842c772bfa86524261820ee6824614455f2c5bc6 |
 | assets/images/events/yowamushi.png | 画像 | 500×600 | 縦 | あり | `sw.js:49`<br>`js/app.js:8219` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c7c4d0eafb7180a57e29ef62d79eed2d0e728b119cfa70e2f941b08129c61bed |
@@ -371,7 +373,7 @@
 | assets/images/loose/ruby/emerald.png | 画像 | 281×332 | 縦 | あり | `js/app.js:1318` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c4d2c29d7f831f2a11beb9baef883b1022614a03411027d2257c962647656bd3 |
 | assets/images/loose/ruby/marquise.png | 画像 | 228×402 | 縦 | あり | `js/app.js:1317` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b75cc32ef13dcbf46fe1ef8f4c54881cabae5e97ebbd115da1208d82b2660f4f |
 | assets/images/loose/ruby/oval-cabochon.png | 画像 | 283×339 | 縦 | あり | `js/app.js:1321` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b0c151c5189664d5a6c3ac7ce8d7084b8dc77ec886edbd26212d62b5bccf7a52 |
-| assets/images/loose/ruby/oval.png | 画像 | 293×350 | 縦 | あり | `js/app.js:1315` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0930ef8eeffc1e1e6586a83e48f4a8f78dcba0a921296a12dfd632eda50957f5 |
+| assets/images/loose/ruby/oval.png | 画像 | 293×350 | 縦 | あり | `js/wolf-boy-ring-event.js:10`<br>`js/app.js:1315`<br>`scripts/check-wolf-boy-ring-event.py:68` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0930ef8eeffc1e1e6586a83e48f4a8f78dcba0a921296a12dfd632eda50957f5 |
 | assets/images/loose/ruby/pear.png | 画像 | 296×391 | 縦 | あり | `js/app.js:1316` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cf8b1e95df47256c94ed8583faa66d617d83fa571a1619abf6d5b325aa2f0b78 |
 | assets/images/loose/ruby/round-cabochon.png | 画像 | 350×364 | 縦 | あり | `js/app.js:1320` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b835ded4da98f1f3fbecdbbbd6a59d98379d21854d1ae0cce94b5c6c08e8faea |
 | assets/images/loose/ruby/round.png | 画像 | 399×427 | 縦 | あり | `js/app.js:1314` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2c36f48838f5828d2c27f121efddb3acc9439c3806f36af391972d913cf6f8ac |
@@ -501,8 +503,8 @@
 | assets/images/sleep.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 26b311327c2681b303b4ca059f8573af3723379165a5c501266ecbd15293e147 |
 | assets/images/space-portrait.webp | 画像 | 711×1536 | 縦 | なし | `scripts/check-regression-baseline.py:110` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 32cd95dd2f71a062d8a682ef7b06c91b2273807345249a35262f6013385f1a9a |
 | assets/images/space.webp | 画像 | 1536×688 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e0a14b374193885ac01244a356ba37883a021adab5ca9d8fef844ca0df586d9 |
-| assets/images/store-portrait.webp | 画像 | 864×1536 | 縦 | なし | `scripts/check-regression-baseline.py:108` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 667e2750d7640e006fe9ced9d0753d21d0ae3e692a274dca1ac9d81ae11f5665 |
-| assets/images/store.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5b74c1131a116a22c6a50349a2975ab0e0d9efb469e3b2005d44c8d1f631630e |
+| assets/images/store-portrait.webp | 画像 | 864×1536 | 縦 | なし | `js/wolf-boy-ring-event.js:13`<br>`scripts/check-regression-baseline.py:108` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 667e2750d7640e006fe9ced9d0753d21d0ae3e692a274dca1ac9d81ae11f5665 |
+| assets/images/store.webp | 画像 | 1536×691 | 横 | なし | `js/wolf-boy-ring-event.js:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5b74c1131a116a22c6a50349a2975ab0e0d9efb469e3b2005d44c8d1f631630e |
 | assets/images/today-gem-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9983b93a5d621b423ca6f488940ce0a30e8cfde454368a9ef527a26bdfcefe8f |
 | assets/images/today-gem.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 406168b5a747d7607dd75749ef2e095e346beac9472ea76ba4314f431638ed83 |
 | assets/images/tools/bench-peg.png | 画像 | 1156×528 | 横 | あり | `js/game-data-core.js:3603` | 受領アセット（TOOL_IMAGE_INTAKE_MANIFEST_v0.10.484.json, source=1000019139.png） | 変更禁止（原本由来。明示許可時のみ加工） | f163464054cdab75c42f88239d6c5a6f6c60ec832051254430d1fa4042bbd263 |
@@ -561,10 +563,10 @@
 | assets/images/tropical-shop/wood_medium_b.png | 画像 | 957×563 | 横 | あり | `js/app.js:443 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 064a57d75297b2c8d04f849c46f29a11999ae5c815c049f011cf52c8eea57328 |
 | assets/images/tropical-shop/wood_small_a.png | 画像 | 1200×373 | 横 | あり | `js/app.js:443 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5cb139e73e44cb44b1ade56ea2b48c88a6cf0509af6a3921ef5616846e3125d2 |
 | assets/images/tropical-shop/wood_small_b.png | 画像 | 1121×580 | 横 | あり | `js/app.js:443 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 44812724c81d82354d96bcf33e3abbf1ddd206a85aa07f8124c8b60ac7c2e612 |
-| assets/images/ui/memories-bg-landscape-v738.webp | 画像 | 960×432 | 横 | なし | `js/memories-backgrounds.js:1` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 64a384b075d935ea52ca6e32518e583f36f790dda1ef99a2c28ab6d546e91023 |
+| assets/images/ui/memories-bg-landscape-v738.webp | 画像 | 960×432 | 横 | なし | `js/memories-backgrounds.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 64a384b075d935ea52ca6e32518e583f36f790dda1ef99a2c28ab6d546e91023 |
 | assets/images/ui/memories-bg-portrait-v738.webp | 画像 | 432×768 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 08fd7cf99dce71b4a4d4eed7d03e2a77d535cc88fb889e4063482d88522a876e |
 | assets/images/ui/memories-bg-portrait-v746.webp | 画像 | 432×768 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 08fd7cf99dce71b4a4d4eed7d03e2a77d535cc88fb889e4063482d88522a876e |
-| assets/images/ui/memories-bg-portrait-v748.webp | 画像 | 360×640 | 縦 | なし | `js/memories-backgrounds.js:2` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5bf9215c04862d31e673d2c0d8aa84c01d6e027c60e8af447bbf55b2251fd777 |
+| assets/images/ui/memories-bg-portrait-v748.webp | 画像 | 360×640 | 縦 | なし | `js/memories-backgrounds.js:4` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5bf9215c04862d31e673d2c0d8aa84c01d6e027c60e8af447bbf55b2251fd777 |
 | assets/images/workshop-portrait.webp | 画像 | 864×1536 | 縦 | なし | `scripts/check-regression-baseline.py:107` | 由来記録なし | 要確認（明示許可がない限り加工しない） | abc31e3aafd5340e32422f52189e1672ee4bcbd14823d81ecfaabb532854e433 |
 | assets/images/workshop-staff-apprentice-v754.base64.txt | データ | 19,523 B | - | - | `workshop-staff-images-v754.js:8` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8048f1acae0f2794031a006ce89fe292000007510ba40ae924749ef96e1c6e62 |
 | assets/images/workshop-staff-skilled-v754.base64.txt | データ | 10,852 B | - | - | `workshop-staff-images-v754.js:9` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 34d1ac20a4d486bf71c140be2b9539b69edeb7ce3c33f2e599c340ef444a68e2 |
@@ -614,3 +616,4 @@
 | assets/videos/events/tattoo-woman-amber-intro.mp4 | 動画 | 5,977,611 B | - | - | `js/app.js:420` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 18d2431c7f3359a5f47307fc6892622ef93379db4efa2695fe58a228554c97ee |
 | assets/videos/events/terry-california-intro.mp4 | 動画 | 5,391,328 B | - | - | `js/app.js:9349` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bd2bb97b9fb2f8a74daf1fe6a4db585f15798da23c15d5747d0fea6b0dbdee4e |
 | assets/videos/events/western-union-antique-diamond-intro.mp4 | 動画 | 3,324,190 B | - | - | `js/app.js:327` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 35570fc0b8c47b949efb5d942c663f94d64c9856123682b32141b6e82472a2be |
+| assets/videos/wolf-boy-ring-event.mp4 | 動画 | 6,230,396 B | - | - | `js/wolf-boy-ring-event.js:9`<br>`scripts/check-wolf-boy-ring-event.py:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d3bbf7df02d6af0ec55065341ce507fc954edc2a7ed982ec42e850062b5090ef |

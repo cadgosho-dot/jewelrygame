@@ -78,6 +78,8 @@ SOURCE_ORDER = [
     'js/local-save-storage.js',
     'js/loose-gem-professional.js',
     'js/memories-backgrounds.js',
+    'js/event-bootstrap.js',
+    'js/wolf-boy-ring-event.js',
     'js/security-config.js',
     'js/workshop-staff-images-loader-v754.js',
     'manifest.webmanifest',

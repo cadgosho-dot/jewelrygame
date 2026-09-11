@@ -1,0 +1,227 @@
+name: Modularize store rent v0.10.941
+
+on:
+  push:
+    branches:
+      - feature/store-rent-escalation-v010941
+
+permissions:
+  contents: write
+
+jobs:
+  modularize-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/store-rent-escalation-v010941
+          fetch-depth: 0
+
+      - name: Move store rent calculation into finance module
+        shell: bash
+        run: |
+          mkdir -p js/finance tools
+
+          cat > js/finance/store-rent.js <<'EOF'
+          export const STORE_RENT_ESCALATION_PERIOD_DAYS = 360;
+          export const STORE_RENT_ESCALATION_MAX_YEARS = 10;
+          export const STORE_RENT_ESCALATION_RATE = 1.2;
+          export const STORE_RENT_ESCALATION_ROUNDING_UNIT = 1000;
+
+          export function calculateStoreMonthlyRent(baseRent, currentDay, rentedDay) {
+            const base = Math.max(0, Number(baseRent) || 0);
+            if (!base) return 0;
+
+            const rented = Number(rentedDay);
+            if (!Number.isFinite(rented) || rented <= 0) return base;
+
+            const current = Math.max(1, Math.floor(Number(currentDay) || 1));
+            const start = Math.max(1, Math.floor(rented));
+            const elapsedDays = Math.max(0, current - start);
+            const increaseYears = Math.min(
+              STORE_RENT_ESCALATION_MAX_YEARS,
+              Math.floor(elapsedDays / STORE_RENT_ESCALATION_PERIOD_DAYS),
+            );
+
+            let rent = base;
+            for (let year = 0; year < increaseYears; year += 1) {
+              rent = Math.ceil((rent * STORE_RENT_ESCALATION_RATE) / STORE_RENT_ESCALATION_ROUNDING_UNIT)
+                * STORE_RENT_ESCALATION_ROUNDING_UNIT;
+            }
+            return rent;
+          }
+          EOF
+
+          cat > tools/test-store-rent-escalation.mjs <<'EOF'
+          import assert from 'node:assert/strict';
+          import { calculateStoreMonthlyRent } from '../js/finance/store-rent.js';
+
+          const sequences = new Map([
+            [150000, [150000, 180000, 216000, 260000, 312000, 375000, 450000, 540000, 648000, 778000, 934000]],
+            [400000, [400000, 480000, 576000, 692000, 831000, 998000, 1198000, 1438000, 1726000, 2072000, 2487000]],
+            [700000, [700000, 840000, 1008000, 1210000, 1452000, 1743000, 2092000, 2511000, 3014000, 3617000, 4341000]],
+          ]);
+
+          for (const [base, expected] of sequences) {
+            const actual = expected.map((_, year) => calculateStoreMonthlyRent(base, 100 + (year * 360), 100));
+            assert.deepEqual(actual, expected, `rent sequence mismatch for ${base}`);
+          }
+
+          assert.equal(calculateStoreMonthlyRent(150000, 459, 100), 150000);
+          assert.equal(calculateStoreMonthlyRent(150000, 460, 100), 180000);
+          assert.equal(calculateStoreMonthlyRent(150000, 3699, 100), 778000);
+          assert.equal(calculateStoreMonthlyRent(150000, 3700, 100), 934000);
+          assert.equal(calculateStoreMonthlyRent(150000, 99999, 100), 934000);
+          assert.equal(calculateStoreMonthlyRent(150000, 99999, undefined), 150000);
+          assert.equal(calculateStoreMonthlyRent(0, 99999, 100), 0);
+
+          console.log('STORE RENT ESCALATION REGRESSION: PASS');
+          EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app_path = Path('js/app.js')
+          text = app_path.read_text(encoding='utf-8')
+          old = """const STORE_RENT_ESCALATION_PERIOD_DAYS = 360;
+          const STORE_RENT_ESCALATION_MAX_YEARS = 10;
+          const STORE_RENT_ESCALATION_RATE = 1.2;
+          const STORE_RENT_ESCALATION_ROUNDING_UNIT = 1000;
+
+          function storeMonthlyRent(branchNumber = 1) {
+            const baseRent = Math.max(0, Number(STORE_MONTHLY_RENTS[branchNumber]) || 0);
+            if (!baseRent) return 0;
+
+            const branch = (state?.store?.branches || []).find((entry) => Number(entry?.number) === Number(branchNumber));
+            if (!branch) return baseRent;
+
+            const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
+            const rentedDay = Math.max(1, Math.floor(Number(branch?.rentedDay) || 1));
+            const elapsedDays = Math.max(0, currentDay - rentedDay);
+            const increaseYears = Math.min(
+              STORE_RENT_ESCALATION_MAX_YEARS,
+              Math.floor(elapsedDays / STORE_RENT_ESCALATION_PERIOD_DAYS),
+            );
+
+            let rent = baseRent;
+            for (let year = 0; year < increaseYears; year += 1) {
+              rent = Math.ceil((rent * STORE_RENT_ESCALATION_RATE) / STORE_RENT_ESCALATION_ROUNDING_UNIT)
+                * STORE_RENT_ESCALATION_ROUNDING_UNIT;
+            }
+            return rent;
+          }
+          """
+          new = """function storeMonthlyRent(branchNumber = 1) {
+            const branch = (state?.store?.branches || []).find((entry) => Number(entry?.number) === Number(branchNumber));
+            return calculateStoreMonthlyRent(STORE_MONTHLY_RENTS[branchNumber], state?.game?.day, branch?.rentedDay);
+          }
+          """
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one inline store-rent block, found {text.count(old)}')
+          text = text.replace(old, new, 1)
+          import_line = "import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.941';\n"
+          if import_line not in text:
+              text = import_line + text
+          app_path.write_text(text, encoding='utf-8')
+
+          sw_path = Path('sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          old_sw = "'./manifest.webmanifest', './quiz-event-v2.css?v=0.10.941', './js/app.js?v=0.10.941', './js/runtime/lazy-modules.js?v=0.10.941'"
+          new_sw = "'./manifest.webmanifest', './quiz-event-v2.css?v=0.10.941', './js/app.js?v=0.10.941', './js/finance/store-rent.js?v=0.10.941', './js/runtime/lazy-modules.js?v=0.10.941'"
+          if sw.count(old_sw) != 1:
+              raise SystemExit(f'Expected one service-worker app anchor, found {sw.count(old_sw)}')
+          sw_path.write_text(sw.replace(old_sw, new_sw, 1), encoding='utf-8')
+
+          version_path = Path('scripts/version-sync.py')
+          version = version_path.read_text(encoding='utf-8')
+          sw_anchor = "    Rule('sw.js', 'app.js precache key', qparam(r'\\./js/app\\.js'), keep_prefix),\n"
+          sw_rule = "    Rule('sw.js', 'store-rent.js precache key', qparam(r'\\./js/finance/store-rent\\.js'), keep_prefix),\n"
+          if sw_rule not in version:
+              if version.count(sw_anchor) != 1:
+                  raise SystemExit('version-sync sw app anchor mismatch')
+              version = version.replace(sw_anchor, sw_anchor + sw_rule, 1)
+          app_anchor = "    Rule('js/app.js', 'game-data.js import key', qparam(r'\\./game-data\\.js'), keep_prefix),\n"
+          app_rule = "    Rule('js/app.js', 'store-rent.js import key', qparam(r'\\./finance/store-rent\\.js'), keep_prefix),\n"
+          if app_rule not in version:
+              if version.count(app_anchor) != 1:
+                  raise SystemExit('version-sync app import anchor mismatch')
+              version = version.replace(app_anchor, app_anchor + app_rule, 1)
+          version_path.write_text(version, encoding='utf-8')
+
+          current_path = Path('scripts/check-current.py')
+          current = current_path.read_text(encoding='utf-8')
+          anchor = "    ('月次固定費処理保護', [sys.executable, str(ROOT / 'scripts/check-process-monthly-fixed-costs-regression.py')]),\n"
+          rule = "    ('店舗家賃年次上昇', [sys.executable, str(ROOT / 'scripts/check-store-rent-escalation.py')]),\n"
+          if rule not in current:
+              if current.count(anchor) != 1:
+                  raise SystemExit('check-current monthly fixed costs anchor mismatch')
+              current = current.replace(anchor, rule + anchor, 1)
+          current_path.write_text(current, encoding='utf-8')
+          PY
+
+          cat > scripts/check-store-rent-escalation.py <<'PY'
+          #!/usr/bin/env python3
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          ROOT = Path(__file__).resolve().parents[1]
+          APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+          MODULE = (ROOT / 'js/finance/store-rent.js').read_text(encoding='utf-8')
+          SW = (ROOT / 'sw.js').read_text(encoding='utf-8')
+          VERSION_SYNC = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
+          CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
+
+          checks = {
+              'versioned module import': "./finance/store-rent.js?v=0.10.941" in APP,
+              'thin app wrapper delegates': 'return calculateStoreMonthlyRent(STORE_MONTHLY_RENTS[branchNumber], state?.game?.day, branch?.rentedDay);' in APP,
+              'inline escalation constants removed from app': 'STORE_RENT_ESCALATION_PERIOD_DAYS' not in APP,
+              'module period 360': 'STORE_RENT_ESCALATION_PERIOD_DAYS = 360' in MODULE,
+              'module maximum 10 years': 'STORE_RENT_ESCALATION_MAX_YEARS = 10' in MODULE,
+              'module rate 1.2': 'STORE_RENT_ESCALATION_RATE = 1.2' in MODULE,
+              'module rounding 1000': 'STORE_RENT_ESCALATION_ROUNDING_UNIT = 1000' in MODULE,
+              'module per-year rounding': 'Math.ceil((rent * STORE_RENT_ESCALATION_RATE) / STORE_RENT_ESCALATION_ROUNDING_UNIT)' in MODULE,
+              'missing legacy rentedDay stays at base rent': 'if (!Number.isFinite(rented) || rented <= 0) return base;' in MODULE,
+              'service worker precaches module': './js/finance/store-rent.js?v=0.10.941' in SW,
+              'version sync tracks module precache': 'store-rent.js precache key' in VERSION_SYNC,
+              'version sync tracks module import': 'store-rent.js import key' in VERSION_SYNC,
+              'current audit registers check': 'check-store-rent-escalation.py' in CURRENT,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          for name, ok in checks.items():
+              print(('OK' if ok else 'NG') + ': ' + name)
+          if failed:
+              raise SystemExit('STORE RENT ESCALATION: static checks failed: ' + ', '.join(failed))
+
+          subprocess.run(['node', str(ROOT / 'tools/test-store-rent-escalation.mjs')], check=True)
+          print('STORE RENT ESCALATION: PASS')
+          PY
+
+      - name: Validate focused behavior and app size
+        shell: bash
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-store-rent-escalation.py
+          python3 scripts/check-process-monthly-fixed-costs-regression.py
+          python3 scripts/check-rent-next-store-regression.py
+          python3 scripts/check-repository-hygiene.py
+          git diff --check
+          python3 - <<'PY'
+          from pathlib import Path
+          size = Path('js/app.js').stat().st_size
+          limit = 1411760
+          print(f'app.js size after module split: {size}/{limit} bytes')
+          if size > limit:
+              raise SystemExit('app.js size guard exceeded')
+          PY
+
+      - name: Commit modular implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/modularize-store-rent-v010941.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "店舗家賃計算をfinanceモジュールへ分離"
+          git push origin HEAD:feature/store-rent-escalation-v010941

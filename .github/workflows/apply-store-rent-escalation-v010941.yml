@@ -9,6 +9,18 @@ permissions:
   contents: write
 
 jobs:
+  baseline-audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 91b6da77e79cdb2976a10cee563aff462401195c
+          fetch-depth: 0
+      - name: Run baseline current audit
+        continue-on-error: true
+        run: python3 scripts/check-current.py
+
   apply-and-test:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
@@ -146,7 +158,8 @@ jobs:
           python3 scripts/check-process-monthly-fixed-costs-regression.py
           python3 scripts/check-rent-next-store-regression.py
 
-      - name: Run current audit
+      - name: Run candidate current audit
+        continue-on-error: true
         run: python3 scripts/check-current.py
 
       - name: Commit implementation

@@ -1,0 +1,50 @@
+name: Finalize store rent v0.10.941
+
+on:
+  push:
+    branches:
+      - feature/store-rent-escalation-v010941
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/store-rent-escalation-v010941
+          fetch-depth: 0
+      - name: Record changelog and remove temporary workflows
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('CHANGELOG.md')
+          text = path.read_text(encoding='utf-8')
+          heading = '## v0.10.941\n'
+          if heading not in text:
+              anchor = '## v0.10.940\n'
+              if text.count(anchor) != 1:
+                  raise SystemExit('CHANGELOG anchor mismatch')
+              entry = '''## v0.10.941
+- 全店舗の月額家賃を、各店舗の契約日から360日ごとに1.2倍へ更新し、各回1,000円単位で切り上げ、10回（3,600日）以降は固定する仕様へ変更。
+- 店舗家賃の計算本体を `js/finance/store-rent.js` へ分離し、`app.js` は既存の店舗状態を渡す接続処理だけに縮小。既存セーブ形式・自宅家賃・店舗契約・月次固定費の処理順は変更なし。
+- 家賃年次上昇、店舗契約、月次固定費、モジュール独立性の回帰検査と、PWAキャッシュ・VERSION同期・管理資料整合を追加／更新。
+
+'''
+              path.write_text(text.replace(anchor, entry + anchor, 1), encoding='utf-8')
+          PY
+          rm -f .github/workflows/verify-store-rent-v010941.yml
+          rm -f .github/workflows/finalize-store-rent-v010941.yml
+      - name: Commit final feature state
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "v0.10.941 店舗家賃仕様の変更履歴を記録"
+          git push origin HEAD:feature/store-rent-escalation-v010941

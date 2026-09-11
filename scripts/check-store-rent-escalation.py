@@ -9,6 +9,7 @@ MODULE = (ROOT / 'js/finance/store-rent.js').read_text(encoding='utf-8')
 SW = (ROOT / 'sw.js').read_text(encoding='utf-8')
 VERSION_SYNC = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
 CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
+CHANGELOG = (ROOT / 'CHANGELOG.md').read_text(encoding='utf-8')
 
 checks = {
     'versioned module import': "./finance/store-rent.js?v=0.10.941" in APP,
@@ -27,6 +28,9 @@ checks = {
     'version sync tracks module precache': 'store-rent.js precache key' in VERSION_SYNC,
     'version sync tracks module import': 'store-rent.js import key' in VERSION_SYNC,
     'current audit registers check': 'check-store-rent-escalation.py' in CURRENT,
+    'changelog records v0.10.941': '## v0.10.941' in CHANGELOG,
+    'changelog records 360-day escalation': '360日ごとに1.2倍' in CHANGELOG and '1,000円単位で切り上げ' in CHANGELOG,
+    'changelog records finance module split': 'js/finance/store-rent.js' in CHANGELOG,
 }
 failed = [name for name, ok in checks.items() if not ok]
 for name, ok in checks.items():

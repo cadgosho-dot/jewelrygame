@@ -1,3 +1,4 @@
+import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.941';
 import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
@@ -4618,32 +4619,9 @@ function storeLeaseCost(branchNumber = 1) {
   return Math.max(0, Number(STORE_LEASE_COSTS[branchNumber]) || Number(STORE_LEASE_COST) || 0);
 }
 
-const STORE_RENT_ESCALATION_PERIOD_DAYS = 360;
-const STORE_RENT_ESCALATION_MAX_YEARS = 10;
-const STORE_RENT_ESCALATION_RATE = 1.2;
-const STORE_RENT_ESCALATION_ROUNDING_UNIT = 1000;
-
 function storeMonthlyRent(branchNumber = 1) {
-  const baseRent = Math.max(0, Number(STORE_MONTHLY_RENTS[branchNumber]) || 0);
-  if (!baseRent) return 0;
-
   const branch = (state?.store?.branches || []).find((entry) => Number(entry?.number) === Number(branchNumber));
-  if (!branch) return baseRent;
-
-  const currentDay = Math.max(1, Math.floor(Number(state?.game?.day) || 1));
-  const rentedDay = Math.max(1, Math.floor(Number(branch?.rentedDay) || 1));
-  const elapsedDays = Math.max(0, currentDay - rentedDay);
-  const increaseYears = Math.min(
-    STORE_RENT_ESCALATION_MAX_YEARS,
-    Math.floor(elapsedDays / STORE_RENT_ESCALATION_PERIOD_DAYS),
-  );
-
-  let rent = baseRent;
-  for (let year = 0; year < increaseYears; year += 1) {
-    rent = Math.ceil((rent * STORE_RENT_ESCALATION_RATE) / STORE_RENT_ESCALATION_ROUNDING_UNIT)
-      * STORE_RENT_ESCALATION_ROUNDING_UNIT;
-  }
-  return rent;
+  return calculateStoreMonthlyRent(STORE_MONTHLY_RENTS[branchNumber], state?.game?.day, branch?.rentedDay);
 }
 
 function contractedStoreBranches() {

@@ -66,6 +66,7 @@ CHECKS = [
     ('ジュエリーショップ売買処理保護', [sys.executable, str(ROOT / 'scripts/check-jewelry-shop-trade-regression.py')]),
     ('工房工具購入・修理処理保護', [sys.executable, str(ROOT / 'scripts/check-workshop-tool-trade-regression.py')]),
     ('店舗契約処理保護', [sys.executable, str(ROOT / 'scripts/check-rent-next-store-regression.py')]),
+    ('店舗家賃年次上昇', [sys.executable, str(ROOT / 'scripts/check-store-rent-escalation.py')]),
     ('月次固定費処理保護', [sys.executable, str(ROOT / 'scripts/check-process-monthly-fixed-costs-regression.py')]),
     ('未払い固定費支払い処理保護', [sys.executable, str(ROOT / 'scripts/check-outstanding-payment-regression.py')]),
     ('熱帯魚屋購入処理保護', [sys.executable, str(ROOT / 'scripts/check-tropical-shop-purchase-regression.py')]),

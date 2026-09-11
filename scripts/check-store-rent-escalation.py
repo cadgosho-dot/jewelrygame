@@ -1,53 +1,35 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import math
+import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+MODULE = (ROOT / 'js/finance/store-rent.js').read_text(encoding='utf-8')
+SW = (ROOT / 'sw.js').read_text(encoding='utf-8')
+VERSION_SYNC = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
+CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
 
-required = [
-    'const STORE_RENT_ESCALATION_PERIOD_DAYS = 360;',
-    'const STORE_RENT_ESCALATION_MAX_YEARS = 10;',
-    'const STORE_RENT_ESCALATION_RATE = 1.2;',
-    'const STORE_RENT_ESCALATION_ROUNDING_UNIT = 1000;',
-    'Math.floor(elapsedDays / STORE_RENT_ESCALATION_PERIOD_DAYS)',
-    'Math.ceil((rent * STORE_RENT_ESCALATION_RATE) / STORE_RENT_ESCALATION_ROUNDING_UNIT)',
-    '(state?.store?.branches || []).find',
-    'Number(branch?.rentedDay)',
-]
-for needle in required:
-    if needle not in APP:
-        raise SystemExit(f'STORE RENT ESCALATION: missing {needle}')
-
-def rent_for(base, elapsed_days):
-    years = min(10, max(0, elapsed_days) // 360)
-    rent = base
-    for _ in range(years):
-        rent = math.ceil((rent * 1.2) / 1000) * 1000
-    return rent
-
-cases = {
-    150000: [150000, 180000, 216000, 260000, 312000, 375000, 450000, 540000, 648000, 778000, 934000],
-    400000: [400000, 480000, 576000, 692000, 831000, 998000, 1198000, 1438000, 1726000, 2072000, 2487000],
-    700000: [700000, 840000, 1008000, 1210000, 1452000, 1743000, 2092000, 2511000, 3014000, 3617000, 4341000],
+checks = {
+    'versioned module import': "./finance/store-rent.js?v=0.10.941" in APP,
+    'thin app wrapper delegates': 'return calculateStoreMonthlyRent(STORE_MONTHLY_RENTS[branchNumber], state?.game?.day, branch?.rentedDay);' in APP,
+    'inline escalation constants removed from app': 'STORE_RENT_ESCALATION_PERIOD_DAYS' not in APP,
+    'module period 360': 'STORE_RENT_ESCALATION_PERIOD_DAYS = 360' in MODULE,
+    'module maximum 10 years': 'STORE_RENT_ESCALATION_MAX_YEARS = 10' in MODULE,
+    'module rate 1.2': 'STORE_RENT_ESCALATION_RATE = 1.2' in MODULE,
+    'module rounding 1000': 'STORE_RENT_ESCALATION_ROUNDING_UNIT = 1000' in MODULE,
+    'module per-year rounding': 'Math.ceil((rent * STORE_RENT_ESCALATION_RATE) / STORE_RENT_ESCALATION_ROUNDING_UNIT)' in MODULE,
+    'missing legacy rentedDay stays at base rent': 'if (!Number.isFinite(rented) || rented <= 0) return base;' in MODULE,
+    'service worker precaches module': './js/finance/store-rent.js?v=0.10.941' in SW,
+    'version sync tracks module precache': 'store-rent.js precache key' in VERSION_SYNC,
+    'version sync tracks module import': 'store-rent.js import key' in VERSION_SYNC,
+    'current audit registers check': 'check-store-rent-escalation.py' in CURRENT,
 }
-for base, expected in cases.items():
-    actual = [rent_for(base, year * 360) for year in range(11)]
-    if actual != expected:
-        raise SystemExit(f'STORE RENT ESCALATION: {base} sequence mismatch: {actual}')
+failed = [name for name, ok in checks.items() if not ok]
+for name, ok in checks.items():
+    print(('OK' if ok else 'NG') + ': ' + name)
+if failed:
+    raise SystemExit('STORE RENT ESCALATION: static checks failed: ' + ', '.join(failed))
 
-boundary = [
-    (150000, 359, 150000),
-    (150000, 360, 180000),
-    (150000, 719, 180000),
-    (150000, 720, 216000),
-    (150000, 3599, 778000),
-    (150000, 3600, 934000),
-    (150000, 99999, 934000),
-]
-for base, elapsed, expected in boundary:
-    actual = rent_for(base, elapsed)
-    if actual != expected:
-        raise SystemExit(f'STORE RENT ESCALATION boundary failed: {base}, {elapsed}: {actual} != {expected}')
-
+subprocess.run(['node', str(ROOT / 'tools/test-store-rent-escalation.mjs')], check=True)
 print('STORE RENT ESCALATION: PASS')

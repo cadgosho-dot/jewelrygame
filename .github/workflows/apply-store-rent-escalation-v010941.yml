@@ -122,7 +122,22 @@ jobs:
 
       - name: Synchronize version
         run: |
-          python3 scripts/version-sync.py --set 0.10.941
+          python3 scripts/version-sync.py --set 0.10.941 || true
+          python3 - <<'PY'
+          from pathlib import Path
+          targets = [
+              Path('js/event-bootstrap.js'),
+              Path('js/memories-backgrounds.js'),
+              Path('js/wolf-boy-ring-event.js'),
+          ]
+          for path in targets:
+              text = path.read_text(encoding='utf-8')
+              old = '?v=0.10.940'
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one {old}, found {count}')
+              path.write_text(text.replace(old, '?v=0.10.941', 1), encoding='utf-8')
+          PY
           python3 scripts/version-sync.py --check
 
       - name: Run focused regression checks

@@ -10,7 +10,6 @@ const WOLF_IMAGE = './assets/images/events/wolf-mother.png';
 const BUTLER_IMAGE = './assets/images/events/sheep-butler.png';
 const K18_IMAGE = './assets/images/metals/k18yg.png';
 const VIDEO_URL = './assets/videos/events/wolf-mother-butler-event.mp4';
-const BGM_URL = './assets/audio/events/teeth_behind_the_glass.ogg';
 const STORE_BG_LANDSCAPE = './assets/images/store.webp';
 const STORE_BG_PORTRAIT = './assets/images/store-portrait.webp';
 const DAYS_AFTER_WOLF_BOY = 7;
@@ -19,16 +18,16 @@ const REWARD_METAL_KEY = 'gold';
 const REWARD_AMOUNT = 20;
 
 const STEPS = Object.freeze([
-  { stage:'dialogue1', speaker:'執事', image:BUTLER_IMAGE, text:'失礼いたします、、こちらで先日、坊ちゃまが指輪を作っていただいたと聞きまして、、、狼のマスクをした羊の子供です、、、' },
-  { stage:'dialogue2', speaker:'狼', image:WOLF_IMAGE, text:'おまえが、あの指輪を作った職人か？、、、' },
-  { stage:'dialogue3', speaker:'執事', image:BUTLER_IMAGE, text:'坊ちゃまが、大変お世話になったようでございます、、、' },
-  { stage:'dialogue4', speaker:'執事', image:BUTLER_IMAGE, text:'奥様は、たいそう喜んでおられました、、、、ありがとうございました、、、' },
-  { stage:'dialogue5', speaker:'狼', image:WOLF_IMAGE, text:'黙れ、、、' },
-  { stage:'dialogue6', speaker:'狼', image:WOLF_IMAGE, text:'今日はどの程度の店か見に来ただけだ、、、、\nあと、、、まだ支払いも済ませていないようだな、、、あの恥知らずが、、、、' },
-  { stage:'dialogue7', speaker:'執事', image:BUTLER_IMAGE, text:'こちらをお収めください、、、、' },
-  { stage:'reward', type:'reward' },
-  { stage:'dialogue8', speaker:'狼', image:WOLF_IMAGE, text:'今後私の身につけるものは全てこの店に任せる、、、また来る、、、、' },
-  { stage:'dialogue9', speaker:'執事', image:BUTLER_IMAGE, text:'それでは、失礼致します、、、' },
+  { stage: 'dialogue1', speaker: '執事', image: BUTLER_IMAGE, text: '失礼いたします、、こちらで先日、坊ちゃまが指輪を作っていただいたと聞きまして、、、狼のマスクをした羊の子供です、、、' },
+  { stage: 'dialogue2', speaker: '狼', image: WOLF_IMAGE, text: 'おまえが、あの指輪を作った職人か？、、、' },
+  { stage: 'dialogue3', speaker: '執事', image: BUTLER_IMAGE, text: '坊ちゃまが、大変お世話になったようでございます、、、' },
+  { stage: 'dialogue4', speaker: '執事', image: BUTLER_IMAGE, text: '奥様は、たいそう喜んでおられました、、、、ありがとうございました、、、' },
+  { stage: 'dialogue5', speaker: '狼', image: WOLF_IMAGE, text: '黙れ、、、' },
+  { stage: 'dialogue6', speaker: '狼', image: WOLF_IMAGE, text: '今日はどの程度の店か見に来ただけだ、、、、\nあと、、、まだ支払いも済ませていないようだな、、、あの恥知らずが、、、、' },
+  { stage: 'dialogue7', speaker: '執事', image: BUTLER_IMAGE, text: 'こちらをお収めください、、、、' },
+  { stage: 'reward', type: 'reward' },
+  { stage: 'dialogue8', speaker: '狼', image: WOLF_IMAGE, text: '今後私の身につけるものは全てこの店に任せる、、、また来る、、、、' },
+  { stage: 'dialogue9', speaker: '執事', image: BUTLER_IMAGE, text: 'それでは、失礼致します、、、' },
 ]);
 const VALID_STAGES = new Set(['movie', ...STEPS.map((step) => step.stage)]);
 
@@ -37,14 +36,13 @@ let stage = 'movie';
 let rewardGranted = false;
 let overlay = null;
 let videoEl = null;
-let eventBgm = null;
 let previousBodyScreen = '';
 let observerScreen = String(document.body?.dataset?.screen || '');
 let storeCheckSerial = 0;
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[char]));
 }
 
@@ -56,7 +54,7 @@ function readResumeState() {
   try {
     const saved = JSON.parse(safeLocalStorage()?.getItem(ACTIVE_KEY) || 'null');
     if (!saved?.active || !VALID_STAGES.has(saved.stage)) return null;
-    return { stage:saved.stage, rewardGranted:Boolean(saved.rewardGranted) };
+    return { stage: saved.stage, rewardGranted: Boolean(saved.rewardGranted) };
   } catch (_) {
     return null;
   }
@@ -65,10 +63,10 @@ function readResumeState() {
 function writeResumeState() {
   try {
     safeLocalStorage()?.setItem(ACTIVE_KEY, JSON.stringify({
-      active:true,
+      active: true,
       stage,
       rewardGranted,
-      updatedAt:Date.now(),
+      updatedAt: Date.now(),
     }));
   } catch (_) {}
 }
@@ -81,9 +79,11 @@ function snapshot() {
   try { return globalThis.__JXJ_MEMORIES_STATE__?.() || null; } catch (_) { return null; }
 }
 
-// The public memories snapshot is intentionally cloned. For this one event reward,
-// borrow the references used to build that clone for one synchronous call only,
-// then restore structuredClone immediately. No shared UI or ordinary inventory path is changed.
+// __JXJ_MEMORIES_STATE__ returns a structured clone for read-only event checks.
+// The reward is exceptional because the user explicitly requires K18 +20g even
+// beyond the normal storage limit. Capture the one synchronous source object
+// passed to structuredClone, mutate only inventory.metals.gold, then immediately
+// restore structuredClone. __JXJ_MEMORIES_RECORD__ saves the resulting game state.
 function liveEventStateParts() {
   const snapshotFn = globalThis.__JXJ_MEMORIES_STATE__;
   const originalClone = globalThis.structuredClone;
@@ -129,9 +129,8 @@ function installStyle() {
 #${OVERLAY_ID}{position:fixed;inset:0;z-index:14000;overflow:hidden;background:#090603;color:#eef3f4;isolation:isolate;touch-action:manipulation}
 #${OVERLAY_ID} *{box-sizing:border-box}
 #${OVERLAY_ID} .wolf-mother-store-bg{position:absolute;inset:0;z-index:0;background:#090603 url("${STORE_BG_LANDSCAPE}") center/contain no-repeat}
-#${OVERLAY_ID} .wolf-mother-store-shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.04) 45%,rgba(0,0,0,.38));pointer-events:none}
 #${OVERLAY_ID} .wolf-mother-event-content{position:absolute;inset:0;z-index:2;overflow:hidden}
-body[data-screen="workshopKappaJadeEvent"] #${OVERLAY_ID} .visit-event-dialogue.speaker-wolf>small{color:#ff6c63!important}
+body[data-screen="workshopKappaJadeEvent"] #${OVERLAY_ID} .visit-event-dialogue.speaker-wolf>small{color:#d98c83!important}
 body[data-screen="workshopKappaJadeEvent"] #${OVERLAY_ID} .visit-event-dialogue.speaker-butler>small{color:#eadcc8!important}
 body[data-screen="workshopKappaJadeEvent"] #${OVERLAY_ID} .kappa-jade-reward-button img.wolf-mother-k18-image{object-fit:contain!important}
 #${OVERLAY_ID} .wolf-mother-movie{position:absolute;inset:0;z-index:3;background:#000}
@@ -147,7 +146,7 @@ function eventEndButton() {
 }
 
 function backgroundMarkup(content) {
-  return `<div class="wolf-mother-store-bg" aria-hidden="true"></div><div class="wolf-mother-store-shade" aria-hidden="true"></div><div class="wolf-mother-event-content">${content}</div>`;
+  return `<div class="wolf-mother-store-bg" aria-hidden="true"></div><div class="wolf-mother-event-content">${content}</div>`;
 }
 
 function dialogueMarkup(step) {
@@ -181,32 +180,6 @@ function movieMarkup() {
   </section></main>`;
 }
 
-function ensureEventBgm() {
-  if (eventBgm) return eventBgm;
-  eventBgm = new Audio(BGM_URL);
-  eventBgm.preload = 'auto';
-  eventBgm.loop = true;
-  eventBgm.volume = 0.72;
-  return eventBgm;
-}
-
-function startEventBgm() {
-  try {
-    const audio = ensureEventBgm();
-    audio.pause();
-    audio.currentTime = 0;
-    const promise = audio.play();
-    promise?.catch?.(() => {});
-  } catch (_) {}
-}
-
-function stopEventBgm() {
-  try {
-    eventBgm?.pause();
-    if (eventBgm) eventBgm.currentTime = 0;
-  } catch (_) {}
-}
-
 function setBodyEventScreen() {
   if (!document.body) return;
   if (!previousBodyScreen) previousBodyScreen = String(document.body.dataset.screen || 'store');
@@ -225,7 +198,7 @@ function render() {
   if (stage === 'movie') {
     overlay.innerHTML = movieMarkup();
     videoEl = overlay.querySelector('[data-wmb-video]');
-    videoEl?.addEventListener('ended', finishMovie, { once:true });
+    videoEl?.addEventListener('ended', finishMovie, { once: true });
     const play = videoEl?.play?.();
     play?.catch?.(() => {});
     return;
@@ -244,7 +217,8 @@ async function finishMovie() {
   if (!running || stage !== 'movie') return;
   try { videoEl?.pause(); } catch (_) {}
   videoEl = null;
-  playSfx('western-union-arrival', { gain:.82 });
+  await resumeAudio().catch(() => {});
+  playSfx('western-union-arrival', { gain: .82 });
   persist('dialogue1');
   render();
 }
@@ -259,7 +233,6 @@ function cleanup({ completed = false } = {}) {
   running = false;
   try { videoEl?.pause(); } catch (_) {}
   videoEl = null;
-  stopEventBgm();
   if (completed) clearResumeState();
   overlay?.remove();
   overlay = null;
@@ -269,8 +242,8 @@ function cleanup({ completed = false } = {}) {
 
 function completeEvent() {
   clearResumeState();
-  playSfx('success', { gain:.72 });
-  cleanup({ completed:true });
+  playSfx('success', { gain: .72 });
+  cleanup({ completed: true });
 }
 
 function advanceDialogue() {
@@ -280,7 +253,7 @@ function advanceDialogue() {
     completeEvent();
     return;
   }
-  playSfx('select', { gain:.66 });
+  playSfx('select', { gain: .66 });
   persist(next);
   render();
 }
@@ -299,10 +272,10 @@ function grantK18IgnoringCapacity() {
   const current = Math.max(0, Number(live.inventory.metals[REWARD_METAL_KEY]) || 0);
   live.inventory.metals[REWARD_METAL_KEY] = Math.round((current + REWARD_AMOUNT) * 10) / 10;
   const recorded = globalThis.__JXJ_MEMORIES_RECORD__?.({
-    key:BUTLER_MEMORY_KEY,
-    name:'執事',
-    image:BUTLER_IMAGE,
-    description:'狼の家に仕える羊の執事。',
+    key: BUTLER_MEMORY_KEY,
+    name: '執事',
+    image: BUTLER_IMAGE,
+    description: '狼の家に仕える羊の執事。',
   });
   if (!recorded) {
     live.inventory.metals[REWARD_METAL_KEY] = current;
@@ -319,8 +292,8 @@ function receiveReward() {
     console.warn('[WolfMotherButlerEvent] K18 reward update failed');
     return;
   }
-  playSfx('coin', { gain:.96 });
-  vibrate([22,30,58]);
+  playSfx('coin', { gain: .96 });
+  vibrate([22, 30, 58]);
   persist(nextAfter(stage));
   render();
 }
@@ -331,11 +304,11 @@ function handleClick(event) {
   const action = button.dataset.wmbAction;
   if (action === 'end') {
     clearResumeState();
-    cleanup({ completed:true });
+    cleanup({ completed: true });
     return;
   }
   if (action === 'skipMovie' && stage === 'movie') {
-    finishMovie();
+    void finishMovie();
     return;
   }
   if (action === 'receiveReward') {
@@ -347,10 +320,10 @@ function handleClick(event) {
 
 function recordWolf() {
   globalThis.__JXJ_MEMORIES_RECORD__?.({
-    key:WOLF_MEMORY_KEY,
-    name:'狼',
-    image:WOLF_IMAGE,
-    description:'狼少年の母親。',
+    key: WOLF_MEMORY_KEY,
+    name: '狼',
+    image: WOLF_IMAGE,
+    description: '狼少年の母親。',
   });
 }
 
@@ -363,14 +336,14 @@ function startEvent(startStage = 'movie', restoredReward = false) {
   previousBodyScreen = String(document.body?.dataset?.screen || 'store');
   overlay = document.createElement('div');
   overlay.id = OVERLAY_ID;
-  overlay.setAttribute('role','dialog');
-  overlay.setAttribute('aria-label','狼と執事イベント');
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-label', '狼と執事イベント');
   overlay.addEventListener('click', handleClick);
   document.body.appendChild(overlay);
   recordWolf();
   writeResumeState();
-  suspendAudio();
-  startEventBgm();
+  if (stage === 'movie') suspendAudio();
+  else resumeAudio().catch(() => {});
   render();
   return true;
 }
@@ -407,12 +380,12 @@ function handleScreenChange() {
 }
 
 const observer = new MutationObserver(handleScreenChange);
-observer.observe(document.body, { attributes:true, attributeFilter:['data-screen'] });
+observer.observe(document.body, { attributes: true, attributeFilter: ['data-screen'] });
 if (observerScreen === 'store') queueMicrotask(onStoreEntered);
 
 export const WOLF_MOTHER_BUTLER_EVENT_SPEC = Object.freeze({
-  daysAfterWolfBoy:DAYS_AFTER_WOLF_BOY,
-  triggerChance:TRIGGER_CHANCE,
-  rewardMetalKey:REWARD_METAL_KEY,
-  rewardAmount:REWARD_AMOUNT,
+  daysAfterWolfBoy: DAYS_AFTER_WOLF_BOY,
+  triggerChance: TRIGGER_CHANCE,
+  rewardMetalKey: REWARD_METAL_KEY,
+  rewardAmount: REWARD_AMOUNT,
 });

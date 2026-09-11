@@ -1,0 +1,31 @@
+name: Sync event probability doc v0.10.941
+
+on:
+  push:
+    branches:
+      - feature/store-rent-escalation-v010941
+
+permissions:
+  contents: write
+
+jobs:
+  sync-doc:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/store-rent-escalation-v010941
+          fetch-depth: 0
+      - name: Regenerate event probability reference
+        run: |
+          python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-event-probability-list.py --check
+      - name: Commit generated documentation only
+        run: |
+          rm -f .github/workflows/sync-event-probability-doc-v010941.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add EVENT_PROBABILITY_LIST.md .github/workflows/sync-event-probability-doc-v010941.yml
+          git commit -m "イベント確率管理資料を現行行番号へ同期"
+          git push origin HEAD:feature/store-rent-escalation-v010941

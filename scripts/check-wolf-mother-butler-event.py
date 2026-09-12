@@ -14,6 +14,7 @@ BUTLER = ROOT / 'assets/images/events/sheep-butler.png'
 VIDEO = ROOT / 'assets/videos/events/wolf-mother-butler-event.mp4'
 BGM = ROOT / 'assets/music/events/teeth_behind_the_glass.mp3'
 
+# 承認済み正式アセットは再生成・再圧縮を許さず、SHA-256で完全一致を固定する。
 EXPECTED_SHA256 = {
     MOTHER: '16ca7238c13c986a17c608d5a861e750ee0de34e9a82a935c93a39ddbf5edcb6',
     BUTLER: 'aa8f912ce0e3dfef4cfba0eacda3d6e852a4d828de191d3e235da6372b4b5a5e',

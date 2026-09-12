@@ -1,0 +1,13 @@
+JEWELRY×JEWELRY 母親・執事イベント 正式アセット
+配置先:
+assets/videos/events/wolf-mother-butler-event.mp4
+assets/music/events/teeth_behind_the_glass.mp3
+
+SHA-256:
+wolf-mother-butler-event.mp4  197bc8dee4ca7a783e9748daab6c3976b173a2ede3d255cf02e927c2f80cf699
+teeth_behind_the_glass.mp3   5a4ba334442e98d8baa69404f3b2ad4804b5925d1d7c405dc4797bbfcff36cd3
+
+対象PR:
+#113
+branch:
+feature/wolf-mother-butler-event-safe

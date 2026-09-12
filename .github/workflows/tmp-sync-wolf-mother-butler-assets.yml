@@ -1,0 +1,35 @@
+name: 母親・執事イベント管理資料同期
+
+on:
+  push:
+    branches:
+      - feature/wolf-mother-butler-event-safe
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/wolf-mother-butler-event-safe
+          fetch-depth: 0
+      - name: 管理資料を同期
+        run: |
+          python3 scripts/generate-assets-manifest.py
+          python3 scripts/generate-event-probability-list.py
+      - name: 一時ワークフローを削除
+        run: git rm .github/workflows/tmp-sync-wolf-mother-butler-assets.yml
+      - name: 変更をコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ASSETS.md EVENT_PROBABILITY_LIST.md
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "母親・執事イベント管理資料を同期"
+          git push origin HEAD:feature/wolf-mother-butler-event-safe

@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.941** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.942** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -14,14 +14,14 @@
 
 ## 集計
 
-- 総ファイル数: **584**
-- 画像: **458**
-- 音源: **100**
-- 動画: **13**
+- 総ファイル数: **588**
+- 画像: **460**
+- 音源: **101**
+- 動画: **14**
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **462** / 直接参照未検出: **122**
+- 静的な直接参照を検出: **466** / 直接参照未検出: **122**
 
 ## 重要な由来記録
 
@@ -202,6 +202,7 @@
 | assets/images/events/pearl-human.png | 画像 | 386×602 | 縦 | あり | `js/app.js:11091`<br>`js/memories-screen.js:24` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 586482842184581075c0c216328fb3adb3821972e06bd935478be47bff501274 |
 | assets/images/events/pearl.png | 画像 | 1181×1170 | 横 | あり | `js/app.js:1255`<br>`js/memories-screen.js:10` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aa78c4aab2d7b3ec7f95708f56cc57b00be06bd5bdeac691a0bb961c05830454 |
 | assets/images/events/ridley-okazaki.png | 画像 | 1500×1024 | 横 | あり | `js/app.js:15973`<br>`js/memories-screen.js:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f55f05124a481cf78046966c8c742e9c88957e00b251b177ac49dbb9a5e4bcce |
+| assets/images/events/sheep-butler.png | 画像 | 1229×1536 | 縦 | あり | `js/wolf-mother-butler-event.js:10`<br>`scripts/check-wolf-mother-butler-event.py:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aa8f912ce0e3dfef4cfba0eacda3d6e852a4d828de191d3e235da6372b4b5a5e |
 | assets/images/events/speed-star.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:11133`<br>`js/memories-screen.js:26` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f1af4a0a1f82cc36f19a48ca72a95c4f7dbe6d04dc624dc96ef7869c6e90ef92 |
 | assets/images/events/store-thief-old-woman.png | 画像 | 995×1408 | 縦 | あり | `js/app.js:18850`<br>`js/memories-screen.js:21` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e9720b4c6052237dcead769807d760324af6fff3100f0e84fc2ec10ef3d62bc2 |
 | assets/images/events/storyteller-v745.png | 画像 | 934×1010 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 91745c970c5524778e97e2e03037bd4bea4498f503fb24279dbfc8a10dac4458 |
@@ -215,6 +216,7 @@
 | assets/images/events/white-bunny.png | 画像 | 1007×1283 | 縦 | あり | `js/app.js:16000`<br>`js/memories-screen.js:36` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63bdc7446fb2fa885b6a61f60553268d8cdb9248da1d5eea735efa2213266b99 |
 | assets/images/events/wolf-boy-ring.png | 画像 | 1483×1132 | 横 | あり | `js/wolf-boy-ring-event.js:8`<br>`scripts/check-wolf-boy-ring-event.py:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ea631c473bd48a395d5771dc588b3e21d1320b5231dc192a1f12c63d8d051299 |
 | assets/images/events/wolf-boy.png | 画像 | 1024×1549 | 縦 | あり | `js/wolf-boy-ring-event.js:7`<br>`scripts/check-wolf-boy-ring-event.py:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a7bee4bf8ec075552b2765692b349e2e71c696d4fd92771bbc73fd3dac2798c4 |
+| assets/images/events/wolf-mother.png | 画像 | 1229×1536 | 縦 | あり | `js/wolf-mother-butler-event.js:9`<br>`scripts/check-wolf-mother-butler-event.py:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 16ca7238c13c986a17c608d5a861e750ee0de34e9a82a935c93a39ddbf5edcb6 |
 | assets/images/events/workshop-kappa-jade-rough.png | 画像 | 1254×1254 | 正方形 | あり | `js/app.js:15613`<br>`js/memories-screen.js:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a5a650e96d46f26c435b43bc96a5d21b9497779750a98d051c10093e78e79e0d |
 | assets/images/events/workshop-kappa-jade.png | 画像 | 1122×1402 | 縦 | あり | `js/app.js:15621` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 02621dd81e10b9f1c272123c842c772bfa86524261820ee6824614455f2c5bc6 |
 | assets/images/events/yowamushi.png | 画像 | 500×600 | 縦 | あり | `sw.js:49`<br>`js/app.js:8221` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c7c4d0eafb7180a57e29ef62d79eed2d0e728b119cfa70e2f941b08129c61bed |
@@ -463,7 +465,7 @@
 | assets/images/meal-ramen.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | d3da36c7938223df67e5d1112d5063f18455c2dffef5cfa7e014536863fda6a2 |
 | assets/images/meal-soba-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | c413239337c47e8ce8b20f8ee4f1ba868b415efb204a1150c9bca9a93f961378 |
 | assets/images/meal-soba.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | a432f37be3826c6a185dcebab0fa9ed9be2e14fb9ca7ca677a720a83586db444 |
-| assets/images/metals/k18yg.png | 画像 | 1369×319 | 横 | あり | `js/app.js:5190` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ddd298d5e0fb28ed064ab93035cf2bcc67cc834b19b22306042916c94504535d |
+| assets/images/metals/k18yg.png | 画像 | 1369×319 | 横 | あり | `js/app.js:5190`<br>`js/wolf-mother-butler-event.js:11` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ddd298d5e0fb28ed064ab93035cf2bcc67cc834b19b22306042916c94504535d |
 | assets/images/metals/pt900.png | 画像 | 1234×643 | 横 | あり | `js/app.js:5191` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bdadf406785ffd1fd7b647f8fb2a4dfadacb385765203a24debb3c7b8032ecb6 |
 | assets/images/metals/sv925.png | 画像 | 1422×1142 | 横 | あり | `js/app.js:5192` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 24d28f7cf6b6bf5dc1481ec4c6890921e5c5bab380934912d961f37e28612a7e |
 | assets/images/metalshop-portrait.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 01def48f984140ba70ee1cea43d461a03d6e7660fc69a0bb967387e01785e021 |
@@ -503,8 +505,8 @@
 | assets/images/sleep.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 26b311327c2681b303b4ca059f8573af3723379165a5c501266ecbd15293e147 |
 | assets/images/space-portrait.webp | 画像 | 711×1536 | 縦 | なし | `scripts/check-regression-baseline.py:110` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 32cd95dd2f71a062d8a682ef7b06c91b2273807345249a35262f6013385f1a9a |
 | assets/images/space.webp | 画像 | 1536×688 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e0a14b374193885ac01244a356ba37883a021adab5ca9d8fef844ca0df586d9 |
-| assets/images/store-portrait.webp | 画像 | 864×1536 | 縦 | なし | `js/wolf-boy-ring-event.js:13`<br>`scripts/check-regression-baseline.py:108` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 667e2750d7640e006fe9ced9d0753d21d0ae3e692a274dca1ac9d81ae11f5665 |
-| assets/images/store.webp | 画像 | 1536×691 | 横 | なし | `js/wolf-boy-ring-event.js:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5b74c1131a116a22c6a50349a2975ab0e0d9efb469e3b2005d44c8d1f631630e |
+| assets/images/store-portrait.webp | 画像 | 864×1536 | 縦 | なし | `js/wolf-boy-ring-event.js:13`<br>`scripts/check-regression-baseline.py:108`<br>`js/wolf-mother-butler-event.js:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 667e2750d7640e006fe9ced9d0753d21d0ae3e692a274dca1ac9d81ae11f5665 |
+| assets/images/store.webp | 画像 | 1536×691 | 横 | なし | `js/wolf-boy-ring-event.js:12`<br>`js/wolf-mother-butler-event.js:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5b74c1131a116a22c6a50349a2975ab0e0d9efb469e3b2005d44c8d1f631630e |
 | assets/images/today-gem-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9983b93a5d621b423ca6f488940ce0a30e8cfde454368a9ef527a26bdfcefe8f |
 | assets/images/today-gem.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 406168b5a747d7607dd75749ef2e095e346beac9472ea76ba4314f431638ed83 |
 | assets/images/tools/bench-peg.png | 画像 | 1156×528 | 横 | あり | `js/game-data-core.js:3603` | 受領アセット（TOOL_IMAGE_INTAKE_MANIFEST_v0.10.484.json, source=1000019139.png） | 変更禁止（原本由来。明示許可時のみ加工） | f163464054cdab75c42f88239d6c5a6f6c60ec832051254430d1fa4042bbd263 |
@@ -603,6 +605,7 @@
 | assets/minigames/kaitenzushi/data/sushi_catalog.json | データ | 2,723 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | fa8421c136d8db8809847a7b026e3b3e9c4fbfb7ec03d8eae01505c36727ba0e |
 | assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:89`<br>`js/app.js:19503`<br>`js/kaitenzushi-embedded.js:2` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
 | assets/minigames/retro-battle/index.html | ミニゲーム/コード | 18,690,587 B | - | - | `js/app.js:317` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d8332ba68b6a4ce9634ac1f7746fd146b0b4cff089aeaeb5e801580c9dcd1c5b |
+| assets/music/events/teeth_behind_the_glass.mp3 | 音源 | 3,760,183 B | - | - | `js/wolf-mother-butler-event.js:13`<br>`scripts/check-wolf-mother-butler-event.py:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5a4ba334442e98d8baa69404f3b2ad4804b5925d1d7c405dc4797bbfcff36cd3 |
 | assets/videos/cinema/.gitkeep | その他 | 0 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
 | assets/videos/cinema/cinema-film-01.mp4 | 動画 | 5,040,480 B | - | - | `data/cinema-event-videos.json:3 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c3dcdca3865cd5a104ee9ac9169dbeebf44616f748aed20557619a685bf5eccb |
 | assets/videos/cinema/cinema-film-02.mp4 | 動画 | 3,714,087 B | - | - | `data/cinema-event-videos.json:4 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f158a2fe9dd0e459e1386a27cc5d22cd97e1ab2360dd795c2404957d054d1c36 |
@@ -616,4 +619,5 @@
 | assets/videos/events/tattoo-woman-amber-intro.mp4 | 動画 | 5,977,611 B | - | - | `js/app.js:421` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 18d2431c7f3359a5f47307fc6892622ef93379db4efa2695fe58a228554c97ee |
 | assets/videos/events/terry-california-intro.mp4 | 動画 | 5,391,328 B | - | - | `js/app.js:9351` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bd2bb97b9fb2f8a74daf1fe6a4db585f15798da23c15d5747d0fea6b0dbdee4e |
 | assets/videos/events/western-union-antique-diamond-intro.mp4 | 動画 | 3,324,190 B | - | - | `js/app.js:328` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 35570fc0b8c47b949efb5d942c663f94d64c9856123682b32141b6e82472a2be |
+| assets/videos/events/wolf-mother-butler-event.mp4 | 動画 | 5,944,731 B | - | - | `js/wolf-mother-butler-event.js:12`<br>`scripts/check-wolf-mother-butler-event.py:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 197bc8dee4ca7a783e9748daab6c3976b173a2ede3d255cf02e927c2f80cf699 |
 | assets/videos/wolf-boy-ring-event.mp4 | 動画 | 6,230,396 B | - | - | `js/wolf-boy-ring-event.js:9`<br>`scripts/check-wolf-boy-ring-event.py:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d3bbf7df02d6af0ec55065341ce507fc954edc2a7ed982ec42e850062b5090ef |

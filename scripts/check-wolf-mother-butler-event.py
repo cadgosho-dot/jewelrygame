@@ -33,6 +33,9 @@ DIALOGUES = [
     'それでは、失礼致します、、、',
 ]
 
+PNG_SIGNATURE = bytes.fromhex('89504e470d0a1a0a')
+MP3_FRAME_PREFIXES = {bytes.fromhex('fffb'), bytes.fromhex('fff3'), bytes.fromhex('fff2')}
+
 
 def require(condition: bool, message: str) -> None:
     if not condition:
@@ -52,7 +55,6 @@ def main() -> None:
     source = MODULE.read_text(encoding='utf-8')
     bootstrap = BOOTSTRAP.read_text(encoding='utf-8')
 
-    # 狼少年イベントの後日談としての発生条件を固定する。
     require("const EVENT_KEY = 'wolfMotherButlerEvent';" in source, 'イベント記録キーが違います')
     require("const WOLF_BOY_MEMORY_KEY = 'wolfBoyRingEvent';" in source, '狼少年イベントとの連携キーが違います')
     require("const WOLF_MEMORY_KEY = 'wolfMotherVisitEvent';" in source, '母親の記録キーが違います')
@@ -65,18 +67,15 @@ def main() -> None:
     require('if (eventState?.completed) return false;' in source, '一度だけ発生の完了判定がありません')
     require("patchEvent({ active:false, stage:'completed', completed:true, rewardGranted });" in source, '完了状態の保存がありません')
 
-    # 登録済みセリフを一字も書き換えない。
     for text in DIALOGUES:
         require(text in source, f'登録済みセリフが一致しません: {text}')
 
-    # 報酬仕様。
     require("const REWARD_METAL_KEY = 'gold';" in source, 'K18YG報酬の地金キーが違います')
     require('const REWARD_AMOUNT = 20;' in source, 'K18YG 20g報酬が違います')
     require("message:'K18YGが20g追加されました'" in source, '報酬メッセージが違います')
     require('grantMetalIgnoreCapacity?.(REWARD_METAL_KEY, REWARD_AMOUNT' in source, '容量無視の報酬付与処理がありません')
     require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')
 
-    # 正式アセットと専用BGM。
     require("const WOLF_IMAGE = './assets/images/events/wolf-mother.png';" in source, '母親画像パスが違います')
     require("const BUTLER_IMAGE = './assets/images/events/sheep-butler.png';" in source, '執事画像パスが違います')
     require("const VIDEO_URL = './assets/videos/events/wolf-mother-butler-event.mp4';" in source, '動画パスが違います')
@@ -85,10 +84,9 @@ def main() -> None:
     require('eventBgm.loop = true;' in source, '専用BGMのループがありません')
     require('suspendBgm();' in source, 'イベント開始時の通常BGM停止がありません')
     require("if (stage === 'movie') suspendAudio();" in source, '動画中の通常音声停止がありません')
-    require('if (stage !== \'movie\') resumeAudio().catch(() => {});' in source, '会話中の環境音復帰がありません')
+    require("if (stage !== 'movie') resumeAudio().catch(() => {});" in source, '会話中の環境音復帰がありません')
     require('stopEventBgm();' in source and 'await resumeBgm();' in source, 'イベント終了時の通常BGM復帰がありません')
 
-    # MOVIE二重進行防止と通常イベントUI固定クラス。
     require('let movieFinishing = false;' in source, 'MOVIE二重進行防止状態がありません')
     require("if (!running || stage !== 'movie' || movieFinishing) return;" in source, 'MOVIE二重進行防止判定がありません')
     require('event-safety-recovery' in source, 'イベント終了ボタンがありません')
@@ -98,7 +96,6 @@ def main() -> None:
     require('event-dialogue-card visit-event-dialogue glass-panel' in source, '通常イベントUIのセリフ枠を使用していません')
     require('kappa-jade-reward-button' in source, '通常イベントUIの報酬枠を使用していません')
 
-    # VERSIONと独立モジュール起動口。
     require(f"from './audio.js?v={version}'" in source, 'audio.js参照VERSIONが同期していません')
     require(f"import './wolf-mother-butler-event.js?v={version}';" in bootstrap, 'event-bootstrapからイベント本体が読み込まれていません')
 
@@ -107,11 +104,11 @@ def main() -> None:
         actual = sha256(path)
         require(actual == expected, f'{path.relative_to(ROOT)} が承認済み正式アセットと一致しません: {actual}')
 
-    require(MOTHER.read_bytes().startswith(b'\\x89PNG\\r\\n\\x1a\\n'), '母親画像がPNGではありません')
-    require(BUTLER.read_bytes().startswith(b'\\x89PNG\\r\\n\\x1a\\n'), '執事画像がPNGではありません')
+    require(MOTHER.read_bytes().startswith(PNG_SIGNATURE), '母親画像がPNGではありません')
+    require(BUTLER.read_bytes().startswith(PNG_SIGNATURE), '執事画像がPNGではありません')
     require(b'ftyp' in VIDEO.read_bytes()[:32], 'イベント動画がMP4ではありません')
     bgm_head = BGM.read_bytes()[:4]
-    require(bgm_head.startswith(b'ID3') or bgm_head[:2] in {b'\\xff\\xfb', b'\\xff\\xf3', b'\\xff\\xf2'}, '専用BGMがMP3ではありません')
+    require(bgm_head.startswith(b'ID3') or bgm_head[:2] in MP3_FRAME_PREFIXES, '専用BGMがMP3ではありません')
 
     print('OK: 母親・執事イベントの発生条件・登録済みセリフ・通常イベントUI・報酬・音声制御・正式アセットを確認しました。')
 

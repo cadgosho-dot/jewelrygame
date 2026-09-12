@@ -34,20 +34,23 @@ jobs:
       - name: v0.10.942へ同期
         shell: bash
         run: |
-          python3 scripts/version-sync.py --set 0.10.942
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           root = Path('.')
-          # version-sync.py の対象外でも、root js/*.js の ?v= は現行ビルド参照として
-          # check側で保護されているため、現行941から942へ揃える。
+          # version-sync.py は --set の最後に全 root js/*.js の ?v= を検査するため、
+          # 明示Rule外のイベント参照を先に現行941から942へ揃える。
           for path in sorted((root / 'js').glob('*.js')):
               text = path.read_text(encoding='utf-8')
               updated = text.replace('?v=0.10.941', '?v=0.10.942')
               if updated != text:
                   path.write_text(updated, encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --set 0.10.942
+          python3 - <<'PY'
+          from pathlib import Path
 
+          root = Path('.')
           current = root / 'scripts/check-current.py'
           text = current.read_text(encoding='utf-8')
           entry = "    ('母親・執事イベント', [sys.executable, str(ROOT / 'scripts/check-wolf-mother-butler-event.py')]),\n"

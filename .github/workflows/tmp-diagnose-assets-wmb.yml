@@ -1,4 +1,4 @@
-name: 母親・執事イベント ASSETS差分診断
+name: 母親・執事イベント 総合検査逐次診断
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,12 +16,10 @@ jobs:
           ref: feature/wolf-mother-butler-event-safe
           fetch-depth: 0
 
-      - name: ASSETS差分を表示
-        shell: bash
-        run: |
-          cp ASSETS.md /tmp/ASSETS.before.md
-          python3 scripts/generate-assets-manifest.py --write
-          echo '===== ASSETS DIFF START ====='
-          git --no-pager diff -- ASSETS.md || true
-          echo '===== ASSETS DIFF END ====='
-          python3 scripts/generate-assets-manifest.py --check
+      - name: 検査環境を準備
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: 総合検査を1本ずつ実行
+        env:
+          JXJ_CHECK_WORKERS: '1'
+        run: python3 -u scripts/check-current.py

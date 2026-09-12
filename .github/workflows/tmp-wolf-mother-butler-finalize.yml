@@ -1,0 +1,62 @@
+name: 母親・執事イベント v0.10.942 最終同期
+
+on:
+  push:
+    branches:
+      - feature/wolf-mother-butler-event-safe
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: feature/wolf-mother-butler-event-safe
+          fetch-depth: 0
+
+      - name: v0.10.942へ同期
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          old = '?v=0.10.941'
+          new = '?v=0.10.942'
+          for path in sorted(Path('js').glob('*.js')):
+              text = path.read_text(encoding='utf-8')
+              if old in text:
+                  path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          python3 scripts/version-sync.py --set 0.10.942
+          python3 scripts/version-sync.py --check
+
+      - name: 管理資料を正式同期
+        shell: bash
+        run: |
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-event-probability-list.py --write
+          python3 scripts/generate-assets-manifest.py --check
+          python3 scripts/generate-event-probability-list.py --check
+
+      - name: 母親・執事イベント専用検査
+        shell: bash
+        run: |
+          python3 scripts/check-wolf-mother-butler-event.py
+
+      - name: 一時ワークフローを削除してコミット
+        shell: bash
+        run: |
+          rm -f .github/workflows/tmp-wolf-mother-butler-finalize.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "更新なし"
+            exit 0
+          fi
+          git commit -m "v0.10.942 母親・執事イベント最終同期"
+          git push origin HEAD:feature/wolf-mother-butler-event-safe

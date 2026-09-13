@@ -74,6 +74,11 @@ def main() -> None:
     require('height:100dvh!important' in source and 'width:auto!important' in source, '横画面動画の高さ基準全体表示が変わっています')
     require('event-safety-recovery' in source, 'イベント終了ボタンがありません')
     require('MOVIEスキップ' in source, 'MOVIEスキップボタンがありません')
+    require("let movieFinishing = false;" in source, 'MOVIE進行の二重実行防止状態がありません')
+    require("if (!running || stage !== 'movie' || movieFinishing) return;" in source, 'MOVIE終了とスキップの二重進行防止判定がありません')
+    require('movieFinishing = true;' in source, 'MOVIE進行ロックがありません')
+    require("if (!running || stage !== 'movie') return;" in source, '音声復帰待機後のイベント状態再確認がありません')
+    require('finally {' in source and 'movieFinishing = false;' in source, 'MOVIE進行ロックの確実な解除がありません')
     require('background:transparent!important' in source, '通常イベントUIの透明セリフ枠が変わっています')
     require('cleanup({ completed: true });' in source, 'イベント終了時の復旧処理がありません')
 
@@ -91,7 +96,7 @@ def main() -> None:
     video_head = VIDEO.read_bytes()[:32]
     require(b'ftyp' in video_head, 'イベント動画がMP4ではありません')
 
-    print('OK: 狼少年・指輪イベントの発生条件・登録済みセリフ・通常イベントUI・承認済みアセットを確認しました。')
+    print('OK: 狼少年・指輪イベントの発生条件・登録済みセリフ・通常イベントUI・承認済みアセット・MOVIE進行ロックを確認しました。')
 
 
 if __name__ == '__main__':

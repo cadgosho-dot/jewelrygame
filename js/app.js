@@ -9504,7 +9504,7 @@ function alienAbductionEventState() {
     ? state.events.alienAbductionEvent
     : {};
   const validStages = new Set(['idle', 'intro1', 'intro2', 'abducted', 'returnPending', 'completed']);
-  state.events.alienAbductionEvent = {
+  const next = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     daysSlept: Math.max(0, Math.min(ALIEN_ABDUCTION_DAYS, Math.floor(Number(saved.daysSlept) || 0))),
@@ -9512,7 +9512,9 @@ function alienAbductionEventState() {
     totalTrips: Math.max(0, Math.floor(Number(saved.totalTrips) || 0)),
     chipGrantedThisTrip: Boolean(saved.chipGrantedThisTrip),
   };
-  return state.events.alienAbductionEvent;
+  Object.assign(saved, next);
+  state.events.alienAbductionEvent = saved;
+  return saved;
 }
 
 function isAlienAbducted() {
@@ -16044,7 +16046,7 @@ function emeraldCaptainKebabEventState() {
     ? state.events.emeraldCaptainKebabEvent
     : {};
   const validStages = new Set(['idle', 'intro1', 'intro2', 'showcase', 'purchaseResult', 'purchase', 'eating', 'farewell', 'completed']);
-  state.events.emeraldCaptainKebabEvent = {
+  const next = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     pendingMealId: typeof saved.pendingMealId === 'string' ? saved.pendingMealId : '',
@@ -16055,10 +16057,12 @@ function emeraldCaptainKebabEventState() {
     hungerAfter: Math.max(0, Math.min(7, Number(saved.hungerAfter) || 0)),
     gemTotalPrice: Math.max(0, Math.floor(Number(saved.gemTotalPrice) || emeraldCaptainKebabEventTotalCost())),
   };
-  if (!state.events.emeraldCaptainKebabEvent.active && !['idle', 'completed'].includes(state.events.emeraldCaptainKebabEvent.stage)) {
-    state.events.emeraldCaptainKebabEvent.stage = 'completed';
+  Object.assign(saved, next);
+  state.events.emeraldCaptainKebabEvent = saved;
+  if (!saved.active && !['idle', 'completed'].includes(saved.stage)) {
+    saved.stage = 'completed';
   }
-  return state.events.emeraldCaptainKebabEvent;
+  return saved;
 }
 
 function maybeStartEmeraldCaptainKebabEvent() {

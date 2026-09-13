@@ -32,23 +32,7 @@ jobs:
             git show origin/feature/home-property-b-v010944-clean:$f > "$f"
           done
           python3 scripts/temp-apply-home-property-v010945.py
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('scripts/version-sync.py')
-          s = p.read_text(encoding='utf-8')
-          anchor = "    Rule('js/memories-screen.js', 'memories VERSION', quoted_constant('VERSION'), keep_quote),\n"
-          extra = """    Rule('js/event-bootstrap.js', 'wolf-boy event import key', qparam(r'\\./wolf-boy-ring-event\\.js'), keep_prefix),
-    Rule('js/event-bootstrap.js', 'wolf-mother event import key', qparam(r'\\./wolf-mother-butler-event\\.js'), keep_prefix),
-    Rule('js/memories-backgrounds.js', 'event-bootstrap import key', qparam(r'\\./event-bootstrap\\.js'), keep_prefix),
-    Rule('js/wolf-boy-ring-event.js', 'audio import key', qparam(r'\\./audio\\.js'), keep_prefix),
-    Rule('js/wolf-mother-butler-event.js', 'audio import key', qparam(r'\\./audio\\.js'), keep_prefix),
-"""
-          if extra not in s:
-              if s.count(anchor) != 1:
-                  raise SystemExit('version-sync event anchor mismatch')
-              s = s.replace(anchor, anchor + extra, 1)
-              p.write_text(s, encoding='utf-8')
-          PY
+          python3 scripts/temp-version-sync-event-rules-v010945.py
           python3 scripts/version-sync.py --set 0.10.945
           python3 scripts/generate-event-probability-list.py --write
           node --check js/app.js
@@ -67,6 +51,7 @@ jobs:
           set -euo pipefail
           rm -f .github/workflows/temp-home-property-v010945-apply.yml
           rm -f scripts/temp-apply-home-property-v010945.py
+          rm -f scripts/temp-version-sync-event-rules-v010945.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A

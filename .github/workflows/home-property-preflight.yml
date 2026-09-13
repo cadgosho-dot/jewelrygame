@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - feature/home-property-b-v010944
-    paths:
-      - '.github/workflows/home-property-preflight.yml'
 
 permissions:
   contents: write
@@ -39,6 +37,32 @@ jobs:
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add scripts/check-current.py
             git commit -m '自宅物件検査を総合監査へ登録'
+            git push origin HEAD:feature/home-property-b-v010944
+          fi
+
+      - name: VERSION参照の最小同期
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          targets = {
+              Path('js/audio.js'): ("./audio-scene-map.js?v=0.10.943", "./audio-scene-map.js?v=0.10.944"),
+              Path('js/firebase-service.js'): ("./local-save-storage.js?v=0.10.943", "./local-save-storage.js?v=0.10.944"),
+          }
+          for path, (old, new) in targets.items():
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count == 1:
+                  path.write_text(text.replace(old, new, 1), encoding='utf-8')
+              elif count == 0 and new in text:
+                  pass
+              else:
+                  raise SystemExit(f'FAIL {path}: expected exactly one stale VERSION reference, got {count}')
+          PY
+          if ! git diff --quiet -- js/audio.js js/firebase-service.js; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add js/audio.js js/firebase-service.js
+            git commit -m 'v0.10.944 VERSION参照を最小同期'
             git push origin HEAD:feature/home-property-b-v010944
           fi
 

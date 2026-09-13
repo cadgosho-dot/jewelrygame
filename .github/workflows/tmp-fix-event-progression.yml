@@ -42,15 +42,15 @@ jobs:
               text = text[:pos] + new + text[pos + len(old):]
 
           replace_after(
-              'function normalizeOkachimachiDailyEventState(state, key, defaults) {',
+              'function normalizeOkachimachiDailyEventState(key, validStages, defaults = {}) {',
               '  state.events[key] = next;\n  return next;',
               '  Object.assign(saved, next);\n  state.events[key] = saved;\n  return saved;',
               8000,
           )
           replace_after(
-              'function pearlManEventState(state) {',
-              '  state.events.pearlMan = next;\n  return next;',
-              '  Object.assign(saved, next);\n  state.events.pearlMan = saved;\n  return saved;',
+              'function pearlHumanEventState() {',
+              '  state.events.pearlHumanEvent = next;\n  return next;',
+              '  Object.assign(saved, next);\n  state.events.pearlHumanEvent = saved;\n  return saved;',
               5000,
           )
 
@@ -64,7 +64,7 @@ jobs:
           text = Path('js/app.js').read_text(encoding='utf-8')
           checks = [
               'Object.assign(saved, next);\n  state.events[key] = saved;\n  return saved;',
-              'Object.assign(saved, next);\n  state.events.pearlMan = saved;\n  return saved;',
+              'Object.assign(saved, next);\n  state.events.pearlHumanEvent = saved;\n  return saved;',
           ]
           for check in checks:
               if text.count(check) != 1:

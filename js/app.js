@@ -18741,9 +18741,10 @@ function finishStoreTheftEvent() {
 }
 
 function recoverStoreTheftDisappearanceSequence() {
-  const eventState = storeTheftEventState();
+  let eventState = storeTheftEventState();
   if (!eventState.active || !['farewell', 'pause'].includes(eventState.stage)) return;
   applyStoreTheftEventLoss();
+  eventState = storeTheftEventState();
   eventState.stage = 'theftNotice';
   saveGame();
   playSfx('shoplift-steal', { gain: .76, rate: .88 });

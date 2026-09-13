@@ -62,6 +62,18 @@ checks['mystery Chinese retained reference crosses settlement helper'] = (
     and mystery_start.index('applyMysteryChineseMeal()') < mystery_start.index("eventState.stage = 'eating';")
 )
 
+store_loss = section('applyStoreTheftEventLoss')
+checks['store theft loss helper reacquires event state'] = 'const eventState = storeTheftEventState();' in store_loss
+store_recover = section('recoverStoreTheftDisappearanceSequence')
+store_loss_pos = store_recover.index('applyStoreTheftEventLoss();')
+store_reacquire_pos = store_recover.index('\n  eventState = storeTheftEventState();', store_loss_pos)
+checks['store theft recovery reacquires state after loss helper'] = (
+    'let eventState = storeTheftEventState();' in store_recover
+    and "eventState.stage = 'theftNotice';" in store_recover
+    and store_loss_pos < store_reacquire_pos
+    and store_reacquire_pos < store_recover.index("eventState.stage = 'theftNotice';", store_reacquire_pos)
+)
+
 for name, ok in checks.items():
     print(f"{'OK' if ok else 'NG'}: {name}")
 if not all(checks.values()):

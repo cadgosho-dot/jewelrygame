@@ -14,6 +14,17 @@ checks = {
     '横画面専用中央配置を維持': '@media (orientation:landscape){' in text and '.app{max-width:none;min-height:calc(100dvh - 16px);justify-content:center;align-items:center;gap:0}' in text,
 }
 
+
+marker = '<style id="aquarium-mobile-badge-return-clearance">'
+mobile_badge_style = text.split(marker, 1)[1].split('</style>', 1)[0] if marker in text else ''
+checks['携帯の飼育負荷を親画面の戻るボタンから右上へ退避'] = all(token in mobile_badge_style for token in (
+    '@media (orientation:portrait) and (max-width:820px),',
+    '(orientation:landscape) and (max-height:700px)',
+    'left:auto!important;',
+    'right:max(8px,env(safe-area-inset-right))!important;',
+))
+checks['水槽PC表示の既存左上バッジ位置を維持'] = '.badge{position:fixed;left:8px;top:8px;' in text
+
 failed = [name for name, ok in checks.items() if not ok]
 for name, ok in checks.items():
     print(('OK' if ok else 'NG') + ': ' + name)

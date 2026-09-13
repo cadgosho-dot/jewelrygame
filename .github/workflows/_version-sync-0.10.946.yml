@@ -1,0 +1,33 @@
+name: Temporary VERSION sync 0.10.946
+
+on:
+  push:
+    branches:
+      - chore/version-0.10.946-battle
+
+permissions:
+  contents: write
+
+jobs:
+  sync-version:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/version-0.10.946-battle
+          fetch-depth: 0
+      - name: Set VERSION 0.10.946
+        run: python3 scripts/version-sync.py --set 0.10.946
+      - name: Verify VERSION sync
+        run: python3 scripts/version-sync.py --check
+      - name: Remove temporary workflow and commit synchronized VERSION
+        run: |
+          rm .github/workflows/_version-sync-0.10.946.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 1
+          git commit -m "VERSIONを0.10.946へ更新"
+          git push origin HEAD:chore/version-0.10.946-battle

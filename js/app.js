@@ -1,12 +1,5 @@
 import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.944';
-import {
-  HOME_MOVE_COST,
-  homePropertyUnlocked,
-  normalizeHomeProperty,
-  homePropertyMonthlyRent,
-  homePropertyMoveTotal,
-  homePropertyBackgroundAsset,
-} from './finance/home-property.js?v=0.10.944';
+import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.944';
 import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
@@ -148,6 +141,23 @@ globalThis.__JXJ_MEMORIES_RECORD__ = (entry) => {
 };
 let screen = 'loading';
 let screenData = {};
+const homePropertyController = createHomePropertyController({
+  getState: () => state,
+  getScreenData: () => screenData,
+  shell,
+  yen,
+  version: VERSION,
+  isPortraitLayout,
+  showToast,
+  addFinance,
+  saveGame,
+  gameDate,
+  rerender: render,
+  payFixedCost,
+  addNotification,
+  propertyARent: HOME_MONTHLY_RENT,
+  getMinLivingCashReserve: () => MIN_LIVING_CASH_RESERVE,
+});
 let navigation = [];
 let craftDraft = null;
 let completionId = null;
@@ -11880,7 +11890,7 @@ function okachimachiBackgroundAssetName(portrait = isPortraitLayout()) {
 }
 
 function backgroundAssetFor(target) {
-  if (backgroundFor(target) === 'sleep') return homePropertyBackgroundAsset(currentHomePropertyId(), isPortraitLayout());
+  if (backgroundFor(target) === 'sleep') return homePropertyController.backgroundAsset();
   if (isAlienAbducted() && target !== 'alienReturnEvent') return isPortraitLayout() ? 'space-portrait' : 'space';
   if (target === 'bluesJukeEvent') {
     const place = bluesJukeCurrentScene()?.place === 'inside' ? 'interior' : 'exterior';
@@ -11964,7 +11974,7 @@ function applyCurrentBackground() {
     return;
   }
   const asset = backgroundAssetFor(screen);
-  const backgroundFile = backgroundFor(screen) === 'sleep' && currentHomePropertyId() === 'B'
+  const backgroundFile = backgroundFor(screen) === 'sleep' && homePropertyController.currentProperty() === 'B'
     ? `${asset}.png`
     : `${asset}.webp`;
   document.body.dataset.backgroundLayout = backgroundLayoutFor(screen, asset);
@@ -17653,79 +17663,12 @@ function renderDisplayShop() {
     </div>`, { help: 'ショーケース、ディスプレイ用品、ケースを購入できます。ケースは▲▼のタップまたは長押しで購入数を調整できます。購入した商品は店舗へ設置して使用します。' });
 }
 
-function currentHomePropertyId() {
-  return normalizeHomeProperty(state?.business?.homeProperty);
-}
-
-function currentHomeMonthlyRent() {
-  return homePropertyMonthlyRent(currentHomePropertyId(), HOME_MONTHLY_RENT);
-}
-
-function homePropertyLabel(propertyId) {
-  return normalizeHomeProperty(propertyId) === 'B' ? '物件Ｂ' : '物件A';
-}
-
-function homePropertyPreviewFile(propertyId) {
-  const normalized = normalizeHomeProperty(propertyId);
-  const asset = homePropertyBackgroundAsset(normalized, isPortraitLayout());
-  return normalized === 'B' ? `${asset}.png` : `${asset}.webp`;
-}
-
-function renderHomeProperty() {
-  const current = currentHomePropertyId();
-  const selected = normalizeHomeProperty(screenData.homeProperty || current);
-  screenData.homeProperty = selected;
-  const rent = homePropertyMonthlyRent(selected, HOME_MONTHLY_RENT);
-  const previewFile = homePropertyPreviewFile(selected);
-  const currentStyle = (id) => id === current
-    ? 'box-shadow:0 0 0 2px rgba(232,196,117,.95) inset,0 0 16px rgba(232,196,117,.5);'
-    : '';
-  const selectedClass = (id) => id === selected ? 'primary-button' : 'secondary-button';
-  return shell('自宅', `
-    <section class="center-card glass-panel expansion-card" style="max-width:min(820px,94vw);margin-inline:auto;">
-      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:14px;">
-        <button type="button" class="${selectedClass('A')}" data-action="select-home-property" data-property="A" aria-pressed="${selected === 'A'}" style="min-width:110px;${currentStyle('A')}">物件A</button>
-        <button type="button" class="${selectedClass('B')}" data-action="select-home-property" data-property="B" aria-pressed="${selected === 'B'}" style="min-width:110px;${currentStyle('B')}">物件Ｂ</button>
-      </div>
-      <div style="display:grid;place-items:center;min-height:0;margin:0 auto 14px;">
-        <img src="./assets/images/${previewFile}?v=${VERSION}" alt="${homePropertyLabel(selected)}" draggable="false" style="display:block;max-width:100%;width:auto;max-height:52vh;object-fit:contain;border-radius:14px;">
-      </div>
-      <div class="phone-card" style="margin:0 auto 14px;text-align:center;max-width:520px;">
-        <strong>引越し費用　${yen(HOME_MOVE_COST)}</strong>
-        <span>毎月家賃　${yen(rent)}</span>
-      </div>
-      ${selected !== current ? '<button type="button" class="primary-button full-button" data-action="move-home-property">引越す</button>' : ''}
-      <button type="button" class="secondary-button full-button" data-action="real-estate-menu" style="margin-top:10px;">戻る</button>
-    </section>`, { help: '物件を選ぶと画像・引越し費用・毎月家賃を確認できます。現在住んでいる物件は枠の光で示されます。' });
-}
-
-function moveHomeProperty() {
-  if (!homePropertyUnlocked(state?.game?.day)) return showToast('自宅の引越しは351日目から利用できます。', 'error');
-  const current = currentHomePropertyId();
-  const destination = normalizeHomeProperty(screenData.homeProperty || current);
-  if (destination === current) return;
-  const rent = homePropertyMonthlyRent(destination, HOME_MONTHLY_RENT);
-  const total = homePropertyMoveTotal(destination, HOME_MONTHLY_RENT);
-  if ((Number(state?.game?.money) || 0) < total) {
-    return showToast(`引越しには合計${yen(total)}が必要です。`, 'error');
-  }
-  state.game.money -= total;
-  state.business.homeProperty = destination;
-  const moveDate = gameDate();
-  state.business.lastProcessedHomeRentMonth = `${moveDate.getFullYear()}-${String(moveDate.getMonth() + 1).padStart(2, '0')}`;
-  addFinance(`引越し費用（${homePropertyLabel(destination)}）`, 0, HOME_MOVE_COST);
-  addFinance(`自宅家賃1ヶ月分（${homePropertyLabel(destination)}）`, 0, rent);
-  saveGame();
-  showToast(`${homePropertyLabel(destination)}へ引越しました。${yen(total)}を支払いました。`, 'success', false);
-  render();
-}
-
 function renderRealEstate() {
   const nextBranchNumber = nextStoreBranchNumber();
   const contractAvailable = nextBranchNumber <= MAX_STORE_BRANCHES;
-  const homeAvailable = homePropertyUnlocked(state?.game?.day);
+  const homeAvailable = homePropertyController.isUnlocked();
 
-  if (screenData.view === 'home') return renderHomeProperty();
+  if (screenData.view === 'home') return homePropertyController.renderView();
 
   if (screenData.view !== 'contract') {
     return shell('不動産屋', `
@@ -21226,7 +21169,7 @@ function renderPhoneContent() {
       </nav>
       <h2 class="finance-summary-title">${esc(financePeriodHeading(period))}</h2>
       <div class="phone-totals finance-totals"><div><small>収入</small><strong>${yen(income)}</strong></div><div><small>支出</small><strong>${yen(expense)}</strong></div><div><small>差引</small><strong class="${balance >= 0 ? 'income' : 'expense'}">${balance >= 0 ? '+' : '-'}${yen(Math.abs(balance))}</strong></div></div>
-      <article class="phone-card"><strong>毎月の固定費</strong><span>自宅家賃 ${yen(currentHomeMonthlyRent())}（毎月15日・開始30日間は初回猶予）・工房維持費 ${yen(WORKSHOP_MONTHLY_COST)}（月初）・店舗家賃（店舗ごと／月初）</span><small>自動徴収と一括支払いでは生活費 ${yen(MIN_LIVING_CASH_RESERVE)} を残します。</small></article>
+      <article class="phone-card"><strong>毎月の固定費</strong><span>自宅家賃 ${yen(homePropertyController.currentRent())}（毎月15日・開始30日間は初回猶予）・工房維持費 ${yen(WORKSHOP_MONTHLY_COST)}（月初）・店舗家賃（店舗ごと／月初）</span><small>自動徴収と一括支払いでは生活費 ${yen(MIN_LIVING_CASH_RESERVE)} を残します。</small></article>
       ${outstanding ? `<section class="outstanding-payment-panel"><header><strong>未払い合計</strong><b>${yen(outstanding)}</b></header><div class="outstanding-payment-list">${outstandingPaymentTargets().map((target) => `<article class="phone-card outstanding-payment-row"><div><strong>${esc(target.label)}</strong><small>未払い ${yen(target.due)}</small></div><button type="button" class="secondary-button" data-action="pay-outstanding-item" data-kind="${esc(target.kind)}" data-id="${esc(target.id)}">この項目を支払う</button></article>`).join('')}</div><button class="primary-button full-button" data-action="pay-outstanding-costs">優先順でまとめて支払う</button><small>支払順：工房維持費 → 選択中店舗 → その他店舗 → スタッフ給与 → 自宅家賃</small></section>` : '<article class="phone-card success-text"><strong>未払いはありません。</strong></article>'}
       <div class="phone-finance-list">${rows.slice().reverse().map((row) => `<article class="finance-row"><span>${financeRowDateLabel(row.day)} ${esc(row.label)}</span><strong class="${row.income ? 'income' : 'expense'}">${row.income ? `+${yen(row.income)}` : `-${yen(row.expense)}`}</strong></article>`).join('') || `<div class="phone-empty">${period === 'today' ? '今日' : period === 'month' ? '今月' : period === 'year' ? '今年' : '累計'}の収支記録はありません。</div>`}</div></section>`;
   }
@@ -22654,37 +22597,7 @@ function processMonthlyFixedCosts() {
 }
 
 function processHomeRent() {
-  const today = gameDate();
-  if (today.getDate() !== 15) return null;
-  const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  if (state.business.lastProcessedHomeRentMonth === monthKey) return null;
-
-  if (Math.max(1, Number(state.game.day) || 1) <= 30) {
-    const report = { month: monthKey, amount: 0, paid: 0, unpaid: 0, grace: true };
-    state.business.lastProcessedHomeRentMonth = monthKey;
-    state.business.homeRentReports.push(report);
-    state.business.homeRentReports = state.business.homeRentReports.slice(-24);
-    const message = 'ゲーム開始から30日間は、自宅家賃の初回猶予期間です。今月の請求はありません。';
-    state.tools.morningMessages = [...(state.tools.morningMessages || []), message].slice(-10);
-    addNotification('自宅家賃の初回猶予', message, 'info');
-    return report;
-  }
-
-  const homeRent = currentHomeMonthlyRent();
-  const result = payFixedCost(`${monthKey} 自宅家賃`, homeRent, (unpaid) => {
-    state.business.homeRentUnpaid += unpaid;
-  });
-  const report = { month: monthKey, amount: homeRent, paid: result.paid, unpaid: result.unpaid };
-  state.business.lastProcessedHomeRentMonth = monthKey;
-  state.business.homeRentReports.push(report);
-  state.business.homeRentReports = state.business.homeRentReports.slice(-24);
-
-  const resultMessage = result.unpaid
-    ? `自宅家賃 ${yen(homeRent)}のうち${yen(result.paid)}を支払い、${yen(result.unpaid)}が未払いです。生活費${yen(MIN_LIVING_CASH_RESERVE)}は残しています。`
-    : `自宅家賃 ${yen(homeRent)}を支払いました。`;
-  state.tools.morningMessages = [...(state.tools.morningMessages || []), resultMessage].slice(-10);
-  addNotification('自宅家賃支払日', resultMessage, result.unpaid ? 'warning' : 'info');
-  return report;
+  return homePropertyController.processRent();
 }
 
 function outstandingPaymentTargets() {
@@ -24650,20 +24563,9 @@ root.addEventListener('click', async (event) => {
       break;
     }
     case 'open-store-contract': screenData.view = 'contract'; render(); break;
-    case 'open-home-property':
-      if (homePropertyUnlocked(state?.game?.day)) {
-        screenData.view = 'home';
-        screenData.homeProperty = currentHomePropertyId();
-        render();
-      }
-      break;
-    case 'select-home-property':
-      if (screenData.view === 'home') {
-        screenData.homeProperty = normalizeHomeProperty(button.dataset.property);
-        render();
-      }
-      break;
-    case 'move-home-property': moveHomeProperty(); break;
+    case 'open-home-property': homePropertyController.open(); break;
+    case 'select-home-property': homePropertyController.select(button.dataset.property); break;
+    case 'move-home-property': homePropertyController.move(); break;
     case 'real-estate-menu': screenData = {}; render(); break;
     case 'rent-next-store': rentNextStore(); break;
     case 'confirm-store-name': {

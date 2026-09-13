@@ -14,7 +14,8 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         if (!key || !patch || typeof patch !== 'object' || Array.isArray(patch)) return { ok:false, reason:'invalid-arguments' };
         state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
         const current = state.events[key] && typeof state.events[key] === 'object' && !Array.isArray(state.events[key]) ? state.events[key] : {};
-        state.events[key] = { ...current, ...patch };
+        Object.assign(current, patch);
+        state.events[key] = current;
         persist();
         return { ok:true };
       } catch (error) {

@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / 'js/wolf-mother-butler-event.js'
+APP = ROOT / 'js/app.js'
+HELPERS = ROOT / 'js/events/event-state-helpers.js'
+UNIT = ROOT / 'tools/test-event-state-helpers.mjs'
 BOOTSTRAP = ROOT / 'js/event-bootstrap.js'
 VERSION_FILE = ROOT / 'VERSION'
 MOTHER = ROOT / 'assets/images/events/wolf-mother.png'
@@ -49,11 +54,16 @@ def sha256(path: Path) -> str:
 
 def main() -> None:
     require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')
+    require(APP.exists(), 'app.js がありません')
+    require(HELPERS.exists(), 'event-state-helpers.js がありません')
+    require(UNIT.exists(), 'test-event-state-helpers.mjs がありません')
     require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')
     require(VERSION_FILE.exists(), 'VERSION がありません')
 
     version = VERSION_FILE.read_text(encoding='utf-8').strip()
     source = MODULE.read_text(encoding='utf-8')
+    app_source = APP.read_text(encoding='utf-8')
+    helper_source = HELPERS.read_text(encoding='utf-8')
     bootstrap = BOOTSTRAP.read_text(encoding='utf-8')
 
     require("const EVENT_KEY = 'wolfMotherButlerEvent';" in source, 'イベント記録キーが違います')
@@ -76,6 +86,12 @@ def main() -> None:
     require("message:'K18YGが20g追加されました'" in source, '報酬メッセージが違います')
     require('grantMetalIgnoreCapacity?.(REWARD_METAL_KEY, REWARD_AMOUNT' in source, '容量無視の報酬付与処理がありません')
     require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')
+    require(f"from './events/event-state-helpers.js?v={version}'" in app_source, 'イベント状態ヘルパーのVERSION付きimportがありません')
+    require('globalThis.__JXJ_EVENT_STATE_HELPERS__ = createEventStateHelpers(() => state, saveGame, showToast, playSfx, roundedMetalWeight, METALS);' in app_source, 'app.jsのイベント状態ヘルパー接続がありません')
+    require('patchEventState(eventKey, patch)' in helper_source, 'イベント状態保存ヘルパーがありません')
+    require('grantMetalIgnoreCapacity(metalKey, amount' in helper_source, '容量無視の地金付与ヘルパーがありません')
+    require('state.events[key] = { ...current, ...patch };' in helper_source, 'イベント進行状態を実stateへ保存していません')
+    require('state.inventory.metals[key] = roundedMetalWeight(current + quantity);' in helper_source, '報酬地金を実stateへ加算していません')
 
     require("const WOLF_IMAGE = './assets/images/events/wolf-mother.png';" in source, '母親画像パスが違います')
     require("const BUTLER_IMAGE = './assets/images/events/sheep-butler.png';" in source, '執事画像パスが違います')
@@ -110,6 +126,12 @@ def main() -> None:
     require(b'ftyp' in VIDEO.read_bytes()[:32], 'イベント動画がMP4ではありません')
     bgm_head = BGM.read_bytes()[:4]
     require(bgm_head.startswith(b'ID3') or bgm_head[:2] in MP3_FRAME_PREFIXES, '専用BGMがMP3ではありません')
+
+    unit = subprocess.run(['node', str(UNIT)], cwd=ROOT, text=True, capture_output=True)
+    print(unit.stdout, end='')
+    if unit.stderr:
+        print(unit.stderr, file=sys.stderr, end='')
+    require(unit.returncode == 0, 'イベント状態ヘルパーの実動テストに失敗しました')
 
     print('OK: 母親・執事イベントの発生条件・登録済みセリフ・通常イベントUI・報酬・音声制御・正式アセットを確認しました。')
 

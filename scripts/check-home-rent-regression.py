@@ -73,12 +73,14 @@ def block_body(signature):
 automatic = block_body('function automaticPaymentCapacity() {')
 pay_fixed = block_body('function payFixedCost(label, amount, onUnpaid) {')
 home_rent = block_body('function processHomeRent() {')
+current_home_rent = block_body('function currentHomeMonthlyRent() {')
 reconcile = block_body('function reconcileMorningPaymentsIdempotently() {')
 
 checks = [
     ('automaticPaymentCapacity definition exists once', APP.count('function automaticPaymentCapacity() {') == 1),
     ('payFixedCost definition exists once', APP.count('function payFixedCost(label, amount, onUnpaid) {') == 1),
     ('processHomeRent definition exists once', APP.count('function processHomeRent() {') == 1),
+    ('currentHomeMonthlyRent definition exists once', APP.count('function currentHomeMonthlyRent() {') == 1),
     ('living cash reserve remains 10000', 'const MIN_LIVING_CASH_RESERVE = 10000;' in APP),
 
     ('automatic capacity normalizes money', 'const money = Math.max(0, Math.floor(Number(state.game.money) || 0));' in automatic),
@@ -95,6 +97,7 @@ checks = [
     ('fixed cost return shape retained', 'return { paid, unpaid };' in pay_fixed),
     ('fixed cost has no direct save/time mutation', all(token not in pay_fixed for token in ('saveGame(', 'advanceTime(', 'spendHours(', 'spendMinutes('))),
 
+    ('current home rent delegates to property resolver', 'return homePropertyMonthlyRent(currentHomePropertyId(), HOME_MONTHLY_RENT);' in current_home_rent),
     ('home rent current game date lookup retained', 'const today = gameDate();' in home_rent),
     ('home rent day-15 guard retained', 'if (today.getDate() !== 15) return null;' in home_rent),
     ('home rent month key retained', "const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;" in home_rent),
@@ -109,11 +112,12 @@ checks = [
     ('home rent grace notification retained', "addNotification('自宅家賃の初回猶予', message, 'info');" in home_rent),
     ('home rent grace report return retained', home_rent.count('return report;') >= 2),
 
-    ('home rent delegates payment to fixed-cost helper', 'const result = payFixedCost(`${monthKey} 自宅家賃`, HOME_MONTHLY_RENT, (unpaid) =>' in home_rent),
+    ('home rent resolves current property amount', 'const homeRent = currentHomeMonthlyRent();' in home_rent),
+    ('home rent delegates payment to fixed-cost helper', 'const result = payFixedCost(`${monthKey} 自宅家賃`, homeRent, (unpaid) =>' in home_rent),
     ('home rent unpaid accumulation retained', 'state.business.homeRentUnpaid += unpaid;' in home_rent),
-    ('home rent paid report shape retained', 'const report = { month: monthKey, amount: HOME_MONTHLY_RENT, paid: result.paid, unpaid: result.unpaid };' in home_rent),
+    ('home rent paid report shape retained', 'const report = { month: monthKey, amount: homeRent, paid: result.paid, unpaid: result.unpaid };' in home_rent),
     ('home rent unpaid message retains living reserve', '生活費${yen(MIN_LIVING_CASH_RESERVE)}は残しています。' in home_rent),
-    ('home rent full-payment message retained', ': `自宅家賃 ${yen(HOME_MONTHLY_RENT)}を支払いました。`;' in home_rent),
+    ('home rent full-payment message retained', ': `自宅家賃 ${yen(homeRent)}を支払いました。`;' in home_rent),
     ('home rent payment morning message retained', 'state.tools.morningMessages = [...(state.tools.morningMessages || []), resultMessage].slice(-10);' in home_rent),
     ('home rent payment notification retained', "addNotification('自宅家賃支払日', resultMessage, result.unpaid ? 'warning' : 'info');" in home_rent),
     ('home rent has no direct save/time mutation', all(token not in home_rent for token in ('saveGame(', 'advanceTime(', 'spendHours(', 'spendMinutes('))),
@@ -125,6 +129,7 @@ checks = [
     ('dynamic harness extracts automatic capacity', "extractFunction('automaticPaymentCapacity')" in TEST),
     ('dynamic harness extracts fixed cost helper', "extractFunction('payFixedCost')" in TEST),
     ('dynamic harness extracts home rent function', "extractFunction('processHomeRent')" in TEST),
+    ('dynamic harness supplies current property rent resolver', 'currentHomeMonthlyRent: () => HOME_MONTHLY_RENT' in TEST),
     ('automatic capacity regression retained', 'testAutomaticPaymentCapacityKeepsLivingReserve' in TEST),
     ('fixed-cost full/partial regression retained', 'testPayFixedCostFullAndPartialPayment' in TEST),
     ('fixed-cost zero-due regression retained', 'testPayFixedCostZeroDueDoesNothing' in TEST),
@@ -163,5 +168,5 @@ if result.returncode != 0:
     print('HOME RENT PROTECTION: FAIL')
     sys.exit(result.returncode)
 
-print('固定費の自動支払い可能額・全額/一部支払い・生活費留保と、自宅家賃の15日判定・二重請求防止・開始30日猶予・未払い累積・履歴/朝メッセージ上限・通知を現在の挙動のまま固定しました。')
+print('固定費の自動支払い可能額・全額/一部支払い・生活費留保と、自宅家賃の15日判定・二重請求防止・開始30日猶予・未払い累積・履歴/朝メッセージ上限・通知を維持しつつ、現在の自宅物件に応じた家賃計算を保護しました。')
 print('HOME RENT PROTECTION: PASS')

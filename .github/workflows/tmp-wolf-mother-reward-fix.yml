@@ -24,6 +24,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import textwrap
 
           app_path = Path('js/app.js')
           app = app_path.read_text(encoding='utf-8')
@@ -33,7 +34,8 @@ jobs:
           if '__JXJ_EVENT_STATE_HELPERS__' in app:
               raise SystemExit('event state helper already exists; refusing duplicate insertion')
 
-          bridge = r'''globalThis.__JXJ_EVENT_STATE_HELPERS__ = Object.freeze({
+          bridge = textwrap.dedent("""\
+          globalThis.__JXJ_EVENT_STATE_HELPERS__ = Object.freeze({
             patchEventState(eventKey, patch) {
               try {
                 if (!state) return { ok: false, reason: 'state-unavailable' };
@@ -73,29 +75,16 @@ jobs:
               }
             },
           });
-'''
-          app = app.replace(marker, marker + bridge, 1)
-          app_path.write_text(app, encoding='utf-8')
+          """)
+          app_path.write_text(app.replace(marker, marker + bridge, 1), encoding='utf-8')
 
           test_path = Path('scripts/check-wolf-mother-butler-event.py')
           test = test_path.read_text(encoding='utf-8')
           replacements = [
-              (
-                  "MODULE = ROOT / 'js/wolf-mother-butler-event.js'\nBOOTSTRAP = ROOT / 'js/event-bootstrap.js'",
-                  "MODULE = ROOT / 'js/wolf-mother-butler-event.js'\nAPP = ROOT / 'js/app.js'\nBOOTSTRAP = ROOT / 'js/event-bootstrap.js'",
-              ),
-              (
-                  "    require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')\n    require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')",
-                  "    require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')\n    require(APP.exists(), 'app.js がありません')\n    require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')",
-              ),
-              (
-                  "    source = MODULE.read_text(encoding='utf-8')\n    bootstrap = BOOTSTRAP.read_text(encoding='utf-8')",
-                  "    source = MODULE.read_text(encoding='utf-8')\n    app_source = APP.read_text(encoding='utf-8')\n    bootstrap = BOOTSTRAP.read_text(encoding='utf-8')",
-              ),
-              (
-                  "    require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')",
-                  "    require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')\n    require('globalThis.__JXJ_EVENT_STATE_HELPERS__' in app_source, 'イベント状態ヘルパーがapp.jsに公開されていません')\n    require('patchEventState(eventKey, patch)' in app_source, 'イベント状態保存ヘルパーがありません')\n    require('grantMetalIgnoreCapacity(metalKey, amount' in app_source, '容量無視の地金付与ヘルパーがありません')\n    require('state.events[key] = { ...current, ...patch };' in app_source, 'イベント進行状態を実stateへ保存していません')\n    require('state.inventory.metals[key] = roundedMetalWeight(current + quantity);' in app_source, '報酬地金を実stateへ加算していません')",
-              ),
+              ("MODULE = ROOT / 'js/wolf-mother-butler-event.js'\nBOOTSTRAP = ROOT / 'js/event-bootstrap.js'", "MODULE = ROOT / 'js/wolf-mother-butler-event.js'\nAPP = ROOT / 'js/app.js'\nBOOTSTRAP = ROOT / 'js/event-bootstrap.js'"),
+              ("    require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')\n    require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')", "    require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')\n    require(APP.exists(), 'app.js がありません')\n    require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')"),
+              ("    source = MODULE.read_text(encoding='utf-8')\n    bootstrap = BOOTSTRAP.read_text(encoding='utf-8')", "    source = MODULE.read_text(encoding='utf-8')\n    app_source = APP.read_text(encoding='utf-8')\n    bootstrap = BOOTSTRAP.read_text(encoding='utf-8')"),
+              ("    require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')", "    require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')\n    require('globalThis.__JXJ_EVENT_STATE_HELPERS__' in app_source, 'イベント状態ヘルパーがapp.jsに公開されていません')\n    require('patchEventState(eventKey, patch)' in app_source, 'イベント状態保存ヘルパーがありません')\n    require('grantMetalIgnoreCapacity(metalKey, amount' in app_source, '容量無視の地金付与ヘルパーがありません')\n    require('state.events[key] = { ...current, ...patch };' in app_source, 'イベント進行状態を実stateへ保存していません')\n    require('state.inventory.metals[key] = roundedMetalWeight(current + quantity);' in app_source, '報酬地金を実stateへ加算していません')"),
           ]
           for old, new in replacements:
               if test.count(old) != 1:

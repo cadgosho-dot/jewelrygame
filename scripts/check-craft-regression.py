@@ -9,6 +9,11 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
 CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
 TEST = (ROOT / 'tools/test-craft-regression.mjs').read_text(encoding='utf-8')
+LAST_METAL_PATH = ROOT / 'js/workshop/craft-last-metal-selection.js'
+LAST_METAL = LAST_METAL_PATH.read_text(encoding='utf-8')
+LAST_METAL_TEST_PATH = ROOT / 'tools/test-craft-last-metal-selection.mjs'
+LAST_METAL_TEST = LAST_METAL_TEST_PATH.read_text(encoding='utf-8')
+CRAFT_SURFACE = (ROOT / 'js/ui/craft-surface.js').read_text(encoding='utf-8')
 
 def function_source(name: str) -> str:
     lines = APP.splitlines()
@@ -57,6 +62,14 @@ checks = {
     'no loose regression case': 'testCraftWithoutLooseDoesNotConsumeLoose' in TEST,
     'order craft regression case': 'testOrderCraftMarksOrderComplete' in TEST,
     'guard regression case': 'testCraftGuardRails' in TEST,
+    'last metal module is wired from existing craft UI import': "import '../workshop/craft-last-metal-selection.js';" in CRAFT_SURFACE,
+    'last player craft metal helper exported': 'export function lastPlayerCraftMetal(' in LAST_METAL,
+    'existing jewelry history reused without save schema change': '__JXJ_MEMORIES_STATE__' in LAST_METAL and 'snapshot?.inventory?.jewelry' in LAST_METAL,
+    'order craft metal remains protected': "grid.querySelector('button[disabled]')" in LAST_METAL,
+    'craft loose roundtrip preserves current selection': "new Set(['craft', 'craftLoose'])" in LAST_METAL and 'craftSessionActive' in LAST_METAL,
+    'non-player jewelry does not replace manual choice history': all(marker in LAST_METAL for marker in ('workshopStaff', 'autopilot', 'jewelryShop', 'receivedGiftCode')),
+    'last metal module does not write save storage': all(marker not in LAST_METAL for marker in ('saveGame(', 'localStorage', 'indexedDB', 'firebase')),
+    'last metal regression cases exist': 'lastPlayerCraftMetal' in LAST_METAL_TEST and 'workshopStaff' in LAST_METAL_TEST and 'order-1' in LAST_METAL_TEST,
     'current audit registration': "'ジュエリー制作処理保護'" in CURRENT and 'check-craft-regression.py' in CURRENT,
 }
 
@@ -66,16 +79,23 @@ for label, ok in checks.items():
     if not ok:
         failed.append(label)
 
-syntax = subprocess.run(['node', '--check', 'tools/test-craft-regression.mjs'], cwd=ROOT, text=True, capture_output=True)
-if syntax.returncode:
-    print(syntax.stderr, end='')
-    failed.append('node syntax')
+for source in ('tools/test-craft-regression.mjs', str(LAST_METAL_TEST_PATH), str(LAST_METAL_PATH)):
+    syntax = subprocess.run(['node', '--check', source], cwd=ROOT, text=True, capture_output=True)
+    if syntax.returncode:
+        print(syntax.stderr, end='')
+        failed.append(f'node syntax: {source}')
 
 unit = subprocess.run(['node', 'tools/test-craft-regression.mjs'], cwd=ROOT, text=True, capture_output=True)
 print(unit.stdout, end='')
 if unit.returncode:
     print(unit.stderr, end='')
     failed.append('dynamic regression')
+
+last_metal_unit = subprocess.run(['node', 'tools/test-craft-last-metal-selection.mjs'], cwd=ROOT, text=True, capture_output=True)
+print(last_metal_unit.stdout, end='')
+if last_metal_unit.returncode:
+    print(last_metal_unit.stderr, end='')
+    failed.append('last metal selection regression')
 
 if failed:
     print('CRAFT PROTECTION: FAIL')

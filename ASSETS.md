@@ -148,7 +148,7 @@
 | assets/images/craft-jewelry-landscape-v758.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 11e95b699673f972fdd688829e840118f8bec5ab39d86fb01966cf81af5e27be |
 | assets/images/craft-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | dcec02168a33280fb14b4c8142e2f586d0ca9d454cb871beedc68f2cef6c2981 |
 | assets/images/craft.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | d2e2f4ae00806864e32d99657c852643bd6ce12c19b53003cb81de3a40abb74c |
-| assets/images/customers/customer-placeholder.svg | 画像 | 1,444 B | - | - | `js/app.js:19336`<br>`js/game-data-core.js:6793` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e241791c854d1e5c75d44292b67c3eef95272eea7c078dcd95a196fabe8b23f6 |
+| assets/images/customers/customer-placeholder.svg | 画像 | 1,444 B | - | - | `js/app.js:19337`<br>`js/game-data-core.js:6793` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e241791c854d1e5c75d44292b67c3eef95272eea7c078dcd95a196fabe8b23f6 |
 | assets/images/display-products/case.png | 画像 | 735×940 | 縦 | あり | `js/game-data-core.js:6728` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4a53177b9ef044c6626756ea9d7ccf036a3a8216438fb6683ef076090041524c |
 | assets/images/display-products/display-supplies.png | 画像 | 816×940 | 縦 | あり | `js/game-data-core.js:6724` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e6be097a4c082a45c6ee1cce84a4819fb41767e1eb181d5e56a54007e3b865ec |
 | assets/images/display-products/showcase.png | 画像 | 940×796 | 横 | あり | `js/game-data-core.js:6720` | 由来記録なし | 要確認（明示許可がない限り加工しない） | fb7585fc34a57131ff0970bf521d239d5aef07a42a1529ddc3d8c160d58e4d3d |
@@ -204,7 +204,7 @@
 | assets/images/events/ridley-okazaki.png | 画像 | 1500×1024 | 横 | あり | `js/app.js:15984`<br>`js/memories-screen.js:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f55f05124a481cf78046966c8c742e9c88957e00b251b177ac49dbb9a5e4bcce |
 | assets/images/events/sheep-butler.png | 画像 | 1229×1536 | 縦 | あり | `js/wolf-mother-butler-event.js:10`<br>`scripts/check-wolf-mother-butler-event.py:18` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aa8f912ce0e3dfef4cfba0eacda3d6e852a4d828de191d3e235da6372b4b5a5e |
 | assets/images/events/speed-star.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:11138`<br>`js/memories-screen.js:26` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f1af4a0a1f82cc36f19a48ca72a95c4f7dbe6d04dc624dc96ef7869c6e90ef92 |
-| assets/images/events/store-thief-old-woman.png | 画像 | 995×1408 | 縦 | あり | `js/app.js:18863`<br>`js/memories-screen.js:21` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e9720b4c6052237dcead769807d760324af6fff3100f0e84fc2ec10ef3d62bc2 |
+| assets/images/events/store-thief-old-woman.png | 画像 | 995×1408 | 縦 | あり | `js/app.js:18864`<br>`js/memories-screen.js:21` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e9720b4c6052237dcead769807d760324af6fff3100f0e84fc2ec10ef3d62bc2 |
 | assets/images/events/storyteller-v745.png | 画像 | 934×1010 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 91745c970c5524778e97e2e03037bd4bea4498f503fb24279dbfc8a10dac4458 |
 | assets/images/events/storyteller-v751.png | 画像 | 720×610 | 横 | あり | `memories-event-image-overrides-v751.js:6`<br>`js/app.js:11187`<br>`js/memories-screen.js:27` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1647c369f85be086172dad41a7a8dfe96f0362d194acd92327a029c154d46cdf |
 | assets/images/events/storyteller.png | 画像 | 934×1010 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 91745c970c5524778e97e2e03037bd4bea4498f503fb24279dbfc8a10dac4458 |
@@ -603,7 +603,7 @@
 | assets/minigames/kaitenzushi/assets/sushi/red_250/shiromi.png | 画像 | 517×187 | 横 | あり | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7798061afc56f63fa3a395beb188f04f495d518bb2b20461fb769bd979dbd3ed |
 | assets/minigames/kaitenzushi/data/game_rules.json | データ | 666 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0645627b2dbadc1b16f76812782729df5ca3b4f6e50bb381346dd2d9089c3b99 |
 | assets/minigames/kaitenzushi/data/sushi_catalog.json | データ | 2,723 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | fa8421c136d8db8809847a7b026e3b3e9c4fbfb7ec03d8eae01505c36727ba0e |
-| assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:89`<br>`js/app.js:19516`<br>`js/kaitenzushi-embedded.js:2` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
+| assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:89`<br>`js/app.js:19517`<br>`js/kaitenzushi-embedded.js:2` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
 | assets/minigames/retro-battle/index.html | ミニゲーム/コード | 18,690,587 B | - | - | `js/app.js:317` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d8332ba68b6a4ce9634ac1f7746fd146b0b4cff089aeaeb5e801580c9dcd1c5b |
 | assets/music/events/teeth_behind_the_glass.mp3 | 音源 | 3,760,183 B | - | - | `js/wolf-mother-butler-event.js:13`<br>`scripts/check-wolf-mother-butler-event.py:20` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5a4ba334442e98d8baa69404f3b2ad4804b5925d1d7c405dc4797bbfcff36cd3 |
 | assets/videos/cinema/.gitkeep | その他 | 0 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |

@@ -90,7 +90,8 @@ def main() -> None:
     require('globalThis.__JXJ_EVENT_STATE_HELPERS__ = createEventStateHelpers(() => state, saveGame, showToast, playSfx, roundedMetalWeight, METALS);' in app_source, 'app.jsのイベント状態ヘルパー接続がありません')
     require('patchEventState(eventKey, patch)' in helper_source, 'イベント状態保存ヘルパーがありません')
     require('grantMetalIgnoreCapacity(metalKey, amount' in helper_source, '容量無視の地金付与ヘルパーがありません')
-    require('state.events[key] = { ...current, ...patch };' in helper_source, 'イベント進行状態を実stateへ保存していません')
+    require('Object.assign(current, patch);' in helper_source, 'イベント状態更新で既存オブジェクト参照を維持していません')
+    require('state.events[key] = current;' in helper_source, 'イベント進行状態を実stateへ保存していません')
     require('state.inventory.metals[key] = roundedMetalWeight(current + quantity);' in helper_source, '報酬地金を実stateへ加算していません')
 
     require("const WOLF_IMAGE = './assets/images/events/wolf-mother.png';" in source, '母親画像パスが違います')

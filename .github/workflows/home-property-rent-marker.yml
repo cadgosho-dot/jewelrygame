@@ -1,0 +1,49 @@
+name: 自宅物件前払い家賃整理
+
+on:
+  push:
+    branches:
+      - feature/home-property-b-v010944-clean
+    paths:
+      - '.github/workflows/home-property-rent-marker.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/home-property-b-v010944-clean
+      - name: 引越し時の1ヶ月分前払いを当月処理済みにする
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          app = Path('js/app.js')
+          text = app.read_text(encoding='utf-8')
+          old = """  state.game.money -= total;\n  state.business.homeProperty = destination;\n  addFinance(`引越し費用（${homePropertyLabel(destination)}）`, 0, HOME_MOVE_COST);\n"""
+          new = """  state.game.money -= total;\n  state.business.homeProperty = destination;\n  const moveDate = gameDate();\n  state.business.lastProcessedHomeRentMonth = `${moveDate.getFullYear()}-${String(moveDate.getMonth() + 1).padStart(2, '0')}`;\n  addFinance(`引越し費用（${homePropertyLabel(destination)}）`, 0, HOME_MOVE_COST);\n"""
+          if old not in text:
+              if new in text:
+                  raise SystemExit(0)
+              raise SystemExit('FAIL: moveHomeProperty insertion point')
+          app.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          check = Path('scripts/check-home-property.py')
+          ctext = check.read_text(encoding='utf-8')
+          marker = '    "${asset}.png",\n'
+          addition = '    "lastProcessedHomeRentMonth = `${moveDate.getFullYear()}-${String(moveDate.getMonth() + 1).padStart(2, \'0\')}`",\n'
+          if addition not in ctext:
+              if marker not in ctext:
+                  raise SystemExit('FAIL: check-home-property insertion point')
+              check.write_text(ctext.replace(marker, marker + addition, 1), encoding='utf-8')
+          PY
+          node --check js/app.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/app.js scripts/check-home-property.py
+          git commit -m '引越し時の前払い家賃の二重請求を防止'
+          git push origin HEAD:feature/home-property-b-v010944-clean

@@ -1,0 +1,148 @@
+name: Temporary Wolf Mother Reward Fix
+
+on:
+  push:
+    branches:
+      - fix/wolf-mother-reward-stall
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/wolf-mother-reward-stall
+          fetch-depth: 0
+
+      - name: Apply reward/state bridge and regression guard
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+          marker = 'let state = null;\n'
+          if app.count(marker) != 1:
+              raise SystemExit(f'app.js state marker count is {app.count(marker)}, expected 1')
+          if '__JXJ_EVENT_STATE_HELPERS__' in app:
+              raise SystemExit('event state helper already exists; refusing duplicate insertion')
+
+          bridge = r'''globalThis.__JXJ_EVENT_STATE_HELPERS__ = Object.freeze({
+            patchEventState(eventKey, patch) {
+              try {
+                if (!state) return { ok: false, reason: 'state-unavailable' };
+                const key = String(eventKey || '').trim();
+                if (!key || !patch || typeof patch !== 'object' || Array.isArray(patch)) {
+                  return { ok: false, reason: 'invalid-arguments' };
+                }
+                state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+                const current = state.events[key] && typeof state.events[key] === 'object' && !Array.isArray(state.events[key]) ? state.events[key] : {};
+                state.events[key] = { ...current, ...patch };
+                void saveGame();
+                return { ok: true };
+              } catch (error) {
+                console.warn('[EventStateHelpers] patchEventState failed', error);
+                return { ok: false, error };
+              }
+            },
+            grantMetalIgnoreCapacity(metalKey, amount, options = {}) {
+              try {
+                if (!state) return { ok: false, reason: 'state-unavailable' };
+                const key = String(metalKey || '').trim();
+                const quantity = Number(amount);
+                if (!METALS[key] || !Number.isFinite(quantity) || quantity <= 0) {
+                  return { ok: false, reason: 'invalid-arguments' };
+                }
+                state.inventory = state.inventory && typeof state.inventory === 'object' && !Array.isArray(state.inventory) ? state.inventory : {};
+                state.inventory.metals = state.inventory.metals && typeof state.inventory.metals === 'object' && !Array.isArray(state.inventory.metals) ? state.inventory.metals : {};
+                const current = Math.max(0, Number(state.inventory.metals[key]) || 0);
+                state.inventory.metals[key] = roundedMetalWeight(current + quantity);
+                if (options?.message) showToast(String(options.message), options.type || 'success');
+                if (options?.withSound !== false) playSfx('coin', { gain: .9 });
+                void saveGame();
+                return { ok: true, value: state.inventory.metals[key] };
+              } catch (error) {
+                console.warn('[EventStateHelpers] grantMetalIgnoreCapacity failed', error);
+                return { ok: false, error };
+              }
+            },
+          });
+'''
+          app = app.replace(marker, marker + bridge, 1)
+          app_path.write_text(app, encoding='utf-8')
+
+          test_path = Path('scripts/check-wolf-mother-butler-event.py')
+          test = test_path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "MODULE = ROOT / 'js/wolf-mother-butler-event.js'\nBOOTSTRAP = ROOT / 'js/event-bootstrap.js'",
+                  "MODULE = ROOT / 'js/wolf-mother-butler-event.js'\nAPP = ROOT / 'js/app.js'\nBOOTSTRAP = ROOT / 'js/event-bootstrap.js'",
+              ),
+              (
+                  "    require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')\n    require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')",
+                  "    require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')\n    require(APP.exists(), 'app.js がありません')\n    require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')",
+              ),
+              (
+                  "    source = MODULE.read_text(encoding='utf-8')\n    bootstrap = BOOTSTRAP.read_text(encoding='utf-8')",
+                  "    source = MODULE.read_text(encoding='utf-8')\n    app_source = APP.read_text(encoding='utf-8')\n    bootstrap = BOOTSTRAP.read_text(encoding='utf-8')",
+              ),
+              (
+                  "    require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')",
+                  "    require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')\n    require('globalThis.__JXJ_EVENT_STATE_HELPERS__' in app_source, 'イベント状態ヘルパーがapp.jsに公開されていません')\n    require('patchEventState(eventKey, patch)' in app_source, 'イベント状態保存ヘルパーがありません')\n    require('grantMetalIgnoreCapacity(metalKey, amount' in app_source, '容量無視の地金付与ヘルパーがありません')\n    require('state.events[key] = { ...current, ...patch };' in app_source, 'イベント進行状態を実stateへ保存していません')\n    require('state.inventory.metals[key] = roundedMetalWeight(current + quantity);' in app_source, '報酬地金を実stateへ加算していません')",
+              ),
+          ]
+          for old, new in replacements:
+              if test.count(old) != 1:
+                  raise SystemExit(f'test patch marker count is {test.count(old)}, expected 1: {old[:70]}')
+              test = test.replace(old, new, 1)
+          test_path.write_text(test, encoding='utf-8')
+          PY
+
+      - name: Bump active build version
+        run: |
+          python3 scripts/version-sync.py --set 0.10.943
+          python3 - <<'PY'
+          from pathlib import Path
+          old = '0.10.942'
+          new = '0.10.943'
+          for name in ('js/event-bootstrap.js', 'js/wolf-boy-ring-event.js', 'js/wolf-mother-butler-event.js'):
+              path = Path(name)
+              text = path.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'{name}: expected {old} reference was not found')
+              path.write_text(text.replace(old, new), encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text(encoding='utf-8')
+          marker = '## v0.10.942\n'
+          entry = (
+              '## v0.10.943\n'
+              '- 狼の母親・執事イベントで、K18YG 20gの報酬タップ時に地金付与処理へ接続できず進行停止する不具合を修正。イベント状態保存と容量無視の報酬付与を既存stateへ接続する最小限のブリッジを追加。\n'
+              '- 報酬タップ後にK18YG 20gが追加され、次の登録済みセリフへ進める経路とイベント進行状態の保存を回帰検査で固定。通常イベントUI、セリフ、画像、動画、BGM、発生条件、セーブ形式は変更なし。\n\n'
+          )
+          if text.count(marker) != 1:
+              raise SystemExit('CHANGELOG v0.10.942 marker is not unique')
+          changelog.write_text(text.replace(marker, entry + marker, 1), encoding='utf-8')
+          PY
+
+      - name: Run focused checks
+        run: |
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-wolf-mother-butler-event.py
+          python3 scripts/check-event-save-roundtrip.py
+          python3 scripts/check-regression-baseline.py
+
+      - name: Commit fix and remove temporary workflow
+        run: |
+          rm .github/workflows/tmp-wolf-mother-reward-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "v0.10.943 狼の母親イベント報酬停止を修正"
+          git push origin HEAD:fix/wolf-mother-reward-stall

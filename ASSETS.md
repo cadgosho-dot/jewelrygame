@@ -132,8 +132,8 @@
 | assets/audio/space-main-bgm.mp3 | 音源 | 4,148,169 B | - | - | `js/audio-scene-map.js:31 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0249e6f845edb76a91b5d392e0e342085f6bfddf66b86da0771633252b7eae0c |
 | assets/data/metal-prices.json | データ | 144 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6dec5bbd8b752be0404055200976171fad3e66b7a89ce00010d47622e0fa45b2 |
 | assets/data/storyteller-okachimachi-quiz.json | データ | 25,964 B | - | - | `js/app.js:435` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cd726e43302f881ca11f058d2979ccaca606a143da6373f5091a9148b35a4955 |
-| assets/icons/apple-touch-icon.png | 画像 | 180×180 | 正方形 | なし | `index.html:74`<br>`game.html:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8921b6e30b95f24d0df8b10e4c1bedc8004bf6ca9ba27d9368d0e40506f35777 |
-| assets/icons/favicon.png | 画像 | 64×64 | 正方形 | なし | `about.html:24`<br>`index.html:73`<br>`game.html:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c44b9428e6b4965e2a4280efc717a965c4f5a441f9bc3de1af08817a2171429a |
+| assets/icons/apple-touch-icon.png | 画像 | 180×180 | 正方形 | なし | `index.html:95`<br>`game.html:23` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8921b6e30b95f24d0df8b10e4c1bedc8004bf6ca9ba27d9368d0e40506f35777 |
+| assets/icons/favicon.png | 画像 | 64×64 | 正方形 | なし | `about.html:24`<br>`index.html:94`<br>`game.html:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c44b9428e6b4965e2a4280efc717a965c4f5a441f9bc3de1af08817a2171429a |
 | assets/icons/icon-192.png | 画像 | 192×192 | 正方形 | なし | `manifest.webmanifest:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8d583eaf7c7c867b014274cde4baef4e9372535a939b1cee37603ef56d47945f |
 | assets/icons/icon-512.png | 画像 | 512×512 | 正方形 | なし | `manifest.webmanifest:26` | 由来記録なし | 要確認（明示許可がない限り加工しない） | beb1bcebf7dc2da3accee3ff8a7e363e09642b7f332ea93f8f56868f2d4780f1 |
 | assets/images/backgrounds/terry-hamburger-landscape.png | 画像 | 1536×864 | 横 | なし | `js/app.js:16430` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2b16adcc1a0d7e0287ad80feb24194c77f9da5866dbfc38ad1583daa9f605fce |
@@ -427,7 +427,7 @@
 | assets/images/main-menu-new-year.webp | 画像 | 1536×691 | 横 | なし | `sw.js:40` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cfa2f361ff4bace2bf58337cf5e63e6ad2008d639ff254af8b179a8e247c5561 |
 | assets/images/main-menu-obon-portrait.webp | 画像 | 854×1536 | 縦 | なし | `sw.js:43` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c70bf812615e657f7d9763fc67416c0a6d45b4b1464f8ace9ad61dd1690943e2 |
 | assets/images/main-menu-obon.webp | 画像 | 1536×658 | 横 | なし | `sw.js:43` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 978caf7b5d8068d68625ab9a41d09c094cfe30a3d0151d6721a04ceba7f2134f |
-| assets/images/main-menu-portrait.webp | 画像 | 864×1536 | 縦 | なし | `index.html:55`<br>`scripts/check-regression-baseline.py:104` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 67c66c36b52adfbf67e535a1806ee42d043669c8f1e72eeb741166a6b53f70cc |
+| assets/images/main-menu-portrait.webp | 画像 | 864×1536 | 縦 | なし | `index.html:72`<br>`scripts/check-regression-baseline.py:104` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 67c66c36b52adfbf67e535a1806ee42d043669c8f1e72eeb741166a6b53f70cc |
 | assets/images/main-menu-snow-portrait.webp | 画像 | 667×1200 | 縦 | なし | `sw.js:48` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0d736985f4498cd89fc59f11ad6b01f85c66fd761a0d791bbcaefdd3724512be |
 | assets/images/main-menu-snow.webp | 画像 | 1100×496 | 横 | なし | `sw.js:48` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 112f7960f406c4ca5d5075045335cefea346be14c4551abe2eed9d3e2afbc36b |
 | assets/images/main-menu-spring-portrait.webp | 画像 | 864×1536 | 縦 | なし | `sw.js:41` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f6dc7a1b985e0c2f711ccaa6fda5a9abb9f5e570a2ebaa1ad2d9c4cc437d80ea |

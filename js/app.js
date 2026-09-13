@@ -10649,8 +10649,9 @@ function normalizeOkachimachiDailyEventState(key, validStages, defaults = {}) {
     else if (typeof value === 'string') next[name] = typeof saved[name] === 'string' ? saved[name] : value;
   }
   if (!next.active && !['idle', 'completed'].includes(next.stage)) next.stage = 'completed';
-  state.events[key] = next;
-  return next;
+  Object.assign(saved, next);
+  state.events[key] = saved;
+  return saved;
 }
 
 let pearlHumanFinishTimer = null;
@@ -10669,8 +10670,9 @@ function pearlHumanEventState() {
   };
   if (!next.active && !['idle', 'completed'].includes(next.stage)) next.stage = 'completed';
   state.events = state.events || {};
-  state.events.pearlHumanEvent = next;
-  return next;
+  Object.assign(saved, next);
+  state.events.pearlHumanEvent = saved;
+  return saved;
 }
 
 function pearlHumanEffectActive(day = state?.game?.day) {

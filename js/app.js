@@ -14586,7 +14586,7 @@ function cinemaVisitEventState() {
     ? state.events.cinemaVisitEvent
     : {};
   const validStages = new Set(['idle', 'invitation', 'playing', 'completed']);
-  state.events.cinemaVisitEvent = {
+  const next = {
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
@@ -14596,10 +14596,12 @@ function cinemaVisitEventState() {
     lastVideo: normalizeCinemaEventVideoName(saved.lastVideo),
     settled: Boolean(saved.settled),
   };
-  if (!state.events.cinemaVisitEvent.active && !['idle', 'completed'].includes(state.events.cinemaVisitEvent.stage)) {
-    state.events.cinemaVisitEvent.stage = 'completed';
+  Object.assign(saved, next);
+  state.events.cinemaVisitEvent = saved;
+  if (!saved.active && !['idle', 'completed'].includes(saved.stage)) {
+    saved.stage = 'completed';
   }
-  return state.events.cinemaVisitEvent;
+  return saved;
 }
 
 function resumeCinemaVisitEvent() {
@@ -14736,7 +14738,7 @@ function apprenticeCinemaEventState() {
     ? state.events.apprenticeCinemaEvent
     : {};
   const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2', 'completed']);
-  state.events.apprenticeCinemaEvent = {
+  const next = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     selectedVideo: normalizeCinemaEventVideoName(saved.selectedVideo),
@@ -14745,10 +14747,12 @@ function apprenticeCinemaEventState() {
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
     lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
   };
-  if (!state.events.apprenticeCinemaEvent.active && !['idle', 'completed'].includes(state.events.apprenticeCinemaEvent.stage)) {
-    state.events.apprenticeCinemaEvent.stage = 'completed';
+  Object.assign(saved, next);
+  state.events.apprenticeCinemaEvent = saved;
+  if (!saved.active && !['idle', 'completed'].includes(saved.stage)) {
+    saved.stage = 'completed';
   }
-  return state.events.apprenticeCinemaEvent;
+  return saved;
 }
 
 function resumeApprenticeCinemaEvent() {

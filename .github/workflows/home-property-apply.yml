@@ -6,6 +6,7 @@ on:
       - feature/home-property-b-v010944
     paths:
       - '.github/workflows/home-property-apply.yml'
+      - 'scripts/prepare-version-sync-v010944.py'
       - 'scripts/apply-home-property-v010944.py'
       - 'js/finance/home-property.js'
       - 'scripts/check-home-property.py'
@@ -25,6 +26,9 @@ jobs:
           ref: feature/home-property-b-v010944
           fetch-depth: 0
 
+      - name: VERSION同期規則を補強
+        run: python3 scripts/prepare-version-sync-v010944.py
+
       - name: 自宅物件パッチ適用
         run: python3 scripts/apply-home-property-v010944.py
 
@@ -32,7 +36,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add js/app.js scripts/version-sync.py sw.js VERSION CHANGELOG.md README.md GAME_RULES.md TODO.md EVENT_PROBABILITY_LIST.md ASSETS.md auth-cache-recovery.js auth.html game.html hosting-origin-guard.js index.html js/game-data.js js/game-data-core.js js/google-auth-bridge.js js/memories-backgrounds.js js/memories-screen.js quiz-event-v2.css styles.css viewport-shell.js
+          git add js/app.js scripts/version-sync.py sw.js VERSION CHANGELOG.md README.md GAME_RULES.md TODO.md EVENT_PROBABILITY_LIST.md ASSETS.md auth-cache-recovery.js auth.html game.html hosting-origin-guard.js index.html js/game-data.js js/game-data-core.js js/google-auth-bridge.js js/memories-backgrounds.js js/memories-screen.js js/event-bootstrap.js js/wolf-boy-ring-event.js js/wolf-mother-butler-event.js quiz-event-v2.css styles.css viewport-shell.js
           if git diff --cached --quiet; then
             echo 'No generated changes.'
             exit 0

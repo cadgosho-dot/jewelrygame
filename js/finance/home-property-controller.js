@@ -93,7 +93,9 @@ export function createHomePropertyController({
           <strong>引越し費用　${yen(HOME_MOVE_COST)}</strong>
           <span>毎月家賃　${yen(rent)}</span>
         </div>
-        ${selected !== current ? '<button type="button" class="primary-button full-button" data-action="move-home-property">引越す</button>' : ''}
+        ${selected !== current
+          ? '<button type="button" class="primary-button full-button" data-action="move-home-property">引越す</button>'
+          : '<button type="button" class="primary-button full-button home-property-move-placeholder" aria-hidden="true" tabindex="-1" style="visibility:hidden;pointer-events:none;">引越す</button>'}
         <button type="button" class="secondary-button full-button" data-action="real-estate-menu" style="margin-top:10px;">戻る</button>
       </section>`, { help: '物件を選ぶと画像・引越し費用・毎月家賃を確認できます。現在住んでいる物件は画像中央の「契約中」で示されます。' });
   }

@@ -18,6 +18,20 @@ jobs:
         with:
           ref: chore/version-0.10.946-battle
           fetch-depth: 0
+      - name: Extend VERSION sync coverage for current event modules
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/version-sync.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = "    # main modules\n"
+          addition = """    # standalone event module cache keys\n    Rule('js/memories-backgrounds.js', 'event-bootstrap.js import key', qparam(r'\\./event-bootstrap\\.js'), keep_prefix),\n    Rule('js/event-bootstrap.js', 'wolf-boy-ring-event.js import key', qparam(r'\\./wolf-boy-ring-event\\.js'), keep_prefix),\n    Rule('js/event-bootstrap.js', 'wolf-mother-butler-event.js import key', qparam(r'\\./wolf-mother-butler-event\\.js'), keep_prefix),\n    Rule('js/wolf-boy-ring-event.js', 'audio.js import key', qparam(r'\\./audio\\.js'), keep_prefix),\n    Rule('js/wolf-mother-butler-event.js', 'audio.js import key', qparam(r'\\./audio\\.js'), keep_prefix),\n\n"""
+          if addition not in text:
+              if anchor not in text:
+                  raise SystemExit('version-sync insertion anchor not found')
+              text = text.replace(anchor, addition + anchor, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
       - name: Set VERSION 0.10.946
         run: python3 scripts/version-sync.py --set 0.10.946
       - name: Verify VERSION sync

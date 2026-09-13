@@ -106,6 +106,25 @@ async function kaitenzushiDocumentNetworkFirst(request) {
   });
 }
 
+async function retroBattleDocumentNetworkFirst(request) {
+  const cache = await caches.open(APP_CACHE);
+  const canonicalUrl = new URL('./assets/minigames/retro-battle/index.html', self.registration.scope).href;
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response.ok) {
+      await cache.put(canonicalUrl, response.clone()).catch(() => {});
+      return response;
+    }
+  } catch (_) {}
+  const cached = (await cache.match(request, { ignoreSearch: true }))
+    || (await cache.match(canonicalUrl, { ignoreSearch: true }));
+  if (cached) return cached;
+  return new Response(`<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>戦闘ミニゲーム 読み込みエラー</title><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#000;color:#fff;font-family:sans-serif;text-align:center"><main><strong>戦闘ミニゲームを読み込めませんでした</strong><p>通信状態を確認して、もう一度御徒町へ移動してください。</p></main></body></html>`, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   const appCache = await caches.open(APP_CACHE);
@@ -231,6 +250,10 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.pathname.endsWith('/assets/minigames/kaitenzushi/game/index.html')) {
     event.respondWith(kaitenzushiDocumentNetworkFirst(event.request));
+    return;
+  }
+  if (url.pathname.endsWith('/assets/minigames/retro-battle/index.html')) {
+    event.respondWith(retroBattleDocumentNetworkFirst(event.request));
     return;
   }
   if (event.request.mode === 'navigate' || destination === 'document') {

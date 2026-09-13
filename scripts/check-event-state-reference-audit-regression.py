@@ -47,6 +47,21 @@ checks['emerald meal retains event reference across preload await'] = (
     and emerald_meal.index('await preloadEmeraldCaptainMealAssets();') < emerald_meal.index('eventState.mealPaid = true;')
 )
 
+mystery_state = section('mysteryChineseMealEventState')
+checks['mystery Chinese state normalized through next object'] = 'const next = {' in mystery_state
+checks['mystery Chinese state updated in place'] = 'Object.assign(saved, next);' in mystery_state
+checks['mystery Chinese saved reference restored'] = 'state.events.mysteryChineseMealEvent = saved;' in mystery_state
+checks['mystery Chinese state aliases saved reference'] = 'const eventState = saved;' in mystery_state
+checks['mystery Chinese replacement assignment removed'] = 'state.events.mysteryChineseMealEvent = {' not in mystery_state
+
+mystery_start = section('startMysteryChineseMealEating')
+checks['mystery Chinese retained reference crosses settlement helper'] = (
+    'const eventState = mysteryChineseMealEventState();' in mystery_start
+    and 'applyMysteryChineseMeal()' in mystery_start
+    and "eventState.stage = 'eating';" in mystery_start
+    and mystery_start.index('applyMysteryChineseMeal()') < mystery_start.index("eventState.stage = 'eating';")
+)
+
 for name, ok in checks.items():
     print(f"{'OK' if ok else 'NG'}: {name}")
 if not all(checks.values()):

@@ -124,6 +124,7 @@ jobs:
 
       - name: Run focused checks
         run: |
+          python3 -m pip install --disable-pip-version-check pillow
           python3 scripts/version-sync.py --check
           python3 scripts/check-wolf-mother-butler-event.py
           python3 scripts/check-event-save-roundtrip.py

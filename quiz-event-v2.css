@@ -90,6 +90,14 @@ body[data-screen="okachimachiQuiz"] :is(
 body[data-screen="okachimachiQuiz"] .jxj-quiz-king-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-dialogue-panel-v2{
   padding-bottom:34px!important;
 }
+@media (orientation:portrait){
+  body[data-screen="okachimachiQuiz"] .jxj-quiz-king-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-dialogue-panel-v2{
+    left:0!important;
+    right:0!important;
+    width:auto!important;
+    max-width:none!important;
+  }
+}
 body[data-screen="okachimachiQuiz"] .jxj-quiz-king-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-tap-v2{
   position:absolute!important;
   left:auto!important;

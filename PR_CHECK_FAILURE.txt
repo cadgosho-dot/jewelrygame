@@ -1,0 +1,352 @@
+exit_status=1
+--- tail 350 ---
+OK: helper has no reverse dependency: canSpendMinutes
+OK: helper has no reverse dependency: hunger
+OK: helper has no reverse dependency: sleep
+OK: helper has no reverse dependency: roundedMetalWeight
+OK: helper has no reverse dependency: metalOwnedWeight
+OK: helper has no reverse dependency: metalReservedWeight
+OK: helper has no reverse dependency: metalAvailableWeight
+OK: helper has no reverse dependency: materialRequirementsFor
+METAL WEIGHT LABEL TEST: PASS
+
+METAL WEIGHT LABEL INTEGRATION: FAIL
+- app keeps non-display weight calculations
+
+===== 数量長押し管理 =====
+PRESS HOLD CONTROLLER: PASS
+標準320ms/65ms、販売価格420ms/110ms、継続条件停止、表示クラスなし、長押し後クリック抑止・cancel・disabledを確認しました。
+PRESS HOLD INTEGRATION: PASS
+地金・ルース・ディスプレイケース・販売価格・熱帯魚屋の5領域をcontrollerへ分離し、各領域の既存タイミングと見た目を維持しています。
+
+===== Pages公開対象 =====
+PAGES PUBLISH POLICY: PASS
+
+===== 検索・SEO公開 =====
+SEO POLICY: PASS
+正式公開URL: https://cadgosho-dot.github.io/jewelrygame/
+検索対象: index.html / about.html
+noindex: game.html / auth.html
+
+===== 長期セーブ容量対策 =====
+OK: 容量超過判定がある
+OK: 端末1コピー節約モードがある
+OK: 起動時端末保存に安全ヘルパーがある
+OK: 起動時容量不足で1コピー化して再試行する
+OK: 起動時端末保存の最終失敗で起動を止めない
+OK: クラウド採用時は安全保存を使う
+OK: 端末優先移行時は安全保存を使う
+OK: 容量不足時に重複バックアップを解放する
+OK: 破損診断へ巨大なraw全文を保存しない
+OK: 正常読込時に旧pre-migrationを解放する
+OK: 端末書込前にクラウド用snapshotを確保する
+OK: 容量不足時に最新端末セーブを再試行する
+OK: 端末保存失敗でもクラウド保存へ進む
+OK: 端末とクラウド両方失敗時の表示がある
+
+SAVE STORAGE POLICY: PASS
+
+===== 長期履歴自動整理 =====
+BOUNDED SAVE HISTORY: PASS
+整理前 20,687,621 bytes -> 整理後 90,184 bytes -> 再読込後 93,680 bytes
+破棄した終了注文 9,880件 / 売却済み 19,780件 / 収支明細 9,700件
+
+===== 長期不要データ整理 =====
+LONG TERM MISC CLEANUP: PASS
+{"checks":{"oldCalendarRemoved":true,"boundaryCalendarKept":true,"currentCalendarKept":true,"futureCalendarKept":true,"invalidCalendarRemoved":true,"notificationsBounded":true,"notificationTextBounded":true,"reportsBounded":true,"robberyBounded":true,"branchUnpaidClean":true,"branchesClean":true,"activeBranchRecovered":true,"knowledgeClean":true,"cleanupReported":true,"roundTripStable":true},"misc":{"discardedCalendarEvents":2,"discardedNotifications":60,"discardedHomeRentReports":12,"discardedMonthlyReports":12,"discardedRobberyHistory":10,"discardedInvalidBranches":2,"discardedBranchUnpaidKeys":2,"discardedProcessingKnowledge":2,"changed":true}}
+
+===== クラウド完全削除 =====
+OK: 既知saveChunksを全件列挙して削除
+OK: saveMetaを削除
+OK: session/currentを削除
+OK: ゲームデータ削除でサブコレクション掃除
+OK: 旧gameStateStorage参照も消す
+OK: アカウント削除でサブコレクションを先に掃除
+OK: 孤立チャンクは24時間後から掃除
+OK: 孤立チャンク掃除は最大256件
+
+CLOUD DELETE POLICY: PASS
+
+===== セーブ容量診断（内部） =====
+OK: Firebaseに読み取り専用診断APIが残っている
+OK: 診断APIは現行saveMetaを読む
+OK: 内部診断はstateの複製を使う
+OK: 内部診断は終了履歴を整理する
+OK: 内部診断は収支履歴も整理する
+OK: 設定画面に容量診断ボタンを出さない
+OK: プレイヤー操作から容量診断を開けない
+
+SAVE DIAGNOSTICS INTERNAL POLICY: PASS
+
+===== IndexedDB端末セーブ =====
+OK: IndexedDB保存モジュールがある
+OK: appのIndexedDBモジュール版が現行VERSION
+OK: FirebaseのIndexedDBモジュール版が現行VERSION
+OK: オフライン冷間起動用にIndexedDBモジュールをCORE_SHELLへ事前キャッシュ
+OK: IndexedDBはユーザー別キーで保存する
+OK: IndexedDB読み書き削除APIがある
+OK: IndexedDB完了監視をリクエスト前に登録する
+OK: 起動時にクラウドより先にIndexedDBを読む
+OK: IndexedDBと旧localStorageを比較する
+OK: 端末候補とクラウドをrevision比較する
+OK: 旧localStorageユーザーをIndexedDBへ自動移行する
+OK: クラウド採用データもIndexedDBへ保存する
+OK: 起動時はlocalStorage互換コピーを残す
+OK: 通常保存はIndexedDBをクラウドより先に確定する
+OK: IndexedDB失敗時もlocalStorage結果をフォールバックに使う
+OK: 終了直前のlocalStorage緊急コピーを単一経路で維持する
+OK: ゲームデータ削除でIndexedDBも削除する
+OK: アカウント削除でIndexedDBも削除する
+OK: プレゼント競合判定もIndexedDBを見る
+OK: プレゼント確定後もIndexedDBへ保存する
+OK: プレゼントは旧localStorageフォールバックを残す
+OK: 移行時に旧localStorageを削除しない
+
+INDEXEDDB SAVE POLICY: PASS
+
+===== プレゼント分割セーブ =====
+OK: gift reads current saveMeta/current generation
+OK: gift stages a new chunk generation
+OK: gift atomically switches saveMeta/current
+OK: gift checks save-generation conflicts
+OK: gift protects commit-response-loss
+OK: gift keeps local save quota recovery
+OK: gift never reads legacy inline gameState
+OK: gift never writes legacy inline gameState
+OK: gift has explicit save-conflict message
+OK: gift exports preflight cloud confirmation
+OK: gift preflight directly reads current cloud metadata
+OK: gift preflight validates current saveRevision
+OK: gift has cloud-save-unavailable message
+OK: app confirms cloud save before gift creation
+OK: app remaps post-confirm no-save to cloud retry guidance
+OK: app does not raw-write localStorage after committed gift
+OK: app still adopts committed cloud gift state
+
+GIFT CHUNKED SAVE POLICY: PASS
+
+===== プレゼント取消モーダル =====
+OK: 取消ボタンが確認モーダルを開く
+OK: 確認用コードを保持
+OK: モーダル側に取消確定処理
+OK: 確定時に対象コードを取得
+OK: 確定時にモーダルを閉じる
+OK: 確定時に取消処理を実行
+OK: 取消処理本体を維持
+OK: プレゼント取消確認モーダルの処理接続を確認しました。
+
+===== 未参照クラウドチャンク掃除 =====
+OK: Firestoreの限定一覧取得APIを使う
+OK: 24時間以上古いチャンクだけを対象にする
+OK: 1回最大256件に制限する
+OK: 1セッション1回だけ試す
+OK: 問い合わせ前の現行generationを保護する
+OK: 削除直前に現行metadataを再確認する
+OK: 現行generationは削除対象から除外する
+OK: 削除は取得した古い文書refだけに限定する
+OK: 掃除失敗は保存成功を壊さない
+OK: 通常保存成功後にベストエフォート掃除を起動する
+OK: プレゼント確定後にもベストエフォート掃除を起動する
+OK: 既存の直前世代掃除を維持する
+
+ORPHAN CHUNK CLEANUP POLICY: PASS
+
+===== 加工知識データ =====
+PASS processing knowledge: sequence=ringResizingTechnicalGuideV1 -> jewelrySolderingBrazingProfessionalGuideV1 -> preciousMetalJewelryFinishingProfessionalGuideV1 -> stoneSettingProfessionalEncyclopedicGuideV1 -> gemstoneLapidaryCuttingPolishingProfessionalGuideV1 / finishing=44 chapters / stone=60 sections / stone-principles=70 / stone-refs=27 / lapidary=53 sections / lapidary-principles=70 / lapidary-refs=29
+
+===== 地金相場フォールバック =====
+METAL MARKET FALLBACK CHECK: PASS
+
+===== ショーケース画像 =====
+PASS showcase jewelry visual audit
+
+===== 完成画面縦余白 =====
+PASS completion render class exists
+PASS portrait completion rule exists
+PASS scoped to completion screen
+PASS reserves both header bars
+PASS safe area included
+PASS fallback clearance >= 196px
+PASS landscape not targeted by new rule
+PASS completion artwork rules retained
+COMPLETION PORTRAIT HEADER CLEARANCE AUDIT: PASS
+
+===== 見習い映画館中央配置 =====
+PASS weekend condition is Saturday/Sunday only
+PASS apprentice playback screen has dedicated centered layout
+PASS playback screen uses grid
+PASS playback screen centers stage
+PASS apprentice video stays centered
+PASS event videos keep contain mode
+APPRENTICE CINEMA CENTER AUDIT: PASS
+
+===== エメラルド班班長報酬タップ =====
+PASS reward button action retained
+PASS legacy v753 compatibility retained
+PASS v846 direct guard exists
+PASS direct guard restricted to showcase
+PASS pointerup direct path
+PASS touchend fallback path
+PASS direct path advances event without depending on click
+PASS successful reward tap enters purchase result
+PASS purchase result immediately arms next-scene continuation
+PASS purchase-result render keeps reload fallback
+PASS next dialogue stage is purchase
+PASS purchase dialogue continues to meal scene
+PASS button and image rect fallback
+PASS child hit targets delegated to parent
+EMERALD CAPTAIN REWARD TAP AUDIT: PASS
+
+===== イベント構造整合 =====
+EVENT INTEGRITY AUDIT: PASS
+OK: data-action coverage: 243 static actions handled
+OK: event stage validators parsed: 33 / active maps: 41
+OK: event audio routes guarded: 7
+OK: static asset refs checked: 245
+OK: loose-shop quiz: 50 questions / 4 choices contract checked
+OK: event save/migration round-trip: 206 active stages checked
+OK: meal/quiz crash-and-reload recovery: PASS (18 quiz stages)
+
+===== イベント保存往復 =====
+EVENT SAVE ROUNDTRIP AUDIT: PASS
+OK: 206 active event stages survived JSON save + migrateState()
+OK: westernUnionEvent video resume metadata preserved
+OK: tattooWomanAmberEvent video resume metadata preserved
+OK: grayHoodAquariumEvent video resume metadata preserved
+OK: oyatsuDaisukiEvent iceEating intentionally recovers to iceFade
+
+===== 食事・クイズ復旧 =====
+MEAL / QUIZ RECOVERY AUDIT: PASS
+OK: eatMeal active-event resume precedes hunger/same-meal/money/time gates
+OK: normal meal payment/time/hunger/history commit before eating animation
+OK: maybeStartRidleyOkazakiSobaEvent active resume precedes new-trigger prerequisites
+OK: maybeStartWhiteBunnyIceEvent active resume precedes new-trigger prerequisites
+OK: maybeStartEmeraldCaptainKebabEvent active resume precedes new-trigger prerequisites
+OK: sushi-chef/free-kaitenzushi recovery precedes normal gates
+OK: quiz session JSON+migrateState round-trip: 18 stages checked
+
+===== 御徒町夜背景 =====
+OKACHIMACHI NIGHT BACKGROUND AUDIT: PASS
+OK: 17:59 day / 18:00 night / 22:00 night
+OK: landscape and portrait night assets present with expected dimensions
+OK: okachimachi base route and cinema exterior route use time-aware helper
+OK: Service Worker precaches both night assets
+
+===== 起動診断 =====
+PASS CSP is present
+PASS CSP keeps self scripts enabled
+PASS hosting origin guard loads before app module
+PASS app is loaded as an ES module
+PASS game-data version marker
+PASS service worker version marker
+PASS app UI version marker
+PASS game CSS version marker
+PASS game app version marker
+PASS index shell version marker
+PASS startup-facing versions agree
+PASS startup save-ready gate exists
+PASS start button is disabled until save is ready
+PASS boot initializes Firebase before declaring save ready
+PASS preferred save comparison still exists
+PASS startup audio hold exists
+PASS startup audio release API exists
+PASS game releases startup audio after entry
+PASS service worker registration exists
+PASS service worker update check exists
+STARTUP SAFETY AUDIT: PASS (v0.10.943)
+
+===== 起動クラウド無応答復旧 =====
+OK: startup timeout helper exists
+OK: startup cloud timeout is bounded
+OK: device IndexedDB save is read before cloud session claim
+OK: session claim has timeout
+OK: cloud save load has timeout
+OK: timeout keeps existing local recovery warning path
+OK: cloud load failure still falls back to device save
+STARTUP CLOUD TIMEOUT CHECK: PASS
+
+===== 起動クラウド無応答・実ブラウザ =====
+STARTUP CLOUD TIMEOUT BROWSER: PASS
+Firestore無応答でも正常な端末セーブからタイトルを解放し、続きからメイン画面へ入れることを確認しました。
+
+===== 水槽正本・再設置 =====
+AQUARIUM RUNTIME POLICY: PASS
+水槽表示はHTML本体を正本とし、Service Workerによる旧ホットフィックス注入に依存していません。
+
+===== 水槽死亡率・おやつ発生率 =====
+AQUARIUM MORTALITY / OYATSU RATE: PASS
+
+===== 水槽縦画面中央配置 =====
+OK: 縦画面でアプリ領域を中央配置
+OK: 旧上寄せ指定を除去
+OK: 水槽ステージを維持
+OK: 観察ボタンを維持
+OK: 横画面専用中央配置を維持
+OK: 水槽の縦画面中央配置を確認しました。
+
+===== 熱帯魚屋カテゴリ導線 =====
+OK: 3カテゴリ定義
+OK: 水草商品データ
+OK: カテゴリ固定コントロールDOM
+OK: カテゴリボタンDOM
+OK: スワイプ案内
+OK: スワイプ処理
+OK: 入店時スクロールリセット
+OK: 描画後バインド
+OK: カテゴリ固定表示CSS
+OK: 横スワイプCSS
+OK: 2段ヘッダー二重余白防止
+OK: 熱帯魚屋は魚・水草・ディスプレイをタップ／左右スワイプで切替でき、カテゴリ導線はスクロール中も固定表示されます。
+
+===== ストーリーテラーV2レイアウト =====
+OK: V2共通描画ヘルパー
+OK: ストーリーテラーV2
+OK: 通りすがりのクイズ王V2
+OK: 3DメガネV2
+OK: 3イベント共通CSS
+OK: V2 CSSをゲームへ読込
+OK: V2 CSSをPWAキャッシュ
+OK: 縦会話キャラ中央寄せ
+OK: 会話タップ右詰め
+OK: 縦クイズ下詰め
+OK: 縦クイズ人物中央
+OK: 横クイズ左右分離
+OK: 横会話全幅
+OK: 横報酬中央48%
+OK: 報酬小さく上下動
+OK: 4択タップ領域
+OK: いいとも時セリフ非表示
+OK: 3Dメガネ専用上書き識別子
+OK: 3Dメガネ画像固定
+OK: 3Dメガネ背景固定
+OK: 3Dメガネ縦4択ステージ固定
+OK: 3Dメガネ縦4択人物領域固定
+OK: 3Dメガネ縦4択人物最終位置固定
+OK: 3Dメガネ縦4択パネル固定
+OK: 3Dメガネ縦4択2列固定
+OK: 3Dメガネ縦会話固定
+OK: 3Dメガネ横4択固定
+OK: 3Dメガネ横会話固定
+OK: 3Dメガネ上書き再適用保護
+OK: ストーリーテラー / 通りすがりのクイズ王 / 3Dメガネの共通V2表示と、3Dメガネ専用UI固定を確認しました。
+
+===== 終了時セーブ一本化 =====
+LIFECYCLE SAVE POLICY: PASS
+終了・非表示イベントは単一経路を使い、同一状態の重複保存を抑止します。
+
+===== 互換DOM監視軽量化 =====
+HOSTING GUARD POLICY: PASS
+互換ガードはgame.html側だけで、DOM変化時に限定して修復処理を行います。
+
+===== Firebase App Check準備 =====
+APP CHECK READINESS: PASS (enabled)
+App Checkはコード上、有効なsite keyで有効化されています。
+
+===== 実ブラウザ主要導線 =====
+BROWSER SMOKE: PASS
+新規ゲーム・端末保存・再読込・続きから・スマートフォン・就寝翌日・水槽観察を実ブラウザで確認しました。
+
+CURRENT BUILD AUDIT: FAIL
+- 管理資料整合
+- リポジトリ整理状態
+- 地金重量表示

@@ -1,0 +1,98 @@
+name: Temporary mystery Chinese state reference fix
+
+on:
+  push:
+    branches:
+      - fix/mystery-chinese-state-reference-20260914
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply minimal stale-reference fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          app_path = root / 'js/app.js'
+          app = app_path.read_text(encoding='utf-8')
+
+          def section(source, name):
+              match = re.search(rf'(?m)^(?:async\s+)?function\s+{re.escape(name)}\s*\([^\n]*\)\s*\{{', source)
+              if not match:
+                  raise SystemExit(f'{name}: function not found')
+              following = re.search(r'(?m)^(?:async\s+)?function\s+', source[match.end():])
+              end = match.end() + following.start() if following else len(source)
+              return match.start(), end, source[match.start():end]
+
+          start, end, body = section(app, 'mysteryChineseMealEventState')
+          old_open = '  state.events.mysteryChineseMealEvent = {'
+          old_close = '  };\n  const eventState = state.events.mysteryChineseMealEvent;'
+          if body.count(old_open) != 1:
+              raise SystemExit('mysteryChineseMealEventState: replacement assignment target not found exactly once')
+          if body.count(old_close) != 1:
+              raise SystemExit('mysteryChineseMealEventState: closing assignment target not found exactly once')
+          body = body.replace(old_open, '  const next = {', 1)
+          body = body.replace(
+              old_close,
+              '  };\n  Object.assign(saved, next);\n  state.events.mysteryChineseMealEvent = saved;\n  const eventState = saved;',
+              1,
+          )
+          app = app[:start] + body + app[end:]
+          app_path.write_text(app, encoding='utf-8')
+
+          guard_path = root / 'scripts/check-event-state-reference-audit-regression.py'
+          guard = guard_path.read_text(encoding='utf-8')
+          marker = "emerald_meal = section('startEmeraldCaptainKebabMeal')\nchecks['emerald meal retains event reference across preload await'] = (\n"
+          if marker not in guard:
+              raise SystemExit('audit guard marker not found')
+          addition = """
+
+mystery_state = section('mysteryChineseMealEventState')
+checks['mystery Chinese state normalized through next object'] = 'const next = {' in mystery_state
+checks['mystery Chinese state updated in place'] = 'Object.assign(saved, next);' in mystery_state
+checks['mystery Chinese saved reference restored'] = 'state.events.mysteryChineseMealEvent = saved;' in mystery_state
+checks['mystery Chinese state aliases saved reference'] = 'const eventState = saved;' in mystery_state
+checks['mystery Chinese replacement assignment removed'] = 'state.events.mysteryChineseMealEvent = {' not in mystery_state
+
+mystery_start = section('startMysteryChineseMealEating')
+checks['mystery Chinese retained reference crosses settlement helper'] = (
+    'const eventState = mysteryChineseMealEventState();' in mystery_start
+    and 'applyMysteryChineseMeal()' in mystery_start
+    and "eventState.stage = 'eating';" in mystery_start
+    and mystery_start.index('applyMysteryChineseMeal()') < mystery_start.index("eventState.stage = 'eating';")
+)
+"""
+          insert_at = guard.index("\nfor name, ok in checks.items():")
+          guard = guard[:insert_at] + addition + guard[insert_at:]
+          guard_path.write_text(guard, encoding='utf-8')
+          PY
+
+      - name: Run focused state-reference regression
+        run: python scripts/check-event-state-reference-audit-regression.py
+
+      - name: Run existing mystery Chinese meal regression
+        run: python scripts/check-mystery-chinese-meal-regression.py
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/app.js scripts/check-event-state-reference-audit-regression.py
+          if git diff --cached --quiet; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git commit -m "謎の中華料理イベントの状態参照切れを修正"
+          git push origin HEAD

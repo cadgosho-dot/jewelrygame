@@ -15174,7 +15174,7 @@ function mysteryChineseMealEventState() {
     : {};
   const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'eating', 'postMeal']);
   const validStages = new Set(['idle', 'video', ...dialogueStages, 'completed']);
-  state.events.mysteryChineseMealEvent = {
+  const next = {
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
@@ -15188,7 +15188,9 @@ function mysteryChineseMealEventState() {
     introVideoCompleted: Boolean(saved.introVideoCompleted),
     stageAfterVideo: dialogueStages.has(saved.stageAfterVideo) ? saved.stageAfterVideo : '',
   };
-  const eventState = state.events.mysteryChineseMealEvent;
+  Object.assign(saved, next);
+  state.events.mysteryChineseMealEvent = saved;
+  const eventState = saved;
   if (!eventState.active) {
     if (!['idle', 'completed'].includes(eventState.stage)) eventState.stage = 'completed';
     eventState.stageAfterVideo = '';

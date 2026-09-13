@@ -51,6 +51,14 @@ def provenance_map() -> dict[str, dict[str, str]]:
             'source': 'ユーザー提供（直近引継ぎ記録あり）',
             'permission': '変更禁止（色・彩度・画風・再描画）',
         }
+    for rel, source in [
+        ('assets/images/home-property-b.png', '1000023835.png'),
+        ('assets/images/home-property-b-portrait.png', '1000023836.png'),
+    ]:
+        provenance[rel] = {
+            'source': f'ユーザー指定正式画像（bedroom_images.zip / {source}）',
+            'permission': '変更禁止（原本と同一バイト。再生成・変換・再圧縮・リサイズ禁止）',
+        }
     return provenance
 
 SOURCE_ORDER = [

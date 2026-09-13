@@ -75,6 +75,8 @@ RULES = [
     Rule('sw.js', 'quiz-event-v2.css precache key', qparam(r'\./quiz-event-v2\.css'), keep_prefix),
     Rule('sw.js', 'app.js precache key', qparam(r'\./js/app\.js'), keep_prefix),
     Rule('sw.js', 'store-rent.js precache key', qparam(r'\./js/finance/store-rent\.js'), keep_prefix),
+    Rule('sw.js', 'home-property.js precache key', qparam(r'\./js/finance/home-property\.js'), keep_prefix),
+    Rule('sw.js', 'home-property-controller.js precache key', qparam(r'\./js/finance/home-property-controller\.js'), keep_prefix),
     Rule('sw.js', 'lazy-modules.js precache key', qparam(r'\./js/runtime/lazy-modules\.js'), keep_prefix),
     Rule('sw.js', 'finished-video-cache-warm.js precache key', qparam(r'\./js/runtime/finished-video-cache-warm\.js'), keep_prefix),
     Rule('sw.js', 'winter-cold-text-effect.js precache key', qparam(r'\./js/ui/winter-cold-text-effect\.js'), keep_prefix),
@@ -141,6 +143,8 @@ RULES = [
     # main modules
     Rule('js/app.js', 'game-data.js import key', qparam(r'\./game-data\.js'), keep_prefix),
     Rule('js/app.js', 'store-rent.js import key', qparam(r'\./finance/store-rent\.js'), keep_prefix),
+    Rule('js/app.js', 'home-property-controller.js import key', qparam(r'\./finance/home-property-controller\.js'), keep_prefix),
+    Rule('js/finance/home-property-controller.js', 'home-property.js import key', qparam(r'\./home-property\.js'), keep_prefix),
     Rule('js/app.js', 'UI build version', quoted_constant('UI_BUILD_VERSION'), keep_quote),
     Rule('js/app.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
     Rule('js/app.js', 'audio-scene-map.js import key', qparam(r'\./audio-scene-map\.js'), keep_prefix),

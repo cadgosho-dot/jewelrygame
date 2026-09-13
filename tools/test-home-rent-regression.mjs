@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+import { createHomePropertyController } from '../js/finance/home-property-controller.js';
 
 const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 
@@ -46,7 +47,6 @@ function extractFunction(name) {
 
 const automaticPaymentCapacitySource = extractFunction('automaticPaymentCapacity');
 const payFixedCostSource = extractFunction('payFixedCost');
-const processHomeRentSource = extractFunction('processHomeRent');
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 function makeHarness(overrides = {}) {
@@ -63,6 +63,7 @@ function makeHarness(overrides = {}) {
       day: overrides.day ?? 31,
     },
     business: {
+      homeProperty: overrides.homeProperty,
       lastProcessedHomeRentMonth: overrides.lastProcessedHomeRentMonth ?? '',
       homeRentReports: [...(overrides.homeRentReports ?? [])],
       homeRentUnpaid: overrides.homeRentUnpaid ?? 0,
@@ -75,12 +76,8 @@ function makeHarness(overrides = {}) {
   const dateText = overrides.date ?? '2026-09-15';
   const context = {
     state,
-    HOME_MONTHLY_RENT,
     MIN_LIVING_CASH_RESERVE,
-    gameDate: () => new Date(`${dateText}T12:00:00`),
     addFinance: (...args) => calls.finance.push(args),
-    addNotification: (...args) => calls.notifications.push(args),
-    yen: (value) => `¥${Number(value)}`,
     Math,
     Number,
     String,
@@ -90,18 +87,34 @@ function makeHarness(overrides = {}) {
   vm.runInContext(`
     ${automaticPaymentCapacitySource}
     ${payFixedCostSource}
-    ${processHomeRentSource}
     globalThis.__automaticPaymentCapacity = automaticPaymentCapacity;
     globalThis.__payFixedCost = payFixedCost;
-    globalThis.__processHomeRent = processHomeRent;
   `, context);
+
+  const controller = createHomePropertyController({
+    getState: () => state,
+    getScreenData: () => ({}),
+    shell: () => '',
+    yen: (value) => `¥${Number(value)}`,
+    version: '0.10.945',
+    isPortraitLayout: () => false,
+    showToast: () => {},
+    addFinance: (...args) => calls.finance.push(args),
+    saveGame: () => {},
+    gameDate: () => new Date(`${dateText}T12:00:00`),
+    rerender: () => {},
+    payFixedCost: context.__payFixedCost,
+    addNotification: (...args) => calls.notifications.push(args),
+    propertyARent: HOME_MONTHLY_RENT,
+    getMinLivingCashReserve: () => MIN_LIVING_CASH_RESERVE,
+  });
 
   return {
     state,
     calls,
     automaticPaymentCapacity: context.__automaticPaymentCapacity,
     payFixedCost: context.__payFixedCost,
-    processHomeRent: context.__processHomeRent,
+    processHomeRent: controller.processRent,
   };
 }
 
@@ -152,6 +165,7 @@ function testHomeRentNonBillingDayAndDuplicateAreNoOps() {
   assert.equal(nonBilling.processHomeRent(), null);
   assert.equal(nonBilling.state.game.money, 50000);
   assert.deepEqual(nonBilling.state.business.homeRentReports, []);
+  assert.deepEqual(nonBilling.calls.finance, []);
   assert.deepEqual(nonBilling.calls.notifications, []);
 
   const duplicate = makeHarness({
@@ -254,6 +268,27 @@ function testHomeRentSecondCallCannotChargeTwice() {
   assert.equal(h.calls.notifications.length, 1);
 }
 
+function testHomeRentPropertyBUses200000() {
+  const h = makeHarness({
+    date: '2026-09-15',
+    day: 351,
+    money: 250000,
+    homeRent: 70000,
+    reserve: 10000,
+    homeProperty: 'B',
+  });
+  const report = h.processHomeRent();
+
+  assert.deepEqual(plain(report), { month: '2026-09', amount: 200000, paid: 200000, unpaid: 0 });
+  assert.equal(h.state.game.money, 50000);
+  assert.equal(h.state.business.homeRentUnpaid, 0);
+  assert.equal(h.state.business.lastProcessedHomeRentMonth, '2026-09');
+  assert.deepEqual(plain(h.state.business.homeRentReports), [plain(report)]);
+  assert.deepEqual(h.calls.finance, [['2026-09 自宅家賃', 0, 200000]]);
+  assert.deepEqual(plain(h.state.tools.morningMessages), ['自宅家賃 ¥200000を支払いました。']);
+  assert.deepEqual(h.calls.notifications, [['自宅家賃支払日', '自宅家賃 ¥200000を支払いました。', 'info']]);
+}
+
 testAutomaticPaymentCapacityKeepsLivingReserve();
 testPayFixedCostFullAndPartialPayment();
 testPayFixedCostZeroDueDoesNothing();
@@ -263,6 +298,7 @@ testHomeRentFullPayment();
 testHomeRentPartialPaymentAccumulatesUnpaidAndKeepsReserve();
 testHomeRentNoAutomaticCapacityRecordsFullUnpaid();
 testHomeRentSecondCallCannotChargeTwice();
+testHomeRentPropertyBUses200000();
 
 console.log('HOME RENT REGRESSION: PASS');
-console.log('automaticPaymentCapacity()/payFixedCost()/processHomeRent() current behavior protected: living-cash reserve, due normalization, full/partial payment, day-15/idempotency gates, first-30-day grace, unpaid accumulation, bounded reports/messages, notifications, and no direct save/time cost.');
+console.log('automaticPaymentCapacity()/payFixedCost()/homePropertyController.processRent() behavior protected: living-cash reserve, due normalization, full/partial payment, day-15/idempotency gates, first-30-day grace, unpaid accumulation, bounded reports/messages, notifications, legacy property A behavior, and property B ¥200000 rent.');

@@ -78,6 +78,7 @@ CHECKS = [
     ('スタッフ運用・職人スタッフ自動制作処理保護', [sys.executable, str(ROOT / 'scripts/check-staff-operations-regression.py')]),
     ('スマホアイテム・装備処理保護', [sys.executable, str(ROOT / 'scripts/check-phone-item-equipment-regression.py')]),
     ('固定費自動支払い・自宅家賃処理保護', [sys.executable, str(ROOT / 'scripts/check-home-rent-regression.py')]),
+    ('自宅物件・引越し処理保護', [sys.executable, str(ROOT / 'scripts/check-home-property.py')]),
     ('自動操縦処理保護', [sys.executable, str(ROOT / 'scripts/check-autopilot-regression.py')]),
     ('通常食事処理保護', [sys.executable, str(ROOT / 'scripts/check-manual-meal-regression.py')]),
     ('回転寿司開始・会計処理保護', [sys.executable, str(ROOT / 'scripts/check-kaitenzushi-regression.py')]),

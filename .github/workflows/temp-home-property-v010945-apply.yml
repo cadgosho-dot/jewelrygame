@@ -17,6 +17,10 @@ jobs:
           ref: feature/home-property-b-v010945-clean
           fetch-depth: 0
 
+      - name: Install Python image dependency
+        shell: bash
+        run: python3 -m pip install --disable-pip-version-check pillow
+
       - name: Apply home property feature
         shell: bash
         run: |

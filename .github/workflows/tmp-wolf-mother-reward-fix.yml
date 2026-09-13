@@ -95,18 +95,20 @@ jobs:
 
       - name: Bump active build version
         run: |
-          python3 scripts/version-sync.py --set 0.10.943
           python3 - <<'PY'
           from pathlib import Path
           old = '0.10.942'
           new = '0.10.943'
-          for name in ('js/event-bootstrap.js', 'js/wolf-boy-ring-event.js', 'js/wolf-mother-butler-event.js'):
+          for name in ('js/event-bootstrap.js', 'js/memories-backgrounds.js', 'js/wolf-boy-ring-event.js', 'js/wolf-mother-butler-event.js'):
               path = Path(name)
               text = path.read_text(encoding='utf-8')
               if old not in text:
                   raise SystemExit(f'{name}: expected {old} reference was not found')
               path.write_text(text.replace(old, new), encoding='utf-8')
-
+          PY
+          python3 scripts/version-sync.py --set 0.10.943
+          python3 - <<'PY'
+          from pathlib import Path
           changelog = Path('CHANGELOG.md')
           text = changelog.read_text(encoding='utf-8')
           marker = '## v0.10.942\n'

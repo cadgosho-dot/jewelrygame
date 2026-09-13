@@ -1,4 +1,4 @@
-name: 一時自宅物件v0.10.945適用
+name: temp-home-property-v010945-apply
 
 on:
   push:
@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message == '一時自宅物件v0.10.945適用ワークフローを追加'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,7 +17,7 @@ jobs:
           ref: feature/home-property-b-v010945-clean
           fetch-depth: 0
 
-      - name: 既存v0.10.944の正式修正を保ったまま自宅物件機能を適用
+      - name: Apply home property feature
         shell: bash
         run: |
           set -euo pipefail
@@ -32,259 +31,9 @@ jobs:
             tools/test-home-rent-regression.mjs; do
             git show origin/feature/home-property-b-v010944-clean:$f > "$f"
           done
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          app_path = Path('js/app.js')
-          text = app_path.read_text(encoding='utf-8')
-
-          def replace_once(old, new, label):
-              global text
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{label}: expected 1 match, got {count}')
-              text = text.replace(old, new, 1)
-
-          replace_once(
-              "import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.944';\n",
-              "import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.944';\nimport { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.944';\n",
-              'controller import',
-          )
-
-          replace_once(
-              "let screenData = {};\n",
-              """let screenData = {};
-          const homePropertyController = createHomePropertyController({
-            getState: () => state,
-            getScreenData: () => screenData,
-            shell,
-            yen,
-            version: VERSION,
-            isPortraitLayout,
-            showToast,
-            addFinance,
-            saveGame,
-            gameDate,
-            rerender: render,
-            payFixedCost,
-            addNotification,
-            propertyARent: HOME_MONTHLY_RENT,
-            getMinLivingCashReserve: () => MIN_LIVING_CASH_RESERVE,
-          });
-          """,
-              'controller init',
-          )
-
-          alien_line = "  if (isAlienAbducted() && target !== 'alienReturnEvent') return isPortraitLayout() ? 'space-portrait' : 'space';\n"
-          replace_once(
-              alien_line,
-              alien_line + "  if (backgroundFor(target) === 'sleep') return homePropertyController.backgroundAsset();\n",
-              'sleep background resolver',
-          )
-
-          replace_once(
-              "  document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${asset}.webp?v=${VERSION}')`);",
-              "  const extension = backgroundFor(screen) === 'sleep' && homePropertyController.currentProperty() === 'B' ? 'png' : 'webp';\n  document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${asset}.${extension}?v=${VERSION}')`);",
-              'sleep image extension',
-          )
-
-          replace_once(
-              '自宅家賃 ${yen(HOME_MONTHLY_RENT)}（毎月15日・開始30日間は初回猶予）',
-              '自宅家賃 ${yen(homePropertyController.currentRent())}（毎月15日・開始30日間は初回猶予）',
-              'finance rent display',
-          )
-
-          old_real_estate_head = """function renderRealEstate() {
-            const nextBranchNumber = nextStoreBranchNumber();
-            const contractAvailable = nextBranchNumber <= MAX_STORE_BRANCHES;
-
-            if (screenData.view !== 'contract') {
-              return shell('不動産屋', `
-                <section class=\"center-card glass-panel expansion-card\">
-                  <button class=\"primary-button full-button\" data-action=\"open-store-contract\" ${contractAvailable ? '' : 'disabled'}>店舗契約</button>
-                </section>`, { help: contractAvailable ? '店舗契約を押すと、次に契約できる店舗の条件を確認できます。' : '現在契約できる店舗はありません。' });
-            }
-          """
-          # Source indentation is two spaces, normalize exact actual snippet separately.
-          old_real_estate_head = """function renderRealEstate() {
-            const nextBranchNumber = nextStoreBranchNumber();
-            const contractAvailable = nextBranchNumber <= MAX_STORE_BRANCHES;
-
-            if (screenData.view !== 'contract') {
-              return shell('不動産屋', `
-                <section class=\"center-card glass-panel expansion-card\">
-                  <button class=\"primary-button full-button\" data-action=\"open-store-contract\" ${contractAvailable ? '' : 'disabled'}>店舗契約</button>
-                </section>`, { help: contractAvailable ? '店舗契約を押すと、次に契約できる店舗の条件を確認できます。' : '現在契約できる店舗はありません。' });
-            }
-          """.replace('    ', '  ')
-          if old_real_estate_head not in text:
-              old_real_estate_head = """function renderRealEstate() {
-  const nextBranchNumber = nextStoreBranchNumber();
-  const contractAvailable = nextBranchNumber <= MAX_STORE_BRANCHES;
-
-  if (screenData.view !== 'contract') {
-    return shell('不動産屋', `
-      <section class=\"center-card glass-panel expansion-card\">
-        <button class=\"primary-button full-button\" data-action=\"open-store-contract\" ${contractAvailable ? '' : 'disabled'}>店舗契約</button>
-      </section>`, { help: contractAvailable ? '店舗契約を押すと、次に契約できる店舗の条件を確認できます。' : '現在契約できる店舗はありません。' });
-  }
-"""
-          new_real_estate_head = """function renderRealEstate() {
-  const nextBranchNumber = nextStoreBranchNumber();
-  const contractAvailable = nextBranchNumber <= MAX_STORE_BRANCHES;
-  const homeAvailable = homePropertyController.isUnlocked();
-
-  if (screenData.view === 'home') return homePropertyController.renderView();
-
-  if (screenData.view !== 'contract') {
-    return shell('不動産屋', `
-      <section class=\"center-card glass-panel expansion-card\">
-        <button class=\"primary-button full-button\" data-action=\"open-store-contract\" ${contractAvailable ? '' : 'disabled'}>店舗契約</button>
-        ${homeAvailable ? '<button class=\"primary-button full-button\" data-action=\"open-home-property\">自宅</button>' : ''}
-      </section>`, { help: homeAvailable ? '店舗契約または自宅の引越しを選べます。' : (contractAvailable ? '店舗契約を押すと、次に契約できる店舗の条件を確認できます。' : '現在契約できる店舗はありません。') });
-  }
-"""
-          replace_once(old_real_estate_head, new_real_estate_head, 'real estate menu')
-
-          replace_once(
-              "    case 'open-store-contract': screenData.view = 'contract'; render(); break;\n    case 'real-estate-menu': screenData = {}; render(); break;",
-              "    case 'open-store-contract': screenData.view = 'contract'; render(); break;\n    case 'open-home-property': homePropertyController.open(); break;\n    case 'select-home-property': homePropertyController.select(button.dataset.property); break;\n    case 'move-home-property': homePropertyController.move(); break;\n    case 'real-estate-menu': screenData = {}; render(); break;",
-              'home property actions',
-          )
-
-          # Replace the existing home-rent function body with a thin orchestration wrapper.
-          signature = 'function processHomeRent() {'
-          start = text.find(signature)
-          if start < 0:
-              raise SystemExit('processHomeRent not found')
-          brace = text.find('{', start)
-          depth = 0
-          quote = None
-          escape = False
-          line_comment = False
-          block_comment = False
-          end = None
-          i = brace
-          while i < len(text):
-              c = text[i]
-              n = text[i + 1] if i + 1 < len(text) else ''
-              if line_comment:
-                  if c == '\n': line_comment = False
-                  i += 1; continue
-              if block_comment:
-                  if c == '*' and n == '/': block_comment = False; i += 2; continue
-                  i += 1; continue
-              if quote:
-                  if escape: escape = False
-                  elif c == '\\': escape = True
-                  elif c == quote: quote = None
-                  i += 1; continue
-              if c == '/' and n == '/': line_comment = True; i += 2; continue
-              if c == '/' and n == '*': block_comment = True; i += 2; continue
-              if c in "'\"`": quote = c; i += 1; continue
-              if c == '{': depth += 1
-              elif c == '}':
-                  depth -= 1
-                  if depth == 0:
-                      end = i + 1
-                      break
-              i += 1
-          if end is None:
-              raise SystemExit('processHomeRent end not found')
-          text = text[:start] + "function processHomeRent() {\n  return homePropertyController.processRent();\n}" + text[end:]
-
-          for marker in [
-              'createHomePropertyController',
-              "case 'open-home-property'",
-              "case 'select-home-property'",
-              "case 'move-home-property'",
-              'homePropertyController.currentRent()',
-              'homePropertyController.backgroundAsset()',
-              'homePropertyController.processRent()',
-          ]:
-              if marker not in text:
-                  raise SystemExit(f'missing app marker: {marker}')
-          if text.count('function processHomeRent() {') != 1:
-              raise SystemExit('processHomeRent count changed')
-          app_path.write_text(text, encoding='utf-8')
-
-          # Preserve the old feature modules/tests, but rebind them to the new patch version.
-          for file_name in [
-              'js/finance/home-property.js',
-              'js/finance/home-property-controller.js',
-              'scripts/check-home-property.py',
-              'scripts/check-home-rent-regression.py',
-              'tools/test-home-rent-regression.mjs',
-          ]:
-              path = Path(file_name)
-              value = path.read_text(encoding='utf-8').replace('0.10.944', '0.10.945')
-              path.write_text(value, encoding='utf-8')
-          PY
-
-      - name: バージョン同期対象とPWAキャッシュを追加
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-
-          vs = Path('scripts/version-sync.py')
-          text = vs.read_text(encoding='utf-8')
-          old = "    Rule('sw.js', 'store-rent.js precache key', qparam(r'\\./js/finance/store-rent\\.js'), keep_prefix),\n"
-          new = old + "    Rule('sw.js', 'home-property.js precache key', qparam(r'\\./js/finance/home-property\\.js'), keep_prefix),\n    Rule('sw.js', 'home-property-controller.js precache key', qparam(r'\\./js/finance/home-property-controller\\.js'), keep_prefix),\n"
-          if text.count(old) != 1: raise SystemExit('version-sync sw anchor mismatch')
-          text = text.replace(old, new, 1)
-          old = "    Rule('js/app.js', 'store-rent.js import key', qparam(r'\\./finance/store-rent\\.js'), keep_prefix),\n"
-          new = old + "    Rule('js/app.js', 'home-property-controller.js import key', qparam(r'\\./finance/home-property-controller\\.js'), keep_prefix),\n    Rule('js/finance/home-property-controller.js', 'home-property.js import key', qparam(r'\\./home-property\\.js'), keep_prefix),\n"
-          if text.count(old) != 1: raise SystemExit('version-sync app anchor mismatch')
-          text = text.replace(old, new, 1)
-          vs.write_text(text, encoding='utf-8')
-
-          sw = Path('sw.js')
-          value = sw.read_text(encoding='utf-8')
-          anchor = "'./js/app.js?v=0.10.944', './js/finance/store-rent.js?v=0.10.944',"
-          replacement = "'./js/app.js?v=0.10.944', './js/finance/store-rent.js?v=0.10.944', './js/finance/home-property.js?v=0.10.944', './js/finance/home-property-controller.js?v=0.10.944',"
-          if value.count(anchor) != 1: raise SystemExit('sw anchor mismatch')
-          sw.write_text(value.replace(anchor, replacement, 1), encoding='utf-8')
-
-          current = Path('scripts/check-current.py')
-          value = current.read_text(encoding='utf-8')
-          anchor = "    ('固定費自動支払い・自宅家賃処理保護', [sys.executable, str(ROOT / 'scripts/check-home-rent-regression.py')]),\n"
-          replacement = anchor + "    ('自宅物件・引越し処理保護', [sys.executable, str(ROOT / 'scripts/check-home-property.py')]),\n"
-          if value.count(anchor) != 1: raise SystemExit('check-current anchor mismatch')
-          current.write_text(value.replace(anchor, replacement, 1), encoding='utf-8')
-          PY
-
-      - name: v0.10.945へ同期して履歴を追加
-        shell: bash
-        run: |
-          set -euo pipefail
+          python3 scripts/temp-apply-home-property-v010945.py
           python3 scripts/version-sync.py --set 0.10.945
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('CHANGELOG.md')
-          text = path.read_text(encoding='utf-8')
-          entry = """## v0.10.945 - 2026-09-13
-
-- 351日目以降、不動産屋に「自宅」を追加し、物件A／物件Ｂの選択・引越し機能を追加。
-- 物件Ｂの月額家賃を200,000円、引越し費用を1,000,000円とし、移動先1か月分家賃を引越し時に支払う仕様を追加。
-- 選択中の自宅を「寝る」背景へ即時反映し、旧セーブは物件Aとして扱う。引越し月の家賃二重請求を防止。
-- 自宅物件ロジックは `js/finance/home-property.js` と `js/finance/home-property-controller.js` に分離し、既存UI・イベント・セーブ形式・Firebase関連は変更しない。
-
-"""
-          if '## v0.10.945 - 2026-09-13' not in text:
-              pos = text.find('## ')
-              if pos < 0: raise SystemExit('CHANGELOG heading not found')
-              text = text[:pos] + entry + text[pos:]
-              path.write_text(text, encoding='utf-8')
-          PY
           python3 scripts/generate-event-probability-list.py --write
-
-      - name: 画像以外の事前検査
-        shell: bash
-        run: |
-          set -euo pipefail
           node --check js/app.js
           node --check js/finance/home-property.js
           node --check js/finance/home-property-controller.js
@@ -294,13 +43,13 @@ jobs:
           python3 scripts/check-regression-baseline.py
           python3 scripts/check-repository-hygiene.py
           python3 scripts/generate-event-probability-list.py --check
-          # Formal images are added as exact user-supplied PNGs in the next commit.
 
-      - name: 一時ワークフローを削除して保存
+      - name: Commit applied feature
         shell: bash
         run: |
           set -euo pipefail
           rm -f .github/workflows/temp-home-property-v010945-apply.yml
+          rm -f scripts/temp-apply-home-property-v010945.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A

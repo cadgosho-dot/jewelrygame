@@ -1,3 +1,5 @@
+import '../workshop/craft-last-metal-selection.js';
+
 // Pure mapping helpers for the craft surface-selection UI.
 export function craftSurfaceParts(finishId = 'mirror') {
   switch (finishId) {

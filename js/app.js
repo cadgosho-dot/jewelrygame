@@ -17711,6 +17711,8 @@ function moveHomeProperty() {
   }
   state.game.money -= total;
   state.business.homeProperty = destination;
+  const moveDate = gameDate();
+  state.business.lastProcessedHomeRentMonth = `${moveDate.getFullYear()}-${String(moveDate.getMonth() + 1).padStart(2, '0')}`;
   addFinance(`引越し費用（${homePropertyLabel(destination)}）`, 0, HOME_MOVE_COST);
   addFinance(`自宅家賃1ヶ月分（${homePropertyLabel(destination)}）`, 0, rent);
   saveGame();

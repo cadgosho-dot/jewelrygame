@@ -30,6 +30,7 @@ checks = [
     "homePropertyBackgroundAsset(currentHomePropertyId(), isPortraitLayout())",
     "物件Ｂ",
     "${asset}.png",
+    "lastProcessedHomeRentMonth = `${moveDate.getFullYear()}-${String(moveDate.getMonth() + 1).padStart(2, '0')}`",
 ]
 for marker in checks:
     if marker not in app:

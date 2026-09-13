@@ -1,0 +1,559 @@
+name: 一時自宅物件分離
+
+on:
+  push:
+    branches:
+      - feature/home-property-b-v010944-clean
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.event.head_commit.message == '一時自宅物件分離ワークフローを追加'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/home-property-b-v010944-clean
+          fetch-depth: 0
+
+      - name: app.jsを最小接続へ変更
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('js/app.js')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, got {count}')
+              text = text.replace(old, new, 1)
+
+          old_import = """import {
+            HOME_MOVE_COST,
+            homePropertyUnlocked,
+            normalizeHomeProperty,
+            homePropertyMonthlyRent,
+            homePropertyMoveTotal,
+            homePropertyBackgroundAsset,
+          } from './finance/home-property.js?v=0.10.944';
+          """
+          replace_once(old_import, "import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.944';\n", 'home import')
+
+          marker = "let screenData = {};\n"
+          controller = """let screenData = {};
+          const homePropertyController = createHomePropertyController({
+            getState: () => state,
+            getScreenData: () => screenData,
+            shell,
+            yen,
+            version: VERSION,
+            isPortraitLayout,
+            showToast,
+            addFinance,
+            saveGame,
+            gameDate,
+            rerender: render,
+            payFixedCost,
+            addNotification,
+            propertyARent: HOME_MONTHLY_RENT,
+            getMinLivingCashReserve: () => MIN_LIVING_CASH_RESERVE,
+          });
+          """
+          replace_once(marker, controller, 'controller init')
+
+          start = text.find('function currentHomePropertyId() {')
+          end = text.find('function renderRealEstate() {', start)
+          if start < 0 or end < 0:
+              raise SystemExit('home inline block not found')
+          removed = text[start:end]
+          for required in ('function currentHomeMonthlyRent()', 'function renderHomeProperty()', 'function moveHomeProperty()'):
+              if required not in removed:
+                  raise SystemExit(f'inline block missing {required}')
+          text = text[:start] + text[end:]
+
+          replace_once(
+              "if (backgroundFor(target) === 'sleep') return homePropertyBackgroundAsset(currentHomePropertyId(), isPortraitLayout());",
+              "if (backgroundFor(target) === 'sleep') return homePropertyController.backgroundAsset();",
+              'sleep asset resolver',
+          )
+          replace_once(
+              "backgroundFor(screen) === 'sleep' && currentHomePropertyId() === 'B'",
+              "backgroundFor(screen) === 'sleep' && homePropertyController.currentProperty() === 'B'",
+              'sleep png condition',
+          )
+          replace_once('yen(currentHomeMonthlyRent())', 'yen(homePropertyController.currentRent())', 'finance current rent')
+          replace_once('const homeAvailable = homePropertyUnlocked(state?.game?.day);', 'const homeAvailable = homePropertyController.isUnlocked();', 'home unlock')
+          replace_once("if (screenData.view === 'home') return renderHomeProperty();", "if (screenData.view === 'home') return homePropertyController.renderView();", 'home render')
+
+          old_actions = """    case 'open-home-property':
+                if (homePropertyUnlocked(state?.game?.day)) {
+                  screenData.view = 'home';
+                  screenData.homeProperty = currentHomePropertyId();
+                  render();
+                }
+                break;
+              case 'select-home-property':
+                if (screenData.view === 'home') {
+                  screenData.homeProperty = normalizeHomeProperty(button.dataset.property);
+                  render();
+                }
+                break;
+              case 'move-home-property': moveHomeProperty(); break;"""
+          if old_actions not in text:
+              old_actions = """    case 'open-home-property':
+              if (homePropertyUnlocked(state?.game?.day)) {
+                screenData.view = 'home';
+                screenData.homeProperty = currentHomePropertyId();
+                render();
+              }
+              break;
+            case 'select-home-property':
+              if (screenData.view === 'home') {
+                screenData.homeProperty = normalizeHomeProperty(button.dataset.property);
+                render();
+              }
+              break;
+            case 'move-home-property': moveHomeProperty(); break;"""
+          if old_actions not in text:
+              # whitespace-independent targeted replacements
+              import re
+              pattern = re.compile(r"\s*case 'open-home-property':\s*if \(homePropertyUnlocked\(state\?\.game\?\.day\)\) \{\s*screenData\.view = 'home';\s*screenData\.homeProperty = currentHomePropertyId\(\);\s*render\(\);\s*\}\s*break;\s*case 'select-home-property':\s*if \(screenData\.view === 'home'\) \{\s*screenData\.homeProperty = normalizeHomeProperty\(button\.dataset\.property\);\s*render\(\);\s*\}\s*break;\s*case 'move-home-property': moveHomeProperty\(\); break;")
+              match = pattern.search(text)
+              if not match:
+                  raise SystemExit('home action block not found')
+              new_actions = "\n    case 'open-home-property': homePropertyController.open(); break;\n    case 'select-home-property': homePropertyController.select(button.dataset.property); break;\n    case 'move-home-property': homePropertyController.move(); break;"
+              text = text[:match.start()] + new_actions + text[match.end():]
+          else:
+              new_actions = """    case 'open-home-property': homePropertyController.open(); break;
+              case 'select-home-property': homePropertyController.select(button.dataset.property); break;
+              case 'move-home-property': homePropertyController.move(); break;"""
+              text = text.replace(old_actions, new_actions, 1)
+
+          rent_start = text.find('function processHomeRent() {')
+          rent_end = text.find('function outstandingPaymentTargets() {', rent_start)
+          if rent_start < 0 or rent_end < 0:
+              raise SystemExit('processHomeRent block not found')
+          text = text[:rent_start] + "function processHomeRent() {\n  return homePropertyController.processRent();\n}\n\n" + text[rent_end:]
+
+          forbidden = [
+              'HOME_MOVE_COST', 'homePropertyUnlocked', 'normalizeHomeProperty',
+              'homePropertyMonthlyRent', 'homePropertyMoveTotal', 'homePropertyBackgroundAsset',
+              'currentHomePropertyId', 'currentHomeMonthlyRent', 'renderHomeProperty', 'moveHomeProperty',
+          ]
+          leftovers = [token for token in forbidden if token in text]
+          if leftovers:
+              raise SystemExit('legacy home identifiers remain: ' + ', '.join(leftovers))
+          required = [
+              'createHomePropertyController', 'homePropertyController.isUnlocked()',
+              'homePropertyController.renderView()', 'homePropertyController.currentRent()',
+              'homePropertyController.backgroundAsset()', 'homePropertyController.processRent()',
+          ]
+          missing = [token for token in required if token not in text]
+          if missing:
+              raise SystemExit('controller integration missing: ' + ', '.join(missing))
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: 自宅物件専用検査をモジュール構成へ更新
+        shell: bash
+        run: |
+          cat > scripts/check-home-property.py <<'PY'
+          #!/usr/bin/env python3
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          ROOT = Path(__file__).resolve().parents[1]
+          MODULE = ROOT / 'js/finance/home-property.js'
+          CONTROLLER = ROOT / 'js/finance/home-property-controller.js'
+          APP = ROOT / 'js/app.js'
+          CORE = ROOT / 'js/game-data-core.js'
+          VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+
+          required = [
+              ROOT / 'assets/images/home-property-b.png',
+              ROOT / 'assets/images/home-property-b-portrait.png',
+          ]
+          for path in required:
+              if not path.is_file() or path.stat().st_size <= 0:
+                  raise SystemExit(f'FAIL: missing home property asset: {path.relative_to(ROOT)}')
+
+          app = APP.read_text(encoding='utf-8')
+          controller = CONTROLLER.read_text(encoding='utf-8')
+          core = CORE.read_text(encoding='utf-8')
+          if 'export const HOME_MONTHLY_RENT = 70000;' not in core:
+              raise SystemExit('FAIL: property A rent baseline changed')
+
+          app_checks = [
+              './finance/home-property-controller.js?v=',
+              'homePropertyController.isUnlocked()',
+              'homePropertyController.renderView()',
+              'homePropertyController.currentRent()',
+              'homePropertyController.backgroundAsset()',
+              'homePropertyController.processRent()',
+              "case 'open-home-property'",
+              "case 'select-home-property'",
+              "case 'move-home-property'",
+          ]
+          controller_checks = [
+              'data-action="select-home-property"',
+              'data-action="move-home-property"',
+              '物件A',
+              '物件Ｂ',
+              '${asset}.png',
+              "lastProcessedHomeRentMonth = `${moveDate.getFullYear()}-${String(moveDate.getMonth() + 1).padStart(2, '0')}`",
+              'HOME_MOVE_COST',
+              'homePropertyMoveTotal',
+              'homePropertyMonthlyRent',
+          ]
+          for marker in app_checks:
+              if marker not in app:
+                  raise SystemExit(f'FAIL: missing app integration: {marker}')
+          for marker in controller_checks:
+              if marker not in controller:
+                  raise SystemExit(f'FAIL: missing controller integration: {marker}')
+
+          node_code = r'''import {
+            HOME_PROPERTY_UNLOCK_DAY, HOME_MOVE_COST, HOME_PROPERTY_B_MONTHLY_RENT,
+            normalizeHomeProperty, homePropertyUnlocked, homePropertyMonthlyRent,
+            homePropertyMoveTotal, homePropertyBackgroundAsset,
+          } from './js/finance/home-property.js';
+          const fail = (m) => { throw new Error(m); };
+          if (HOME_PROPERTY_UNLOCK_DAY !== 351) fail('unlock day');
+          if (HOME_MOVE_COST !== 1000000) fail('move cost');
+          if (HOME_PROPERTY_B_MONTHLY_RENT !== 200000) fail('B rent');
+          if (homePropertyUnlocked(350)) fail('350 must be locked');
+          if (!homePropertyUnlocked(351)) fail('351 must be unlocked');
+          if (normalizeHomeProperty(undefined) !== 'A') fail('legacy save default');
+          if (homePropertyMonthlyRent('A', 70000) !== 70000) fail('A rent');
+          if (homePropertyMonthlyRent('B', 70000) !== 200000) fail('B rent resolver');
+          if (homePropertyMoveTotal('A', 70000) !== 1070000) fail('A move total');
+          if (homePropertyMoveTotal('B', 70000) !== 1200000) fail('B move total');
+          if (homePropertyBackgroundAsset('A', false) !== 'sleep') fail('A landscape');
+          if (homePropertyBackgroundAsset('A', true) !== 'sleep-portrait') fail('A portrait');
+          if (homePropertyBackgroundAsset('B', false) !== 'home-property-b') fail('B landscape');
+          if (homePropertyBackgroundAsset('B', true) !== 'home-property-b-portrait') fail('B portrait');
+          console.log('HOME PROPERTY MODULE: PASS');'''
+          result = subprocess.run(['node', '--input-type=module', '-e', node_code], cwd=ROOT, text=True, capture_output=True)
+          if result.returncode:
+              sys.stderr.write(result.stdout + result.stderr)
+              raise SystemExit('FAIL: home property module behavior')
+
+          if f"./finance/home-property-controller.js?v={VERSION}" not in app:
+              raise SystemExit('FAIL: home-property controller import VERSION mismatch')
+          print('HOME PROPERTY AUDIT: PASS')
+          PY
+
+      - name: 自宅家賃の動的回帰検査をモジュール構成へ更新
+        shell: bash
+        run: |
+          cat > tools/test-home-rent-regression.mjs <<'MJS'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          import assert from 'node:assert/strict';
+          import { createHomePropertyController } from '../js/finance/home-property-controller.js';
+
+          const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+
+          function extractFunction(name) {
+            const re = new RegExp(`(?:^|\\n)function\\s+${name}\\s*\\([^\\n]*\\)\\s*\\{`, 'm');
+            const match = re.exec(app);
+            assert.ok(match, `${name} definition not found`);
+            const start = match.index + (match[0].startsWith('\n') ? 1 : 0);
+            const brace = app.indexOf('{', start);
+            let depth = 0, quote = null, escape = false, lineComment = false, blockComment = false;
+            for (let i = brace; i < app.length; i += 1) {
+              const c = app[i], next = app[i + 1] || '';
+              if (lineComment) { if (c === '\n') lineComment = false; continue; }
+              if (blockComment) { if (c === '*' && next === '/') { blockComment = false; i += 1; } continue; }
+              if (quote) { if (escape) escape = false; else if (c === '\\') escape = true; else if (c === quote) quote = null; continue; }
+              if (c === '/' && next === '/') { lineComment = true; i += 1; continue; }
+              if (c === '/' && next === '*') { blockComment = true; i += 1; continue; }
+              if (c === "'" || c === '"' || c === '`') { quote = c; continue; }
+              if (c === '{') depth += 1;
+              else if (c === '}') { depth -= 1; if (depth === 0) return app.slice(start, i + 1); }
+            }
+            throw new Error(`${name} end not found`);
+          }
+
+          const automaticPaymentCapacitySource = extractFunction('automaticPaymentCapacity');
+          const payFixedCostSource = extractFunction('payFixedCost');
+          const plain = (value) => JSON.parse(JSON.stringify(value));
+
+          function makeHarness(overrides = {}) {
+            const calls = { finance: [], notifications: [] };
+            const HOME_MONTHLY_RENT = overrides.homeRent ?? 30000;
+            const MIN_LIVING_CASH_RESERVE = overrides.reserve ?? 10000;
+            const state = {
+              game: { money: overrides.money ?? 50000, day: overrides.day ?? 31 },
+              business: {
+                homeProperty: overrides.homeProperty,
+                lastProcessedHomeRentMonth: overrides.lastProcessedHomeRentMonth ?? '',
+                homeRentReports: [...(overrides.homeRentReports ?? [])],
+                homeRentUnpaid: overrides.homeRentUnpaid ?? 0,
+              },
+              tools: { morningMessages: [...(overrides.morningMessages ?? [])] },
+            };
+            const dateText = overrides.date ?? '2026-09-15';
+            const context = {
+              state,
+              MIN_LIVING_CASH_RESERVE,
+              addFinance: (...args) => calls.finance.push(args),
+              Math, Number, String,
+            };
+            vm.createContext(context);
+            vm.runInContext(`
+              ${automaticPaymentCapacitySource}
+              ${payFixedCostSource}
+              globalThis.__automaticPaymentCapacity = automaticPaymentCapacity;
+              globalThis.__payFixedCost = payFixedCost;
+            `, context);
+
+            const controller = createHomePropertyController({
+              getState: () => state,
+              getScreenData: () => ({}),
+              shell: () => '',
+              yen: (value) => `¥${Number(value)}`,
+              version: '0.10.944',
+              isPortraitLayout: () => false,
+              showToast: () => {},
+              addFinance: (...args) => calls.finance.push(args),
+              saveGame: () => {},
+              gameDate: () => new Date(`${dateText}T12:00:00`),
+              rerender: () => {},
+              payFixedCost: context.__payFixedCost,
+              addNotification: (...args) => calls.notifications.push(args),
+              propertyARent: HOME_MONTHLY_RENT,
+              getMinLivingCashReserve: () => MIN_LIVING_CASH_RESERVE,
+            });
+
+            return {
+              state,
+              calls,
+              automaticPaymentCapacity: context.__automaticPaymentCapacity,
+              payFixedCost: context.__payFixedCost,
+              processHomeRent: controller.processRent,
+            };
+          }
+
+          function testAutomaticPaymentCapacityKeepsLivingReserve() {
+            assert.equal(makeHarness({ money: 50000, reserve: 10000 }).automaticPaymentCapacity(), 40000);
+            assert.equal(makeHarness({ money: 10000, reserve: 10000 }).automaticPaymentCapacity(), 0);
+            assert.equal(makeHarness({ money: 8000, reserve: 10000 }).automaticPaymentCapacity(), 0);
+            assert.equal(makeHarness({ money: 12345.9, reserve: 10000 }).automaticPaymentCapacity(), 2345);
+          }
+
+          function testPayFixedCostFullAndPartialPayment() {
+            const full = makeHarness({ money: 60000, reserve: 10000 });
+            const fullUnpaid = [];
+            assert.deepEqual(plain(full.payFixedCost('固定費', 30000, (amount) => fullUnpaid.push(amount))), { paid: 30000, unpaid: 0 });
+            assert.equal(full.state.game.money, 30000);
+            assert.deepEqual(full.calls.finance, [['固定費', 0, 30000]]);
+            assert.deepEqual(fullUnpaid, []);
+            const partial = makeHarness({ money: 25000, reserve: 10000 });
+            const partialUnpaid = [];
+            assert.deepEqual(plain(partial.payFixedCost('固定費', 30000, (amount) => partialUnpaid.push(amount))), { paid: 15000, unpaid: 15000 });
+            assert.equal(partial.state.game.money, 10000);
+            assert.deepEqual(partialUnpaid, [15000]);
+          }
+
+          function testPayFixedCostZeroDueDoesNothing() {
+            const h = makeHarness({ money: 20000, reserve: 10000 });
+            const unpaid = [];
+            assert.deepEqual(plain(h.payFixedCost('固定費', -10, (amount) => unpaid.push(amount))), { paid: 0, unpaid: 0 });
+            assert.equal(h.state.game.money, 20000);
+            assert.deepEqual(h.calls.finance, []);
+            assert.deepEqual(unpaid, []);
+          }
+
+          function testHomeRentNonBillingDayAndDuplicateAreNoOps() {
+            const nonBilling = makeHarness({ date: '2026-09-14', day: 31, money: 50000 });
+            assert.equal(nonBilling.processHomeRent(), null);
+            assert.equal(nonBilling.state.game.money, 50000);
+            const duplicate = makeHarness({ date: '2026-09-15', day: 31, money: 50000, lastProcessedHomeRentMonth: '2026-09' });
+            assert.equal(duplicate.processHomeRent(), null);
+            assert.equal(duplicate.state.game.money, 50000);
+          }
+
+          function testHomeRentGracePeriodAndBounds() {
+            const reports = Array.from({ length: 24 }, (_, i) => ({ month: `old-${i}` }));
+            const morning = Array.from({ length: 10 }, (_, i) => `old-message-${i}`);
+            const h = makeHarness({ date: '2026-09-15', day: 30, money: 50000, homeRentReports: reports, morningMessages: morning });
+            const report = h.processHomeRent();
+            assert.deepEqual(plain(report), { month: '2026-09', amount: 0, paid: 0, unpaid: 0, grace: true });
+            assert.equal(h.state.business.homeRentReports.length, 24);
+            assert.equal(h.state.tools.morningMessages.length, 10);
+          }
+
+          function testHomeRentFullPayment() {
+            const h = makeHarness({ date: '2026-09-15', day: 31, money: 50000, homeRent: 30000, reserve: 10000 });
+            const report = h.processHomeRent();
+            assert.deepEqual(plain(report), { month: '2026-09', amount: 30000, paid: 30000, unpaid: 0 });
+            assert.equal(h.state.game.money, 20000);
+            assert.deepEqual(h.calls.notifications, [['自宅家賃支払日', '自宅家賃 ¥30000を支払いました。', 'info']]);
+          }
+
+          function testHomeRentPartialPaymentAccumulatesUnpaidAndKeepsReserve() {
+            const h = makeHarness({ date: '2026-09-15', day: 31, money: 25000, homeRent: 30000, reserve: 10000, homeRentUnpaid: 5000 });
+            const report = h.processHomeRent();
+            assert.deepEqual(plain(report), { month: '2026-09', amount: 30000, paid: 15000, unpaid: 15000 });
+            assert.equal(h.state.game.money, 10000);
+            assert.equal(h.state.business.homeRentUnpaid, 20000);
+          }
+
+          function testHomeRentNoAutomaticCapacityRecordsFullUnpaid() {
+            const h = makeHarness({ date: '2026-09-15', day: 31, money: 9000, homeRent: 30000, reserve: 10000 });
+            const report = h.processHomeRent();
+            assert.deepEqual(plain(report), { month: '2026-09', amount: 30000, paid: 0, unpaid: 30000 });
+            assert.equal(h.state.business.homeRentUnpaid, 30000);
+          }
+
+          function testHomeRentSecondCallCannotChargeTwice() {
+            const h = makeHarness({ date: '2026-09-15', day: 31, money: 50000, homeRent: 30000, reserve: 10000 });
+            assert.ok(h.processHomeRent());
+            assert.equal(h.processHomeRent(), null);
+            assert.equal(h.state.game.money, 20000);
+            assert.equal(h.state.business.homeRentReports.length, 1);
+          }
+
+          function testHomeRentPropertyBUses200000() {
+            const h = makeHarness({ date: '2026-09-15', day: 351, money: 250000, homeRent: 70000, reserve: 10000, homeProperty: 'B' });
+            const report = h.processHomeRent();
+            assert.deepEqual(plain(report), { month: '2026-09', amount: 200000, paid: 200000, unpaid: 0 });
+            assert.equal(h.state.game.money, 50000);
+          }
+
+          testAutomaticPaymentCapacityKeepsLivingReserve();
+          testPayFixedCostFullAndPartialPayment();
+          testPayFixedCostZeroDueDoesNothing();
+          testHomeRentNonBillingDayAndDuplicateAreNoOps();
+          testHomeRentGracePeriodAndBounds();
+          testHomeRentFullPayment();
+          testHomeRentPartialPaymentAccumulatesUnpaidAndKeepsReserve();
+          testHomeRentNoAutomaticCapacityRecordsFullUnpaid();
+          testHomeRentSecondCallCannotChargeTwice();
+          testHomeRentPropertyBUses200000();
+
+          console.log('HOME RENT REGRESSION: PASS');
+          MJS
+
+          cat > scripts/check-home-rent-regression.py <<'PY'
+          #!/usr/bin/env python3
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          ROOT = Path(__file__).resolve().parents[1]
+          APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+          CONTROLLER = (ROOT / 'js/finance/home-property-controller.js').read_text(encoding='utf-8')
+          TEST = (ROOT / 'tools/test-home-rent-regression.mjs').read_text(encoding='utf-8')
+          CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
+
+          def block_body(text, signature):
+              start = text.find(signature)
+              if start < 0: return ''
+              brace = text.find('{', start)
+              if brace < 0: return ''
+              depth = 0; quote = None; esc = False; line = False; block = False; i = brace
+              while i < len(text):
+                  c = text[i]; n = text[i + 1] if i + 1 < len(text) else ''
+                  if line:
+                      if c == '\n': line = False
+                      i += 1; continue
+                  if block:
+                      if c == '*' and n == '/': block = False; i += 2; continue
+                      i += 1; continue
+                  if quote:
+                      if esc: esc = False
+                      elif c == '\\': esc = True
+                      elif c == quote: quote = None
+                      i += 1; continue
+                  if c == '/' and n == '/': line = True; i += 2; continue
+                  if c == '/' and n == '*': block = True; i += 2; continue
+                  if c in "'\"`": quote = c; i += 1; continue
+                  if c == '{': depth += 1
+                  elif c == '}':
+                      depth -= 1
+                      if depth == 0: return text[start:i + 1]
+                  i += 1
+              return ''
+
+          automatic = block_body(APP, 'function automaticPaymentCapacity() {')
+          pay_fixed = block_body(APP, 'function payFixedCost(label, amount, onUnpaid) {')
+          home_wrapper = block_body(APP, 'function processHomeRent() {')
+          process_rent = block_body(CONTROLLER, 'function processRent() {')
+          reconcile = block_body(APP, 'function reconcileMorningPaymentsIdempotently() {')
+
+          checks = [
+              ('automaticPaymentCapacity definition exists once', APP.count('function automaticPaymentCapacity() {') == 1),
+              ('payFixedCost definition exists once', APP.count('function payFixedCost(label, amount, onUnpaid) {') == 1),
+              ('processHomeRent wrapper exists once', APP.count('function processHomeRent() {') == 1),
+              ('home rent wrapper delegates to controller', 'return homePropertyController.processRent();' in home_wrapper),
+              ('living cash reserve remains 10000', 'const MIN_LIVING_CASH_RESERVE = 10000;' in APP),
+              ('automatic capacity normalizes money', 'const money = Math.max(0, Math.floor(Number(state.game.money) || 0));' in automatic),
+              ('automatic capacity keeps living reserve', 'return Math.max(0, money - MIN_LIVING_CASH_RESERVE);' in automatic),
+              ('fixed cost normalizes due', 'const due = Math.max(0, Math.floor(Number(amount) || 0));' in pay_fixed),
+              ('fixed cost capacity clamp retained', 'const paid = Math.min(automaticPaymentCapacity(), due);' in pay_fixed),
+              ('fixed cost money deduction retained', 'state.game.money -= paid;' in pay_fixed),
+              ('fixed cost unpaid callback retained', 'if (unpaid) onUnpaid(unpaid);' in pay_fixed),
+              ('home rent date lookup retained in controller', 'const today = gameDate();' in process_rent),
+              ('home rent day-15 guard retained', 'if (today.getDate() !== 15) return null;' in process_rent),
+              ('home rent month idempotency retained', 'lastProcessedHomeRentMonth === monthKey' in process_rent),
+              ('home rent first-30-day grace retained', 'Number(currentState.game.day) || 1) <= 30' in process_rent),
+              ('home rent current property amount retained', 'const homeRent = currentRent();' in process_rent),
+              ('home rent fixed cost helper retained', 'payFixedCost(`${monthKey} 自宅家賃`, homeRent' in process_rent),
+              ('home rent unpaid accumulation retained', 'currentState.business.homeRentUnpaid += unpaid;' in process_rent),
+              ('home rent reports bounded to 24 retained', 'homeRentReports.slice(-24)' in process_rent),
+              ('home rent messages bounded to 10 retained', 'morningMessages || []), resultMessage].slice(-10)' in process_rent),
+              ('home rent notifications retained', "addNotification('自宅家賃支払日'" in process_rent),
+              ('morning recovery helper still calls home rent', 'processHomeRent();' in reconcile),
+              ('daily rollover still processes monthly costs then home rent', 'processMonthlyFixedCosts();\n  processHomeRent();\n  processExpiredOrders();' in APP),
+              ('home rent retains multiple invocation routes', APP.count('processHomeRent();') >= 3),
+              ('dynamic harness imports controller', 'createHomePropertyController' in TEST),
+              ('B rent dynamic regression retained', 'testHomeRentPropertyBUses200000' in TEST),
+              ('home rent audit registered', 'check-home-rent-regression.py' in CURRENT),
+          ]
+
+          failed = []
+          for label, ok in checks:
+              print(f"{'OK' if ok else 'NG'}: {label}")
+              if not ok: failed.append(label)
+          if failed:
+              print('\nHOME RENT PROTECTION: FAIL')
+              for label in failed: print(f'- {label}')
+              sys.exit(1)
+
+          result = subprocess.run(['node', str(ROOT / 'tools/test-home-rent-regression.mjs')], cwd=ROOT, text=True, capture_output=True)
+          if result.stdout: print(result.stdout, end='' if result.stdout.endswith('\n') else '\n')
+          if result.stderr: print(result.stderr, end='' if result.stderr.endswith('\n') else '\n', file=sys.stderr)
+          if result.returncode != 0:
+              print('HOME RENT PROTECTION: FAIL')
+              sys.exit(result.returncode)
+          print('HOME RENT PROTECTION: PASS')
+          PY
+
+      - name: 確率表同期と静的検査
+        shell: bash
+        run: |
+          python3 scripts/generate-event-probability-list.py --write
+          node --check js/app.js
+          node --check js/finance/home-property.js
+          node --check js/finance/home-property-controller.js
+          python3 scripts/check-home-rent-regression.py
+          python3 scripts/check-repository-hygiene.py
+          python3 scripts/generate-event-probability-list.py --check
+
+      - name: 一時ワークフローを削除して保存
+        shell: bash
+        run: |
+          rm -f .github/workflows/temp-home-property-refactor.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/app.js js/finance/home-property-controller.js scripts/check-home-property.py scripts/check-home-rent-regression.py tools/test-home-rent-regression.mjs EVENT_PROBABILITY_LIST.md .github/workflows/temp-home-property-refactor.yml
+          git commit -m "自宅物件処理を独立モジュールへ接続"
+          git push origin HEAD:feature/home-property-b-v010944-clean

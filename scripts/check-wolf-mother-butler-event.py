@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / 'js/wolf-mother-butler-event.js'
+APP = ROOT / 'js/app.js'
 BOOTSTRAP = ROOT / 'js/event-bootstrap.js'
 VERSION_FILE = ROOT / 'VERSION'
 MOTHER = ROOT / 'assets/images/events/wolf-mother.png'
@@ -49,11 +50,13 @@ def sha256(path: Path) -> str:
 
 def main() -> None:
     require(MODULE.exists(), 'wolf-mother-butler-event.js がありません')
+    require(APP.exists(), 'app.js がありません')
     require(BOOTSTRAP.exists(), 'event-bootstrap.js がありません')
     require(VERSION_FILE.exists(), 'VERSION がありません')
 
     version = VERSION_FILE.read_text(encoding='utf-8').strip()
     source = MODULE.read_text(encoding='utf-8')
+    app_source = APP.read_text(encoding='utf-8')
     bootstrap = BOOTSTRAP.read_text(encoding='utf-8')
 
     require("const EVENT_KEY = 'wolfMotherButlerEvent';" in source, 'イベント記録キーが違います')
@@ -76,6 +79,11 @@ def main() -> None:
     require("message:'K18YGが20g追加されました'" in source, '報酬メッセージが違います')
     require('grantMetalIgnoreCapacity?.(REWARD_METAL_KEY, REWARD_AMOUNT' in source, '容量無視の報酬付与処理がありません')
     require('if (!rewardGranted)' in source, '報酬二重付与防止がありません')
+    require('globalThis.__JXJ_EVENT_STATE_HELPERS__' in app_source, 'イベント状態ヘルパーがapp.jsに公開されていません')
+    require('patchEventState(eventKey, patch)' in app_source, 'イベント状態保存ヘルパーがありません')
+    require('grantMetalIgnoreCapacity(metalKey, amount' in app_source, '容量無視の地金付与ヘルパーがありません')
+    require('state.events[key] = { ...current, ...patch };' in app_source, 'イベント進行状態を実stateへ保存していません')
+    require('state.inventory.metals[key] = roundedMetalWeight(current + quantity);' in app_source, '報酬地金を実stateへ加算していません')
 
     require("const WOLF_IMAGE = './assets/images/events/wolf-mother.png';" in source, '母親画像パスが違います')
     require("const BUTLER_IMAGE = './assets/images/events/sheep-butler.png';" in source, '執事画像パスが違います')

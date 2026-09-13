@@ -1,39 +1,39 @@
-const VERSION = '0.10.945';
+const VERSION = '0.10.947';
 const APP_CACHE = `jewelrygame-app-v${VERSION}`;
 const RUNTIME_CACHE = `jewelrygame-runtime-v${VERSION}`;
 const MEDIA_CACHE = 'jewelrygame-media-v1';
 const CACHE_PREFIX = 'jewelrygame-';
 const CORE_SHELL = [
-  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.945', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
-  './manifest.webmanifest', './quiz-event-v2.css?v=0.10.945', './js/app.js?v=0.10.945', './js/finance/store-rent.js?v=0.10.945', './js/finance/home-property.js?v=0.10.945', './js/finance/home-property-controller.js?v=0.10.945', './js/runtime/lazy-modules.js?v=0.10.945', './js/runtime/finished-video-cache-warm.js?v=0.10.945', './js/ui/winter-cold-text-effect.js?v=0.10.945', './js/ui/toast-presenter.js?v=0.10.945', './js/ui/modal-presenter.js?v=0.10.945', './js/ui/autosave-status-presenter.js?v=0.10.945', './js/ui/clipboard-fallback.js?v=0.10.945', './js/ui/gift-labels.js?v=0.10.945', './js/ui/craft-surface.js?v=0.10.945', './js/ui/press-hold-controller.js?v=0.10.945', './js/events/event-state-helpers.js?v=0.10.945', './js/audio.js?v=0.10.945', './js/audio-scene-map.js?v=0.10.945', './js/game-data.js?v=0.10.945', './js/memories-screen.js?v=0.10.945', './js/memories-backgrounds.js?v=0.10.945', './js/daily-gems-index.js?v=0.10.945',
-  './js/ui/tool-brief.js?v=0.10.945',
-  './js/ui/store-branch-label.js?v=0.10.945',
-  './js/ui/viewport-clamp.js?v=0.10.945',
-  './js/ui/meal-time-message.js?v=0.10.945',
-  './js/ui/loose-shape-label.js?v=0.10.945',
-  './js/ui/rough-display-name.js?v=0.10.945',
-  './js/ui/time-remaining-label.js?v=0.10.945',
-  './js/ui/workshop-staff-quality-description.js?v=0.10.945',
-  './js/ui/workshop-loose-display-name.js?v=0.10.945',
-  './js/ui/metal-market-date-label.js?v=0.10.945',
-  './js/ui/metal-price-date-label.js?v=0.10.945',
-  './js/ui/phone-item-effect-text.js?v=0.10.945',
-  './js/ui/save-diagnostic-date-label.js?v=0.10.945',
-  './js/ui/save-diagnostic-bytes-label.js?v=0.10.945',
-  './js/ui/save-diagnostic-capacity-label.js?v=0.10.945',
-  './js/ui/birthday-japanese-label.js?v=0.10.945',
-  './js/ui/game-date-label.js?v=0.10.945',
-  './js/ui/finance-row-date-label.js?v=0.10.945',
-  './js/ui/notification-date-label.js?v=0.10.945',
-  './js/ui/customer-preference-label.js?v=0.10.945',
-  './js/ui/customer-template-text.js?v=0.10.945',
-  './js/ui/store-display-name.js?v=0.10.945',
-  './js/ui/artisan-title.js?v=0.10.945',
-  './js/ui/loose-display-label.js?v=0.10.945',
-  './js/ui/install-status-text.js?v=0.10.945',
-  './js/ui/metal-weight-label.js?v=0.10.945',
+  './', './index.html', './game.html', './auth.html', './auth-cache-recovery.js?v=0.10.947', './hosting-origin-guard.js', './viewport-shell.css', './viewport-shell.js', './styles.css',
+  './manifest.webmanifest', './quiz-event-v2.css?v=0.10.947', './js/app.js?v=0.10.947', './js/finance/store-rent.js?v=0.10.947', './js/finance/home-property.js?v=0.10.947', './js/finance/home-property-controller.js?v=0.10.947', './js/runtime/lazy-modules.js?v=0.10.947', './js/runtime/finished-video-cache-warm.js?v=0.10.947', './js/ui/winter-cold-text-effect.js?v=0.10.947', './js/ui/toast-presenter.js?v=0.10.947', './js/ui/modal-presenter.js?v=0.10.947', './js/ui/autosave-status-presenter.js?v=0.10.947', './js/ui/clipboard-fallback.js?v=0.10.947', './js/ui/gift-labels.js?v=0.10.947', './js/ui/craft-surface.js?v=0.10.947', './js/ui/press-hold-controller.js?v=0.10.947', './js/events/event-state-helpers.js?v=0.10.947', './js/audio.js?v=0.10.947', './js/audio-scene-map.js?v=0.10.947', './js/game-data.js?v=0.10.947', './js/memories-screen.js?v=0.10.947', './js/memories-backgrounds.js?v=0.10.947', './js/daily-gems-index.js?v=0.10.947',
+  './js/ui/tool-brief.js?v=0.10.947',
+  './js/ui/store-branch-label.js?v=0.10.947',
+  './js/ui/viewport-clamp.js?v=0.10.947',
+  './js/ui/meal-time-message.js?v=0.10.947',
+  './js/ui/loose-shape-label.js?v=0.10.947',
+  './js/ui/rough-display-name.js?v=0.10.947',
+  './js/ui/time-remaining-label.js?v=0.10.947',
+  './js/ui/workshop-staff-quality-description.js?v=0.10.947',
+  './js/ui/workshop-loose-display-name.js?v=0.10.947',
+  './js/ui/metal-market-date-label.js?v=0.10.947',
+  './js/ui/metal-price-date-label.js?v=0.10.947',
+  './js/ui/phone-item-effect-text.js?v=0.10.947',
+  './js/ui/save-diagnostic-date-label.js?v=0.10.947',
+  './js/ui/save-diagnostic-bytes-label.js?v=0.10.947',
+  './js/ui/save-diagnostic-capacity-label.js?v=0.10.947',
+  './js/ui/birthday-japanese-label.js?v=0.10.947',
+  './js/ui/game-date-label.js?v=0.10.947',
+  './js/ui/finance-row-date-label.js?v=0.10.947',
+  './js/ui/notification-date-label.js?v=0.10.947',
+  './js/ui/customer-preference-label.js?v=0.10.947',
+  './js/ui/customer-template-text.js?v=0.10.947',
+  './js/ui/store-display-name.js?v=0.10.947',
+  './js/ui/artisan-title.js?v=0.10.947',
+  './js/ui/loose-display-label.js?v=0.10.947',
+  './js/ui/install-status-text.js?v=0.10.947',
+  './js/ui/metal-weight-label.js?v=0.10.947',
   './js/japan-holidays.js', './js/firebase-config.js',
-  './js/google-auth-bridge.js?v=0.10.945', './js/security-config.js', './js/firebase-service.js?v=0.10.945', './js/local-save-storage.js?v=0.10.945',
+  './js/google-auth-bridge.js?v=0.10.947', './js/security-config.js', './js/firebase-service.js?v=0.10.947', './js/local-save-storage.js?v=0.10.947',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
   './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
   // v0.10.759: seasonal main-screen backgrounds (landscape + portrait).
@@ -101,6 +101,25 @@ async function kaitenzushiDocumentNetworkFirst(request) {
     || (await cache.match(canonicalUrl, { ignoreSearch: true }));
   if (cached) return cached;
   return new Response(`<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>回転寿司 読み込みエラー</title><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#120b08;color:#fff2d2;font-family:sans-serif;text-align:center"><main><strong>回転寿司を読み込めませんでした</strong><p>通信またはキャッシュを更新して、もう一度お試しください。</p></main></body></html>`, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
+async function retroBattleDocumentNetworkFirst(request) {
+  const cache = await caches.open(APP_CACHE);
+  const canonicalUrl = new URL('./assets/minigames/retro-battle/index.html', self.registration.scope).href;
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response.ok) {
+      await cache.put(canonicalUrl, response.clone()).catch(() => {});
+      return response;
+    }
+  } catch (_) {}
+  const cached = (await cache.match(request, { ignoreSearch: true }))
+    || (await cache.match(canonicalUrl, { ignoreSearch: true }));
+  if (cached) return cached;
+  return new Response(`<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>戦闘ミニゲーム 読み込みエラー</title><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#000;color:#fff;font-family:sans-serif;text-align:center"><main><strong>戦闘ミニゲームを読み込めませんでした</strong><p>通信状態を確認して、もう一度御徒町へ移動してください。</p></main></body></html>`, {
     status: 503,
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
   });
@@ -231,6 +250,10 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.pathname.endsWith('/assets/minigames/kaitenzushi/game/index.html')) {
     event.respondWith(kaitenzushiDocumentNetworkFirst(event.request));
+    return;
+  }
+  if (url.pathname.endsWith('/assets/minigames/retro-battle/index.html')) {
+    event.respondWith(retroBattleDocumentNetworkFirst(event.request));
     return;
   }
   if (event.request.mode === 'navigate' || destination === 'document') {

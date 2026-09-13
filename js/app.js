@@ -1,60 +1,60 @@
-import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.945';
-import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.945';
+import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.947';
+import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.947';
 import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.945';
+} from './game-data.js?v=0.10.947';
 
-const UI_BUILD_VERSION = '0.10.945';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.945';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.945';
+const UI_BUILD_VERSION = '0.10.947';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.947';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.947';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.945';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.947';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.945';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.945';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.945';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.945';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.945';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.945';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.945';
-import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.945';
-import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.945';
-import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.945';
-import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.945';
-import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.945';
-import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.945';
-import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.945';
-import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.945';
-import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.945';
-import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.945';
-import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.945';
-import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.945';
-import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.945';
-import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.945';
-import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.945';
-import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.945';
-import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.945';
-import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.945';
-import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.945';
-import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.945';
-import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.945';
-import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.945';
-import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.945';
-import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.945';
-import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.945';
-import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.945';
-import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.945';
-import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.945';
-import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.945';
-import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.945';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.945'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.945';
+} from './firebase-service.js?v=0.10.947';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.947';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.947';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.947';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.947';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.947';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.947';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.947';
+import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.947';
+import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.947';
+import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.947';
+import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.947';
+import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.947';
+import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.947';
+import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.947';
+import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.947';
+import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.947';
+import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.947';
+import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.947';
+import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.947';
+import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.947';
+import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.947';
+import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.947';
+import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.947';
+import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.947';
+import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.947';
+import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.947';
+import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.947';
+import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.947';
+import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.947';
+import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.947';
+import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.947';
+import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.947';
+import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.947';
+import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.947';
+import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.947';
+import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.947';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.947'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.947';
 
 
 
@@ -9522,7 +9522,7 @@ function alienAbductionEventState() {
     ? state.events.alienAbductionEvent
     : {};
   const validStages = new Set(['idle', 'intro1', 'intro2', 'abducted', 'returnPending', 'completed']);
-  state.events.alienAbductionEvent = {
+  const next = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     daysSlept: Math.max(0, Math.min(ALIEN_ABDUCTION_DAYS, Math.floor(Number(saved.daysSlept) || 0))),
@@ -9530,7 +9530,9 @@ function alienAbductionEventState() {
     totalTrips: Math.max(0, Math.floor(Number(saved.totalTrips) || 0)),
     chipGrantedThisTrip: Boolean(saved.chipGrantedThisTrip),
   };
-  return state.events.alienAbductionEvent;
+  Object.assign(saved, next);
+  state.events.alienAbductionEvent = saved;
+  return saved;
 }
 
 function isAlienAbducted() {
@@ -11978,7 +11980,7 @@ function applyCurrentBackground() {
   }
   const asset = backgroundAssetFor(screen);
   document.body.dataset.backgroundLayout = backgroundLayoutFor(screen, asset);
-  const extension = backgroundFor(screen) === 'sleep' && homePropertyController.currentProperty() === 'B' ? 'png' : 'webp';
+  const extension = /^home-property-b(?:-portrait)?$/.test(asset) ? 'png' : 'webp';
   document.documentElement.style.setProperty('--screen-bg', `url('./assets/images/${asset}.${extension}?v=${VERSION}')`);
 }
 
@@ -14606,7 +14608,7 @@ function cinemaVisitEventState() {
     ? state.events.cinemaVisitEvent
     : {};
   const validStages = new Set(['idle', 'invitation', 'playing', 'completed']);
-  state.events.cinemaVisitEvent = {
+  const next = {
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
@@ -14616,10 +14618,12 @@ function cinemaVisitEventState() {
     lastVideo: normalizeCinemaEventVideoName(saved.lastVideo),
     settled: Boolean(saved.settled),
   };
-  if (!state.events.cinemaVisitEvent.active && !['idle', 'completed'].includes(state.events.cinemaVisitEvent.stage)) {
-    state.events.cinemaVisitEvent.stage = 'completed';
+  Object.assign(saved, next);
+  state.events.cinemaVisitEvent = saved;
+  if (!saved.active && !['idle', 'completed'].includes(saved.stage)) {
+    saved.stage = 'completed';
   }
-  return state.events.cinemaVisitEvent;
+  return saved;
 }
 
 function resumeCinemaVisitEvent() {
@@ -14756,7 +14760,7 @@ function apprenticeCinemaEventState() {
     ? state.events.apprenticeCinemaEvent
     : {};
   const validStages = new Set(['idle', 'intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2', 'completed']);
-  state.events.apprenticeCinemaEvent = {
+  const next = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     selectedVideo: normalizeCinemaEventVideoName(saved.selectedVideo),
@@ -14765,10 +14769,12 @@ function apprenticeCinemaEventState() {
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
     lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
   };
-  if (!state.events.apprenticeCinemaEvent.active && !['idle', 'completed'].includes(state.events.apprenticeCinemaEvent.stage)) {
-    state.events.apprenticeCinemaEvent.stage = 'completed';
+  Object.assign(saved, next);
+  state.events.apprenticeCinemaEvent = saved;
+  if (!saved.active && !['idle', 'completed'].includes(saved.stage)) {
+    saved.stage = 'completed';
   }
-  return state.events.apprenticeCinemaEvent;
+  return saved;
 }
 
 function resumeApprenticeCinemaEvent() {
@@ -15188,7 +15194,7 @@ function mysteryChineseMealEventState() {
     : {};
   const dialogueStages = new Set(['intro1', 'intro2', 'intro3', 'reward', 'eating', 'postMeal']);
   const validStages = new Set(['idle', 'video', ...dialogueStages, 'completed']);
-  state.events.mysteryChineseMealEvent = {
+  const next = {
     lastCheckedDate: /^\d{4}-\d{2}-\d{2}$/.test(String(saved.lastCheckedDate || '')) ? String(saved.lastCheckedDate) : '',
     lastTriggeredDay: Math.max(0, Math.floor(Number(saved.lastTriggeredDay) || 0)),
     totalTriggered: Math.max(0, Math.floor(Number(saved.totalTriggered) || 0)),
@@ -15202,7 +15208,9 @@ function mysteryChineseMealEventState() {
     introVideoCompleted: Boolean(saved.introVideoCompleted),
     stageAfterVideo: dialogueStages.has(saved.stageAfterVideo) ? saved.stageAfterVideo : '',
   };
-  const eventState = state.events.mysteryChineseMealEvent;
+  Object.assign(saved, next);
+  state.events.mysteryChineseMealEvent = saved;
+  const eventState = saved;
   if (!eventState.active) {
     if (!['idle', 'completed'].includes(eventState.stage)) eventState.stage = 'completed';
     eventState.stageAfterVideo = '';
@@ -16060,7 +16068,7 @@ function emeraldCaptainKebabEventState() {
     ? state.events.emeraldCaptainKebabEvent
     : {};
   const validStages = new Set(['idle', 'intro1', 'intro2', 'showcase', 'purchaseResult', 'purchase', 'eating', 'farewell', 'completed']);
-  state.events.emeraldCaptainKebabEvent = {
+  const next = {
     active: Boolean(saved.active),
     stage: validStages.has(saved.stage) ? saved.stage : 'idle',
     pendingMealId: typeof saved.pendingMealId === 'string' ? saved.pendingMealId : '',
@@ -16071,10 +16079,12 @@ function emeraldCaptainKebabEventState() {
     hungerAfter: Math.max(0, Math.min(7, Number(saved.hungerAfter) || 0)),
     gemTotalPrice: Math.max(0, Math.floor(Number(saved.gemTotalPrice) || emeraldCaptainKebabEventTotalCost())),
   };
-  if (!state.events.emeraldCaptainKebabEvent.active && !['idle', 'completed'].includes(state.events.emeraldCaptainKebabEvent.stage)) {
-    state.events.emeraldCaptainKebabEvent.stage = 'completed';
+  Object.assign(saved, next);
+  state.events.emeraldCaptainKebabEvent = saved;
+  if (!saved.active && !['idle', 'completed'].includes(saved.stage)) {
+    saved.stage = 'completed';
   }
-  return state.events.emeraldCaptainKebabEvent;
+  return saved;
 }
 
 function maybeStartEmeraldCaptainKebabEvent() {
@@ -18755,9 +18765,10 @@ function finishStoreTheftEvent() {
 }
 
 function recoverStoreTheftDisappearanceSequence() {
-  const eventState = storeTheftEventState();
+  let eventState = storeTheftEventState();
   if (!eventState.active || !['farewell', 'pause'].includes(eventState.stage)) return;
   applyStoreTheftEventLoss();
+  eventState = storeTheftEventState();
   eventState.stage = 'theftNotice';
   saveGame();
   playSfx('shoplift-steal', { gain: .76, rate: .88 });

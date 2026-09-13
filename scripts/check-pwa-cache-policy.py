@@ -47,6 +47,16 @@ require(f"'./auth-cache-recovery.js?v={VERSION}'" in sw, 'Service Workerが現�
 require("fetch(request, { cache: 'no-store' })" in sw, 'HTML更新時のHTTPキャッシュ回避がありません')
 require('event.respondWith(documentNetworkFirst(event.request));' in sw,
         '画面遷移がdocumentNetworkFirstを使用していません')
+require('async function retroBattleDocumentNetworkFirst(request)' in sw,
+        '戦闘ミニゲーム専用のHTML読み込み保護がありません')
+require("new URL('./assets/minigames/retro-battle/index.html', self.registration.scope).href" in sw,
+        '戦闘ミニゲームの正規キャッシュURLが定義されていません')
+require("url.pathname.endsWith('/assets/minigames/retro-battle/index.html')" in sw,
+        '戦闘ミニゲームHTMLが専用読み込み経路へ振り分けられていません')
+require('event.respondWith(retroBattleDocumentNetworkFirst(event.request));' in sw,
+        '戦闘ミニゲームHTMLが専用読み込み保護を使用していません')
+require((ROOT / 'assets/minigames/retro-battle/index.html').is_file(),
+        '戦闘ミニゲーム本体HTMLが存在しません')
 require("const CACHE_PREFIX = 'jewelrygame-';" in sw, '自アプリ用キャッシュprefixが定義されていません')
 require('key.startsWith(CACHE_PREFIX)' in sw, 'activate時の削除対象が自アプリのキャッシュに限定されていません')
 require("const MEDIA_CACHE = 'jewelrygame-media-v1';" in sw, '動画用永続キャッシュが維持されていません')

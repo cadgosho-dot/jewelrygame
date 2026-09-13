@@ -1,4 +1,4 @@
-import { suspendAudio, resumeAudio, playSfx, vibrate } from './audio.js?v=0.10.945';
+import { suspendAudio, resumeAudio, playSfx, vibrate } from './audio.js?v=0.10.947';
 
 const OVERLAY_ID = 'jxj-wolf-boy-ring-overlay';
 const STYLE_ID = 'jxj-wolf-boy-ring-style';
@@ -30,6 +30,7 @@ let running = false;
 let stage = 'movie';
 let overlay = null;
 let videoEl = null;
+let movieFinishing = false;
 let blackoutTimer = null;
 let craftAmbient = null;
 let previousScreen = String(document.body?.dataset?.screen || '');
@@ -367,12 +368,18 @@ function render() {
 }
 
 async function finishMovie() {
-  if (!running || stage !== 'movie') return;
-  try { videoEl?.pause(); } catch (_) {}
-  videoEl = null;
-  await resumeAudio().catch(() => {});
-  persistStage('intro1');
-  render();
+  if (!running || stage !== 'movie' || movieFinishing) return;
+  movieFinishing = true;
+  try {
+    try { videoEl?.pause(); } catch (_) {}
+    videoEl = null;
+    await resumeAudio().catch(() => {});
+    if (!running || stage !== 'movie') return;
+    persistStage('intro1');
+    render();
+  } finally {
+    movieFinishing = false;
+  }
 }
 
 function startBlackoutToRing() {
@@ -395,6 +402,7 @@ function startBlackoutToRing() {
 function cleanup({ completed = true } = {}) {
   if (!running) return;
   running = false;
+  movieFinishing = false;
   if (blackoutTimer) {
     clearTimeout(blackoutTimer);
     blackoutTimer = null;
@@ -458,6 +466,7 @@ function startEvent(startStage = 'movie', { recordEncounter = true } = {}) {
   if (running || document.getElementById(OVERLAY_ID)) return false;
   installStyle();
   running = true;
+  movieFinishing = false;
   stage = VALID_STAGES.has(startStage) ? startStage : 'movie';
   if (stage === 'blackout') stage = 'intro3';
   writeResumeStage(stage);

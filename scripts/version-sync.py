@@ -133,6 +133,13 @@ RULES = [
     Rule('hosting-origin-guard.js', 'workshop staff cache key', qparam(r'\./workshop-staff-images-v754\.js'), keep_prefix),
     Rule('auth-cache-recovery.js', 'Service Worker recovery build version', quoted_constant('BUILD_VERSION'), keep_quote),
 
+    # standalone event module cache keys
+    Rule('js/memories-backgrounds.js', 'event-bootstrap.js import key', qparam(r'\./event-bootstrap\.js'), keep_prefix),
+    Rule('js/event-bootstrap.js', 'wolf-boy-ring-event.js import key', qparam(r'\./wolf-boy-ring-event\.js'), keep_prefix),
+    Rule('js/event-bootstrap.js', 'wolf-mother-butler-event.js import key', qparam(r'\./wolf-mother-butler-event\.js'), keep_prefix),
+    Rule('js/wolf-boy-ring-event.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
+    Rule('js/wolf-mother-butler-event.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
+
     # main modules
     Rule('js/app.js', 'game-data.js import key', qparam(r'\./game-data\.js'), keep_prefix),
     Rule('js/app.js', 'store-rent.js import key', qparam(r'\./finance/store-rent\.js'), keep_prefix),
@@ -187,11 +194,6 @@ RULES = [
     Rule('js/game-data-core.js', 'game data core VERSION', export_constant('VERSION'), keep_quote),
     Rule('js/memories-screen.js', 'memories-backgrounds import key', qparam(r'\./memories-backgrounds\.js'), keep_prefix),
     Rule('js/memories-screen.js', 'memories VERSION', quoted_constant('VERSION'), keep_quote),
-    Rule('js/event-bootstrap.js', 'wolf-boy event import key', qparam(r'\./wolf-boy-ring-event\.js'), keep_prefix),
-    Rule('js/event-bootstrap.js', 'wolf-mother event import key', qparam(r'\./wolf-mother-butler-event\.js'), keep_prefix),
-    Rule('js/memories-backgrounds.js', 'event-bootstrap import key', qparam(r'\./event-bootstrap\.js'), keep_prefix),
-    Rule('js/wolf-boy-ring-event.js', 'audio import key', qparam(r'\./audio\.js'), keep_prefix),
-    Rule('js/wolf-mother-butler-event.js', 'audio import key', qparam(r'\./audio\.js'), keep_prefix),
 
     # current management documents; historical archive files are intentionally excluded
     Rule('README.md', 'README current version', re.compile(r'(?P<prefix>現在の開発基準は、リポジトリ直下 `VERSION` に記録された \*\*v)0\.10\.\d+(?P<suffix>\*\*)'), keep_quote),

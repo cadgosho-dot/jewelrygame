@@ -5,7 +5,7 @@ import {
   homePropertyMonthlyRent,
   homePropertyMoveTotal,
   homePropertyBackgroundAsset,
-} from './home-property.js?v=0.10.945';
+} from './home-property.js?v=0.10.947';
 
 export function createHomePropertyController({
   getState,

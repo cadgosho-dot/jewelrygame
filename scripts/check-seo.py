@@ -12,8 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE = 'https://cadgosho-dot.github.io/jewelrygame/'
 ABOUT = BASE + 'about.html'
 IMAGE = BASE + 'assets/images/main-menu.webp'
-TITLE = 'JEWELRY×JEWELRY｜宝石採掘・ジュエリー店経営ブラウザゲーム'
-DESC = '宝石を採掘し、原石を研磨してジュエリーを制作。御徒町を舞台に接客・販売・店舗経営を楽しめるブラウザシミュレーションゲーム「JEWELRY×JEWELRY」。'
+TITLE = 'JEWELRY×JEWELRY｜ジュエリーゲーム・宝石採掘・店舗経営'
+DESC = 'JEWELRY×JEWELRYは、宝石を採掘・研磨し、ジュエリーを制作して接客・販売・店舗経営まで楽しめる無料のブラウザシミュレーションゲームです。御徒町を舞台に、宝石ゲーム・ジュエリーゲームならではの仕事と生活を体験できます。'
+MANIFEST_DESC = '宝石を採掘し、原石を研磨してジュエリーを制作。御徒町を舞台に接客・販売・店舗経営を楽しめるブラウザシミュレーションゲーム「JEWELRY×JEWELRY」。'
 errors: list[str] = []
 
 
@@ -23,6 +24,24 @@ def read(rel: str) -> str:
         errors.append(f'SEO必須ファイルがありません: {rel}')
         return ''
     return path.read_text(encoding='utf-8')
+
+
+def jsonld_nodes(data: object) -> list[dict]:
+    if not isinstance(data, dict):
+        return []
+    graph = data.get('@graph')
+    if isinstance(graph, list):
+        return [node for node in graph if isinstance(node, dict)]
+    return [data]
+
+
+def type_set(node: dict) -> set[str]:
+    value = node.get('@type')
+    if isinstance(value, str):
+        return {value}
+    if isinstance(value, list):
+        return {str(item) for item in value}
+    return set()
 
 
 index = read('index.html')
@@ -48,7 +67,7 @@ for marker in required_index:
     if marker not in index:
         errors.append(f'index.html SEO要素がありません: {marker}')
 
-# JSON-LD: valid, canonical app URL, and Google-supported web game co-typing.
+# JSON-LD: accept either a direct game object or an @graph and validate the game node.
 match = re.search(r'<script type="application/ld\+json"[^>]*>(.*?)</script>', index, re.S)
 if not match:
     errors.append('index.html にJSON-LDがありません')
@@ -58,18 +77,26 @@ else:
     except json.JSONDecodeError as exc:
         errors.append(f'index.html JSON-LDが不正です: {exc}')
     else:
-        types = data.get('@type')
-        if not isinstance(types, list) or not {'VideoGame', 'WebApplication'}.issubset(set(types)):
+        nodes = jsonld_nodes(data)
+        game_data = next(
+            (node for node in nodes if {'VideoGame', 'WebApplication'}.issubset(type_set(node))),
+            None,
+        )
+        if game_data is None:
             errors.append('JSON-LD @type は VideoGame + WebApplication の併記が必要です')
-        if data.get('url') != BASE:
-            errors.append('JSON-LD url が正式公開URLと一致しません')
-        if data.get('applicationCategory') != 'GameApplication':
-            errors.append('JSON-LD applicationCategory が GameApplication ではありません')
-        offers = data.get('offers') or {}
-        if str(offers.get('price')) not in {'0', '0.0'} or offers.get('priceCurrency') != 'JPY':
-            errors.append('JSON-LD 無料Offer（0 JPY）がありません')
-        if data.get('image') != IMAGE:
-            errors.append('JSON-LD image がOGP代表画像と一致しません')
+        else:
+            if game_data.get('url') != BASE:
+                errors.append('JSON-LD url が正式公開URLと一致しません')
+            if game_data.get('applicationCategory') != 'GameApplication':
+                errors.append('JSON-LD applicationCategory が GameApplication ではありません')
+            offers = game_data.get('offers') or {}
+            if str(offers.get('price')) not in {'0', '0.0'} or offers.get('priceCurrency') != 'JPY':
+                errors.append('JSON-LD 無料Offer（0 JPY）がありません')
+            if game_data.get('image') != IMAGE:
+                errors.append('JSON-LD image がOGP代表画像と一致しません')
+        website_data = next((node for node in nodes if 'WebSite' in type_set(node)), None)
+        if website_data is None or website_data.get('url') != BASE or website_data.get('name') != 'JEWELRY×JEWELRY':
+            errors.append('JSON-LD WebSite が正式公開URL・ゲーム名と一致しません')
 
 # Search landing page must be genuine visible content and link back to play.
 required_about = [
@@ -77,6 +104,7 @@ required_about = [
     '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">',
     '<h1>JEWELRY×JEWELRY</h1>',
     '宝石を採掘', '研磨・ジュエリー制作', '接客・販売・店舗経営', '御徒町とランダムイベント',
+    '宝石採掘からジュエリー制作・店舗経営まで', '宝石採掘ゲーム', 'ジュエリー制作ゲーム', '店舗経営ゲーム',
     '<a class="play" href="./">ゲームを開始する</a>',
 ]
 for marker in required_about:
@@ -89,14 +117,14 @@ if '<meta name="robots" content="noindex,follow">' not in game:
 if '<meta name="robots" content="noindex,nofollow,noarchive">' not in auth:
     errors.append('auth.html に noindex,nofollow,noarchive がありません')
 
-# Manifest description stays aligned with the public description.
+# Keep the stable PWA install description protected independently from search-result copy.
 try:
     manifest = json.loads(manifest_text)
 except json.JSONDecodeError as exc:
     errors.append(f'manifest.webmanifest が不正です: {exc}')
 else:
-    if manifest.get('description') != DESC:
-        errors.append('manifest.webmanifest description がSEO説明と一致しません')
+    if manifest.get('description') != MANIFEST_DESC:
+        errors.append('manifest.webmanifest description が既存PWA説明から変わっています')
 
 # Sitemap contains only canonical indexable pages.
 try:

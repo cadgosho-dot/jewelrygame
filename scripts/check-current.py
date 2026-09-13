@@ -91,6 +91,8 @@ CHECKS = [
     ('顧客来店管理処理保護', [sys.executable, str(ROOT / 'scripts/check-customer-visit-regression.py')]),
     ('セーブ統括処理保護', [sys.executable, str(ROOT / 'scripts/check-save-game-regression.py')]),
     ('イベント緊急確定処理保護', [sys.executable, str(ROOT / 'scripts/check-event-emergency-settlement-regression.py')]),
+    ('映画館イベント状態参照保護', [sys.executable, str(ROOT / 'scripts/check-cinema-event-state-reference-regression.py')]),
+    ('イベント状態参照追加保護', [sys.executable, str(ROOT / 'scripts/check-event-state-reference-audit-regression.py')]),
     ('共通収支記録処理保護', [sys.executable, str(ROOT / 'scripts/check-finance-ledger-regression.py')]),
     ('セーブ読込・復旧処理保護', [sys.executable, str(ROOT / 'scripts/check-load-game-regression.py')]),
     ('職人成長・レベル補正処理保護', [sys.executable, str(ROOT / 'scripts/check-artisan-progression-regression.py')]),

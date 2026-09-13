@@ -60,7 +60,7 @@ export function createHomePropertyController({
     data.homeProperty = selected;
     const rent = homePropertyMonthlyRent(selected, propertyARent);
     const preview = previewFile(selected);
-    const selectorTopGap = isPortraitLayout() ? '44px' : '18px';
+    const selectorTopGap = isPortraitLayout() ? '72px' : '32px';
     const currentStyle = (id) => id === current
       ? 'box-shadow:0 0 0 2px rgba(232,196,117,.95) inset,0 0 16px rgba(232,196,117,.5);'
       : '';
@@ -74,7 +74,7 @@ export function createHomePropertyController({
         <div style="display:grid;place-items:center;min-height:0;margin:0 auto 14px;">
           <img src="./assets/images/${preview}?v=${version}" alt="${label(selected)}" draggable="false" style="display:block;max-width:100%;width:auto;max-height:52vh;object-fit:contain;border:1.25px solid rgba(232,196,117,.82);border-radius:14px;">
         </div>
-        <div class="phone-card" style="margin:0 auto 14px;text-align:center;max-width:520px;">
+        <div class="phone-card" style="margin:0 auto 14px;text-align:center;max-width:520px;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;">
           <strong>引越し費用　${yen(HOME_MOVE_COST)}</strong>
           <span>毎月家賃　${yen(rent)}</span>
         </div>

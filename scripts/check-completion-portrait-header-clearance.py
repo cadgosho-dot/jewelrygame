@@ -2,6 +2,11 @@ from pathlib import Path
 import re, sys
 css = Path('styles.css').read_text(encoding='utf-8')
 app = Path('js/app.js').read_text(encoding='utf-8')
+html = Path('game.html').read_text(encoding='utf-8')
+order_style_marker = '<style id="order-completion-portrait-safety-v947">'
+order_style = html.split(order_style_marker, 1)[1].split('</style>', 1)[0] if order_style_marker in html else ''
+normal_style_marker = '<style id="completion-safety-v731">'
+normal_style = html.split(normal_style_marker, 1)[1].split('</style>', 1)[0] if normal_style_marker in html else ''
 checks = [
     ('completion render class exists', 'completion-jewelry-preview' in app and 'completion-jewelry-artwork' in app),
     ('portrait completion rule exists', 'v0.10.663 完成画面' in css),
@@ -11,6 +16,12 @@ checks = [
     ('fallback clearance >= 196px', 'max(196px' in css.split('v0.10.663 完成画面',1)[1]),
     ('landscape not targeted by new rule', '@media (orientation:portrait)' in css.split('v0.10.663 完成画面',1)[1]),
     ('completion artwork rules retained', '.completion-jewelry-artwork.item-pendant' in css and '.completion-jewelry-artwork.item-earrings' in css),
+    ('order completion action retained', 'data-action="deliver-order-completion"' in app),
+    ('order-only portrait safety style exists', bool(order_style)),
+    ('order-only selector is scoped by delivery action', '.result-card:has([data-action="deliver-order-completion"]) > .completion-jewelry-preview' in order_style),
+    ('order-only portrait safety stays portrait-only', '@media (orientation: portrait) and (max-width: 820px)' in order_style),
+    ('order-only top clearance is 48px', 'padding-top: 48px !important;' in order_style),
+    ('normal completion safety remains unchanged', 'padding: 10px 0 0 !important;' in normal_style),
 ]
 failed=[]
 for name, ok in checks:

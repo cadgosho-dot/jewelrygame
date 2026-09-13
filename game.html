@@ -319,6 +319,16 @@ html[data-device-class="phone"][data-orientation="portrait"] body[data-screen="c
 }
 </style>
 
+<style id="order-completion-portrait-safety-v947">
+/* 注文品の完成画面だけ、商品上側の安全余白を増やす。通常制作の完成画面は変更しない。 */
+@media (orientation: portrait) and (max-width: 820px) {
+  body[data-screen="completion"] .result-card:has([data-action="deliver-order-completion"]) > .completion-jewelry-preview {
+    padding-top: 48px !important;
+    overflow: visible !important;
+  }
+}
+</style>
+
 <style id="amber-loose-size-v740">
 /* v0.10.740: 工房 > 在庫 > ルース一覧で、琥珀だけ小さく見えるため表示サイズを補正。 */
 body[data-screen="inventory"] .loose-inventory-list img.loose-mini.loose-image[src*="/loose/amber/amber.png"] {

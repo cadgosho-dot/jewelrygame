@@ -1,0 +1,65 @@
+name: 自宅物件クリーン事前検査
+
+on:
+  push:
+    branches:
+      - feature/home-property-b-v010944-clean
+    paths:
+      - '.github/workflows/home-property-clean-preflight.yml'
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: ブランチ取得
+        uses: actions/checkout@v6
+        with:
+          ref: feature/home-property-b-v010944-clean
+
+      - name: JavaScript構文確認
+        run: node --check js/app.js
+
+      - name: VERSION同期確認
+        run: python3 scripts/version-sync.py --check
+
+      - name: 自宅家賃回帰保護
+        run: python3 scripts/check-home-rent-regression.py
+
+      - name: 自宅物件計算ロジック
+        run: |
+          node --input-type=module - <<'NODE'
+          import assert from 'node:assert/strict';
+          import { HOME_PROPERTY_UNLOCK_DAY, HOME_MOVE_COST, HOME_PROPERTY_B_MONTHLY_RENT, normalizeHomeProperty, homePropertyUnlocked, homePropertyMonthlyRent, homePropertyMoveTotal, homePropertyBackgroundAsset } from './js/finance/home-property.js';
+          assert.equal(HOME_PROPERTY_UNLOCK_DAY, 351);
+          assert.equal(HOME_MOVE_COST, 1000000);
+          assert.equal(HOME_PROPERTY_B_MONTHLY_RENT, 200000);
+          assert.equal(homePropertyUnlocked(350), false);
+          assert.equal(homePropertyUnlocked(351), true);
+          assert.equal(normalizeHomeProperty(undefined), 'A');
+          assert.equal(homePropertyMonthlyRent('A', 70000), 70000);
+          assert.equal(homePropertyMonthlyRent('B', 70000), 200000);
+          assert.equal(homePropertyMoveTotal('A', 70000), 1070000);
+          assert.equal(homePropertyMoveTotal('B', 70000), 1200000);
+          assert.equal(homePropertyBackgroundAsset('A', false), 'sleep');
+          assert.equal(homePropertyBackgroundAsset('A', true), 'sleep-portrait');
+          assert.equal(homePropertyBackgroundAsset('B', false), 'home-property-b');
+          assert.equal(homePropertyBackgroundAsset('B', true), 'home-property-b-portrait');
+          console.log('HOME PROPERTY CLEAN PREFLIGHT: PASS');
+          NODE
+
+      - name: 回帰検査用Pillow準備
+        run: python3 -m pip install --disable-pip-version-check pillow
+
+      - name: 中核回帰基準
+        run: python3 scripts/check-regression-baseline.py
+
+      - name: 店舗家賃回帰確認
+        run: python3 scripts/check-store-rent-escalation.py
+
+      - name: 母親イベント報酬停止修正の保持確認
+        run: |
+          test -f js/events/event-state-helpers.js
+          grep -q "createEventStateHelpers" js/app.js
+          grep -q "event-state-helpers.js?v=0.10.944" js/app.js
+          python3 scripts/check-wolf-mother-butler-event.py

@@ -7,6 +7,18 @@ import {
   homePropertyBackgroundAsset,
 } from './home-property.js?v=0.10.947';
 
+const HOME_PROPERTY_MENU_STYLE_ID = 'home-property-menu-spacing-style';
+
+function installHomePropertyMenuSpacingStyle() {
+  if (typeof document === 'undefined' || document.getElementById(HOME_PROPERTY_MENU_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = HOME_PROPERTY_MENU_STYLE_ID;
+  style.textContent = 'button[data-action="open-home-property"]{margin-top:18px;}';
+  document.head?.appendChild(style);
+}
+
+installHomePropertyMenuSpacingStyle();
+
 export function createHomePropertyController({
   getState,
   getScreenData,
@@ -72,7 +84,10 @@ export function createHomePropertyController({
           <button type="button" class="${selectedClass('B')}" data-action="select-home-property" data-property="B" aria-pressed="${selected === 'B'}" style="min-width:110px;${currentStyle('B')}">物件Ｂ</button>
         </div>
         <div style="display:grid;place-items:center;min-height:0;margin:0 auto 14px;">
-          <img src="./assets/images/${preview}?v=${version}" alt="${label(selected)}" draggable="false" style="display:block;max-width:100%;width:auto;max-height:52vh;object-fit:contain;border:1.25px solid rgba(232,196,117,.82);border-radius:14px;">
+          <div style="position:relative;display:inline-grid;place-items:center;max-width:100%;">
+            <img src="./assets/images/${preview}?v=${version}" alt="${label(selected)}" draggable="false" style="display:block;max-width:100%;width:auto;max-height:52vh;object-fit:contain;border:1.25px solid rgba(232,196,117,.82);border-radius:14px;">
+            ${selected === current ? '<div class="home-property-contract-badge" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 22px;border:1.5px solid rgba(232,196,117,.95);border-radius:12px;background:transparent;color:#fff7e6;font-weight:800;font-size:clamp(24px,4vw,40px);letter-spacing:.08em;line-height:1;pointer-events:none;white-space:nowrap;">契約中</div>' : ''}
+          </div>
         </div>
         <div class="phone-card" style="margin:0 auto 14px;text-align:center;max-width:520px;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;">
           <strong>引越し費用　${yen(HOME_MOVE_COST)}</strong>
@@ -80,7 +95,7 @@ export function createHomePropertyController({
         </div>
         ${selected !== current ? '<button type="button" class="primary-button full-button" data-action="move-home-property">引越す</button>' : ''}
         <button type="button" class="secondary-button full-button" data-action="real-estate-menu" style="margin-top:10px;">戻る</button>
-      </section>`, { help: '物件を選ぶと画像・引越し費用・毎月家賃を確認できます。現在住んでいる物件は枠の光で示されます。' });
+      </section>`, { help: '物件を選ぶと画像・引越し費用・毎月家賃を確認できます。現在住んでいる物件は画像中央の「契約中」で示されます。' });
   }
 
   function open() {

@@ -21,11 +21,13 @@ assert.equal(toasts.length, 1);
 assert.equal(sounds.length, 0);
 assert.equal(saves, 1);
 
+const progressState = state.events.wolfMotherButlerEvent;
 const progress = helper.patchEventState('wolfMotherButlerEvent', { stage:'dialogue8', rewardGranted:true });
 assert.equal(progress.ok, true);
-assert.equal(state.events.wolfMotherButlerEvent.stage, 'dialogue8');
-assert.equal(state.events.wolfMotherButlerEvent.rewardGranted, true);
-assert.equal(state.events.wolfMotherButlerEvent.active, true);
+assert.strictEqual(state.events.wolfMotherButlerEvent, progressState);
+assert.equal(progressState.stage, 'dialogue8');
+assert.equal(progressState.rewardGranted, true);
+assert.equal(progressState.active, true);
 assert.equal(saves, 2);
 
 const invalid = helper.grantMetalIgnoreCapacity('unknown', 20);
@@ -34,4 +36,4 @@ assert.equal(state.inventory.metals.gold, 25);
 assert.equal(saves, 2);
 
 console.log('EVENT STATE HELPERS TEST: PASS');
-console.log('K18YG 20g付与とreward→dialogue8進行状態の保存を確認しました。');
+console.log('イベント状態の既存参照を維持したままreward→dialogue8へ進行し、K18YG 20g付与も維持することを確認しました。');

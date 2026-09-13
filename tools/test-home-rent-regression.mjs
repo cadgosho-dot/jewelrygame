@@ -77,6 +77,7 @@ function makeHarness(overrides = {}) {
     state,
     HOME_MONTHLY_RENT,
     MIN_LIVING_CASH_RESERVE,
+    currentHomeMonthlyRent: () => HOME_MONTHLY_RENT,
     gameDate: () => new Date(`${dateText}T12:00:00`),
     addFinance: (...args) => calls.finance.push(args),
     addNotification: (...args) => calls.notifications.push(args),
@@ -265,4 +266,4 @@ testHomeRentNoAutomaticCapacityRecordsFullUnpaid();
 testHomeRentSecondCallCannotChargeTwice();
 
 console.log('HOME RENT REGRESSION: PASS');
-console.log('automaticPaymentCapacity()/payFixedCost()/processHomeRent() current behavior protected: living-cash reserve, due normalization, full/partial payment, day-15/idempotency gates, first-30-day grace, unpaid accumulation, bounded reports/messages, notifications, and no direct save/time cost.');
+console.log('automaticPaymentCapacity()/payFixedCost()/processHomeRent() current behavior protected: living-cash reserve, due normalization, full/partial payment, day-15/idempotency gates, first-30-day grace, unpaid accumulation, bounded reports/messages, notifications, current-property rent resolution, and no direct save/time cost.');

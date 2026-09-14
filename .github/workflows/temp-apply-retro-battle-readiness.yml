@@ -1,0 +1,465 @@
+name: TEMP apply retro battle readiness fix
+
+on:
+  push:
+    branches:
+      - fix/retro-battle-start-readiness-20260914
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ブランチを取得
+        uses: actions/checkout@v6
+        with:
+          ref: fix/retro-battle-start-readiness-20260914
+          fetch-depth: 0
+
+      - name: 最新main向け最小修正を適用
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          root = Path('.')
+          version = (root / 'VERSION').read_text(encoding='utf-8').strip()
+          if version != '0.10.947':
+              raise SystemExit(f'想定外のVERSIONです: {version}')
+
+          module_path = root / 'js/events/retro-battle-frame-loader.js'
+          if module_path.exists():
+              raise SystemExit('retro-battle-frame-loader.js が既に存在します')
+          module_path.write_text(dedent('''\
+          export const RETRO_BATTLE_API_READY_TIMEOUT_MS = 10000;
+          export const RETRO_BATTLE_API_READY_POLL_MS = 100;
+          const RETRO_BATTLE_PATH = '/assets/minigames/retro-battle/index.html';
+
+          export function bindRetroBattleFrameLoader({
+            frame,
+            isActive,
+            startOptions,
+            onInventoryChange,
+            onEnd,
+            onError,
+            timeoutMs = RETRO_BATTLE_API_READY_TIMEOUT_MS,
+            pollMs = RETRO_BATTLE_API_READY_POLL_MS,
+          }) {
+            let waitTimer = null;
+            let waitDeadline = 0;
+            let waiting = true;
+            let loadHandled = false;
+            let battleWindow = null;
+            let inventoryHandler = null;
+            let endHandler = null;
+
+            const active = () => (typeof isActive === 'function' ? Boolean(isActive()) : true);
+
+            const clearWaitTimer = () => {
+              if (waitTimer === null) return;
+              clearTimeout(waitTimer);
+              waitTimer = null;
+            };
+
+            const clearWaitBindings = () => {
+              if (!waiting) return;
+              waiting = false;
+              clearWaitTimer();
+              frame.removeEventListener('load', handleFrameLoad);
+            };
+
+            const cleanup = () => {
+              clearWaitBindings();
+              if (battleWindow && inventoryHandler) {
+                battleWindow.removeEventListener('retroBattleInventoryChange', inventoryHandler);
+              }
+              if (battleWindow && endHandler) {
+                battleWindow.removeEventListener('retroBattleEnd', endHandler);
+              }
+              battleWindow = null;
+              inventoryHandler = null;
+              endHandler = null;
+            };
+
+            const documentIsReady = () => {
+              try {
+                const pathname = String(frame.contentWindow?.location?.pathname || '');
+                return pathname.endsWith(RETRO_BATTLE_PATH)
+                  && frame.contentDocument?.readyState === 'complete';
+              } catch (_) {
+                return false;
+              }
+            };
+
+            const fail = (error) => {
+              cleanup();
+              if (typeof onError === 'function') onError(error);
+            };
+
+            const startBattle = () => {
+              try {
+                battleWindow = frame.contentWindow;
+                const battleApi = battleWindow?.RetroBattle;
+                if (!battleWindow || !battleApi || typeof battleApi.start !== 'function') return false;
+
+                clearWaitBindings();
+                inventoryHandler = (event) => {
+                  if (active() && typeof onInventoryChange === 'function') onInventoryChange(event?.detail);
+                };
+                endHandler = (event) => {
+                  if (active() && typeof onEnd === 'function') onEnd(event?.detail);
+                };
+                battleWindow.addEventListener('retroBattleInventoryChange', inventoryHandler);
+                battleWindow.addEventListener('retroBattleEnd', endHandler);
+                battleApi.start(typeof startOptions === 'function' ? startOptions() : {});
+                frame.style.visibility = 'visible';
+                return true;
+              } catch (error) {
+                fail(error);
+                return true;
+              }
+            };
+
+            const waitForBattleApi = () => {
+              if (!waiting) return;
+              if (!active()) {
+                cleanup();
+                return;
+              }
+              if (startBattle()) return;
+
+              const remaining = waitDeadline - Date.now();
+              if (remaining <= 0) {
+                fail(new Error('RetroBattle API の準備がタイムアウトしました'));
+                return;
+              }
+
+              clearWaitTimer();
+              const interval = Math.max(10, Number(pollMs) || RETRO_BATTLE_API_READY_POLL_MS);
+              waitTimer = setTimeout(waitForBattleApi, Math.min(interval, remaining));
+            };
+
+            function handleFrameLoad() {
+              if (!waiting || loadHandled) return;
+              if (!active()) {
+                cleanup();
+                return;
+              }
+              if (!documentIsReady()) return;
+
+              loadHandled = true;
+              waitDeadline = Date.now() + Math.max(0, Number(timeoutMs) || 0);
+              waitForBattleApi();
+            }
+
+            frame.addEventListener('load', handleFrameLoad);
+            queueMicrotask(handleFrameLoad);
+            return cleanup;
+          }
+          '''), encoding='utf-8')
+
+          app_path = root / 'js/app.js'
+          app = app_path.read_text(encoding='utf-8')
+          import_anchor = "import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.947'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.947';\n"
+          if app.count(import_anchor) != 1:
+              raise SystemExit('app.jsのイベントimport基準点を一意に確認できません')
+          app = app.replace(
+              import_anchor,
+              import_anchor + "import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.947';\n",
+              1,
+          )
+
+          start_marker = 'function bindRetroBattleFrame() {'
+          end_marker = '\nfunction renderRetroBattleEvent()'
+          if app.count(start_marker) != 1:
+              raise SystemExit('app.jsのbindRetroBattleFrameを一意に確認できません')
+          start = app.index(start_marker)
+          end = app.index(end_marker, start)
+          existing = app[start:end]
+          required_existing = [
+              "root.querySelector('iframe[data-retro-battle-frame]')",
+              "throw new Error('RetroBattle API が見つかりません')",
+              'playerName: retroBattlePlayerName()',
+              'inventory: retroBattleInventorySnapshot()',
+              'failRetroBattleEventLoad(error)',
+          ]
+          missing = [token for token in required_existing if token not in existing]
+          if missing:
+              raise SystemExit('現行戦闘起動処理の保護条件が一致しません: ' + ', '.join(missing))
+
+          replacement = dedent('''\
+          function bindRetroBattleFrame() {
+            if (screen !== 'retroBattleEvent' || !retroBattleSession) return;
+            const session = retroBattleSession;
+            const frame = root.querySelector('iframe[data-retro-battle-frame]');
+            if (!(frame instanceof HTMLIFrameElement) || frame.dataset.retroBattleBound === '1') return;
+            frame.dataset.retroBattleBound = '1';
+
+            session.cleanup = bindRetroBattleFrameLoader({
+              frame,
+              isActive: () => (
+                screen === 'retroBattleEvent'
+                && session === retroBattleSession
+                && !session.settled
+              ),
+              startOptions: () => ({
+                playerName: retroBattlePlayerName(),
+                inventory: retroBattleInventorySnapshot(),
+              }),
+              onInventoryChange: applyRetroBattleInventoryChange,
+              onEnd: (detail) => finishRetroBattleEvent(detail, session),
+              onError: failRetroBattleEventLoad,
+            });
+          }
+          ''').rstrip()
+          app = app[:start] + replacement + app[end:]
+          app_path.write_text(app, encoding='utf-8')
+
+          sw_path = root / 'sw.js'
+          sw = sw_path.read_text(encoding='utf-8')
+          if './js/events/retro-battle-frame-loader.js?v=' not in sw:
+              lines = sw.splitlines(keepends=True)
+              hits = [i for i, line in enumerate(lines) if './js/events/event-state-helpers.js?v=' in line]
+              if len(hits) != 1:
+                  raise SystemExit('sw.jsのevent-state-helpers基準点を一意に確認できません')
+              i = hits[0]
+              line = lines[i]
+              indent = line[:len(line) - len(line.lstrip())]
+              quote = "'" if "'./js/events/event-state-helpers.js" in line else '"'
+              lines.insert(i + 1, f"{indent}{quote}./js/events/retro-battle-frame-loader.js?v=0.10.947{quote},\n")
+              sw = ''.join(lines)
+          sw_path.write_text(sw, encoding='utf-8')
+
+          version_sync_path = root / 'scripts/version-sync.py'
+          version_sync = version_sync_path.read_text(encoding='utf-8')
+          sw_rule = "    Rule('sw.js', 'event-state-helpers.js precache key', qparam(r'\\./js/events/event-state-helpers\\.js'), keep_prefix),\n"
+          app_rule = "    Rule('js/app.js', 'event-state-helpers.js import key', qparam(r'\\./events/event-state-helpers\\.js'), keep_prefix),\n"
+          if "retro-battle-frame-loader.js precache key" not in version_sync:
+              if version_sync.count(sw_rule) != 1:
+                  raise SystemExit('version-sync.pyのSW基準点を一意に確認できません')
+              version_sync = version_sync.replace(
+                  sw_rule,
+                  sw_rule + "    Rule('sw.js', 'retro-battle-frame-loader.js precache key', qparam(r'\\./js/events/retro-battle-frame-loader\\.js'), keep_prefix),\n",
+                  1,
+              )
+          if "retro-battle-frame-loader.js import key" not in version_sync:
+              if version_sync.count(app_rule) != 1:
+                  raise SystemExit('version-sync.pyのapp基準点を一意に確認できません')
+              version_sync = version_sync.replace(
+                  app_rule,
+                  app_rule + "    Rule('js/app.js', 'retro-battle-frame-loader.js import key', qparam(r'\\./events/retro-battle-frame-loader\\.js'), keep_prefix),\n",
+                  1,
+              )
+          version_sync_path.write_text(version_sync, encoding='utf-8')
+
+          test_path = root / 'tools/test-retro-battle-frame-loader.mjs'
+          test_path.write_text(dedent('''\
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+
+          const source = await readFile(new URL('../js/events/retro-battle-frame-loader.js', import.meta.url), 'utf8');
+          const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+          const {
+            bindRetroBattleFrameLoader,
+            RETRO_BATTLE_API_READY_TIMEOUT_MS,
+            RETRO_BATTLE_API_READY_POLL_MS,
+          } = await import(moduleUrl);
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+          class FakeTarget {
+            constructor() { this.listeners = new Map(); }
+            addEventListener(type, listener, options = {}) {
+              const rows = this.listeners.get(type) || [];
+              rows.push({ listener, once: Boolean(options?.once) });
+              this.listeners.set(type, rows);
+            }
+            removeEventListener(type, listener) {
+              const rows = this.listeners.get(type) || [];
+              this.listeners.set(type, rows.filter((row) => row.listener !== listener));
+            }
+            dispatch(type, detail) {
+              const rows = [...(this.listeners.get(type) || [])];
+              for (const row of rows) {
+                row.listener({ type, detail });
+                if (row.once) this.removeEventListener(type, row.listener);
+              }
+            }
+          }
+
+          class FakeFrame extends FakeTarget {
+            constructor(pathname = '/jewelrygame/assets/minigames/retro-battle/index.html') {
+              super();
+              this.style = { visibility: 'hidden' };
+              this.contentWindow = new FakeTarget();
+              this.contentWindow.location = { pathname };
+              this.contentDocument = { readyState: 'complete' };
+            }
+          }
+
+          assert.equal(RETRO_BATTLE_API_READY_TIMEOUT_MS, 10000);
+          assert.equal(RETRO_BATTLE_API_READY_POLL_MS, 100);
+
+          {
+            const frame = new FakeFrame('/initial-document');
+            let startCount = 0;
+            let startPayload = null;
+            let inventoryDetail = null;
+            let endDetail = null;
+            let errorCount = 0;
+
+            const cleanup = bindRetroBattleFrameLoader({
+              frame,
+              isActive: () => true,
+              startOptions: () => ({ playerName: 'テスト', inventory: { pazupan: 1 } }),
+              onInventoryChange: (detail) => { inventoryDetail = detail; },
+              onEnd: (detail) => { endDetail = detail; },
+              onError: () => { errorCount += 1; },
+              timeoutMs: 150,
+              pollMs: 10,
+            });
+
+            await sleep(10);
+            assert.equal(startCount, 0, '一時documentでは開始しない');
+            frame.contentWindow.location.pathname = '/jewelrygame/assets/minigames/retro-battle/index.html';
+            frame.dispatch('load');
+            setTimeout(() => {
+              frame.contentWindow.RetroBattle = {
+                start(payload) {
+                  startCount += 1;
+                  startPayload = payload;
+                },
+              };
+            }, 20);
+
+            await sleep(80);
+            assert.equal(startCount, 1, 'API準備後に一度だけ開始する');
+            assert.deepEqual(startPayload, { playerName: 'テスト', inventory: { pazupan: 1 } });
+            assert.equal(frame.style.visibility, 'visible');
+            frame.dispatch('load');
+            await sleep(15);
+            assert.equal(startCount, 1, '再loadでも二重開始しない');
+
+            frame.contentWindow.dispatch('retroBattleInventoryChange', { itemKey: 'pazupan', delta: -1 });
+            frame.contentWindow.dispatch('retroBattleEnd', { result: 'victory' });
+            assert.deepEqual(inventoryDetail, { itemKey: 'pazupan', delta: -1 });
+            assert.deepEqual(endDetail, { result: 'victory' });
+            assert.equal(errorCount, 0);
+            cleanup();
+          }
+
+          {
+            const frame = new FakeFrame();
+            let errorCount = 0;
+            bindRetroBattleFrameLoader({
+              frame,
+              isActive: () => true,
+              startOptions: () => ({}),
+              onInventoryChange: () => {},
+              onEnd: () => {},
+              onError: () => { errorCount += 1; },
+              timeoutMs: 30,
+              pollMs: 5,
+            });
+            await sleep(80);
+            assert.equal(errorCount, 1, 'APIが準備されなければ上限後に一度だけ失敗する');
+          }
+
+          {
+            const frame = new FakeFrame();
+            let errorCount = 0;
+            let active = true;
+            bindRetroBattleFrameLoader({
+              frame,
+              isActive: () => active,
+              startOptions: () => ({}),
+              onInventoryChange: () => {},
+              onEnd: () => {},
+              onError: () => { errorCount += 1; },
+              timeoutMs: 50,
+              pollMs: 5,
+            });
+            active = false;
+            await sleep(30);
+            assert.equal(errorCount, 0, 'イベント離脱時はエラー扱いにしない');
+          }
+
+          console.log('RETRO BATTLE FRAME LOADER REGRESSION: PASS');
+          '''), encoding='utf-8')
+
+          checker_path = root / 'scripts/check-retro-battle-frame-loader.py'
+          checker_path.write_text(dedent('''\
+          #!/usr/bin/env python3
+          from pathlib import Path
+          import subprocess
+
+          ROOT = Path(__file__).resolve().parents[1]
+          app = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+          module = (ROOT / 'js/events/retro-battle-frame-loader.js').read_text(encoding='utf-8')
+          sw = (ROOT / 'sw.js').read_text(encoding='utf-8')
+          version_sync = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
+
+          checks = {
+              '10秒待機上限': 'RETRO_BATTLE_API_READY_TIMEOUT_MS = 10000' in module,
+              '100ms再確認': 'RETRO_BATTLE_API_READY_POLL_MS = 100' in module,
+              '実戦闘document確認': "RETRO_BATTLE_PATH = '/assets/minigames/retro-battle/index.html'" in module,
+              'app import': "./events/retro-battle-frame-loader.js?v=" in app,
+              '現行iframe selector維持': "root.querySelector('iframe[data-retro-battle-frame]')" in app,
+              'プレイヤー名維持': 'playerName: retroBattlePlayerName()' in app,
+              'アイテムsnapshot維持': 'inventory: retroBattleInventorySnapshot()' in app,
+              'アイテム同期維持': 'onInventoryChange: applyRetroBattleInventoryChange' in app,
+              '終了処理維持': 'onEnd: (detail) => finishRetroBattleEvent(detail, session)' in app,
+              '既存失敗処理維持': 'onError: failRetroBattleEventLoad' in app,
+              'SW precache': './js/events/retro-battle-frame-loader.js?v=' in sw,
+              'version-sync SW登録': 'retro-battle-frame-loader.js precache key' in version_sync,
+              'version-sync app登録': 'retro-battle-frame-loader.js import key' in version_sync,
+          }
+
+          start = app.index('function bindRetroBattleFrame()')
+          end = app.index('function renderRetroBattleEvent()', start)
+          integration = app[start:end]
+          checks['戦闘開始引数へmoneyを追加しない'] = 'money:' not in integration
+          checks['既存終了処理を置換しない'] = 'finishRetroBattleEvent' in integration
+
+          failed = [label for label, ok in checks.items() if not ok]
+          for label, ok in checks.items():
+              print(('PASS' if ok else 'FAIL') + ': ' + label)
+          if failed:
+              raise SystemExit('RETRO BATTLE FRAME LOADER CHECK: FAIL — ' + ', '.join(failed))
+
+          subprocess.run(['node', str(ROOT / 'tools/test-retro-battle-frame-loader.mjs')], check=True)
+          print('RETRO BATTLE FRAME LOADER CHECK: PASS')
+          '''), encoding='utf-8')
+
+          current_path = root / 'scripts/check-current.py'
+          current = current_path.read_text(encoding='utf-8')
+          check_line = "    ('戦闘ミニゲーム起動待ち', [sys.executable, str(ROOT / 'scripts/check-retro-battle-frame-loader.py')]),\n"
+          if check_line not in current:
+              anchor = "    ('PWAキャッシュ更新', [sys.executable, str(ROOT / 'scripts/check-pwa-cache-policy.py')]),\n"
+              if current.count(anchor) != 1:
+                  raise SystemExit('check-current.pyのPWA基準点を一意に確認できません')
+              current = current.replace(anchor, anchor + check_line, 1)
+          current_path.write_text(current, encoding='utf-8')
+          PY
+
+      - name: VERSIONを0.10.948へ同期
+        run: python3 scripts/version-sync.py --set 0.10.948
+
+      - name: 対象回帰検査
+        run: |
+          node --check js/app.js
+          python3 scripts/check-retro-battle-frame-loader.py
+          python3 scripts/check-pwa-cache-policy.py
+          python3 scripts/version-sync.py --check
+          git diff --check
+
+      - name: 一時ワークフローを除去して保存
+        run: |
+          rm -f .github/workflows/temp-apply-retro-battle-readiness.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "戦闘ミニゲームの起動準備待ちを安定化"
+          git push origin HEAD:fix/retro-battle-start-readiness-20260914

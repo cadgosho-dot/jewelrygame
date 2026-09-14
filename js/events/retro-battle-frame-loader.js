@@ -1,3 +1,4 @@
+// iframe初期表示のabout:blankを戦闘画面の準備完了と誤判定しないための専用ローダー。
 export const RETRO_BATTLE_API_READY_TIMEOUT_MS = 10000;
 export const RETRO_BATTLE_API_READY_POLL_MS = 100;
 const RETRO_BATTLE_PATH = '/assets/minigames/retro-battle/index.html';

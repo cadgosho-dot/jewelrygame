@@ -37,6 +37,46 @@ function syncWorkshopStaffGrowthState(state) {
   return state;
 }
 
+// 旧バージョンの店舗レベル移行では、レベル維持のため必要営業日数を
+// operatingDays に補填していた。ゲーム経過日数を超える値は実営業日として成立しないため、
+// 読込時に「契約日から現在日まで」の上限へ戻す。レベル自体は変更しない。
+export function maxPossibleStoreOperatingDays(gameDay, rentedDay = 1) {
+  const currentDay = Math.max(1, Math.floor(Number(gameDay) || 1));
+  const startDay = Math.max(1, Math.floor(Number(rentedDay) || 1));
+  if (startDay > currentDay) return 0;
+  return currentDay - startDay + 1;
+}
+
+function clampStoreOperatingDays(value, gameDay, rentedDay = 1) {
+  const days = Math.max(0, Math.floor(Number(value) || 0));
+  return Math.min(days, maxPossibleStoreOperatingDays(gameDay, rentedDay));
+}
+
+export function repairStoreOperatingDaysState(state) {
+  const store = state?.store;
+  if (!store || typeof store !== 'object' || Array.isArray(store)) return state;
+  const gameDay = state?.game?.day;
+  const branches = Array.isArray(store.branches) ? store.branches : [];
+
+  for (const branch of branches) {
+    if (!branch || typeof branch !== 'object' || Array.isArray(branch)) continue;
+    const rentedDay = Number(branch.rentedDay) > 0
+      ? branch.rentedDay
+      : (Number(branch.number) === 1 ? store.rentedDay : 1);
+    branch.operatingDays = clampStoreOperatingDays(branch.operatingDays, gameDay, rentedDay);
+  }
+
+  const branchOne = branches.find((branch) => Number(branch?.number) === 1);
+  if (branchOne) {
+    // 旧互換用トップレベル値も支店1と同じ実営業日へ同期し、
+    // branches が欠けた保存を後で読み直しても不可能な値を復活させない。
+    store.operatingDays = Math.max(0, Math.floor(Number(branchOne.operatingDays) || 0));
+  } else if (store.rented) {
+    store.operatingDays = clampStoreOperatingDays(store.operatingDays, gameDay, store.rentedDay);
+  }
+  return state;
+}
+
 const EMERALD_CAPTAIN_KEBAB_EVENT_MEAL_ID = 'kebab';
 const EMERALD_CAPTAIN_KEBAB_EVENT_GEM_ID = 'emerald';
 const EMERALD_CAPTAIN_KEBAB_EVENT_SHAPE_IDS = Object.freeze([
@@ -195,6 +235,7 @@ export function initialState(...args) {
   if (state && typeof state === 'object') {
     state.version = VERSION;
     syncWorkshopStaffGrowthState(state);
+    repairStoreOperatingDaysState(state);
   }
   return state;
 }
@@ -230,6 +271,7 @@ export function migrateState(saved) {
   if (state && typeof state === 'object') {
     state.version = VERSION;
     syncWorkshopStaffGrowthState(state);
+    repairStoreOperatingDaysState(state);
   }
   return state;
 }

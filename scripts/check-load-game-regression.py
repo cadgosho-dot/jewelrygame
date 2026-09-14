@@ -7,7 +7,9 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / 'js/app.js').read_text(encoding='utf-8')
+GAME_DATA = (ROOT / 'js/game-data.js').read_text(encoding='utf-8')
 TEST = (ROOT / 'tools/test-load-game-regression.mjs').read_text(encoding='utf-8')
+STORE_OPERATING_TEST = (ROOT / 'tools/test-store-operating-days-regression.mjs').read_text(encoding='utf-8')
 CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
 SYNC = ROOT / '.github/workflows/phase41-sync-v010930.yml'
 
@@ -48,6 +50,17 @@ checks = {
         'vm.runInContext(source, ctx',
         'loadGame()',
     ]),
+    'store operating day repair stays after core migration': all(token in GAME_DATA for token in [
+        'export function repairStoreOperatingDaysState(state)',
+        'const state = core.migrateState(source);',
+        'repairStoreOperatingDaysState(state);',
+    ]) and GAME_DATA.index('const state = core.migrateState(source);') < GAME_DATA.rindex('repairStoreOperatingDaysState(state);'),
+    'store operating day dynamic regression retained': all(token in STORE_OPERATING_TEST for token in [
+        "repairStoreOperatingDaysState(impossible);",
+        "assertEqual(impossible.store.branches[0].operatingDays, 408",
+        "assertEqual(impossible.store.level, 16",
+        'STORE OPERATING DAYS REGRESSION: PASS',
+    ]),
     'registered in audit or pending formal sync': 'check-load-game-regression.py' in CURRENT or (SYNC.is_file() and 'check-load-game-regression.py' in SYNC.read_text(encoding='utf-8')),
 }
 
@@ -67,7 +80,11 @@ for name, ok in checks.items():
 if not all(checks.values()):
     sys.exit('LOAD GAME PROTECTION: FAIL')
 
-result = subprocess.run(['node', str(ROOT / 'tools/test-load-game-regression.mjs')], cwd=ROOT)
-if result.returncode:
-    sys.exit(result.returncode)
+for command in [
+    ['node', str(ROOT / 'tools/test-load-game-regression.mjs')],
+    ['node', str(ROOT / 'tools/test-store-operating-days-regression.mjs')],
+]:
+    result = subprocess.run(command, cwd=ROOT)
+    if result.returncode:
+        sys.exit(result.returncode)
 print('LOAD GAME PROTECTION: PASS')

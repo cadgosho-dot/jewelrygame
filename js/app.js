@@ -11437,14 +11437,15 @@ function maybeStartMiningBattleEvent() {
 }
 
 function retroBattleStartOptions(session = retroBattleSession) {
-  const playerName = retroBattlePlayerName();
-  const inventory = retroBattleInventorySnapshot();
-  if (session?.context !== 'mining') return { playerName, inventory };
+  const base = {
+    playerName: retroBattlePlayerName(),
+    inventory: retroBattleInventorySnapshot(),
+  };
+  if (session?.context !== 'mining') return base;
   return buildMiningBattleStartOptions({
+    ...base,
     enemy: session.enemy,
     enemyImage: session.enemy?.image,
-    playerName,
-    inventory,
     baseOptions: { attackMode: 'mining' },
   });
 }

@@ -1,0 +1,13 @@
+{
+  "version": "0.10.949",
+  "items": [
+    {
+      "outputPath": "assets/images/tropical-shop/fish-axolotl.png",
+      "sourceFilename": "1000022846.png",
+      "sourceSha256": "1839604f129657c4f2f5c63f733e1ea9e3a5c7a13053eae8804be3000162ac75",
+      "preparedFilename": "透過PNGのアルビノウーパールーパー.png",
+      "sha256": "e778329b9377f89612cf876ece67c29d47ecee146f19681e85b569c1428b6218",
+      "note": "2026-09-15の受領画像を元に前の作業で準備済みの透過PNGを再利用。今回再生成・再加工なし。"
+    }
+  ]
+}

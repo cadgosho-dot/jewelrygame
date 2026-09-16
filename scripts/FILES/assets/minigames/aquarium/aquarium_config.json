@@ -1,0 +1,424 @@
+{
+  "schemaVersion": 2,
+  "featureId": "aquarium_minigame",
+  "tankLimit": 1,
+  "capacity": {
+    "fishLoadMax": 40,
+    "plantTotalMax": 15
+  },
+  "fish": [
+    {
+      "id": "neon_tetra",
+      "name": "ネオンテトラ",
+      "speciesMax": 20,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "rummy_nose_tetra",
+      "name": "ラミーノーズテトラ",
+      "speciesMax": 20,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "red_phantom_tetra",
+      "name": "レッドファントムテトラ",
+      "speciesMax": 18,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "african_lampeye",
+      "name": "アフリカンランプアイ",
+      "speciesMax": 20,
+      "loadPoint": 1,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "platy",
+      "name": "プラティ",
+      "speciesMax": 10,
+      "loadPoint": 2,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "black_molly",
+      "name": "ブラックモーリー",
+      "speciesMax": 10,
+      "loadPoint": 2,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "corydoras",
+      "name": "コリドラス",
+      "speciesMax": 8,
+      "loadPoint": 2,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "dwarf_gourami",
+      "name": "ドワーフグラミー",
+      "speciesMax": 4,
+      "loadPoint": 3,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "altum_angelfish",
+      "name": "アルタムエンゼルフィッシュ",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "discus_blue_diamond",
+      "name": "ディスカス・ブルーダイヤモンド",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "discus_red_map",
+      "name": "ディスカス・レッドマップ",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
+    },
+    {
+      "id": "axolotl",
+      "name": "ウーパールーパー",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
+    }
+  ],
+  "plants": [
+    {
+      "id": "anacharis",
+      "name": "アナカリス",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "amazon_sword",
+      "name": "アマゾンソード",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "microsorum",
+      "name": "ミクロソリウム",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "anubias_nana",
+      "name": "アヌビアス・ナナ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "willow_moss",
+      "name": "ウィローモス",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "vallisneria",
+      "name": "バリスネリア",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "cabomba",
+      "name": "カボンバ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "hygrophila",
+      "name": "ハイグロフィラ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "amazon_pennywort",
+      "name": "アマゾンチドメグサ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    },
+    {
+      "id": "cryptocoryne",
+      "name": "クリプトコリネ",
+      "speciesMax": 15,
+      "initialOwned": 0,
+      "initialInTank": 0,
+      "naturalPropagation": false
+    }
+  ],
+  "displayItems": [
+    {
+      "id": "tank",
+      "name": "水槽",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "hang_on_filter",
+      "name": "フィルター",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "heater",
+      "name": "ヒーター",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "light",
+      "name": "ライト",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "soil",
+      "name": "床砂",
+      "ownedMax": 1,
+      "installedMax": 1,
+      "required": true,
+      "initialOwned": 1,
+      "initialInstalled": 1,
+      "installationSelectable": false
+    },
+    {
+      "id": "wood_large_a",
+      "name": "流木 大 A",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_large_b",
+      "name": "流木 大 B",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_medium_a",
+      "name": "流木 中 A",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_medium_b",
+      "name": "流木 中 B",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_small_a",
+      "name": "流木 小 A",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "wood_small_b",
+      "name": "流木 小 B",
+      "ownedMax": 3,
+      "installedMax": 3,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "driftwood"
+    },
+    {
+      "id": "stone_a_large",
+      "name": "Stone type A 大",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_a_medium",
+      "name": "Stone type A 中",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_a_small",
+      "name": "Stone type A 小",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_b_large",
+      "name": "Stone type B 大",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_b_medium",
+      "name": "Stone type B 中",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_b_small",
+      "name": "Stone type B 小",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_c_large",
+      "name": "Stone type C 大",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_c_medium",
+      "name": "Stone type C 中",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    },
+    {
+      "id": "stone_c_small",
+      "name": "Stone type C 小",
+      "ownedMax": 5,
+      "installedMax": 5,
+      "required": false,
+      "initialOwned": 0,
+      "initialInstalled": 0,
+      "installationSelectable": true,
+      "family": "stone"
+    }
+  ],
+  "rules": {
+    "releaseCapacityImmediatelyOnDeathSaleOrRemoval": true,
+    "fishBreeding": {
+      "juvenilesCanMatureUntilLimits": true,
+      "noBirthWhenAnyApplicableLimitReached": true,
+      "deleteExistingOnOverLimit": false
+    },
+    "plantPropagation": false,
+    "purchaseAndRewardBlockedAtLimit": true,
+    "overLimitExistingItemsAreNotDeleted": true,
+    "messages": {
+      "fishSpeciesLimit": "この魚種の飼育数上限です",
+      "fishLoadLimit": "水槽の飼育負荷上限です",
+      "plantSpeciesLimit": "水草の飼育数上限です",
+      "plantTotalLimit": "水草全体の飼育数上限です",
+      "displayLimit": "この用品の所持数上限です"
+    }
+  }
+}

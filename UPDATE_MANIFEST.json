@@ -1,0 +1,201 @@
+{
+  "repository": "cadgosho-dot/jewelrygame",
+  "branch": "main",
+  "baseVersion": "0.10.948",
+  "baseCommit": "c3a8704233989fe6858122d60be5083fa7f34c52",
+  "targetVersion": "0.10.949",
+  "files": [
+    {
+      "path": "ASSETS.md",
+      "bytes": 156703,
+      "sha256": "ef4d26b663341a5e39279510043d6f761dbfeebf367bb95b2bacb8237ffcd181",
+      "previousSha256": "9be17fed5f6d0121544d949b45edd8d6f5731290c68102148c21d7b953729e45"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 361601,
+      "sha256": "a63235edd9c8163c23b061da6bfe1b70a1145ffab1e3fc063caef302df4e61e6",
+      "previousSha256": "15c703a876acab9d348a23bd965fdadd00e9d0d1c847b691531c1f46cb358a58"
+    },
+    {
+      "path": "EVENT_PROBABILITY_LIST.md",
+      "bytes": 5884,
+      "sha256": "f3f2d49509c7cfa8ac6671656b05453e365a2408843d4f5acea631739120cb8c",
+      "previousSha256": "02e495eaa3938ec626e7d2b3ab4741ba456a16ec754e4adb3f45e6ebfe87b354"
+    },
+    {
+      "path": "GAME_RULES.md",
+      "bytes": 9658,
+      "sha256": "36391d99f5b1178675831e5b713796f753d3feaa1e37b1a41f2b4b59d81878be",
+      "previousSha256": "bbdb1b813ae103b01e9ec122b8f9c08d53f0d9b269b582dd9c327eca339c2fb9"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5543,
+      "sha256": "b8c7a45ec6e5f8626cfc8f772da7f4b1468d65e0abf8b2ca6383571f5e387360",
+      "previousSha256": "2fc3815df656d56dd8078c3f962dcd149bb511c5ce96ec1ae900f305641fb698"
+    },
+    {
+      "path": "TODO.md",
+      "bytes": 3503,
+      "sha256": "8047d571902551da66b826902b92befd1e7c9645a6ae1eec1024d48295cd55ff",
+      "previousSha256": "b65c4ad0deaa6383c482f22141d565586492f07bf2a1833843b478dbebead611"
+    },
+    {
+      "path": "VERSION",
+      "bytes": 9,
+      "sha256": "0af867bf8d139d039e8677fdf014d564362f09f8924fe94295d563a15d1fabbc",
+      "previousSha256": "b46d9d7befba4a5d6865ce97f80722e84c3f8db0d3f8f57f760da12656e6f98f"
+    },
+    {
+      "path": "assets/images/tropical-shop/fish-axolotl.png",
+      "bytes": 997722,
+      "sha256": "e778329b9377f89612cf876ece67c29d47ecee146f19681e85b569c1428b6218",
+      "previousSha256": null
+    },
+    {
+      "path": "assets/minigames/aquarium/aquarium_config.json",
+      "bytes": 10038,
+      "sha256": "0d4646d66626905a557ab1a34786d834ef9bbc53f301dd1bcaec18cbb39f903c",
+      "previousSha256": "0cffdd0693ce953b401c95c4baddc215a3c19728c36af70be1de5d52ea38ede9"
+    },
+    {
+      "path": "assets/minigames/aquarium/aquarium_initial_state.json",
+      "bytes": 3341,
+      "sha256": "2cc2c9fe0a89038fe1058aa64c38e2ae37776351a8bde5063f6277e28c5c5056",
+      "previousSha256": "81dc2cc2ffd00c83a013f2084138b05a22452b11814ea1283184855b5d55b9f6"
+    },
+    {
+      "path": "assets/minigames/aquarium/index.html",
+      "bytes": 5948656,
+      "sha256": "1aedb29aeb8f9566021aa096b2df3a569a2b94594a0a21be01839bdaaf2be333",
+      "previousSha256": "d84bded92a962373edf91f5a1e7a2bc9a39853f9a892f2ab4cd436dad440d932"
+    },
+    {
+      "path": "auth-cache-recovery.js",
+      "bytes": 1163,
+      "sha256": "7a236e3f08ad55ffce0b8593604b08ec51a4c5ef7cde634d85e63123cf929441",
+      "previousSha256": "efa7d2721f0537bb86c3eeb3aa1df2b9f1f8bae2bf6b19a8c4c170b3329d74fa"
+    },
+    {
+      "path": "auth.html",
+      "bytes": 5024,
+      "sha256": "c69f2b8edb96f9e3b46a232dc3f123cfed16f936cddb8864ec290b4787be2414",
+      "previousSha256": "3f55de8ecb52e6021774fa841b98926a5caa3366bf951c96e5078ad59446ffa6"
+    },
+    {
+      "path": "docs/archive/asset-manifests/TOOL_IMAGE_INTAKE_MANIFEST_v0.10.949.json",
+      "bytes": 565,
+      "sha256": "287a33d9c5732cc11999c01e24e32a862a89b7d89e582b1bdbc6f032fab815a2",
+      "previousSha256": null
+    },
+    {
+      "path": "game.html",
+      "bytes": 21003,
+      "sha256": "39c25af5d8eb547d41148fb5928f3cce4d8f4d4faaa9956b4c4d4486ca317d7a",
+      "previousSha256": "ff0b603b480b4752f9b7d76b379c5744dce2a6c376e9e880fc0249482150391b"
+    },
+    {
+      "path": "hosting-origin-guard.js",
+      "bytes": 9619,
+      "sha256": "d4d10929735e4aca6d7cb90650668f77e3ea8023761c989c58edafcbeda6e630",
+      "previousSha256": "5174da2320eacb56502bb1879155ce3d182101193a1e89cbe0c303cbe7fd79fb"
+    },
+    {
+      "path": "index.html",
+      "bytes": 7341,
+      "sha256": "0b2fceedc812e6d49dabb4ae6567884891fb17d53032cd616c47017810daa753",
+      "previousSha256": "57249a596d81c8a3698a545504f19394de79dc9fe9d5bc10092a36b74f4ae504"
+    },
+    {
+      "path": "js/app.js",
+      "bytes": 1410101,
+      "sha256": "a914a9c4321b1502bb2fd5a14ebe89971c7577a59f702505fa8fced02375ac95",
+      "previousSha256": "0038a4560a0c960cc14b8a3409dd83cbd1868e294674c2cefb77b75ed778b9a0"
+    },
+    {
+      "path": "js/aquarium/axolotl.js",
+      "bytes": 3484,
+      "sha256": "0d1dda3df9157c89cec0d73b65cb16dc3e9abba2c45b6ce5c812d45bb68d246a",
+      "previousSha256": null
+    },
+    {
+      "path": "js/audio.js",
+      "bytes": 25464,
+      "sha256": "e0eb8950bf82a6b3f9000be97370c364d81d9fffd912e82332385951e426c745",
+      "previousSha256": "91b02147e4772e41498d36174d6786396d48b1845de03d5dbef9b5b5d3bf3a79"
+    },
+    {
+      "path": "js/event-bootstrap.js",
+      "bytes": 216,
+      "sha256": "a3ef94a78628e28951350056d02cf58c8697b343385a972f6ed24c44d83cf7a5",
+      "previousSha256": "93803ecadba76833822b34360000d063fbc99030336a2a698a1aaa433741d47c"
+    },
+    {
+      "path": "js/finance/home-property-controller.js",
+      "bytes": 8994,
+      "sha256": "cda8d26a67da1b5bc5f6a2812363f6d7e12ed0369a269c000be5ba027a508245",
+      "previousSha256": "70e2232acf3c9d7d70251b5a0c17279fc77fad601d3b58b26a06223f2ea5fcb9"
+    },
+    {
+      "path": "js/firebase-service.js",
+      "bytes": 59765,
+      "sha256": "3a3b96960a5574caa9ada3dee9bdb34f5eadf569f0356e68ee34618e2674c787",
+      "previousSha256": "4d4e645f02263de8c779a0a8113557ca61c220a5a15cbb5546cbe872f153338a"
+    },
+    {
+      "path": "js/game-data-core.js",
+      "bytes": 699801,
+      "sha256": "8d9fcac298d8be50dd60b133bfbc3adf0fa926d1fd9b448f8575cab43f57a5a4",
+      "previousSha256": "de44b028e11c1d83a2cb9e365cfc3be65f22d34358994e558cc1e5edb180fca9"
+    },
+    {
+      "path": "js/game-data.js",
+      "bytes": 12592,
+      "sha256": "8ec911e4cd13fcad09d912935c8ed2e50bfb02df79abbfffa57a2e9eac319671",
+      "previousSha256": "0afdaa04cf85ecd6733a64c05f8f102a51f5dcc702bbef2a4ab0298cbd32e2c2"
+    },
+    {
+      "path": "js/memories-backgrounds.js",
+      "bytes": 223,
+      "sha256": "84d95f56fd7177ecca92cabede113099e02f34b8d1b613fe312b871bb3f8d70e",
+      "previousSha256": "641c339ad46229e96acd4d2ce826585aa9b6521b662638cc9c06c9a3473473a2"
+    },
+    {
+      "path": "js/memories-screen.js",
+      "bytes": 21166,
+      "sha256": "2bdf43a3ae77ed6d39c1f40aee53f39cdeca39a2ea6012cb437575c5b7dd2dbf",
+      "previousSha256": "813c1eb682a9cb2e4c7f0b63b627b96c89d44e901c1c9e905a9d2cfc6c74bc7c"
+    },
+    {
+      "path": "js/wolf-boy-ring-event.js",
+      "bytes": 22457,
+      "sha256": "5af488f93640489a7cc27f99f091426528246b1f4b1ea64cc0b48928dea34823",
+      "previousSha256": "4010113c736086711989e08ce7e26881b7732b36d23a65d617c4430b8cd0f432"
+    },
+    {
+      "path": "js/wolf-mother-butler-event.js",
+      "bytes": 14792,
+      "sha256": "95635093ee5bffb6b5a93453269ac628e07dc9f8900d73135f29c543d4541d03",
+      "previousSha256": "3b57f167efd815c73f64bbbc9ad0d31779c714bf3c9d9de6d0da62bd06b5e0bd"
+    },
+    {
+      "path": "scripts/check-current.py",
+      "bytes": 16933,
+      "sha256": "82aaa5630d0e590e3dbcf5edea6456a6b32bcac5a6e94e9d270d1a894d4f0b75",
+      "previousSha256": "7e5b51068506b7d508beac5ba06c434d5140ec6c005f1a79546a2370f1455bef"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 13755,
+      "sha256": "ea1d007f3bb2676f17faa46a3fbb5058d3bf5f701efbc54a65fc02efa9babd39",
+      "previousSha256": "8bb81e847748155aebfcab6d119c3fcf5faa08aaf0b6772b9259f9db1773022d"
+    },
+    {
+      "path": "tools/test-aquarium-axolotl.mjs",
+      "bytes": 6889,
+      "sha256": "dcac349aa166ccb9773e6be920c83d4f76e2cd3026483fb1a006a89b6bc2e46b",
+      "previousSha256": null
+    }
+  ]
+}

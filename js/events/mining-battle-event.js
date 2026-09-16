@@ -4,8 +4,8 @@
 export const MINING_BATTLE_TRIGGER_DENOMINATOR = 30;
 
 export const MINING_BATTLE_ENEMIES = Object.freeze([
-  Object.freeze({ id: 'mole', name: 'モグラ' }),
-  Object.freeze({ id: 'bat', name: 'コウモリ' }),
+  Object.freeze({ id: 'mole', name: 'モグラ', image: 'assets/minigames/mining-battle/mole.png' }),
+  Object.freeze({ id: 'bat', name: 'コウモリ', image: 'assets/minigames/mining-battle/bat.png' }),
 ]);
 
 // 携帯確認用HTMLとmain既存アセットの内容一致を確認済みの再利用先。

@@ -1,0 +1,41 @@
+name: mining-battle-apply-temp
+on:
+  push:
+    branches: [work/mining-battle-final-20260916]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/mining-battle-final-20260916
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply patch once
+        run: |
+          if grep -q "maybeStartMiningBattleEvent" js/app.js; then
+            echo "patch already applied"
+          else
+            python .tmp/mining-battle-apply.py
+          fi
+      - name: Run mining battle tests
+        run: |
+          node tools/test-mining-battle-event.mjs
+          node tools/test-mining-battle-integration.mjs
+      - name: Commit branch changes
+        run: |
+          if git diff --quiet; then
+            echo "no changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/app.js js/events/mining-battle-event.js assets/minigames/retro-battle/index.html tools/test-mining-battle-integration.mjs
+          git commit -m "採掘戦闘を承認済みUIで本体接続"
+          git push origin HEAD:work/mining-battle-final-20260916

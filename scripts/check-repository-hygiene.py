@@ -47,7 +47,7 @@ for path in required_archive_dirs:
 expected_counts = {
     'docs/archive/verification-code/scripts': 43,
     'docs/archive/verification-code/tools': 30,
-    'docs/archive/asset-manifests': 5,
+    'docs/archive/asset-manifests': 6,
     'docs/archive/legacy-markers': 1,
 }
 for rel, expected in expected_counts.items():

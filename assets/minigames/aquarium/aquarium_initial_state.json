@@ -61,6 +61,11 @@
       "owned": 0,
       "inTank": 0,
       "juveniles": 0
+    },
+    "axolotl": {
+      "owned": 0,
+      "inTank": 0,
+      "juveniles": 0
     }
   },
   "plants": {

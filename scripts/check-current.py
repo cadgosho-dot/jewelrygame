@@ -128,6 +128,7 @@ CHECKS = [
     ('起動診断', [sys.executable, str(ROOT / 'scripts/check-startup-diagnostics.py')]),
     ('起動クラウド無応答復旧', [sys.executable, str(ROOT / 'scripts/check-startup-cloud-timeout.py')]),
     ('起動クラウド無応答・実ブラウザ', [sys.executable, str(ROOT / 'scripts/check-startup-cloud-timeout-browser.py')]),
+    ('ウーパールーパー購入・保存・床面表示', ['node', str(ROOT / 'tools/test-aquarium-axolotl.mjs')]),
     ('水槽正本・再設置', [sys.executable, str(ROOT / 'scripts/check-aquarium-runtime.py')]),
     ('水槽死亡率・おやつ発生率', [sys.executable, str(ROOT / 'scripts/check-aquarium-mortality-rate.py')]),
     ('水槽縦画面中央配置', [sys.executable, str(ROOT / 'scripts/check-aquarium-portrait-center.py')]),

@@ -94,6 +94,14 @@
       "loadPoint": 6,
       "initialOwned": 0,
       "initialInTank": 0
+    },
+    {
+      "id": "axolotl",
+      "name": "ウーパールーパー",
+      "speciesMax": 4,
+      "loadPoint": 6,
+      "initialOwned": 0,
+      "initialInTank": 0
     }
   ],
   "plants": [

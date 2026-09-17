@@ -13,7 +13,7 @@ export const MINING_BATTLE_REUSED_ASSETS = Object.freeze({
   battleFrame: 'assets/minigames/retro-battle/index.html',
   landscapeBackground: 'assets/images/mining.webp',
   portraitBackground: 'assets/images/mining-portrait.webp',
-  pickaxe: 'assets/images/equipment/basic-pickaxe.png',
+  pickaxe: 'assets/minigames/mining-battle/pickaxe.png',
   attackSfx: 'assets/audio/sfx-dig.ogg',
 });
 

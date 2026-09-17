@@ -16,7 +16,7 @@ assert.match(app, /addFinance\('御徒町・戦闘ミニゲーム勝利'/);
 assert.match(battle, /body\.mining-battle-mode \.bg-photo/);
 assert.match(battle, /\.\.\/\.\.\/images\/mining\.webp/);
 assert.match(battle, /\.\.\/\.\.\/images\/mining-portrait\.webp/);
-assert.match(battle, /\.\.\/\.\.\/images\/equipment\/basic-pickaxe\.png/);
+assert.match(battle, /\.\.\/mining-battle\/pickaxe\.png/);
 assert.match(battle, /\.\.\/\.\.\/audio\/sfx-dig\.ogg/);
 assert.match(battle, /startOptions\.attackMode === \"mining\"/);
 assert.match(battle, /duration:320,easing:\"ease-out\",fill:\"both\"/);

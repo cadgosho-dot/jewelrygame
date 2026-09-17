@@ -164,8 +164,10 @@ function installNewEventCharacterPositionLock() {
   syncCharacterLock();
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', installNewEventCharacterPositionLock, { once: true });
-} else {
-  installNewEventCharacterPositionLock();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installNewEventCharacterPositionLock, { once: true });
+  } else {
+    installNewEventCharacterPositionLock();
+  }
 }

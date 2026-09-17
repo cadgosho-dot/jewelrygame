@@ -26,9 +26,17 @@ def require_exact_assets() -> None:
             raise SystemExit(f'approved asset hash mismatch: {rel}: {actual}')
 
 
+def require_contains(rel: str, needle: str) -> None:
+    text = (ROOT / rel).read_text(encoding='utf-8')
+    if needle not in text:
+        raise SystemExit(f'expected finalized reference missing in {rel}: {needle!r}')
+
+
 def replace_once(rel: str, old: str, new: str) -> None:
     path = ROOT / rel
     text = path.read_text(encoding='utf-8')
+    if new in text and old not in text:
+        return
     count = text.count(old)
     if count != 1:
         raise SystemExit(f'expected exactly one replacement in {rel}: {old!r}, found {count}')
@@ -37,20 +45,18 @@ def replace_once(rel: str, old: str, new: str) -> None:
 
 def main() -> None:
     require_exact_assets()
-    replace_once(
+    require_contains(
         'js/events/mining-battle-event.js',
-        "pickaxe: 'assets/images/equipment/basic-pickaxe.png'",
         "pickaxe: 'assets/minigames/mining-battle/pickaxe.png'",
+    )
+    require_contains(
+        'tools/test-mining-battle-event.mjs',
+        "assert.equal(MINING_BATTLE_REUSED_ASSETS.pickaxe, 'assets/minigames/mining-battle/pickaxe.png');",
     )
     replace_once(
         'assets/minigames/retro-battle/index.html',
         'background-image:url("../../images/equipment/basic-pickaxe.png")',
         'background-image:url("../mining-battle/pickaxe.png")',
-    )
-    replace_once(
-        'tools/test-mining-battle-event.mjs',
-        "assert.equal(MINING_BATTLE_REUSED_ASSETS.pickaxe, 'assets/images/equipment/basic-pickaxe.png');",
-        "assert.equal(MINING_BATTLE_REUSED_ASSETS.pickaxe, 'assets/minigames/mining-battle/pickaxe.png');",
     )
     replace_once(
         'tools/test-mining-battle-integration.mjs',

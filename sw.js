@@ -37,8 +37,18 @@ const CORE_SHELL = [
   './js/japan-holidays.js', './js/firebase-config.js',
   './js/google-auth-bridge.js?v=0.10.949', './js/security-config.js', './js/firebase-service.js?v=0.10.949', './js/local-save-storage.js?v=0.10.949',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
-  // Optional meal, seasonal, aquarium and event artwork/audio are runtime-cached on first use.
-  // Keeping them out of CORE_SHELL avoids downloading unrelated assets during Service Worker install.
+  // Seasonal main-screen backgrounds remain precached so seasonal switching keeps its offline behavior.
+  './assets/images/main-menu-new-year.webp', './assets/images/main-menu-new-year-portrait.webp',
+  './assets/images/main-menu-spring.webp', './assets/images/main-menu-spring-portrait.webp',
+  './assets/images/main-menu-tanabata.webp', './assets/images/main-menu-tanabata-portrait.webp',
+  './assets/images/main-menu-obon.webp', './assets/images/main-menu-obon-portrait.webp',
+  './assets/images/main-menu-late-summer.webp', './assets/images/main-menu-late-summer-portrait.webp',
+  './assets/images/main-menu-halloween.webp', './assets/images/main-menu-halloween-portrait.webp',
+  './assets/images/main-menu-late-autumn.webp', './assets/images/main-menu-late-autumn-portrait.webp',
+  './assets/images/main-menu-christmas.webp', './assets/images/main-menu-christmas-portrait.webp',
+  './assets/images/main-menu-snow.webp', './assets/images/main-menu-snow-portrait.webp',
+  // Optional meal, aquarium and event artwork/audio are runtime-cached on first use.
+  // Keeping those out of CORE_SHELL avoids downloading unrelated assets during Service Worker install.
 ];
 
 async function trimCache(cacheName, maxEntries = 320) {

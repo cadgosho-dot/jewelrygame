@@ -53,15 +53,14 @@ def main() -> None:
         'tools/test-mining-battle-event.mjs',
         "assert.equal(MINING_BATTLE_REUSED_ASSETS.pickaxe, 'assets/minigames/mining-battle/pickaxe.png');",
     )
+    require_contains(
+        'tools/test-mining-battle-integration.mjs',
+        r"assert.match(battle, /\.\.\/mining-battle\/pickaxe\.png/);",
+    )
     replace_once(
         'assets/minigames/retro-battle/index.html',
         'background-image:url("../../images/equipment/basic-pickaxe.png")',
         'background-image:url("../mining-battle/pickaxe.png")',
-    )
-    replace_once(
-        'tools/test-mining-battle-integration.mjs',
-        r"assert.match(battle, /\.\.\/\.\.\/images\/equipment\/basic-pickaxe\.png/);",
-        r"assert.match(battle, /\.\.\/mining-battle\/pickaxe\.png/);",
     )
     print('approved mining battle assets verified and references finalized')
 

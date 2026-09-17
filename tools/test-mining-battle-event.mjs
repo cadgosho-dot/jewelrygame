@@ -25,7 +25,7 @@ assert.equal(rotation.next().id, 'mole');
 assert.equal(MINING_BATTLE_REUSED_ASSETS.battleFrame, 'assets/minigames/retro-battle/index.html');
 assert.equal(MINING_BATTLE_REUSED_ASSETS.landscapeBackground, 'assets/images/mining.webp');
 assert.equal(MINING_BATTLE_REUSED_ASSETS.portraitBackground, 'assets/images/mining-portrait.webp');
-assert.equal(MINING_BATTLE_REUSED_ASSETS.pickaxe, 'assets/images/equipment/basic-pickaxe.png');
+assert.equal(MINING_BATTLE_REUSED_ASSETS.pickaxe, 'assets/minigames/mining-battle/pickaxe.png');
 assert.equal(MINING_BATTLE_REUSED_ASSETS.attackSfx, 'assets/audio/sfx-dig.ogg');
 assert.equal(MINING_PICKAXE_ANIMATION.duration, 320);
 assert.equal(MINING_PICKAXE_ANIMATION.easing, 'ease-out');

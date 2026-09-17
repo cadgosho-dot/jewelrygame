@@ -8,6 +8,9 @@ TEST = (ROOT / 'tools/test-tropical-shop-purchase-regression.mjs').read_text(enc
 CURRENT = (ROOT / 'scripts/check-current.py').read_text(encoding='utf-8')
 SYNC = ROOT / '.github/workflows/phase19-sync-v010908.yml'
 SYNC_TEXT = SYNC.read_text(encoding='utf-8') if SYNC.exists() else ''
+MENU_PATH = ROOT / 'js/aquarium/tropical-shop-menu-navigation.js'
+MENU = MENU_PATH.read_text(encoding='utf-8') if MENU_PATH.exists() else ''
+HELPER = (ROOT / 'js/events/event-state-helpers.js').read_text(encoding='utf-8')
 
 
 def function_body(signature):
@@ -62,6 +65,14 @@ checks = [
     ('vibration retained', 'vibrate(28);' in purchase),
     ('render retained', 'render();' in purchase),
     ('no time cost introduced', all(token not in purchase for token in ('spendHours(', 'advanceTime(', 'canSpendHours(', 'canSpendMinutes('))),
+    ('shop category menu module exists', MENU_PATH.exists()),
+    ('shop enters menu mode first', "let viewMode = 'menu';" in MENU and "viewMode = 'menu';" in MENU),
+    ('menu hides product list', "productGrid.hidden = viewMode === 'menu';" in MENU),
+    ('selection screen hides category menu', "tabs.hidden = viewMode !== 'menu';" in MENU),
+    ('category tap opens selection screen', "viewMode = 'category';" in MENU and "[data-action=\"tropical-shop-tab\"]" in MENU),
+    ('back from selection returns category menu', "[data-action=\"back\"]" in MENU and 'stopImmediatePropagation' in MENU),
+    ('shop exit resets menu mode', 'wasShopActive' in MENU and "viewMode = 'menu';" in MENU),
+    ('oyatsu event bootstrap loads shop navigation', "import '../aquarium/tropical-shop-menu-navigation.js';" in HELPER),
     ('dynamic harness extracts max quantity', "extractFunction('tropicalShopMaxQuantity')" in TEST),
     ('dynamic harness extracts purchase', "extractFunction('purchaseTropicalShopItem')" in TEST),
     ('fish max regression case', 'testMaxQuantityProtectsFishCapacityLoadAndAffordability' in TEST),
@@ -84,5 +95,5 @@ if failed:
 proc = subprocess.run(['node', str(ROOT / 'tools/test-tropical-shop-purchase-regression.mjs')], cwd=ROOT, text=True)
 if proc.returncode:
     raise SystemExit(proc.returncode)
-print('熱帯魚屋購入の魚種上限・水槽負荷・水草総数・ディスプレイ同系統上限・所持金・数量再計算・水槽反映・収支・通知・保存を固定しました。')
+print('熱帯魚屋の入口カテゴリメニューと各商品選択画面の分離、および購入処理の既存保護を固定しました。')
 print('TROPICAL SHOP PURCHASE PROTECTION: PASS')

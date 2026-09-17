@@ -34,12 +34,10 @@ const CORE_SHELL = [
   './js/ui/install-status-text.js?v=0.10.949',
   './js/ui/metal-weight-label.js?v=0.10.949',
   './js/aquarium/axolotl.js',
-  './assets/images/tropical-shop/fish-axolotl.png',
   './js/japan-holidays.js', './js/firebase-config.js',
   './js/google-auth-bridge.js?v=0.10.949', './js/security-config.js', './js/firebase-service.js?v=0.10.949', './js/local-save-storage.js?v=0.10.949',
   './assets/images/okachimachi-night.webp', './assets/images/okachimachi-night-portrait.webp',
-  './assets/images/meal-after18-v727.webp', './assets/images/meal-after18-portrait-v727.webp',
-  // v0.10.759: seasonal main-screen backgrounds (landscape + portrait).
+  // Seasonal main-screen backgrounds remain precached so seasonal switching keeps its offline behavior.
   './assets/images/main-menu-new-year.webp', './assets/images/main-menu-new-year-portrait.webp',
   './assets/images/main-menu-spring.webp', './assets/images/main-menu-spring-portrait.webp',
   './assets/images/main-menu-tanabata.webp', './assets/images/main-menu-tanabata-portrait.webp',
@@ -49,9 +47,8 @@ const CORE_SHELL = [
   './assets/images/main-menu-late-autumn.webp', './assets/images/main-menu-late-autumn-portrait.webp',
   './assets/images/main-menu-christmas.webp', './assets/images/main-menu-christmas-portrait.webp',
   './assets/images/main-menu-snow.webp', './assets/images/main-menu-snow-portrait.webp',
-  './assets/images/events/yowamushi.png', './assets/images/events/one-love.png', './assets/images/loose/rosequartz/oval-cabochon.png',
-  './assets/images/events/hospital-room-landscape.jpg', './assets/images/events/hospital-room-portrait.jpg', './assets/audio/amb-hospital-clock.wav',
-  // v0.10.666: large event images and quiz data are runtime-cached on first use instead of being downloaded during every SW install.
+  // Optional meal, aquarium and event artwork/audio are runtime-cached on first use.
+  // Keeping those out of CORE_SHELL avoids downloading unrelated assets during Service Worker install.
 ];
 
 async function trimCache(cacheName, maxEntries = 320) {

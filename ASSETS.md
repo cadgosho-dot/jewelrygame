@@ -21,7 +21,7 @@
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **471** / 直接参照未検出: **120**
+- 静的な直接参照を検出: **473** / 直接参照未検出: **118**
 
 ## 重要な由来記録
 
@@ -535,8 +535,8 @@
 | assets/images/tools/torch.png | 画像 | 1445×484 | 横 | あり | `js/game-data-core.js:3474`<br>`scripts/FILES/js/game-data-core.js:3474` | 受領アセット（TOOL_IMAGE_INTAKE_MANIFEST_v0.10.484.json, source=1000019140.png） | 変更禁止（原本由来。明示許可時のみ加工） | 18f246d71bb72b4da82a7ae436be12684f076468f8da5838df9068cf7bc039f2 |
 | assets/images/tools/ultrasonic-cleaner.png | 画像 | 1276×1185 | 横 | あり | `js/game-data-core.js:3941`<br>`scripts/FILES/js/game-data-core.js:3941` | 受領アセット（TOOL_IMAGE_INTAKE_MANIFEST_v0.10.484.json, source=1000019137.png） | 変更禁止（原本由来。明示許可時のみ加工） | 35ca8a1c8debfd11065332d1738cda7b290d1946db970560806939752820929a |
 | assets/images/tools/wood-block.png | 画像 | 728×1440 | 縦 | あり | `js/game-data-core.js:3862`<br>`scripts/FILES/js/game-data-core.js:3862` | 受領アセット（TOOL_IMAGE_INTAKE_MANIFEST_v0.10.484.json, source=1000019168.png） | 変更禁止（原本由来。明示許可時のみ加工） | 4a599ba5e6c3232db80eb85b590500a18f6b84c0d58f2f1ed15e1a0ae8aca4ce |
-| assets/images/tropical-fish-shop-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 06c12c0c6459b14de944f22a08e01b2638a4d0668c387a033908c001e841dcd0 |
-| assets/images/tropical-fish-shop.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | d2fe5c3354d5af395c34ddd7eb35616b495a1fb79c666f992933c1ee522f35d5 |
+| assets/images/tropical-fish-shop-portrait.webp | 画像 | 864×1536 | 縦 | なし | `oyatsu-daisuki-approved-ui.css:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 06c12c0c6459b14de944f22a08e01b2638a4d0668c387a033908c001e841dcd0 |
+| assets/images/tropical-fish-shop.webp | 画像 | 1536×691 | 横 | なし | `oyatsu-daisuki-approved-ui.css:5` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d2fe5c3354d5af395c34ddd7eb35616b495a1fb79c666f992933c1ee522f35d5 |
 | assets/images/tropical-shop/fish-african-lampeye.png | 画像 | 1173×447 | 横 | あり | `js/app.js:458 (basename)`<br>`scripts/FILES/js/app.js:458 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e85b80a56202830bfc204533c1beacdbf855b9068dabd772307ebdf390985a57 |
 | assets/images/tropical-shop/fish-altum-angelfish.png | 画像 | 613×1005 | 縦 | あり | `js/app.js:458 (basename)`<br>`scripts/FILES/js/app.js:458 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | dcf3295642568276a42c5b908d6389d44ea90feab0f7f88c62aeaaf4d75c9052 |
 | assets/images/tropical-shop/fish-axolotl.png | 画像 | 1774×887 | 横 | あり | `UPDATE_MANIFEST.json:51`<br>`scripts/FILES/docs/archive/asset-manifests/TOOL_IMAGE_INTAKE_MANIFEST_v0.10.949.json:5`<br>`scripts/FILES/sw.js:37` | 受領アセット（TOOL_IMAGE_INTAKE_MANIFEST_v0.10.949.json, source=1000022846.png） | 変更禁止（原本由来。明示許可時のみ加工） | e778329b9377f89612cf876ece67c29d47ecee146f19681e85b569c1428b6218 |

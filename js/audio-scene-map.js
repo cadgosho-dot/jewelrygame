@@ -209,8 +209,7 @@ export const AUDIO_SCENE_DEFINITIONS = Object.freeze({
   }),
   whiteBunnyTonkatsuShop: frozenScene({
     bgm: `${AUDIO_DIR}/bgm-white-bunny-tonkatsu.mp3`,
-    ambient: { type: 'file', url: `${KAITENZUSHI_AUDIO_DIR}/izakaya_ambient.ogg` },
-    bgmScale: 0.90, ambientScale: 0.82,
+    bgmScale: 0.90, ambientScale: 0,
   }),
   kaitenzushi: frozenScene({
     bgm: `${KAITENZUSHI_AUDIO_DIR}/enka_bgm.ogg`,

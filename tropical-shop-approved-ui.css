@@ -1,0 +1,531 @@
+/* JEWELRY×JEWELRY — approved tropical-fish-shop UI lock.
+   Based on the user-approved mobile confirmation v26. */
+
+body[data-screen="tropicalFishShop"] #root,
+body[data-screen="tropicalFishShop"] .screen-shell,
+body[data-screen="tropicalFishShop"] .tropical-fish-shop-content{
+  transform:none!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-shop-status,
+body[data-screen="tropicalFishShop"] .tropical-shop-swipe-hint,
+body[data-screen="tropicalFishShop"] .jxj-tropical-approved-hidden{
+  display:none!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-shop-controls{
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-shop-tabs{
+  display:grid!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-shop-controls[hidden],
+body[data-screen="tropicalFishShop"] .tropical-category-screen[hidden]{
+  display:none!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-shop-tabs button.tropical-transparent-tab{
+  all:unset!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  position:relative!important;
+  z-index:5!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  border:1.25px solid rgba(231,189,103,.75)!important;
+  border-radius:16px!important;
+  color:#fff6e1!important;
+  text-align:center!important;
+  font-weight:800!important;
+  letter-spacing:.02em!important;
+  line-height:1.2!important;
+  background:transparent!important;
+  background-color:rgba(0,0,0,0)!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  cursor:pointer!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-shop-tabs button.tropical-transparent-tab:is(:hover,:focus,:focus-visible,:active){
+  background:transparent!important;
+  background-color:rgba(0,0,0,0)!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  outline:none!important;
+}
+body[data-screen="tropicalFishShop"] .tropical-shop-tabs button.tropical-transparent-tab::before,
+body[data-screen="tropicalFishShop"] .tropical-shop-tabs button.tropical-transparent-tab::after{
+  content:none!important;
+  display:none!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-category-screen{
+  position:absolute!important;
+  inset:0!important;
+  z-index:2!important;
+  width:auto!important;
+  height:auto!important;
+  margin:0!important;
+  padding:12px 14px max(24px,env(safe-area-inset-bottom))!important;
+  box-sizing:border-box!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  transform:none!important;
+  background:transparent!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-category-screen .tropical-product-grid{
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  transform:none!important;
+  overflow:visible!important;
+}
+
+body[data-screen="tropicalFishShop"] .tropical-category-screen .tropical-product-card{
+  position:relative!important;
+  inset:auto!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  order:initial!important;
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+  transform:none!important;
+  margin:0!important;
+  min-width:0!important;
+  max-width:none!important;
+}
+
+body[data-screen="tropicalFishShop"]:not(.jxj-tropical-shop-approved) .tropical-product-grid{
+  visibility:hidden!important;
+}
+
+body[data-screen="tropicalFishShop"] .screen-content.tropical-fish-shop-content{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  top:var(--jwj-tropical-content-top,190px)!important;
+  bottom:0!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  background:transparent!important;
+  z-index:2!important;
+}
+
+body[data-screen="tropicalFishShop"] .game-header{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  z-index:800!important;
+  height:auto!important;
+  min-height:0!important;
+  transform:none!important;
+}
+body[data-screen="tropicalFishShop"] .game-header .top-bar-one,
+body[data-screen="tropicalFishShop"] .game-header .top-bar-two{
+  position:relative!important;
+  top:auto!important;
+  left:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  transform:none!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+body[data-screen="tropicalFishShop"] .screen-header-spacer{
+  display:none!important;
+}
+
+@media (orientation:portrait){
+  html[data-device-class="phone"] body[data-screen="tropicalFishShop"] #root{
+    height:100dvh!important;
+    min-height:100dvh!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .screen-shell{
+    position:relative!important;
+    width:100%!important;
+    height:100dvh!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    overflow:hidden!important;
+  }
+  html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .game-header{
+    position:relative!important;
+    inset:auto!important;
+    grid-row:1!important;
+    grid-column:1!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    margin:0!important;
+    transform:none!important;
+    z-index:800!important;
+  }
+  html[data-device-class="phone"] body[data-screen="tropicalFishShop"] .screen-content.tropical-fish-shop-content{
+    position:relative!important;
+    inset:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
+    grid-row:2!important;
+    grid-column:1!important;
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-category-screen{
+    position:absolute!important;
+    inset:0!important;
+    padding:10px 14px max(24px,env(safe-area-inset-bottom))!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-category-screen .tropical-product-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-flow:row!important;
+    grid-auto-rows:auto!important;
+    gap:12px!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-shop-tabs{
+    grid-template-columns:1fr!important;
+    gap:24px!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-transparent-tab{
+    min-height:84px!important;
+    padding:18px 12px!important;
+    font-size:18px!important;
+  }
+}
+
+@media (orientation:landscape){
+  body[data-screen="tropicalFishShop"] .tropical-category-screen .tropical-product-grid{
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    grid-auto-flow:row!important;
+    grid-auto-rows:auto!important;
+    gap:12px!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-shop-controls{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    margin:0!important;
+    padding:14px!important;
+    box-sizing:border-box!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    background:transparent!important;
+    pointer-events:none!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-shop-tabs{
+    width:100%!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:14px!important;
+    margin:0!important;
+    padding:0!important;
+    align-self:center!important;
+    pointer-events:auto!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-transparent-tab{
+    min-height:68px!important;
+    padding:14px 10px!important;
+    font-size:16px!important;
+  }
+}
+
+body[data-screen="tropicalFishShop"] .tropical-modal-backdrop{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  top:var(--jwj-tropical-content-top,190px)!important;
+  bottom:0!important;
+  z-index:901!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  padding:6px 14px 10px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  pointer-events:auto!important;
+  touch-action:pan-y!important;
+}
+
+@media (orientation:portrait){
+  body[data-screen="tropicalFishShop"] .tropical-modal{
+    position:relative!important;
+    width:calc(100vw - 24px)!important;
+    max-width:620px!important;
+    height:auto!important;
+    max-height:calc(100dvh - var(--jwj-tropical-content-top,190px) - 10px)!important;
+    margin:0 auto!important;
+    padding:42px 14px 18px!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto auto auto auto auto auto!important;
+    gap:10px!important;
+    align-items:stretch!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-close{
+    position:absolute!important;
+    top:8px!important;
+    right:8px!important;
+    left:auto!important;
+    bottom:auto!important;
+    z-index:10!important;
+    margin:0!important;
+    transform:none!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-imgbox{
+    position:relative!important;
+    inset:auto!important;
+    grid-column:1!important;
+    grid-row:1!important;
+    width:100%!important;
+    height:180px!important;
+    min-height:180px!important;
+    max-height:180px!important;
+    margin:0!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:hidden!important;
+    transform:none!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-imgbox img{
+    position:static!important;
+    inset:auto!important;
+    width:100%!important;
+    height:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    object-fit:contain!important;
+    object-position:center!important;
+    margin:0!important;
+    transform:none!important;
+    display:block!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal h2{
+    position:static!important;
+    inset:auto!important;
+    grid-column:1!important;
+    grid-row:2!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+    text-align:center!important;
+    font-size:26px!important;
+    line-height:1.2!important;
+    white-space:normal!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-total{
+    position:static!important;
+    inset:auto!important;
+    grid-column:1!important;
+    grid-row:3!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+    text-align:center!important;
+    font-size:22px!important;
+    line-height:1.25!important;
+    white-space:normal!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-qty-control{
+    position:static!important;
+    inset:auto!important;
+    grid-column:1!important;
+    grid-row:4!important;
+    width:100%!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+    display:grid!important;
+    grid-template-columns:1fr .8fr 1fr!important;
+    gap:10px!important;
+    align-items:center!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-qty-control button{
+    min-height:56px!important;
+    height:56px!important;
+    margin:0!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-qty-control output{
+    position:static!important;
+    inset:auto!important;
+    margin:0!important;
+    transform:none!important;
+    text-align:center!important;
+    font-size:32px!important;
+    line-height:1!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal > small{
+    position:static!important;
+    inset:auto!important;
+    grid-column:1!important;
+    grid-row:5!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+    text-align:center!important;
+    font-size:16px!important;
+    line-height:1.3!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal .primary-button{
+    position:static!important;
+    inset:auto!important;
+    grid-column:1!important;
+    grid-row:6!important;
+    width:100%!important;
+    min-height:54px!important;
+    margin:0!important;
+    transform:none!important;
+  }
+}
+
+@media (orientation:landscape){
+  body[data-screen="tropicalFishShop"] .tropical-modal{
+    position:relative!important;
+    width:min(760px,72vw)!important;
+    max-width:calc(100vw - 28px)!important;
+    height:auto!important;
+    max-height:calc(100dvh - var(--jwj-tropical-content-top,190px) - 10px)!important;
+    margin:0 auto!important;
+    padding:10px 16px 18px!important;
+    box-sizing:border-box!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    display:grid!important;
+    grid-template-columns:minmax(180px,40%) minmax(260px,1fr)!important;
+    grid-template-rows:auto auto auto auto auto!important;
+    column-gap:18px!important;
+    row-gap:6px!important;
+    align-items:center!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-close{
+    position:absolute!important;
+    top:8px!important;
+    right:8px!important;
+    z-index:4!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-imgbox{
+    grid-column:1!important;
+    grid-row:1 / 6!important;
+    width:100%!important;
+    height:min(40dvh,230px)!important;
+    min-height:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-imgbox img{
+    width:100%!important;
+    height:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    object-fit:contain!important;
+    display:block!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal h2{
+    grid-column:2!important;
+    grid-row:1!important;
+    margin:2px 48px 0 0!important;
+    font-size:clamp(18px,2.3vw,28px)!important;
+    line-height:1.1!important;
+    text-align:left!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal-total{
+    grid-column:2!important;
+    grid-row:2!important;
+    margin:0!important;
+    font-size:clamp(20px,2.7vw,32px)!important;
+    line-height:1.15!important;
+    text-align:left!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-qty-control{
+    grid-column:2!important;
+    grid-row:3!important;
+    width:100%!important;
+    margin:2px 0!important;
+    display:grid!important;
+    grid-template-columns:1fr .8fr 1fr!important;
+    gap:10px!important;
+    align-items:center!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-qty-control button{
+    min-height:48px!important;
+    height:48px!important;
+    margin:0!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-qty-control output{
+    font-size:clamp(26px,3vw,38px)!important;
+    line-height:1!important;
+    text-align:center!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal > small{
+    grid-column:2!important;
+    grid-row:4!important;
+    margin:0!important;
+    font-size:clamp(14px,1.6vw,20px)!important;
+    line-height:1.2!important;
+    text-align:center!important;
+  }
+  body[data-screen="tropicalFishShop"] .tropical-modal .primary-button{
+    grid-column:2!important;
+    grid-row:5!important;
+    width:100%!important;
+    min-height:46px!important;
+    margin:2px 0 10px!important;
+    font-size:clamp(16px,1.8vw,22px)!important;
+  }
+}

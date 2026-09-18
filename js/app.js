@@ -59,15 +59,7 @@ import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.951'
 import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.951';
 import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.951'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.951';
 import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.951';
-import {
-  WHITE_BUNNY_TONKATSU_ACTIVE_STAGES,
-  whiteBunnyTonkatsuEventState,
-  maybeStartWhiteBunnyTonkatsuEvent,
-  renderWhiteBunnyTonkatsuEvent,
-  scheduleWhiteBunnyTonkatsuTransition,
-  advanceWhiteBunnyTonkatsuEvent,
-  eatWhiteBunnyTonkatsuEvent,
-} from './events/white-bunny-tonkatsu-event.js?v=0.10.951';
+import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.951';
 
 
 
@@ -572,7 +564,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   cinemaVisitEvent: new Set(['invitation', 'playing']),
   apprenticeCinemaEvent: new Set(['intro1', 'intro2', 'intro3', 'playing', 'outro1', 'outro2']),
   whiteBunnyIceEvent: new Set(['intro1', 'intro2', 'intro3', 'intro4', 'choice', 'rudeReply', 'kindReply1', 'kindReply2']),
-  whiteBunnyTonkatsuEvent: new Set(WHITE_BUNNY_TONKATSU_ACTIVE_STAGES),
+  whiteBunnyTonkatsuEvent:new Set(W.WHITE_BUNNY_TONKATSU_ACTIVE_STAGES),
   clockTowerDonationEvent: new Set(['intro1', 'intro2', 'intro3']),
   mysteryChineseMealEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'eating', 'postMeal']),
   ridleyOkazakiSobaEvent: new Set(['intro1', 'intro2', 'intro3']),
@@ -602,7 +594,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   cinemaVisitEvent: { eventKey: 'cinemaVisitEvent', fallback: 'okachimachi' },
   apprenticeCinemaEvent: { eventKey: 'apprenticeCinemaEvent', fallback: 'okachimachi' },
   whiteBunnyIceEvent: { eventKey: 'whiteBunnyIceEvent', fallback: 'meal' },
-  whiteBunnyTonkatsuEvent: { eventKey: 'whiteBunnyTonkatsuEvent', fallback: 'meal' },
+  whiteBunnyTonkatsuEvent:{eventKey:'whiteBunnyTonkatsuEvent',fallback:'meal'},
   mysteryChineseMealEvent: { eventKey: 'mysteryChineseMealEvent', fallback: 'main' },
   ridleyOkazakiSobaEvent: { eventKey: 'ridleyOkazakiSobaEvent', fallback: 'meal' },
   emeraldCaptainKebabEvent: { eventKey: 'emeraldCaptainKebabEvent', fallback: 'meal' },
@@ -11994,7 +11986,7 @@ function audioFor(target) {
     apprenticeCinemaStage: target === 'apprenticeCinemaEvent' ? apprenticeCinemaEventState().stage : '',
     bluesJukePlace: target === 'bluesJukeEvent' ? (bluesJukeCurrentScene()?.place || 'outside') : '',
     mealId: target === 'meal' ? screenData?.mealId || '' : '',
-    whiteBunnyTonkatsuStage: target === 'whiteBunnyTonkatsuEvent' ? (whiteBunnyTonkatsuEventState(state)?.stage || '') : '',
+    whiteBunnyTonkatsuStage:target==='whiteBunnyTonkatsuEvent'?(state.events?.whiteBunnyTonkatsuEvent?.stage||''):'',
   });
 }
 
@@ -12688,7 +12680,7 @@ function render() {
       ridleyOkazakiSobaEvent: renderRidleyOkazakiSobaEvent,
       emeraldCaptainKebabEvent: renderEmeraldCaptainKebabEvent,
       whiteBunnyIceEvent: renderWhiteBunnyIceEvent,
-      whiteBunnyTonkatsuEvent: renderWhiteBunnyTonkatsuEventScreen,
+      whiteBunnyTonkatsuEvent:renderWhiteBunnyTonkatsuEventScreen,
       kappaJadeEvent: renderKappaJadeEvent,
       workshopKappaJadeEvent: renderWorkshopKappaJadeEvent,
       oneLoveEvent: renderOneLoveEvent,
@@ -16016,20 +16008,7 @@ function renderRidleyOkazakiSobaEvent() {
     </main>`;
 }
 
-function renderWhiteBunnyTonkatsuEventScreen() {
-  const eventState = whiteBunnyTonkatsuEventState(state);
-  if (!eventState?.active) {
-    queueMicrotask(() => setScreen('meal', {}, false));
-    return renderMeal();
-  }
-  const markup = `${mainStatusHeader()}${renderWhiteBunnyTonkatsuEvent({
-    state,
-    playerName: state?.playerName || 'あなた',
-    version: VERSION,
-  })}`;
-  queueMicrotask(() => scheduleWhiteBunnyTonkatsuTransition({ state, saveGame, render }));
-  return markup;
-}
+function renderWhiteBunnyTonkatsuEventScreen(){if(!state.events?.whiteBunnyTonkatsuEvent?.active){queueMicrotask(()=>setScreen('meal',{},false));return renderMeal();}queueMicrotask(()=>W.scheduleWhiteBunnyTonkatsuTransition({state,saveGame,render}));return `${mainStatusHeader()}${W.renderWhiteBunnyTonkatsuEvent({state,playerName:state?.playerName||'あなた',version:VERSION})}`;}
 
 function renderWhiteBunnyIceEvent() {
   const eventState = whiteBunnyIceEventState();
@@ -19921,7 +19900,7 @@ function finishMealEatingEarly() {
 function resumeActiveMealEvent(mealId) {
   const routes = {
     convenience: [['cyclopsEvent', 'cyclopsEvent']],
-    ice: [['whiteBunnyTonkatsuEvent', 'whiteBunnyTonkatsuEvent'], ['whiteBunnyIceEvent', 'whiteBunnyIceEvent']],
+    ice:[['whiteBunnyTonkatsuEvent','whiteBunnyTonkatsuEvent'],['whiteBunnyIceEvent','whiteBunnyIceEvent']],
     kebab: [['emeraldCaptainKebabEvent', 'emeraldCaptainKebabEvent']],
     hamburger: [['touristWoodSwordEvent', 'touristWoodSwordEvent'], ['terryCaliforniaEvent', 'terryCaliforniaEvent']],
     indian: [['diamondPolishingLapEvent', 'diamondPolishingLapEvent'], ['ganeshaTuskEvent', 'ganeshaTuskEvent']],
@@ -19955,15 +19934,7 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
   if (state.game.money < actualPrice) return showToast('所持金が足りません。', 'error');
   if (!canSpendMealTime()) return showToast(mealTimeUnavailableMessage(), 'error');
   if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
-  if (mealId === 'ice' && !skipEventCheck && maybeStartWhiteBunnyTonkatsuEvent({
-    state,
-    illnessSuppressed: illnessEventSuppressionActive(),
-    hungerLevel,
-    saveGame,
-    setScreen,
-    playSfx,
-    vibrate,
-  })) return;
+  if(mealId==='ice'&&!skipEventCheck&&W.maybeStartWhiteBunnyTonkatsuEvent({state,illnessSuppressed:illnessEventSuppressionActive(),hungerLevel,saveGame,setScreen,playSfx,vibrate}))return;
   if (mealId === 'ice' && !skipEventCheck && maybeStartWhiteBunnyIceEvent()) return;
   if (mealId === 'kebab' && !skipEventCheck && maybeStartEmeraldCaptainKebabEvent()) return;
   if (mealId === 'hamburger' && !skipEventCheck && tryRandomEventStarters([
@@ -24470,16 +24441,8 @@ root.addEventListener('click', async (event) => {
     case 'white-bunny-ice-event-next':
       await advanceWhiteBunnyIceEvent();
       break;
-    case 'white-bunny-tonkatsu-next':
-      advanceWhiteBunnyTonkatsuEvent({
-        state, hungerLevel, saveGame, render, setScreen, playSfx, spendMealTime, showToast,
-      });
-      break;
-    case 'white-bunny-tonkatsu-eat':
-      eatWhiteBunnyTonkatsuEvent({
-        state, saveGame, render, addFinance, startMoneyFeedback, playSfx, showToast,
-      });
-      break;
+    case 'white-bunny-tonkatsu-next':W.advanceWhiteBunnyTonkatsuEvent({state,hungerLevel,saveGame,render,setScreen,playSfx,spendMealTime,showToast});break;
+    case 'white-bunny-tonkatsu-eat':W.eatWhiteBunnyTonkatsuEvent({state,saveGame,render,addFinance,startMoneyFeedback,playSfx,showToast});break;
     case 'ridley-okazaki-soba-event-next':
       await advanceRidleyOkazakiSobaEvent();
       break;

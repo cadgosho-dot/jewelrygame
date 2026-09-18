@@ -98,8 +98,8 @@ function backgroundMarkup(tonkatsu = false, version = '') {
   const suffix = version ? `?v=${encodeURIComponent(version)}` : '';
   if (tonkatsu) {
     return `<picture class="white-bunny-tonkatsu-background" aria-hidden="true">
-      <source media="(orientation: portrait)" srcset="./assets/images/events/white-bunny-tonkatsu-shop-portrait.webp${suffix}">
-      <img src="./assets/images/events/white-bunny-tonkatsu-shop-landscape.webp${suffix}" alt="" draggable="false">
+      <source media="(orientation: portrait)" srcset="./assets/images/events/white-bunny-tonkatsu-shop-portrait.jpg${suffix}">
+      <img src="./assets/images/events/white-bunny-tonkatsu-shop-landscape.jpg${suffix}" alt="" draggable="false">
     </picture>`;
   }
   return `<picture class="white-bunny-tonkatsu-background" aria-hidden="true">

@@ -33,7 +33,7 @@ const names = ['canSpendMinutes', 'canSpendMealTime', 'spendMealTime', 'resumeAc
 const source = names.map(extractFunction).join('\n');
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const routes = {
-  convenience: ['Cyclops'], ice: ['WhiteBunnyIce'], kebab: ['EmeraldCaptainKebab'],
+  convenience: ['Cyclops'], ice: ['WhiteBunnyTonkatsu', 'WhiteBunnyIce'], kebab: ['EmeraldCaptainKebab'],
   hamburger: ['TouristWoodSword', 'TerryCalifornia'], indian: ['DiamondPolishingLap', 'GaneshaTusk'],
   ramen: ['ChildhoodFriend'], soba: ['RidleyOkazakiSoba'], chinese: ['MysteryChineseMeal'], korean: ['GrayHoodAquarium'],
 };
@@ -81,6 +81,7 @@ function harness(options = {}) {
   for (const route of Object.values(routes).flat()) {
     ctx[`maybeStart${route}Event`] = () => { record('event', route); return route === options.event; };
   }
+  ctx.W = { maybeStartWhiteBunnyTonkatsuEvent: ctx.maybeStartWhiteBunnyTonkatsuEvent };
   vm.createContext(ctx);
   vm.runInContext(source, ctx, { filename: 'app.js:manual-meal' });
   return { ctx, calls, saves, timers, initial: structuredClone(ctx.state), eat: (id = 'plain', opts) => ctx.eatMeal(id, opts) };

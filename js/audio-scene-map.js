@@ -202,6 +202,16 @@ export const AUDIO_SCENE_DEFINITIONS = Object.freeze({
       { type: 'weather', name: 'weather', scale: 0.42 },
     ],
   }),
+  whiteBunnyTonkatsuIce: frozenScene({
+    bgm: `${AUDIO_DIR}/bgm-meal-ice.ogg`,
+    ambient: { type: 'file', url: `${AUDIO_DIR}/amb-meal-ice.ogg` },
+    bgmScale: 0.72, ambientScale: 0.82,
+  }),
+  whiteBunnyTonkatsuShop: frozenScene({
+    bgm: `${AUDIO_DIR}/bgm-white-bunny-tonkatsu.mp3`,
+    ambient: { type: 'file', url: `${KAITENZUSHI_AUDIO_DIR}/izakaya_ambient.ogg` },
+    bgmScale: 0.90, ambientScale: 0.82,
+  }),
   kaitenzushi: frozenScene({
     bgm: `${KAITENZUSHI_AUDIO_DIR}/enka_bgm.ogg`,
     ambient: { type: 'file', url: `${KAITENZUSHI_AUDIO_DIR}/izakaya_ambient.ogg` },
@@ -323,7 +333,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   kaitenzushi: 'kaitenzushi',
 });
 
-export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['bluesJukeEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'meal']);
+export const DYNAMIC_AUDIO_SCREENS = Object.freeze(['bluesJukeEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'okachimachiQuiz', 'looseShopOriginalQuizEvent', 'whiteBunnyTonkatsuEvent', 'meal']);
 
 const MEAL_SCENES = Object.freeze({
   convenience: 'meal-convenience',
@@ -348,6 +358,7 @@ export function resolveAudioScene(target, context = {}) {
   }
   if (screen === 'okachimachiQuiz') return context.quizStage === 'question' ? 'okachimachiQuiz' : 'okachimachi';
   if (screen === 'looseShopOriginalQuizEvent') return context.quizStage === 'question' ? 'okachimachiQuiz' : 'looseShop';
+  if (screen === 'whiteBunnyTonkatsuEvent') return ['tonkatsu', 'blackoutToIce'].includes(String(context.whiteBunnyTonkatsuStage || '')) ? 'whiteBunnyTonkatsuShop' : 'whiteBunnyTonkatsuIce';
   if (screen === 'meal') return MEAL_SCENES[String(context.mealId || '')] || 'meal';
   return SCREEN_AUDIO_SCENES[screen] || 'main';
 }

@@ -113,7 +113,7 @@ function dialogueMarkup(text, version = '') {
   return `<section class="white-bunny-tonkatsu-event-stage" aria-live="polite">
     ${backgroundMarkup(false, version)}
     <div class="white-bunny-tonkatsu-character-area" aria-hidden="true">
-      <img class="white-bunny-tonkatsu-character" src="./assets/images/events/white-bunny-tonkatsu.png${suffix}" alt="" draggable="false">
+      <img class="white-bunny-tonkatsu-character" src="./assets/images/events/white-bunny.png${suffix}" alt="" draggable="false">
     </div>
     <button type="button" class="white-bunny-tonkatsu-dialogue" data-action="white-bunny-tonkatsu-next">
       <small class="white-bunny-tonkatsu-name">ホワイト・バニー</small>

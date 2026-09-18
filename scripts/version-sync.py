@@ -59,6 +59,8 @@ RULES = [
     Rule('game.html', 'hosting-origin-guard cache key', qparam(r'\./hosting-origin-guard\.js'), keep_prefix),
     Rule('game.html', 'styles.css cache key', qparam(r'\./styles\.css'), keep_prefix),
     Rule('game.html', 'quiz-event-v2.css cache key', qparam(r'\./quiz-event-v2\.css'), keep_prefix),
+    Rule('game.html', 'tropical shop approved UI CSS cache key', qparam(r'\./tropical-shop-approved-ui\.css'), keep_prefix),
+    Rule('game.html', 'oyatsu approved UI CSS cache key', qparam(r'\./oyatsu-daisuki-approved-ui\.css'), keep_prefix),
     Rule('game.html', 'app.js cache key', qparam(r'\./js/app\.js'), keep_prefix),
     Rule('game.html', 'memories-screen.js cache key', qparam(r'\./js/memories-screen\.js'), keep_prefix),
 
@@ -73,6 +75,8 @@ RULES = [
     Rule('sw.js', 'Service Worker VERSION', quoted_constant('VERSION'), keep_quote),
     Rule('sw.js', 'PWA recovery precache key', qparam(r'\./auth-cache-recovery\.js'), keep_prefix),
     Rule('sw.js', 'quiz-event-v2.css precache key', qparam(r'\./quiz-event-v2\.css'), keep_prefix),
+    Rule('sw.js', 'tropical shop approved UI CSS precache key', qparam(r'\./tropical-shop-approved-ui\.css'), keep_prefix),
+    Rule('sw.js', 'oyatsu approved UI CSS precache key', qparam(r'\./oyatsu-daisuki-approved-ui\.css'), keep_prefix),
     Rule('sw.js', 'app.js precache key', qparam(r'\./js/app\.js'), keep_prefix),
     Rule('sw.js', 'store-rent.js precache key', qparam(r'\./js/finance/store-rent\.js'), keep_prefix),
     Rule('sw.js', 'home-property.js precache key', qparam(r'\./js/finance/home-property\.js'), keep_prefix),
@@ -115,6 +119,8 @@ RULES = [
     Rule('sw.js', 'press-hold-controller.js precache key', qparam(r'\./js/ui/press-hold-controller\.js'), keep_prefix),
     Rule('sw.js', 'event-state-helpers.js precache key', qparam(r'\./js/events/event-state-helpers\.js'), keep_prefix),
     Rule('sw.js', 'retro-battle-frame-loader.js precache key', qparam(r'\./js/events/retro-battle-frame-loader\.js'), keep_prefix),
+    Rule('sw.js', 'tropical shop approved UI precache key', qparam(r'\./js/aquarium/tropical-shop-approved-ui\.js'), keep_prefix),
+    Rule('sw.js', 'oyatsu approved UI precache key', qparam(r'\./js/events/oyatsu-daisuki-approved-ui\.js'), keep_prefix),
     Rule('sw.js', 'audio.js precache key', qparam(r'\./js/audio\.js'), keep_prefix),
     Rule('sw.js', 'audio-scene-map.js precache key', qparam(r'\./js/audio-scene-map\.js'), keep_prefix),
     Rule('sw.js', 'game-data.js precache key', qparam(r'\./js/game-data\.js'), keep_prefix),
@@ -143,6 +149,8 @@ RULES = [
 
     # main modules
     Rule('js/app.js', 'game-data.js import key', qparam(r'\./game-data\.js'), keep_prefix),
+    Rule('js/app.js', 'tropical shop approved UI import key', qparam(r'\./aquarium/tropical-shop-approved-ui\.js'), keep_prefix),
+    Rule('js/app.js', 'oyatsu approved UI import key', qparam(r'\./events/oyatsu-daisuki-approved-ui\.js'), keep_prefix),
     Rule('js/app.js', 'store-rent.js import key', qparam(r'\./finance/store-rent\.js'), keep_prefix),
     Rule('js/app.js', 'home-property-controller.js import key', qparam(r'\./finance/home-property-controller\.js'), keep_prefix),
     Rule('js/finance/home-property-controller.js', 'home-property.js import key', qparam(r'\./home-property\.js'), keep_prefix),

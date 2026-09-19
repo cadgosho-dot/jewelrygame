@@ -1,7 +1,11 @@
 import './oyatsu-character-position-lock.js';
 
+let eventServices = {};
+export function setServices(canSpendMealTime, spendMealTime, addFinance, addNotification) {
+  eventServices = { ...eventServices, canSpendMealTime, spendMealTime, addFinance, addNotification };
+}
+
 export function createEventStateHelpers(getState, saveGame, showToast, playSfx, roundedMetalWeight, metals) {
-  let eventServices = {};
   const readState = () => {
     try { return getState?.() || null; } catch (_) { return null; }
   };

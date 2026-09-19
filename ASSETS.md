@@ -21,7 +21,7 @@
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **483** / 直接参照未検出: **116**
+- 静的な直接参照を検出: **484** / 直接参照未検出: **115**
 
 ## 重要な由来記録
 
@@ -465,7 +465,7 @@
 | assets/images/meal-korean-portrait.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2d904a15db99c9fdd6f53139c2b85c83d01a8becd8449d5b9009c2d924c0896c |
 | assets/images/meal-korean.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 70b0a3fe946bcddd0d42615e937e082f8de9ac538b8c5429b94efae195ce2413 |
 | assets/images/meal-menu-portrait.webp | 画像 | 863×1536 | 縦 | なし | `scripts/check-regression-baseline.py:109` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 760808e6aac7fa0955748e5d31b26f391561f15993f39f4e88848070b1f3b151 |
-| assets/images/meal-menu.webp | 画像 | 1536×658 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | baf3328cf15b1b54c846413693ef9a38432d2f0f0b63f703b9efc6885cb2e091 |
+| assets/images/meal-menu.webp | 画像 | 1536×658 | 横 | なし | `js/events/oyatsu-malatang-event.js:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | baf3328cf15b1b54c846413693ef9a38432d2f0f0b63f703b9efc6885cb2e091 |
 | assets/images/meal-ramen-portrait-v386.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 09972a01c31c09a48617d19c9f747516118b63aa99e4e28f88da76316cffc9d5 |
 | assets/images/meal-ramen-portrait.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 09972a01c31c09a48617d19c9f747516118b63aa99e4e28f88da76316cffc9d5 |
 | assets/images/meal-ramen-reunion-portrait-v387.webp | 画像 | 900×1600 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 83b1b336369f2bd16b646addc69c88a427d533577003f7b14be248e4be450ae1 |

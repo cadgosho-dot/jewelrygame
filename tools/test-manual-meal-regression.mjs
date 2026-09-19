@@ -58,6 +58,7 @@ function harness(options = {}) {
     console: { error: () => record('error') },
     hungerLevel: () => ctx.state.wellbeing.hunger,
     illnessEventSuppressionActive: () => false,
+    vibrate: () => record('vibrate'),
     showToast: (...args) => record('toast', ...args),
     mealTimeUnavailableMessage: () => '食事時間不足',
     tryRandomEventStarters: (starters) => starters.some((start) => start()),

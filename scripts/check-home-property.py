@@ -52,6 +52,8 @@ controller_checks = [
     'class="home-property-contract-badge"',
     'background:transparent;color:#fff7e6;',
     '>契約中</div>',
+    "${selected === 'A' ? '✓ ' : ''}物件A",
+    "${selected === 'B' ? '✓ ' : ''}物件Ｂ",
     'home-property-move-placeholder',
     'visibility:hidden;pointer-events:none;',
     'aria-hidden="true" tabindex="-1"',

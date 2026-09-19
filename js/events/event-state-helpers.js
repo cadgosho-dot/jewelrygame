@@ -1,3 +1,5 @@
+import './oyatsu-character-position-lock.js';
+
 export function createEventStateHelpers(getState, saveGame, showToast, playSfx, roundedMetalWeight, metals) {
   const readState = () => {
     try { return getState?.() || null; } catch (_) { return null; }

@@ -10,7 +10,7 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js?v=0.10.952';
 
-const UI_BUILD_VERSION = '0.10.952';
+const UI_BUILD_VERSION = '0.10.953';
 import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.952';
 import { resolveAudioScene } from './audio-scene-map.js?v=0.10.952';
 import { japaneseHolidayName } from './japan-holidays.js';
@@ -16523,9 +16523,10 @@ function renderMain() {
   const activeOrders = activeOrderCount();
   const workshopStatus = workshopUpgradeStatus();
   const outstandingCosts = totalOutstandingBusinessCost();
-  const visiting = canServeCustomers()
-    ? Object.entries(state.customers).filter(([, customer]) => customer.visiting).map(([id]) => CUSTOMERS[id]?.name)
+  const visitingCustomerIds = canServeCustomers()
+    ? Object.entries(state.customers).filter(([id, customer]) => customer.visiting && CUSTOMERS[id]).map(([id]) => id)
     : [];
+  const visiting = visitingCustomerIds.map((id) => CUSTOMERS[id]?.name);
   const autopilotEnabled = Boolean(state?.settings?.autopilotEnabled);
   const locked = hungerLocked();
   const autopilotDisabled = 'disabled aria-disabled="true" title="自動操縦中はスマートフォンと今日の宝石のみ操作できます"';
@@ -16543,7 +16544,7 @@ function renderMain() {
       ${autopilotEnabled ? '<div class="autopilot-main-notice" role="status" aria-live="polite"><strong>自動操縦中</strong></div>' : ''}
       ${locked && !autopilotEnabled ? `<button type="button" class="hunger-lock-notice hunger-lock-meal-shortcut" data-action="nav" data-screen="meal" aria-label="空腹のため食事画面へ移動する"><strong>空腹で動けません</strong><span>食事をするか、今日は休んでください。</span></button>` : ''}
       ${hungerFeedback && !autopilotEnabled ? `<div class="hunger-recovery-overlay" role="status"><strong>空腹度</strong><div><b>${hungerFeedback.before}</b><span>→</span><b>${hungerFeedback.after}</b></div>${hungerPips(hungerFeedback.after)}</div>` : ''}
-      ${visiting.length && !locked && !autopilotEnabled ? `<div class="floating-notice"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
+      ${visiting.length && !locked && !autopilotEnabled ? `<div class="floating-notice" data-action="customer" data-id="${esc(visitingCustomerIds[0])}" aria-label="来店中のお客様の接客画面を開く"><strong>お客様が来店しています。</strong><span>${esc(visiting.join('、'))}</span></div>` : ''}
       ${outstandingCosts > 0 && activeOrders > 0 && !autopilotEnabled
         ? `<div class="main-shortcut-stack" aria-label="未払いと受注品の案内">
             <button type="button" class="main-unpaid-shortcut" data-action="open-finance" aria-label="未払いがあります。スマートフォンの収支画面を開く">未払いがあります</button>
@@ -24820,7 +24821,17 @@ root.addEventListener('click', async (event) => {
       else if (!storeBusinessOpen()) showToast('接客できるのは9:00～19:00です。', 'error');
       else if (!hasCraftedJewelry()) showToast('まずジュエリーを1点制作してください。', 'error');
       else if (!anyStoreBranchOperating()) showToast('営業中の店舗がありません。', 'error');
-      else setScreen('customer', { customerId: button.dataset.id });
+      else {
+        const customerId = button.dataset.id;
+        const customerState = state.customers?.[customerId];
+        const visitBranch = storeBranchByNumber(customerState?.visitingBranchNumber || state.store.branchNumber);
+        if (visitBranch) {
+          state.store.branchNumber = Math.max(1, Number(visitBranch.number) || 1);
+          mirrorCurrentStoreDisplay(visitBranch);
+          saveGame();
+        }
+        setScreen('customer', { customerId });
+      }
       break;
     case 'hear-customer-wishes': hearCustomerWishes(button.dataset.customer); break;
     case 'open-customer-products': openCustomerProducts(button.dataset.customer); break;

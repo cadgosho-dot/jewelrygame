@@ -1,4 +1,4 @@
-import { suspendAudio, resumeAudio, playSfx, vibrate } from './audio.js?v=0.10.952';
+import { suspendAudio, resumeAudio, playSfx, vibrate } from './audio.js?v=0.10.954';
 
 const OVERLAY_ID = 'jxj-wolf-boy-ring-overlay';
 const STYLE_ID = 'jxj-wolf-boy-ring-style';

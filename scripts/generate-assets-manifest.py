@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import difflib
 import hashlib
 import json
 import sys
@@ -345,15 +344,6 @@ def main() -> int:
     if normalize_for_check(current) != normalize_for_check(rendered):
         print('ASSETS MANIFEST: FAIL')
         print('- ASSETS.md が現在のassets/と静的参照状態に一致しません')
-        diff = difflib.unified_diff(
-            normalize_for_check(current).splitlines(),
-            normalize_for_check(rendered).splitlines(),
-            fromfile='ASSETS.md',
-            tofile='generated',
-            lineterm='',
-        )
-        for line in list(diff)[:120]:
-            print(line)
         return 1
     print('ASSETS MANIFEST: PASS')
     return 0

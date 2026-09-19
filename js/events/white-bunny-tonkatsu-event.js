@@ -2,6 +2,7 @@ export const WHITE_BUNNY_TONKATSU_SCREEN = 'whiteBunnyTonkatsuEvent';
 export const WHITE_BUNNY_TONKATSU_EVENT_COST = 12000;
 export const WHITE_BUNNY_TONKATSU_EVENT_CHANCE = 1 / 30;
 export const WHITE_BUNNY_TONKATSU_BLACKOUT_MS = 1500;
+export const WHITE_BUNNY_TONKATSU_PAYMENT_FEEDBACK_MS = 1200;
 
 export const WHITE_BUNNY_TONKATSU_ACTIVE_STAGES = Object.freeze([
   'intro1',
@@ -12,6 +13,7 @@ export const WHITE_BUNNY_TONKATSU_ACTIVE_STAGES = Object.freeze([
   'quizAnswer',
   'blackoutToTonkatsu',
   'tonkatsu',
+  'tonkatsuPaid',
   'blackoutToIce',
   'return1',
   'return2',
@@ -19,7 +21,7 @@ export const WHITE_BUNNY_TONKATSU_ACTIVE_STAGES = Object.freeze([
 
 const ACTIVE_STAGE_SET = new Set(WHITE_BUNNY_TONKATSU_ACTIVE_STAGES);
 const VALID_STAGE_SET = new Set(['idle', ...WHITE_BUNNY_TONKATSU_ACTIVE_STAGES, 'completed']);
-const TONKATSU_AUDIO_STAGES = new Set(['tonkatsu', 'blackoutToIce']);
+const TONKATSU_AUDIO_STAGES = new Set(['tonkatsu', 'tonkatsuPaid', 'blackoutToIce']);
 let transitionTimer = null;
 
 function esc(value = '') {
@@ -142,7 +144,7 @@ export function renderWhiteBunnyTonkatsuEvent({ state, playerName = 'あなた',
     return '<main class="white-bunny-tonkatsu-blackout" aria-label="移動中"></main>';
   }
 
-  if (eventState.stage === 'tonkatsu') {
+  if (eventState.stage === 'tonkatsu' || eventState.stage === 'tonkatsuPaid') {
     const suffix = version ? `?v=${encodeURIComponent(version)}` : '';
     return `<main class="main-screen white-bunny-tonkatsu-event-screen">
       <section class="white-bunny-tonkatsu-event-stage white-bunny-tonkatsu-food-stage" aria-live="polite">
@@ -152,7 +154,7 @@ export function renderWhiteBunnyTonkatsuEvent({ state, playerName = 'あなた',
             <img src="./assets/images/events/white-bunny-tonkatsu-food.png${suffix}" alt="とんかつ" draggable="false">
           </div>
         </div>
-        <button type="button" class="white-bunny-tonkatsu-mogu" data-action="white-bunny-tonkatsu-eat">もぐもぐもぐ</button>
+        <button type="button" class="white-bunny-tonkatsu-mogu" ${eventState.stage === 'tonkatsu' ? 'data-action="white-bunny-tonkatsu-eat"' : 'aria-disabled="true"'}>もぐもぐもぐ</button>
       </section>
     </main>`;
   }
@@ -163,21 +165,22 @@ export function renderWhiteBunnyTonkatsuEvent({ state, playerName = 'あなた',
 
 export function scheduleWhiteBunnyTonkatsuTransition({ state, saveGame = () => {}, render = () => {} } = {}) {
   const eventState = whiteBunnyTonkatsuEventState(state);
-  if (!eventState?.active || !['blackoutToTonkatsu', 'blackoutToIce'].includes(eventState.stage)) {
+  if (!eventState?.active || !['blackoutToTonkatsu', 'tonkatsuPaid', 'blackoutToIce'].includes(eventState.stage)) {
     if (transitionTimer) clearTimeout(transitionTimer);
     transitionTimer = null;
     return false;
   }
   if (transitionTimer) clearTimeout(transitionTimer);
   const expectedStage = eventState.stage;
+  const delay = expectedStage === 'tonkatsuPaid' ? WHITE_BUNNY_TONKATSU_PAYMENT_FEEDBACK_MS : WHITE_BUNNY_TONKATSU_BLACKOUT_MS;
   transitionTimer = setTimeout(() => {
     transitionTimer = null;
     const current = whiteBunnyTonkatsuEventState(state);
     if (!current?.active || current.stage !== expectedStage) return;
-    current.stage = expectedStage === 'blackoutToTonkatsu' ? 'tonkatsu' : 'return1';
+    current.stage = expectedStage === 'blackoutToTonkatsu' ? 'tonkatsu' : expectedStage === 'tonkatsuPaid' ? 'blackoutToIce' : 'return1';
     saveGame();
     render();
-  }, WHITE_BUNNY_TONKATSU_BLACKOUT_MS);
+  }, delay);
   return true;
 }
 
@@ -190,6 +193,7 @@ export function advanceWhiteBunnyTonkatsuEvent({
   playSfx = () => {},
   spendMealTime = () => {},
   showToast = () => {},
+  onMealComplete = () => {},
 } = {}) {
   const eventState = whiteBunnyTonkatsuEventState(state);
   if (!eventState?.active) {
@@ -240,9 +244,10 @@ export function advanceWhiteBunnyTonkatsuEvent({
   eventState.active = false;
   eventState.stage = 'completed';
   saveGame();
-  playSfx('levelup', { gain: 0.72 });
+  onMealComplete(before, 7, 'ホワイト・バニーととんかつ');
+  playSfx('levelup');
   setScreen('main', {}, false);
-  showToast('ごちそうさまでした　空腹度が7／7になりました', 'meal-complete', false);
+  showToast('ごちそうさまでした', 'meal-complete', false);
   return true;
 }
 
@@ -268,9 +273,12 @@ export function eatWhiteBunnyTonkatsuEvent({
     eventState.paid = true;
     startMoneyFeedback(-WHITE_BUNNY_TONKATSU_EVENT_COST, 1200);
   }
-  eventState.stage = 'blackoutToIce';
+  eventState.stage = 'tonkatsuPaid';
   saveGame();
-  playSfx('eat', { gain: 0.78 });
+  setTimeout(() => {
+    const current = whiteBunnyTonkatsuEventState(state);
+    if (current?.active && current.stage === 'tonkatsuPaid') playSfx('eat');
+  }, 420);
   render();
   return true;
 }

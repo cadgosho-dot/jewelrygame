@@ -134,6 +134,7 @@ CHECKS = [
     ('水槽縦画面中央配置', [sys.executable, str(ROOT / 'scripts/check-aquarium-portrait-center.py')]),
     ('熱帯魚屋カテゴリ導線', [sys.executable, str(ROOT / 'scripts/check-tropical-shop-navigation.py')]),
     ('おやつ大好き承認UI', [sys.executable, str(ROOT / 'scripts/check-oyatsu-approved-ui.py')]),
+    ('おやつ大好き・麻辣湯承認イベント', [sys.executable, str(ROOT / 'scripts/check-oyatsu-malatang-event.py')]),
     ('ストーリーテラーV2レイアウト', [sys.executable, str(ROOT / 'scripts/check-storyteller-v2-layout.py')]),
     ('終了時セーブ一本化', [sys.executable, str(ROOT / 'scripts/check-lifecycle-save-policy.py')]),
     ('互換DOM監視軽量化', [sys.executable, str(ROOT / 'scripts/check-hosting-guard-policy.py')]),

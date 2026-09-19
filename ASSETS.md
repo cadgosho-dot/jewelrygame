@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.951** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.952** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -21,7 +21,7 @@
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **479** / 直接参照未検出: **120**
+- 静的な直接参照を検出: **484** / 直接参照未検出: **115**
 
 ## 重要な由来記録
 
@@ -138,8 +138,8 @@
 | assets/icons/favicon.png | 画像 | 64×64 | 正方形 | なし | `about.html:24`<br>`index.html:94`<br>`game.html:22`<br>`scripts/FILES/game.html:22` | 由来記録なし | 要確認（明示許可がない限り加工しない） | c44b9428e6b4965e2a4280efc717a965c4f5a441f9bc3de1af08817a2171429a |
 | assets/icons/icon-192.png | 画像 | 192×192 | 正方形 | なし | `manifest.webmanifest:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8d583eaf7c7c867b014274cde4baef4e9372535a939b1cee37603ef56d47945f |
 | assets/icons/icon-512.png | 画像 | 512×512 | 正方形 | なし | `manifest.webmanifest:26` | 由来記録なし | 要確認（明示許可がない限り加工しない） | beb1bcebf7dc2da3accee3ff8a7e363e09642b7f332ea93f8f56868f2d4780f1 |
-| assets/images/backgrounds/oyatsu-malatang-shop-portrait.jpg | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1b3709afeb28a15e1c4103256fcb21782d554803c09ddeaa644f400c336fc5c8 |
-| assets/images/backgrounds/oyatsu-malatang-shop.jpg | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6405918690c99b883987a23e608dbfad37bc2b7657b20b95dd0c666f261a788a |
+| assets/images/backgrounds/oyatsu-malatang-shop-portrait.jpg | 画像 | 864×1536 | 縦 | なし | `js/events/oyatsu-malatang-event.js:11`<br>`scripts/check-oyatsu-malatang-event.py:16` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1b3709afeb28a15e1c4103256fcb21782d554803c09ddeaa644f400c336fc5c8 |
+| assets/images/backgrounds/oyatsu-malatang-shop.jpg | 画像 | 1536×691 | 横 | なし | `js/events/oyatsu-malatang-event.js:10`<br>`scripts/check-oyatsu-malatang-event.py:15` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6405918690c99b883987a23e608dbfad37bc2b7657b20b95dd0c666f261a788a |
 | assets/images/backgrounds/terry-hamburger-landscape.png | 画像 | 1536×864 | 横 | なし | `js/app.js:16445`<br>`scripts/FILES/js/app.js:16436` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2b16adcc1a0d7e0287ad80feb24194c77f9da5866dbfc38ad1583daa9f605fce |
 | assets/images/backgrounds/terry-hamburger-portrait.png | 画像 | 928×1536 | 縦 | なし | `js/app.js:16444`<br>`scripts/FILES/js/app.js:16435` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3cbfa1535c34e0af0bc2ec2793ada1561d23471b27ce1737ae00b93175328294 |
 | assets/images/blues-juke-exterior-portrait.webp | 画像 | 691×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2c93e5f2fa68b371226b7a5d1460d7ad7ffd40885e84d3f5f3f6d1cc0d659e36 |
@@ -238,7 +238,7 @@
 | assets/images/foods/korean-bibimbap-v781.png | 画像 | 1526×1334 | 横 | あり | `js/app.js:2253`<br>`scripts/FILES/js/app.js:2248` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b6931132f968101b21f85ead4a29f5731c5168dd508825444eba5384a91e71a4 |
 | assets/images/foods/korean-stone-bibimbap-v782.png | 画像 | 1520×1320 | 横 | あり | `js/app.js:2254`<br>`scripts/FILES/js/app.js:2249` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 18de46819e7eca2e54a0e333cd311f0316d2f49e2049ffe6c5980c4ccee1ca53 |
 | assets/images/foods/korean.png | 画像 | 1326×1025 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e230168e52d65d62ada6cf4fa3a09d9df9fbba4cdee229a56ad6dbd2b94ee52d |
-| assets/images/foods/oyatsu-malatang.png | 画像 | 1536×1358 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 71c1aa0ec382076a2b8c7f18aa774f9b640885ed85f23db59dfa7c194e777e2d |
+| assets/images/foods/oyatsu-malatang.png | 画像 | 1536×1358 | 横 | あり | `js/events/oyatsu-malatang-event.js:9`<br>`scripts/check-oyatsu-malatang-event.py:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 71c1aa0ec382076a2b8c7f18aa774f9b640885ed85f23db59dfa7c194e777e2d |
 | assets/images/foods/ramen.png | 画像 | 987×889 | 横 | あり | `js/app.js:2257`<br>`scripts/FILES/js/app.js:2252` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a22f39a43001bb776f07e9664db3ece3f46e958dd233dba52efb3773131bd10d |
 | assets/images/foods/soba-croquette-v780.png | 画像 | 1501×1394 | 横 | あり | `js/app.js:2261`<br>`scripts/FILES/js/app.js:2256` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f3deec55dfaefa766fed0272a2fab5d4ade98d5d6fa36f815886aacc31fdbfdc |
 | assets/images/foods/soba-kake-curry-v779.png | 画像 | 1527×1007 | 横 | あり | `js/app.js:2260`<br>`scripts/FILES/js/app.js:2255` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63fab04ea777a5dbba2d2e4ef3a8ad71ec33f4a2eb2dc34154411e7fdbfda3f9 |
@@ -465,7 +465,7 @@
 | assets/images/meal-korean-portrait.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2d904a15db99c9fdd6f53139c2b85c83d01a8becd8449d5b9009c2d924c0896c |
 | assets/images/meal-korean.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 70b0a3fe946bcddd0d42615e937e082f8de9ac538b8c5429b94efae195ce2413 |
 | assets/images/meal-menu-portrait.webp | 画像 | 863×1536 | 縦 | なし | `scripts/check-regression-baseline.py:109` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 760808e6aac7fa0955748e5d31b26f391561f15993f39f4e88848070b1f3b151 |
-| assets/images/meal-menu.webp | 画像 | 1536×658 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | baf3328cf15b1b54c846413693ef9a38432d2f0f0b63f703b9efc6885cb2e091 |
+| assets/images/meal-menu.webp | 画像 | 1536×658 | 横 | なし | `js/events/oyatsu-malatang-event.js:12` | 由来記録なし | 要確認（明示許可がない限り加工しない） | baf3328cf15b1b54c846413693ef9a38432d2f0f0b63f703b9efc6885cb2e091 |
 | assets/images/meal-ramen-portrait-v386.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 09972a01c31c09a48617d19c9f747516118b63aa99e4e28f88da76316cffc9d5 |
 | assets/images/meal-ramen-portrait.webp | 画像 | 1024×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 09972a01c31c09a48617d19c9f747516118b63aa99e4e28f88da76316cffc9d5 |
 | assets/images/meal-ramen-reunion-portrait-v387.webp | 画像 | 900×1600 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 83b1b336369f2bd16b646addc69c88a427d533577003f7b14be248e4be450ae1 |
@@ -626,7 +626,7 @@
 | assets/videos/events/mystery-chinese-meal-intro.mp4 | 動画 | 5,078,384 B | - | - | `js/app.js:447`<br>`scripts/FILES/js/app.js:444` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f0cc7816264699a7a55a731a097083ab8981cbf1e427ba121552b1740c321dcc |
 | assets/videos/events/okachimachi-invasive-turtles-intro.mp4 | 動画 | 3,115,136 B | - | - | `js/app.js:342`<br>`scripts/FILES/js/app.js:339` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 42300e9803ccedc9d5ec843a1715bc5e1fab51c2f6823f03ec47054566cfe459 |
 | assets/videos/events/okachimachi-quiz-king-intro.mp4 | 動画 | 3,163,385 B | - | - | `js/app.js:326`<br>`scripts/FILES/js/app.js:323` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9e0d5e33711ca52b34ae171f419cea09267f276bb0567401d000841dc94a7519 |
-| assets/videos/events/oyatsu-malatang-event.mp4 | 動画 | 1,617,684 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4bfb929884cff665252d9b2431e12029a30d9d25a73ed0786a27c07bd85f7eec |
+| assets/videos/events/oyatsu-malatang-event.mp4 | 動画 | 1,617,684 B | - | - | `js/events/oyatsu-malatang-event.js:14`<br>`scripts/check-oyatsu-malatang-event.py:17` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4bfb929884cff665252d9b2431e12029a30d9d25a73ed0786a27c07bd85f7eec |
 | assets/videos/events/oyatsu-tropical-shop-intro.mp4 | 動画 | 5,500,558 B | - | - | `js/app.js:454`<br>`scripts/FILES/js/app.js:451` | 由来記録なし | 要確認（明示許可がない限り加工しない） | acd490ac696cdb8b9d63d49da26d427b47591dedbeb119eda80b31691385e0f7 |
 | assets/videos/events/tattoo-woman-amber-intro.mp4 | 動画 | 5,977,611 B | - | - | `js/app.js:444`<br>`scripts/FILES/js/app.js:441` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 18d2431c7f3359a5f47307fc6892622ef93379db4efa2695fe58a228554c97ee |
 | assets/videos/events/terry-california-intro.mp4 | 動画 | 5,391,328 B | - | - | `js/app.js:9378`<br>`scripts/FILES/js/app.js:9373` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bd2bb97b9fb2f8a74daf1fe6a4db585f15798da23c15d5747d0fea6b0dbdee4e |

@@ -147,6 +147,9 @@ RULES = [
     Rule('js/memories-backgrounds.js', 'event-bootstrap.js import key', qparam(r'\./event-bootstrap\.js'), keep_prefix),
     Rule('js/event-bootstrap.js', 'wolf-boy-ring-event.js import key', qparam(r'\./wolf-boy-ring-event\.js'), keep_prefix),
     Rule('js/event-bootstrap.js', 'wolf-mother-butler-event.js import key', qparam(r'\./wolf-mother-butler-event\.js'), keep_prefix),
+    Rule('js/event-bootstrap.js', 'oyatsu-malatang-event.js import key', qparam(r'\./events/oyatsu-malatang-event\.js'), keep_prefix),
+    Rule('js/events/oyatsu-malatang-event.js', 'audio.js import key', qparam(r'\.\./audio\.js'), keep_prefix),
+    Rule('js/events/oyatsu-malatang-event.js', 'approved UI CSS cache key', qparam(r'\./oyatsu-malatang-event\.css'), keep_prefix),
     Rule('js/wolf-boy-ring-event.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
     Rule('js/wolf-mother-butler-event.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
 

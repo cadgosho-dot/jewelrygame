@@ -19920,6 +19920,11 @@ function resumeActiveMealEvent(mealId) {
   return false;
 }
 
+function setMealFeedback(before,after,mealName){
+  hungerFeedback={before,after,mealName};clearTimeout(hungerFeedbackTimer);
+  hungerFeedbackTimer=setTimeout(()=>{hungerFeedback=null;if(screen==='main')render()},1550);
+}
+
 async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } = {}) {
   const meal = MEALS[mealId];
   if (!meal || mealTransitioning) return;
@@ -19977,21 +19982,11 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
     await waitForNextPaintWithTimeout();
     await eatingCompletion;
 
-    hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
-    clearTimeout(hungerFeedbackTimer);
+    setMealFeedback(before,state.wellbeing.hunger,meal.name);
     if (mealId === 'ice' && startOyatsuIceReturnAfterMeal()) {
-      showToast('ごちそうさまでした', 'meal-complete', false);
-      playSfx('levelup');
-      hungerFeedbackTimer = setTimeout(() => { hungerFeedback = null; }, 1550);
-      return;
+      showToast('ごちそうさまでした','meal-complete',false);playSfx('levelup');return;
     }
-    setScreen('main', {}, false);
-    showToast('ごちそうさまでした', 'meal-complete', false);
-    playSfx('levelup');
-    hungerFeedbackTimer = setTimeout(() => {
-      hungerFeedback = null;
-      if (screen === 'main') render();
-    }, 1550);
+    setScreen('main',{},false);showToast('ごちそうさまでした','meal-complete',false);playSfx('levelup');
   } catch (error) {
     console.error('食事処理エラー', error);
     stopIceMealAudio();
@@ -24441,7 +24436,7 @@ root.addEventListener('click', async (event) => {
     case 'white-bunny-ice-event-next':
       await advanceWhiteBunnyIceEvent();
       break;
-    case 'white-bunny-tonkatsu-next':W.advanceWhiteBunnyTonkatsuEvent({state,hungerLevel,saveGame,render,setScreen,playSfx,spendMealTime,showToast});break;
+    case 'white-bunny-tonkatsu-next':W.advanceWhiteBunnyTonkatsuEvent({state,hungerLevel,saveGame,render,setScreen,playSfx,spendMealTime,showToast,onMealComplete:setMealFeedback});break;
     case 'white-bunny-tonkatsu-eat':W.eatWhiteBunnyTonkatsuEvent({state,saveGame,render,addFinance,startMoneyFeedback,playSfx,showToast});break;
     case 'ridley-okazaki-soba-event-next':
       await advanceRidleyOkazakiSobaEvent();

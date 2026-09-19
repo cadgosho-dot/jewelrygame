@@ -19920,7 +19920,7 @@ function resumeActiveMealEvent(mealId) {
   return false;
 }
 
-function setMealFeedback(before,after,mealName){
+function setMealFeedback(before,after,mealName) {
   hungerFeedback={before,after,mealName};clearTimeout(hungerFeedbackTimer);
   hungerFeedbackTimer=setTimeout(()=>{hungerFeedback=null;if(screen==='main')render()},1550);
 }

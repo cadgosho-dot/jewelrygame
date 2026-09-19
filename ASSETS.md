@@ -21,7 +21,7 @@
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **477** / 直接参照未検出: **122**
+- 静的な直接参照を検出: **479** / 直接参照未検出: **120**
 
 ## 重要な由来記録
 
@@ -280,10 +280,6 @@
 | assets/images/jewelry-shop-portrait.webp | 画像 | 691×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 246b245241e5a40f5df3cd78ca480d491dbc5f333bec73b12aa5c5ebf3bdb00d |
 | assets/images/jewelry-shop-sell-character.png | 画像 | 1369×1524 | 縦 | あり | `js/app.js:17435`<br>`scripts/FILES/js/app.js:17433` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1be41b5bf1591c4f813196d6b697898a7beab23bd23c4f855d3647969f6777c0 |
 | assets/images/jewelry-shop.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | a6fe84c6c1d57d02eacad10e24d87a3d3c0c09b9667e5fc55ba24d9500181c44 |
-| assets/images/loose-shop-portrait-v385.webp | 画像 | 874×1536 | 縦 | なし | `memories-event-image-overrides-v751.js:9`<br>`preview/3d-glasses-event-layout.html:60`<br>`scripts/check-storyteller-v2-layout.py:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d593d390215b58b55cdfc78399fe381b49e0c29b6a7aa59ecc5cf368b3ff63d1 |
-| assets/images/loose-shop-v380.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e1b6bdc7ee5ebf740ca381c2da662b0135a85cd1c208ff92879f8b3c919f2a8 |
-| assets/images/loose-shop-v385.webp | 画像 | 1600×900 | 横 | なし | `memories-event-image-overrides-v751.js:10`<br>`preview/3d-glasses-event-layout.html:16`<br>`scripts/check-storyteller-v2-layout.py:38` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 30c40ae707e24baf3619efe5e31b68620ac95af726d82d3f6237745b6c5325a6 |
-| assets/images/loose-shop.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e1b6bdc7ee5ebf740ca381c2da662b0135a85cd1c208ff92879f8b3c919f2a8 |
 | assets/images/loose/amber/amber.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:1437`<br>`scripts/FILES/js/app.js:1435` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63d10cc28105cdd3179892138e349b623aaa0d6e508466e182856912851bce75 |
 | assets/images/loose/amethyst/emerald.png | 画像 | 232×270 | 縦 | あり | `js/app.js:1232`<br>`scripts/FILES/js/app.js:1230` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a195922bea5133d3a760d10a6863f20207d8d4d8a47fa45df8c0dce40ab2ef49 |
 | assets/images/loose/amethyst/marquise.png | 画像 | 181×309 | 縦 | あり | `js/app.js:1231`<br>`scripts/FILES/js/app.js:1229` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f6cc6b4cf83de2a3f087103a6cb14f56fd9213e2cc570ba2395738be2ab795cc |
@@ -425,6 +421,10 @@
 | assets/images/loose/turquoise/round-cabochon.png | 画像 | 667×687 | 縦 | あり | `js/app.js:1312`<br>`scripts/FILES/js/app.js:1310` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ec3e16835edb83474b2ff8256e409dc11eefe04ea6171104b6ca50d694270d56 |
 | assets/images/loose/water-garden-emerald/emerald.png | 画像 | 624×774 | 縦 | あり | `js/app.js:1467`<br>`scripts/FILES/js/app.js:1465` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bd945cfa002a7aad04a3face2c4d050ce22192c78e829b32d61b3e648b7e1251 |
 | assets/images/loose/wave-aquamarine/oval.png | 画像 | 1187×1000 | 横 | あり | `js/app.js:1476`<br>`scripts/FILES/js/app.js:1474` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e683170c4d43bd67399b399427ba2b23f118b93f5ff0558071fabb2b5f9a67f5 |
+| assets/images/loose-shop-portrait-v385.webp | 画像 | 874×1536 | 縦 | なし | `memories-event-image-overrides-v751.js:9`<br>`preview/3d-glasses-event-layout.html:60`<br>`scripts/check-storyteller-v2-layout.py:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d593d390215b58b55cdfc78399fe381b49e0c29b6a7aa59ecc5cf368b3ff63d1 |
+| assets/images/loose-shop-v380.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e1b6bdc7ee5ebf740ca381c2da662b0135a85cd1c208ff92879f8b3c919f2a8 |
+| assets/images/loose-shop-v385.webp | 画像 | 1600×900 | 横 | なし | `memories-event-image-overrides-v751.js:10`<br>`preview/3d-glasses-event-layout.html:16`<br>`scripts/check-storyteller-v2-layout.py:38` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 30c40ae707e24baf3619efe5e31b68620ac95af726d82d3f6237745b6c5325a6 |
+| assets/images/loose-shop.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e1b6bdc7ee5ebf740ca381c2da662b0135a85cd1c208ff92879f8b3c919f2a8 |
 | assets/images/main-menu-christmas-portrait.webp | 画像 | 855×1536 | 縦 | なし | `sw.js:50`<br>`scripts/FILES/sw.js:50` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a8b1337d9e109358ec6014025d3e3b2e9b70badb483925f60e605c1c57dc1d0b |
 | assets/images/main-menu-christmas.webp | 画像 | 1536×692 | 横 | なし | `sw.js:50`<br>`scripts/FILES/sw.js:50` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f7ebaef81d0fc23757d0641d3472c73ed690ec6a6630be18144d2c60cedb5eb0 |
 | assets/images/main-menu-halloween-portrait.webp | 画像 | 675×1200 | 縦 | なし | `sw.js:48`<br>`scripts/FILES/sw.js:48` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 504cfcb3be0d1b65d6a32e3737861f025a9f6974816b690f8bdf2f7245e00f92 |
@@ -455,8 +455,8 @@
 | assets/images/meal-convenience.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 48887891cc037eca99b5745e41b7638a1aad13a47e6b4f894d7caab495c8c51c |
 | assets/images/meal-hamburger-portrait.webp | 画像 | 929×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | cd3a86d716b1ca3d709d17edbeee3e479cc0fe999a78268741df48b864fb9026 |
 | assets/images/meal-hamburger.webp | 画像 | 1600×900 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | af5638d8d383c5f78b4fa392dcfbc7845d7c9ca04a626d0d65b7c1269fa01c8b |
-| assets/images/meal-ice-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | b7d0b8719dfe2a6a85421c5735ac3a26bdca131df486d5a856f443d46941c61c |
-| assets/images/meal-ice.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2026ef5740434e4a27fab3e3cd27c402671d96a2dc58f7e4de3102df1b2bb66d |
+| assets/images/meal-ice-portrait.webp | 画像 | 864×1536 | 縦 | なし | `js/events/white-bunny-tonkatsu-event.js:106` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b7d0b8719dfe2a6a85421c5735ac3a26bdca131df486d5a856f443d46941c61c |
+| assets/images/meal-ice.webp | 画像 | 1536×864 | 横 | なし | `js/events/white-bunny-tonkatsu-event.js:107` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2026ef5740434e4a27fab3e3cd27c402671d96a2dc58f7e4de3102df1b2bb66d |
 | assets/images/meal-indian-portrait.webp | 画像 | 864×1536 | 縦 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab32a9776e1d54b25a41b9ad05720041b30567eec6de71ef8801f88804100b41 |
 | assets/images/meal-indian.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4e1d902b8ac0039404474e65c713cc98bb399944e00b8be1ee7b77397ce29be3 |
 | assets/images/meal-kaitenzushi-event.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8a72f1e8ee635d0570669bee857df16f31fc1d2fd5868f6e6472a59550a40c99 |
@@ -482,11 +482,6 @@
 | assets/images/metalshop.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | a12d9b65e3532d04b72a89a5e3729430612c6bddd15592511788b8e6c0786f3f |
 | assets/images/mining-portrait.webp | 画像 | 864×1536 | 縦 | なし | `scripts/check-regression-baseline.py:106` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ea6ebfce4ee04b7a9616247b1b92d5b9f62d804b78fd178dabfc1fd9026731a3 |
 | assets/images/mining-rock.png | 画像 | 600×480 | 横 | あり | `js/app.js:16625`<br>`scripts/FILES/js/app.js:16623` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0014187199bf4d6aed0970f7d81550e451f6e06c4964ec9056c007906022001f |
-| assets/images/mining-rocks-broken/broken-01.png | 画像 | 1024×989 | 横 | あり | `js/app.js:1204`<br>`scripts/FILES/js/app.js:1202` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 54369904b76fc44d289a6122c4f71eeb569af1159c78d141675b2f2679989bd2 |
-| assets/images/mining-rocks-broken/broken-02.png | 画像 | 1024×983 | 横 | あり | `js/app.js:1205`<br>`scripts/FILES/js/app.js:1203` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 788c41685e3660f4e29774c7bb6e5a0663c3fd63ee4b6be3af02a07187d26b0f |
-| assets/images/mining-rocks-broken/broken-03.png | 画像 | 974×1024 | 縦 | あり | `js/app.js:1206`<br>`scripts/FILES/js/app.js:1204` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5a1dafd5d186cca1c0fd202a1b1af2040cf4f99af432f5aaca8cba7da8f4c65f |
-| assets/images/mining-rocks-broken/broken-04.png | 画像 | 1024×976 | 横 | あり | `js/app.js:1207`<br>`scripts/FILES/js/app.js:1205` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cbc50580c23c182a923c46f99841a54f11c164e939175aef17f152386c5dc7b1 |
-| assets/images/mining-rocks-broken/broken-05.png | 画像 | 1024×1012 | 横 | あり | `js/app.js:1208`<br>`scripts/FILES/js/app.js:1206` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ad9f7e169bc229d790d2c9f95dd8214dd0d8fee8cd4bff15396eacb203be71cf |
 | assets/images/mining-rocks/rock-01.png | 画像 | 1024×923 | 横 | あり | `js/app.js:1191`<br>`scripts/FILES/js/app.js:1189` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2e48329a0c6a367492bc95910a61cdec72865b4b92e23751d182b0bbede7c802 |
 | assets/images/mining-rocks/rock-02.png | 画像 | 1024×926 | 横 | あり | `js/app.js:1192`<br>`scripts/FILES/js/app.js:1190` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6222682b4c9ed5f0711440f53a507c8e2cce32b771af7735447724d1b856a77b |
 | assets/images/mining-rocks/rock-03.png | 画像 | 1024×601 | 横 | あり | `js/app.js:1193`<br>`scripts/FILES/js/app.js:1191` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 02faf71f76db25e6019a5995cc121d85569a438198dc41f83cd79b88bcb9f7c4 |
@@ -497,6 +492,11 @@
 | assets/images/mining-rocks/rock-08.png | 画像 | 1024×861 | 横 | あり | `js/app.js:1198`<br>`scripts/FILES/js/app.js:1196` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 917123c66b4046254bfbcfa5141e88886a0193275d5b2ad7049585f24b54bc60 |
 | assets/images/mining-rocks/rock-09.png | 画像 | 1024×571 | 横 | あり | `js/app.js:1199`<br>`scripts/FILES/js/app.js:1197` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 10918ae6c3884a622e7f2e3741bc07cbc673d3c5a50833d895ba106be00a4562 |
 | assets/images/mining-rocks/rock-10.png | 画像 | 1024×826 | 横 | あり | `js/app.js:1200`<br>`scripts/FILES/js/app.js:1198` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 01b5d33c02ce04bed4024e157328a7f766982a28d3bb49404250677d62e56384 |
+| assets/images/mining-rocks-broken/broken-01.png | 画像 | 1024×989 | 横 | あり | `js/app.js:1204`<br>`scripts/FILES/js/app.js:1202` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 54369904b76fc44d289a6122c4f71eeb569af1159c78d141675b2f2679989bd2 |
+| assets/images/mining-rocks-broken/broken-02.png | 画像 | 1024×983 | 横 | あり | `js/app.js:1205`<br>`scripts/FILES/js/app.js:1203` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 788c41685e3660f4e29774c7bb6e5a0663c3fd63ee4b6be3af02a07187d26b0f |
+| assets/images/mining-rocks-broken/broken-03.png | 画像 | 974×1024 | 縦 | あり | `js/app.js:1206`<br>`scripts/FILES/js/app.js:1204` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5a1dafd5d186cca1c0fd202a1b1af2040cf4f99af432f5aaca8cba7da8f4c65f |
+| assets/images/mining-rocks-broken/broken-04.png | 画像 | 1024×976 | 横 | あり | `js/app.js:1207`<br>`scripts/FILES/js/app.js:1205` | 由来記録なし | 要確認（明示許可がない限り加工しない） | cbc50580c23c182a923c46f99841a54f11c164e939175aef17f152386c5dc7b1 |
+| assets/images/mining-rocks-broken/broken-05.png | 画像 | 1024×1012 | 横 | あり | `js/app.js:1208`<br>`scripts/FILES/js/app.js:1206` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ad9f7e169bc229d790d2c9f95dd8214dd0d8fee8cd4bff15396eacb203be71cf |
 | assets/images/mining.webp | 画像 | 1536×691 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e89c13a888563b7e319781e8599cc7e8dc567ff86205c81a21a7d426abe301b2 |
 | assets/images/okachimachi-night-portrait.webp | 画像 | 1024×1536 | 縦 | なし | `sw.js:41`<br>`scripts/check-okachimachi-night-background.py:23`<br>`scripts/FILES/sw.js:40` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 10292b3f85930a4bff01bdf68399fc87a863fcf2a50c75b62082ed9579d9def6 |
 | assets/images/okachimachi-night.webp | 画像 | 1536×768 | 横 | なし | `sw.js:41`<br>`scripts/check-okachimachi-night-background.py:22`<br>`scripts/FILES/sw.js:40` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b926ee089a26f6c180e650b4dc6d10e504ec5ca9ba322df0322ad572066a2f56 |

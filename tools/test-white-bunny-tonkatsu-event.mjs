@@ -3,6 +3,7 @@ import {
   WHITE_BUNNY_TONKATSU_EVENT_COST,
   WHITE_BUNNY_TONKATSU_EVENT_CHANCE,
   WHITE_BUNNY_TONKATSU_BLACKOUT_MS,
+  WHITE_BUNNY_TONKATSU_PAYMENT_FEEDBACK_MS,
   whiteBunnyTonkatsuEventState,
   maybeStartWhiteBunnyTonkatsuEvent,
   renderWhiteBunnyTonkatsuEvent,
@@ -22,6 +23,7 @@ function makeState(money = 12000, hunger = 2) {
 assert.equal(WHITE_BUNNY_TONKATSU_EVENT_COST, 12000);
 assert.equal(WHITE_BUNNY_TONKATSU_EVENT_CHANCE, 1 / 30);
 assert.equal(WHITE_BUNNY_TONKATSU_BLACKOUT_MS, 1500);
+assert.equal(WHITE_BUNNY_TONKATSU_PAYMENT_FEEDBACK_MS, 1200);
 
 assert.equal(maybeStartWhiteBunnyTonkatsuEvent({
   state: makeState(11999),
@@ -95,10 +97,14 @@ assert.equal(state.game.money, 0);
 assert.equal(financeOut, 12000);
 assert.equal(feedback, -12000);
 assert.equal(whiteBunnyTonkatsuEventState(state).paid, true);
-assert.equal(whiteBunnyTonkatsuEventState(state).stage, 'blackoutToIce');
+assert.equal(whiteBunnyTonkatsuEventState(state).stage, 'tonkatsuPaid');
+assert.ok(renderWhiteBunnyTonkatsuEvent({ state, playerName }).includes('もぐもぐもぐ'), '支払い演出中も食事画面を維持する');
 
 let mealTimeCount = 0;
 let finalScreen = '';
+let completion = null;
+let completionToast = null;
+let completionSound = null;
 whiteBunnyTonkatsuEventState(state).stage = 'return2';
 advanceWhiteBunnyTonkatsuEvent({
   state,
@@ -107,6 +113,9 @@ advanceWhiteBunnyTonkatsuEvent({
   render: () => {},
   setScreen: (next) => { finalScreen = next; },
   spendMealTime: () => { mealTimeCount += 1; },
+  onMealComplete: (before, after, mealName) => { completion = { before, after, mealName }; },
+  showToast: (...args) => { completionToast = args; },
+  playSfx: (name) => { completionSound = name; },
 });
 assert.equal(state.wellbeing.hunger, 7);
 assert.equal(state.wellbeing.mealsEaten, 1);
@@ -114,6 +123,9 @@ assert.equal(state.daily.meals.length, 1);
 assert.equal(state.daily.meals[0].price, 12000);
 assert.equal(mealTimeCount, 1);
 assert.equal(finalScreen, 'main');
+assert.deepEqual(completion, { before: 2, after: 7, mealName: 'ホワイト・バニーととんかつ' });
+assert.deepEqual(completionToast, ['ごちそうさまでした', 'meal-complete', false]);
+assert.equal(completionSound, 'levelup');
 assert.equal(whiteBunnyTonkatsuEventState(state).active, false);
 assert.equal(whiteBunnyTonkatsuEventState(state).stage, 'completed');
 

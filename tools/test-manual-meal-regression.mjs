@@ -29,7 +29,7 @@ function extractFunction(name) {
   }
   throw new Error(`${name} closing brace missing`);
 }
-const names = ['canSpendMinutes', 'canSpendMealTime', 'spendMealTime', 'resumeActiveMealEvent', 'eatMeal'];
+const names = ['canSpendMinutes', 'canSpendMealTime', 'spendMealTime', 'resumeActiveMealEvent', 'setMealFeedback', 'eatMeal'];
 const source = names.map(extractFunction).join('\n');
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const routes = {

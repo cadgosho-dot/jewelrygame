@@ -1,65 +1,65 @@
 import './aquarium/axolotl.js';
-import './aquarium/tropical-shop-approved-ui.js?v=0.10.951';
-import './events/oyatsu-daisuki-approved-ui.js?v=0.10.951';
-import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.951';
-import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.951';
+import './aquarium/tropical-shop-approved-ui.js?v=0.10.952';
+import './events/oyatsu-daisuki-approved-ui.js?v=0.10.952';
+import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.952';
+import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.952';
 import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.951';
+} from './game-data.js?v=0.10.952';
 
-const UI_BUILD_VERSION = '0.10.951';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.951';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.951';
+const UI_BUILD_VERSION = '0.10.952';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.952';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.952';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.951';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.952';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.951';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.951';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.951';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.951';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.951';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.951';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.951';
-import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.951';
-import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.951';
-import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.951';
-import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.951';
-import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.951';
-import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.951';
-import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.951';
-import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.951';
-import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.951';
-import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.951';
-import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.951';
-import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.951';
-import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.951';
-import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.951';
-import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.951';
-import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.951';
-import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.951';
-import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.951';
-import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.951';
-import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.951';
-import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.951';
-import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.951';
-import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.951';
-import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.951';
-import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.951';
-import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.951';
-import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.951';
-import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.951';
-import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.951';
-import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.951';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.951'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.951';
-import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.951';
-import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.951';
+} from './firebase-service.js?v=0.10.952';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.952';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.952';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.952';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.952';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.952';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.952';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.952';
+import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.952';
+import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.952';
+import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.952';
+import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.952';
+import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.952';
+import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.952';
+import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.952';
+import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.952';
+import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.952';
+import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.952';
+import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.952';
+import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.952';
+import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.952';
+import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.952';
+import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.952';
+import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.952';
+import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.952';
+import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.952';
+import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.952';
+import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.952';
+import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.952';
+import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.952';
+import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.952';
+import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.952';
+import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.952';
+import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.952';
+import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.952';
+import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.952';
+import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.952';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.952'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.952';
+import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.952';
+import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.952';
 
 
 
@@ -19920,6 +19920,11 @@ function resumeActiveMealEvent(mealId) {
   return false;
 }
 
+function setMealFeedback(before,after,mealName) {
+  hungerFeedback={before,after,mealName};clearTimeout(hungerFeedbackTimer);
+  hungerFeedbackTimer=setTimeout(()=>{hungerFeedback=null;if(screen==='main')render()},1550);
+}
+
 async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } = {}) {
   const meal = MEALS[mealId];
   if (!meal || mealTransitioning) return;
@@ -19977,21 +19982,11 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
     await waitForNextPaintWithTimeout();
     await eatingCompletion;
 
-    hungerFeedback = { before, after: state.wellbeing.hunger, mealName: meal.name };
-    clearTimeout(hungerFeedbackTimer);
+    setMealFeedback(before,state.wellbeing.hunger,meal.name);
     if (mealId === 'ice' && startOyatsuIceReturnAfterMeal()) {
-      showToast('ごちそうさまでした', 'meal-complete', false);
-      playSfx('levelup');
-      hungerFeedbackTimer = setTimeout(() => { hungerFeedback = null; }, 1550);
-      return;
+      showToast('ごちそうさまでした','meal-complete',false);playSfx('levelup');return;
     }
-    setScreen('main', {}, false);
-    showToast('ごちそうさまでした', 'meal-complete', false);
-    playSfx('levelup');
-    hungerFeedbackTimer = setTimeout(() => {
-      hungerFeedback = null;
-      if (screen === 'main') render();
-    }, 1550);
+    setScreen('main',{},false);showToast('ごちそうさまでした','meal-complete',false);playSfx('levelup');
   } catch (error) {
     console.error('食事処理エラー', error);
     stopIceMealAudio();
@@ -24441,7 +24436,7 @@ root.addEventListener('click', async (event) => {
     case 'white-bunny-ice-event-next':
       await advanceWhiteBunnyIceEvent();
       break;
-    case 'white-bunny-tonkatsu-next':W.advanceWhiteBunnyTonkatsuEvent({state,hungerLevel,saveGame,render,setScreen,playSfx,spendMealTime,showToast});break;
+    case 'white-bunny-tonkatsu-next':W.advanceWhiteBunnyTonkatsuEvent({state,hungerLevel,saveGame,render,setScreen,playSfx,spendMealTime,showToast,onMealComplete:setMealFeedback});break;
     case 'white-bunny-tonkatsu-eat':W.eatWhiteBunnyTonkatsuEvent({state,saveGame,render,addFinance,startMoneyFeedback,playSfx,showToast});break;
     case 'ridley-okazaki-soba-event-next':
       await advanceRidleyOkazakiSobaEvent();

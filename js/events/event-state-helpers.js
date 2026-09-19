@@ -1,4 +1,5 @@
 import './oyatsu-character-position-lock.js';
+import '../aquarium/tropical-shop-menu-navigation.js';
 
 export function createEventStateHelpers(getState, saveGame, showToast, playSfx, roundedMetalWeight, metals) {
   const readState = () => {

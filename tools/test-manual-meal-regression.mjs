@@ -57,6 +57,7 @@ function harness(options = {}) {
     MEALS: meals, MEAL_DURATION_MINUTES: 60, DAY_END_MINUTES: 1320, structuredClone,
     console: { error: () => record('error') },
     hungerLevel: () => ctx.state.wellbeing.hunger,
+    illnessEventSuppressionActive: () => false,
     showToast: (...args) => record('toast', ...args),
     mealTimeUnavailableMessage: () => '食事時間不足',
     tryRandomEventStarters: (starters) => starters.some((start) => start()),

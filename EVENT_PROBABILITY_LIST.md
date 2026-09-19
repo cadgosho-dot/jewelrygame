@@ -26,6 +26,7 @@
 | エメラルド班班長 | **4%** | 約1/25 | 対象のケバブ利用時 | `EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE` (`js/app.js`) |
 | 韓国料理・水槽解放 | **8%** | 約1/12.5 | 366日目以降・水槽未解放などの条件を満たす時 | `GRAY_HOOD_AQUARIUM_EVENT_CHANCE` (`js/app.js`) |
 | リドリー岡崎（そば） | **4%** | 約1/25 | 対象の立ち食いそば利用時 | `RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE` (`js/app.js`) |
+| おやつ大好き・麻辣湯 | **1.5%** | 約1/66.7 | メイン画面の「食事」押下時・所持金3,500円以上 | `OYATSU_MALATANG_EVENT_CHANCE` (`js/events/oyatsu-malatang-event.js`) |
 
 ## 御徒町・街
 

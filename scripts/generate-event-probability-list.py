@@ -18,7 +18,7 @@ APP = ROOT / 'js' / 'app.js'
 WHITE_BUNNY_TONKATSU = ROOT / 'js' / 'events' / 'white-bunny-tonkatsu-event.js'
 VERSION_FILE = ROOT / 'VERSION'
 OUTPUT = ROOT / 'EVENT_PROBABILITY_LIST.md'
-CONST_RE = re.compile(r'^(?:export\s+)?const\s+([A-Z0-9_]+)\s*=\s*(.+?);\s*
+CONST_RE = re.compile(r'^(?:export\s+)?const\s+([A-Z0-9_]+)\s*=\s*(.+?);\s*$', re.M)
 
 BIN_OPS = {
     ast.Add: operator.add,

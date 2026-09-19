@@ -1,0 +1,22 @@
+[
+  {
+    "path": "assets/images/events/white-bunny-tonkatsu-shop-landscape.jpg",
+    "bytes": 323401,
+    "sha256": "ee2d9ed4f668f333b5233b4b8b876def50c1113a2b822798113740c5bff11594"
+  },
+  {
+    "path": "assets/images/events/white-bunny-tonkatsu-shop-portrait.jpg",
+    "bytes": 329340,
+    "sha256": "ed59af42c32efe1eb3f2443ab2c445b483406dbc2cc686a62ee2289030f04511"
+  },
+  {
+    "path": "assets/images/events/white-bunny-tonkatsu-food.png",
+    "bytes": 3078271,
+    "sha256": "4b951c4c7edc091fc84a914bc339af482c8ea2c2a91d5e2e8a8cd04b18516f5c"
+  },
+  {
+    "path": "assets/audio/bgm-white-bunny-tonkatsu.mp3",
+    "bytes": 817153,
+    "sha256": "2597ffdcf43739d49ac836bacb2ea049fd34161191cbb7f85fe20b0ab82f1e0b"
+  }
+]

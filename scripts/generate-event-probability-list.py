@@ -15,9 +15,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / 'js' / 'app.js'
+WHITE_BUNNY_TONKATSU = ROOT / 'js' / 'events' / 'white-bunny-tonkatsu-event.js'
 VERSION_FILE = ROOT / 'VERSION'
 OUTPUT = ROOT / 'EVENT_PROBABILITY_LIST.md'
-CONST_RE = re.compile(r'^const\s+([A-Z0-9_]+)\s*=\s*(.+?);\s*$', re.M)
+CONST_RE = re.compile(r'^(?:export\s+)?const\s+([A-Z0-9_]+)\s*=\s*(.+?);\s*$', re.M)
 
 BIN_OPS = {
     ast.Add: operator.add,
@@ -94,6 +95,7 @@ EVENT_GROUPS = [
         ('SUSHI_CHEF_EVENT_CHANCE', '回転寿司・店主無料イベント', '対象の回転寿司利用時'),
         ('CYCLOPS_EVENT_CHANCE', 'コンビニ・サイクロプス', '対象のコンビニ利用時'),
         ('WHITE_BUNNY_ICE_EVENT_CHANCE', 'ホワイト・バニー（アイス）', '対象のアイス利用時'),
+        ('WHITE_BUNNY_TONKATSU_EVENT_CHANCE', 'ホワイト・バニー／とんかつ', 'アイス選択時・所持金12,000円以上'),
         ('TERRY_CALIFORNIA_EVENT_CHANCE', 'テリー・カリフォルニア', '対象のハンバーガー利用時'),
         ('GANESHA_TUSK_EVENT_CHANCE', 'ガネーシャ', '対象のインド料理利用時'),
         ('MYSTERY_CHINESE_MEAL_EVENT_CHANCE', '謎の中華料理', '対象の中華料理利用時'),
@@ -132,7 +134,11 @@ EVENT_GROUPS = [
 
 def generate() -> str:
     text = APP.read_text(encoding='utf-8')
-    exprs, lines = constants(text)
+    exprs, _ = constants(text)
+    source_paths = {name: 'js/app.js' for name in exprs}
+    module_exprs, _ = constants(WHITE_BUNNY_TONKATSU.read_text(encoding='utf-8'))
+    exprs['WHITE_BUNNY_TONKATSU_EVENT_CHANCE'] = module_exprs['WHITE_BUNNY_TONKATSU_EVENT_CHANCE']
+    source_paths['WHITE_BUNNY_TONKATSU_EVENT_CHANCE'] = 'js/events/white-bunny-tonkatsu-event.js'
     values = numeric_values(exprs)
     version = VERSION_FILE.read_text(encoding='utf-8').strip()
 
@@ -146,7 +152,7 @@ def generate() -> str:
         '# EVENT_PROBABILITY_LIST — JEWELRY×JEWELRY',
         '',
         f'> 現行実装基準: **v{version}**',
-        '> 数値は `js/app.js` の有効な定数から自動生成する。手入力で確率を書き換えない。',
+        '> 数値は現行コードの有効な定数から自動生成する。手入力で確率を書き換えない。',
         '> 条件を満たした各判定での確率であり、「N回目に必ず発生」を意味しない。',
         '',
         '## 共通倍率',
@@ -155,6 +161,7 @@ def generate() -> str:
         f'- 従来の `1/30` 系料理イベントは **{pct(values["MEAL_RANDOM_EVENT_CHANCE"])}**。',
         f'- 韓国料理の水槽解放イベントは `1/15 × {multiplier:g}` = **{pct(values["GRAY_HOOD_AQUARIUM_EVENT_CHANCE"])}**。',
         f'- ホワイト・バニーは個別指定で **{pct(values["WHITE_BUNNY_ICE_EVENT_CHANCE"])}**。',
+        f'- ホワイト・バニー／とんかつは個別指定で **{pct(values["WHITE_BUNNY_TONKATSU_EVENT_CHANCE"])}**。',
         '',
     ]
 
@@ -163,7 +170,7 @@ def generate() -> str:
         for const, label, condition in events:
             value = values[const]
             lines_out.append(
-                f'| {label} | **{pct(value)}** | {approx_fraction(value)} | {condition} | `{const}` (`js/app.js:{lines[const]}`) |'
+                f'| {label} | **{pct(value)}** | {approx_fraction(value)} | {condition} | `{const}` (`{source_paths[const]}`) |'
             )
         lines_out.append('')
 

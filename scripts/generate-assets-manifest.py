@@ -59,6 +59,22 @@ def provenance_map() -> dict[str, dict[str, str]]:
             'source': f'ユーザー指定正式画像（bedroom_images.zip / {source}）',
             'permission': '変更禁止（原本と同一バイト。再生成・変換・再圧縮・リサイズ禁止）',
         }
+    provenance['assets/images/events/white-bunny-tonkatsu-shop-landscape.jpg'] = {
+        'source': 'ユーザー指定正式画像（2026-09-19 / 1000024259.png、JPEG原本を拡張子整理のみ）',
+        'permission': '変更禁止（原本と同一バイト。再生成・変換・再圧縮・リサイズ禁止）',
+    }
+    provenance['assets/images/events/white-bunny-tonkatsu-shop-portrait.jpg'] = {
+        'source': 'ユーザー指定正式画像（2026-09-19 / 1000024258.png、JPEG原本を拡張子整理のみ）',
+        'permission': '変更禁止（原本と同一バイト。再生成・変換・再圧縮・リサイズ禁止）',
+    }
+    provenance['assets/images/events/white-bunny-tonkatsu-food.png'] = {
+        'source': 'ユーザー指定正式画像（2026-09-19 / とんかつ定食・背景透過PNG）',
+        'permission': '変更禁止（透過済み正式PNG。再生成・色変更・画風変更禁止）',
+    }
+    provenance['assets/audio/bgm-white-bunny-tonkatsu.mp3'] = {
+        'source': 'ユーザー指定正式音源（2026-09-19 / とんかつ.mp3）',
+        'permission': '変更禁止（受領音源と同一バイト。再生成・再圧縮禁止）',
+    }
     return provenance
 
 SOURCE_ORDER = [
@@ -276,6 +292,7 @@ def generate() -> str:
         '## 重要な由来記録',
         '',
         '- 直近引継ぎでユーザー提供と確認できる病院背景2枚、中華料理画像2枚は「変更禁止」として記録。',
+        '- ホワイト・バニー／とんかつイベントの店内背景2枚・とんかつ透過PNG・専用BGMは2026-09-19のユーザー指定正式アセットとして記録。',
         '- `TOOL_IMAGE_INTAKE_MANIFEST_*` で受領元ファイルが記録されている工具画像は「受領アセット」として記録。',
         '- それ以外は由来を推測せず「由来記録なし」とした。',
         '',

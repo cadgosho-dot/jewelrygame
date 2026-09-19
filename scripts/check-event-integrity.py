@@ -119,6 +119,8 @@ def parse_active_stage_map(source: str) -> dict[str, set[str]]:
     result: dict[str, set[str]] = {}
     for key, body in re.findall(r'^\s*(\w+)\s*:\s*new Set\(\[([^\]]*)\]\)', block, re.M | re.S):
         result[key] = quoted_values(body)
+    for key in re.findall(r'^\s*(\w+)\s*:\s*new Set\((?!\[)[^)]+\)', block, re.M):
+        result.setdefault(key, set())
     return result
 
 

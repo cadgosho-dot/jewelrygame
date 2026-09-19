@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.953** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.954** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -614,7 +614,7 @@
 | assets/minigames/kaitenzushi/assets/sushi/red_250/shiromi.png | 画像 | 517×187 | 横 | あり | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7798061afc56f63fa3a395beb188f04f495d518bb2b20461fb769bd979dbd3ed |
 | assets/minigames/kaitenzushi/data/game_rules.json | データ | 666 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 0645627b2dbadc1b16f76812782729df5ca3b4f6e50bb381346dd2d9089c3b99 |
 | assets/minigames/kaitenzushi/data/sushi_catalog.json | データ | 2,723 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | fa8421c136d8db8809847a7b026e3b3e9c4fbfb7ec03d8eae01505c36727ba0e |
-| assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:91`<br>`js/app.js:19531`<br>`js/kaitenzushi-embedded.js:2`<br>`scripts/FILES/js/app.js:19521` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
+| assets/minigames/kaitenzushi/game/index.html | ミニゲーム/コード | 59,861 B | - | - | `sw.js:91`<br>`js/app.js:19526`<br>`js/kaitenzushi-embedded.js:2`<br>`scripts/FILES/js/app.js:19521` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 62a9164b12552b147b77714fc057ce7c2032768b49c0cb7db10907bb825dd81a |
 | assets/minigames/retro-battle/index.html | ミニゲーム/コード | 18,690,587 B | - | - | `scripts/check-pwa-cache-policy.py:52`<br>`sw.js:113`<br>`js/app.js:340`<br>`js/events/retro-battle-frame-loader.js:4` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d8332ba68b6a4ce9634ac1f7746fd146b0b4cff089aeaeb5e801580c9dcd1c5b |
 | assets/music/events/teeth_behind_the_glass.mp3 | 音源 | 3,760,183 B | - | - | `js/wolf-mother-butler-event.js:13`<br>`scripts/FILES/js/wolf-mother-butler-event.js:13`<br>`scripts/check-wolf-mother-butler-event.py:20` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5a4ba334442e98d8baa69404f3b2ad4804b5925d1d7c405dc4797bbfcff36cd3 |
 | assets/videos/cinema/.gitkeep | その他 | 0 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |

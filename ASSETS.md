@@ -14,14 +14,14 @@
 
 ## 集計
 
-- 総ファイル数: **595**
-- 画像: **466**
-- 音源: **101**
+- 総ファイル数: **599**
+- 画像: **469**
+- 音源: **102**
 - 動画: **15**
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **473** / 直接参照未検出: **122**
+- 静的な直接参照を検出: **477** / 直接参照未検出: **122**
 
 ## 重要な由来記録
 
@@ -86,6 +86,7 @@
 | assets/audio/bgm-sleep.ogg | 音源 | 102,204 B | - | - | `js/audio-scene-map.js:116 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | dc2a393cf7c75b9717ee3f61aba63910205341c330e24d6a172cb5ece7af5ba2 |
 | assets/audio/bgm-store.ogg | 音源 | 94,528 B | - | - | `js/audio-scene-map.js:56 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e3610f183238c9ebedd0521493eaf48b7e22cb2e7a9aae9d6f07c85c50542180 |
 | assets/audio/bgm-tropical-fish-shop.wav | 音源 | 10,584,044 B | - | - | `js/audio-scene-map.js:97 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9a6e1682a947d0ce825750f8848c1a6dff63adc8c291e2061b963af1bd55e7f5 |
+| assets/audio/bgm-white-bunny-tonkatsu.mp3 | 音源 | 817,153 B | - | - | `ASSET_SHA256.json:18` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2597ffdcf43739d49ac836bacb2ea049fd34161191cbb7f85fe20b0ab82f1e0b |
 | assets/audio/bgm-white-bunny.ogg | 音源 | 655,091 B | - | - | `js/app.js:419`<br>`scripts/FILES/js/app.js:417` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 021017cd753cdd285133203ead78eeafd54f903d80287a3468cbc7132169e069 |
 | assets/audio/bgm-workshop.ogg | 音源 | 92,301 B | - | - | `tools/test-audio-transitions.mjs:57 (basename)`<br>`js/audio-scene-map.js:41 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b0dde4f9a631a1f642c3ff258555b30bef8675aaacdcfb27de14b78e4812666c |
 | assets/audio/bgm-wrist-found-dark.ogg | 音源 | 102,744 B | - | - | `js/audio-scene-map.js:107 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d0b916d1a7185b57a07446e373646e67077f3cfbe530642e26dfba8b0cc484c5 |
@@ -215,6 +216,9 @@
 | assets/images/events/terry-california.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:16439`<br>`js/memories-screen.js:19`<br>`scripts/FILES/js/app.js:16437`<br>`scripts/FILES/js/memories-screen.js:19` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 6405f7a63b565a59776eb3de264620a2d2b2e26282b2351adaf4a9a48d8f6d04 |
 | assets/images/events/tourist.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:15903`<br>`js/memories-screen.js:33`<br>`scripts/FILES/js/app.js:15901`<br>`scripts/FILES/js/memories-screen.js:33` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a2e3c5edae6e61f2d2ab8bb6ba1cdd3a68ac364cb8628efadb046c600adc8eb6 |
 | assets/images/events/western-union-messenger.png | 画像 | 1000×1536 | 縦 | あり | `scripts/check-regression-baseline.py:112`<br>`js/app.js:14420`<br>`js/memories-screen.js:9`<br>`scripts/FILES/js/app.js:14418` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7c974adc83fafaa8a109aea6ba8eb48457b4dba7010c2e2de083130d30eae113 |
+| assets/images/events/white-bunny-tonkatsu-food.png | 画像 | 1488×1079 | 横 | あり | `ASSET_SHA256.json:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4b951c4c7edc091fc84a914bc339af482c8ea2c2a91d5e2e8a8cd04b18516f5c |
+| assets/images/events/white-bunny-tonkatsu-shop-landscape.jpg | 画像 | 1536×691 | 横 | なし | `ASSET_SHA256.json:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ee2d9ed4f668f333b5233b4b8b876def50c1113a2b822798113740c5bff11594 |
+| assets/images/events/white-bunny-tonkatsu-shop-portrait.jpg | 画像 | 691×1536 | 縦 | なし | `ASSET_SHA256.json:8` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ed59af42c32efe1eb3f2443ab2c445b483406dbc2cc686a62ee2289030f04511 |
 | assets/images/events/white-bunny.png | 画像 | 1007×1283 | 縦 | あり | `js/app.js:16013`<br>`js/memories-screen.js:36`<br>`scripts/FILES/js/app.js:16011`<br>`scripts/FILES/js/memories-screen.js:36` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63bdc7446fb2fa885b6a61f60553268d8cdb9248da1d5eea735efa2213266b99 |
 | assets/images/events/wolf-boy-ring.png | 画像 | 1483×1132 | 横 | あり | `js/wolf-boy-ring-event.js:8`<br>`scripts/FILES/js/wolf-boy-ring-event.js:8`<br>`scripts/check-wolf-boy-ring-event.py:14` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ea631c473bd48a395d5771dc588b3e21d1320b5231dc192a1f12c63d8d051299 |
 | assets/images/events/wolf-boy.png | 画像 | 1024×1549 | 縦 | あり | `js/wolf-boy-ring-event.js:7`<br>`scripts/FILES/js/wolf-boy-ring-event.js:7`<br>`scripts/check-wolf-boy-ring-event.py:13` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a7bee4bf8ec075552b2765692b349e2e71c696d4fd92771bbc73fd3dac2798c4 |

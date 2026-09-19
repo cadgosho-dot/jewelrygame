@@ -10,7 +10,7 @@ import {
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
 } from './game-data.js?v=0.10.952';
 
-const UI_BUILD_VERSION = '0.10.953';
+const UI_BUILD_VERSION = '0.10.954';
 import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.952';
 import { resolveAudioScene } from './audio-scene-map.js?v=0.10.952';
 import { japaneseHolidayName } from './japan-holidays.js';
@@ -19359,14 +19359,9 @@ function renderOrders() {
           <div class="order-customer-name-profile">
             <div class="order-customer-name-line"><h2>${esc(order.customerName)}</h2><span class="order-customer-relation">${esc(customerProfile.relation)}</span></div>
             <div class="order-customer-profile-inline">
-              <span class="wide"><b>概要</b>${esc(customerProfile.profile)}</span>
-              <span><b>年代・職業</b>${esc(`${customerProfile.ageGroup}・${customerProfile.occupation}`)}</span>
-              <span><b>使用者</b>${esc(customerProfile.wearer)}</span>
-              <span class="wide"><b>来店目的</b>${esc(customerProfile.purpose)}</span>
-              <span><b>着用場面</b>${esc(customerProfile.wearingScene)}</span>
+              <span><b>人物</b>${esc(`${customerProfile.ageGroup}・${customerProfile.occupation}`)}</span>
+              <span class="wide"><b>目的</b>${esc(customerProfile.purpose)}</span>
               <span class="wide"><b>好み</b>${esc(customerProfile.preference)}</span>
-              <span class="wide"><b>予算の考え方</b>${esc(customerProfile.budgetStyle)}</span>
-              <span class="wide"><b>接客傾向</b>${esc(customerProfile.traits)}</span>
             </div>
           </div>
           <span class="order-progress-badge">${esc(orderDisplayStatus(order))}</span>

@@ -80,8 +80,8 @@ export function createHomePropertyController({
     return shell('自宅', `
       <section class="center-card glass-panel expansion-card" style="max-width:min(820px,94vw);margin-inline:auto;">
         <div style="display:flex;gap:10px;justify-content:center;margin:${selectorTopGap} 0 14px;">
-          <button type="button" class="${selectedClass('A')}" data-action="select-home-property" data-property="A" aria-pressed="${selected === 'A'}" style="min-width:110px;${currentStyle('A')}">物件A</button>
-          <button type="button" class="${selectedClass('B')}" data-action="select-home-property" data-property="B" aria-pressed="${selected === 'B'}" style="min-width:110px;${currentStyle('B')}">物件Ｂ</button>
+          <button type="button" class="${selectedClass('A')}" data-action="select-home-property" data-property="A" aria-pressed="${selected === 'A'}" style="min-width:110px;${currentStyle('A')}">${selected === 'A' ? '✓ ' : ''}物件A</button>
+          <button type="button" class="${selectedClass('B')}" data-action="select-home-property" data-property="B" aria-pressed="${selected === 'B'}" style="min-width:110px;${currentStyle('B')}">${selected === 'B' ? '✓ ' : ''}物件Ｂ</button>
         </div>
         <div style="display:grid;place-items:center;min-height:0;margin:0 auto 14px;">
           <div style="position:relative;display:inline-grid;place-items:center;max-width:100%;">

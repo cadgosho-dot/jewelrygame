@@ -23,7 +23,7 @@ jobs:
           python-version: '3.12'
       - name: Generate asset manifest
         run: |
-          python scripts/generate-assets-manifest.py
+          python scripts/generate-assets-manifest.py --write
       - name: Focused mining battle tests
         run: |
           node tools/test-mining-battle-event.mjs

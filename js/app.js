@@ -5259,7 +5259,6 @@ function jewelryLooseSetVisual(itemId, gemId, shapeId = 'default', mode = 'large
     const slotWidth = isSmall ? '21%' : (isCompletion || isShowcaseSmall) ? `${resolvedGemPx}px` : '23%';
     // v0.10.646: completion earrings are positioned against the actual earring-art stage,
     // so each loose sits on the center of the round top plate instead of the full preview width.
-    // v0.10.672: showcaseSmall ring/pendant now use centered small-artwork stages so their stone placement matches Workshop completion proportions.
     // v0.10.671: store showcase earrings use the same round-top-plate centers as Workshop completion.
     // The mask is scaled with contain inside the earring artwork, so these stage-relative centers remain valid at showcase size.
     const slotTop = isSmall ? '33%' : (isCompletion || isShowcaseSmall) ? '20.5%' : '31%';

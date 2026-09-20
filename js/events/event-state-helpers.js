@@ -1,5 +1,10 @@
 import './oyatsu-character-position-lock.js';
 
+let eventServices = {};
+export function setServices(canSpendMealTime, spendMealTime, addFinance, addNotification) {
+  eventServices = { ...eventServices, canSpendMealTime, spendMealTime, addFinance, addNotification };
+}
+
 export function createEventStateHelpers(getState, saveGame, showToast, playSfx, roundedMetalWeight, metals) {
   const readState = () => {
     try { return getState?.() || null; } catch (_) { return null; }
@@ -8,6 +13,11 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
     try { void saveGame?.(); } catch (_) {}
   };
   return Object.freeze({
+    configureServices(services = {}) {
+      if (!services || typeof services !== 'object' || Array.isArray(services)) return { ok:false, reason:'invalid-services' };
+      eventServices = { ...eventServices, ...services };
+      return { ok:true };
+    },
     patchEventState(eventKey, patch) {
       try {
         const state = readState();
@@ -22,6 +32,89 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         return { ok:true };
       } catch (error) {
         console.warn('[EventStateHelpers] patchEventState failed', error);
+        return { ok:false, error };
+      }
+    },
+    eventRuntimeSnapshot(eventKey) {
+      try {
+        const state = readState();
+        if (!state) return { ok:false, reason:'state-unavailable' };
+        const key = String(eventKey || '').trim();
+        const event = key && state.events?.[key] && typeof state.events[key] === 'object' && !Array.isArray(state.events[key])
+          ? { ...state.events[key] }
+          : {};
+        return {
+          ok:true,
+          playerName:String(state.playerName || ''),
+          game:{
+            day:Math.max(1, Math.floor(Number(state.game?.day) || 1)),
+            startDate:String(state.game?.startDate || ''),
+            minutes:Math.max(0, Math.floor(Number(state.game?.minutes) || 0)),
+            money:Math.max(0, Math.floor(Number(state.game?.money) || 0)),
+            weather:String(state.game?.weather || '晴れ'),
+          },
+          wellbeing:{
+            hunger:Math.max(0, Math.floor(Number(state.wellbeing?.hunger) || 0)),
+            maxHunger:Math.max(1, Math.floor(Number(state.wellbeing?.maxHunger) || 7)),
+            lastMeal:String(state.wellbeing?.lastMeal || ''),
+            mealsEaten:Math.max(0, Math.floor(Number(state.wellbeing?.mealsEaten) || 0)),
+          },
+          mealTimeAvailable: (() => {
+            try { return eventServices.canSpendMealTime?.() !== false; } catch (_) { return true; }
+          })(),
+          event,
+        };
+      } catch (error) {
+        console.warn('[EventStateHelpers] eventRuntimeSnapshot failed', error);
+        return { ok:false, error };
+      }
+    },
+    settleEventMeal(eventKey, options = {}) {
+      try {
+        const state = readState();
+        if (!state) return { ok:false, reason:'state-unavailable' };
+        const key = String(eventKey || '').trim();
+        const price = Math.max(0, Math.floor(Number(options?.price) || 0));
+        const mealId = String(options?.mealId || '').trim();
+        if (!key || !mealId || price <= 0) return { ok:false, reason:'invalid-arguments' };
+        state.events = state.events && typeof state.events === 'object' && !Array.isArray(state.events) ? state.events : {};
+        const current = state.events[key] && typeof state.events[key] === 'object' && !Array.isArray(state.events[key]) ? state.events[key] : {};
+        state.events[key] = current;
+        if (current.charged) {
+          return {
+            ok:true,
+            alreadyCharged:true,
+            money:Math.max(0, Math.floor(Number(state.game?.money) || 0)),
+            hunger:Math.max(0, Math.floor(Number(state.wellbeing?.hunger) || 0)),
+          };
+        }
+        const money = Math.max(0, Math.floor(Number(state.game?.money) || 0));
+        if (money < price) return { ok:false, reason:'insufficient-funds', money, price };
+        state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
+        state.wellbeing = state.wellbeing && typeof state.wellbeing === 'object' && !Array.isArray(state.wellbeing) ? state.wellbeing : {};
+        const maxHunger = Math.max(1, Math.floor(Number(state.wellbeing.maxHunger) || 7));
+        const hungerBefore = Math.max(0, Math.min(maxHunger, Math.floor(Number(state.wellbeing.hunger) || 0)));
+        const mealLabel = String(options?.mealLabel || mealId);
+        state.game.money = money - price;
+        try { eventServices.addFinance?.(String(options?.financeLabel || `${mealLabel}で食事`), 0, price); } catch (_) {}
+        try { eventServices.spendMealTime?.(); } catch (_) {}
+        state.wellbeing.hunger = maxHunger;
+        state.wellbeing.lastMeal = mealId;
+        state.wellbeing.mealsEaten = Math.max(0, Math.floor(Number(state.wellbeing.mealsEaten) || 0)) + 1;
+        state.daily = state.daily && typeof state.daily === 'object' && !Array.isArray(state.daily) ? state.daily : {};
+        state.daily.meals = Array.isArray(state.daily.meals) ? state.daily.meals : [];
+        state.daily.meals.push({ id:mealId, name:mealLabel, price, recovery:Math.max(0, maxHunger - hungerBefore) });
+        current.charged = true;
+        current.mealPrice = price;
+        current.mealId = mealId;
+        current.mealLabel = mealLabel;
+        current.hungerBefore = hungerBefore;
+        current.hungerAfter = maxHunger;
+        try { eventServices.addNotification?.(`${mealLabel}を食べた`, `${price.toLocaleString('ja-JP')}円を支払い、空腹度が回復しました。`, 'special'); } catch (_) {}
+        persist();
+        return { ok:true, money:state.game.money, hunger:state.wellbeing.hunger, maxHunger, hungerBefore };
+      } catch (error) {
+        console.warn('[EventStateHelpers] settleEventMeal failed', error);
         return { ok:false, error };
       }
     },

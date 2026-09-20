@@ -317,6 +317,7 @@ export const SCREEN_AUDIO_SCENES = Object.freeze({
   glabToolGuide: 'glab',
   glabVisitVideoEvent: 'glab',
   kawaharaKnowledgeEvent: 'glab',
+  kawaharaGameEvent: 'glab',
 
   mysteryChineseMealEvent: 'meal-chinese',
   ridleyOkazakiSobaEvent: 'meal-soba',

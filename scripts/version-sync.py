@@ -206,6 +206,7 @@ RULES = [
     Rule('js/app.js', 'press-hold-controller.js import key', qparam(r'\./ui/press-hold-controller\.js'), keep_prefix),
     Rule('js/app.js', 'event-state-helpers.js import key', qparam(r'\./events/event-state-helpers\.js'), keep_prefix),
     Rule('js/app.js', 'retro-battle-frame-loader.js import key', qparam(r'\./events/retro-battle-frame-loader\.js'), keep_prefix),
+    Rule('js/app.js', 'mining-battle-event.js import key', qparam(r'\./events/mining-battle-event\.js'), keep_prefix),
     Rule('js/firebase-service.js', 'local-save-storage.js import key', qparam(r'\./local-save-storage\.js'), keep_prefix),
     Rule('js/audio.js', 'audio-scene-map.js import key', qparam(r'\./audio-scene-map\.js'), keep_prefix),
     Rule('js/game-data.js', 'game data VERSION', export_constant('VERSION'), keep_quote),

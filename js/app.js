@@ -59,6 +59,7 @@ import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.955'
 import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.955';
 import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.955'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.955';
 import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.955';
+import { shouldTriggerMiningBattle, createMiningBattleEnemyRotation, buildMiningBattleStartOptions, miningBattleRewardForResult, installMiningBattleFrameAssets } from './events/mining-battle-event.js?v=0.10.955';
 import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.955';
 
 
@@ -305,6 +306,7 @@ let kaitenzushiLoadNonce = 0;
 let okachimachiQuizSession = null;
 let looseShopOriginalQuizSession = null;
 let retroBattleSession = null;
+const miningBattleEnemyRotation = createMiningBattleEnemyRotation();
 let okachimachiQuizQuestionsPromise = null;
 let looseShopOriginalQuizQuestionsPromise = null;
 let cinemaEventVideosPromise = null;
@@ -7576,6 +7578,7 @@ function enterMiningFromOutside() {
   if (resumeKappaJadeEvent()) return;
   if (resumeMiningPazupanEvent()) return;
   if (maybeStartMiningPazupanEvent()) return;
+  if (maybeStartMiningBattleEvent()) return;
   setScreen('mining', {});
 }
 
@@ -11424,6 +11427,54 @@ function maybeStartRetroBattleEvent() {
   return true;
 }
 
+function maybeStartMiningBattleEvent() {
+  if (!state || illnessEventSuppressionActive()) return false;
+  if (!shouldTriggerMiningBattle()) return false;
+  const enemy = miningBattleEnemyRotation.next();
+  retroBattleSession = {
+    settled: false,
+    cleanup: null,
+    context: 'mining',
+    enemy,
+  };
+  setScreen('retroBattleEvent', {}, false);
+  return true;
+}
+
+function retroBattleStartOptions(session = retroBattleSession) {
+  const base = {
+    playerName: retroBattlePlayerName(),
+    inventory: retroBattleInventorySnapshot(),
+  };
+  if (session?.context !== 'mining') return base;
+  const enemyImage = new URL(session.enemy.image, document.baseURI).href;
+  return buildMiningBattleStartOptions({
+    playerName: base.playerName,
+    inventory: base.inventory,
+    enemy: session.enemy,
+    enemyImage,
+    baseOptions: {
+      ...base,
+      attackMode: 'mining',
+    },
+  });
+}
+
+function prepareMiningBattleFrame(frame, session = retroBattleSession) {
+  if (session?.context !== 'mining') return;
+  const applyApprovedAssets = () => {
+    try {
+      installMiningBattleFrameAssets(frame.contentDocument);
+    } catch (error) {
+      console.warn('[MiningBattle] approved asset style could not be installed', error);
+    }
+  };
+  frame.addEventListener('load', applyApprovedAssets, { once: true });
+  try {
+    if (frame.contentDocument?.readyState === 'complete') applyApprovedAssets();
+  } catch (_) {}
+}
+
 function applyRetroBattleInventoryChange(detail) {
   const itemKey = String(detail?.itemKey || '');
   const delta = Math.trunc(Number(detail?.delta) || 0);
@@ -11465,6 +11516,19 @@ function finishRetroBattleEvent(detail, session = retroBattleSession) {
   if (typeof session.cleanup === 'function') session.cleanup();
   syncRetroBattleInventoryFromResult(detail?.inventory);
 
+  if (session.context === 'mining') {
+    const reward = miningBattleRewardForResult(result);
+    if (reward && GEMS[reward.gemId]) {
+      state.inventory.rough = state.inventory.rough && typeof state.inventory.rough === 'object' ? state.inventory.rough : {};
+      state.inventory.rough[reward.gemId] = Math.max(0, Math.floor(Number(state.inventory.rough?.[reward.gemId]) || 0)) + reward.quantity;
+      addNotification('ダイヤモンド原石を手に入れました', '工房の原石へ追加されました。', 'special');
+    }
+    saveGame();
+    retroBattleSession = null;
+    setScreen('mining', {}, false);
+    return true;
+  }
+
   const baseMoney = Math.max(0, Math.floor(Number(state?.game?.money) || 0));
   const amount = retroBattleMoneyChange(baseMoney);
   if (result === 'victory') {
@@ -11489,10 +11553,13 @@ function finishRetroBattleEvent(detail, session = retroBattleSession) {
 function failRetroBattleEventLoad(error) {
   console.error('[RetroBattle] load failed', error);
   const session = retroBattleSession;
+  const miningBattle = session?.context === 'mining';
   if (typeof session?.cleanup === 'function') session.cleanup();
   retroBattleSession = null;
-  showToast('戦闘ミニゲームを読み込めませんでした。通常の御徒町へ戻ります。', 'error');
-  setScreen('okachimachi', {}, false);
+  showToast(miningBattle
+    ? '採掘戦闘ミニゲームを読み込めませんでした。通常の採掘画面へ戻ります。'
+    : '戦闘ミニゲームを読み込めませんでした。通常の御徒町へ戻ります。', 'error');
+  setScreen(miningBattle ? 'mining' : 'okachimachi', {}, false);
 }
 
 function bindRetroBattleFrame() {
@@ -11501,6 +11568,7 @@ function bindRetroBattleFrame() {
   const frame = root.querySelector('iframe[data-retro-battle-frame]');
   if (!(frame instanceof HTMLIFrameElement) || frame.dataset.retroBattleBound === '1') return;
   frame.dataset.retroBattleBound = '1';
+  prepareMiningBattleFrame(frame, session);
 
   session.cleanup = bindRetroBattleFrameLoader({
     frame,
@@ -11509,23 +11577,22 @@ function bindRetroBattleFrame() {
       && session === retroBattleSession
       && !session.settled
     ),
-    startOptions: () => ({
-      playerName: retroBattlePlayerName(),
-      inventory: retroBattleInventorySnapshot(),
-    }),
+    startOptions: () => retroBattleStartOptions(session),
     onInventoryChange: applyRetroBattleInventoryChange,
     onEnd: (detail) => finishRetroBattleEvent(detail, session),
     onError: failRetroBattleEventLoad,
   });
 }
 function renderRetroBattleEvent() {
+  const miningBattle = retroBattleSession?.context === 'mining';
   if (!retroBattleSession || retroBattleSession.settled) {
-    queueMicrotask(() => setScreen('okachimachi', {}, false));
-    return renderOkachimachi();
+    queueMicrotask(() => setScreen(miningBattle ? 'mining' : 'okachimachi', {}, false));
+    return miningBattle ? renderMining() : renderOkachimachi();
   }
   queueMicrotask(bindRetroBattleFrame);
+  const title = miningBattle ? '採掘 戦闘ミニゲーム' : '御徒町 戦闘ミニゲーム';
   return `<main class="retro-battle-event-host" style="position:fixed;inset:0;z-index:1200;overflow:hidden;background:#000;">
-    <iframe data-retro-battle-frame src="${RETRO_BATTLE_DOCUMENT_URL}?v=${VERSION}" title="御徒町 戦闘ミニゲーム" allow="autoplay" style="display:block;width:100%;height:100%;border:0;background:#000;visibility:hidden;"></iframe>
+    <iframe data-retro-battle-frame src="${RETRO_BATTLE_DOCUMENT_URL}?v=${VERSION}" title="${title}" allow="autoplay" style="display:block;width:100%;height:100%;border:0;background:#000;visibility:hidden;"></iframe>
   </main>`;
 }
 

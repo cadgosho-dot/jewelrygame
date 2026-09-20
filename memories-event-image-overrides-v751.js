@@ -34,6 +34,11 @@
     const style = document.createElement('style');
     style.id = LOOSE_QUIZ_STYLE_ID;
     style.textContent = `
+      /* Keep the event out of the portrait screen-content auto grid. Its
+         absolutely positioned dialogue must not collapse the containing row. */
+      body[data-screen="looseShopOriginalQuizEvent"] .screen-shell.event-shell-no-header>.screen-content{
+        display:block!important;align-content:normal!important
+      }
       body[data-screen="looseShopOriginalQuizEvent"] .screen-shell.event-shell-no-header>.screen-content,
       body[data-screen="looseShopOriginalQuizEvent"] .main-screen,
       body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2{
@@ -146,13 +151,15 @@
         margin:0!important;padding:10px 12px 12px!important;overflow-y:auto!important
       }
       html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2>.jxj-quiz-character-area-v2{
-        position:absolute!important;inset:0 0 clamp(92px,25vh,150px) 0!important;
+        position:absolute!important;left:50%!important;right:auto!important;
+        top:max(24px,env(safe-area-inset-top,0px))!important;bottom:-8px!important;
+        width:min(92vw,760px)!important;height:auto!important;
         display:flex!important;align-items:flex-start!important;justify-content:center!important;
-        padding:0!important;overflow:hidden!important;transform:none!important
+        padding:0!important;overflow:visible!important;transform:translateX(-50%)!important
       }
       html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-character-v2{
-        width:auto!important;height:auto!important;max-width:min(58vw,760px)!important;max-height:100%!important;
-        margin:auto!important;transform:none!important;object-fit:contain!important;object-position:center top!important
+        width:auto!important;height:88dvh!important;max-width:70vw!important;max-height:88dvh!important;
+        margin:0 auto!important;transform:none!important;object-fit:contain!important;object-position:center top!important
       }
       html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2>.jxj-quiz-dialogue-panel-v2{
         position:absolute!important;z-index:20!important;left:50%!important;right:auto!important;top:auto!important;
@@ -176,7 +183,7 @@
         grid-column:3!important;grid-row:1!important;justify-self:start!important;align-self:center!important;
         margin:0!important;padding:.34rem .78rem!important;font-size:clamp(.92rem,1.75vw,1.22rem)!important;line-height:1.1!important
       }
-      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2>.jxj-quiz-question-v2{
+      html[data-loose-quiz-orientation="landscape"] body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-question-panel-v2>h2{
         grid-column:1/-1!important;grid-row:2!important;margin:0!important;text-align:center!important;
         font-size:clamp(1.08rem,2.05vw,1.48rem)!important;line-height:1.35!important
       }

@@ -1,0 +1,39 @@
+name: finalize-mining-battle-manifest
+
+on:
+  push:
+    branches:
+      - work/mining-battle-complete-20260921
+    paths:
+      - .github/workflows/finalize-mining-battle-manifest-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/mining-battle-complete-20260921
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate asset manifest
+        run: |
+          python scripts/generate-assets-manifest.py
+      - name: Focused mining battle tests
+        run: |
+          node tools/test-mining-battle-event.mjs
+          node tools/test-mining-battle-integration.mjs
+          python scripts/check-retro-battle-frame-loader.py
+      - name: Commit manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ASSETS.md scripts/generate-assets-manifest.py
+          git rm .github/workflows/finalize-mining-battle-manifest-temp.yml
+          git commit -m "採掘戦闘アセット台帳と回帰検査を同期"
+          git push origin HEAD:work/mining-battle-complete-20260921

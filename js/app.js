@@ -58,8 +58,8 @@ import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.956'
 import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.956';
 import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.956';
 import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.956'; import { createEventStateHelpers, setServices } from './events/event-state-helpers.js?v=0.10.956';
-import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.956';
-import { shouldTriggerMiningBattle, createMiningBattleEnemyRotation, buildMiningBattleStartOptions, miningBattleRewardForResult, installMiningBattleFrameAssets } from './events/mining-battle-event.js?v=0.10.956';
+import { bindRetroBattleFrameLoader, createRetroBattleStateAdapter } from './events/retro-battle-frame-loader.js?v=0.10.956';
+import { createMiningBattleRuntime } from './events/mining-battle-event.js?v=0.10.956';
 import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.956';
 
 
@@ -306,7 +306,6 @@ let kaitenzushiLoadNonce = 0;
 let okachimachiQuizSession = null;
 let looseShopOriginalQuizSession = null;
 let retroBattleSession = null;
-const miningBattleEnemyRotation = createMiningBattleEnemyRotation();
 let okachimachiQuizQuestionsPromise = null;
 let looseShopOriginalQuizQuestionsPromise = null;
 let cinemaEventVideosPromise = null;
@@ -11401,109 +11400,38 @@ async function startOkachimachiQuizIfDue(eventState) {
   }
 }
 
-function retroBattlePlayerName() {
-  return String(state?.playerName || 'あなた').trim() || 'あなた';
-}
+const retroBattleStateAdapter = createRetroBattleStateAdapter({
+  getState: () => state,
+  save: saveGame,
+  itemKeys: RETRO_BATTLE_ITEM_KEYS,
+  moneyRate: RETRO_BATTLE_MONEY_RATE,
+  moneyCap: RETRO_BATTLE_MONEY_CAP,
+});
+const miningBattleRuntime = createMiningBattleRuntime((path) => new URL(path, document.baseURI).href);
 
-function retroBattleOwnedItemCount(itemKey) {
-  return Math.max(0, Math.floor(Number(state?.inventory?.items?.[itemKey]) || 0));
-}
-
-function retroBattleInventorySnapshot() {
-  return {
-    pazupan: retroBattleOwnedItemCount('pazupan'),
-    energyDrink: retroBattleOwnedItemCount('energyDrink'),
-  };
-}
+function retroBattlePlayerName() { return retroBattleStateAdapter.playerName(); }
+function retroBattleInventorySnapshot() { return retroBattleStateAdapter.inventorySnapshot(); }
 
 function maybeStartRetroBattleEvent() {
   if (!state || illnessEventSuppressionActive()) return false;
   if (Math.random() >= RETRO_BATTLE_EVENT_CHANCE) return false;
-  retroBattleSession = {
-    settled: false,
-    cleanup: null,
-  };
+  retroBattleSession = { settled: false, cleanup: null };
   setScreen('retroBattleEvent', {}, false);
   return true;
 }
 
 function maybeStartMiningBattleEvent() {
   if (!state || illnessEventSuppressionActive()) return false;
-  if (!shouldTriggerMiningBattle()) return false;
-  const enemy = miningBattleEnemyRotation.next();
-  retroBattleSession = {
-    settled: false,
-    cleanup: null,
-    context: 'mining',
-    enemy,
-  };
+  const session = miningBattleRuntime.createSession();
+  if (!session) return false;
+  retroBattleSession = session;
   setScreen('retroBattleEvent', {}, false);
   return true;
 }
 
-function retroBattleStartOptions(session = retroBattleSession) {
-  const base = {
-    playerName: retroBattlePlayerName(),
-    inventory: retroBattleInventorySnapshot(),
-  };
-  if (session?.context !== 'mining') return base;
-  const enemyImage = new URL(session.enemy.image, document.baseURI).href;
-  return buildMiningBattleStartOptions({
-    playerName: base.playerName,
-    inventory: base.inventory,
-    enemy: session.enemy,
-    enemyImage,
-    baseOptions: { attackMode: 'mining' },
-  });
-}
-
-function prepareMiningBattleFrame(frame, session = retroBattleSession) {
-  if (session?.context !== 'mining') return;
-  const applyApprovedAssets = () => {
-    try {
-      installMiningBattleFrameAssets(frame.contentDocument);
-    } catch (error) {
-      console.warn('[MiningBattle] approved asset style could not be installed', error);
-    }
-  };
-  frame.addEventListener('load', applyApprovedAssets, { once: true });
-  try {
-    if (frame.contentDocument?.readyState === 'complete') applyApprovedAssets();
-  } catch (_) {}
-}
-
-function applyRetroBattleInventoryChange(detail) {
-  const itemKey = String(detail?.itemKey || '');
-  const delta = Math.trunc(Number(detail?.delta) || 0);
-  if (!RETRO_BATTLE_ITEM_KEYS.includes(itemKey) || delta >= 0) return false;
-  state.inventory.items = state.inventory.items && typeof state.inventory.items === 'object' ? state.inventory.items : {};
-  const owned = retroBattleOwnedItemCount(itemKey);
-  if (owned <= 0) return false;
-  state.inventory.items[itemKey] = Math.max(0, owned + delta);
-  saveGame();
-  return true;
-}
-
-function syncRetroBattleInventoryFromResult(inventory) {
-  if (!inventory || typeof inventory !== 'object') return false;
-  state.inventory.items = state.inventory.items && typeof state.inventory.items === 'object' ? state.inventory.items : {};
-  let changed = false;
-  RETRO_BATTLE_ITEM_KEYS.forEach((itemKey) => {
-    if (!Object.prototype.hasOwnProperty.call(inventory, itemKey)) return;
-    const owned = retroBattleOwnedItemCount(itemKey);
-    const reported = Math.max(0, Math.floor(Number(inventory[itemKey]) || 0));
-    const next = Math.min(owned, reported);
-    if (next === owned) return;
-    state.inventory.items[itemKey] = next;
-    changed = true;
-  });
-  return changed;
-}
-
-function retroBattleMoneyChange(baseMoney) {
-  const money = Math.max(0, Math.floor(Number(baseMoney) || 0));
-  return Math.min(RETRO_BATTLE_MONEY_CAP, Math.floor(money * RETRO_BATTLE_MONEY_RATE));
-}
+function applyRetroBattleInventoryChange(detail) { return retroBattleStateAdapter.applyInventoryChange(detail); }
+function syncRetroBattleInventoryFromResult(inventory) { return retroBattleStateAdapter.syncInventory(inventory); }
+function retroBattleMoneyChange(baseMoney) { return retroBattleStateAdapter.moneyChange(baseMoney); }
 
 function finishRetroBattleEvent(detail, session = retroBattleSession) {
   if (!session || session !== retroBattleSession || session.settled) return false;
@@ -11513,11 +11441,8 @@ function finishRetroBattleEvent(detail, session = retroBattleSession) {
   if (typeof session.cleanup === 'function') session.cleanup();
   syncRetroBattleInventoryFromResult(detail?.inventory);
 
-  if (session.context === 'mining') {
-    const reward = miningBattleRewardForResult(result);
-    if (reward && GEMS[reward.gemId]) {
-      state.inventory.rough = state.inventory.rough && typeof state.inventory.rough === 'object' ? state.inventory.rough : {};
-      state.inventory.rough[reward.gemId] = Math.max(0, Math.floor(Number(state.inventory.rough?.[reward.gemId]) || 0)) + reward.quantity;
+  if (miningBattleRuntime.isSession(session)) {
+    if (miningBattleRuntime.applyReward(result, state, GEMS)) {
       addNotification('ダイヤモンド原石を手に入れました', '工房の原石へ追加されました。', 'special');
     }
     saveGame();
@@ -11550,7 +11475,7 @@ function finishRetroBattleEvent(detail, session = retroBattleSession) {
 function failRetroBattleEventLoad(error) {
   console.error('[RetroBattle] load failed', error);
   const session = retroBattleSession;
-  const miningBattle = session?.context === 'mining';
+  const miningBattle = miningBattleRuntime.isSession(session);
   if (typeof session?.cleanup === 'function') session.cleanup();
   retroBattleSession = null;
   showToast(miningBattle
@@ -11565,7 +11490,7 @@ function bindRetroBattleFrame() {
   const frame = root.querySelector('iframe[data-retro-battle-frame]');
   if (!(frame instanceof HTMLIFrameElement) || frame.dataset.retroBattleBound === '1') return;
   frame.dataset.retroBattleBound = '1';
-  prepareMiningBattleFrame(frame, session);
+  miningBattleRuntime.prepareFrame(frame, session);
 
   session.cleanup = bindRetroBattleFrameLoader({
     frame,
@@ -11574,14 +11499,17 @@ function bindRetroBattleFrame() {
       && session === retroBattleSession
       && !session.settled
     ),
-    startOptions: () => retroBattleStartOptions(session),
+    startOptions: () => miningBattleRuntime.startOptions(session, {
+      playerName: retroBattlePlayerName(),
+      inventory: retroBattleInventorySnapshot(),
+    }),
     onInventoryChange: applyRetroBattleInventoryChange,
     onEnd: (detail) => finishRetroBattleEvent(detail, session),
     onError: failRetroBattleEventLoad,
   });
 }
 function renderRetroBattleEvent() {
-  const miningBattle = retroBattleSession?.context === 'mining';
+  const miningBattle = miningBattleRuntime.isSession(retroBattleSession);
   if (!retroBattleSession || retroBattleSession.settled) {
     queueMicrotask(() => setScreen(miningBattle ? 'mining' : 'okachimachi', {}, false));
     return miningBattle ? renderMining() : renderOkachimachi();

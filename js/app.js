@@ -11453,10 +11453,7 @@ function retroBattleStartOptions(session = retroBattleSession) {
     inventory: base.inventory,
     enemy: session.enemy,
     enemyImage,
-    baseOptions: {
-      ...base,
-      attackMode: 'mining',
-    },
+    baseOptions: { attackMode: 'mining' },
   });
 }
 

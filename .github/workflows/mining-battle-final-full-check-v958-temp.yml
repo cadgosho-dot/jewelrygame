@@ -1,0 +1,41 @@
+name: mining-battle-final-full-check-v958
+
+on:
+  push:
+    branches:
+      - work/mining-battle-complete-20260921
+    paths:
+      - .github/workflows/mining-battle-final-full-check-v958-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: work/mining-battle-complete-20260921
+          fetch-depth: 1
+      - name: Prepare validation environment
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow playwright tinycss2 cssselect2 lxml
+          python3 -m playwright install --with-deps chromium
+      - name: Refresh asset manifest
+        run: python3 scripts/generate-assets-manifest.py --write
+      - name: Run full validation
+        env:
+          JXJ_REQUIRE_BROWSER_SMOKE: '1'
+        run: |
+          python3 scripts/check-3d-quiz-css.py
+          timeout 8m python3 -u scripts/check-current.py
+      - name: Commit final manifest and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ASSETS.md
+          git rm .github/workflows/mining-battle-final-full-check-v958-temp.yml
+          git commit -m "v0.10.958 採掘戦闘の最終総合検査PASS"
+          git push origin HEAD:work/mining-battle-complete-20260921

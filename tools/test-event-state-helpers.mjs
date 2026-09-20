@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { createEventStateHelpers } from '../js/events/event-state-helpers.js';
 
-const state = { events:{ wolfMotherButlerEvent:{ active:true, stage:'reward' } }, inventory:{ metals:{ gold:5 } } };
+const state = { playerName:'確認職人', game:{ day:12, startDate:'2026-09-01', minutes:720, money:10000, weather:'晴れ' }, wellbeing:{ hunger:2, maxHunger:7, lastMeal:'', mealsEaten:0 }, events:{ wolfMotherButlerEvent:{ active:true, stage:'reward' }, oyatsuMalatangEvent:{ active:true, stage:'meal', charged:false } }, inventory:{ metals:{ gold:5 } } };
 let saves = 0;
 const toasts = [];
 const sounds = [];
+const finances = [];
+const notifications = [];
+let mealTimeSpendCount = 0;
 const helper = createEventStateHelpers(
   () => state,
   () => { saves += 1; },
@@ -13,6 +16,12 @@ const helper = createEventStateHelpers(
   (value) => Math.round(Math.max(0, Number(value) || 0) * 10) / 10,
   { gold:{} },
 );
+helper.configureServices({
+  canSpendMealTime: () => true,
+  spendMealTime: () => { mealTimeSpendCount += 1; state.game.minutes += 60; },
+  addFinance: (...args) => finances.push(args),
+  addNotification: (...args) => notifications.push(args),
+});
 
 const reward = helper.grantMetalIgnoreCapacity('gold', 20, { message:'K18YGが20g追加されました', type:'success', withSound:false });
 assert.equal(reward.ok, true);
@@ -35,5 +44,48 @@ assert.equal(invalid.ok, false);
 assert.equal(state.inventory.metals.gold, 25);
 assert.equal(saves, 2);
 
+const runtime = helper.eventRuntimeSnapshot('oyatsuMalatangEvent');
+assert.equal(runtime.ok, true);
+assert.equal(runtime.playerName, '確認職人');
+assert.equal(runtime.game.money, 10000);
+assert.equal(runtime.wellbeing.hunger, 2);
+assert.equal(runtime.event.stage, 'meal');
+assert.equal(runtime.mealTimeAvailable, true);
+
+const meal = helper.settleEventMeal('oyatsuMalatangEvent', { price:3500, mealId:'oyatsuMalatang', mealLabel:'麻辣湯' });
+assert.equal(meal.ok, true);
+assert.equal(meal.alreadyCharged, undefined);
+assert.equal(state.game.money, 6500);
+assert.equal(state.wellbeing.hunger, 7);
+assert.equal(state.wellbeing.lastMeal, 'oyatsuMalatang');
+assert.equal(state.wellbeing.mealsEaten, 1);
+assert.equal(state.events.oyatsuMalatangEvent.charged, true);
+assert.equal(state.game.minutes, 780);
+assert.equal(mealTimeSpendCount, 1);
+assert.deepEqual(finances[0], ['麻辣湯で食事', 0, 3500]);
+assert.equal(notifications.length, 1);
+assert.equal(state.daily.meals.length, 1);
+assert.equal(state.daily.meals[0].name, '麻辣湯');
+assert.equal(saves, 3);
+
+const duplicateMeal = helper.settleEventMeal('oyatsuMalatangEvent', { price:3500, mealId:'oyatsuMalatang', mealLabel:'麻辣湯' });
+assert.equal(duplicateMeal.ok, true);
+assert.equal(duplicateMeal.alreadyCharged, true);
+assert.equal(state.game.money, 6500);
+assert.equal(state.wellbeing.mealsEaten, 1);
+assert.equal(mealTimeSpendCount, 1);
+assert.equal(finances.length, 1);
+assert.equal(state.daily.meals.length, 1);
+assert.equal(saves, 3);
+
+state.events.oyatsuMalatangEvent.charged = false;
+state.game.money = 1000;
+const insufficientMeal = helper.settleEventMeal('oyatsuMalatangEvent', { price:3500, mealId:'oyatsuMalatang', mealLabel:'麻辣湯' });
+assert.equal(insufficientMeal.ok, false);
+assert.equal(insufficientMeal.reason, 'insufficient-funds');
+assert.equal(state.game.money, 1000);
+assert.equal(state.wellbeing.mealsEaten, 1);
+assert.equal(saves, 3);
+
 console.log('EVENT STATE HELPERS TEST: PASS');
-console.log('イベント状態の既存参照を維持したままreward→dialogue8へ進行し、K18YG 20g付与も維持することを確認しました。');
+console.log('イベント状態参照・K18報酬・麻辣湯3500円一度だけ決済と空腹度全回復を確認しました。');

@@ -97,7 +97,7 @@ body[data-screen="orders"] .order-detail-grid {
   grid-template-columns: 1fr !important;
   gap: 0 !important;
   margin: 0 !important;
-  border: 1.25px solid rgba(255, 255, 255, .11) !important;
+  border: 2.25px solid rgba(255, 255, 255, .11) !important;
   border-radius: 11px !important;
   background: rgba(0, 0, 0, .18) !important;
   overflow: hidden !important;
@@ -110,7 +110,7 @@ body[data-screen="orders"] .order-detail-grid > div {
   min-height: 42px !important;
   padding: 0 !important;
   border: 0 !important;
-  border-top: 1px solid rgba(255, 255, 255, .10) !important;
+  border-top: 2px solid rgba(255, 255, 255, .10) !important;
   border-radius: 0 !important;
   background: transparent !important;
 }
@@ -252,7 +252,7 @@ body[data-screen="orders"] .order-craft-button strong {
     gap: 5px !important;
     height: 100% !important;
     padding: 6px !important;
-    border-right: 1px solid rgba(231, 192, 110, .24) !important;
+    border-right: 2px solid rgba(231, 192, 110, .24) !important;
     border-bottom: 0 !important;
   }
   body[data-screen="orders"] .order-customer-image {

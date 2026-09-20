@@ -46,7 +46,7 @@ body[data-screen="tropicalFishShop"] .tropical-shop-tabs button.tropical-transpa
   z-index:5!important;
   pointer-events:auto!important;
   touch-action:manipulation!important;
-  border:1.25px solid rgba(231,189,103,.75)!important;
+  border:2.25px solid rgba(231,189,103,.75)!important;
   border-radius:16px!important;
   color:#fff6e1!important;
   text-align:center!important;

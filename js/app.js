@@ -11400,17 +11400,8 @@ async function startOkachimachiQuizIfDue(eventState) {
   }
 }
 
-const retroBattleStateAdapter = createRetroBattleStateAdapter({
-  getState: () => state,
-  save: saveGame,
-  itemKeys: RETRO_BATTLE_ITEM_KEYS,
-  moneyRate: RETRO_BATTLE_MONEY_RATE,
-  moneyCap: RETRO_BATTLE_MONEY_CAP,
-});
+const retroBattleStateAdapter = createRetroBattleStateAdapter({ getState: () => state, save: saveGame, itemKeys: RETRO_BATTLE_ITEM_KEYS, moneyRate: RETRO_BATTLE_MONEY_RATE, moneyCap: RETRO_BATTLE_MONEY_CAP });
 const miningBattleRuntime = createMiningBattleRuntime((path) => new URL(path, document.baseURI).href);
-
-function retroBattlePlayerName() { return retroBattleStateAdapter.playerName(); }
-function retroBattleInventorySnapshot() { return retroBattleStateAdapter.inventorySnapshot(); }
 
 function maybeStartRetroBattleEvent() {
   if (!state || illnessEventSuppressionActive()) return false;
@@ -11429,17 +11420,13 @@ function maybeStartMiningBattleEvent() {
   return true;
 }
 
-function applyRetroBattleInventoryChange(detail) { return retroBattleStateAdapter.applyInventoryChange(detail); }
-function syncRetroBattleInventoryFromResult(inventory) { return retroBattleStateAdapter.syncInventory(inventory); }
-function retroBattleMoneyChange(baseMoney) { return retroBattleStateAdapter.moneyChange(baseMoney); }
-
 function finishRetroBattleEvent(detail, session = retroBattleSession) {
   if (!session || session !== retroBattleSession || session.settled) return false;
   const result = String(detail?.result || '');
   if (!['victory', 'defeat', 'escaped'].includes(result)) return false;
   session.settled = true;
   if (typeof session.cleanup === 'function') session.cleanup();
-  syncRetroBattleInventoryFromResult(detail?.inventory);
+  retroBattleStateAdapter.syncInventory(detail?.inventory);
 
   if (miningBattleRuntime.isSession(session)) {
     if (miningBattleRuntime.applyReward(result, state, GEMS)) {
@@ -11452,7 +11439,7 @@ function finishRetroBattleEvent(detail, session = retroBattleSession) {
   }
 
   const baseMoney = Math.max(0, Math.floor(Number(state?.game?.money) || 0));
-  const amount = retroBattleMoneyChange(baseMoney);
+  const amount = retroBattleStateAdapter.moneyChange(baseMoney);
   if (result === 'victory') {
     state.game.money = baseMoney + amount;
     if (amount > 0) addFinance('御徒町・戦闘ミニゲーム勝利', amount, 0);
@@ -11500,10 +11487,10 @@ function bindRetroBattleFrame() {
       && !session.settled
     ),
     startOptions: () => miningBattleRuntime.startOptions(session, {
-      playerName: retroBattlePlayerName(),
-      inventory: retroBattleInventorySnapshot(),
+      playerName: retroBattleStateAdapter.playerName(),
+      inventory: retroBattleStateAdapter.inventorySnapshot(),
     }),
-    onInventoryChange: applyRetroBattleInventoryChange,
+    onInventoryChange: retroBattleStateAdapter.applyInventoryChange,
     onEnd: (detail) => finishRetroBattleEvent(detail, session),
     onError: failRetroBattleEventLoad,
   });

@@ -23,6 +23,8 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check pillow playwright tinycss2 cssselect2 lxml
           python3 -m playwright install --with-deps chromium
+      - name: Refresh asset manifest
+        run: python3 scripts/generate-assets-manifest.py --write
       - name: Run full validation
         env:
           JXJ_REQUIRE_BROWSER_SMOKE: '1'
@@ -33,6 +35,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ASSETS.md
           git rm .github/workflows/mining-battle-final-full-check-temp.yml
           git commit -m "採掘戦闘の最終総合検査PASS"
           git push origin HEAD:work/mining-battle-complete-20260921

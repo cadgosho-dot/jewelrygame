@@ -66,6 +66,18 @@ def inspect(orientation,stage,attrs=True):
  return doc,result,skipped
 if __name__=='__main__':
  failures=[]
+ css=(ROOT/'quiz-event-v2.css').read_text()
+ approved=[
+  '3Dメガネ 携帯確認 rev5 固定',
+  'padding-bottom:44px!important;',
+  'font-size:clamp(.52rem,1.9vw,.68rem)!important;',
+  'max-height:min(40dvh,290px)!important;',
+  'max-height:min(19dvh,150px)!important;',
+  'width:min(40vw,440px)!important;',
+  'max-height:min(30dvh,180px)!important;',
+ ]
+ for token in approved:
+  if token not in css: failures.append('approved 3D glasses rev5 token missing: '+token)
  for orientation in ['portrait','landscape']:
   for stage in ['intro1','intro2','question']:
    doc,r,skipped=inspect(orientation,stage)

@@ -5,7 +5,7 @@ import {
   homePropertyMonthlyRent,
   homePropertyMoveTotal,
   homePropertyBackgroundAsset,
-} from './home-property.js?v=0.10.957';
+} from './home-property.js?v=0.10.958';
 
 const HOME_PROPERTY_MENU_STYLE_ID = 'home-property-menu-spacing-style';
 

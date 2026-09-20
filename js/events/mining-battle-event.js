@@ -1,5 +1,5 @@
 // 採掘場所選択前に発生する採掘戦闘イベントの独立ロジック。
-// 本体へ接続するまで副作用を持たせず、既存の御徒町戦闘UI・セーブ形式を変更しない。
+// 採掘戦闘の独立ロジック。既存の御徒町戦闘UI・セーブ形式を変更せず、承認済み透明PNGだけを参照する。
 
 export const MINING_BATTLE_TRIGGER_DENOMINATOR = 30;
 export const MINING_BATTLE_REWARD_GEM_ID = 'diamond';

@@ -101,3 +101,46 @@ export function installMiningBattleFrameAssets(doc) {
   doc.head.appendChild(style);
   return true;
 }
+
+
+export function createMiningBattleRuntime(resolveAssetUrl = (value) => value) {
+  const rotation = createMiningBattleEnemyRotation();
+  const isSession = (session) => session?.context === 'mining';
+
+  return Object.freeze({
+    isSession,
+    createSession(random = Math.random) {
+      if (!shouldTriggerMiningBattle(random)) return null;
+      return { settled: false, cleanup: null, context: 'mining', enemy: rotation.next() };
+    },
+    startOptions(session, base = {}) {
+      if (!isSession(session)) return { ...base };
+      return buildMiningBattleStartOptions({
+        enemy: session.enemy,
+        enemyImage: resolveAssetUrl(session.enemy.image),
+        playerName: base.playerName,
+        inventory: base.inventory,
+        baseOptions: { attackMode: 'mining' },
+      });
+    },
+    prepareFrame(frame, session) {
+      if (!isSession(session)) return false;
+      const apply = () => {
+        try { installMiningBattleFrameAssets(frame.contentDocument); }
+        catch (error) { console.warn('[MiningBattle] approved asset style could not be installed', error); }
+      };
+      frame.addEventListener('load', apply, { once: true });
+      try { if (frame.contentDocument?.readyState === 'complete') apply(); } catch (_) {}
+      return true;
+    },
+    applyReward(result, gameState, gems = {}) {
+      const reward = miningBattleRewardForResult(result);
+      if (!reward || !gems?.[reward.gemId] || !gameState?.inventory) return null;
+      const rough = gameState.inventory.rough && typeof gameState.inventory.rough === 'object'
+        ? gameState.inventory.rough
+        : (gameState.inventory.rough = {});
+      rough[reward.gemId] = Math.max(0, Math.floor(Number(rough[reward.gemId]) || 0)) + reward.quantity;
+      return reward;
+    },
+  });
+}

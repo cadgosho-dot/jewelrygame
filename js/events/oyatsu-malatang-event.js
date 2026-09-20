@@ -1,4 +1,4 @@
-import { suspendAudio, resumeAudio, playSfx, vibrate } from '../audio.js?v=0.10.959';
+import { suspendAudio, resumeAudio, playSfx, vibrate } from '../audio.js?v=0.10.960';
 
 const OVERLAY_ID='jxj-oyatsu-malatang-overlay';
 const STYLE_ID='jxj-oyatsu-malatang-style';
@@ -44,7 +44,7 @@ const yen=(n)=>`${Math.max(0,Math.floor(Number(n)||0)).toLocaleString('ja-JP')}å
 
 function ensureStyle(){
   if(document.getElementById(STYLE_ID))return;
-  const l=document.createElement('link');l.id=STYLE_ID;l.rel='stylesheet';l.href='./oyatsu-malatang-event.css?v=0.10.959';document.head.appendChild(l);
+  const l=document.createElement('link');l.id=STYLE_ID;l.rel='stylesheet';l.href='./oyatsu-malatang-event.css?v=0.10.960';document.head.appendChild(l);
 }
 function playBgm(){
   try{

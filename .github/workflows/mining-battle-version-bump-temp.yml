@@ -1,0 +1,41 @@
+name: mining-battle-version-bump
+
+on:
+  push:
+    branches:
+      - work/mining-battle-complete-20260921
+    paths:
+      - .github/workflows/mining-battle-version-bump-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: work/mining-battle-complete-20260921
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bump build version
+        run: |
+          python scripts/version-sync.py --set 0.10.958
+          python scripts/generate-assets-manifest.py --write
+          python scripts/version-sync.py --check
+      - name: Focused regression checks
+        run: |
+          node tools/test-mining-battle-event.mjs
+          node tools/test-mining-battle-integration.mjs
+          python scripts/check-retro-battle-frame-loader.py
+      - name: Commit versioned implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git rm .github/workflows/mining-battle-version-bump-temp.yml
+          git commit -m "v0.10.958 採掘戦闘ミニゲーム実装"
+          git push origin HEAD:work/mining-battle-complete-20260921

@@ -12,6 +12,7 @@ import {
   shouldTriggerMiningBattle,
   createMiningBattleEnemyRotation,
   buildMiningBattleStartOptions,
+  createMiningBattleRuntime,
 } from '../js/events/mining-battle-event.js';
 
 assert.equal(MINING_BATTLE_TRIGGER_DENOMINATOR, 30);
@@ -72,4 +73,21 @@ assert.equal(miningBattleRewardForResult('escaped'), null);
   assert.match(appended[0].textContent, /\.\.\/mining-battle\/pickaxe\.png/);
   assert.equal(installMiningBattleFrameAssets(doc), true);
   assert.equal(appended.length, 1);
+}
+
+{
+  const runtime = createMiningBattleRuntime((path) => `https://example.test/${path}`);
+  const session = runtime.createSession(() => 0);
+  assert.equal(runtime.isSession(session), true);
+  assert.equal(session.enemy.id, 'mole');
+  const start = runtime.startOptions(session, { playerName: '職人', inventory: { pazupan: 2 } });
+  assert.equal(start.attackMode, 'mining');
+  assert.equal(start.enemyName, 'モグラ');
+  assert.match(start.enemyImage, /^https:\/\/example\.test\/assets\/minigames\/mining-battle\/mole\.png$/);
+
+  const gameState = { inventory: { rough: {} } };
+  assert.deepEqual(runtime.applyReward('victory', gameState, { diamond: {} }), { gemId: 'diamond', quantity: 1 });
+  assert.equal(gameState.inventory.rough.diamond, 1);
+  assert.equal(runtime.applyReward('defeat', gameState, { diamond: {} }), null);
+  assert.equal(gameState.inventory.rough.diamond, 1);
 }

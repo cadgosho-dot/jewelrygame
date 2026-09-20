@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / 'js' / 'app.js'
 WHITE_BUNNY_TONKATSU = ROOT / 'js' / 'events' / 'white-bunny-tonkatsu-event.js'
 OYATSU_MALATANG_MODULE = ROOT / 'js' / 'events' / 'oyatsu-malatang-event.js'
+KAWAHARA_GAME_EVENT_MODULE = ROOT / 'js' / 'events' / 'kawahara-game-event.js'
 VERSION_FILE = ROOT / 'VERSION'
 OUTPUT = ROOT / 'EVENT_PROBABILITY_LIST.md'
 CONST_RE = re.compile(r'^(?:export\s+)?const\s+([A-Z0-9_]+)\s*=\s*(.+?);\s*$', re.M)
@@ -121,6 +122,7 @@ EVENT_GROUPS = [
         ('ROBBERY_DAILY_CHANCE', '店舗・強盗', '日次対象判定。木刀効果中はこの確率の50%'),
         ('GLAB_VISIT_VIDEO_EVENT_CHANCE', 'g-Lab.訪問動画', 'g-Lab.の新規イベント判定時'),
         ('KAWAHARA_KNOWLEDGE_EVENT_CHANCE', 'カワハラ加工知識', 'g-Lab.の新規イベント判定時'),
+        ('KAWAHARA_GAME_EVENT_CHANCE', 'カワハラ・ゲーム制作', '300日目以降・g-Lab.入店ごと・一度だけ'),
         ('KAPPA_JADE_EVENT_CHANCE', '河原の河童・翡翠', '河原選択・1日1回など'),
         ('WORKSHOP_KAPPA_JADE_EVENT_CHANCE', '工房の河童・翡翠', '河原の河童経験後・クールダウン等'),
         ('YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE', '弱虫ローズクォーツ', '工房の対象判定時'),
@@ -144,6 +146,9 @@ def generate() -> str:
     malatang_exprs, _ = constants(OYATSU_MALATANG_MODULE.read_text(encoding='utf-8'))
     exprs['OYATSU_MALATANG_EVENT_CHANCE'] = malatang_exprs['OYATSU_MALATANG_EVENT_CHANCE']
     source_paths['OYATSU_MALATANG_EVENT_CHANCE'] = 'js/events/oyatsu-malatang-event.js'
+    kawahara_exprs, _ = constants(KAWAHARA_GAME_EVENT_MODULE.read_text(encoding='utf-8'))
+    exprs['KAWAHARA_GAME_EVENT_CHANCE'] = kawahara_exprs['KAWAHARA_GAME_EVENT_CHANCE']
+    source_paths['KAWAHARA_GAME_EVENT_CHANCE'] = 'js/events/kawahara-game-event.js'
     values = numeric_values(exprs)
     version = VERSION_FILE.read_text(encoding='utf-8').strip()
 

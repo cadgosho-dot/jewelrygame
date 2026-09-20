@@ -80,7 +80,7 @@
 | assets/audio/bgm-meal-korean.ogg | 音源 | 103,510 B | - | - | `js/audio-scene-map.js:179 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1f0c7ee1677d5e17aa14456b7d872f2ce806df2db5974efe7eabb646f4f59b83 |
 | assets/audio/bgm-meal-ramen.ogg | 音源 | 165,743 B | - | - | `tools/test-audio-transitions.mjs:73 (basename)`<br>`js/audio-scene-map.js:152 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2fcca6da35b52d1107cb95193c27bef1cd62fbf11fdb4c2928d0eaf343815d0d |
 | assets/audio/bgm-meal-soba.ogg | 音源 | 93,034 B | - | - | `js/audio-scene-map.js:143 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ab37e1cd68c43c0b2b1bb933731d027ec4559a3725cdecabddacfbd47ca710b4 |
-| assets/audio/bgm-meal.ogg | 音源 | 168,641 B | - | - | `js/events/oyatsu-malatang-event.js:15`<br>`scripts/check-oyatsu-malatang-event.py:31` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b38b184cf6c99ff50c8ef0f663d24a48645b72bff7f333658b6592fd5c58aaf8 |
+| assets/audio/bgm-meal.ogg | 音源 | 168,641 B | - | - | `js/events/oyatsu-malatang-event.js:15`<br>`scripts/check-oyatsu-malatang-event.py:33` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b38b184cf6c99ff50c8ef0f663d24a48645b72bff7f333658b6592fd5c58aaf8 |
 | assets/audio/bgm-mining.ogg | 音源 | 89,509 B | - | - | `js/audio-scene-map.js:36 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9087c169cc9c7c497a457a722c12710989ed7ac821b0fa0b85abdc293cf8875e |
 | assets/audio/bgm-okachimachi.ogg | 音源 | 84,709 B | - | - | `tools/test-audio-transitions.mjs:67 (basename)`<br>`js/audio-scene-map.js:61 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 8e5631c81a3cd02c93bd555e5fd39d794df68db608b99c4c4375407cf68c1c8f |
 | assets/audio/bgm-phone.ogg | 音源 | 191,519 B | - | - | `tools/validate-audio-scenes.mjs:87` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7409e4dcca324bd460d648d3a3346e8151b89b9b477eb0774aac12c162c081eb |

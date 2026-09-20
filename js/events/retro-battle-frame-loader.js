@@ -124,3 +124,50 @@ export function bindRetroBattleFrameLoader({
   queueMicrotask(handleFrameLoad);
   return cleanup;
 }
+
+
+export function createRetroBattleStateAdapter({ getState, save, itemKeys = [], moneyRate = 0, moneyCap = 0 } = {}) {
+  const state = () => (typeof getState === 'function' ? getState() : null);
+  const owned = (key) => Math.max(0, Math.floor(Number(state()?.inventory?.items?.[key]) || 0));
+
+  return Object.freeze({
+    playerName() {
+      return String(state()?.playerName || 'あなた').trim() || 'あなた';
+    },
+    inventorySnapshot() {
+      return Object.fromEntries(itemKeys.map((key) => [key, owned(key)]));
+    },
+    applyInventoryChange(detail) {
+      const key = String(detail?.itemKey || '');
+      const delta = Math.trunc(Number(detail?.delta) || 0);
+      const current = state();
+      if (!itemKeys.includes(key) || delta >= 0 || !current?.inventory) return false;
+      current.inventory.items = current.inventory.items && typeof current.inventory.items === 'object' ? current.inventory.items : {};
+      const count = owned(key);
+      if (count <= 0) return false;
+      current.inventory.items[key] = Math.max(0, count + delta);
+      if (typeof save === 'function') save();
+      return true;
+    },
+    syncInventory(inventory) {
+      const current = state();
+      if (!inventory || typeof inventory !== 'object' || !current?.inventory) return false;
+      current.inventory.items = current.inventory.items && typeof current.inventory.items === 'object' ? current.inventory.items : {};
+      let changed = false;
+      itemKeys.forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(inventory, key)) return;
+        const count = owned(key);
+        const reported = Math.max(0, Math.floor(Number(inventory[key]) || 0));
+        const next = Math.min(count, reported);
+        if (next === count) return;
+        current.inventory.items[key] = next;
+        changed = true;
+      });
+      return changed;
+    },
+    moneyChange(baseMoney) {
+      const money = Math.max(0, Math.floor(Number(baseMoney) || 0));
+      return Math.min(Math.max(0, Math.floor(Number(moneyCap) || 0)), Math.floor(money * Math.max(0, Number(moneyRate) || 0)));
+    },
+  });
+}

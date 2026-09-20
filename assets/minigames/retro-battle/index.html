@@ -276,6 +276,23 @@
   }
 
 </style>
+<style id="mining-battle-runtime-style">
+body.mining-battle-mode .bg-photo{
+  background-image:linear-gradient(rgba(10,18,32,.20),rgba(10,18,32,.12)),url("../../images/mining.webp")!important;
+}
+.mining-pickaxe-fx{
+  position:absolute;width:clamp(150px,30vw,310px);height:clamp(150px,30vw,310px);
+  background-image:url("../mining-battle/pickaxe.png");background-repeat:no-repeat;
+  background-position:center;background-size:contain;transform-origin:50% 88%;
+  pointer-events:none;z-index:14;opacity:0;
+}
+@media (orientation:portrait){
+  body.mining-battle-mode .bg-photo{
+    background-image:linear-gradient(rgba(10,18,32,.20),rgba(10,18,32,.12)),url("../../images/mining-portrait.webp")!important;
+  }
+  .mining-pickaxe-fx{width:clamp(145px,46vw,270px);height:clamp(145px,46vw,270px)}
+}
+</style>
 </head>
 <body>
 <div class="game" id="game" aria-label="レトロRPG戦闘ミニゲーム">
@@ -409,6 +426,27 @@
 
   function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
   function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+  let miningDigBuffer = null;
+  function applyBattleMode(){
+    document.body.classList.toggle('mining-battle-mode', startOptions.attackMode === 'mining');
+  }
+  async function prepareMiningDig(){
+    if(miningDigBuffer || !audioCtx) return;
+    try{
+      const response = await fetch('../../audio/sfx-dig.ogg');
+      if(!response.ok) return;
+      const bytes = await response.arrayBuffer();
+      miningDigBuffer = await audioCtx.decodeAudioData(bytes);
+    }catch(e){}
+  }
+  function playMiningDig(){
+    if(muted || !audioCtx || !miningDigBuffer || !sfxGain) return;
+    const sound = audioCtx.createBufferSource();
+    sound.buffer = miningDigBuffer;
+    sound.connect(sfxGain);
+    sound.start();
+  }
 
   // ===== 激しめ戦闘BGM / 効果音 =====
   let audioCtx = null;
@@ -677,8 +715,10 @@
     setTimeout(()=>enemySprite.classList.remove("enemy-impact"),410);
     addFxEl("impact-ring",x,y,430);
     if(kind === "attack"){
-      const slash = addFxEl("slash-fx",x,y,360);
-      slash.style.transform = "translate(-50%,-50%) rotate(-30deg)";
+      if(startOptions.attackMode !== "mining"){
+        const slash = addFxEl("slash-fx",x,y,360);
+        slash.style.transform = "translate(-50%,-50%) rotate(-30deg)";
+      }
       burstParticles(x,y,26,["#fff","#ffe36a","#ff7f37"]);
     }
   }
@@ -957,25 +997,53 @@
   async function playerAttack(kind){
     if(locked) return;
     await ensureAudio();
-    locked = true; setButtons(true); state.turn++;
+    locked = true; setButtons(true);
+    if(kind === "attack" && startOptions.attackMode === "mining") await prepareMiningDig();
+    state.turn++;
 
     if(kind === "attack"){
-      say(`${config.playerName}の こうげき！`);
-      playSfx("attack");
-      await wait(250);
-      const {x,y}=enemyCenter();
-      const slash = addFxEl("slash-fx",x,y,360);
-      slash.style.transform = "translate(-50%,-50%) rotate(-30deg)";
-      burstParticles(x,y,18,["#fff","#ffe36a","#ff8a38"]);
-      await wait(120);
-      const dmg = rnd(config.attackMin, config.attackMax);
-      state.enemyHp -= dmg;
-      impactEnemy("attack");
-      damagePop(dmg,"-");
-      game.classList.add("flash");
-      await wait(300);
-      game.classList.remove("flash");
-      say(`${currentEnemy.name}に ${dmg}の ダメージ！`);
+      if(startOptions.attackMode === "mining"){
+        say(`${config.playerName}の こうげき！`);
+        await wait(250);
+        const {x,y}=enemyCenter();
+        const pickaxe = addFxEl("mining-pickaxe-fx",x,y,420);
+        pickaxe.style.left = `${x - pickaxe.offsetWidth * .5}px`;
+        pickaxe.style.top = `${y - pickaxe.offsetHeight * .20}px`;
+        pickaxe.animate([
+          {offset:0,opacity:0,transform:"translate(32%,-22%) rotate(42deg) scale(.92)"},
+          {offset:.16,opacity:1},
+          {offset:.56,opacity:1,transform:"translate(-34%,2%) rotate(-31deg) scale(1)"},
+          {offset:1,opacity:0,transform:"translate(-38%,8%) rotate(-35deg) scale(.98)"}
+        ],{duration:320,easing:"ease-out",fill:"both"});
+        await wait(180);
+        playMiningDig();
+        burstParticles(x,y,18,["#fff","#ffe36a","#ff8a38"]);
+        const dmg = rnd(config.attackMin, config.attackMax);
+        state.enemyHp -= dmg;
+        impactEnemy("attack");
+        damagePop(dmg,"-");
+        game.classList.add("flash");
+        await wait(240);
+        game.classList.remove("flash");
+        say(`${currentEnemy.name}に ${dmg}の ダメージ！`);
+      }else{
+        say(`${config.playerName}の こうげき！`);
+        playSfx("attack");
+        await wait(250);
+        const {x,y}=enemyCenter();
+        const slash = addFxEl("slash-fx",x,y,360);
+        slash.style.transform = "translate(-50%,-50%) rotate(-30deg)";
+        burstParticles(x,y,18,["#fff","#ffe36a","#ff8a38"]);
+        await wait(120);
+        const dmg = rnd(config.attackMin, config.attackMax);
+        state.enemyHp -= dmg;
+        impactEnemy("attack");
+        damagePop(dmg,"-");
+        game.classList.add("flash");
+        await wait(300);
+        game.classList.remove("flash");
+        say(`${currentEnemy.name}に ${dmg}の ダメージ！`);
+      }
     }
 
     if(kind === "run"){
@@ -1085,7 +1153,7 @@
     enemyData: ENEMIES,
     magicData: MAGICS,
     itemData: ITEMS,
-    start(options = {}){ startOptions = {...options}; config = {...DEFAULTS, ...options}; resetState(); },
+    start(options = {}){ startOptions = {...options}; config = {...DEFAULTS, ...options}; applyBattleMode(); resetState(); },
     setInventory(inventory){ state.inventory = normalizeInventory(inventory); updateUI(); return {...state.inventory}; },
     getInventory(){ return {...(state.inventory || {})}; },
     getState(){ return JSON.parse(JSON.stringify(state)); },

@@ -75,6 +75,15 @@ def provenance_map() -> dict[str, dict[str, str]]:
         'source': 'ユーザー指定正式音源（2026-09-19 / とんかつ.mp3）',
         'permission': '変更禁止（受領音源と同一バイト。再生成・再圧縮禁止）',
     }
+    for rel, source in [
+        ('assets/minigames/mining-battle/mole.png', 'モグラ'),
+        ('assets/minigames/mining-battle/bat.png', 'コウモリ'),
+        ('assets/minigames/mining-battle/pickaxe.png', 'ツルハシ'),
+    ]:
+        provenance[rel] = {
+            'source': f'ユーザー提供正式画像（2026-09-21 / {source} / 背景除去・透明PNG化を承認）',
+            'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更禁止）',
+        }
     return provenance
 
 SOURCE_ORDER = [

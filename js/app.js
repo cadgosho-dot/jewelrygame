@@ -1,65 +1,66 @@
 import './aquarium/axolotl.js';
-import './aquarium/tropical-shop-approved-ui.js?v=0.10.957';
-import './events/oyatsu-daisuki-approved-ui.js?v=0.10.957';
-import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.957';
-import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.957';
+import './aquarium/tropical-shop-approved-ui.js?v=0.10.958';
+import './events/oyatsu-daisuki-approved-ui.js?v=0.10.958';
+import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.958';
+import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.958';
 import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
   recommendedPrice, productionCost, productionHours, itemName, roundThousand, roughSalePrice, loosePurchasePrice, looseSalePrice, looseCutPriceMultiplier, looseShapeIdsForGem, defaultLooseShapeForGem,
   clock, nextWeather, AQUARIUM_CONFIG, createInitialAquariumState, normalizeAquariumState,
-} from './game-data.js?v=0.10.957';
+} from './game-data.js?v=0.10.958';
 
-const UI_BUILD_VERSION = '0.10.957';
-import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.957';
-import { resolveAudioScene } from './audio-scene-map.js?v=0.10.957';
+const UI_BUILD_VERSION = '0.10.958';
+import { configureAudio, unlockAudio, releaseStartupAudioHold, applyAudioSettings, switchAudio, updateMainEnvironment, playSfx, startPoliceSiren, setPoliceSirenGain, stopPoliceSiren, startWristFoundDarkDrone, stopWristFoundDarkDrone, vibrate, suspendAudio, resumeAudio, stopMealAudio, duckCurrentAmbient } from './audio.js?v=0.10.958';
+import { resolveAudioScene } from './audio-scene-map.js?v=0.10.958';
 import { japaneseHolidayName } from './japan-holidays.js';
-import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.957';
+import { dailyGemSummaryForDate } from './daily-gems-index.js?v=0.10.958';
 import {
   initializeFirebase, observeAuth, emailLogin, emailSignup, logout,
   needsEmailVerification, resendVerificationEmail, refreshAuthUser, requestPasswordReset, currentProviderKind,
   loadState, saveState, getCloudSaveDiagnostics, deleteGameData, deleteAccountCompletely, claimSession, watchSession, heartbeat, firebaseErrorMessage,
   createGiftCode, inspectGiftCode, claimGiftCode, cancelGiftCode, normalizeGiftCode, confirmGiftCloudSave, giftErrorMessage,
-} from './firebase-service.js?v=0.10.957';
-import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.957';
-import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.957';
-import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.957';
-import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.957';
-import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.957';
-import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.957';
-import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.957';
-import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.957';
-import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.957';
-import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.957';
-import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.957';
-import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.957';
-import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.957';
-import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.957';
-import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.957';
-import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.957';
-import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.957';
-import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.957';
-import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.957';
-import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.957';
-import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.957';
-import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.957';
-import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.957';
-import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.957';
-import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.957';
-import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.957';
-import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.957';
-import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.957';
-import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.957';
-import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.957';
-import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.957';
-import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.957';
-import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.957';
-import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.957';
-import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.957';
-import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.957';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.957'; import { createEventStateHelpers, setServices } from './events/event-state-helpers.js?v=0.10.957';
-import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.957';
-import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.957';
+} from './firebase-service.js?v=0.10.958';
+import { readIndexedDbSave, writeIndexedDbSave, deleteIndexedDbSave } from './local-save-storage.js?v=0.10.958';
+import { createLazyModuleManager } from './runtime/lazy-modules.js?v=0.10.958';
+import { installFinishedVideoCacheWarm } from './runtime/finished-video-cache-warm.js?v=0.10.958';
+import { createWinterColdTextEffect } from './ui/winter-cold-text-effect.js?v=0.10.958';
+import { createToastPresenter } from './ui/toast-presenter.js?v=0.10.958';
+import { createModalPresenter } from './ui/modal-presenter.js?v=0.10.958';
+import { createAutosaveStatusPresenter } from './ui/autosave-status-presenter.js?v=0.10.958';
+import { fallbackCopyText } from './ui/clipboard-fallback.js?v=0.10.958';
+import { giftCategoryLabel, giftStatusLabel } from './ui/gift-labels.js?v=0.10.958';
+import { craftSurfaceParts, craftSurfaceFinishId } from './ui/craft-surface.js?v=0.10.958';
+import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.958';
+import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.958';
+import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.958';
+import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.958';
+import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.958';
+import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.958';
+import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.958';
+import { formatWorkshopStaffQualityDescription } from './ui/workshop-staff-quality-description.js?v=0.10.958';
+import { formatWorkshopLooseDisplayName } from './ui/workshop-loose-display-name.js?v=0.10.958';
+import { formatMetalMarketDateLabel } from './ui/metal-market-date-label.js?v=0.10.958';
+import { formatMetalPriceDateLabel } from './ui/metal-price-date-label.js?v=0.10.958';
+import { formatPhoneItemEffectText } from './ui/phone-item-effect-text.js?v=0.10.958';
+import { formatSaveDiagnosticDateLabel } from './ui/save-diagnostic-date-label.js?v=0.10.958';
+import { formatSaveDiagnosticBytesLabel } from './ui/save-diagnostic-bytes-label.js?v=0.10.958';
+import { formatSaveDiagnosticCapacityLabel } from './ui/save-diagnostic-capacity-label.js?v=0.10.958';
+import { formatBirthdayJapaneseLabel } from './ui/birthday-japanese-label.js?v=0.10.958';
+import { formatGameDateLabel } from './ui/game-date-label.js?v=0.10.958';
+import { formatFinanceRowDateLabel } from './ui/finance-row-date-label.js?v=0.10.958';
+import { formatNotificationDateLabel } from './ui/notification-date-label.js?v=0.10.958';
+import { formatCustomerPreferenceLabel } from './ui/customer-preference-label.js?v=0.10.958';
+import { formatCustomerTemplateText } from './ui/customer-template-text.js?v=0.10.958';
+import { formatStoreDisplayName } from './ui/store-display-name.js?v=0.10.958';
+import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.958';
+import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.958';
+import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.958';
+import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.958';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.958'; import { createEventStateHelpers, setServices } from './events/event-state-helpers.js?v=0.10.958';
+import { bindRetroBattleFrameLoader, createRetroBattleStateAdapter } from './events/retro-battle-frame-loader.js?v=0.10.958';
+import { createMiningBattleRuntime } from './events/mining-battle-event.js?v=0.10.958';
+import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.958';
 
 
 
@@ -7575,6 +7576,7 @@ function enterMiningFromOutside() {
   if (resumeKappaJadeEvent()) return;
   if (resumeMiningPazupanEvent()) return;
   if (maybeStartMiningPazupanEvent()) return;
+  if (maybeStartMiningBattleEvent()) return;
   setScreen('mining', {});
 }
 
@@ -11397,63 +11399,24 @@ async function startOkachimachiQuizIfDue(eventState) {
   }
 }
 
-function retroBattlePlayerName() {
-  return String(state?.playerName || 'あなた').trim() || 'あなた';
-}
-
-function retroBattleOwnedItemCount(itemKey) {
-  return Math.max(0, Math.floor(Number(state?.inventory?.items?.[itemKey]) || 0));
-}
-
-function retroBattleInventorySnapshot() {
-  return {
-    pazupan: retroBattleOwnedItemCount('pazupan'),
-    energyDrink: retroBattleOwnedItemCount('energyDrink'),
-  };
-}
+const retroBattleStateAdapter = createRetroBattleStateAdapter({ getState: () => state, save: saveGame, itemKeys: RETRO_BATTLE_ITEM_KEYS, moneyRate: RETRO_BATTLE_MONEY_RATE, moneyCap: RETRO_BATTLE_MONEY_CAP });
+const miningBattleRuntime = createMiningBattleRuntime((path) => new URL(path, document.baseURI).href);
 
 function maybeStartRetroBattleEvent() {
   if (!state || illnessEventSuppressionActive()) return false;
   if (Math.random() >= RETRO_BATTLE_EVENT_CHANCE) return false;
-  retroBattleSession = {
-    settled: false,
-    cleanup: null,
-  };
+  retroBattleSession = { settled: false, cleanup: null };
   setScreen('retroBattleEvent', {}, false);
   return true;
 }
 
-function applyRetroBattleInventoryChange(detail) {
-  const itemKey = String(detail?.itemKey || '');
-  const delta = Math.trunc(Number(detail?.delta) || 0);
-  if (!RETRO_BATTLE_ITEM_KEYS.includes(itemKey) || delta >= 0) return false;
-  state.inventory.items = state.inventory.items && typeof state.inventory.items === 'object' ? state.inventory.items : {};
-  const owned = retroBattleOwnedItemCount(itemKey);
-  if (owned <= 0) return false;
-  state.inventory.items[itemKey] = Math.max(0, owned + delta);
-  saveGame();
+function maybeStartMiningBattleEvent() {
+  if (!state || illnessEventSuppressionActive()) return false;
+  const session = miningBattleRuntime.createSession();
+  if (!session) return false;
+  retroBattleSession = session;
+  setScreen('retroBattleEvent', {}, false);
   return true;
-}
-
-function syncRetroBattleInventoryFromResult(inventory) {
-  if (!inventory || typeof inventory !== 'object') return false;
-  state.inventory.items = state.inventory.items && typeof state.inventory.items === 'object' ? state.inventory.items : {};
-  let changed = false;
-  RETRO_BATTLE_ITEM_KEYS.forEach((itemKey) => {
-    if (!Object.prototype.hasOwnProperty.call(inventory, itemKey)) return;
-    const owned = retroBattleOwnedItemCount(itemKey);
-    const reported = Math.max(0, Math.floor(Number(inventory[itemKey]) || 0));
-    const next = Math.min(owned, reported);
-    if (next === owned) return;
-    state.inventory.items[itemKey] = next;
-    changed = true;
-  });
-  return changed;
-}
-
-function retroBattleMoneyChange(baseMoney) {
-  const money = Math.max(0, Math.floor(Number(baseMoney) || 0));
-  return Math.min(RETRO_BATTLE_MONEY_CAP, Math.floor(money * RETRO_BATTLE_MONEY_RATE));
 }
 
 function finishRetroBattleEvent(detail, session = retroBattleSession) {
@@ -11462,10 +11425,20 @@ function finishRetroBattleEvent(detail, session = retroBattleSession) {
   if (!['victory', 'defeat', 'escaped'].includes(result)) return false;
   session.settled = true;
   if (typeof session.cleanup === 'function') session.cleanup();
-  syncRetroBattleInventoryFromResult(detail?.inventory);
+  retroBattleStateAdapter.syncInventory(detail?.inventory);
+
+  if (miningBattleRuntime.isSession(session)) {
+    if (miningBattleRuntime.applyReward(result, state, GEMS)) {
+      addNotification('ダイヤモンド原石を手に入れました', '工房の原石へ追加されました。', 'special');
+    }
+    saveGame();
+    retroBattleSession = null;
+    setScreen('mining', {}, false);
+    return true;
+  }
 
   const baseMoney = Math.max(0, Math.floor(Number(state?.game?.money) || 0));
-  const amount = retroBattleMoneyChange(baseMoney);
+  const amount = retroBattleStateAdapter.moneyChange(baseMoney);
   if (result === 'victory') {
     state.game.money = baseMoney + amount;
     if (amount > 0) addFinance('御徒町・戦闘ミニゲーム勝利', amount, 0);
@@ -11488,10 +11461,13 @@ function finishRetroBattleEvent(detail, session = retroBattleSession) {
 function failRetroBattleEventLoad(error) {
   console.error('[RetroBattle] load failed', error);
   const session = retroBattleSession;
+  const miningBattle = miningBattleRuntime.isSession(session);
   if (typeof session?.cleanup === 'function') session.cleanup();
   retroBattleSession = null;
-  showToast('戦闘ミニゲームを読み込めませんでした。通常の御徒町へ戻ります。', 'error');
-  setScreen('okachimachi', {}, false);
+  showToast(miningBattle
+    ? '採掘戦闘ミニゲームを読み込めませんでした。通常の採掘画面へ戻ります。'
+    : '戦闘ミニゲームを読み込めませんでした。通常の御徒町へ戻ります。', 'error');
+  setScreen(miningBattle ? 'mining' : 'okachimachi', {}, false);
 }
 
 function bindRetroBattleFrame() {
@@ -11500,6 +11476,7 @@ function bindRetroBattleFrame() {
   const frame = root.querySelector('iframe[data-retro-battle-frame]');
   if (!(frame instanceof HTMLIFrameElement) || frame.dataset.retroBattleBound === '1') return;
   frame.dataset.retroBattleBound = '1';
+  miningBattleRuntime.prepareFrame(frame, session);
 
   session.cleanup = bindRetroBattleFrameLoader({
     frame,
@@ -11508,23 +11485,25 @@ function bindRetroBattleFrame() {
       && session === retroBattleSession
       && !session.settled
     ),
-    startOptions: () => ({
-      playerName: retroBattlePlayerName(),
-      inventory: retroBattleInventorySnapshot(),
+    startOptions: () => miningBattleRuntime.startOptions(session, {
+      playerName: retroBattleStateAdapter.playerName(),
+      inventory: retroBattleStateAdapter.inventorySnapshot(),
     }),
-    onInventoryChange: applyRetroBattleInventoryChange,
+    onInventoryChange: retroBattleStateAdapter.applyInventoryChange,
     onEnd: (detail) => finishRetroBattleEvent(detail, session),
     onError: failRetroBattleEventLoad,
   });
 }
 function renderRetroBattleEvent() {
+  const miningBattle = miningBattleRuntime.isSession(retroBattleSession);
   if (!retroBattleSession || retroBattleSession.settled) {
-    queueMicrotask(() => setScreen('okachimachi', {}, false));
-    return renderOkachimachi();
+    queueMicrotask(() => setScreen(miningBattle ? 'mining' : 'okachimachi', {}, false));
+    return miningBattle ? renderMining() : renderOkachimachi();
   }
   queueMicrotask(bindRetroBattleFrame);
+  const title = miningBattle ? '採掘 戦闘ミニゲーム' : '御徒町 戦闘ミニゲーム';
   return `<main class="retro-battle-event-host" style="position:fixed;inset:0;z-index:1200;overflow:hidden;background:#000;">
-    <iframe data-retro-battle-frame src="${RETRO_BATTLE_DOCUMENT_URL}?v=${VERSION}" title="御徒町 戦闘ミニゲーム" allow="autoplay" style="display:block;width:100%;height:100%;border:0;background:#000;visibility:hidden;"></iframe>
+    <iframe data-retro-battle-frame src="${RETRO_BATTLE_DOCUMENT_URL}?v=${VERSION}" title="${title}" allow="autoplay" style="display:block;width:100%;height:100%;border:0;background:#000;visibility:hidden;"></iframe>
   </main>`;
 }
 

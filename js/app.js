@@ -60,6 +60,7 @@ import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.956';
 import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.956'; import { createEventStateHelpers, setServices } from './events/event-state-helpers.js?v=0.10.956';
 import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.956';
 import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.956';
+import { createKawaharaGameEventController, KAWAHARA_GAME_EVENT_ACTIVE_STAGES } from './events/kawahara-game-event.js?v=0.10.956';
 
 
 
@@ -112,6 +113,17 @@ const modalPresenter = createModalPresenter({ element: modalEl, escapeHtml: esc 
 const autosaveStatusPresenter = createAutosaveStatusPresenter();
 
 let state = null; globalThis.__JXJ_EVENT_STATE_HELPERS__ = createEventStateHelpers(() => state, saveGame, showToast, playSfx, roundedMetalWeight, METALS); setServices(canSpendMealTime, spendMealTime, addFinance, addNotification);
+const kawaharaGameEventController = createKawaharaGameEventController({
+  getState: () => state,
+  saveGame,
+  setScreen,
+  render,
+  renderFallback: renderGlab,
+  playSfx,
+  escapeHtml: esc,
+  version: () => VERSION,
+  isSuppressed: () => illnessEventSuppressionActive(),
+});
 globalThis.__JXJ_MEMORIES_STATE__ = () => state ? structuredClone({ events: state.events, inventory: state.inventory, game: state.game, memories: state.memories }) : null;
 globalThis.__JXJ_MEMORIES_RECORD__ = (entry) => {
   try {
@@ -525,7 +537,7 @@ const YOWAMUSHI_ROSE_QUARTZ_EVENT_GEM_ID = 'rosequartz';
 const YOWAMUSHI_ROSE_QUARTZ_EVENT_SHAPE_ID = 'ovalCabochon';
 const OKACHIMACHI_AREA_SCREENS = new Set([
   'okachimachi', 'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'tropicalFishShop', 'speedStarEvent', 'storytellerEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'supplier', 'supplierMetals', 'supplierMetalHistory', 'pureMetalProfessionalGuide', 'supplierRough',
-  'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent',
+  'looseShop', 'looseShopOriginalQuizEvent', 'jewelryShop', 'displayShop', 'realEstate', 'tattooWomanAmberEvent', 'clockTowerDonationEvent', 'cinemaVisitEvent', 'apprenticeCinemaEvent', 'glab', 'glabSns', 'glabTool', 'glabToolGuide', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'kawaharaGameEvent',
 ]);
 
 const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
@@ -548,6 +560,7 @@ const EVENT_ACTIVE_STAGE_MAP = Object.freeze({
   wristFoundEvent: new Set(['intro', 'report']),
   glabVisitVideoEvent: new Set(['video']),
   kawaharaKnowledgeEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
+  kawaharaGameEvent: new Set(KAWAHARA_GAME_EVENT_ACTIVE_STAGES),
   looseShopOriginalQuizEvent: new Set([]),
   tattooWomanAmberEvent: new Set(['video', 'intro1', 'intro2', 'intro3', 'reward', 'farewell']),
   mermaidEvent: new Set(['intro', 'reward']),
@@ -578,7 +591,7 @@ const ILLNESS_SUPPRESSED_EVENT_SCREENS = new Set([
   'cinemaVisitEvent', 'apprenticeCinemaEvent', 'whiteBunnyIceEvent', 'mysteryChineseMealEvent', 'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'kappaJadeEvent', 'workshopKappaJadeEvent', 'oneLoveEvent', 'hospitalEvent', 'sushiChefEvent', 'cyclopsEvent',
   'ganeshaTuskEvent', 'childhoodFriendEvent', 'grayHoodAquariumEvent', 'touristWoodSwordEvent', 'terryCaliforniaEvent', 'diamondPolishingLapEvent', 'yowamushiRoseQuartzEvent',
   'hauntingEvent', 'storeTheftEvent', 'alienAbductionEvent', 'alienReturnEvent', 'miningPazupanEvent',
-  'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'robberyReport', 'kaitenzushi',
+  'okachimachiQuiz', 'pearlHumanEvent', 'oyatsuDaisukiEvent', 'speedStarEvent', 'storytellerEvent', 'looseShopOriginalQuizEvent', 'okachimachiTollEvent', 'okachimachiInvasiveTurtlesEvent', 'pandaMusicEvent', 'wristFoundEvent', 'glabVisitVideoEvent', 'kawaharaKnowledgeEvent', 'kawaharaGameEvent', 'robberyReport', 'kaitenzushi',
 ]);
 
 // v0.10.462: すべてのイベント画面に共通の復旧経路を持たせる。
@@ -614,6 +627,7 @@ const EVENT_SCREEN_RECOVERY_CONFIG = Object.freeze({
   wristFoundEvent: { eventKey: 'wristFoundEvent', fallback: 'okachimachi' },
   glabVisitVideoEvent: { eventKey: 'glabVisitVideoEvent', fallback: 'glab' },
   kawaharaKnowledgeEvent: { eventKey: 'kawaharaKnowledgeEvent', fallback: 'glab' },
+  kawaharaGameEvent: { eventKey: 'kawaharaGameEvent', fallback: 'glab' },
   sushiChefEvent: { eventKey: 'sushiChefEvent', fallback: 'main' },
   cyclopsEvent: { eventKey: 'cyclopsEvent', fallback: 'main' },
   ganeshaTuskEvent: { eventKey: 'ganeshaTuskEvent', fallback: 'main' },
@@ -656,7 +670,7 @@ const EVENT_EMERGENCY_POLICY = Object.freeze({
   conditionalLoss: new Set(['storeTheftEvent']),
   completionOnly: new Set([
     'bluesJukeEvent', 'winterColdEvent', 'birthdaySleepEvent', 'sushiChefEvent', 'childhoodFriendEvent', 'whiteBunnyIceEvent', 'whiteBunnyTonkatsuEvent',
-    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent', 'oneLoveEvent', 'hospitalEvent',
+    'ridleyOkazakiSobaEvent', 'emeraldCaptainKebabEvent', 'alienAbductionEvent', 'wristFoundEvent', 'oneLoveEvent', 'hospitalEvent', 'kawaharaGameEvent',
   ]),
   sessionOnly: new Set(['okachimachiQuiz', 'looseShopOriginalQuizEvent', 'robberyReport', 'kaitenzushi']),
 });
@@ -892,7 +906,7 @@ const EVENT_PROGRESS_ACTIONS = new Set([
   'childhood-friend-event-next', 'childhood-friend-meal-finish', 'childhood-friend-event-recover', 'emerald-captain-kebab-event-next', 'emerald-captain-kebab-meal-finish',
   'white-bunny-ice-event-next', 'white-bunny-ice-event-choice', 'white-bunny-tonkatsu-next', 'white-bunny-tonkatsu-eat',
   'gray-hood-aquarium-video-start', 'gray-hood-aquarium-next', 'gray-hood-aquarium-receive',
-  'glab-visit-video-start', 'kawahara-knowledge-video-start', 'kawahara-knowledge-event-next', 'okachimachi-quiz-video-start',
+  'glab-visit-video-start', 'kawahara-knowledge-video-start', 'kawahara-knowledge-event-next', 'kawahara-game-event-next', 'okachimachi-quiz-video-start',
   'terry-california-video-start', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline',
   'wood-sword-event-next', 'wood-sword-event-route', 'wood-sword-event-receive', 'alien-event-next',
   'alien-return-next', 'diamond-polishing-lap-event-next', 'haunting-event-next',
@@ -11855,7 +11869,7 @@ function advanceLooseShopOriginalQuizDialogue() {
 
 function backgroundFor(target) {
   const map = {
-    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', hospitalEvent: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', oneLoveEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
+    loading: 'main', login: 'main', emailVerification: 'main', title: 'main', nameSetup: 'main', main: 'main', bluesJukeEvent: 'main', winterColdEvent: 'main', birthdaySleepEvent: 'sleep', hospitalEvent: 'main', westernUnionEvent: 'main', mermaidEvent: 'main', tattooWomanAmberEvent: 'realEstate', clockTowerDonationEvent: 'okachimachi', cinemaVisitEvent: 'okachimachi', apprenticeCinemaEvent: 'okachimachi', okachimachiTollEvent: 'okachimachi', okachimachiInvasiveTurtlesEvent: 'okachimachi', pandaMusicEvent: 'okachimachi', wristFoundEvent: 'okachimachi', oyatsuDaisukiEvent: 'okachimachi', speedStarEvent: 'okachimachi', storytellerEvent: 'okachimachi', tropicalFishShop: 'okachimachi', glabVisitVideoEvent: 'glab', kawaharaKnowledgeEvent: 'glab', kawaharaGameEvent: 'glab', mysteryChineseMealEvent: 'meal', ridleyOkazakiSobaEvent: 'meal', emeraldCaptainKebabEvent: 'meal', whiteBunnyIceEvent: 'meal', alienAbductionEvent: 'main', alienReturnEvent: 'main', sushiChefEvent: 'meal', cyclopsEvent: 'meal', ganeshaTuskEvent: 'meal', childhoodFriendEvent: 'meal', grayHoodAquariumEvent: 'meal', touristWoodSwordEvent: 'meal', terryCaliforniaEvent: 'meal', diamondPolishingLapEvent: 'meal', hauntingEvent: 'sleep', storeTheftEvent: 'store', mining: 'mining', miningPazupanEvent: 'mining', kappaJadeEvent: 'mining', miningGame: 'mining', miningResult: 'mining', workshop: 'workshop', workshopKappaJadeEvent: 'workshop', oneLoveEvent: 'workshop', yowamushiRoseQuartzEvent: 'workshop',
     craft: 'craft', craftLoose: 'craft', polishing: 'workshop', completion: 'workshop', inventory: 'workshop', finishedItemDetail: 'workshop', workshopTool: 'workshop', workshopToolGuide: 'workshop', workshopStaff: 'workshop', processingKnowledgeDetail: 'workshop', metalInventoryDetail: 'workshop', metalProfessionalGuide: 'workshop', glab: 'glab', glabSns: 'glab', glabTool: 'glab', okachimachi: 'okachimachi', okachimachiQuiz: 'okachimachi', looseShopOriginalQuizEvent: 'looseShop', supplier: 'metalshop', supplierMetals: 'metalshop', supplierMetalHistory: 'metalshop', pureMetalProfessionalGuide: 'metalshop', supplierRough: 'okachimachi', looseShop: 'okachimachi', jewelryShop: 'okachimachi', looseInventoryDetail: 'workshop', looseGemGuide: 'workshop', looseCutGuide: 'workshop', realEstate: 'okachimachi',
     store: 'store', showcaseSelect: 'store', showcaseDetail: 'store', customer: 'store', orders: 'workshop', expansion: 'store', employee: 'store', displayShop: 'okachimachi',
     phone: 'phone', aquarium: 'phone', todayGem: 'main', meal: 'meal', kaitenzushi: 'meal', settings: 'main', settingsTitle: 'main', robberyReport: 'main', dayResult: 'sleep',
@@ -12741,6 +12755,7 @@ function render() {
       glabSns: renderGlabSns,
       glabVisitVideoEvent: renderGlabVisitVideoEvent,
       kawaharaKnowledgeEvent: renderKawaharaKnowledgeEvent,
+      kawaharaGameEvent: kawaharaGameEventController.renderScreen,
       glabTool: renderGlabToolDetail,
       glabToolGuide: renderGlabToolGuide,
       store: renderStore,
@@ -24536,9 +24551,13 @@ root.addEventListener('click', async (event) => {
       }
       if (target === 'realEstate' && maybeStartTattooWomanAmberEvent()) break;
       if (target === 'glab') {
-        // 進行中イベントは必ず先に復帰し、新規イベント2種の判定順だけを毎回ランダム化する。
+        // 進行中イベントを先に復帰。300日目以降のカワハラ制作イベントは、
+        // 承認済み仕様どおり「g-Lab.入店ごとに5%・一度だけ」を先に判定する。
         if (resumeGlabVisitVideoEvent()) break;
         if (resumeKawaharaKnowledgeEvent()) break;
+        if (kawaharaGameEventController.resume()) break;
+        if (kawaharaGameEventController.maybeStart()) break;
+        // 既存の反復イベント2種は従来どおり、判定順だけを毎回ランダム化する。
         if (tryRandomEventStarters([
           () => maybeStartGlabVisitVideoEvent(),
           () => maybeStartKawaharaKnowledgeEvent(),
@@ -24601,6 +24620,7 @@ root.addEventListener('click', async (event) => {
       goMain();
       break;
     case 'kawahara-knowledge-event-next': advanceKawaharaKnowledgeEvent(); break;
+    case 'kawahara-game-event-next': kawaharaGameEventController.advance(); break;
     case 'acknowledge-robbery': acknowledgeRobberyReport(); break;
     case 'help': showModal({ title: '説明', body: `<p>${esc(button.dataset.help)}</p>`, confirm: '閉じる', action: 'modal-close', hideCancel: true }); break;
     case 'open-phone-item-image': showPhoneItemImage(button.dataset.kind, button.dataset.id); break;

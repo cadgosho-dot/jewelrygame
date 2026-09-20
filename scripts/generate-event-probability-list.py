@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / 'js' / 'app.js'
 WHITE_BUNNY_TONKATSU = ROOT / 'js' / 'events' / 'white-bunny-tonkatsu-event.js'
+OYATSU_MALATANG_MODULE = ROOT / 'js' / 'events' / 'oyatsu-malatang-event.js'
 VERSION_FILE = ROOT / 'VERSION'
 OUTPUT = ROOT / 'EVENT_PROBABILITY_LIST.md'
 CONST_RE = re.compile(r'^(?:export\s+)?const\s+([A-Z0-9_]+)\s*=\s*(.+?);\s*$', re.M)
@@ -102,6 +103,7 @@ EVENT_GROUPS = [
         ('EMERALD_CAPTAIN_KEBAB_EVENT_CHANCE', 'エメラルド班班長', '対象のケバブ利用時'),
         ('GRAY_HOOD_AQUARIUM_EVENT_CHANCE', '韓国料理・水槽解放', '366日目以降・水槽未解放などの条件を満たす時'),
         ('RIDLEY_OKAZAKI_SOBA_EVENT_CHANCE', 'リドリー岡崎（そば）', '対象の立ち食いそば利用時'),
+        ('OYATSU_MALATANG_EVENT_CHANCE', 'おやつ大好き・麻辣湯', 'メイン画面の「食事」押下時・所持金3,500円以上'),
     ]),
     ('御徒町・街', [
         ('OKACHIMACHI_TOLL_EVENT_CHANCE', '御徒町・通行料', '御徒町の対象判定時'),
@@ -139,6 +141,9 @@ def generate() -> str:
     module_exprs, _ = constants(WHITE_BUNNY_TONKATSU.read_text(encoding='utf-8'))
     exprs['WHITE_BUNNY_TONKATSU_EVENT_CHANCE'] = module_exprs['WHITE_BUNNY_TONKATSU_EVENT_CHANCE']
     source_paths['WHITE_BUNNY_TONKATSU_EVENT_CHANCE'] = 'js/events/white-bunny-tonkatsu-event.js'
+    malatang_exprs, _ = constants(OYATSU_MALATANG_MODULE.read_text(encoding='utf-8'))
+    exprs['OYATSU_MALATANG_EVENT_CHANCE'] = malatang_exprs['OYATSU_MALATANG_EVENT_CHANCE']
+    source_paths['OYATSU_MALATANG_EVENT_CHANCE'] = 'js/events/oyatsu-malatang-event.js'
     values = numeric_values(exprs)
     version = VERSION_FILE.read_text(encoding='utf-8').strip()
 

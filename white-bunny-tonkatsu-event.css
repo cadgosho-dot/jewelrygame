@@ -52,7 +52,7 @@ body[data-screen="whiteBunnyTonkatsuEvent"] #root > .game-header.main-header > .
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
-  border: 1.25px solid rgba(255,232,181,.42) !important;
+  border: 2.25px solid rgba(255,232,181,.42) !important;
   border-radius: 13px !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
@@ -227,7 +227,7 @@ body[data-screen="whiteBunnyTonkatsuEvent"] .white-bunny-tonkatsu-dialogue {
   margin: 0 !important;
   padding: 12px 15px 17px !important;
   appearance: none !important;
-  border: 1.25px solid rgba(255,255,255,.58) !important;
+  border: 2.25px solid rgba(255,255,255,.58) !important;
   border-radius: 14px !important;
   background: transparent !important;
   background-image: none !important;
@@ -286,7 +286,7 @@ body[data-screen="whiteBunnyTonkatsuEvent"] .white-bunny-tonkatsu-food-frame {
   align-items: center !important;
   justify-content: center !important;
   padding: 10px !important;
-  border: 1.6px solid rgba(255,255,255,.62) !important;
+  border: 2.6px solid rgba(255,255,255,.62) !important;
   border-radius: 18px !important;
   background: rgba(0,0,0,.14) !important;
   box-shadow: 0 10px 28px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.10) !important;
@@ -348,8 +348,8 @@ body[data-screen="whiteBunnyTonkatsuEvent"] .event-safety-recovery {
   margin: 0 !important;
   padding: 3px 6px !important;
   border: 0 !important;
-  border-right: 1.25px solid rgba(255,255,255,.20) !important;
-  border-bottom: 1.25px solid rgba(255,255,255,.20) !important;
+  border-right: 2.25px solid rgba(255,255,255,.20) !important;
+  border-bottom: 2.25px solid rgba(255,255,255,.20) !important;
   border-radius: 0 0 7px 0 !important;
   background: rgba(12,10,14,.38) !important;
   background-image: none !important;

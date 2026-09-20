@@ -39,3 +39,5 @@ jobs:
           git rm .github/workflows/mining-battle-version-bump-temp.yml
           git commit -m "v0.10.958 採掘戦闘ミニゲーム実装"
           git push origin HEAD:work/mining-battle-complete-20260921
+
+# retry after version-sync registration

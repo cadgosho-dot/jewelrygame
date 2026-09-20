@@ -62,6 +62,7 @@ RULES = [
     Rule('game.html', 'tropical shop approved UI CSS cache key', qparam(r'\./tropical-shop-approved-ui\.css'), keep_prefix),
     Rule('game.html', 'oyatsu approved UI CSS cache key', qparam(r'\./oyatsu-daisuki-approved-ui\.css'), keep_prefix),
     Rule('game.html', 'white bunny tonkatsu CSS cache key', qparam(r'\./white-bunny-tonkatsu-event\.css'), keep_prefix),
+    Rule('game.html', 'order sheet compact UI CSS cache key', qparam(r'\./order-sheet-compact-ui\.css'), keep_prefix),
     Rule('game.html', 'app.js cache key', qparam(r'\./js/app\.js'), keep_prefix),
     Rule('game.html', 'memories-screen.js cache key', qparam(r'\./js/memories-screen\.js'), keep_prefix),
 

@@ -57,7 +57,7 @@ import { formatArtisanTitle } from './ui/artisan-title.js?v=0.10.955';
 import { formatLooseDisplayLabel } from './ui/loose-display-label.js?v=0.10.955';
 import { formatInstallStatusText } from './ui/install-status-text.js?v=0.10.955';
 import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.955';
-import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.955'; import { createEventStateHelpers } from './events/event-state-helpers.js?v=0.10.955';
+import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.955'; import { createEventStateHelpers, setServices } from './events/event-state-helpers.js?v=0.10.955';
 import { bindRetroBattleFrameLoader } from './events/retro-battle-frame-loader.js?v=0.10.955';
 import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.955';
 
@@ -111,7 +111,7 @@ const toastPresenter = createToastPresenter({ element: toastEl });
 const modalPresenter = createModalPresenter({ element: modalEl, escapeHtml: esc });
 const autosaveStatusPresenter = createAutosaveStatusPresenter();
 
-let state = null; globalThis.__JXJ_EVENT_STATE_HELPERS__ = createEventStateHelpers(() => state, saveGame, showToast, playSfx, roundedMetalWeight, METALS);
+let state = null; globalThis.__JXJ_EVENT_STATE_HELPERS__ = createEventStateHelpers(() => state, saveGame, showToast, playSfx, roundedMetalWeight, METALS); setServices(canSpendMealTime, spendMealTime, addFinance, addNotification);
 globalThis.__JXJ_MEMORIES_STATE__ = () => state ? structuredClone({ events: state.events, inventory: state.inventory, game: state.game, memories: state.memories }) : null;
 globalThis.__JXJ_MEMORIES_RECORD__ = (entry) => {
   try {

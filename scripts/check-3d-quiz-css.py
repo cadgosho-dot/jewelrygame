@@ -5,6 +5,7 @@ This checks the CSS/DOM contract; it does not replace a browser layout test.
 """
 from pathlib import Path
 import sys,re,json,subprocess,importlib.util
+sys.dont_write_bytecode=True
 import tinycss2,cssselect2,lxml.html
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('fixture',ROOT/'scripts/serve-3d-quiz-layout.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)

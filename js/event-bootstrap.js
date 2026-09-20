@@ -2,3 +2,4 @@
 import './wolf-boy-ring-event.js?v=0.10.959';
 import './wolf-mother-butler-event.js?v=0.10.959';
 import './events/oyatsu-malatang-event.js?v=0.10.959';
+import './events/glab-kawahara-game-event.js?v=0.10.959';

@@ -873,3 +873,83 @@ body[data-screen="storytellerEvent"] .storyteller-ittomo>span{
   0%,100%{top:0}
   50%{top:-6px}
 }
+
+/*
+ * 2026-09-21 実機確認・承認済み
+ * 3Dメガネ 携帯確認 rev5 固定。
+ * このブロックは3Dメガネ専用。クイズ王・ストーリーテラー等へ影響させない。
+ * 縦画面の報酬表示、横画面の報酬切れ防止、「タップして進む」の文字サイズと本文余白を固定する。
+ */
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-dialogue-panel-v2{
+  padding-bottom:44px!important;
+}
+body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-dialogue-v2 .jxj-quiz-tap-v2{
+  font-size:clamp(.52rem,1.9vw,.68rem)!important;
+  line-height:1.1!important;
+}
+
+@media (orientation:portrait){
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-reward-v2{
+    padding:40px 14px 16px!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-reward-v2 .jxj-quiz-reward-panel-v2{
+    width:min(72vw,280px)!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:min(40dvh,290px)!important;
+    padding:10px 10px 8px!important;
+    gap:3px!important;
+    grid-template-areas:"visual" "title" "tap"!important;
+    grid-template-rows:auto auto auto!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-visual-v2{
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-gem-v2{
+    max-width:68%!important;
+    max-height:min(19dvh,150px)!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-panel-v2>strong{
+    margin:0!important;
+    padding:0!important;
+    line-height:1.12!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-panel-v2>.jxj-quiz-tap-v2{
+    margin-top:0!important;
+  }
+}
+
+@media (orientation:landscape){
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2.jxj-quiz-stage-reward-v2 .jxj-quiz-reward-panel-v2{
+    width:min(40vw,440px)!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:min(82dvh,410px)!important;
+    padding:14px 14px 10px!important;
+    gap:4px!important;
+    overflow:hidden!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-visual-v2{
+    padding:0!important;
+    min-height:0!important;
+    height:auto!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-gem-v2{
+    max-width:86%!important;
+    max-height:min(30dvh,180px)!important;
+    object-fit:contain!important;
+    object-position:center center!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-panel-v2>strong{
+    margin:0!important;
+    line-height:1.12!important;
+  }
+  body[data-screen="looseShopOriginalQuizEvent"] .jxj-quiz-loose-v2 .jxj-quiz-reward-panel-v2>.jxj-quiz-tap-v2{
+    margin-top:0!important;
+  }
+}
+

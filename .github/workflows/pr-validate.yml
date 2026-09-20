@@ -24,8 +24,11 @@ jobs:
 
       - name: 画像・実ブラウザ検査環境を準備
         run: |
-          python3 -m pip install --disable-pip-version-check pillow playwright
+          python3 -m pip install --disable-pip-version-check pillow playwright tinycss2 cssselect2 lxml
           python3 -m playwright install --with-deps chromium
+
+      - name: 3DメガネのCSS・描画HTMLの接続を検査
+        run: python3 scripts/check-3d-quiz-css.py
 
       - name: PR総合検査
         env:

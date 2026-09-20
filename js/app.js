@@ -60,6 +60,7 @@ import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.958';
 import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.958'; import { createEventStateHelpers, setServices } from './events/event-state-helpers.js?v=0.10.958';
 import { bindRetroBattleFrameLoader, createRetroBattleStateAdapter } from './events/retro-battle-frame-loader.js?v=0.10.958';
 import { createMiningBattleRuntime } from './events/mining-battle-event.js?v=0.10.958';
+import './events/glab-kawahara-game-event.js?v=0.10.959';
 import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.958';
 
 

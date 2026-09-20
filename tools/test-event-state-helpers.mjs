@@ -8,6 +8,8 @@ const sounds = [];
 const finances = [];
 const notifications = [];
 let mealTimeSpendCount = 0;
+const mealFeedbacks = [];
+let renders = 0;
 const helper = createEventStateHelpers(
   () => state,
   () => { saves += 1; },
@@ -21,6 +23,8 @@ helper.configureServices({
   spendMealTime: () => { mealTimeSpendCount += 1; state.game.minutes += 60; },
   addFinance: (...args) => finances.push(args),
   addNotification: (...args) => notifications.push(args),
+  setMealFeedback: (...args) => mealFeedbacks.push(args),
+  render: () => { renders += 1; },
 });
 
 const reward = helper.grantMetalIgnoreCapacity('gold', 20, { message:'K18YGが20g追加されました', type:'success', withSound:false });
@@ -86,6 +90,13 @@ assert.equal(insufficientMeal.reason, 'insufficient-funds');
 assert.equal(state.game.money, 1000);
 assert.equal(state.wellbeing.mealsEaten, 1);
 assert.equal(saves, 3);
+
+const mealUi = helper.completeEventMealUi({ before:2, after:7, mealName:'麻辣湯' });
+assert.equal(mealUi.ok, true);
+assert.deepEqual(mealFeedbacks, [[2, 7, '麻辣湯']]);
+assert.equal(renders, 1);
+assert.deepEqual(toasts.at(-1), ['ごちそうさまでした', 'meal-complete', false]);
+assert.deepEqual(sounds.at(-1), ['levelup']);
 
 console.log('EVENT STATE HELPERS TEST: PASS');
 console.log('イベント状態参照・K18報酬・麻辣湯3500円一度だけ決済と空腹度全回復を確認しました。');

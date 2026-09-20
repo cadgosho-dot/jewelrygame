@@ -1,4 +1,4 @@
-import { suspendAudio, resumeAudio, suspendBgm, resumeBgm, playSfx, vibrate } from './audio.js?v=0.10.958';
+import { suspendAudio, resumeAudio, suspendBgm, resumeBgm, playSfx, vibrate } from './audio.js?v=0.10.959';
 
 const OVERLAY_ID = 'jxj-wolf-mother-butler-overlay';
 const STYLE_ID = 'jxj-wolf-mother-butler-style';

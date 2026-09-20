@@ -1,8 +1,8 @@
 import './oyatsu-character-position-lock.js';
 
 let eventServices = {};
-export function setServices(canSpendMealTime, spendMealTime, addFinance, addNotification) {
-  eventServices = { ...eventServices, canSpendMealTime, spendMealTime, addFinance, addNotification };
+export function setServices(canSpendMealTime, spendMealTime, addFinance, addNotification, setMealFeedback, render) {
+  eventServices = { ...eventServices, canSpendMealTime, spendMealTime, addFinance, addNotification, setMealFeedback, render };
 }
 
 export function createEventStateHelpers(getState, saveGame, showToast, playSfx, roundedMetalWeight, metals) {
@@ -117,6 +117,16 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         console.warn('[EventStateHelpers] settleEventMeal failed', error);
         return { ok:false, error };
       }
+    },
+    completeEventMealUi(options = {}) {
+      const before = Math.max(0, Math.floor(Number(options?.before) || 0));
+      const after = Math.max(0, Math.floor(Number(options?.after) || 0));
+      const mealName = String(options?.mealName || '食事');
+      try { eventServices.setMealFeedback?.(before, after, mealName); } catch (_) {}
+      try { eventServices.render?.(); } catch (_) {}
+      try { showToast?.('ごちそうさまでした', 'meal-complete', false); } catch (_) {}
+      try { playSfx?.('levelup'); } catch (_) {}
+      return { ok:true, before, after, mealName };
     },
     grantMetalIgnoreCapacity(metalKey, amount, options = {}) {
       try {

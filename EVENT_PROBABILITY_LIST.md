@@ -50,6 +50,7 @@
 | 店舗・強盗 | **1%** | 約1/100 | 日次対象判定。木刀効果中はこの確率の50% | `ROBBERY_DAILY_CHANCE` (`js/app.js`) |
 | g-Lab.訪問動画 | **3.33%** | 約1/30 | g-Lab.の新規イベント判定時 | `GLAB_VISIT_VIDEO_EVENT_CHANCE` (`js/app.js`) |
 | カワハラ加工知識 | **2.5%** | 約1/40 | g-Lab.の新規イベント判定時 | `KAWAHARA_KNOWLEDGE_EVENT_CHANCE` (`js/app.js`) |
+| カワハラ・ゲーム制作 | **5%** | 約1/20 | 300日目以降・g-Lab.入店ごと・一度だけ | `KAWAHARA_GAME_EVENT_CHANCE` (`js/events/kawahara-game-event.js`) |
 | 河原の河童・翡翠 | **3.33%** | 約1/30 | 河原選択・1日1回など | `KAPPA_JADE_EVENT_CHANCE` (`js/app.js`) |
 | 工房の河童・翡翠 | **3.33%** | 約1/30 | 河原の河童経験後・クールダウン等 | `WORKSHOP_KAPPA_JADE_EVENT_CHANCE` (`js/app.js`) |
 | 弱虫ローズクォーツ | **8.33%** | 約1/12 | 工房の対象判定時 | `YOWAMUSHI_ROSE_QUARTZ_EVENT_CHANCE` (`js/app.js`) |

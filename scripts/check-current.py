@@ -123,6 +123,7 @@ CHECKS = [
     ('狼の母親・執事イベント', [sys.executable, str(ROOT / 'scripts/check-wolf-mother-butler-event.py')]),
     ('迷子犬・犬探し周期', ['node', str(ROOT / 'tools/test-dog-search-state.mjs')]),
     ('迷子犬K18報酬', ['node', str(ROOT / 'tools/test-dog-search-reward.mjs')]),
+    ('迷子犬承認PNG', ['node', str(ROOT / 'tools/test-dog-search-assets.mjs')]),
     ('イベント構造整合', [sys.executable, str(ROOT / 'scripts/check-event-integrity.py')]),
     ('イベント保存往復', [sys.executable, str(ROOT / 'scripts/check-event-save-roundtrip.py')]),
     ('食事・クイズ復旧', [sys.executable, str(ROOT / 'scripts/check-meal-quiz-recovery.py')]),

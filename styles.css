@@ -22650,3 +22650,106 @@ body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-butto
 body[data-screen="emeraldCaptainKebabEvent"] .emerald-captain-kebab-reward-button>*{
   pointer-events:none!important;
 }
+
+
+/* 2026-09-21 APPROVED NORMAL EVENT UI — character position / tap guide
+   携帯確認 v6 で承認された「通常イベントUI」の基準。
+   クイズイベントUI・報酬画面・消失/結果演出には適用しない。
+   既存のイベント固有固定ルールがある場合は固有ルールを優先する。 */
+
+/* 縦画面：キャラクターを下寄せ。 */
+@media (orientation:portrait) {
+  html[data-device-class="phone"]
+  body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing)
+  > .visit-character-area {
+    left:50%!important;
+    right:auto!important;
+    top:0!important;
+    bottom:clamp(84px,20vh,164px)!important;
+    width:100%!important;
+    height:auto!important;
+    padding:18px 14px 0!important;
+    transform:translateX(-50%)!important;
+    display:flex!important;
+    align-items:flex-end!important;
+    justify-content:center!important;
+    overflow:visible!important;
+    z-index:4!important;
+    pointer-events:none!important;
+  }
+
+  html[data-device-class="phone"]
+  body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing)
+  > .visit-character-area > .visit-character {
+    display:block!important;
+    width:auto!important;
+    height:auto!important;
+    max-width:min(94vw,720px)!important;
+    max-height:min(62dvh,860px)!important;
+    margin:0 auto!important;
+    object-fit:contain!important;
+    object-position:center bottom!important;
+  }
+}
+
+/* 横画面：上詰め。頭を切らず、確認版の位置を固定。 */
+@media (orientation:landscape) {
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing)
+  > .visit-character-area {
+    left:50%!important;
+    right:auto!important;
+    top:max(0px,env(safe-area-inset-top))!important;
+    bottom:clamp(118px,21vh,184px)!important;
+    width:100%!important;
+    height:auto!important;
+    padding:4px 12px 0!important;
+    transform:translateX(-50%)!important;
+    display:flex!important;
+    align-items:flex-start!important;
+    justify-content:center!important;
+    overflow:visible!important;
+    z-index:4!important;
+    pointer-events:none!important;
+  }
+
+  html[data-device-class="phone"][data-orientation="landscape"]
+  body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing)
+  > .visit-character-area > .visit-character {
+    display:block!important;
+    width:auto!important;
+    height:auto!important;
+    max-width:min(50vw,680px)!important;
+    max-height:calc(100dvh - 20px)!important;
+    margin:0 auto!important;
+    object-fit:contain!important;
+    object-position:center top!important;
+  }
+}
+
+/* 「タップして進む」：携帯確認 v6 の大きさを通常イベントUIの基準にする。 */
+html[data-device-class="phone"]
+body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing)
+> :is(.visit-event-dialogue,.event-dialogue-card) > .tap-guide {
+  justify-self:end!important;
+  color:#bdc9cd!important;
+  font-size:.78rem!important;
+  font-weight:800!important;
+  line-height:1.1!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+  transform-origin:right center!important;
+}
+
+html[data-device-class="phone"]
+body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing)
+> :is(.visit-event-dialogue,.event-dialogue-card) > .tap-guide > .tap-guide-text {
+  display:inline-block!important;
+  font-size:1em!important;
+  line-height:1!important;
+  transform:scale(.82)!important;
+  transform-origin:right center!important;
+  -webkit-text-size-adjust:none!important;
+  text-size-adjust:none!important;
+  white-space:nowrap!important;
+}

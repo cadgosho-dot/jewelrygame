@@ -12304,7 +12304,7 @@ function scheduleOkachimachiQuizBottomLayoutSync() {
 }
 
 function setScreen(target, data = {}, push = true) {
-  if (target === 'displayShop' && state && maybeStartPearlHumanEvent()) target = 'pearlHumanEvent';
+  if (data?.dogSearchResume!==true && target === 'displayShop' && state && maybeStartPearlHumanEvent()) target = 'pearlHumanEvent';
   if (target === 'tropicalFishShop' && screen !== 'tropicalFishShop') {
     data = { ...data, tropicalResetScroll: true };
   }
@@ -21385,11 +21385,11 @@ function pickRandomMiningBrokenRockImage() {
   return MINING_BROKEN_ROCK_IMAGE_POOL[index];
 }
 
-function mine() {
+function mine({skipEventCheck=false}={}) {
   const location = selectedMining ? miningLocationById(selectedMining) : null;
   if (!location) return showToast('採掘場所を選んでください。', 'error');
   if (!canSpendHours(location.hours)) return showToast('今日は採掘する時間がありません。', 'error');
-  if (maybeStartKappaJadeEvent()) return;
+  if(!skipEventCheck&&maybeStartKappaJadeEvent())return;
   const shuffled = shuffleRockIndices();
   miningGame = {
     locationId: selectedMining,
@@ -23962,7 +23962,7 @@ window.addEventListener('blur', () => {
   tropicalShopQuantityPressHold.cancel();
 });
 
-globalThis.__JXJ_NAVIGATE__=setScreen;
+globalThis.__JXJ_N=setScreen;
 
 root.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
@@ -23988,7 +23988,8 @@ root.addEventListener('click', async (event) => {
   }
   if (!['mine', 'hit-rock', 'okachimachi-quiz-next', 'okachimachi-quiz-answer', 'loose-shop-original-quiz-next', 'loose-shop-original-quiz-answer', 'blues-juke-event-next', 'pazupan-event-next', 'mermaid-event-next', 'cyclops-event-receive', 'wood-sword-event-route', 'wood-sword-event-receive', 'cinema-visit-event-start', 'cinema-video-start', 'gray-hood-aquarium-video-start', 'glab-visit-video-start', 'kawahara-knowledge-video-start', 'okachimachi-quiz-video-start', 'tattoo-woman-amber-video-start', 'western-union-video-start', 'mystery-chinese-meal-video-start', 'terry-california-video-start', 'event-movie-skip', 'wrist-found-event-next', 'terry-california-event-next', 'terry-california-event-buy', 'terry-california-event-decline', 'ridley-okazaki-soba-event-next'].includes(action)) playSfx('select');
   if (action === 'phone-tab' || (action === 'nav' && button.dataset.screen === 'phone') || (screen === 'phone' && phoneTab === 'settings')) vibrate(28);
-  if(globalThis.__JXJ_EVENT_ACTION_INTERCEPT__?.(button,action))return;
+  if(globalThis.__JXJ_I?.(button,action))return;
+  const R=globalThis.__JXJ_R===button;
   switch (action) {
     case 'google-login': {
       const title = button.querySelector('.google-login-title');
@@ -24587,7 +24588,7 @@ root.addEventListener('click', async (event) => {
     case 'modal-close': closeModal(); break;
     case 'reload-page': location.reload(); break;
     case 'select-mining': selectedMining = button.dataset.id; render(); break;
-    case 'mine': mine(); break;
+    case 'mine': mine({skipEventCheck:R}); break;
     case 'hit-rock': hitMiningRock(Number(button.dataset.index), button); break;
     case 'mine-again': miningGame = null; setScreen('mining', {}, false); break;
     case 'supplier-category': setScreen(button.dataset.screen, {}); break;
@@ -24988,9 +24989,9 @@ root.addEventListener('click', async (event) => {
       break;
     case 'use-phone-item': usePhoneItem(button.dataset.id); break;
     case 'toggle-equipment': togglePhoneEquipment(button.dataset.id); break;
-    case 'eat-meal': await eatMeal(button.dataset.id); break;
+    case 'eat-meal': await eatMeal(button.dataset.id,{skipEventCheck:R}); break;
     case 'meal-eating-finish': finishMealEatingEarly(); break;
-    case 'play-kaitenzushi': startKaitenzushi(); break;
+    case 'play-kaitenzushi': startKaitenzushi({skipEventCheck:R}); break;
     case 'retry-kaitenzushi': retryKaitenzushi(); break;
     case 'cancel-kaitenzushi': cancelKaitenzushi(); break;
     case 'kaitenzushi-finish': finishKaitenzushiFromParent(); break;

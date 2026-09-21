@@ -11,6 +11,7 @@ b=(ROOT/'js/event-bootstrap.js').read_text(encoding='utf-8')
 unit=ROOT/'tools/test-event-state-helpers.mjs'
 
 ASSETS = {
+    'おやつ大好き正式PNG': ('assets/images/events/oyatsu-daisuki.png', '4b8ad7367110cab91dc1cef175987f407218809b6fd41586cafec45d31f4c8bc'),
     '麻辣湯正式PNG': ('assets/images/foods/oyatsu-malatang.png', '71c1aa0ec382076a2b8c7f18aa774f9b640885ed85f23db59dfa7c194e777e2d'),
     '麻辣湯店内横正式JPEG': ('assets/images/backgrounds/oyatsu-malatang-shop.jpg', '6405918690c99b883987a23e608dbfad37bc2b7657b20b95dd0c666f261a788a'),
     '麻辣湯店内縦正式JPEG': ('assets/images/backgrounds/oyatsu-malatang-shop-portrait.jpg', '1b3709afeb28a15e1c4103256fcb21782d554803c09ddeaa644f400c336fc5c8'),
@@ -26,7 +27,7 @@ checks={
 '発生率1.5%':'const OYATSU_MALATANG_EVENT_CHANCE=0.015;' in m,
 '所持金3500円以上':'const PRICE=3500;' in m and 'money<PRICE' in m,
 '食事ボタン押下時抽選':"dataset?.screen||'')!=='main'" in m and 'onCapture' in m,
-'既存おやつ大好き画像':"const CHARACTER='./assets/images/events/oyatsu-daisuki.png';" in m,
+'既存おやつ大好き画像':"const CHARACTER='./assets/images/events/oyatsu-daisuki.png?v=0.10.961-oyatsu23-image';" in m,
 'キャラクター位置ロック競合なし':'jxj-new-event-character' not in m,
 '初回描画前に専用CSS読込':'ensureStyle();\ndocument.addEventListener' in m,
 '登録済みセリフ':all(x in m for x in ('Hey、へい！${name}、、、ハイホー！','麻辣湯いこーよっ、、、最近流行ってるよねぇ、、、、','美味しかったね！、、次は激辛たのもっと！','ばいびー、、、')),

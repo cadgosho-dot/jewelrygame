@@ -20,6 +20,12 @@ jobs:
           fetch-depth: 1
       - name: 画像資料生成環境
         run: python3 -m pip install --disable-pip-version-check pillow
+      - name: 承認済み透明PNGを反映
+        run: |
+          curl -fL 'https://d2ol7oe51mr4n9.cloudfront.net/user_3JZ4dk1ZDJzC1aivEvEvwpidzeu/a94237ba-d852-47c1-b0fc-3cdeab761d4d.zip' -o /tmp/dog-search-assets.zip
+          unzip -o /tmp/dog-search-assets.zip -d assets/images/events
+          file assets/images/events/dog-search-cabbage.png
+          file assets/images/events/dog-search-shepherd.png
       - name: VERSIONと生成資料を同期
         run: |
           python3 scripts/version-sync.py --set 0.10.962

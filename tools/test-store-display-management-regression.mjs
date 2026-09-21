@@ -64,6 +64,7 @@ const functionNames = [
   'installedShowcaseCount',
   'storeMaximumDisplaySupplies',
   'storeDisplaySuppliesInstalled',
+  'displayProductPurchaseMaximum',
   'mirrorCurrentStoreDisplay',
   'findEmptyShowcasePosition',
   'showcaseLocationForJewelry',
@@ -157,6 +158,7 @@ function makeHarness(overrides = {}) {
     storeBranchByNumber: (number) => state.store.branches.find((row) => Number(row.number) === Number(number)) || null,
     storeCaseRemaining: (branch) => Math.max(0, Math.floor(Number(branch?.casesInstalled) || 0)),
     storeMaximumCases: () => 50,
+    contractedStoreBranches: () => state.store.branches,
     facilityUnlocked: () => true,
     storeBranchLabel: (number) => `店舗${number}`,
     captureStoreScrollSnapshot: () => { calls.capturedScroll += 1; return { top: 123 }; },
@@ -184,7 +186,7 @@ function makeHarness(overrides = {}) {
     function __confirmSellingPrice(button) { ${confirmBody} }
     globalThis.__api = {
       normalizeSellingPrice, storeMaximumShowcases, branchShowcases, installedShowcaseCount,
-      storeMaximumDisplaySupplies, storeDisplaySuppliesInstalled, mirrorCurrentStoreDisplay,
+      storeMaximumDisplaySupplies, storeDisplaySuppliesInstalled, displayProductPurchaseMaximum, mirrorCurrentStoreDisplay,
       findEmptyShowcasePosition, showcaseLocationForJewelry, displayCaseInstallMaximum,
       setDisplayCaseInstallQuantity, displayCaseInstallQuantity, showcaseSellingPrice,
       adjustShowcaseSellingPrice, placeItem, placeItemInShowcaseSlot, removeShowcase,
@@ -202,6 +204,21 @@ function assertNoTimeOrMoneyCost(h, initialMoney = 777777) {
   assert.equal(h.calls.advanceTime, 0);
 }
 
+function testDisplayProductPurchaseMaximum() {
+  const h = makeHarness({
+    expanded: true,
+    showcaseOwned: 1,
+    displaySuppliesOwned: 1,
+    branch1Showcases: [showcase('s1')],
+    branch2Showcases: [showcase('s2'), showcase('s3')],
+    branch1DisplaySupplies: 1,
+    branch2DisplaySupplies: 0,
+  });
+  assert.equal(h.api.displayProductPurchaseMaximum('showcase'), 2);
+  assert.equal(h.api.displayProductPurchaseMaximum('displaySupplies'), 1);
+  assert.equal(h.api.displayProductPurchaseMaximum('case'), Number.POSITIVE_INFINITY);
+}
+
 function testShowcaseInstallationAndLimits() {
   const h = makeHarness({ showcaseOwned: 1, expanded: true });
   h.api.installDisplayProduct('showcase');
@@ -216,6 +233,7 @@ function testShowcaseInstallationAndLimits() {
   assert.equal(h.calls.renders, 1);
   assert.equal(h.calls.capturedScroll, 1);
   assert.deepEqual(plain(h.calls.restoredScroll), [{ top: 123 }]);
+  assert.equal(h.calls.toasts.at(-1)?.[0], 'ショーケースを店舗へ設置しました。このショーケースには完成品を5個まで陳列できます。');
   assertNoTimeOrMoneyCost(h);
 
   const blocked = makeHarness({ showcaseOwned: 1, expanded: false, branch1Showcases: [showcase()] });
@@ -391,6 +409,7 @@ function testInstallationBasicGuards() {
   assertNoTimeOrMoneyCost(unowned);
 }
 
+testDisplayProductPurchaseMaximum();
 testShowcaseInstallationAndLimits();
 testDisplaySuppliesInstallationAndGuards();
 testCaseMultiInstallAndMaximum();

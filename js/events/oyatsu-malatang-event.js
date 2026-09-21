@@ -5,7 +5,7 @@ const STYLE_ID='jxj-oyatsu-malatang-style';
 const EVENT_KEY='oyatsuMalatangEvent';
 const OYATSU_MALATANG_EVENT_CHANCE=0.015;
 const PRICE=3500;
-const CHARACTER='./assets/images/events/oyatsu-daisuki.png';
+const CHARACTER='./assets/images/events/oyatsu-daisuki.png?v=0.10.961-oyatsu23-image';
 const FOOD='./assets/images/foods/oyatsu-malatang.png';
 const SHOP_L='./assets/images/backgrounds/oyatsu-malatang-shop.jpg';
 const SHOP_P='./assets/images/backgrounds/oyatsu-malatang-shop-portrait.jpg';

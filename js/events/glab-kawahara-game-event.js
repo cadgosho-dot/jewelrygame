@@ -189,10 +189,17 @@ async function onGlabEntered() {
 }
 
 function handleScreenChange() {
+  const previousScreen = observedScreen;
   const nextScreen = String(document.body?.dataset?.screen || '');
-  const enteredGlab = nextScreen === 'glab' && observedScreen !== 'glab';
+  const enteredGlab = nextScreen === 'glab' && previousScreen !== 'glab';
   observedScreen = nextScreen;
-  if (enteredGlab) queueMicrotask(onGlabEntered);
+
+  // g-Lab.内イベント終了後に通常画面へ戻っただけの場合は、
+  // 同じ入店の続きとして扱い、新しいカワハライベントを連続発生させない。
+  const returningFromGlabEvent = previousScreen === 'kawaharaKnowledgeEvent'
+    || previousScreen === 'glabVisitVideoEvent';
+
+  if (enteredGlab && !returningFromGlabEvent) queueMicrotask(onGlabEntered);
 }
 
 const observer = new MutationObserver(handleScreenChange);

@@ -171,6 +171,7 @@ function eligible(stateSnapshot) {
 
 async function onGlabEntered() {
   if (running || document.getElementById(OVERLAY_ID)) return;
+  if (document.documentElement?.hasAttribute('data-jxj-exclusive-event')) return;
   const stateSnapshot = snapshot();
   const eventState = stateSnapshot?.events?.[EVENT_KEY] || {};
 

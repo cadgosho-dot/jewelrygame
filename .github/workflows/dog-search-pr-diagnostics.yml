@@ -11,45 +11,45 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - name: Show dog-search integration targets
+      - name: Show dog-search click routes
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
           app=Path('js/app.js').read_text(encoding='utf-8')
-          for name in ['enterOkachimachiFromOutside','startKaitenzushi','eatMeal','mine']:
-              m=re.search(r'^(?:async )?function '+re.escape(name)+r'\([^\n]*\) \{',app,re.M)
-              if not m:
-                  print('MISSING',name); continue
-              i=m.start(); depth=0; q=None; esc=False; line=False; block=False
-              brace=app.find('{',m.start(),m.end()+2)
-              for j in range(brace,len(app)):
-                  c=app[j]; n=app[j+1] if j+1<len(app) else ''
-                  if line:
-                      if c=='\n': line=False
-                      continue
-                  if block:
-                      if c=='*' and n=='/': block=False
-                      continue
-                  if q:
-                      if esc: esc=False
-                      elif c=='\\': esc=True
-                      elif c==q: q=None
-                      continue
-                  if c=='/' and n=='/': line=True; continue
-                  if c=='/' and n=='*': block=True; continue
-                  if c in ['\"', "'", chr(96)]: q=c; continue
-                  if c=='{': depth+=1
-                  elif c=='}':
-                      depth-=1
-                      if depth==0:
-                          print('\n===== '+name+' =====\n'+app[i:j+1])
-                          break
-          marker="root.addEventListener('click'"
-          pos=app.find(marker)
-          if pos<0: pos=app.find('root.addEventListener("click"')
-          if pos>=0:
-              print('\n===== root click tail =====\n'+app[pos:pos+18000])
+          needles = [
+            "case 'nav'", "case 'eat'", "case 'meal'", "case 'mine'",
+            "case 'kaitenzushi'", "case 'supplier-category'",
+            "eatMeal(", "startKaitenzushi(", "selectedMeal =",
+            "enterOkachimachiFromOutside()"
+          ]
+          lines=app.splitlines()
+          seen=set()
+          for i,line in enumerate(lines):
+              if any(n in line for n in needles):
+                  lo=max(0,i-5); hi=min(len(lines),i+12)
+                  key=(lo,hi)
+                  if key in seen: continue
+                  seen.add(key)
+                  print(f"\n===== lines {lo+1}-{hi} =====")
+                  print("\n".join(f"{j+1}: {lines[j]}" for j in range(lo,hi)))
+          PY
+      - name: Verify approved dog-search PNG files
+        run: |
+          file assets/images/events/dog-search-cabbage.png assets/images/events/dog-search-shepherd.png
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          for path in [Path('assets/images/events/dog-search-cabbage.png'), Path('assets/images/events/dog-search-shepherd.png')]:
+              data=path.read_bytes()
+              print(path, 'bytes=',len(data),'sha256=',hashlib.sha256(data).hexdigest(),'head=',data[:32].hex())
+              try:
+                  from PIL import Image
+                  with Image.open(path) as im:
+                      im.verify()
+                  with Image.open(path) as im:
+                      print('PIL', im.format, im.size, im.mode, 'alpha=', 'A' in im.mode)
+              except Exception as e:
+                  print('PIL_ERROR', type(e).__name__, str(e))
           PY
       - name: Show expected asset manifest changes
         run: |

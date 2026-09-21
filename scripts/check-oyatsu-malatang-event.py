@@ -35,7 +35,7 @@ checks={
 '1.5秒暗転動画':'const SKIP_DELAY=1500;' in m,
 'MOVIEスキップ右上':'right:6px!important' in c,
 '横動画全高':'height:100%!important' in c and 'object-fit:contain!important' in c,
-'縦キャラクター中央固定':'malatang-character-shell' in m and 'width:min(76vw,420px)!important' in c and 'margin:0 auto!important' in c and 'transform:none!important' in c,
+'縦キャラクター中央固定':'malatang-character-shell' in m and 'width:min(76vw,420px)!important' in c and 'margin:0 auto!important' in c and 'centerPortraitCharacter' in m and 'getImageData' in m and "translateX(${dx.toFixed(2)}px)" in m,
 '横キャラクター承認サイズ':'height:min(86dvh,540px)!important' in c and 'max-width:82vw!important' in c,
 '横麻辣湯画像全体表示':'width:min(88vw,1050px)!important' in c and 'height:100%!important' in c and 'max-width:min(76vw,900px)!important' in c and 'object-position:center top!important' in c,
 '横もぐもぐ文字縮小':'font-size:clamp(18px,2.4vw,26px)!important' in c,

@@ -37,10 +37,13 @@ checks = [
     ('save retained', 'saveGame();' in body),
     ('completion toast retained', 'showToast(`${product.name}を${quantity}個購入しました。`);' in body),
     ('render retained', 'render();' in body),
+    ('store installation purchase guard retained', "displayProductPurchaseMaximum(productId)" in body and '店舗に設置できる数までしか購入できません。' in body),
+    ('display shop product order retained', 'displayShopRules.PRODUCT_ORDER.map((id) => DISPLAY_SHOP_PRODUCTS[id])' in APP),
     ('dynamic harness extracts current function', "extractFunction('buyDisplayProduct')" in TEST),
     ('successful showcase regression case', 'testSuccessfulShowcasePurchase' in TEST),
     ('case quantity regression case', 'testSuccessfulCaseQuantityPurchaseAndDraftReset' in TEST),
     ('purchase limit regression case', 'testPurchaseLimitIncludesInstalledCases' in TEST),
+    ('store installation limit regression case', 'testStoreInstallationPurchaseLimits' in TEST),
     ('guard regression case', 'testGuardRails' in TEST),
     ('current audit registration or sync registration', 'check-buy-display-product-regression.py' in CURRENT or 'check-buy-display-product-regression.py' in SYNC_TEXT),
 ]

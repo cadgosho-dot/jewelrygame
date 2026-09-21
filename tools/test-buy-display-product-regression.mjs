@@ -52,6 +52,7 @@ function makeHarness(overrides = {}) {
     displayCasePurchaseQuantity: () => 1,
     currentStoreBranch: () => branch,
     storeCaseRemaining: (b) => Math.max(0, Number(b?.casesInstalled) || 0),
+    displayProductPurchaseMaximum: () => Number.POSITIVE_INFINITY,
     canSpendHours: () => true,
     startMoneyFeedback: (amount) => calls.feedback.push(amount),
     spendHours: (hours) => { calls.spend += hours; },
@@ -120,6 +121,21 @@ function testPurchaseLimitIncludesInstalledCases() {
   assert.match(h.calls.toast.at(-1)?.[0] || '', /50個まで保有できます/);
 }
 
+function testStoreInstallationPurchaseLimits() {
+  for (const productId of ['showcase', 'displaySupplies']) {
+    const h = makeHarness({
+      context: { displayProductPurchaseMaximum: (id) => id === productId ? 0 : Number.POSITIVE_INFINITY },
+    });
+    const before = { ...h.state.store.displayInventory };
+    h.buy(productId);
+    assertNoMutation(h, 300000, before);
+    assert.equal(
+      h.calls.toast.at(-1)?.[0],
+      `${h.context.DISPLAY_SHOP_PRODUCTS[productId].name}は店舗に設置できる数までしか購入できません。`,
+    );
+  }
+}
+
 function testGuardRails() {
   {
     const h = makeHarness();
@@ -161,6 +177,7 @@ function testGuardRails() {
 testSuccessfulShowcasePurchase();
 testSuccessfulCaseQuantityPurchaseAndDraftReset();
 testPurchaseLimitIncludesInstalledCases();
+testStoreInstallationPurchaseLimits();
 testGuardRails();
 
 console.log('BUY DISPLAY PRODUCT REGRESSION: PASS');

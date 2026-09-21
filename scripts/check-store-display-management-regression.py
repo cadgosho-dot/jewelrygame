@@ -30,6 +30,7 @@ normalize_price = function_body('function normalizeSellingPrice(value, fallback 
 max_showcases = function_body('function storeMaximumShowcases(branch = currentStoreBranch()) {')
 branch_showcases = function_body('function branchShowcases(branch = currentStoreBranch()) {')
 max_supplies = function_body('function storeMaximumDisplaySupplies(branch = currentStoreBranch()) {')
+purchase_max = function_body('function displayProductPurchaseMaximum(productId) {')
 mirror = function_body('function mirrorCurrentStoreDisplay(branch = currentStoreBranch()) {')
 empty_position = function_body('function findEmptyShowcasePosition(branch = currentStoreBranch()) {')
 location = function_body('function showcaseLocationForJewelry(itemId, branch = null) {')
@@ -51,6 +52,7 @@ signatures = [
     'function installedShowcaseCount(branch = currentStoreBranch()) {',
     'function storeMaximumDisplaySupplies(branch = currentStoreBranch()) {',
     'function storeDisplaySuppliesInstalled(branch = currentStoreBranch()) {',
+    'function displayProductPurchaseMaximum(productId) {',
     'function mirrorCurrentStoreDisplay(branch = currentStoreBranch()) {',
     'function findEmptyShowcasePosition(branch = currentStoreBranch()) {',
     'function showcaseLocationForJewelry(itemId, branch = null) {',
@@ -73,15 +75,14 @@ checks += [
     ('additional store showcase limit retained', 'Number(branch?.number) >= 2) return 3' in max_showcases),
     ('branch showcase array initialization retained', 'if (!Array.isArray(branch.showcases)) branch.showcases = [];' in branch_showcases),
     ('display supplies maximum equals showcase count', 'return installedShowcaseCount(branch);' in max_supplies),
+    ('purchase maximum delegates to store module', 'displayShopRules.purchaseMaximum(productId, state.store, contractedStoreBranches())' in purchase_max),
     ('display mirror supplies retained', 'state.store.displaySuppliesInstalled = storeDisplaySuppliesInstalled(branch);' in mirror),
     ('display mirror cases retained', 'state.store.casesInstalled = storeCaseRemaining(branch);' in mirror),
     ('display mirror showcases retained', 'state.store.showcases = branchShowcases(branch);' in mirror),
     ('display mirror showcase count retained', 'state.store.showcaseCount = state.store.showcases.length;' in mirror),
     ('empty showcase slot search retained', 'const slotIndex = (showcase?.slots || []).findIndex((slot) => !slot);' in empty_position),
     ('showcase location keeps jewelry id lookup', 'findIndex((entry) => entry?.jewelryId === itemId)' in location),
-    ('case install owned count retained', 'Math.max(0, Math.floor(Number(inventory.case) || 0))' in case_max),
-    ('case install remaining capacity retained', 'storeMaximumCases() - storeCaseRemaining(branch)' in case_max),
-    ('case install max min owned/capacity retained', 'Math.min(owned, remainingCapacity)' in case_max),
+    ('case install maximum delegates to store module', 'displayShopRules.caseInstallMaximum(state.store, branch)' in case_max),
     ('case install quantity defaults to one when available', 'maximum > 0 ? Math.max(1, initial) : 0' in case_quantity),
     ('showcase selling price fallback retained', 'normalizeSellingPrice(slot?.sellingPrice, item?.recommendedPrice || 1000)' in showcase_price),
     ('selling price adjust screen guard retained', "screen !== 'showcaseDetail'" in adjust_price),
@@ -120,6 +121,7 @@ checks += [
     ('case install quantity retained', "productId === 'case' ? displayCaseInstallQuantity(branch) : 1" in install),
     ('showcase install maximum retained', 'installedShowcaseCount(branch) >= storeMaximumShowcases(branch)' in install),
     ('showcase installs five slots retained', 'slots: [null, null, null, null, null]' in install),
+    ('showcase installation announces five display slots', 'このショーケースには完成品を5個まで陳列できます。' in install),
     ('showcase capacity sync retained', 'syncFinishedJewelryCapacity();' in install),
     ('display supplies require showcase retained', "if (maximum < 1) return showToast('先にショーケースを設置してください。', 'error');" in install),
     ('display supplies capped by showcases retained', 'storeDisplaySuppliesInstalled(branch) >= maximum' in install),
@@ -155,6 +157,7 @@ checks += [
     ('dynamic harness lists price adjust', "'adjustShowcaseSellingPrice'," in TEST),
     ('dynamic harness applies extractor to function list', 'functionNames.map((name) => [name, extractFunction(name)])' in TEST),
     ('dynamic harness extracts inline price confirm', 'extractSellingPriceConfirmBody' in TEST),
+    ('display purchase maximum regression case', 'testDisplayProductPurchaseMaximum' in TEST),
     ('showcase installation regression case', 'testShowcaseInstallationAndLimits' in TEST),
     ('display supplies regression case', 'testDisplaySuppliesInstallationAndGuards' in TEST),
     ('case multi install regression case', 'testCaseMultiInstallAndMaximum' in TEST),
@@ -165,6 +168,9 @@ checks += [
     ('price draft regression case', 'testSellingPriceAdjustmentIsDraftOnlyAndFloored' in TEST),
     ('price confirm regression case', 'testSellingPriceConfirmCommitsPendingPrice' in TEST),
     ('basic guard regression case', 'testInstallationBasicGuards' in TEST),
+    ('display shop module import retained', "import * as displayShopRules from './store/display-shop.js?v=" in APP),
+    ('display shop module precached', './js/store/display-shop.js?v=' in (ROOT / 'sw.js').read_text(encoding='utf-8')),
+    ('display shop module version sync retained', "Rule('js/app.js', 'display-shop.js import key'" in (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')),
     ('current audit registration or sync registration', 'check-store-display-management-regression.py' in CURRENT or 'check-store-display-management-regression.py' in SYNC_TEXT),
 ]
 

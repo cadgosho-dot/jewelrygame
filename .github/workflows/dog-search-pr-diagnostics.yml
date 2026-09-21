@@ -1,0 +1,73 @@
+name: Dog search PR diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Show dog-search integration targets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          app=Path('js/app.js').read_text(encoding='utf-8')
+          for name in ['enterOkachimachiFromOutside','startKaitenzushi','eatMeal','mine']:
+              m=re.search(r'^(?:async )?function '+re.escape(name)+r'\([^\n]*\) \{',app,re.M)
+              if not m:
+                  print('MISSING',name); continue
+              i=m.start(); depth=0; q=None; esc=False; line=False; block=False
+              brace=app.find('{',m.start(),m.end()+2)
+              for j in range(brace,len(app)):
+                  c=app[j]; n=app[j+1] if j+1<len(app) else ''
+                  if line:
+                      if c=='\n': line=False
+                      continue
+                  if block:
+                      if c=='*' and n=='/': block=False
+                      continue
+                  if q:
+                      if esc: esc=False
+                      elif c=='\\': esc=True
+                      elif c==q: q=None
+                      continue
+                  if c=='/' and n=='/': line=True; continue
+                  if c=='/' and n=='*': block=True; continue
+                  if c in ['\"', "'", chr(96)]: q=c; continue
+                  if c=='{': depth+=1
+                  elif c=='}':
+                      depth-=1
+                      if depth==0:
+                          print('\n===== '+name+' =====\n'+app[i:j+1])
+                          break
+          marker="root.addEventListener('click'"
+          pos=app.find(marker)
+          if pos<0: pos=app.find('root.addEventListener("click"')
+          if pos>=0:
+              print('\n===== root click tail =====\n'+app[pos:pos+18000])
+          PY
+      - name: Show expected asset manifest changes
+        run: |
+          cp ASSETS.md /tmp/ASSETS.before
+          python3 scripts/generate-assets-manifest.py --write
+          python3 - <<'PY'
+          from pathlib import Path
+          import difflib
+          a=Path('/tmp/ASSETS.before').read_text(encoding='utf-8').splitlines()
+          b=Path('ASSETS.md').read_text(encoding='utf-8').splitlines()
+          print('\n===== MANIFEST SUMMARY DIFF =====')
+          for line in difflib.unified_diff(a,b,fromfile='ASSETS.before',tofile='ASSETS.expected',n=2):
+              if ('dog-search-' in line or line.startswith('@@') or '総ファイル数' in line or '画像:' in line or '静的な直接参照' in line):
+                  print(line)
+          print('\n===== DOG ASSET ROWS =====')
+          for line in b:
+              if 'dog-search-' in line:
+                  print(line)
+          PY
+      - name: Show app size
+        run: wc -c js/app.js

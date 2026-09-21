@@ -207,6 +207,7 @@ function assertNoTimeOrMoneyCost(h, initialMoney = 777777) {
 }
 
 function testDisplayProductPurchaseMaximum() {
+  assert.deepEqual([...displayShopRulesModule.PRODUCT_ORDER], ['case', 'showcase', 'displaySupplies']);
   const h = makeHarness({
     expanded: true,
     showcaseOwned: 1,

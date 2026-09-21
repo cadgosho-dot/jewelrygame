@@ -22,14 +22,39 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           text=Path('/tmp/app-main.js').read_text(encoding='utf-8')
+
           click="root.addEventListener('click', async (event) => {"
           assert text.count(click)==1
-          text=text.replace(click,"globalThis.__JXJ_NAVIGATE__=setScreen;\n\n"+click,1)
+          text=text.replace(click,"globalThis.__JXJ_N=setScreen;\n\n"+click,1)
+
           start=text.index(click)
           marker='  switch (action) {'
           pos=text.index(marker,start)
-          hook="  if(globalThis.__JXJ_EVENT_ACTION_INTERCEPT__?.(button,action))return;\n"
+          hook="  if(globalThis.__JXJ_I?.(button,action))return;\n  const R=globalThis.__JXJ_R===button;\n"
           text=text[:pos]+hook+text[pos:]
+
+          replacements = {
+            "    case 'eat-meal': await eatMeal(button.dataset.id); break;":
+              "    case 'eat-meal': await eatMeal(button.dataset.id,{skipEventCheck:R}); break;",
+            "    case 'play-kaitenzushi': startKaitenzushi(); break;":
+              "    case 'play-kaitenzushi': startKaitenzushi({skipEventCheck:R}); break;",
+            "    case 'mine': mine(); break;":
+              "    case 'mine': mine({skipEventCheck:R}); break;",
+            "function mine() {":
+              "function mine({skipEventCheck=false}={}) {",
+            "  if (maybeStartKappaJadeEvent()) return;":
+              "  if(!skipEventCheck&&maybeStartKappaJadeEvent())return;",
+          }
+          for old,new in replacements.items():
+              assert text.count(old)==1, (old,text.count(old))
+              text=text.replace(old,new,1)
+
+          lines=text.splitlines()
+          pearl=[i for i,line in enumerate(lines) if 'maybeStartPearlHumanEvent()' in line and 'if (' in line]
+          assert len(pearl)==1, pearl
+          lines[pearl[0]]=lines[pearl[0]].replace('if (','if (data?.dogSearchResume!==true && ',1)
+          text='\n'.join(lines)+'\n'
+
           Path('js/app.js').write_text(text,encoding='utf-8')
           size=Path('js/app.js').stat().st_size
           print('app.js bytes',size)
@@ -45,5 +70,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add js/app.js
-          git commit -m 'Refactor dog search hooks out of app.js'
+          git commit -m 'Keep dog search app integration minimal'
           git push origin HEAD:${{ github.head_ref }}

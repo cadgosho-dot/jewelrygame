@@ -179,6 +179,7 @@ export function createDogSearchEventRuntime({
 
   function removeOverlay({ keepExclusive = false } = {}) {
     clearWait();
+    window.removeEventListener('orientationchange', onOrientationChange);
     overlay?.remove();
     overlay = null;
     running = false;
@@ -348,6 +349,7 @@ export function createDogSearchEventRuntime({
     overlay.setAttribute('aria-label',label);
     overlay.addEventListener('click', onOverlayClick);
     document.body.appendChild(overlay);
+    window.addEventListener('orientationchange', onOrientationChange, { passive:true });
   }
 
   function startClaim() {
@@ -497,7 +499,9 @@ export function createDogSearchEventRuntime({
     }
   }
 
-  window.addEventListener('orientationchange', () => window.setTimeout(onResize, 100), { passive:true });
+  function onOrientationChange() {
+    window.setTimeout(onResize, 100);
+  }
 
   return Object.freeze({
     claim,

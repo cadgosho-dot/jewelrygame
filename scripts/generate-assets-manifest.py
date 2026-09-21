@@ -84,6 +84,14 @@ def provenance_map() -> dict[str, dict[str, str]]:
             'source': f'ユーザー提供正式画像（2026-09-21 / {source} / 背景除去・透明PNG化を承認）',
             'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更禁止）',
         }
+    provenance['assets/images/events/dog-search-cabbage.png'] = {
+        'source': 'ユーザー指定正式画像（2026-09-21 / キャベツ野郎 / 承認済み最終透過PNG）',
+        'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止）',
+    }
+    provenance['assets/images/events/dog-search-shepherd.png'] = {
+        'source': 'ユーザー指定正式画像（2026-09-21 / 牧羊犬 / 最終再トリミング済み透過PNG）',
+        'permission': '変更禁止（黒い毛を透過しない。再生成・色変更・画風変更・再トリミング禁止）',
+    }
     return provenance
 
 SOURCE_ORDER = [

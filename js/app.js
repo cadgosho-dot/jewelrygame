@@ -61,6 +61,7 @@ import { formatMetalWeightLabel } from './ui/metal-weight-label.js?v=0.10.961';
 import { createPressHoldController } from './ui/press-hold-controller.js?v=0.10.961'; import { createEventStateHelpers, setServices } from './events/event-state-helpers.js?v=0.10.961';
 import { bindRetroBattleFrameLoader, createRetroBattleStateAdapter } from './events/retro-battle-frame-loader.js?v=0.10.961';
 import { createMiningBattleRuntime } from './events/mining-battle-event.js?v=0.10.961';
+import { createDogSearchEventRuntime, dogSearchEntryForScreen } from './events/dog-search-event.js?v=0.10.961';
 import * as W from './events/white-bunny-tonkatsu-event.js?v=0.10.961';
 
 
@@ -114,6 +115,11 @@ const modalPresenter = createModalPresenter({ element: modalEl, escapeHtml: esc 
 const autosaveStatusPresenter = createAutosaveStatusPresenter();
 
 let state = null; globalThis.__JXJ_EVENT_STATE_HELPERS__ = createEventStateHelpers(() => state, saveGame, showToast, playSfx, roundedMetalWeight, METALS); setServices(canSpendMealTime, spendMealTime, addFinance, addNotification, setMealFeedback, render);
+const dogSearchRuntime = createDogSearchEventRuntime({
+  getState: () => state,
+  getHelpers: () => globalThis.__JXJ_EVENT_STATE_HELPERS__,
+  navigate: (target, data = {}, push = true) => setScreen(target, data, push),
+});
 globalThis.__JXJ_MEMORIES_STATE__ = () => state ? structuredClone({ events: state.events, inventory: state.inventory, game: state.game, memories: state.memories }) : null;
 globalThis.__JXJ_MEMORIES_RECORD__ = (entry) => {
   try {
@@ -11542,6 +11548,10 @@ async function enterOkachimachiFromOutside() {
   if (resumeSpeedStarEvent()) return;
   if (resumeStorytellerEvent()) return;
 
+  // 犬発見待ちの抽選は、既存の新規ランダムイベントより先に行う。
+  // 外れた場合だけ従来の御徒町イベント抽選へ進む。
+  if (dogSearchRuntime.startActionEntry('okachimachi')) return;
+
   const eventState = okachimachiQuizEventState();
   const todayKey = dateKey(gameDate());
   if (eventState.lastCountedDate !== todayKey) {
@@ -12304,7 +12314,7 @@ function scheduleOkachimachiQuizBottomLayoutSync() {
 }
 
 function setScreen(target, data = {}, push = true) {
-  if (target === 'displayShop' && state && maybeStartPearlHumanEvent()) target = 'pearlHumanEvent';
+  if (target === 'displayShop' && state && data?.dogSearchResume !== true && maybeStartPearlHumanEvent()) target = 'pearlHumanEvent';
   if (target === 'tropicalFishShop' && screen !== 'tropicalFishShop') {
     data = { ...data, tropicalResetScroll: true };
   }
@@ -19682,6 +19692,9 @@ function startKaitenzushi({ skipEventCheck = false, free = false } = {}) {
   if (state.wellbeing.mealsEaten > 0 && state.wellbeing.lastMeal === 'kaitenzushi') return showToast('栄養が片寄るので違うものを食べましょう', 'error');
   if (!free && state.game.money < 190) return showToast('回転寿司を食べるための所持金が足りません。', 'error');
   if (!canSpendMealTime()) return showToast(mealTimeUnavailableMessage(), 'error');
+  if (!skipEventCheck && dogSearchRuntime.startActionEntry('meal:kaitenzushi', {
+    resume: () => startKaitenzushi({ skipEventCheck:true, free }),
+  })) return;
   if (!skipEventCheck && maybeStartSushiChefEvent()) return;
   const sushiEvent = sushiChefEventState();
   const eventFree = free || Boolean(sushiEvent.active && sushiEvent.stage === 'playing');
@@ -19906,6 +19919,9 @@ async function eatMeal(mealId, { skipEventCheck = false, priceOverride = null } 
   const actualPrice = Math.max(0, Math.floor(Number(priceOverride ?? meal.price) || 0));
   if (state.game.money < actualPrice) return showToast('所持金が足りません。', 'error');
   if (!canSpendMealTime()) return showToast(mealTimeUnavailableMessage(), 'error');
+  if (!skipEventCheck && dogSearchRuntime.startActionEntry(`meal:${mealId}`, {
+    resume: () => eatMeal(mealId, { skipEventCheck:true, priceOverride }),
+  })) return;
   if (mealId === 'convenience' && !skipEventCheck && maybeStartCyclopsEvent()) return;
   if(mealId==='ice'&&!skipEventCheck&&W.maybeStartWhiteBunnyTonkatsuEvent({state,illnessSuppressed:illnessEventSuppressionActive(),hungerLevel,saveGame,setScreen,playSfx,vibrate}))return;
   if (mealId === 'ice' && !skipEventCheck && maybeStartWhiteBunnyIceEvent()) return;
@@ -21385,11 +21401,19 @@ function pickRandomMiningBrokenRockImage() {
   return MINING_BROKEN_ROCK_IMAGE_POOL[index];
 }
 
-function mine() {
+function mine({ skipEventCheck = false } = {}) {
   const location = selectedMining ? miningLocationById(selectedMining) : null;
   if (!location) return showToast('採掘場所を選んでください。', 'error');
   if (!canSpendHours(location.hours)) return showToast('今日は採掘する時間がありません。', 'error');
-  if (maybeStartKappaJadeEvent()) return;
+  const dogMiningEntry = selectedMining === 'river'
+    ? 'mining:river'
+    : selectedMining === 'mine'
+      ? 'mining:mine'
+      : '';
+  if (!skipEventCheck && dogMiningEntry && dogSearchRuntime.startActionEntry(dogMiningEntry, {
+    resume: () => mine({ skipEventCheck:true }),
+  })) return;
+  if (!skipEventCheck && maybeStartKappaJadeEvent()) return;
   const shuffled = shuffleRockIndices();
   miningGame = {
     locationId: selectedMining,
@@ -24493,6 +24517,16 @@ root.addEventListener('click', async (event) => {
           break;
         }
       }
+      const dogEntry = target !== screen ? dogSearchEntryForScreen(target) : '';
+      if (dogEntry && dogSearchRuntime.startActionEntry(dogEntry, {
+        resume: () => setScreen(
+          target,
+          target === 'supplierMetals'
+            ? { tab: button.dataset.tab || 'market', dogSearchResume:true }
+            : { dogSearchResume:true },
+          true,
+        ),
+      })) break;
       if (target === 'looseShop' && screen !== 'looseShop') {
         button.disabled = true;
         await maybeEnterLooseShop();
@@ -24587,7 +24621,14 @@ root.addEventListener('click', async (event) => {
     case 'mine': mine(); break;
     case 'hit-rock': hitMiningRock(Number(button.dataset.index), button); break;
     case 'mine-again': miningGame = null; setScreen('mining', {}, false); break;
-    case 'supplier-category': setScreen(button.dataset.screen, {}); break;
+    case 'supplier-category': {
+      const target = button.dataset.screen;
+      if (target === 'supplierMetals' && dogSearchRuntime.startActionEntry('supplierMetals', {
+        resume: () => setScreen(target, { dogSearchResume:true }),
+      })) break;
+      setScreen(target, {});
+      break;
+    }
     case 'supplier-metal-tab': screenData.view = button.dataset.tab; render(); break;
     case 'metal-trade-open': screenData.view = button.dataset.mode; render(); break;
     case 'metal-market-home': screenData.view = 'market'; render(); break;

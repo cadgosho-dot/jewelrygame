@@ -1,7 +1,7 @@
 import { DOG_SEARCH_EVENTS } from './dog-search-data.js';
 
 export const DOG_SEARCH_KEY = 'dogSearchEvent';
-export const DOG_SEARCH_FINAL_STAGES = Object.freeze(['question','cabbage','dog-wait','dog','blackout','wolf1','wolf2','butler1','butler2','reward','wolfFinal']);
+export const DOG_SEARCH_FINAL_STAGES = Object.freeze(['question','cabbage','dog-wait','dog','blackout','wolf1','wolf2','butler1','butler2','reward','wolfFinal','completed']);
 const ids = new Set(DOG_SEARCH_EVENTS.map(row => row.id));
 const validStages = new Set(DOG_SEARCH_FINAL_STAGES);
 const dayNumber = value => Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;

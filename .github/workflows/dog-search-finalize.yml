@@ -1,0 +1,47 @@
+name: 犬探し最終同期
+
+on:
+  push:
+    branches:
+      - codex/dog-search-cycle-20260921
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: "!contains(github.event.head_commit.message, '[dog-finalized]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: codex/dog-search-cycle-20260921
+          fetch-depth: 1
+      - name: 画像資料生成環境
+        run: python3 -m pip install --disable-pip-version-check pillow
+      - name: VERSIONと生成資料を同期
+        run: |
+          python3 scripts/version-sync.py --set 0.10.962
+          python3 scripts/generate-assets-manifest.py --write
+          python3 scripts/generate-event-probability-list.py --write
+      - name: 犬探し関連回帰
+        run: |
+          node tools/test-dog-search-state.mjs
+          node tools/test-dog-search-reward.mjs
+          node tools/test-dog-search-assets.mjs
+          python3 scripts/check-event-integrity.py
+          python3 scripts/check-event-save-roundtrip.py
+          python3 scripts/check-pwa-cache-policy.py
+          python3 scripts/version-sync.py --check
+          python3 scripts/check-management-docs.py
+          python3 scripts/check-repository-hygiene.py
+      - name: 最終同期結果を保存
+        run: |
+          rm -f .github/workflows/dog-search-finalize.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Finalize dog search v0.10.962 [dog-finalized]'
+          git push origin HEAD:codex/dog-search-cycle-20260921

@@ -34,7 +34,9 @@ checks={
 '1.5秒暗転動画':'const SKIP_DELAY=1500;' in m,
 'MOVIEスキップ右上':'right:6px!important' in c,
 '横動画全高':'height:100%!important' in c and 'object-fit:contain!important' in c,
-'横麻辣湯画像全体表示':'max-width:min(44vw,460px)!important' in c and 'max-height:100%!important' in c and 'object-fit:contain!important' in c,
+'縦キャラクター中央固定':'malatang-character-shell' in m and 'width:min(76vw,420px)!important' in c and 'margin:0 auto!important' in c and 'transform:none!important' in c,
+'横キャラクター承認サイズ':'height:min(86dvh,540px)!important' in c and 'max-width:82vw!important' in c,
+'横麻辣湯画像全体表示':'width:min(88vw,1050px)!important' in c and 'height:100%!important' in c and 'max-width:min(76vw,900px)!important' in c and 'object-position:center top!important' in c,
 '横もぐもぐ文字縮小':'font-size:clamp(18px,2.4vw,26px)!important' in c,
 'もぐもぐタップで決済':'startMealPayment()' in m and "a==='meal-finish'&&stage==='meal')startMealPayment()" in m,
 '所持金減少アニメ':'money-change-active' in m and 'header-money-change loss' in m and 'PAYMENT_DURATION=1200' in m,
@@ -56,4 +58,4 @@ if proc.stdout: print(proc.stdout,end='')
 if proc.stderr: print(proc.stderr,end='',file=sys.stderr)
 if proc.returncode != 0:
  print('NG: 麻辣湯イベント食事確定の実動検査に失敗');sys.exit(1)
-print('OK: 承認済みv18仕様を固定')
+print('OK: 承認済みv23仕様を固定')

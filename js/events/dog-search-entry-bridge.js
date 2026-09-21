@@ -1,8 +1,9 @@
 import { createDogSearchEventRuntime, dogSearchEntryForScreen } from './dog-search-event.js';
 import { DOG_SEARCH_KEY } from './dog-search-state.js';
 
-const INTERCEPT_KEY = '__JXJ_EVENT_ACTION_INTERCEPT__';
-const NAVIGATE_KEY = '__JXJ_NAVIGATE__';
+const INTERCEPT_KEY = '__JXJ_I';
+const NAVIGATE_KEY = '__JXJ_N';
+const RESUME_KEY = '__JXJ_R';
 const bypass = new WeakSet();
 let selectedMining = 'river';
 
@@ -68,9 +69,27 @@ function replay(button) {
   if (!(button instanceof Element) || !button.isConnected) return;
   bypass.add(button);
   queueMicrotask(() => {
-    if (button.isConnected) button.click();
-    else bypass.delete(button);
+    if (!button.isConnected) {
+      bypass.delete(button);
+      return;
+    }
+    globalThis[RESUME_KEY] = button;
+    try {
+      button.click();
+    } finally {
+      if (globalThis[RESUME_KEY] === button) delete globalThis[RESUME_KEY];
+    }
   });
+}
+
+function continuationFor(button, action) {
+  if (action === 'nav' || action === 'supplier-category') {
+    const target = String(button.dataset?.screen || '');
+    return () => {
+      if (target) navigate(target, { dogSearchResume:true });
+    };
+  }
+  return () => replay(button);
 }
 
 function intercept(button, action) {
@@ -85,7 +104,7 @@ function intercept(button, action) {
   }
   const entry = dogSearchEntryFromAction(button, action, selectedMining);
   if (!entry) return false;
-  return runtime.startActionEntry(entry, { resume:() => replay(button) });
+  return runtime.startActionEntry(entry, { resume:continuationFor(button, action) });
 }
 
 const previous = globalThis[INTERCEPT_KEY];

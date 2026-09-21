@@ -177,22 +177,24 @@ export function createDogSearchEventRuntime({
     waitTimer = 0;
   }
 
-  function removeOverlay() {
+  function removeOverlay({ keepExclusive = false } = {}) {
     clearWait();
     overlay?.remove();
     overlay = null;
     running = false;
     middleEvent = null;
     lineIndex = 0;
-    setExclusive(false);
+    if (!keepExclusive) setExclusive(false);
   }
 
   function finishSession({ continueAction = false } = {}) {
     const continuation = continueAction ? resumeAction : null;
     resumeAction = null;
-    removeOverlay();
-    if (typeof continuation === 'function') queueMicrotask(() => {
+    const keepExclusive = typeof continuation === 'function';
+    removeOverlay({ keepExclusive });
+    if (keepExclusive) queueMicrotask(() => {
       try { continuation(); } catch (error) { console.warn('[DogSearch] continuation failed', error); }
+      finally { window.setTimeout(() => setExclusive(false), 0); }
     });
   }
 
@@ -416,7 +418,7 @@ export function createDogSearchEventRuntime({
     }
     const result = controller.completeIntro();
     if (!result?.ok) return endEarly();
-    finishSession({ continueAction:false });
+    finishSession({ continueAction:true });
   }
 
   function advanceMiddle() {

@@ -34,7 +34,7 @@ c.startFinal('reward');assert.equal(c.receiveReward().ok,true);assert.equal(c.re
 s=JSON.parse(JSON.stringify(s));const c2=createDogSearchController({getState:()=>s,helpers:()=>helper});
 assert.equal(c2.receiveReward().ok,true);assert.equal(s.inventory.metals.gold,10019);
 assert.deepEqual(pickDogSearchEvent(s,'okachimachi',roll(.99)),{kind:'final',stage:'wolfFinal'});
-c2.finishFinal();assert.equal(s.events.dogSearchEvent.lastCompletedDay,131);assert.equal(s.events.dogSearchEvent.active,false);assert.deepEqual(s.events.dogSearchEvent.seenEventIds,[]);
+c2.finishFinal();assert.equal(s.events.dogSearchEvent.lastCompletedDay,131);assert.equal(s.events.dogSearchEvent.active,false);assert.equal(s.events.dogSearchEvent.finalStage,'completed');assert.deepEqual(s.events.dogSearchEvent.seenEventIds,[]);
 s.game.day=310;assert.equal(pickDogSearchEvent(s,'store',roll(0)),null);
 s.game.day=311;assert.deepEqual(pickDogSearchEvent(s,'store',roll(.199)),{kind:'intro'});assert.equal(pickDogSearchEvent(s,'store',roll(.2)),null);
 c2.completeIntro();assert.equal(s.events.dogSearchEvent.finalRewardGranted,false);

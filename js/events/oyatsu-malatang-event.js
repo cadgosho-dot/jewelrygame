@@ -38,6 +38,41 @@ const snap=()=>{
 };
 const patch=(p)=>{try{return H()?.patchEventState?.(EVENT_KEY,p)||null}catch(_){return null}};
 const portrait=()=>innerHeight>=innerWidth;
+const portraitVisibleCenterCache=new Map();
+
+function centerPortraitCharacter(){
+  if(!overlay||!portrait())return;
+  const image=overlay.querySelector('.visit-character');
+  if(!(image instanceof HTMLImageElement))return;
+  const apply=()=>{
+    if(!running||!overlay?.contains(image)||!portrait())return;
+    const naturalWidth=Number(image.naturalWidth)||0,naturalHeight=Number(image.naturalHeight)||0;
+    if(!(naturalWidth>0&&naturalHeight>0))return;
+    const source=String(image.currentSrc||image.src||'');
+    let centerX=portraitVisibleCenterCache.get(source);
+    if(!Number.isFinite(centerX)){
+      try{
+        const canvas=document.createElement('canvas');canvas.width=naturalWidth;canvas.height=naturalHeight;
+        const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)return;
+        ctx.drawImage(image,0,0);
+        const pixels=ctx.getImageData(0,0,naturalWidth,naturalHeight).data;
+        let minX=naturalWidth,maxX=-1;
+        for(let y=0;y<naturalHeight;y++){
+          for(let x=0;x<naturalWidth;x++){
+            if(pixels[(y*naturalWidth+x)*4+3]>8){if(x<minX)minX=x;if(x>maxX)maxX=x}
+          }
+        }
+        if(maxX<minX)return;
+        centerX=(minX+maxX+1)/2;portraitVisibleCenterCache.set(source,centerX);
+      }catch(_){return}
+    }
+    const rect=image.getBoundingClientRect();if(!(rect.width>0))return;
+    const dx=(naturalWidth/2-centerX)*(rect.width/naturalWidth);
+    image.style.setProperty('transform',`translateX(${dx.toFixed(2)}px)`,'important');
+  };
+  if(image.complete&&image.naturalWidth>0)requestAnimationFrame(apply);
+  else image.addEventListener('load',()=>requestAnimationFrame(apply),{once:true});
+}
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const player=()=>String(snap()?.playerName||'').trim()||'あなた';
 const yen=(n)=>`${Math.max(0,Math.floor(Number(n)||0)).toLocaleString('ja-JP')}円`;
@@ -64,6 +99,7 @@ function renderDialogue(){
       <small>おやつ大好き</small><strong>${esc(line)}</strong><span>タップして進む</span>
     </button>
   </section></main>${endButton()}`;
+  centerPortraitCharacter();
 }
 function status(){
   const s=snap()||{},g=s.game||{},w=s.wellbeing||{},day=Math.max(1,Math.floor(Number(g.day)||1)),min=Math.max(0,Math.floor(Number(g.minutes)||0));

@@ -44,7 +44,7 @@ const yen=(n)=>`${Math.max(0,Math.floor(Number(n)||0)).toLocaleString('ja-JP')}�
 
 function ensureStyle(){
   if(document.getElementById(STYLE_ID))return;
-  const l=document.createElement('link');l.id=STYLE_ID;l.rel='stylesheet';l.href='./oyatsu-malatang-event.css?v=0.10.961';document.head.appendChild(l);
+  const l=document.createElement('link');l.id=STYLE_ID;l.rel='stylesheet';l.href='./oyatsu-malatang-event.css?v=0.10.961-oyatsu23';document.head.appendChild(l);
 }
 function playBgm(){
   try{
@@ -59,7 +59,7 @@ function renderDialogue(){
   const line=LINES[stage]?.(player())||'';
   overlay.innerHTML=`${background(portrait()?MENU_P:MENU_L)}
   <main class="main-screen malatang-dialogue-screen"><section class="visit-character-event">
-    <div class="visit-character-area"><img class="visit-character" src="${CHARACTER}" alt="おやつ大好き" draggable="false"></div>
+    <div class="visit-character-area"><div class="malatang-character-shell"><img class="visit-character" src="${CHARACTER}" alt="おやつ大好き" draggable="false"></div></div>
     <button type="button" class="event-dialogue-card visit-event-dialogue glass-panel jxj-transparent-dialogue" data-mala="next">
       <small>おやつ大好き</small><strong>${esc(line)}</strong><span>タップして進む</span>
     </button>
@@ -94,9 +94,9 @@ function lockMeal(){
   const p=overlay.querySelector('.malatang-meal-panel'),f=overlay.querySelector('.meal-food-display'),i=f?.querySelector('img'),c=p?.querySelector('strong');
   if(!(p instanceof HTMLElement)||!(f instanceof HTMLElement)||!(i instanceof HTMLImageElement)||!(c instanceof HTMLElement))return;
   if(innerWidth<=innerHeight){[p,f,i,c].forEach(e=>e.removeAttribute('style'));return}
-  p.style.cssText='display:grid!important;grid-template-rows:minmax(0,1fr) 30px!important;overflow:hidden!important;padding:8px 14px 10px!important';
-  f.style.cssText='width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:4px 10px 6px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;box-sizing:border-box!important';
-  i.style.cssText='display:block!important;width:auto!important;height:auto!important;max-height:100%!important;max-width:min(44vw,460px)!important;margin:0 auto!important;object-fit:contain!important;object-position:center center!important';
+  p.style.cssText='flex:1 1 0!important;width:min(88vw,1050px)!important;max-width:min(88vw,1050px)!important;height:100%!important;min-height:0!important;max-height:100%!important;margin:0 auto!important;padding:2px 12px 5px!important;transform:none!important;display:grid!important;grid-template-rows:minmax(0,1fr) 30px!important;gap:0!important;overflow:hidden!important';
+  f.style.cssText='width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;overflow:hidden!important;box-sizing:border-box!important';
+  i.style.cssText='display:block!important;width:auto!important;height:100%!important;max-height:100%!important;max-width:min(76vw,900px)!important;margin:0 auto!important;object-fit:contain!important;object-position:center top!important';
   c.style.cssText='position:static!important;height:30px!important;min-height:30px!important;margin:0!important;padding:0!important;display:grid!important;place-items:center!important;font-size:clamp(18px,2.4vw,26px)!important;line-height:1!important';
 }
 function renderMeal(){

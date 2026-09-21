@@ -135,10 +135,15 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         const key = String(metalKey || '').trim();
         const quantity = Number(amount);
         if (!metals?.[key] || !Number.isFinite(quantity) || quantity <= 0) return { ok:false, reason:'invalid-arguments' };
+        // Optional event receipt: inventory and its guard share the same save snapshot.
+        const rewardEvent = options.eventKey ? state.events?.[options.eventKey] : null;
+        if (options.eventKey && (!rewardEvent || typeof rewardEvent !== 'object' || Array.isArray(rewardEvent) || !options.rewardFlag)) return { ok:false, reason:'event-state-unavailable' };
+        if (rewardEvent?.[options.rewardFlag] === true) return { ok:true, alreadyGranted:true };
         state.inventory = state.inventory && typeof state.inventory === 'object' && !Array.isArray(state.inventory) ? state.inventory : {};
         state.inventory.metals = state.inventory.metals && typeof state.inventory.metals === 'object' && !Array.isArray(state.inventory.metals) ? state.inventory.metals : {};
         const current = Math.max(0, Number(state.inventory.metals[key]) || 0);
         state.inventory.metals[key] = roundedMetalWeight(current + quantity);
+        if (rewardEvent) Object.assign(rewardEvent, options.eventPatch || {}, { [options.rewardFlag]:true });
         if (options?.message) showToast?.(String(options.message), options.type || 'success');
         if (options?.withSound !== false) playSfx?.('coin', { gain:.9 });
         persist();

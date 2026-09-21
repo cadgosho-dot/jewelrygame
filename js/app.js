@@ -4960,6 +4960,26 @@ function storeDisplaySuppliesInstalled(branch = currentStoreBranch()) {
   return Math.max(0, Math.floor(Number(state?.store?.displaySuppliesInstalled) || 0));
 }
 
+function displayProductPurchaseMaximum(productId) {
+  const branches = contractedStoreBranches();
+  const inventory = state.store.displayInventory || {};
+  const owned = Math.max(0, Math.floor(Number(inventory[productId]) || 0));
+
+  if (productId === 'showcase') {
+    const maximum = branches.reduce((sum, branch) => sum + storeMaximumShowcases(branch), 0);
+    const installed = branches.reduce((sum, branch) => sum + installedShowcaseCount(branch), 0);
+    return Math.max(0, maximum - installed - owned);
+  }
+
+  if (productId === 'displaySupplies') {
+    const maximum = branches.reduce((sum, branch) => sum + storeMaximumDisplaySupplies(branch), 0);
+    const installed = branches.reduce((sum, branch) => sum + storeDisplaySuppliesInstalled(branch), 0);
+    return Math.max(0, maximum - installed - owned);
+  }
+
+  return Number.POSITIVE_INFINITY;
+}
+
 function storeCaseRemaining(branch = currentStoreBranch()) {
   const value = branch && Number.isFinite(Number(branch.casesInstalled)) ? branch.casesInstalled : state?.store?.casesInstalled;
   return Math.min(storeMaximumCases(), Math.max(0, Math.floor(Number(value) || 0)));
@@ -17586,7 +17606,8 @@ function renderDisplayProductVisual(product, extraClass = '') {
 
 function renderDisplayShop() {
   const inventory = state.store.displayInventory || {};
-  const products = Object.values(DISPLAY_SHOP_PRODUCTS);
+  const productIds = ['case', 'showcase', 'displaySupplies'];
+  const products = productIds.map((id) => DISPLAY_SHOP_PRODUCTS[id]).filter(Boolean);
   const productRows = products.map((product) => {
     const owned = Math.max(0, Math.floor(Number(inventory[product.id]) || 0));
     const installed = product.id === 'showcase'
@@ -17596,7 +17617,9 @@ function renderDisplayShop() {
         : storeCaseRemaining(currentStoreBranch());
     const totalOwned = owned + (product.id === 'case' ? installed : 0);
     const limitReached = Boolean(product.purchaseLimit) && totalOwned >= Number(product.purchaseLimit);
-    const disabled = limitReached || state.game.money < product.price || !canSpendHours(1);
+    const installationPurchaseMaximum = displayProductPurchaseMaximum(product.id);
+    const installationLimitReached = Number.isFinite(installationPurchaseMaximum) && installationPurchaseMaximum < 1;
+    const disabled = limitReached || installationLimitReached || state.game.money < product.price || !canSpendHours(1);
     const ownedText = product.id === 'case'
       ? `未設置 ${owned}個・店舗の残数 ${installed}個`
       : `未設置 ${owned}個・設置済み ${installed}${product.id === 'showcase' ? '台' : '個'}`;
@@ -22299,6 +22322,10 @@ function buyDisplayProduct(productId) {
   if (!availability.open) return showToast(availability.reason, 'error');
   const quantity = productId === 'case' ? displayCasePurchaseQuantity() : 1;
   if (quantity < 1) return showToast('購入する数量を選択してください。', 'error');
+  if (productId === 'showcase' || productId === 'displaySupplies') {
+    const purchaseMaximum = displayProductPurchaseMaximum(productId);
+    if (quantity > purchaseMaximum) return showToast(`${product.name}は店舗に設置できる数までしか購入できません。`, 'error');
+  }
   if (product.purchaseLimit) {
     const owned = Math.max(0, Number(state.store.displayInventory?.[productId]) || 0);
     const installed = productId === 'case' ? storeCaseRemaining(currentStoreBranch()) : 0;
@@ -22443,7 +22470,7 @@ function installDisplayProduct(productId) {
   showToast(productId === 'case'
     ? `${product.name}を${installQuantity}個、店舗へ設置しました。`
     : productId === 'showcase'
-      ? `${product.name}を店舗へ設置しました。完成品の保管上限は${state.inventory.capacity}個です。`
+      ? `${product.name}を店舗へ設置しました。このショーケースには完成品を5個まで陳列できます。`
       : `${product.name}を店舗へ設置しました。`);
   render();
   restoreStoreScrollSnapshot(storeScrollSnapshot);

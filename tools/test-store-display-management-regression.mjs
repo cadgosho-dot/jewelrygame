@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+import * as displayShopRulesModule from '../js/store/display-shop.js';
 
 const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 
@@ -149,6 +150,7 @@ function makeHarness(overrides = {}) {
     state,
     screen,
     screenData,
+    displayShopRules: displayShopRulesModule,
     DISPLAY_SHOP_PRODUCTS: {
       showcase: { id: 'showcase', name: 'ショーケース' },
       displaySupplies: { id: 'displaySupplies', name: 'ディスプレイ用品' },

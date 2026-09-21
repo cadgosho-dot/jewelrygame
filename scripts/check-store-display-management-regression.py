@@ -30,6 +30,7 @@ normalize_price = function_body('function normalizeSellingPrice(value, fallback 
 max_showcases = function_body('function storeMaximumShowcases(branch = currentStoreBranch()) {')
 branch_showcases = function_body('function branchShowcases(branch = currentStoreBranch()) {')
 max_supplies = function_body('function storeMaximumDisplaySupplies(branch = currentStoreBranch()) {')
+purchase_max = function_body('function displayProductPurchaseMaximum(productId) {')
 mirror = function_body('function mirrorCurrentStoreDisplay(branch = currentStoreBranch()) {')
 empty_position = function_body('function findEmptyShowcasePosition(branch = currentStoreBranch()) {')
 location = function_body('function showcaseLocationForJewelry(itemId, branch = null) {')
@@ -51,6 +52,7 @@ signatures = [
     'function installedShowcaseCount(branch = currentStoreBranch()) {',
     'function storeMaximumDisplaySupplies(branch = currentStoreBranch()) {',
     'function storeDisplaySuppliesInstalled(branch = currentStoreBranch()) {',
+    'function displayProductPurchaseMaximum(productId) {',
     'function mirrorCurrentStoreDisplay(branch = currentStoreBranch()) {',
     'function findEmptyShowcasePosition(branch = currentStoreBranch()) {',
     'function showcaseLocationForJewelry(itemId, branch = null) {',
@@ -73,6 +75,10 @@ checks += [
     ('additional store showcase limit retained', 'Number(branch?.number) >= 2) return 3' in max_showcases),
     ('branch showcase array initialization retained', 'if (!Array.isArray(branch.showcases)) branch.showcases = [];' in branch_showcases),
     ('display supplies maximum equals showcase count', 'return installedShowcaseCount(branch);' in max_supplies),
+    ('purchase maximum uses contracted stores', 'contractedStoreBranches()' in purchase_max),
+    ('showcase purchase maximum uses store capacity', 'storeMaximumShowcases(branch)' in purchase_max and 'installedShowcaseCount(branch)' in purchase_max),
+    ('display supplies purchase maximum uses installed showcases', 'storeMaximumDisplaySupplies(branch)' in purchase_max and 'storeDisplaySuppliesInstalled(branch)' in purchase_max),
+    ('non-installation product purchase maximum is unlimited', 'return Number.POSITIVE_INFINITY;' in purchase_max),
     ('display mirror supplies retained', 'state.store.displaySuppliesInstalled = storeDisplaySuppliesInstalled(branch);' in mirror),
     ('display mirror cases retained', 'state.store.casesInstalled = storeCaseRemaining(branch);' in mirror),
     ('display mirror showcases retained', 'state.store.showcases = branchShowcases(branch);' in mirror),
@@ -120,6 +126,7 @@ checks += [
     ('case install quantity retained', "productId === 'case' ? displayCaseInstallQuantity(branch) : 1" in install),
     ('showcase install maximum retained', 'installedShowcaseCount(branch) >= storeMaximumShowcases(branch)' in install),
     ('showcase installs five slots retained', 'slots: [null, null, null, null, null]' in install),
+    ('showcase installation announces five display slots', 'このショーケースには完成品を5個まで陳列できます。' in install),
     ('showcase capacity sync retained', 'syncFinishedJewelryCapacity();' in install),
     ('display supplies require showcase retained', "if (maximum < 1) return showToast('先にショーケースを設置してください。', 'error');" in install),
     ('display supplies capped by showcases retained', 'storeDisplaySuppliesInstalled(branch) >= maximum' in install),
@@ -155,6 +162,7 @@ checks += [
     ('dynamic harness lists price adjust', "'adjustShowcaseSellingPrice'," in TEST),
     ('dynamic harness applies extractor to function list', 'functionNames.map((name) => [name, extractFunction(name)])' in TEST),
     ('dynamic harness extracts inline price confirm', 'extractSellingPriceConfirmBody' in TEST),
+    ('display purchase maximum regression case', 'testDisplayProductPurchaseMaximum' in TEST),
     ('showcase installation regression case', 'testShowcaseInstallationAndLimits' in TEST),
     ('display supplies regression case', 'testDisplaySuppliesInstallationAndGuards' in TEST),
     ('case multi install regression case', 'testCaseMultiInstallAndMaximum' in TEST),

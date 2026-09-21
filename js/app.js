@@ -3,6 +3,7 @@ import './aquarium/tropical-shop-approved-ui.js?v=0.10.960';
 import './events/oyatsu-daisuki-approved-ui.js?v=0.10.960';
 import { calculateStoreMonthlyRent } from './finance/store-rent.js?v=0.10.960';
 import { createHomePropertyController } from './finance/home-property-controller.js?v=0.10.960';
+import * as displayShopRules from './store/display-shop.js?v=0.10.960';
 import {
   VERSION, SAVE_SCHEMA_VERSION, DEFAULT_BIRTHDAY, SAVE_KEY, STORE_LEASE_COST, STORE_LEASE_COSTS, STORE_MONTHLY_RENTS, WORKSHOP_MONTHLY_COST, HOME_MONTHLY_RENT, WORKSHOP_EXPANSION_COSTS, WORKSHOP_LEVEL_REQUIREMENTS, ARTISAN_LEVEL_XP, ARTISAN_LEVEL_TITLES, STORE_LEVEL_POINTS, STORE_LEVEL_REQUIREMENTS, JEWELRY_BENCH_PRICE, POLISHING_MACHINE_PRICE, POLISHING_HOURS, DAY_START_MINUTES, DAY_END_MINUTES, MEAL_DURATION_MINUTES, STORE_OPEN_MINUTES, STORE_CLOSE_MINUTES, METALS, PURE_METAL_GUIDES, GEMS, LOOSE_SHAPES, ITEMS, DESIGNS, FINISHES, QUALITIES, compactLongTermHistory, compactFinanceHistory,
   PRICE_MODES, DISPLAY_SHOP_PRODUCTS, STORE_EMPLOYEE_CANDIDATES, STORE_STAFF_GROWTH_LEVELS, WORKSHOP_STAFF_GROWTH_LEVELS, MINING_LOCATIONS, CUSTOMERS, MEALS, GENERAL_ITEMS, EQUIPMENT_ITEMS, WORKSHOP_TOOLS, METAL_WORKSHOP_ORDER, PROCESSING_KNOWLEDGE, PROCESSING_KNOWLEDGE_SEQUENCE, initialState, migrateState, chooseNewestSavedState, normalizeBirthday, isBirthdayOnDate, finishedJewelryCapacity, storeStaffGrowthForWorkDays, storeStaffNextGrowthForWorkDays, workshopStaffGrowthForWorkDays, workshopStaffNextGrowthForWorkDays,
@@ -3392,14 +3393,7 @@ function restoreLooseShopScrollState(snapshot) {
 }
 
 function displayCasePurchaseMaximum() {
-  const product = DISPLAY_SHOP_PRODUCTS.case;
-  if (!product) return 0;
-  const inventory = state.store.displayInventory || {};
-  const owned = Math.max(0, Math.floor(Number(inventory.case) || 0));
-  const installed = Math.max(0, Math.floor(Number(storeCaseRemaining(currentStoreBranch())) || 0));
-  const limitRemaining = Math.max(0, Math.floor(Number(product.purchaseLimit) || 0) - owned - installed);
-  const affordable = Math.max(0, Math.floor(Number(state.game.money || 0) / Math.max(1, Number(product.price) || 1)));
-  return Math.max(0, Math.min(limitRemaining, affordable));
+  return displayShopRules.casePurchaseMaximum(DISPLAY_SHOP_PRODUCTS.case, state.store, currentStoreBranch(), state.game.money);
 }
 
 function setDisplayCasePurchaseQuantity(value) {
@@ -3437,10 +3431,7 @@ function adjustDisplayCasePurchaseQuantity(delta) {
 }
 
 function displayCaseInstallMaximum(branch = currentStoreBranch()) {
-  const inventory = state.store.displayInventory || {};
-  const owned = Math.max(0, Math.floor(Number(inventory.case) || 0));
-  const remainingCapacity = Math.max(0, storeMaximumCases() - storeCaseRemaining(branch));
-  return Math.max(0, Math.min(owned, remainingCapacity));
+  return displayShopRules.caseInstallMaximum(state.store, branch);
 }
 
 function setDisplayCaseInstallQuantity(value, branch = currentStoreBranch()) {
@@ -4954,30 +4945,11 @@ function storeMaximumDisplaySupplies(branch = currentStoreBranch()) {
 }
 
 function storeDisplaySuppliesInstalled(branch = currentStoreBranch()) {
-  if (branch && Number.isFinite(Number(branch.displaySuppliesInstalled))) {
-    return Math.max(0, Math.floor(Number(branch.displaySuppliesInstalled) || 0));
-  }
-  return Math.max(0, Math.floor(Number(state?.store?.displaySuppliesInstalled) || 0));
+  return displayShopRules.displaySuppliesInstalled(state.store, branch);
 }
 
 function displayProductPurchaseMaximum(productId) {
-  const branches = contractedStoreBranches();
-  const inventory = state.store.displayInventory || {};
-  const owned = Math.max(0, Math.floor(Number(inventory[productId]) || 0));
-
-  if (productId === 'showcase') {
-    const maximum = branches.reduce((sum, branch) => sum + storeMaximumShowcases(branch), 0);
-    const installed = branches.reduce((sum, branch) => sum + installedShowcaseCount(branch), 0);
-    return Math.max(0, maximum - installed - owned);
-  }
-
-  if (productId === 'displaySupplies') {
-    const maximum = branches.reduce((sum, branch) => sum + storeMaximumDisplaySupplies(branch), 0);
-    const installed = branches.reduce((sum, branch) => sum + storeDisplaySuppliesInstalled(branch), 0);
-    return Math.max(0, maximum - installed - owned);
-  }
-
-  return Number.POSITIVE_INFINITY;
+  return displayShopRules.purchaseMaximum(productId, state.store, contractedStoreBranches());
 }
 
 function storeCaseRemaining(branch = currentStoreBranch()) {
@@ -17606,8 +17578,7 @@ function renderDisplayProductVisual(product, extraClass = '') {
 
 function renderDisplayShop() {
   const inventory = state.store.displayInventory || {};
-  const productIds = ['case', 'showcase', 'displaySupplies'];
-  const products = productIds.map((id) => DISPLAY_SHOP_PRODUCTS[id]).filter(Boolean);
+  const products = displayShopRules.PRODUCT_ORDER.map((id) => DISPLAY_SHOP_PRODUCTS[id]).filter(Boolean);
   const productRows = products.map((product) => {
     const owned = Math.max(0, Math.floor(Number(inventory[product.id]) || 0));
     const installed = product.id === 'showcase'

@@ -92,6 +92,10 @@ def provenance_map() -> dict[str, dict[str, str]]:
         'source': 'ユーザー指定正式画像（2026-09-21 / 牧羊犬 / 最終再トリミング済み透過PNG）',
         'permission': '変更禁止（黒い毛を透過しない。再生成・色変更・画風変更・再トリミング禁止）',
     }
+    provenance['assets/images/events/oyatsu-daisuki.png'] = {
+        'source': 'ユーザー承認PNG（2026-09-22）',
+        'permission': '承認済み原本をそのまま使用（追加加工なし）',
+    }
     return provenance
 
 SOURCE_ORDER = [

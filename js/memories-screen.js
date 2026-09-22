@@ -1,6 +1,6 @@
-import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.962';
+import { MEMORIES_BG_LANDSCAPE, MEMORIES_BG_PORTRAIT } from './memories-backgrounds.js?v=0.10.963';
 
-const VERSION = '0.10.962';
+const VERSION = '0.10.963';
 const STYLE_ID = 'jxj-memories-style-v752';
 const OVERLAY_ID = 'jxj-memories-overlay';
 const LIGHTBOX_ID = 'jxj-memories-lightbox';
@@ -22,7 +22,7 @@ const CATALOG = [
   { key:'miningPazupanEvent', name:'ボムじいさん', image:'./assets/images/events/pazupan-miner.png', description:'採掘中に出会う、不思議な人物。', reward:{ flag:'rewardGranted', name:'パズーパン', image:'./assets/images/events/pazupan.png' } },
   { key:'workshopKappaJadeEvent', fallbackKey:'kappaJadeEvent', eventKeys:['workshopKappaJadeEvent','kappaJadeEvent'], name:'河童', image:'./assets/images/events/kappa.png', description:'翡翠に縁のある河童。', reward:{ flag:'rewardGranted', name:'翡翠の原石', image:'./assets/images/events/workshop-kappa-jade-rough.png' } },
   { key:'pearlHumanEvent', name:'真珠人間', image:'./assets/images/events/pearl-human.png', description:'真珠にまつわる出来事で出会う謎の人物。', reward:{ flag:'rewardGranted', name:'真珠', image:'./assets/images/events/pearl.png' } },
-  { key:'oyatsuDaisukiEvent', name:'お菓子大好き', image:'./assets/images/events/oyatsu-daisuki.png', description:'御徒町で出会う、アイスと熱帯魚屋が好きな人物。' },
+  { key:'oyatsuDaisukiEvent', name:'お菓子大好き', image:'./assets/images/events/oyatsu-daisuki.png?v=approved-88a4e456', description:'御徒町で出会う、アイスと熱帯魚屋が好きな人物。' },
   { key:'speedStarEvent', name:'スピードスター', image:'./assets/images/events/speed-star.png', description:'突然現れる、勢いのある人物。' },
   { key:'storytellerEvent', name:'ストーリーテラー', image:'./assets/images/events/storyteller-v751.png', description:'言葉と物語で印象を残す人物。' },
   { key:'alienAbductionEvent', fallbackKey:'alienReturnEvent', eventKeys:['alienAbductionEvent','alienReturnEvent'], name:'宇宙人', image:'./assets/images/events/alien.png', description:'宇宙に連れて行く、正体不明の存在。', reward:{ counter:'totalTrips', name:'身体の中のチップ', image:'./assets/images/items/body-chip.png' } },

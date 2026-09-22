@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.962** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.963** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -199,7 +199,7 @@
 | assets/images/events/okachimachi-invasive-turtles.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:343`<br>`js/memories-screen.js:38`<br>`scripts/FILES/js/app.js:338`<br>`scripts/FILES/js/memories-screen.js:38` | 由来記録なし | 要確認（明示許可がない限り加工しない） | eae0008b74f4090282d55a69c7bddc10300d7cde2c3b032e6be1c65304fb2159 |
 | assets/images/events/okachimachi-toll-frog.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:17045`<br>`js/memories-screen.js:35`<br>`scripts/FILES/js/app.js:17065`<br>`scripts/FILES/js/memories-screen.js:35` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9ed4904933a49fcd449d3b08c76a72609ccae135c3c5e53ed1acdcd291313242 |
 | assets/images/events/one-love.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:488`<br>`js/events/dog-search-data.js:163`<br>`scripts/FILES/js/app.js:483`<br>`scripts/FILES/sw.js:52` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2f2fa7209feed45765b9938ef98dd2d746e30bc60d1757411e2cd72458735fa8 |
-| assets/images/events/oyatsu-daisuki.png | 画像 | 420×671 | 縦 | あり | `js/app.js:11146`<br>`js/memories-screen.js:25`<br>`js/events/oyatsu-malatang-event.js:8`<br>`scripts/FILES/js/app.js:11148` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4b8ad7367110cab91dc1cef175987f407218809b6fd41586cafec45d31f4c8bc |
+| assets/images/events/oyatsu-daisuki.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:11146`<br>`js/memories-screen.js:25`<br>`js/events/oyatsu-malatang-event.js:8`<br>`scripts/FILES/js/app.js:11148` | ユーザー承認PNG（2026-09-22） | 承認済み原本をそのまま使用（追加加工なし） | 88a4e456fa39223856e242389c2bbe724d13adc5f4fa4ed3b10c29e71142a362 |
 | assets/images/events/panda-music-band-alien.png | 画像 | 1536×941 | 横 | あり | `js/app.js:425 (basename)`<br>`scripts/FILES/js/app.js:420 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | b9110f9ef0aae98ebc332290a245c28bc5c2cc19118879433c12fc709c3f8ce3 |
 | assets/images/events/panda-music-band-cats.png | 画像 | 1536×984 | 横 | あり | `js/app.js:426 (basename)`<br>`scripts/FILES/js/app.js:421 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4691f4ae9d35b51945e89f9239431b9608ba34e723f7d27453d0d6a611bdeba2 |
 | assets/images/events/panda-music-band-horror.png | 画像 | 1536×1024 | 横 | あり | `js/app.js:427 (basename)`<br>`scripts/FILES/js/app.js:422 (basename)` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 63a65971e5c89075f079aa1218ad6e7a926190dfdc0f9219f1a7c6eed1cc0446 |

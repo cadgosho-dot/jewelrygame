@@ -1,11 +1,11 @@
-import { suspendAudio, resumeAudio, playSfx, vibrate } from '../audio.js?v=0.10.962';
+import { suspendAudio, resumeAudio, playSfx, vibrate } from '../audio.js?v=0.10.963';
 
 const OVERLAY_ID='jxj-oyatsu-malatang-overlay';
 const STYLE_ID='jxj-oyatsu-malatang-style';
 const EVENT_KEY='oyatsuMalatangEvent';
 const OYATSU_MALATANG_EVENT_CHANCE=0.015;
 const PRICE=3500;
-const CHARACTER='./assets/images/events/oyatsu-daisuki.png?v=0.10.961-oyatsu23-image';
+const CHARACTER='./assets/images/events/oyatsu-daisuki.png?v=approved-88a4e456';
 const FOOD='./assets/images/foods/oyatsu-malatang.png';
 const SHOP_L='./assets/images/backgrounds/oyatsu-malatang-shop.jpg';
 const SHOP_P='./assets/images/backgrounds/oyatsu-malatang-shop-portrait.jpg';
@@ -79,7 +79,7 @@ const yen=(n)=>`${Math.max(0,Math.floor(Number(n)||0)).toLocaleString('ja-JP')}å
 
 function ensureStyle(){
   if(document.getElementById(STYLE_ID))return;
-  const l=document.createElement('link');l.id=STYLE_ID;l.rel='stylesheet';l.href='./oyatsu-malatang-event.css?v=0.10.962-oyatsu23';document.head.appendChild(l);
+  const l=document.createElement('link');l.id=STYLE_ID;l.rel='stylesheet';l.href='./oyatsu-malatang-event.css?v=0.10.963-oyatsu23';document.head.appendChild(l);
 }
 function playBgm(){
   try{

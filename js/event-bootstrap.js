@@ -3,4 +3,5 @@ import './wolf-boy-ring-event.js?v=0.10.963';
 import './wolf-mother-butler-event.js?v=0.10.963';
 import './events/oyatsu-malatang-event.js?v=0.10.963-oyatsu23';
 import './events/glab-kawahara-game-event.js?v=0.10.963';
-import './events/dog-search-entry-bridge.js?v=0.10.963';\nimport './events/bulldog-store-assessment-event.js?v=0.10.963';
+import './events/dog-search-entry-bridge.js?v=0.10.963';
+import './events/bulldog-store-assessment-event.js?v=0.10.963';

@@ -22635,7 +22635,8 @@ body[data-screen="metalProfessionalGuide"] .screen-content > .metal-professional
     transform:none!important;
   }
   body[data-screen="completion"] .result-card>.completion-jewelry-preview.item-ring{
-    padding-top:32px!important;
+    padding-top:48px!important;
+    overflow:visible!important;
   }
 }
 

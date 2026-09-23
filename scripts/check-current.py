@@ -172,7 +172,7 @@ with ThreadPoolExecutor(max_workers=worker_count) as executor:
 
 failed = []
 for label, _command in CHECKS:
-    print(f'\n===== {label} =====', flush=True)
+    print(f'\n    ('ブルドッグ夫人・店舗品揃え評価', [sys.executable, str(ROOT / 'scripts/check-bulldog-store-assessment-event.py')]),\n===== {label} =====', flush=True)
     returncode, stdout, stderr, timed_out = results[label]
     if stdout:
         print(stdout, end='' if stdout.endswith('\n') else '\n', flush=True)

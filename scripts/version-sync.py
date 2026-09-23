@@ -152,6 +152,11 @@ RULES = [
     Rule('js/event-bootstrap.js', 'oyatsu-malatang-event.js import key', qparam(r'\./events/oyatsu-malatang-event\.js'), keep_prefix),
     Rule('js/event-bootstrap.js', 'glab-kawahara-game-event.js import key', qparam(r'\./events/glab-kawahara-game-event\.js'), keep_prefix),
     Rule('js/event-bootstrap.js', 'dog-search-entry-bridge.js import key', qparam(r'\./events/dog-search-entry-bridge\.js'), keep_prefix),
+    Rule('sw.js', 'bulldog store assessment rules precache key', qparam(r'\./js/events/bulldog-store-assessment-rules\.js'), keep_prefix),
+    Rule('sw.js', 'bulldog store assessment event precache key', qparam(r'\./js/events/bulldog-store-assessment-event\.js'), keep_prefix),
+    Rule('js/event-bootstrap.js', 'bulldog-store-assessment-event.js import key', qparam(r'\./events/bulldog-store-assessment-event\.js'), keep_prefix),
+    Rule('js/events/bulldog-store-assessment-event.js', 'audio.js import key', qparam(r'\.\./audio\.js'), keep_prefix),
+    Rule('js/events/bulldog-store-assessment-event.js', 'rules import key', qparam(r'\./bulldog-store-assessment-rules\.js'), keep_prefix),
     Rule('js/events/oyatsu-malatang-event.js', 'audio.js import key', qparam(r'\.\./audio\.js'), keep_prefix),
     Rule('js/events/oyatsu-malatang-event.js', 'approved UI CSS cache key', qparam(r'\./oyatsu-malatang-event\.css'), keep_prefix),
     Rule('js/wolf-boy-ring-event.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
@@ -267,7 +272,7 @@ def inspect_stale_active_query_versions(version: str) -> list[str]:
             found = match.group(1)
             if found == version:
                 continue
-            line = text.count('\n    Rule('sw.js', 'bulldog store assessment rules precache key', qparam(r'\\./js/events/bulldog-store-assessment-rules\\.js'), keep_prefix),\n    Rule('sw.js', 'bulldog store assessment event precache key', qparam(r'\\./js/events/bulldog-store-assessment-event\\.js'), keep_prefix),\n    Rule('js/event-bootstrap.js', 'bulldog-store-assessment-event.js import key', qparam(r'\\./events/bulldog-store-assessment-event\\.js'), keep_prefix),\n    Rule('js/events/bulldog-store-assessment-event.js', 'audio.js import key', qparam(r'\\.\\./audio\\.js'), keep_prefix),\n    Rule('js/events/bulldog-store-assessment-event.js', 'rules import key', qparam(r'\\./bulldog-store-assessment-rules\\.js'), keep_prefix),\n', 0, match.start()) + 1
+            line = text.count('\n', 0, match.start()) + 1
             errors.append(
                 f'{path.relative_to(ROOT)}:{line}: active cache-busting version = {found}（期待 {version}）'
             )

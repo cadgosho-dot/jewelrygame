@@ -2,9 +2,42 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 const modulePath = new URL('../js/events/dog-search-state.js', import.meta.url);
 assert.ok(existsSync(modulePath), 'Dog search state module must exist');
-const { pickDogSearchEvent, normalizedDogSearchState, createDogSearchController } = await import(modulePath);
+const { pickDogSearchEvent, normalizedDogSearchState, createDogSearchController, DOG_SEARCH_RESET_GENERATION } = await import(modulePath);
 const { DOG_SEARCH_EVENTS } = await import('../js/events/dog-search-data.js');
 const make = () => ({ playerName:'川原', game:{day:130,money:10000,minutes:600},wellbeing:{hunger:2},inventory:{metals:{gold:9999}},events:{wolfMotherButlerEvent:{completed:true,startedDay:100}} });
+
+const legacy=make();
+legacy.events.dogSearchEvent={
+  active:true,
+  seenEventIds:['meal_ice','meal_kebab'],
+  finalActive:true,
+  finalStage:'reward',
+  finalRewardGranted:true,
+  lastCompletedDay:129,
+};
+let legacySaves=0;
+const legacyHelper={
+  patchEventState(key,patch){
+    Object.assign(legacy.events[key]??={},patch);
+    legacySaves++;
+    return {ok:true};
+  },
+};
+const legacyController=createDogSearchController({getState:()=>legacy,helpers:()=>legacyHelper});
+const legacyReset=legacyController.ensureCurrentGeneration();
+assert.equal(legacyReset.ok,true);
+assert.equal(legacyReset.reset,true);
+assert.equal(legacy.events.dogSearchEvent.resetGeneration,DOG_SEARCH_RESET_GENERATION);
+assert.equal(legacy.events.dogSearchEvent.active,false);
+assert.deepEqual(legacy.events.dogSearchEvent.seenEventIds,[]);
+assert.equal(legacy.events.dogSearchEvent.finalActive,false);
+assert.equal(legacy.events.dogSearchEvent.finalStage,'question');
+assert.equal(legacy.events.dogSearchEvent.finalRewardGranted,false);
+assert.equal(legacy.events.dogSearchEvent.lastCompletedDay,0);
+assert.equal(legacySaves,1,'legacy reset must persist exactly once');
+assert.equal(legacyController.ensureCurrentGeneration().reset,false);
+assert.equal(legacySaves,1,'current generation must not reset repeatedly');
+assert.deepEqual(pickDogSearchEvent(legacy,'store',()=>.199),{kind:'intro'},'reset players must be eligible for the intro again under the original trigger conditions');
 let calls=0; const roll = n => () => {calls++;return n;};
 let s=make();
 assert.equal(pickDogSearchEvent({...s,events:{}},'store',roll(0)),null);
@@ -40,4 +73,4 @@ s.game.day=311;assert.deepEqual(pickDogSearchEvent(s,'store',roll(.199)),{kind:'
 c2.completeIntro();assert.equal(s.events.dogSearchEvent.finalRewardGranted,false);
 assert.deepEqual(normalizedDogSearchState({seenEventIds:[ids[0],ids[0],'fake',...ids]}).seenEventIds,ids.slice(0,5));
 assert.equal(s.game.money,10000);assert.equal(s.game.minutes,600);assert.equal(s.wellbeing.hunger,2);
-console.log('PASS: dog search conditions, 16 entries, unique progress, reload reward, recurrence, no economic effects');
+console.log('PASS: dog search replay reset, conditions, 16 entries, unique progress, reload reward, recurrence, no economic effects');

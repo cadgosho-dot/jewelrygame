@@ -9,7 +9,7 @@ const EXCLUSIVE_VALUE = 'dog-search';
 const FINAL_WAIT_MS = 2000;
 
 const ASSETS = Object.freeze({
-  wolfBoy: './assets/images/events/wolf-boy.png',
+  wolfBoy: './assets/images/events/wolf-boy.png?v=0.10.963-wolf-alpha-fix',
   butler: './assets/images/events/sheep-butler.png',
   cabbage: './assets/images/events/dog-search-cabbage.png',
   dog: './assets/images/events/dog-search-shepherd.png',
@@ -131,7 +131,7 @@ function installStyle() {
   background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.02) 48%,rgba(0,0,0,.30));
 }
 #${OVERLAY_ID} .main-screen{position:relative;z-index:2;height:100%}
-#${OVERLAY_ID} .visit-character-event{min-height:100dvh!important;height:100dvh!important}
+#${OVERLAY_ID} .visit-character-event{min-height:100%!important;height:100%!important}
 #${OVERLAY_ID} .dog-search-question{
   position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%);
   border:0;background:transparent;color:#fff;font:700 clamp(32px,7vw,72px)/1.1 inherit;

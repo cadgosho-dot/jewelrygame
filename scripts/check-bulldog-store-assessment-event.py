@@ -13,6 +13,7 @@ ASSET = ROOT / 'assets/images/events/bulldog-store-assessment.png'
 checks = [
     ('store snapshot exposed to standalone event', 'store: state.store' in APP),
     ('event bootstrap import registered', "import './events/bulldog-store-assessment-event.js?v=" in BOOT),
+    ('event bootstrap contains no escaped newline artifact', '\\\\nimport ' not in BOOT),
     ('store branch tap is the only trigger action', "action !== 'open-store-branch'" in EVENT and "triggerAction:'open-store-branch'" in EVENT),
     ('selected branch id is used', 'buildBulldogStoreAssessmentDialogue(stateSnapshot, branchId)' in EVENT),
     ('about once per fifty in-game days', 'BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE = 1 / 50' in RULES),

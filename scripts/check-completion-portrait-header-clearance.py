@@ -21,6 +21,7 @@ checks = [
     ('order-only selector is scoped by delivery action', '.result-card:has([data-action="deliver-order-completion"]) > .completion-jewelry-preview' in order_style),
     ('order-only portrait safety stays portrait-only', '@media (orientation: portrait) and (max-width: 820px)' in order_style),
     ('order-only top clearance is 48px', 'padding-top: 48px !important;' in order_style),
+    ('order ring has extra 60px top clearance', '.completion-jewelry-preview.item-ring' in order_style and 'padding-top: 60px !important;' in order_style),
     ('normal completion safety remains unchanged', 'padding: 10px 0 0 !important;' in normal_style),
     ('portrait ring completion has 48px top clearance', 'body[data-screen="completion"] .result-card>.completion-jewelry-preview.item-ring{' in css and 'padding-top:48px!important;' in css),
     ('portrait ring completion allows full artwork overflow', 'body[data-screen="completion"] .result-card>.completion-jewelry-preview.item-ring{' in css and 'overflow:visible!important;' in css),

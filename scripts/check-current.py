@@ -138,6 +138,7 @@ CHECKS = [
     ('熱帯魚屋カテゴリ導線', [sys.executable, str(ROOT / 'scripts/check-tropical-shop-navigation.py')]),
     ('おやつ大好き承認UI', [sys.executable, str(ROOT / 'scripts/check-oyatsu-approved-ui.py')]),
     ('おやつ大好き・麻辣湯承認イベント', [sys.executable, str(ROOT / 'scripts/check-oyatsu-malatang-event.py')]),
+    ('ブルドッグ夫人・店舗品揃え評価', [sys.executable, str(ROOT / 'scripts/check-bulldog-store-assessment-event.py')]),
     ('ストーリーテラーV2レイアウト', [sys.executable, str(ROOT / 'scripts/check-storyteller-v2-layout.py')]),
     ('終了時セーブ一本化', [sys.executable, str(ROOT / 'scripts/check-lifecycle-save-policy.py')]),
     ('互換DOM監視軽量化', [sys.executable, str(ROOT / 'scripts/check-hosting-guard-policy.py')]),
@@ -172,7 +173,7 @@ with ThreadPoolExecutor(max_workers=worker_count) as executor:
 
 failed = []
 for label, _command in CHECKS:
-    print(f'\n    ('ブルドッグ夫人・店舗品揃え評価', [sys.executable, str(ROOT / 'scripts/check-bulldog-store-assessment-event.py')]),\n===== {label} =====', flush=True)
+    print(f'\n===== {label} =====', flush=True)
     returncode, stdout, stderr, timed_out = results[label]
     if stdout:
         print(stdout, end='' if stdout.endswith('\n') else '\n', flush=True)

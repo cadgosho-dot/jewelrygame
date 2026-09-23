@@ -394,6 +394,8 @@ export function createDogSearchEventRuntime({
 
   function claim(entry, { resume = null } = {}) {
     if (pending || running || document.getElementById(OVERLAY_ID) || occupiedByOtherExclusiveEvent()) return false;
+    const reset = controller.ensureCurrentGeneration();
+    if (reset?.ok === false) return false;
     const selection = pickDogSearchEvent(state(), String(entry || ''), random);
     if (!selection) return false;
     pending = { entry:String(entry || ''), selection, resume };

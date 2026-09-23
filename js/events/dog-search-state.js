@@ -1,10 +1,12 @@
 import { DOG_SEARCH_EVENTS } from './dog-search-data.js';
 
 export const DOG_SEARCH_KEY = 'dogSearchEvent';
+export const DOG_SEARCH_RESET_GENERATION = 1;
 export const DOG_SEARCH_FINAL_STAGES = Object.freeze(['question','cabbage','dog-wait','dog','blackout','wolf1','wolf2','butler1','butler2','reward','wolfFinal','completed']);
 const ids = new Set(DOG_SEARCH_EVENTS.map(row => row.id));
 const validStages = new Set(DOG_SEARCH_FINAL_STAGES);
 const dayNumber = value => Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
+const generationNumber = value => Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
 
 export function normalizedDogSearchState(value = {}) {
   const event = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -15,6 +17,7 @@ export function normalizedDogSearchState(value = {}) {
     finalStage:validStages.has(event.finalStage) ? event.finalStage : 'question',
     finalRewardGranted:event.finalRewardGranted === true,
     lastCompletedDay:dayNumber(event.lastCompletedDay),
+    resetGeneration:generationNumber(event.resetGeneration),
   };
 }
 
@@ -46,10 +49,36 @@ export function pickDogSearchEvent(state, entry, random = Math.random) {
 export function createDogSearchController({getState, helpers}) {
   const current = () => normalizedDogSearchState(getState()?.events?.[DOG_SEARCH_KEY]);
   const patch = value => helpers()?.patchEventState?.(DOG_SEARCH_KEY,value) || {ok:false};
+  const storedGeneration = () => generationNumber(getState()?.events?.[DOG_SEARCH_KEY]?.resetGeneration);
   return Object.freeze({
     current,
+    ensureCurrentGeneration() {
+      const generation = storedGeneration();
+      if (generation >= DOG_SEARCH_RESET_GENERATION) {
+        return {ok:true,reset:false,generation};
+      }
+      const result = patch({
+        active:false,
+        seenEventIds:[],
+        finalActive:false,
+        finalStage:'question',
+        finalRewardGranted:false,
+        lastCompletedDay:0,
+        resetGeneration:DOG_SEARCH_RESET_GENERATION,
+      });
+      if (!result?.ok) return result || {ok:false};
+      return { ...result, reset:true, generation:DOG_SEARCH_RESET_GENERATION };
+    },
     completeIntro() {
-      return patch({active:true,seenEventIds:[],finalActive:false,finalStage:'question',finalRewardGranted:false});
+      return patch({
+        active:true,
+        seenEventIds:[],
+        finalActive:false,
+        finalStage:'question',
+        finalRewardGranted:false,
+        lastCompletedDay:0,
+        resetGeneration:DOG_SEARCH_RESET_GENERATION,
+      });
     },
     completeMiddle(id) {
       const event=current();

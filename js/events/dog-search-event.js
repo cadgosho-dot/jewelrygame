@@ -12,7 +12,7 @@ const ASSETS = Object.freeze({
   wolfBoy: './assets/images/events/wolf-boy.png?v=0.10.963-wolf-alpha-fix',
   butler: './assets/images/events/sheep-butler.png',
   cabbage: './assets/images/events/dog-search-cabbage.png',
-  dog: './assets/images/events/dog-search-shepherd.png',
+  dog: './assets/images/events/dog-search-shepherd.png?v=0.10.963-dog-alpha-fix-20260923',
   reward: './assets/images/metals/k18yg.png',
   panda: './assets/images/panda-hiroba.webp',
   pandaPortrait: './assets/images/panda-hiroba-portrait.webp',

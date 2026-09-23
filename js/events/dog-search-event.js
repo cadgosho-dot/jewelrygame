@@ -141,6 +141,19 @@ function installStyle() {
 #${OVERLAY_ID} .dog-search-character{filter:drop-shadow(0 22px 34px rgba(0,0,0,.72))}
 #${OVERLAY_ID} .dog-search-reward-image{object-fit:contain}
 #${OVERLAY_ID} .dog-search-background-only{position:absolute;inset:0;z-index:2}
+@media (orientation:landscape){
+  #${OVERLAY_ID} .visit-character-area{
+    top:0!important;
+    bottom:112px!important;
+    padding-top:0!important;
+    align-items:flex-start!important;
+  }
+  #${OVERLAY_ID} .visit-character{
+    align-self:flex-start!important;
+    object-position:center top!important;
+    max-height:calc(100% - 2px)!important;
+  }
+}
 `;
   document.head.appendChild(style);
 }

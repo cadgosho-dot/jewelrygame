@@ -267,7 +267,7 @@ def inspect_stale_active_query_versions(version: str) -> list[str]:
             found = match.group(1)
             if found == version:
                 continue
-            line = text.count('\n', 0, match.start()) + 1
+            line = text.count('\n    Rule('sw.js', 'bulldog store assessment rules precache key', qparam(r'\\./js/events/bulldog-store-assessment-rules\\.js'), keep_prefix),\n    Rule('sw.js', 'bulldog store assessment event precache key', qparam(r'\\./js/events/bulldog-store-assessment-event\\.js'), keep_prefix),\n    Rule('js/event-bootstrap.js', 'bulldog-store-assessment-event.js import key', qparam(r'\\./events/bulldog-store-assessment-event\\.js'), keep_prefix),\n    Rule('js/events/bulldog-store-assessment-event.js', 'audio.js import key', qparam(r'\\.\\./audio\\.js'), keep_prefix),\n    Rule('js/events/bulldog-store-assessment-event.js', 'rules import key', qparam(r'\\./bulldog-store-assessment-rules\\.js'), keep_prefix),\n', 0, match.start()) + 1
             errors.append(
                 f'{path.relative_to(ROOT)}:{line}: active cache-busting version = {found}（期待 {version}）'
             )

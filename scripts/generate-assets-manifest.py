@@ -236,6 +236,20 @@ def image_info(path: Path) -> tuple[str, str, str]:
             alpha = 'あり' if ('A' in im.getbands() or 'transparency' in im.info) else 'なし'
             return f'{width}×{height}', orientation, alpha
     except Exception:
+        # Pillowが読めない最適化PNGでも、標準PNGヘッダーとtRNSから
+        # 台帳に必要な画素・向き・透明性だけは安全に取得する。
+        if path.suffix.lower() == '.png':
+            try:
+                raw = path.read_bytes()
+                if raw[:8] == b'\x89PNG\r\n\x1a\n' and raw[12:16] == b'IHDR' and len(raw) >= 33:
+                    width = int.from_bytes(raw[16:20], 'big')
+                    height = int.from_bytes(raw[20:24], 'big')
+                    color_type = raw[25]
+                    orientation = '横' if width > height else ('縦' if height > width else '正方形')
+                    alpha = 'あり' if color_type in {4, 6} or b'tRNS' in raw else 'なし'
+                    return f'{width}×{height}', orientation, alpha
+            except Exception:
+                pass
         return '', '', ''
 
 
@@ -374,21 +388,9 @@ def main() -> int:
             normalized.append(line)
         return '\n'.join(normalized)
 
-    normalized_current = normalize_for_check(current)
-    normalized_rendered = normalize_for_check(rendered)
-    if normalized_current != normalized_rendered:
+    if normalize_for_check(current) != normalize_for_check(rendered):
         print('ASSETS MANIFEST: FAIL')
         print('- ASSETS.md が現在のassets/と静的参照状態に一致しません')
-        import difflib
-        diff = difflib.unified_diff(
-            normalized_current.splitlines(),
-            normalized_rendered.splitlines(),
-            fromfile='ASSETS.md',
-            tofile='generated',
-            n=2,
-        )
-        for line in list(diff)[:80]:
-            print(line)
         return 1
     print('ASSETS MANIFEST: PASS')
     return 0

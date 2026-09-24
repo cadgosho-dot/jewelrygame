@@ -36,6 +36,7 @@ import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.964';
 import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.964';
 import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.964';
 import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.964';
+import { selectChineseMealImage } from './ui/chinese-meal-image-variant.js';
 import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.964';
 import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.964';
 import { formatTimeRemainingLabel } from './ui/time-remaining-label.js?v=0.10.964';
@@ -2252,6 +2253,7 @@ const MEAL_FOOD_IMAGES = Object.freeze({
   convenience: './assets/images/foods/convenience.png',
   convenienceChristmas: './assets/images/foods/convenience-christmas-v776.png',
   chinese: './assets/images/foods/chinese.png',
+  chineseGyoza: './assets/images/foods/chinese-gyoza-set-v965.png',
   korean: './assets/images/foods/korean-bibimbap-v781.png',
   koreanStone: './assets/images/foods/korean-stone-bibimbap-v782.png',
   indian: './assets/images/foods/indian-v777.png',
@@ -2480,6 +2482,12 @@ function mealFoodImage(mealId) {
     if (isValidGameDate(date) && date.getMonth() === 11 && (date.getDate() === 24 || date.getDate() === 25)) {
       return versionedAsset(MEAL_FOOD_IMAGES.convenienceChristmas);
     }
+  }
+  if (mealId === 'chinese') {
+    const chineseImages = [MEAL_FOOD_IMAGES.chinese, MEAL_FOOD_IMAGES.chineseGyoza];
+    const dayKey = Math.max(1, Math.trunc(Number(state?.game?.day) || 1));
+    const minuteKey = Math.max(0, Math.trunc(Number(state?.game?.minutes) || 0));
+    return versionedAsset(selectChineseMealImage({ selectionKey: `${dayKey}:${minuteKey}`, images: chineseImages }));
   }
   if (mealId === 'soba') {
     const date = gameDateForDay(state?.game?.day || 1);

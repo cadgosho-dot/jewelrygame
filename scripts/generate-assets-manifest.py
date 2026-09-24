@@ -374,9 +374,21 @@ def main() -> int:
             normalized.append(line)
         return '\n'.join(normalized)
 
-    if normalize_for_check(current) != normalize_for_check(rendered):
+    normalized_current = normalize_for_check(current)
+    normalized_rendered = normalize_for_check(rendered)
+    if normalized_current != normalized_rendered:
         print('ASSETS MANIFEST: FAIL')
         print('- ASSETS.md が現在のassets/と静的参照状態に一致しません')
+        import difflib
+        diff = difflib.unified_diff(
+            normalized_current.splitlines(),
+            normalized_rendered.splitlines(),
+            fromfile='ASSETS.md',
+            tofile='generated',
+            n=2,
+        )
+        for line in list(diff)[:80]:
+            print(line)
         return 1
     print('ASSETS MANIFEST: PASS')
     return 0

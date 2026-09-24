@@ -16,7 +16,7 @@ checks = [
     ('event bootstrap contains no escaped newline artifact', '\\\\nimport ' not in BOOT),
     ('store branch tap is the only trigger action', "action !== 'open-store-branch'" in EVENT and "triggerAction:'open-store-branch'" in EVENT),
     ('selected branch id is used', 'buildBulldogStoreAssessmentDialogue(stateSnapshot, branchId)' in EVENT),
-    ('about once per fifty in-game days', 'BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE = 1 / 50' in RULES),
+    ('about once per thirty in-game days', 'BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE = 1 / 30' in RULES),
     ('same in-game day does not reroll by repeated tapping', 'Number(current.lastRollDay) === day' in EVENT),
     ('normal event UI classes retained', 'visit-character-event kappa-jade-event' in EVENT and 'event-dialogue-card visit-event-dialogue glass-panel' in EVENT),
     ('normal event recovery button retained', 'event-safety-recovery' in EVENT),

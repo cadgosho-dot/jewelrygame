@@ -78,6 +78,9 @@ def section(name: str) -> str:
 
 start = section('startEmeraldCaptainKebabMeal')
 finish = section('finishEmeraldCaptainKebabMeal')
+purchase_scheduler = section('scheduleEmeraldCaptainPurchaseDialogue')
+meal_watchdog = section('scheduleEmeraldCaptainMealWatchdog')
+renderer = section('renderEmeraldCaptainKebabEvent')
 checks = {
     'start definition exists once': APP.count('async function startEmeraldCaptainKebabMeal(') == 1,
     'finish definition exists once': APP.count('function finishEmeraldCaptainKebabMeal(') == 1,
@@ -122,6 +125,11 @@ checks = {
     'finish farewell sound retained': "playSfx('emerald-captain-farewell'" in finish,
     'finish render retained': 'render();' in finish,
     'finish true return retained': 'return true;' in finish,
+    'purchase result scheduler does not reset on rerender': 'if (emeraldCaptainPurchaseResultTimer) return;' in purchase_scheduler and 'clearEmeraldCaptainPurchaseResultTimer();' not in purchase_scheduler,
+    'purchase result timer releases before stage check': 'emeraldCaptainPurchaseResultTimer = null;' in purchase_scheduler and purchase_scheduler.index('emeraldCaptainPurchaseResultTimer = null;') < purchase_scheduler.index("eventState.stage !== 'purchaseResult'"),
+    'meal watchdog does not reset on rerender': 'if (emeraldCaptainMealWatchdogTimer) return;' in meal_watchdog and 'clearEmeraldCaptainMealWatchdog();' not in meal_watchdog,
+    'meal watchdog releases before completion': 'emeraldCaptainMealWatchdogTimer = null;' in meal_watchdog and meal_watchdog.index('emeraldCaptainMealWatchdogTimer = null;') < meal_watchdog.index("eventState.stage === 'eating'"),
+    'eating render restores watchdog after reload': "if (eventState.stage === 'eating')" in renderer and 'queueMicrotask(() => scheduleEmeraldCaptainMealWatchdog());' in renderer,
     'payment precedes paid flag': start.index('state.game.money -= meal.price;') < start.index('eventState.mealPaid = true;'),
     'paid flag precedes eating stage': start.index('eventState.mealPaid = true;') < start.index("eventState.stage = 'eating';"),
     'save precedes watchdog': start.index('saveGame();') < start.index('scheduleEmeraldCaptainMealWatchdog();'),

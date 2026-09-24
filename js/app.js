@@ -16091,40 +16091,12 @@ function applyEmeraldCaptainKebabPurchase() {
   return true;
 }
 
-let emeraldCaptainPurchaseResultTimer = null;
-function clearEmeraldCaptainPurchaseResultTimer() {
-  if (emeraldCaptainPurchaseResultTimer) clearTimeout(emeraldCaptainPurchaseResultTimer);
-  emeraldCaptainPurchaseResultTimer = null;
-}
-
-function scheduleEmeraldCaptainPurchaseDialogue(delay = 1200) {
-  // 同じ purchaseResult の再描画では既存タイマーを維持し、遷移が延々と先送りされないようにする。
-  if (emeraldCaptainPurchaseResultTimer) return;
-  emeraldCaptainPurchaseResultTimer = setTimeout(() => {
-    emeraldCaptainPurchaseResultTimer = null;
-    const eventState = emeraldCaptainKebabEventState();
-    if (!eventState.active || eventState.stage !== 'purchaseResult') return;
-    eventState.stage = 'purchase';
-    saveGame();
-    render();
-  }, Math.max(700, Number(delay) || 1200));
-}
-
-let emeraldCaptainMealWatchdogTimer = null;
-function clearEmeraldCaptainMealWatchdog() {
-  if (emeraldCaptainMealWatchdogTimer) clearTimeout(emeraldCaptainMealWatchdogTimer);
-  emeraldCaptainMealWatchdogTimer = null;
-}
-
-function scheduleEmeraldCaptainMealWatchdog(delay = 4200) {
-  // eating 画面の再描画・復帰で監視時間をリセットせず、必ず farewell まで進める。
-  if (emeraldCaptainMealWatchdogTimer) return;
-  emeraldCaptainMealWatchdogTimer = setTimeout(() => {
-    emeraldCaptainMealWatchdogTimer = null;
-    const eventState = emeraldCaptainKebabEventState();
-    if (eventState.active && eventState.stage === 'eating') finishEmeraldCaptainKebabMeal();
-  }, Math.max(800, Number(delay) || 4200));
-}
+let emeraldCaptainPurchaseResultTimer=null;
+function clearEmeraldCaptainPurchaseResultTimer(){if(emeraldCaptainPurchaseResultTimer)clearTimeout(emeraldCaptainPurchaseResultTimer);emeraldCaptainPurchaseResultTimer=null}
+function scheduleEmeraldCaptainPurchaseDialogue(delay=1200){if (emeraldCaptainPurchaseResultTimer) return;emeraldCaptainPurchaseResultTimer=setTimeout(()=>{emeraldCaptainPurchaseResultTimer = null;const e=emeraldCaptainKebabEventState();if(!e.active||e.stage!=='purchaseResult')return;e.stage='purchase';saveGame();render()},Math.max(700,Number(delay)||1200))}
+let emeraldCaptainMealWatchdogTimer=null;
+function clearEmeraldCaptainMealWatchdog(){if(emeraldCaptainMealWatchdogTimer)clearTimeout(emeraldCaptainMealWatchdogTimer);emeraldCaptainMealWatchdogTimer=null}
+function scheduleEmeraldCaptainMealWatchdog(delay=4200){if (emeraldCaptainMealWatchdogTimer) return;emeraldCaptainMealWatchdogTimer=setTimeout(()=>{emeraldCaptainMealWatchdogTimer = null;const e=emeraldCaptainKebabEventState();if(e.active&&e.stage==='eating')finishEmeraldCaptainKebabMeal()},Math.max(800,Number(delay)||4200))}
 
 async function preloadEmeraldCaptainMealAssets() {
   const assets = Promise.all([
@@ -16360,8 +16332,6 @@ function renderEmeraldCaptainKebabEvent() {
   }
 
   if (eventState.stage === 'eating') {
-    // 再読込やアプリ復帰で startEmeraldCaptainKebabMeal() の待機処理が消えていても、
-    // 現在の eating 状態から完了監視を復元する。
     queueMicrotask(() => scheduleEmeraldCaptainMealWatchdog());
     const foodImage = mealFoodImage('kebab');
     return `

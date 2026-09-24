@@ -1,9 +1,9 @@
-import { playSfx } from '../audio.js?v=0.10.963';
+import { playSfx } from '../audio.js?v=0.10.964';
 import {
   BULLDOG_STORE_ASSESSMENT_EVENT_KEY,
   BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE,
   buildBulldogStoreAssessmentDialogue,
-} from './bulldog-store-assessment-rules.js?v=0.10.963';
+} from './bulldog-store-assessment-rules.js?v=0.10.964';
 
 const OVERLAY_ID = 'jxj-bulldog-store-assessment-overlay';
 const STYLE_ID = 'jxj-bulldog-store-assessment-style';

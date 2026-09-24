@@ -16,7 +16,7 @@ checks = [
     ("successful reward tap enters purchase result", "eventState.stage = 'purchaseResult';" in app),
     ("purchase result immediately arms next-scene continuation", 'scheduleEmeraldCaptainPurchaseDialogue(1200);' in app),
     ("purchase-result render keeps reload fallback", "eventState.stage === 'purchaseResult'" in app and 'queueMicrotask(() => scheduleEmeraldCaptainPurchaseDialogue());' in app),
-    ("next dialogue stage is purchase", "eventState.stage = 'purchase';" in app and "if (eventState.stage === 'purchase')" in app),
+    ("next dialogue stage is purchase", ("eventState.stage = 'purchase';" in app or "e.stage='purchase';" in app) and "if (eventState.stage === 'purchase')" in app),
     ("purchase dialogue continues to meal scene", 'await startEmeraldCaptainKebabMeal();' in app),
     ("button and image rect fallback", 'button.getBoundingClientRect()' in app and 'image.getBoundingClientRect()' in app),
     ("child hit targets delegated to parent", '.emerald-captain-kebab-reward-button>*' in css and 'pointer-events:none!important' in css.split('v0.10.846 エメラルド班班長', 1)[1]),

@@ -5,3 +5,4 @@ import './events/oyatsu-malatang-event.js?v=0.10.964-oyatsu23';
 import './events/glab-kawahara-game-event.js?v=0.10.964';
 import './events/dog-search-entry-bridge.js?v=0.10.964';
 import './events/bulldog-store-assessment-event.js?v=0.10.964';
+import './events/robot-store-assessment-event.js?v=0.10.964';

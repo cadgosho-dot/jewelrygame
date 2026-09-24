@@ -100,6 +100,10 @@ def provenance_map() -> dict[str, dict[str, str]]:
         'source': 'ユーザー指定正式画像（2026-09-23 / 威圧感あるブルドッグ美女の肖像.png / ゲーム表示用に縮小・透過PNG最適化）',
         'permission': '変更禁止（受領画像由来。再生成・色変更・画風変更禁止）',
     }
+    provenance['assets/images/events/store-assessment-robot.png'] = {
+        'source': 'ユーザー指定正式画像（2026-09-24 / ロボット店舗評価 / 背景透明PNG）',
+        'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止）',
+    }
     provenance['assets/images/tools/piercing-saw.png'] = {
         'source': 'ユーザー指定正式画像（2026-09-24 / 糸鋸 / 内側開口部透過修正版）',
         'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止）',
@@ -232,6 +236,20 @@ def image_info(path: Path) -> tuple[str, str, str]:
             alpha = 'あり' if ('A' in im.getbands() or 'transparency' in im.info) else 'なし'
             return f'{width}×{height}', orientation, alpha
     except Exception:
+        # Pillowが読めない最適化PNGでも、標準PNGヘッダーとtRNSから
+        # 台帳に必要な画素・向き・透明性だけは安全に取得する。
+        if path.suffix.lower() == '.png':
+            try:
+                raw = path.read_bytes()
+                if raw[:8] == b'\x89PNG\r\n\x1a\n' and raw[12:16] == b'IHDR' and len(raw) >= 33:
+                    width = int.from_bytes(raw[16:20], 'big')
+                    height = int.from_bytes(raw[20:24], 'big')
+                    color_type = raw[25]
+                    orientation = '横' if width > height else ('縦' if height > width else '正方形')
+                    alpha = 'あり' if color_type in {4, 6} or b'tRNS' in raw else 'なし'
+                    return f'{width}×{height}', orientation, alpha
+            except Exception:
+                pass
         return '', '', ''
 
 

@@ -14,14 +14,14 @@
 
 ## 集計
 
-- 総ファイル数: **606**
-- 画像: **476**
+- 総ファイル数: **607**
+- 画像: **477**
 - 音源: **102**
 - 動画: **15**
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **497** / 直接参照未検出: **109**
+- 静的な直接参照を検出: **498** / 直接参照未検出: **109**
 
 ## 重要な由来記録
 
@@ -211,6 +211,7 @@
 | assets/images/events/ridley-okazaki.png | 画像 | 1500×1024 | 横 | あり | `js/app.js:15969`<br>`js/memories-screen.js:13`<br>`js/events/dog-search-data.js:41`<br>`scripts/FILES/js/app.js:15984` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f55f05124a481cf78046966c8c742e9c88957e00b251b177ac49dbb9a5e4bcce |
 | assets/images/events/sheep-butler.png | 画像 | 1229×1536 | 縦 | あり | `js/events/dog-search-event.js:13`<br>`js/wolf-mother-butler-event.js:10`<br>`scripts/FILES/js/wolf-mother-butler-event.js:10`<br>`scripts/check-wolf-mother-butler-event.py:18` | 由来記録なし | 要確認（明示許可がない限り加工しない） | aa8f912ce0e3dfef4cfba0eacda3d6e852a4d828de191d3e235da6372b4b5a5e |
 | assets/images/events/speed-star.png | 画像 | 1024×1536 | 縦 | あり | `js/app.js:11165`<br>`js/memories-screen.js:26`<br>`scripts/FILES/js/app.js:11159`<br>`scripts/FILES/js/memories-screen.js:26` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f1af4a0a1f82cc36f19a48ca72a95c4f7dbe6d04dc624dc96ef7869c6e90ef92 |
+| assets/images/events/store-assessment-robot.png | 画像 | 1223×1286 | 縦 | あり | `sw.js:8`<br>`js/events/robot-store-assessment-event.js:9`<br>`scripts/check-robot-store-assessment-event.py:9` | ユーザー指定正式画像（2026-09-24 / ロボット店舗評価 / 背景透明PNG） | 変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止） | 44e9868e18c0fdbd9c9ba9fce519dc4362bb7a86e49da9c0cb3cc1afb46c1c67 |
 | assets/images/events/store-thief-old-woman.png | 画像 | 995×1408 | 縦 | あり | `js/app.js:18835`<br>`js/memories-screen.js:21`<br>`scripts/FILES/js/app.js:18868`<br>`scripts/FILES/js/memories-screen.js:21` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e9720b4c6052237dcead769807d760324af6fff3100f0e84fc2ec10ef3d62bc2 |
 | assets/images/events/storyteller-v745.png | 画像 | 934×1010 | 縦 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 91745c970c5524778e97e2e03037bd4bea4498f503fb24279dbfc8a10dac4458 |
 | assets/images/events/storyteller-v751.png | 画像 | 720×610 | 横 | あり | `memories-event-image-overrides-v751.js:6`<br>`js/app.js:11214`<br>`js/memories-screen.js:27`<br>`scripts/FILES/js/app.js:11208` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1647c369f85be086172dad41a7a8dfe96f0362d194acd92327a029c154d46cdf |

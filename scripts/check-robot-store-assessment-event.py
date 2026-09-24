@@ -45,7 +45,7 @@ def valid_transparent_png(path: Path) -> bool:
             saw_iend = True
             break
         pos = crc_end
-    if not (width == 304 and height == 320 and saw_iend and idat):
+    if not (width == 1223 and height == 1286 and saw_iend and idat):
         return False
     if not (color_type in {4, 6} or has_transparency):
         return False
@@ -76,7 +76,7 @@ checks = [
     ('normal event recovery button retained', 'event-safety-recovery' in EVENT),
     ('approved character asset path retained', 'assets/images/events/store-assessment-robot.png' in EVENT),
     ('character asset exists', ASSET.exists()),
-    ('character asset is valid 304x320 transparent PNG', ASSET.exists() and valid_transparent_png(ASSET)),
+    ('character asset is valid approved transparent PNG', ASSET.exists() and valid_transparent_png(ASSET)),
     ('showcase fullness is evaluated', 'filledSlots' in RULES and 'totalSlots' in RULES),
     ('loose variety is evaluated from owned inventory', 'ownedGemIds' in RULES and 'possibleGemCount' in RULES),
     ('loose cut variety is evaluated from owned inventory', 'ownedCuts' in RULES and 'possibleCutCount' in RULES),

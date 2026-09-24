@@ -139,6 +139,7 @@ CHECKS = [
     ('おやつ大好き承認UI', [sys.executable, str(ROOT / 'scripts/check-oyatsu-approved-ui.py')]),
     ('おやつ大好き・麻辣湯承認イベント', [sys.executable, str(ROOT / 'scripts/check-oyatsu-malatang-event.py')]),
     ('ブルドッグ夫人・店舗品揃え評価', [sys.executable, str(ROOT / 'scripts/check-bulldog-store-assessment-event.py')]),
+    ('ロボット・店舗品揃え評価', [sys.executable, str(ROOT / 'scripts/check-robot-store-assessment-event.py')]),
     ('ストーリーテラーV2レイアウト', [sys.executable, str(ROOT / 'scripts/check-storyteller-v2-layout.py')]),
     ('終了時セーブ一本化', [sys.executable, str(ROOT / 'scripts/check-lifecycle-save-policy.py')]),
     ('互換DOM監視軽量化', [sys.executable, str(ROOT / 'scripts/check-hosting-guard-policy.py')]),

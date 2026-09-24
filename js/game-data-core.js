@@ -3762,7 +3762,7 @@ export const WORKSHOP_TOOLS = {
   },
   piercingSaw: {
     id: 'piercingSaw', name: '糸鋸', type: '工具', symbol: '≋', price: 6000, qualityPoints: 1,
-    image: './assets/images/tools/piercing-saw.png?v=0.10.963-piercing-saw-20260924',
+    image: './assets/images/tools/piercing-saw.png?v=0.10.964-piercing-saw-20260924',
     initiallyAvailable: true, breakable: true, repairable: false,
     description: '細い鋸刃で板材を切り抜き、輪郭、透かし、窓、細部の切断を行う精密切断工具です。',
     detail: '張力をかけた鋸刃を上下させ、スリ板を支点にしながら小回りの利く切断を行います。',

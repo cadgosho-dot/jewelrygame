@@ -114,7 +114,7 @@ const modalPresenter = createModalPresenter({ element: modalEl, escapeHtml: esc 
 const autosaveStatusPresenter = createAutosaveStatusPresenter();
 
 let state = null; globalThis.__JXJ_EVENT_STATE_HELPERS__ = createEventStateHelpers(() => state, saveGame, showToast, playSfx, roundedMetalWeight, METALS); setServices(canSpendMealTime, spendMealTime, addFinance, addNotification, setMealFeedback, render);
-globalThis.__JXJ_MEMORIES_STATE__ = () => state ? structuredClone({ events: state.events, inventory: state.inventory, game: state.game, memories: state.memories }) : null;
+globalThis.__JXJ_MEMORIES_STATE__=()=>state&&structuredClone({events:state.events,inventory:state.inventory,store:state.store,game:state.game,memories:state.memories});
 globalThis.__JXJ_MEMORIES_RECORD__ = (entry) => {
   try {
     if (!state || !entry || typeof entry !== 'object' || Array.isArray(entry)) return false;

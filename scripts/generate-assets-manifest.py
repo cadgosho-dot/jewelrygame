@@ -96,6 +96,10 @@ def provenance_map() -> dict[str, dict[str, str]]:
         'source': 'ユーザー承認PNG（2026-09-22）',
         'permission': '承認済み原本をそのまま使用（追加加工なし）',
     }
+    provenance['assets/images/events/bulldog-store-assessment.png'] = {
+        'source': 'ユーザー指定正式画像（2026-09-23 / 威圧感あるブルドッグ美女の肖像.png / ゲーム表示用に縮小・透過PNG最適化）',
+        'permission': '変更禁止（受領画像由来。再生成・色変更・画風変更禁止）',
+    }
     return provenance
 
 SOURCE_ORDER = [

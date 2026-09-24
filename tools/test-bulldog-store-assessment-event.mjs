@@ -32,7 +32,7 @@ const snapshot = {
   inventory:{ jewelry },
 };
 
-assert.equal(BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE, 1 / 50);
+assert.equal(BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE, 1 / 30);
 
 const strong = assessStoreAssortment(snapshot, 'branch-1');
 assert.equal(strong.rows.length, 5);

@@ -100,6 +100,10 @@ def provenance_map() -> dict[str, dict[str, str]]:
         'source': 'ユーザー指定正式画像（2026-09-23 / 威圧感あるブルドッグ美女の肖像.png / ゲーム表示用に縮小・透過PNG最適化）',
         'permission': '変更禁止（受領画像由来。再生成・色変更・画風変更禁止）',
     }
+    provenance['assets/images/events/store-assessment-robot.png'] = {
+        'source': 'ユーザー指定正式画像（2026-09-24 / ロボット店舗評価 / 背景透明PNG）',
+        'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止）',
+    }
     provenance['assets/images/tools/piercing-saw.png'] = {
         'source': 'ユーザー指定正式画像（2026-09-24 / 糸鋸 / 内側開口部透過修正版）',
         'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止）',

@@ -1,7 +1,7 @@
 const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 
 export const BULLDOG_STORE_ASSESSMENT_EVENT_KEY = 'bulldogStoreAssessment';
-export const BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE = 1 / 50;
+export const BULLDOG_STORE_ASSESSMENT_TRIGGER_CHANCE = 1 / 30;
 
 export const INTRO_LINES = Object.freeze([
   'ふぅん、、ここが○○○かい？、、どれ、、品揃えを見せてもらおうじゃないか、、、、',

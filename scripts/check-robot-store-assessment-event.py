@@ -1,12 +1,58 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import struct
 import subprocess
+import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 BOOT = (ROOT / 'js/event-bootstrap.js').read_text(encoding='utf-8')
 EVENT = (ROOT / 'js/events/robot-store-assessment-event.js').read_text(encoding='utf-8')
 RULES = (ROOT / 'js/events/robot-store-assessment-rules.js').read_text(encoding='utf-8')
 ASSET = ROOT / 'assets/images/events/store-assessment-robot.png'
+
+def valid_transparent_png(path: Path) -> bool:
+    raw = path.read_bytes()
+    if raw[:8] != b'\x89PNG\r\n\x1a\n' or len(raw) < 33:
+        return False
+    pos = 8
+    width = height = 0
+    color_type = None
+    has_transparency = False
+    idat = bytearray()
+    saw_iend = False
+    while pos + 12 <= len(raw):
+        length = struct.unpack('>I', raw[pos:pos + 4])[0]
+        chunk_type = raw[pos + 4:pos + 8]
+        data_start = pos + 8
+        data_end = data_start + length
+        crc_end = data_end + 4
+        if crc_end > len(raw):
+            return False
+        data = raw[data_start:data_end]
+        expected_crc = struct.unpack('>I', raw[data_end:crc_end])[0]
+        if (zlib.crc32(chunk_type + data) & 0xffffffff) != expected_crc:
+            return False
+        if chunk_type == b'IHDR':
+            if length != 13:
+                return False
+            width, height = struct.unpack('>II', data[:8])
+            color_type = data[9]
+        elif chunk_type == b'tRNS':
+            has_transparency = True
+        elif chunk_type == b'IDAT':
+            idat.extend(data)
+        elif chunk_type == b'IEND':
+            saw_iend = True
+            break
+        pos = crc_end
+    if not (width == 304 and height == 320 and saw_iend and idat):
+        return False
+    if not (color_type in {4, 6} or has_transparency):
+        return False
+    try:
+        return len(zlib.decompress(bytes(idat))) > 0
+    except zlib.error:
+        return False
 
 registered_lines = [
     '店舗データの収集を開始します。……評価対象を認識しました。',
@@ -30,6 +76,7 @@ checks = [
     ('normal event recovery button retained', 'event-safety-recovery' in EVENT),
     ('approved character asset path retained', 'assets/images/events/store-assessment-robot.png' in EVENT),
     ('character asset exists', ASSET.exists()),
+    ('character asset is valid 304x320 transparent PNG', ASSET.exists() and valid_transparent_png(ASSET)),
     ('showcase fullness is evaluated', 'filledSlots' in RULES and 'totalSlots' in RULES),
     ('loose variety is evaluated from owned inventory', 'ownedGemIds' in RULES and 'possibleGemCount' in RULES),
     ('loose cut variety is evaluated from owned inventory', 'ownedCuts' in RULES and 'possibleCutCount' in RULES),

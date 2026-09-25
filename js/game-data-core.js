@@ -3858,7 +3858,7 @@ export const WORKSHOP_TOOLS = {
   },
 
   woodBlock: {
-    id: 'woodBlock', name: '木台', type: '工具', symbol: '▥', price: 8000, qualityPoints: 1,
+    id: 'woodBlock', name: '木台', type: '工具', symbol: '▥', price: 80000, qualityPoints: 1,
     image: './assets/images/tools/wood-block.png', initiallyAvailable: true, breakable: true, repairable: false,
     description: '打ち出しや成形時に品物を支え、金属製の台より柔らかく傷を抑える木製の作業台です。',
     detail: '作業面の木目、割れ、傾きを確認し、加工物の形状に合う当て方で衝撃を分散します。',

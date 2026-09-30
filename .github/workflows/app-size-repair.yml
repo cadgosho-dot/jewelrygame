@@ -85,7 +85,6 @@ jobs:
           if before_size - after_size < 500:
               raise SystemExit(f'Unexpectedly small reduction: {before_size - after_size} bytes')
 
-          # Exact structural guards: one import, no inline definition, all call sites still reference the same constant.
           final_app = app_path.read_text(encoding='utf-8')
           final_module = module_path.read_text(encoding='utf-8')
           if final_app.count(import_line.strip()) != 1:
@@ -106,7 +105,9 @@ jobs:
         run: |
           git diff --check
           git diff --stat
-          test "$(git diff --name-only | sort | tr '\n' ' ')" = "js/app.js js/ui/meal-food-images.js sw.js "
+          git status --short
+          changed="$( { git diff --name-only; git ls-files --others --exclude-standard; } | sort | tr '\n' ' ')"
+          test "$changed" = "js/app.js js/ui/meal-food-images.js sw.js "
 
       - name: 修正をmainへ保存
         shell: bash

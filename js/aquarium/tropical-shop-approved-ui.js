@@ -126,9 +126,11 @@ function syncApprovedTropicalShopUi() {
   const controls = content.querySelector('.tropical-shop-controls');
   const tabs = content.querySelector('.tropical-shop-tabs');
   const { wrapper, grid } = ensureCategoryScreen(content);
+  const menuButtonMinHeight = orientation() === 'portrait' ? '112px' : '96px';
 
   tabs?.querySelectorAll('[data-action="tropical-shop-tab"]').forEach((button) => {
     button.classList.add('tropical-transparent-tab');
+    button.style.setProperty('min-height', menuButtonMinHeight, 'important');
     if (viewMode === 'menu') {
       button.classList.remove('active');
       button.setAttribute('aria-current', 'false');

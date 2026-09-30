@@ -13,6 +13,7 @@ const CORE_SHELL = [
   './js/ui/store-branch-label.js?v=0.10.964',
   './js/ui/viewport-clamp.js?v=0.10.964',
   './js/ui/meal-time-message.js?v=0.10.964',
+  './js/ui/meal-food-images.js',
   './js/ui/loose-shape-label.js?v=0.10.964',
   './js/ui/rough-display-name.js?v=0.10.964',
   './js/ui/time-remaining-label.js?v=0.10.964',

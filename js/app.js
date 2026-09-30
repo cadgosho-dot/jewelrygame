@@ -36,6 +36,7 @@ import { renderToolBriefMarkup } from './ui/tool-brief.js?v=0.10.964';
 import { formatStoreBranchLabel } from './ui/store-branch-label.js?v=0.10.964';
 import { clampViewportNumber } from './ui/viewport-clamp.js?v=0.10.964';
 import { mealTimeUnavailableText } from './ui/meal-time-message.js?v=0.10.964';
+import { MEAL_FOOD_IMAGES } from './ui/meal-food-images.js';
 import { selectChineseMealImage } from './ui/chinese-meal-image-variant.js';
 import { formatLooseShapeLabel } from './ui/loose-shape-label.js?v=0.10.964';
 import { formatRoughDisplayName } from './ui/rough-display-name.js?v=0.10.964';
@@ -2248,23 +2249,7 @@ function looseVariantRows({ ownedOnly = false } = {}) {
   })).filter((entry) => !ownedOnly || entry.owned > 0);
 }
 
-const MEAL_FOOD_IMAGES = Object.freeze({
-  ice: './assets/images/foods/ice-chocomint.png',
-  convenience: './assets/images/foods/convenience.png',
-  convenienceChristmas: './assets/images/foods/convenience-christmas-v776.png',
-  chinese: './assets/images/foods/chinese.png',
-  chineseGyoza: './assets/images/foods/chinese-gyoza-set-v965.png',
-  korean: './assets/images/foods/korean-bibimbap-v781.png',
-  koreanStone: './assets/images/foods/korean-stone-bibimbap-v782.png',
-  indian: './assets/images/foods/indian-v777.png',
-  kebab: './assets/images/foods/kebab.png',
-  ramen: './assets/images/foods/ramen.png',
-  soba: './assets/images/foods/soba.png',
-  sobaMori: './assets/images/foods/soba-mori-v778.png',
-  sobaKakeCurry: './assets/images/foods/soba-kake-curry-v779.png',
-  sobaCroquette: './assets/images/foods/soba-croquette-v780.png',
-  hamburger: './assets/images/foods/hamburger.png',
-});
+
 
 const imagePreloadCache = new Map();
 

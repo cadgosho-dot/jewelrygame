@@ -1,5 +1,23 @@
 import './oyatsu-character-position-lock.js';
 
+let bankEngine = null;
+try {
+  bankEngine = await import('../finance/bank-engine.js');
+} catch (error) {
+  console.warn('[Bank] engine module unavailable', error);
+}
+const accrueBankInterest = (...args) => bankEngine?.accrueBankInterest?.(...args)
+  ?? { credited:0, periods:0, balance:0, changed:false };
+const bankIsOpen = (...args) => bankEngine?.bankIsOpen?.(...args) ?? false;
+const performBankTransaction = (...args) => bankEngine?.performBankTransaction?.(...args)
+  ?? { ok:false, reason:'bank-module-unavailable' };
+
+if (typeof document !== 'undefined') {
+  void import('../finance/bank-ui.js').catch((error) => {
+    console.warn('[Bank] ui module unavailable', error);
+  });
+}
+
 let eventServices = {};
 export function setServices(canSpendMealTime, spendMealTime, addFinance, addNotification, setMealFeedback, render) {
   eventServices = { ...eventServices, canSpendMealTime, spendMealTime, addFinance, addNotification, setMealFeedback, render };
@@ -66,6 +84,63 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         };
       } catch (error) {
         console.warn('[EventStateHelpers] eventRuntimeSnapshot failed', error);
+        return { ok:false, error };
+      }
+    },
+    bankRuntimeSnapshot() {
+      try {
+        const state = readState();
+        if (!state) return { ok:false, reason:'state-unavailable' };
+        if (!bankEngine) return { ok:false, reason:'bank-module-unavailable' };
+        state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
+        const day = Math.max(1, Math.floor(Number(state.game.day) || 1));
+        const interest = accrueBankInterest(state, day);
+        if (interest.changed) persist();
+        return {
+          ok:true,
+          game:{
+            day,
+            minutes:Math.max(0, Math.floor(Number(state.game.minutes) || 0)),
+            money:Math.max(0, Math.floor(Number(state.game.money) || 0)),
+          },
+          bank:{
+            balance:Math.max(0, Math.floor(Number(state.bank?.balance) || 0)),
+            lastInterestDay:Math.max(1, Math.floor(Number(state.bank?.lastInterestDay) || day)),
+          },
+          open:bankIsOpen(state.game.minutes),
+          interest,
+        };
+      } catch (error) {
+        console.warn('[EventStateHelpers] bankRuntimeSnapshot failed', error);
+        return { ok:false, error };
+      }
+    },
+    bankTransaction(kind, amount) {
+      try {
+        const state = readState();
+        if (!state) return { ok:false, reason:'state-unavailable' };
+        if (!bankEngine) return { ok:false, reason:'bank-module-unavailable' };
+        state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
+        if (!bankIsOpen(state.game.minutes)) return { ok:false, reason:'closed' };
+        const result = performBankTransaction(state, String(kind || ''), amount, state.game.day);
+        if (!result.ok) return result;
+
+        // 銀行取引は成立時だけ1時間進める。既存の時間進行を再利用し、
+        // 食事用の「空腹度を減らさない」差分だけここで通常の1時間分へ戻す。
+        try { eventServices.spendMealTime?.(); } catch (_) {
+          state.game.minutes = Math.max(0, Math.floor(Number(state.game.minutes) || 0)) + 60;
+        }
+        state.wellbeing = state.wellbeing && typeof state.wellbeing === 'object' && !Array.isArray(state.wellbeing) ? state.wellbeing : {};
+        state.wellbeing.hunger = Math.max(0, Math.floor(Number(state.wellbeing.hunger) || 0) - 1);
+
+        persist();
+        return {
+          ...result,
+          minutes:Math.max(0, Math.floor(Number(state.game.minutes) || 0)),
+          hunger:Math.max(0, Math.floor(Number(state.wellbeing.hunger) || 0)),
+        };
+      } catch (error) {
+        console.warn('[EventStateHelpers] bankTransaction failed', error);
         return { ok:false, error };
       }
     },

@@ -30,6 +30,9 @@ jobs:
       - name: 3DメガネのCSS・描画HTMLの接続を検査
         run: python3 scripts/check-3d-quiz-css.py
 
+      - name: 銀行機能の回帰検査
+        run: node tools/test-bank-regression.mjs
+
       - name: PR総合検査
         env:
           JXJ_REQUIRE_BROWSER_SMOKE: '1'

@@ -129,6 +129,7 @@ assert.equal(bankStepForHold(4000), 10_000_000);
   assert.equal(transaction.reason, 'closed');
 }
 
+// 銀行上部バーは御徒町の共通ヘッダー構造をそのまま使う。
 const bankUiSource = readFileSync(new URL('../js/finance/bank-ui.js', import.meta.url), 'utf8');
 assert.doesNotMatch(bankUiSource, /8:00〜(?:16|17):00/);
 assert.doesNotMatch(bankUiSource, /jxj-bank-hours/);

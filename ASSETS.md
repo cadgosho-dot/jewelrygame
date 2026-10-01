@@ -14,14 +14,14 @@
 
 ## 集計
 
-- 総ファイル数: **609**
-- 画像: **479**
+- 総ファイル数: **610**
+- 画像: **480**
 - 音源: **102**
 - 動画: **15**
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **500** / 直接参照未検出: **109**
+- 静的な直接参照を検出: **501** / 直接参照未検出: **109**
 
 ## 重要な由来記録
 
@@ -625,6 +625,7 @@
 | assets/minigames/mining-battle/bat.png | 画像 | 1024×1536 | 縦 | あり | `scripts/generate-assets-manifest.py:80`<br>`js/events/mining-battle-event.js:14` | ユーザー提供正式画像（2026-09-21 / コウモリ / 背景除去・透明PNG化を承認） | 変更禁止（承認済み透明PNG。再生成・色変更・画風変更禁止） | 7e1556af88c6315d5c2b1362f0ab08ce18250a3e9ce0dbbf37c512270d475d6e |
 | assets/minigames/mining-battle/mole.png | 画像 | 1536×1314 | 横 | あり | `scripts/generate-assets-manifest.py:79`<br>`js/events/mining-battle-event.js:13`<br>`tools/test-mining-battle-event.mjs:41` | ユーザー提供正式画像（2026-09-21 / モグラ / 背景除去・透明PNG化を承認） | 変更禁止（承認済み透明PNG。再生成・色変更・画風変更禁止） | ca3cdb17785999cc6e6fe53d6e28293926e7be12faeadbce633af1367ff5b85d |
 | assets/minigames/mining-battle/pickaxe.png | 画像 | 1341×1508 | 縦 | あり | `scripts/generate-assets-manifest.py:81`<br>`js/events/mining-battle-event.js:22`<br>`tools/test-mining-battle-event.mjs:33` | ユーザー提供正式画像（2026-09-21 / ツルハシ / 背景除去・透明PNG化を承認） | 変更禁止（承認済み透明PNG。再生成・色変更・画風変更禁止） | 4e13e61fe41c0b6e77b2a6b2bae9a54f28232878429c0315b22d687097780d9c |
+| assets/minigames/retro-battle/enemy-mincho.png | 画像 | 1344×1536 | 縦 | あり | `sw.js:11`<br>`scripts/generate-assets-manifest.py:111`<br>`js/events/okachimachi-battle-enemy.js:3`<br>`scripts/check-retro-battle-frame-loader.py:28` | ユーザー提供正式画像（2026-10-02 / 明朝体 / 元画像のRGBを維持して背景透過・輪郭トリミング） | 変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止） | 4717bbf81c1412d6dfa4d832cd6cc38bb6665793fcf232df4e8ee6f88a566e80 |
 | assets/minigames/retro-battle/index.html | ミニゲーム/コード | 18,693,496 B | - | - | `scripts/check-pwa-cache-policy.py:52`<br>`sw.js:114`<br>`js/app.js:344`<br>`js/events/mining-battle-event.js:19` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 82ba94ed28b98072e8a8f2af3808e9f3d576ad897a6d9544de88ef8e6a82dde5 |
 | assets/music/events/teeth_behind_the_glass.mp3 | 音源 | 3,760,183 B | - | - | `js/wolf-mother-butler-event.js:13`<br>`scripts/FILES/js/wolf-mother-butler-event.js:13`<br>`scripts/check-wolf-mother-butler-event.py:20` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 5a4ba334442e98d8baa69404f3b2ad4804b5925d1d7c405dc4797bbfcff36cd3 |
 | assets/videos/cinema/.gitkeep | その他 | 0 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |

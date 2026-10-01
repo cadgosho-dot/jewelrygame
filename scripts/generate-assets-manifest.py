@@ -108,6 +108,10 @@ def provenance_map() -> dict[str, dict[str, str]]:
         'source': 'ユーザー指定正式画像（2026-09-24 / 糸鋸 / 内側開口部透過修正版）',
         'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止）',
     }
+    provenance['assets/minigames/retro-battle/enemy-mincho.png'] = {
+        'source': 'ユーザー提供正式画像（2026-10-02 / 明朝体 / 元画像のRGBを維持して背景透過・輪郭トリミング）',
+        'permission': '変更禁止（承認済み透明PNG。再生成・色変更・画風変更・再トリミング禁止）',
+    }
     return provenance
 
 SOURCE_ORDER = [

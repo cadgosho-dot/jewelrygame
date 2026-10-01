@@ -62,7 +62,7 @@ function installStyle() {
       background:rgba(8,6,4,.26);
       box-shadow:0 8px 28px rgba(0,0,0,.15);
     }
-    .jxj-bank-menu{display:grid; gap:16px; width:100%;}
+    .jxj-bank-menu{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; width:100%;}
     .jxj-bank-menu-button,
     .jxj-bank-confirm,
     .jxj-bank-secondary,
@@ -88,6 +88,9 @@ function installStyle() {
     }
     .jxj-bank-balance-card small{display:block; opacity:.88; font-size:14px; margin-bottom:5px;}
     .jxj-bank-balance-card strong{display:block; font-size:clamp(24px,6vw,36px); line-height:1.15;}
+    .jxj-bank-menu-balance{margin-bottom:16px;}
+    .jxj-bank-menu-balance small{font-size:clamp(16px,2.8vw,20px);}
+    .jxj-bank-menu-balance strong{font-size:clamp(34px,7vw,54px);}
     .jxj-bank-balance-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;}
     .jxj-bank-transaction-title{
       text-align:center; font-size:clamp(22px,5vw,30px); font-weight:700;
@@ -137,14 +140,11 @@ function installStyle() {
       }
       .jxj-bank-content{padding:12px;}
       .jxj-bank-panel{width:min(94vw,620px); padding:18px;}
-      .jxj-bank-menu{gap:16px;}
+      .jxj-bank-menu{grid-template-columns:1fr; gap:16px;}
       .jxj-bank-menu-button{min-height:86px; font-size:clamp(24px,7vw,32px);}
       .jxj-bank-balance-grid{grid-template-columns:1fr; gap:10px;}
       .jxj-bank-amount-box{grid-template-columns:66px minmax(0,1fr) 66px;}
       .jxj-bank-step{min-height:78px;}
-    }
-    @media (orientation:landscape){
-      .jxj-bank-menu{grid-template-columns:repeat(3,minmax(0,1fr));}
     }
     @media (orientation:landscape) and (max-height:650px){
       .jxj-bank-content{padding-inline:18px; padding-bottom:10px;}
@@ -266,23 +266,14 @@ function renderMenu() {
   }
   panel.innerHTML = `
     ${currentInterestHtml()}
-    <div class="jxj-bank-menu">
-      <button type="button" class="jxj-bank-menu-button" data-bank-mode="deposit">預ける</button>
-      <button type="button" class="jxj-bank-menu-button" data-bank-mode="withdraw">引き出す</button>
-      <button type="button" class="jxj-bank-menu-button" data-bank-mode="balance">残高確認</button>
-    </div>`;
-}
-
-function renderBalance() {
-  const panel = document.querySelector(`#${BANK_SCREEN_ID} .jxj-bank-panel`);
-  if (!panel) return;
-  panel.innerHTML = `
-    <div class="jxj-bank-balance-card">
+    <div class="jxj-bank-balance-card jxj-bank-menu-balance">
       <small>銀行残高</small>
       <strong>${yen(lastSnapshot?.bank?.balance)}</strong>
     </div>
-    <p class="jxj-bank-note">預金利息：30日ごとに1%</p>
-    <button type="button" class="jxj-bank-secondary" data-bank-menu>戻る</button>`;
+    <div class="jxj-bank-menu">
+      <button type="button" class="jxj-bank-menu-button" data-bank-mode="deposit">預ける</button>
+      <button type="button" class="jxj-bank-menu-button" data-bank-mode="withdraw">引き出す</button>
+    </div>`;
 }
 
 function renderTransaction(note = '', noteType = '') {
@@ -487,7 +478,6 @@ document.addEventListener('click', (event) => {
   if (target.matches('[data-bank-menu]')) { bankMode = 'menu'; renderMenu(); return; }
   if (target.matches('[data-bank-mode]')) {
     const mode = target.dataset.bankMode;
-    if (mode === 'balance') { bankMode = 'balance'; renderBalance(); return; }
     bankMode = mode === 'withdraw' ? 'withdraw' : 'deposit';
     draftAmount = BANK_TRANSACTION_STEP;
     renderTransaction();

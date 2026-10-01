@@ -20,54 +20,48 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Apply exact bank header fix
+      - name: Apply guarded bank header fix
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           bank = Path('js/finance/bank-ui.js')
           text = bank.read_text()
 
-          old = '''    #${BANK_SCREEN_ID}>.game-header{
-              position:relative; z-index:4; flex:0 0 auto;
-            }
-          '''
-          assert text.count(old) == 1, 'bank header CSS override not found exactly once'
-          text = text.replace(old, '', 1)
+          text, count = re.subn(
+              r'\n\s*#\$\{BANK_SCREEN_ID\}>\.game-header\{\s*position:relative;\s*z-index:4;\s*flex:0 0 auto;\s*\}\s*',
+              '\n',
+              text,
+              count=1,
+          )
+          assert count == 1, f'bank header CSS override count={count}'
 
-          old = '''    header.querySelectorAll('[data-action]').forEach((node) => node.removeAttribute('data-action'));
-              if (back instanceof HTMLElement) {
-          '''
-          new = '''    header.querySelector('.header-help-button')?.remove();
-              if (back instanceof HTMLElement) {
-          '''
-          assert text.count(old) == 1, 'data-action stripping block not found exactly once'
+          old = "    header.querySelectorAll('[data-action]').forEach((node) => node.removeAttribute('data-action'));\n"
+          new = "    header.querySelector('.header-help-button')?.remove();\n"
+          assert text.count(old) == 1, f'data-action stripping line count={text.count(old)}'
           text = text.replace(old, new, 1)
 
-          old = '''  screen.id = BANK_SCREEN_ID;
-            screen.setAttribute('aria-label','銀行');
-          '''
-          new = '''  screen.id = BANK_SCREEN_ID;
-            screen.classList.add('screen-shell');
-            screen.setAttribute('aria-label','銀行');
-          '''
-          assert text.count(old) == 1, 'bank screen creation block not found exactly once'
+          old = "  screen.id = BANK_SCREEN_ID;\n  screen.setAttribute('aria-label','銀行');\n"
+          new = "  screen.id = BANK_SCREEN_ID;\n  screen.classList.add('screen-shell');\n  screen.setAttribute('aria-label','銀行');\n"
+          assert text.count(old) == 1, f'bank screen creation block count={text.count(old)}'
           text = text.replace(old, new, 1)
 
           old = "  content.className = 'jxj-bank-content';\n"
           new = "  content.className = 'screen-content jxj-bank-content';\n"
-          assert text.count(old) == 1, 'bank content class line not found exactly once'
+          assert text.count(old) == 1, f'bank content class line count={text.count(old)}'
           text = text.replace(old, new, 1)
           bank.write_text(text)
 
           helper = Path('js/events/event-state-helpers.js')
           text = helper.read_text()
-          old = '''  void import('../finance/bank-portrait-header-fix.js').catch((error) => {
-              console.warn('[Bank] portrait header fix unavailable', error);
-            });
-          '''
-          assert text.count(old) == 1, 'portrait fix import not found exactly once'
-          text = text.replace(old, '', 1)
+          text, count = re.subn(
+              r"\n\s*void import\('\.\./finance/bank-portrait-header-fix\.js'\)\.catch\(\(error\) => \{\s*console\.warn\('\[Bank\] portrait header fix unavailable', error\);\s*\}\);\s*",
+              '\n',
+              text,
+              count=1,
+          )
+          assert count == 1, f'portrait fix import count={count}'
           helper.write_text(text)
 
           portrait = Path('js/finance/bank-portrait-header-fix.js')

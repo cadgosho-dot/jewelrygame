@@ -20,8 +20,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -L --fail --retry 3 'https://oaisdmntprkoreacentral.blob.core.windows.net/files/00000000-4bbc-8206-95d5-54827df9214c/raw?se=2026-10-01T01%3A54%3A12Z&sp=r&sv=2026-02-06&sr=b&scid=7c9781b0-50d7-4024-bde7-afa095faf1c6&skoid=3e273c3d-5ea1-4088-9e18-79685531b184&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-01T00%3A50%3A15Z&ske=2026-10-02T00%3A50%3A15Z&sks=b&skv=2026-02-06&sig=F5G5QOa5EGmGUg9%2FKV8EJIUAIUiIOLGCKKpu7qvo7mE%3D' -o assets/images/backgrounds/bank-okachimachi-landscape.jpg
-          curl -L --fail --retry 3 'https://oaisdmntprkoreacentral.blob.core.windows.net/files/00000000-decc-8206-8e63-c46872b8390f/raw?se=2026-10-01T01%3A53%3A30Z&sp=r&sv=2026-02-06&sr=b&scid=00a661e8-b7ab-49ce-9b76-eab011fe6ddb&skoid=3e273c3d-5ea1-4088-9e18-79685531b184&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-01T00%3A45%3A55Z&ske=2026-10-02T00%3A45%3A55Z&sks=b&skv=2026-02-06&sig=2EJqQbneVlcmNqUPrF1GwhgmiG03accR7%2B2t60ExF5o%3D' -o assets/images/backgrounds/bank-okachimachi-portrait.jpg
+          curl -L --fail --retry 3 'https://lh7-rt.googleusercontent.com/slidesz/AGV_vUfOnNz-j82iejsdGB4Y8FAv91Jq8Ciz-pivH2mjKRtC9sdMMpeX6aasxflYChQSoBHrM7EuwvnV85iwBFnFUkddFIK-P4Vp03AmUKXchl1yFYKQmBQ-h5ORgw3QpcGc9kR79GsaQtPXxiJbda03qWK89pfTH9dusWxjjYty03dO0LOreRc=nw?key=rG_RN9xnnxaEww9uSUkv8A' -o assets/images/backgrounds/bank-okachimachi-landscape.jpg
+          curl -L --fail --retry 3 'https://lh7-rt.googleusercontent.com/slidesz/AGV_vUeWW99bDs29lFpBHO2GT7A_w1GAoSyMKu2xZ9dbUcAISIVxHP21Ffo42yRMlz75STP4PLX9CZv1Wwd_lkwR7vFkrDbap8cuSbJanW4OH6MQIrC4HqZ5PwP_iwZsSeDghYW2Dgh5Qq2WMkZjT2NzYwCkpx5A9o1APt-wMorH_lXW8NOaRnY=nw?key=rG_RN9xnnxaEww9uSUkv8A' -o assets/images/backgrounds/bank-okachimachi-portrait.jpg
 
       - name: Verify exact bytes
         shell: bash
@@ -32,7 +32,7 @@ jobs:
           test "$(stat -c%s assets/images/backgrounds/bank-okachimachi-landscape.jpg)" = '397148'
           test "$(stat -c%s assets/images/backgrounds/bank-okachimachi-portrait.jpg)" = '476320'
 
-      - name: Replace bank background references only
+      - name: Replace bank backgrounds only
         shell: bash
         run: |
           set -euo pipefail
@@ -40,14 +40,31 @@ jobs:
           rm -f assets/images/backgrounds/bank-okachimachi-portrait.webp
           sed -i 's/bank-okachimachi-landscape\.webp/bank-okachimachi-landscape.jpg/g' js/finance/bank-ui.js tools/test-bank-regression.mjs
           sed -i 's/bank-okachimachi-portrait\.webp/bank-okachimachi-portrait.jpg/g' js/finance/bank-ui.js tools/test-bank-regression.mjs
+          mkdir -p docs/archive/asset-manifests
+          cat > docs/archive/asset-manifests/TOOL_IMAGE_INTAKE_MANIFEST_BANK_20261001.json <<'JSON'
+          {
+            "items": [
+              {
+                "sourceFilename": "1000024869.png",
+                "outputPath": "assets/images/backgrounds/bank-okachimachi-landscape.jpg"
+              },
+              {
+                "sourceFilename": "1000024870.png",
+                "outputPath": "assets/images/backgrounds/bank-okachimachi-portrait.jpg"
+              }
+            ]
+          }
+          JSON
+          python3 scripts/generate-assets-manifest.py --write
           node tools/test-bank-regression.mjs
 
-      - name: Commit exact originals
+      - name: Commit exact originals and remove temporary workflow
         shell: bash
         run: |
           set -euo pipefail
+          rm -f .github/workflows/temp-bank-background-transfer.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/images/backgrounds/bank-okachimachi-landscape.jpg assets/images/backgrounds/bank-okachimachi-portrait.jpg assets/images/backgrounds/bank-okachimachi-landscape.webp assets/images/backgrounds/bank-okachimachi-portrait.webp js/finance/bank-ui.js tools/test-bank-regression.mjs
+          git add -A
           git commit -m '[bank-bg-transfer-done] Use exact original bank backgrounds'
           git push

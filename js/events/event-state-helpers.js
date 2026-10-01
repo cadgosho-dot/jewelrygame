@@ -9,6 +9,7 @@ try {
 const accrueBankInterest = (...args) => bankEngine?.accrueBankInterest?.(...args)
   ?? { credited:0, periods:0, balance:0, changed:false };
 const bankIsOpen = (...args) => bankEngine?.bankIsOpen?.(...args) ?? false;
+const bankClosureReason = (...args) => bankEngine?.bankClosureReason?.(...args) ?? 'hours';
 const performBankTransaction = (...args) => bankEngine?.performBankTransaction?.(...args)
   ?? { ok:false, reason:'bank-module-unavailable' };
 
@@ -97,12 +98,15 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         if (!bankEngine) return { ok:false, reason:'bank-module-unavailable' };
         state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
         const day = Math.max(1, Math.floor(Number(state.game.day) || 1));
+        const startDate = String(state.game.startDate || '');
         const interest = accrueBankInterest(state, day);
         if (interest.changed) persist();
+        const schedule = { startDate, day };
         return {
           ok:true,
           game:{
             day,
+            startDate,
             minutes:Math.max(0, Math.floor(Number(state.game.minutes) || 0)),
             money:Math.max(0, Math.floor(Number(state.game.money) || 0)),
           },
@@ -110,7 +114,8 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
             balance:Math.max(0, Math.floor(Number(state.bank?.balance) || 0)),
             lastInterestDay:Math.max(1, Math.floor(Number(state.bank?.lastInterestDay) || day)),
           },
-          open:bankIsOpen(state.game.minutes),
+          open:bankIsOpen(state.game.minutes, { startDate:state.game.startDate, day }),
+          closureReason:bankClosureReason(state.game.minutes, schedule),
           interest,
         };
       } catch (error) {
@@ -124,7 +129,8 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         if (!state) return { ok:false, reason:'state-unavailable' };
         if (!bankEngine) return { ok:false, reason:'bank-module-unavailable' };
         state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
-        if (!bankIsOpen(state.game.minutes)) return { ok:false, reason:'closed' };
+        const day = Math.max(1, Math.floor(Number(state.game.day) || 1));
+        if (!bankIsOpen(state.game.minutes, { startDate:state.game.startDate, day })) return { ok:false, reason:'closed' };
         const result = performBankTransaction(state, String(kind || ''), amount, state.game.day);
         if (!result.ok) return result;
 

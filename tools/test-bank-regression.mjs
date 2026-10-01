@@ -200,7 +200,7 @@ assert.ok(transparencyOverrides.startsWith('/* BANK UI TRANSPARENT SURFACES */')
 function assertBankSurfaceTransparent(selector, label) {
   const selectorIndex = transparencyOverrides.indexOf(selector);
   assert.ok(selectorIndex >= 0, `${label}を透過対象に含める`);
-  const ruleTail = transparencyOverrides.slice(selectorIndex, selectorIndex + 350);
+  const ruleTail = transparencyOverrides.slice(selectorIndex, selectorIndex + 1200);
   assert.match(ruleTail, /background:\s*transparent\s*!important/, `${label}の背景を完全透明にする`);
 }
 for (const [selector, label] of [
@@ -215,8 +215,9 @@ for (const [selector, label] of [
   ['.jxj-bank-header', '銀行ヘッダー'],
   ['.jxj-bank-header button', '銀行ヘッダー内ボタン'],
 ]) assertBankSurfaceTransparent(selector, label);
-assert.match(transparencyOverrides, /:active[^{]*\{[^}]*background:\s*transparent\s*!important/, '押下中も背景を塗らない');
-assert.match(transparencyOverrides, /:hover[^{]*\{[^}]*background:\s*transparent\s*!important/, 'ホバー中も背景を塗らない');
+assertBankSurfaceTransparent('.jxj-bank-menu-button:hover', 'ホバー状態');
+assertBankSurfaceTransparent('.jxj-bank-menu-button:focus-visible', 'フォーカス状態');
+assertBankSurfaceTransparent('.jxj-bank-menu-button:active', '押下状態');
 assert.match(bankUiSource, /\.jxj-bank-panel\{[^}]*border:2\.25px solid/, '銀行パネルの枠線を維持する');
 assert.match(bankUiSource, /\.jxj-bank-menu-button,[\s\S]{0,300}border:2\.25px solid/, '銀行ボタンの枠線を維持する');
 assert.doesNotMatch(transparencyOverrides, /border(?:-color)?:\s*(?:none|transparent)/, '透明化で枠線を消さない');

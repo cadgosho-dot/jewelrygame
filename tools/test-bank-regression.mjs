@@ -219,6 +219,8 @@ for (const [selector, label] of [
 ]) assertBankSurfaceTransparent(selector, label);
 assert.match(transparencyOverrides, /:active[^{]*\{[^}]*background:\s*transparent\s*!important/, '押下中も背景を塗らない');
 assert.match(transparencyOverrides, /:hover[^{]*\{[^}]*background:\s*transparent\s*!important/, 'ホバー中も背景を塗らない');
-assert.match(transparencyOverrides, /border-color:\s*var\(--line/, '銀行画面の枠線を維持する');
+assert.match(bankUiSource, /\.jxj-bank-panel\{[^}]*border:2\.25px solid/, '銀行パネルの枠線を維持する');
+assert.match(bankUiSource, /\.jxj-bank-menu-button,[\s\S]{0,300}border:2\.25px solid/, '銀行ボタンの枠線を維持する');
+assert.doesNotMatch(transparencyOverrides, /border(?:-color)?:\s*(?:none|transparent)/, '透明化で枠線を消さない');
 
 console.log('BANK REGRESSION: PASS');

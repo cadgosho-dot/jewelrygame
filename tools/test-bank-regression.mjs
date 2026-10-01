@@ -12,9 +12,9 @@ import {
 } from '../js/finance/bank-engine.js';
 import { createEventStateHelpers, setServices } from '../js/events/event-state-helpers.js';
 
-function makeState({ day = 1, minutes = 9 * 60, money = 1_000_000, balance = 0, lastInterestDay = day, hunger = 7 } = {}) {
+function makeState({ day = 1, startDate = '2027-11-02', minutes = 9 * 60, money = 1_000_000, balance = 0, lastInterestDay = day, hunger = 7 } = {}) {
   return {
-    game:{ day, minutes, money },
+    game:{ day, startDate, minutes, money },
     wellbeing:{ hunger, maxHunger:7 },
     events:{},
     inventory:{},
@@ -22,16 +22,23 @@ function makeState({ day = 1, minutes = 9 * 60, money = 1_000_000, balance = 0, 
   };
 }
 
-assert.equal(bankIsOpen(8 * 60), true);
-assert.equal(bankIsOpen(16 * 60 + 59), true);
-assert.equal(bankIsOpen(17 * 60), false);
-assert.equal(bankIsOpen(7 * 60 + 59), false);
+assert.equal(bankIsOpen(8 * 60, { startDate:'2027-11-02', day:1 }), true);
+assert.equal(bankIsOpen(16 * 60 + 59, { startDate:'2027-11-02', day:1 }), true);
+assert.equal(bankIsOpen(17 * 60, { startDate:'2027-11-02', day:1 }), false);
+assert.equal(bankIsOpen(7 * 60 + 59, { startDate:'2027-11-02', day:1 }), false);
+assert.equal(bankIsOpen(9 * 60, { startDate:'2027-11-02', day:2 }), false, '文化の日は休業');
+assert.equal(bankIsOpen(9 * 60, { startDate:'2027-11-06', day:1 }), false, '土曜日は休業');
+assert.equal(bankIsOpen(9 * 60, { startDate:'2027-11-07', day:1 }), false, '日曜日は休業');
+assert.equal(bankIsOpen(9 * 60, { startDate:'2027-11-08', day:1 }), true, '平日は営業');
 assert.equal(normalizeBankAmount(19_999), BANK_TRANSACTION_STEP);
 assert.equal(normalizeBankAmount(9_999), 0);
 assert.equal(bankStepForHold(100), 10_000);
-assert.equal(bankStepForHold(400), 100_000);
-assert.equal(bankStepForHold(1300), 1_000_000);
-assert.equal(bankStepForHold(2500), 10_000_000);
+assert.equal(bankStepForHold(799), 10_000);
+assert.equal(bankStepForHold(800), 100_000);
+assert.equal(bankStepForHold(1999), 100_000);
+assert.equal(bankStepForHold(2000), 1_000_000);
+assert.equal(bankStepForHold(3999), 1_000_000);
+assert.equal(bankStepForHold(4000), 10_000_000);
 
 {
   const state = makeState();
@@ -111,12 +118,26 @@ assert.equal(bankStepForHold(2500), 10_000_000);
   assert.equal(saveCount, 2);
 }
 
+{
+  const state = makeState({ day:2, startDate:'2027-11-02', minutes:9 * 60 });
+  setServices(() => true, () => { state.game.minutes += 60; }, () => {}, () => {}, () => {}, () => {});
+  const helpers = createEventStateHelpers(() => state, () => {}, () => {}, () => {}, (value) => value, {});
+  const snapshot = helpers.bankRuntimeSnapshot();
+  assert.equal(snapshot.open, false, '祝日は銀行画面も閉じる');
+  const transaction = helpers.bankTransaction('deposit', 100_000);
+  assert.equal(transaction.ok, false);
+  assert.equal(transaction.reason, 'closed');
+}
+
 const bankUiSource = readFileSync(new URL('../js/finance/bank-ui.js', import.meta.url), 'utf8');
 assert.doesNotMatch(bankUiSource, /8:00〜(?:16|17):00/);
 assert.doesNotMatch(bankUiSource, /jxj-bank-hours/);
 assert.match(bankUiSource, /\.game-header/);
 assert.match(bankUiSource, /cloneNode\(true\)/);
 assert.match(bankUiSource, /data-bank-main/);
+assert.match(bankUiSource, /facility-closed/);
+assert.match(bankUiSource, /休業日/);
+assert.match(bankUiSource, /const HOLD_REPEAT_MS = 160;/);
 
 const portraitFixSource = readFileSync(new URL('../js/finance/bank-portrait-header-fix.js', import.meta.url), 'utf8');
 assert.match(portraitFixSource, /#jxj-bank-screen > \.game-header\.jxj-bank-header \.header-center > \[data-bank-close\]/);
@@ -126,6 +147,8 @@ assert.match(portraitFixSource, /display: none !important/);
 
 const eventHelperSource = readFileSync(new URL('../js/events/event-state-helpers.js', import.meta.url), 'utf8');
 assert.match(eventHelperSource, /bank-portrait-header-fix\.js/);
+assert.match(eventHelperSource, /startDate/);
+assert.match(eventHelperSource, /bankIsOpen\(state\.game\.minutes, \{ startDate:state\.game\.startDate, day \}\)/);
 
 const expectedBankAssets = [
   {

@@ -1,0 +1,89 @@
+name: Temporary bank header structure fix
+
+on:
+  push:
+    branches:
+      - fix/bank-header-match-shops-20261001
+    paths:
+      - .github/workflows/temp-bank-header-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply exact bank header fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          bank = Path('js/finance/bank-ui.js')
+          text = bank.read_text()
+
+          old = '''    #${BANK_SCREEN_ID}>.game-header{
+              position:relative; z-index:4; flex:0 0 auto;
+            }
+          '''
+          assert text.count(old) == 1, 'bank header CSS override not found exactly once'
+          text = text.replace(old, '', 1)
+
+          old = '''    header.querySelectorAll('[data-action]').forEach((node) => node.removeAttribute('data-action'));
+              if (back instanceof HTMLElement) {
+          '''
+          new = '''    header.querySelector('.header-help-button')?.remove();
+              if (back instanceof HTMLElement) {
+          '''
+          assert text.count(old) == 1, 'data-action stripping block not found exactly once'
+          text = text.replace(old, new, 1)
+
+          old = '''  screen.id = BANK_SCREEN_ID;
+            screen.setAttribute('aria-label','銀行');
+          '''
+          new = '''  screen.id = BANK_SCREEN_ID;
+            screen.classList.add('screen-shell');
+            screen.setAttribute('aria-label','銀行');
+          '''
+          assert text.count(old) == 1, 'bank screen creation block not found exactly once'
+          text = text.replace(old, new, 1)
+
+          old = "  content.className = 'jxj-bank-content';\n"
+          new = "  content.className = 'screen-content jxj-bank-content';\n"
+          assert text.count(old) == 1, 'bank content class line not found exactly once'
+          text = text.replace(old, new, 1)
+          bank.write_text(text)
+
+          helper = Path('js/events/event-state-helpers.js')
+          text = helper.read_text()
+          old = '''  void import('../finance/bank-portrait-header-fix.js').catch((error) => {
+              console.warn('[Bank] portrait header fix unavailable', error);
+            });
+          '''
+          assert text.count(old) == 1, 'portrait fix import not found exactly once'
+          text = text.replace(old, '', 1)
+          helper.write_text(text)
+
+          portrait = Path('js/finance/bank-portrait-header-fix.js')
+          assert portrait.exists(), 'portrait fix file missing before deletion'
+          portrait.unlink()
+          PY
+
+      - name: Verify bank regression
+        run: node tools/test-bank-regression.mjs
+
+      - name: Commit fix and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/finance/bank-ui.js js/events/event-state-helpers.js tools/test-bank-regression.mjs
+          git rm js/finance/bank-portrait-header-fix.js
+          git rm .github/workflows/temp-bank-header-fix.yml
+          git commit -m "fix: use shared shop header structure for bank"
+          git push origin HEAD:${GITHUB_REF_NAME}

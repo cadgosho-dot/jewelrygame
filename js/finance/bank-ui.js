@@ -11,7 +11,7 @@ const BANK_STYLE_ID = 'jxj-bank-ui-v2';
 const LANDSCAPE_BG = './assets/images/backgrounds/bank-okachimachi-landscape.jpg';
 const PORTRAIT_BG = './assets/images/backgrounds/bank-okachimachi-portrait.jpg';
 const HOLD_START_MS = 320;
-const HOLD_REPEAT_MS = 95;
+const HOLD_REPEAT_MS = 160;
 
 let bankMode = 'menu';
 let draftAmount = BANK_TRANSACTION_STEP;
@@ -160,16 +160,12 @@ function installStyle() {
   document.head.appendChild(style);
 }
 
-function gameMinutes() {
-  const snap = helpers()?.eventRuntimeSnapshot?.('__bank__');
-  return Math.max(0, Math.floor(Number(snap?.game?.minutes) || 0));
-}
-
 function injectBankEntry() {
   const host = document.querySelector('body[data-screen="okachimachi"] .okachimachi-facilities');
   if (!(host instanceof HTMLElement) || host.querySelector('[data-jxj-bank-entry]')) return;
-  const minutes = gameMinutes();
-  const open = bankIsOpen(minutes);
+  const snapshot = helpers()?.bankRuntimeSnapshot?.();
+  const open = Boolean(snapshot?.ok && snapshot.open);
+  const dayOff = snapshot?.closureReason === 'day-off';
   const button = document.createElement('button');
   button.type = 'button';
   button.dataset.jxjBankEntry = 'true';
@@ -179,8 +175,9 @@ function injectBankEntry() {
   } else {
     button.disabled = true;
     button.setAttribute('aria-disabled','true');
-    button.innerHTML = '<span>銀行</span><small>営業時間外</small>';
-    button.title = '営業時間外です。';
+    const closedLabel = dayOff ? '休業日' : '営業時間外';
+    button.innerHTML = `<span>銀行</span><small>${closedLabel}</small>`;
+    button.title = dayOff ? '本日は休業日です。' : '営業時間外です。';
   }
   host.appendChild(button);
 }
@@ -261,8 +258,9 @@ function renderMenu() {
   const panel = screen.querySelector('.jxj-bank-panel');
   if (!panel) return;
   if (!open) {
+    const closedMessage = lastSnapshot?.closureReason === 'day-off' ? '本日は休業日です。' : '本日の銀行窓口は終了しました。';
     panel.innerHTML = `
-      <p class="jxj-bank-note">本日の銀行窓口は終了しました。</p>
+      <p class="jxj-bank-note">${closedMessage}</p>
       <button type="button" class="jxj-bank-secondary" data-bank-close>御徒町へ戻る</button>`;
     return;
   }
@@ -363,7 +361,7 @@ function transactionError(reason) {
     'insufficient-balance':'銀行残高が足りません。',
     'balance-limit':'銀行残高の上限を超えます。',
     'invalid-amount':'金額を指定してください。',
-    'closed':'営業時間外です。',
+    'closed':'現在は銀行を利用できません。',
   })[reason] || '取引できませんでした。';
 }
 

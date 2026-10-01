@@ -128,8 +128,8 @@ const eventHelperSource = readFileSync(new URL('../js/events/event-state-helpers
 assert.match(eventHelperSource, /bank-portrait-header-fix\.js/);
 
 for (const [name, relativePath] of [
-  ['landscape', '../assets/images/backgrounds/bank-okachimachi-landscape.webp'],
-  ['portrait', '../assets/images/backgrounds/bank-okachimachi-portrait.webp'],
+  ['landscape', '../assets/images/backgrounds/bank-okachimachi-landscape.jpg'],
+  ['portrait', '../assets/images/backgrounds/bank-okachimachi-portrait.jpg'],
 ]) {
   const file = readFileSync(new URL(relativePath, import.meta.url));
   const sha256 = createHash('sha256').update(file).digest('hex');

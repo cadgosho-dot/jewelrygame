@@ -212,7 +212,7 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         if (!metals?.[key] || !Number.isFinite(quantity) || quantity <= 0) return { ok:false, reason:'invalid-arguments' };
         // Optional event receipt: inventory and its guard share the same save snapshot.
         const rewardEvent = options.eventKey ? state.events?.[options.eventKey] : null;
-        if (options.eventKey && (!rewardEvent || typeof rewardEvent !== 'object' || Array.isArray(rewardEvent)) || !options.rewardFlag) return { ok:false, reason:'event-state-unavailable' };
+        if (options.eventKey && (!rewardEvent || typeof rewardEvent !== 'object' || Array.isArray(rewardEvent) || !options.rewardFlag)) return { ok:false, reason:'event-state-unavailable' };
         if (rewardEvent?.[options.rewardFlag] === true) return { ok:true, alreadyGranted:true };
         state.inventory = state.inventory && typeof state.inventory === 'object' && !Array.isArray(state.inventory) ? state.inventory : {};
         state.inventory.metals = state.inventory.metals && typeof state.inventory.metals === 'object' && !Array.isArray(state.inventory.metals) ? state.inventory.metals : {};

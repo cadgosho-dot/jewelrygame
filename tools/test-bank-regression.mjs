@@ -191,4 +191,34 @@ for (const expected of expectedBankAssets) {
   console.log(`BANK ASSET ${expected.name}: size=${file.length} sha256=${sha256}`);
 }
 
+
+const transparencyOverrides = bankUiSource.slice(
+  bankUiSource.indexOf('/* BANK UI TRANSPARENT SURFACES */'),
+  bankUiSource.indexOf('`;', bankUiSource.indexOf('/* BANK UI TRANSPARENT SURFACES */')),
+);
+assert.ok(transparencyOverrides.startsWith('/* BANK UI TRANSPARENT SURFACES */'), '銀行画面の透明化上書きを定義する');
+function assertBankSurfaceTransparent(selector, label) {
+  const selectorIndex = transparencyOverrides.indexOf(selector);
+  assert.ok(selectorIndex >= 0, `${label}を透過対象に含める`);
+  const ruleOpen = transparencyOverrides.indexOf('{', selectorIndex);
+  const ruleClose = transparencyOverrides.indexOf('}', ruleOpen);
+  assert.ok(ruleOpen >= 0 && ruleClose > ruleOpen, `${label}の透明化ルールを定義する`);
+  assert.match(transparencyOverrides.slice(ruleOpen, ruleClose), /background:\\s*transparent\\s*!important/, `${label}の背景を完全透明にする`);
+}
+for (const [selector, label] of [
+  ['.jxj-bank-panel', '銀行パネル'],
+  ['.jxj-bank-balance-card', '残高カード'],
+  ['.jxj-bank-interest', '利息表示'],
+  ['.jxj-bank-amount', '金額欄'],
+  ['.jxj-bank-menu-button', '銀行メニューボタン'],
+  ['.jxj-bank-step', '金額調整ボタン'],
+  ['.jxj-bank-confirm', '取引ボタン'],
+  ['.jxj-bank-secondary', '戻るボタン'],
+  ['.jxj-bank-header', '銀行ヘッダー'],
+  ['.jxj-bank-header button', '銀行ヘッダー内ボタン'],
+]) assertBankSurfaceTransparent(selector, label);
+assert.match(transparencyOverrides, /:active[^{]*\\{[^}]*background:\\s*transparent\\s*!important/, '押下中も背景を塗らない');
+assert.match(transparencyOverrides, /:hover[^{]*\\{[^}]*background:\\s*transparent\\s*!important/, 'ホバー中も背景を塗らない');
+assert.match(transparencyOverrides, /border-color:\\s*var\\(--line/, '銀行画面の枠線を維持する');
+
 console.log('BANK REGRESSION: PASS');

@@ -160,6 +160,42 @@ function installStyle() {
       .jxj-bank-step{min-height:58px;}
       .jxj-bank-confirm,.jxj-bank-secondary{min-height:54px;}
     }
+    /* BANK UI TRANSPARENT SURFACES */
+    #${BANK_SCREEN_ID} .jxj-bank-header{
+      background:transparent !important; box-shadow:none !important; backdrop-filter:none !important;
+    }
+    #${BANK_SCREEN_ID} .jxj-bank-panel,
+    #${BANK_SCREEN_ID} .jxj-bank-balance-card,
+    #${BANK_SCREEN_ID} .jxj-bank-interest,
+    #${BANK_SCREEN_ID} .jxj-bank-amount{
+      background:transparent !important; box-shadow:none !important; backdrop-filter:none !important;
+    }
+    #${BANK_SCREEN_ID} .jxj-bank-menu-button,
+    #${BANK_SCREEN_ID} .jxj-bank-confirm,
+    #${BANK_SCREEN_ID} .jxj-bank-secondary,
+    #${BANK_SCREEN_ID} .jxj-bank-step,
+    #${BANK_SCREEN_ID} .jxj-bank-header button{
+      background:transparent !important; box-shadow:none !important; backdrop-filter:none !important;
+    }
+    #${BANK_SCREEN_ID} .jxj-bank-menu-button:hover,
+    #${BANK_SCREEN_ID} .jxj-bank-confirm:hover,
+    #${BANK_SCREEN_ID} .jxj-bank-secondary:hover,
+    #${BANK_SCREEN_ID} .jxj-bank-step:hover,
+    #${BANK_SCREEN_ID} .jxj-bank-header button:hover,
+    #${BANK_SCREEN_ID} .jxj-bank-menu-button:focus-visible,
+    #${BANK_SCREEN_ID} .jxj-bank-confirm:focus-visible,
+    #${BANK_SCREEN_ID} .jxj-bank-secondary:focus-visible,
+    #${BANK_SCREEN_ID} .jxj-bank-step:focus-visible,
+    #${BANK_SCREEN_ID} .jxj-bank-header button:focus-visible{
+      background:transparent !important;
+    }
+    #${BANK_SCREEN_ID} .jxj-bank-menu-button:active,
+    #${BANK_SCREEN_ID} .jxj-bank-confirm:active,
+    #${BANK_SCREEN_ID} .jxj-bank-secondary:active,
+    #${BANK_SCREEN_ID} .jxj-bank-step:active,
+    #${BANK_SCREEN_ID} .jxj-bank-header button:active{
+      background:transparent !important;
+    }
   `;
   document.head.appendChild(style);
 }

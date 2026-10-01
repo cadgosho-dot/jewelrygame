@@ -24,24 +24,31 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('js/finance/bank-ui.js')
           text = path.read_text()
 
-          old = '''    .jxj-bank-content{\n      position:relative; z-index:2; flex:1; min-height:0; overflow:auto;\n      display:grid; align-items:center;\n      padding:clamp(12px,2vw,24px);\n      padding-bottom:max(18px,var(--safe-bottom,8px));\n    }\n'''
-          new = '''    .jxj-bank-content{\n      position:relative; z-index:2; flex:1; min-height:0; overflow:auto;\n      display:grid; align-items:center;\n      padding-inline:clamp(12px,2vw,24px);\n      padding-bottom:max(18px,var(--safe-bottom,8px));\n    }\n'''
-          assert text.count(old) == 1, f'base content padding block count={text.count(old)}'
-          text = text.replace(old, new, 1)
+          text, count = re.subn(
+              r'\.jxj-bank-content\{\s*position:relative; z-index:2; flex:1; min-height:0; overflow:auto;\s*display:grid; align-items:center;\s*padding:clamp\(12px,2vw,24px\);\s*padding-bottom:max\(18px,var\(--safe-bottom,8px\)\);\s*\}',
+              '.jxj-bank-content{\n      position:relative; z-index:2; flex:1; min-height:0; overflow:auto;\n      display:grid; align-items:center;\n      padding-inline:clamp(12px,2vw,24px);\n      padding-bottom:max(18px,var(--safe-bottom,8px));\n    }',
+              text,
+              count=1,
+          )
+          assert count == 1, f'base content padding block count={count}'
 
-          marker = '''    @media (orientation:landscape) and (max-height:650px){\n'''
-          insert = '''    @media (orientation:landscape){\n      .jxj-bank-menu{grid-template-columns:repeat(3,minmax(0,1fr));}\n    }\n    @media (orientation:landscape) and (max-height:650px){\n'''
+          marker = '    @media (orientation:landscape) and (max-height:650px){\n'
+          insert = '    @media (orientation:landscape){\n      .jxj-bank-menu{grid-template-columns:repeat(3,minmax(0,1fr));}\n    }\n    @media (orientation:landscape) and (max-height:650px){\n'
           assert text.count(marker) == 1, f'landscape media marker count={text.count(marker)}'
           text = text.replace(marker, insert, 1)
 
-          old = '''      .jxj-bank-content{padding:10px 18px;}\n'''
-          new = '''      .jxj-bank-content{padding-inline:18px; padding-bottom:10px;}\n'''
-          assert text.count(old) == 1, f'compact landscape padding count={text.count(old)}'
-          text = text.replace(old, new, 1)
+          text, count = re.subn(
+              r'\.jxj-bank-content\{padding:10px 18px;\}',
+              '.jxj-bank-content{padding-inline:18px; padding-bottom:10px;}',
+              text,
+              count=1,
+          )
+          assert count == 1, f'compact landscape padding count={count}'
 
           path.write_text(text)
           PY

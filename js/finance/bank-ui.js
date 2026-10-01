@@ -48,10 +48,7 @@ function installStyle() {
       content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
       background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.02) 45%,rgba(0,0,0,.24));
     }
-    #${BANK_SCREEN_ID}>.game-header{
-      position:relative; z-index:4; flex:0 0 auto;
-    }
-    .jxj-bank-content{
+.jxj-bank-content{
       position:relative; z-index:2; flex:1; min-height:0; overflow:auto;
       display:grid; align-items:center;
       padding:clamp(12px,2vw,24px);
@@ -194,7 +191,7 @@ function buildBankHeader() {
     header.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
     const back = header.querySelector('[data-action="back"]');
     const main = header.querySelector('[data-action="main"], .header-main-button');
-    header.querySelectorAll('[data-action]').forEach((node) => node.removeAttribute('data-action'));
+    header.querySelector('.header-help-button')?.remove();
     if (back instanceof HTMLElement) {
       back.dataset.bankClose = 'true';
       back.setAttribute('aria-label','御徒町へ戻る');
@@ -319,10 +316,11 @@ function openBank() {
   installStyle();
   const screen = document.createElement('section');
   screen.id = BANK_SCREEN_ID;
+  screen.classList.add('screen-shell');
   screen.setAttribute('aria-label','銀行');
   screen.appendChild(buildBankHeader());
   const content = document.createElement('div');
-  content.className = 'jxj-bank-content';
+  content.className = 'screen-content jxj-bank-content';
   content.innerHTML = '<div class="jxj-bank-panel"></div>';
   screen.appendChild(content);
   document.body.appendChild(screen);

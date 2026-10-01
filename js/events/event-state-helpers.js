@@ -17,9 +17,6 @@ if (typeof document !== 'undefined') {
   void import('../finance/bank-ui.js').catch((error) => {
     console.warn('[Bank] ui module unavailable', error);
   });
-  void import('../finance/bank-portrait-header-fix.js').catch((error) => {
-    console.warn('[Bank] portrait header fix unavailable', error);
-  });
 }
 
 let eventServices = {};

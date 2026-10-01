@@ -129,7 +129,7 @@ assert.equal(bankStepForHold(4000), 10_000_000);
   assert.equal(transaction.reason, 'closed');
 }
 
-// 銀行上部バーは御徒町の共通ヘッダー構造をそのまま使う。
+// 銀行上部バーは御徒町の共通構造を維持し、横画面では本文とメニューを重ねない。
 const bankUiSource = readFileSync(new URL('../js/finance/bank-ui.js', import.meta.url), 'utf8');
 assert.doesNotMatch(bankUiSource, /8:00〜(?:16|17):00/);
 assert.doesNotMatch(bankUiSource, /jxj-bank-hours/);
@@ -143,6 +143,9 @@ assert.match(bankUiSource, /content\.className = 'screen-content jxj-bank-conten
 assert.doesNotMatch(bankUiSource, /removeAttribute\('data-action'\)/, '共通ヘッダーの data-action を剥がさない');
 assert.match(bankUiSource, /header\.querySelector\('\.header-help-button'\)\?\.remove\(\)/, '銀行ではヘルプボタンだけを除外する');
 assert.doesNotMatch(bankUiSource, /#\$\{BANK_SCREEN_ID\}>\.game-header\s*\{/, '銀行専用のヘッダー位置上書きを持たない');
+assert.match(bankUiSource, /@media \(orientation:landscape\)\{[\s\S]*?\.jxj-bank-menu\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\);/, '横画面は3つの銀行メニューボタンを横並びにする');
+assert.match(bankUiSource, /\.jxj-bank-content\{[\s\S]{0,260}?padding-inline:clamp\(12px,2vw,24px\);/, '本文は共通ヘッダー余白を潰さず左右余白だけ設定する');
+assert.doesNotMatch(bankUiSource, /@media \(orientation:landscape\) and \(max-height:650px\)\{[\s\S]{0,260}?\.jxj-bank-content\{padding:10px 18px;\}/, '横画面で共通ヘッダー余白をpadding shorthandで上書きしない');
 
 assert.equal(
   existsSync(new URL('../js/finance/bank-portrait-header-fix.js', import.meta.url)),

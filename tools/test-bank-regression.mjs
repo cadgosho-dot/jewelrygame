@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import {
   BANK_BALANCE_LIMIT,
   BANK_TRANSACTION_STEP,
@@ -107,6 +109,15 @@ assert.equal(bankStepForHold(2500), 10_000_000);
   assert.equal(snapshot.interest.credited, 1_000);
   assert.equal(snapshot.bank.balance, 101_000);
   assert.equal(saveCount, 2);
+}
+
+for (const [name, relativePath] of [
+  ['landscape', '../assets/images/backgrounds/bank-okachimachi-landscape.webp'],
+  ['portrait', '../assets/images/backgrounds/bank-okachimachi-portrait.webp'],
+]) {
+  const file = readFileSync(new URL(relativePath, import.meta.url));
+  const sha256 = createHash('sha256').update(file).digest('hex');
+  console.log(`BANK ASSET ${name}: size=${file.length} sha256=${sha256}`);
 }
 
 console.log('BANK REGRESSION: PASS');

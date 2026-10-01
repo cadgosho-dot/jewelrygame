@@ -1,0 +1,69 @@
+name: Temporary bank coin SFX
+
+on:
+  push:
+    branches:
+      - fix/bank-coin-sfx-20261001
+    paths:
+      - .github/workflows/temp-bank-coin-sfx.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Add regression guard first
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/test-bank-regression.mjs')
+          text = p.read_text()
+          marker = "const bankUiSource = readFileSync(new URL('../js/finance/bank-ui.js', import.meta.url), 'utf8');\n"
+          addition = marker + "assert.match(bankUiSource, /import \\{ playSfx \\} from '\\.\\.\\/audio\\.js';/, '銀行UIは共通効果音のplaySfxを使う');\nconst performTransactionStart = bankUiSource.indexOf('function performTransaction() {');\nconst stopHoldStart = bankUiSource.indexOf('function stopHold() {');\nconst performTransactionSource = bankUiSource.slice(performTransactionStart, stopHoldStart);\nassert.match(performTransactionSource, /playSfx\\('coin'\\);/, '成功した預け入れ・引き出しでcoin効果音を鳴らす');\nassert.ok(performTransactionSource.indexOf(\"playSfx('coin');\") > performTransactionSource.indexOf(\"if (!result?.ok)\"), '失敗判定より後だけcoin効果音を鳴らす');\n"
+          assert marker in text
+          assert "playSfx('coin')" not in text
+          p.write_text(text.replace(marker, addition, 1))
+          PY
+
+      - name: Confirm regression test fails before implementation
+        run: |
+          if node tools/test-bank-regression.mjs; then
+            echo "Expected the new coin SFX regression guard to fail before implementation."
+            exit 1
+          fi
+          echo "RED confirmed"
+
+      - name: Implement shared coin SFX on successful transaction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('js/finance/bank-ui.js')
+          text = p.read_text()
+          import_marker = "} from './bank-engine.js';\n\nconst BANK_SCREEN_ID"
+          assert import_marker in text
+          text = text.replace(import_marker, "} from './bank-engine.js';\nimport { playSfx } from '../audio.js';\n\nconst BANK_SCREEN_ID", 1)
+          success_marker = "  if (!result?.ok) {\n    renderTransaction(transactionError(result?.reason), 'error');\n    return;\n  }\n  const delta = bankMode === 'deposit' ? -result.amount : result.amount;"
+          assert success_marker in text
+          text = text.replace(success_marker, "  if (!result?.ok) {\n    renderTransaction(transactionError(result?.reason), 'error');\n    return;\n  }\n  playSfx('coin');\n  const delta = bankMode === 'deposit' ? -result.amount : result.amount;", 1)
+          p.write_text(text)
+          PY
+
+      - name: Verify bank regression
+        run: node tools/test-bank-regression.mjs
+
+      - name: Commit implementation and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/finance/bank-ui.js tools/test-bank-regression.mjs
+          git rm .github/workflows/temp-bank-coin-sfx.yml
+          git commit -m "fix: play coin sound for bank transactions"
+          git push origin HEAD:${GITHUB_REF_NAME}

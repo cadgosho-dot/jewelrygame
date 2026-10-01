@@ -1,3 +1,5 @@
+import { japaneseHolidayName } from '../japan-holidays.js';
+
 export const BANK_OPEN_MINUTES = 8 * 60;
 export const BANK_CLOSE_MINUTES = 17 * 60;
 export const BANK_TRANSACTION_STEP = 10_000;
@@ -12,9 +14,34 @@ const safeInt = (value, fallback = 0) => {
 };
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-export function bankIsOpen(minutes) {
+function bankGameDate(context = {}) {
+  const startDate = String(context?.startDate || '').trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const date = Number(match[3]);
+  const day = Math.max(1, safeInt(context?.day, 1));
+  const result = new Date(year, month - 1, date, 12, 0, 0, 0);
+  if (Number.isNaN(result.getTime())) return null;
+  result.setDate(result.getDate() + day - 1);
+  return result;
+}
+
+export function bankClosureReason(minutes, context = {}) {
   const value = safeInt(minutes, -1);
-  return value >= BANK_OPEN_MINUTES && value < BANK_CLOSE_MINUTES;
+  if (value < BANK_OPEN_MINUTES || value >= BANK_CLOSE_MINUTES) return 'hours';
+
+  const date = bankGameDate(context);
+  if (!date) return '';
+  const dayOfWeek = date.getDay();
+  if (dayOfWeek === 0 || dayOfWeek === 6) return 'day-off';
+  if (japaneseHolidayName(date)) return 'day-off';
+  return '';
+}
+
+export function bankIsOpen(minutes, context = {}) {
+  return bankClosureReason(minutes, context) === '';
 }
 
 export function normalizeBankState(state, currentDay = state?.game?.day) {
@@ -59,9 +86,9 @@ export function normalizeBankAmount(amount) {
 
 export function bankStepForHold(elapsedMs) {
   const ms = Math.max(0, Number(elapsedMs) || 0);
-  if (ms >= 2200) return 10_000_000;
-  if (ms >= 1200) return 1_000_000;
-  if (ms >= 320) return 100_000;
+  if (ms >= 4000) return 10_000_000;
+  if (ms >= 2000) return 1_000_000;
+  if (ms >= 800) return 100_000;
   return BANK_TRANSACTION_STEP;
 }
 

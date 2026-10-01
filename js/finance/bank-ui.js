@@ -47,7 +47,7 @@ function installStyle() {
     }
     #${BANK_SCREEN_ID}::before{
       content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
-      background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.02) 45%,rgba(0,0,0,.24));
+      background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.06) 45%,rgba(0,0,0,.28));
     }
 .jxj-bank-content{
       position:relative; z-index:2; flex:1; min-height:0; overflow:auto;

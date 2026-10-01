@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   BANK_BALANCE_LIMIT,
   BANK_TRANSACTION_STEP,
@@ -132,21 +132,25 @@ assert.equal(bankStepForHold(4000), 10_000_000);
 const bankUiSource = readFileSync(new URL('../js/finance/bank-ui.js', import.meta.url), 'utf8');
 assert.doesNotMatch(bankUiSource, /8:00〜(?:16|17):00/);
 assert.doesNotMatch(bankUiSource, /jxj-bank-hours/);
-assert.match(bankUiSource, /\.game-header/);
 assert.match(bankUiSource, /cloneNode\(true\)/);
 assert.match(bankUiSource, /data-bank-main/);
 assert.match(bankUiSource, /facility-closed/);
 assert.match(bankUiSource, /休業日/);
 assert.match(bankUiSource, /const HOLD_REPEAT_MS = 160;/);
+assert.match(bankUiSource, /screen\.classList\.add\('screen-shell'\)/, '銀行画面も他店舗と同じ screen-shell 構造を使う');
+assert.match(bankUiSource, /content\.className = 'screen-content jxj-bank-content'/, '銀行本文も共通 screen-content を使う');
+assert.doesNotMatch(bankUiSource, /removeAttribute\('data-action'\)/, '共通ヘッダーの data-action を剥がさない');
+assert.match(bankUiSource, /header\.querySelector\('\.header-help-button'\)\?\.remove\(\)/, '銀行ではヘルプボタンだけを除外する');
+assert.doesNotMatch(bankUiSource, /#\$\{BANK_SCREEN_ID\}>\.game-header\s*\{/, '銀行専用のヘッダー位置上書きを持たない');
 
-const portraitFixSource = readFileSync(new URL('../js/finance/bank-portrait-header-fix.js', import.meta.url), 'utf8');
-assert.match(portraitFixSource, /#jxj-bank-screen > \.game-header\.jxj-bank-header \.header-center > \[data-bank-close\]/);
-assert.match(portraitFixSource, /grid-template-areas: "status money" "center center"/);
-assert.match(portraitFixSource, /\.header-help-button/);
-assert.match(portraitFixSource, /display: none !important/);
+assert.equal(
+  existsSync(new URL('../js/finance/bank-portrait-header-fix.js', import.meta.url)),
+  false,
+  '銀行専用の縦画面ヘッダー補正ファイルを残さない',
+);
 
 const eventHelperSource = readFileSync(new URL('../js/events/event-state-helpers.js', import.meta.url), 'utf8');
-assert.match(eventHelperSource, /bank-portrait-header-fix\.js/);
+assert.doesNotMatch(eventHelperSource, /bank-portrait-header-fix\.js/, '銀行専用ヘッダー補正を読み込まない');
 assert.match(eventHelperSource, /startDate/);
 assert.match(eventHelperSource, /bankIsOpen\(state\.game\.minutes, \{ startDate:state\.game\.startDate, day \}\)/);
 

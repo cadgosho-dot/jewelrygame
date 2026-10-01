@@ -92,6 +92,9 @@ function installStyle() {
     .jxj-bank-menu-balance{margin-bottom:16px;}
     .jxj-bank-menu-balance small{font-size:clamp(16px,2.8vw,20px);}
     .jxj-bank-menu-balance strong{font-size:clamp(34px,7vw,54px);}
+    .jxj-bank-menu-balance .jxj-bank-interest-rate{
+      margin:6px 0 0; font-size:12px; line-height:1.3; opacity:.82;
+    }
     .jxj-bank-balance-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;}
     .jxj-bank-transaction-title{
       text-align:center; font-size:clamp(22px,5vw,30px); font-weight:700;
@@ -270,6 +273,7 @@ function renderMenu() {
     <div class="jxj-bank-balance-card jxj-bank-menu-balance">
       <small>銀行残高</small>
       <strong>${yen(lastSnapshot?.bank?.balance)}</strong>
+      <small class="jxj-bank-interest-rate">利息：30日ごとに1％</small>
     </div>
     <div class="jxj-bank-menu">
       <button type="button" class="jxj-bank-menu-button" data-bank-mode="deposit">預ける</button>
@@ -499,3 +503,4 @@ const start = () => {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
 else start();
 }
+

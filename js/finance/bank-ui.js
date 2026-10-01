@@ -51,7 +51,7 @@ function installStyle() {
 .jxj-bank-content{
       position:relative; z-index:2; flex:1; min-height:0; overflow:auto;
       display:grid; align-items:center;
-      padding:clamp(12px,2vw,24px);
+      padding-inline:clamp(12px,2vw,24px);
       padding-bottom:max(18px,var(--safe-bottom,8px));
     }
     .jxj-bank-panel{
@@ -143,8 +143,11 @@ function installStyle() {
       .jxj-bank-amount-box{grid-template-columns:66px minmax(0,1fr) 66px;}
       .jxj-bank-step{min-height:78px;}
     }
+    @media (orientation:landscape){
+      .jxj-bank-menu{grid-template-columns:repeat(3,minmax(0,1fr));}
+    }
     @media (orientation:landscape) and (max-height:650px){
-      .jxj-bank-content{padding:10px 18px;}
+      .jxj-bank-content{padding-inline:18px; padding-bottom:10px;}
       .jxj-bank-panel{width:min(62vw,680px); padding:14px 20px;}
       .jxj-bank-menu{gap:12px;}
       .jxj-bank-menu-button{min-height:62px; font-size:22px;}

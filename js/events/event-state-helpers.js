@@ -1,6 +1,22 @@
 import './oyatsu-character-position-lock.js';
-import '../finance/bank-ui.js';
-import { accrueBankInterest, bankIsOpen, performBankTransaction } from '../finance/bank-engine.js';
+
+let bankEngine = null;
+try {
+  bankEngine = await import('../finance/bank-engine.js');
+} catch (error) {
+  console.warn('[Bank] engine module unavailable', error);
+}
+const accrueBankInterest = (...args) => bankEngine?.accrueBankInterest?.(...args)
+  ?? { credited:0, periods:0, balance:0, changed:false };
+const bankIsOpen = (...args) => bankEngine?.bankIsOpen?.(...args) ?? false;
+const performBankTransaction = (...args) => bankEngine?.performBankTransaction?.(...args)
+  ?? { ok:false, reason:'bank-module-unavailable' };
+
+if (typeof document !== 'undefined') {
+  void import('../finance/bank-ui.js').catch((error) => {
+    console.warn('[Bank] ui module unavailable', error);
+  });
+}
 
 let eventServices = {};
 export function setServices(canSpendMealTime, spendMealTime, addFinance, addNotification, setMealFeedback, render) {
@@ -75,6 +91,7 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
       try {
         const state = readState();
         if (!state) return { ok:false, reason:'state-unavailable' };
+        if (!bankEngine) return { ok:false, reason:'bank-module-unavailable' };
         state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
         const day = Math.max(1, Math.floor(Number(state.game.day) || 1));
         const interest = accrueBankInterest(state, day);
@@ -102,6 +119,7 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
       try {
         const state = readState();
         if (!state) return { ok:false, reason:'state-unavailable' };
+        if (!bankEngine) return { ok:false, reason:'bank-module-unavailable' };
         state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
         if (!bankIsOpen(state.game.minutes)) return { ok:false, reason:'closed' };
         const result = performBankTransaction(state, String(kind || ''), amount, state.game.day);
@@ -194,7 +212,7 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         if (!metals?.[key] || !Number.isFinite(quantity) || quantity <= 0) return { ok:false, reason:'invalid-arguments' };
         // Optional event receipt: inventory and its guard share the same save snapshot.
         const rewardEvent = options.eventKey ? state.events?.[options.eventKey] : null;
-        if (options.eventKey && (!rewardEvent || typeof rewardEvent !== 'object' || Array.isArray(rewardEvent) || !options.rewardFlag)) return { ok:false, reason:'event-state-unavailable' };
+        if (options.eventKey && (!rewardEvent || typeof rewardEvent !== 'object' || Array.isArray(rewardEvent)) || !options.rewardFlag) return { ok:false, reason:'event-state-unavailable' };
         if (rewardEvent?.[options.rewardFlag] === true) return { ok:true, alreadyGranted:true };
         state.inventory = state.inventory && typeof state.inventory === 'object' && !Array.isArray(state.inventory) ? state.inventory : {};
         state.inventory.metals = state.inventory.metals && typeof state.inventory.metals === 'object' && !Array.isArray(state.inventory.metals) ? state.inventory.metals : {};

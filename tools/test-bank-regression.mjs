@@ -118,6 +118,15 @@ assert.match(bankUiSource, /\.game-header/);
 assert.match(bankUiSource, /cloneNode\(true\)/);
 assert.match(bankUiSource, /data-bank-main/);
 
+const portraitFixSource = readFileSync(new URL('../js/finance/bank-portrait-header-fix.js', import.meta.url), 'utf8');
+assert.match(portraitFixSource, /#jxj-bank-screen > \.game-header\.jxj-bank-header \.header-center > \[data-bank-close\]/);
+assert.match(portraitFixSource, /grid-template-areas: "status money" "center center"/);
+assert.match(portraitFixSource, /\.header-help-button/);
+assert.match(portraitFixSource, /display: none !important/);
+
+const eventHelperSource = readFileSync(new URL('../js/events/event-state-helpers.js', import.meta.url), 'utf8');
+assert.match(eventHelperSource, /bank-portrait-header-fix\.js/);
+
 for (const [name, relativePath] of [
   ['landscape', '../assets/images/backgrounds/bank-okachimachi-landscape.webp'],
   ['portrait', '../assets/images/backgrounds/bank-okachimachi-portrait.webp'],

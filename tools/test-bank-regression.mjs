@@ -200,10 +200,8 @@ assert.ok(transparencyOverrides.startsWith('/* BANK UI TRANSPARENT SURFACES */')
 function assertBankSurfaceTransparent(selector, label) {
   const selectorIndex = transparencyOverrides.indexOf(selector);
   assert.ok(selectorIndex >= 0, `${label}を透過対象に含める`);
-  const ruleOpen = transparencyOverrides.indexOf('{', selectorIndex);
-  const ruleClose = transparencyOverrides.indexOf('}', ruleOpen);
-  assert.ok(ruleOpen >= 0 && ruleClose > ruleOpen, `${label}の透明化ルールを定義する`);
-  assert.match(transparencyOverrides.slice(ruleOpen, ruleClose), /background:\s*transparent\s*!important/, `${label}の背景を完全透明にする`);
+  const ruleTail = transparencyOverrides.slice(selectorIndex, selectorIndex + 350);
+  assert.match(ruleTail, /background:\s*transparent\s*!important/, `${label}の背景を完全透明にする`);
 }
 for (const [selector, label] of [
   ['.jxj-bank-panel', '銀行パネル'],

@@ -127,13 +127,26 @@ assert.match(portraitFixSource, /display: none !important/);
 const eventHelperSource = readFileSync(new URL('../js/events/event-state-helpers.js', import.meta.url), 'utf8');
 assert.match(eventHelperSource, /bank-portrait-header-fix\.js/);
 
-for (const [name, relativePath] of [
-  ['landscape', '../assets/images/backgrounds/bank-okachimachi-landscape.jpg'],
-  ['portrait', '../assets/images/backgrounds/bank-okachimachi-portrait.jpg'],
-]) {
-  const file = readFileSync(new URL(relativePath, import.meta.url));
+const expectedBankAssets = [
+  {
+    name:'landscape',
+    relativePath:'../assets/images/backgrounds/bank-okachimachi-landscape.jpg',
+    size:397148,
+    sha256:'b3d305d85a5b8c80869cf15059527af805eba09ee571bba1b7496e8c1cf59a2b',
+  },
+  {
+    name:'portrait',
+    relativePath:'../assets/images/backgrounds/bank-okachimachi-portrait.jpg',
+    size:476320,
+    sha256:'8d4ef397962eba026238d7f3d8c7083fea93ffb052b3dc0d16d320e1cf91a6d3',
+  },
+];
+for (const expected of expectedBankAssets) {
+  const file = readFileSync(new URL(expected.relativePath, import.meta.url));
   const sha256 = createHash('sha256').update(file).digest('hex');
-  console.log(`BANK ASSET ${name}: size=${file.length} sha256=${sha256}`);
+  assert.equal(file.length, expected.size, `${expected.name} bank background size changed`);
+  assert.equal(sha256, expected.sha256, `${expected.name} bank background bytes changed`);
+  console.log(`BANK ASSET ${expected.name}: size=${file.length} sha256=${sha256}`);
 }
 
 console.log('BANK REGRESSION: PASS');

@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 
-const source = await readFile(new URL('../js/events/retro-battle-frame-loader.js', import.meta.url), 'utf8');
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
 const {
   bindRetroBattleFrameLoader,
   RETRO_BATTLE_API_READY_TIMEOUT_MS,
   RETRO_BATTLE_API_READY_POLL_MS,
-} = await import(moduleUrl);
+} = await import('../js/events/retro-battle-frame-loader.js');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -45,6 +42,27 @@ assert.equal(RETRO_BATTLE_API_READY_TIMEOUT_MS, 10000);
 assert.equal(RETRO_BATTLE_API_READY_POLL_MS, 100);
 
 {
+  const originalRandom = Math.random;
+  Math.random = () => 0;
+  try {
+    const frame = new FakeFrame();
+    let payload = null;
+    frame.contentWindow.RetroBattle = { start(options) { payload = options; } };
+    const cleanup = bindRetroBattleFrameLoader({
+      frame,
+      startOptions: () => ({ playerName: '川原', inventory: { pazupan: 1 } }),
+    });
+    await sleep(10);
+    assert.equal(payload.enemyName, '明朝体');
+    assert.ok(payload.enemyImage.endsWith('/assets/minigames/retro-battle/enemy-mincho.png'));
+    assert.equal(payload.playerName, '川原');
+    cleanup();
+  } finally {
+    Math.random = originalRandom;
+  }
+}
+
+{
   const frame = new FakeFrame('/initial-document');
   let startCount = 0;
   let startPayload = null;
@@ -55,7 +73,7 @@ assert.equal(RETRO_BATTLE_API_READY_POLL_MS, 100);
   const cleanup = bindRetroBattleFrameLoader({
     frame,
     isActive: () => true,
-    startOptions: () => ({ playerName: 'テスト', inventory: { pazupan: 1 } }),
+    startOptions: () => ({ playerName: 'テスト', inventory: { pazupan: 1 }, enemyName: '既存指定', enemyImage: 'existing.png' }),
     onInventoryChange: (detail) => { inventoryDetail = detail; },
     onEnd: (detail) => { endDetail = detail; },
     onError: () => { errorCount += 1; },
@@ -78,7 +96,7 @@ assert.equal(RETRO_BATTLE_API_READY_POLL_MS, 100);
 
   await sleep(80);
   assert.equal(startCount, 1, 'API準備後に一度だけ開始する');
-  assert.deepEqual(startPayload, { playerName: 'テスト', inventory: { pazupan: 1 } });
+  assert.deepEqual(startPayload, { playerName: 'テスト', inventory: { pazupan: 1 }, enemyName: '既存指定', enemyImage: 'existing.png' });
   assert.equal(frame.style.visibility, 'visible');
   frame.dispatch('load');
   await sleep(15);

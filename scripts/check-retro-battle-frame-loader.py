@@ -5,6 +5,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 app = (ROOT / 'js/app.js').read_text(encoding='utf-8')
 module = (ROOT / 'js/events/retro-battle-frame-loader.js').read_text(encoding='utf-8')
+enemy = (ROOT / 'js/events/okachimachi-battle-enemy.js').read_text(encoding='utf-8')
 sw = (ROOT / 'sw.js').read_text(encoding='utf-8')
 version_sync = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
 
@@ -22,6 +23,12 @@ checks = {
     'SW precache': './js/events/retro-battle-frame-loader.js?v=' in sw,
     'version-sync SW登録': 'retro-battle-frame-loader.js precache key' in version_sync,
     'version-sync app登録': 'retro-battle-frame-loader.js import key' in version_sync,
+    'loader helper import': "from './okachimachi-battle-enemy.js?v=0.10.965'" in module,
+    'enemy name': "OKACHIMACHI_BATTLE_ENEMY_NAME = '明朝体'" in enemy,
+    'enemy image path': "assets/minigames/retro-battle/enemy-mincho.png" in enemy,
+    'enemy helper SW precache': './js/events/okachimachi-battle-enemy.js?v=0.10.965' in sw,
+    'enemy image SW precache': './assets/minigames/retro-battle/enemy-mincho.png' in sw,
+    'version-sync helper import登録': 'Okachimachi battle enemy helper import key' in version_sync,
 }
 
 start = app.index('function bindRetroBattleFrame()')
@@ -37,4 +44,5 @@ if failed:
     raise SystemExit('RETRO BATTLE FRAME LOADER CHECK: FAIL — ' + ', '.join(failed))
 
 subprocess.run(['node', str(ROOT / 'tools/test-retro-battle-frame-loader.mjs')], check=True)
+subprocess.run(['node', str(ROOT / 'tools/test-okachimachi-battle-enemy.mjs')], check=True)
 print('RETRO BATTLE FRAME LOADER CHECK: PASS')

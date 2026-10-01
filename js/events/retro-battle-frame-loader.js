@@ -1,4 +1,13 @@
+import {
+  buildOkachimachiBattleStartOptions,
+  OKACHIMACHI_BATTLE_ENEMY_IMAGE_PATH,
+} from './okachimachi-battle-enemy.js?v=0.10.965';
+
 // iframe初期表示のabout:blankを戦闘画面の準備完了と誤判定しないための専用ローダー。
+const OKACHIMACHI_BATTLE_ENEMY_IMAGE_URL = new URL(
+  `../../${OKACHIMACHI_BATTLE_ENEMY_IMAGE_PATH}`,
+  import.meta.url,
+).href;
 export const RETRO_BATTLE_API_READY_TIMEOUT_MS = 10000;
 export const RETRO_BATTLE_API_READY_POLL_MS = 100;
 const RETRO_BATTLE_PATH = '/assets/minigames/retro-battle/index.html';
@@ -79,7 +88,10 @@ export function bindRetroBattleFrameLoader({
       };
       battleWindow.addEventListener('retroBattleInventoryChange', inventoryHandler);
       battleWindow.addEventListener('retroBattleEnd', endHandler);
-      battleApi.start(typeof startOptions === 'function' ? startOptions() : {});
+      const options = typeof startOptions === 'function' ? startOptions() : {};
+      battleApi.start(buildOkachimachiBattleStartOptions(options, {
+        imageUrl: OKACHIMACHI_BATTLE_ENEMY_IMAGE_URL,
+      }));
       frame.style.visibility = 'visible';
       return true;
     } catch (error) {

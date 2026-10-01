@@ -198,7 +198,7 @@ const transparencyOverrides = bankUiSource.slice(
 );
 assert.ok(transparencyOverrides.startsWith('/* BANK UI TRANSPARENT SURFACES */'), '銀行画面の透明化上書きを定義する');
 function assertBankSurfaceTransparent(selector, label) {
-  const lines = transparencyOverrides.split('\\n');
+  const lines = transparencyOverrides.split('\n');
   const selectorLine = lines.findIndex((line) => line.includes(selector));
   assert.ok(selectorLine >= 0, `${label}を透過対象に含める`);
   let openLine = selectorLine;
@@ -207,8 +207,8 @@ function assertBankSurfaceTransparent(selector, label) {
   let closeLine = openLine + 1;
   while (closeLine < lines.length && lines[closeLine].trim() !== '}') closeLine += 1;
   assert.ok(closeLine < lines.length, `${label}のCSS宣言を閉じる`);
-  const declarations = lines.slice(openLine + 1, closeLine).join('\\n');
-  assert.match(declarations, /background:\\s*transparent\\s*!important/, `${label}の背景を完全透明にする`);
+  const declarations = lines.slice(openLine + 1, closeLine).join('\n');
+  assert.match(declarations, /background:\s*transparent\s*!important/, `${label}の背景を完全透明にする`);
 }
 for (const [selector, label] of [
   ['.jxj-bank-panel', '銀行パネル'],

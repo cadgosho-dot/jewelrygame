@@ -5,6 +5,7 @@ import {
   bankStepForHold,
   normalizeBankAmount,
 } from './bank-engine.js';
+import { playSfx } from '../audio.js';
 
 const BANK_SCREEN_ID = 'jxj-bank-screen';
 const BANK_STYLE_ID = 'jxj-bank-ui-v2';
@@ -392,6 +393,7 @@ function performTransaction() {
     renderTransaction(transactionError(result?.reason), 'error');
     return;
   }
+  playSfx('coin');
   const delta = bankMode === 'deposit' ? -result.amount : result.amount;
   lastSnapshot = helper.bankRuntimeSnapshot?.() || {
     ok:true,

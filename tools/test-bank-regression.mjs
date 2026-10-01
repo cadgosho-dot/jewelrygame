@@ -131,6 +131,12 @@ assert.equal(bankStepForHold(4000), 10_000_000);
 
 // 銀行上部バーは御徒町の共通構造を維持し、横画面では本文とメニューを重ねない。
 const bankUiSource = readFileSync(new URL('../js/finance/bank-ui.js', import.meta.url), 'utf8');
+assert.match(bankUiSource, /import \{ playSfx \} from '\.\.\/audio\.js';/, '銀行UIは共通効果音のplaySfxを使う');
+const performTransactionStart = bankUiSource.indexOf('function performTransaction() {');
+const stopHoldStart = bankUiSource.indexOf('function stopHold() {');
+const performTransactionSource = bankUiSource.slice(performTransactionStart, stopHoldStart);
+assert.match(performTransactionSource, /playSfx\('coin'\);/, '成功した預け入れ・引き出しでcoin効果音を鳴らす');
+assert.ok(performTransactionSource.indexOf("playSfx('coin');") > performTransactionSource.indexOf("if (!result?.ok)"), '失敗判定より後だけcoin効果音を鳴らす');
 assert.doesNotMatch(bankUiSource, /8:00〜(?:16|17):00/);
 assert.doesNotMatch(bankUiSource, /jxj-bank-hours/);
 assert.match(bankUiSource, /cloneNode\(true\)/);

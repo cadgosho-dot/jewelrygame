@@ -8,8 +8,8 @@ import {
 
 const BANK_SCREEN_ID = 'jxj-bank-screen';
 const BANK_STYLE_ID = 'jxj-bank-ui-v2';
-const LANDSCAPE_BG = './assets/images/backgrounds/bank-okachimachi-landscape.webp';
-const PORTRAIT_BG = './assets/images/backgrounds/bank-okachimachi-portrait.webp';
+const LANDSCAPE_BG = './assets/images/backgrounds/bank-okachimachi-landscape.jpg';
+const PORTRAIT_BG = './assets/images/backgrounds/bank-okachimachi-portrait.jpg';
 const HOLD_START_MS = 320;
 const HOLD_REPEAT_MS = 95;
 

@@ -6,6 +6,7 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 BOOT = (ROOT / 'js/event-bootstrap.js').read_text(encoding='utf-8')
+VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 EVENT = (ROOT / 'js/events/robot-store-assessment-event.js').read_text(encoding='utf-8')
 RULES = (ROOT / 'js/events/robot-store-assessment-rules.js').read_text(encoding='utf-8')
 ASSET = ROOT / 'assets/images/events/store-assessment-robot.png'
@@ -67,7 +68,7 @@ registered_lines = [
 ]
 
 checks = [
-    ('event bootstrap import registered', "import './events/robot-store-assessment-event.js?v=0.10.964';" in BOOT),
+    ('event bootstrap import registered', f"import './events/robot-store-assessment-event.js?v={VERSION}';" in BOOT),
     ('store branch tap is the only trigger action', "action !== 'open-store-branch'" in EVENT and "triggerAction:'open-store-branch'" in EVENT),
     ('selected branch id is used', 'buildRobotStoreAssessmentDialogue(stateSnapshot, branchId)' in EVENT),
     ('about once per thirty in-game days', 'ROBOT_STORE_ASSESSMENT_TRIGGER_CHANCE = 1 / 30' in RULES),

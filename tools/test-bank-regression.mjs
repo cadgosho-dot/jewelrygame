@@ -23,8 +23,8 @@ function makeState({ day = 1, minutes = 9 * 60, money = 1_000_000, balance = 0, 
 }
 
 assert.equal(bankIsOpen(8 * 60), true);
-assert.equal(bankIsOpen(15 * 60 + 59), true);
-assert.equal(bankIsOpen(16 * 60), false);
+assert.equal(bankIsOpen(16 * 60 + 59), true);
+assert.equal(bankIsOpen(17 * 60), false);
 assert.equal(bankIsOpen(7 * 60 + 59), false);
 assert.equal(normalizeBankAmount(19_999), BANK_TRANSACTION_STEP);
 assert.equal(normalizeBankAmount(9_999), 0);
@@ -110,6 +110,13 @@ assert.equal(bankStepForHold(2500), 10_000_000);
   assert.equal(snapshot.bank.balance, 101_000);
   assert.equal(saveCount, 2);
 }
+
+const bankUiSource = readFileSync(new URL('../js/finance/bank-ui.js', import.meta.url), 'utf8');
+assert.doesNotMatch(bankUiSource, /8:00〜(?:16|17):00/);
+assert.doesNotMatch(bankUiSource, /jxj-bank-hours/);
+assert.match(bankUiSource, /\.game-header/);
+assert.match(bankUiSource, /cloneNode\(true\)/);
+assert.match(bankUiSource, /data-bank-main/);
 
 for (const [name, relativePath] of [
   ['landscape', '../assets/images/backgrounds/bank-okachimachi-landscape.webp'],

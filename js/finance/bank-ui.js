@@ -1,7 +1,5 @@
 import {
   BANK_BALANCE_LIMIT,
-  BANK_CLOSE_MINUTES,
-  BANK_OPEN_MINUTES,
   BANK_TRANSACTION_STEP,
   bankIsOpen,
   bankStepForHold,
@@ -9,7 +7,7 @@ import {
 } from './bank-engine.js';
 
 const BANK_SCREEN_ID = 'jxj-bank-screen';
-const BANK_STYLE_ID = 'jxj-bank-ui-v1';
+const BANK_STYLE_ID = 'jxj-bank-ui-v2';
 const LANDSCAPE_BG = './assets/images/backgrounds/bank-okachimachi-landscape.webp';
 const PORTRAIT_BG = './assets/images/backgrounds/bank-okachimachi-portrait.webp';
 const HOLD_START_MS = 320;
@@ -40,80 +38,91 @@ function installStyle() {
   style.textContent = `
     #${BANK_SCREEN_ID}{
       position:fixed; inset:0; z-index:2200; overflow:hidden;
-      color:#fff; font-family:inherit; background:#171410 center/cover no-repeat;
-      background-image:linear-gradient(rgba(0,0,0,.13),rgba(0,0,0,.22)),url("${LANDSCAPE_BG}");
+      display:flex; flex-direction:column; min-height:0;
+      color:var(--text,#f7ead4); font-family:var(--ui-font,inherit);
+      background:#171410 center/cover no-repeat;
+      background-image:linear-gradient(rgba(0,0,0,.10),rgba(0,0,0,.20)),url("${LANDSCAPE_BG}");
       touch-action:manipulation;
     }
     #${BANK_SCREEN_ID}::before{
-      content:""; position:absolute; inset:0; pointer-events:none;
-      background:linear-gradient(180deg,rgba(0,0,0,.14),rgba(0,0,0,.05) 35%,rgba(0,0,0,.18));
+      content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+      background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.02) 45%,rgba(0,0,0,.24));
     }
-    .jxj-bank-topbar{
-      position:absolute; z-index:3; top:max(12px,env(safe-area-inset-top)); left:12px; right:12px;
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      pointer-events:none;
+    #${BANK_SCREEN_ID}>.game-header{
+      position:relative; z-index:4; flex:0 0 auto;
     }
-    .jxj-bank-back{
-      pointer-events:auto; width:46px; height:46px; border:1px solid rgba(255,255,255,.54);
-      border-radius:12px; background:rgba(8,8,8,.58); color:#fff; font-size:26px; line-height:1;
-      box-shadow:0 2px 8px rgba(0,0,0,.16); -webkit-tap-highlight-color:transparent;
-    }
-    .jxj-bank-hours{
-      padding:8px 12px; border-radius:12px; background:rgba(6,6,6,.56);
-      border:1px solid rgba(255,255,255,.34); font-size:13px; letter-spacing:.04em;
-      box-shadow:0 2px 8px rgba(0,0,0,.14);
+    .jxj-bank-content{
+      position:relative; z-index:2; flex:1; min-height:0; overflow:auto;
+      display:grid; align-items:center;
+      padding:clamp(12px,2vw,24px);
+      padding-bottom:max(18px,var(--safe-bottom,8px));
     }
     .jxj-bank-panel{
-      position:absolute; z-index:2; left:50%; top:52%; transform:translate(-50%,-50%);
-      width:min(88vw,560px); min-height:min(64vh,540px);
+      width:min(620px,100%); margin:auto; box-sizing:border-box;
       display:flex; flex-direction:column; justify-content:center; align-items:stretch;
-      box-sizing:border-box; padding:24px clamp(18px,4vw,34px);
-      border:1px solid rgba(255,255,255,.35); border-radius:22px;
-      background:rgba(7,7,7,.70);
-      box-shadow:0 5px 18px rgba(0,0,0,.17);
-      backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+      padding:clamp(16px,3vw,24px);
+      border:2.25px solid var(--line,rgba(232,191,104,.45)); border-radius:18px;
+      background:rgba(8,6,4,.26);
+      box-shadow:0 8px 28px rgba(0,0,0,.15);
     }
-    .jxj-bank-menu{display:grid; gap:18px; width:100%;}
+    .jxj-bank-menu{display:grid; gap:16px; width:100%;}
+    .jxj-bank-menu-button,
+    .jxj-bank-confirm,
+    .jxj-bank-secondary,
+    .jxj-bank-step{
+      border:2.25px solid var(--line,rgba(232,191,104,.45));
+      color:var(--text,#f7ead4); background:rgba(8,6,4,.38);
+      box-shadow:none; -webkit-tap-highlight-color:transparent;
+      text-shadow:0 2px 6px rgba(0,0,0,.82);
+    }
     .jxj-bank-menu-button,
     .jxj-bank-confirm,
     .jxj-bank-secondary{
-      width:100%; min-height:82px; border:1px solid rgba(255,255,255,.42); border-radius:17px;
-      color:#fff; background:rgba(18,18,18,.68); font:700 clamp(21px,4vw,30px)/1.15 inherit;
-      letter-spacing:.04em; box-shadow:0 3px 10px rgba(0,0,0,.14); -webkit-tap-highlight-color:transparent;
+      width:100%; min-height:76px; border-radius:12px;
+      font:700 clamp(20px,4vw,28px)/1.15 inherit; letter-spacing:.02em;
     }
-    .jxj-bank-menu-button:active,.jxj-bank-confirm:active,.jxj-bank-secondary:active{transform:translateY(1px);}
+    .jxj-bank-menu-button:active,.jxj-bank-confirm:active,.jxj-bank-secondary:active,.jxj-bank-step:active{
+      transform:translateY(1px); background:rgba(42,31,21,.50);
+    }
     .jxj-bank-balance-card{
-      width:100%; box-sizing:border-box; padding:18px 16px; border-radius:16px;
-      border:1px solid rgba(255,255,255,.30); background:rgba(0,0,0,.50);
-      box-shadow:0 2px 8px rgba(0,0,0,.11); text-align:center;
+      width:100%; box-sizing:border-box; padding:18px 16px; border-radius:12px;
+      border:2.25px solid var(--line,rgba(232,191,104,.45)); background:rgba(8,6,4,.34);
+      box-shadow:none; text-align:center;
     }
-    .jxj-bank-balance-card small{display:block; opacity:.80; font-size:14px; margin-bottom:5px;}
-    .jxj-bank-balance-card strong{display:block; font-size:clamp(24px,6vw,38px); line-height:1.15;}
+    .jxj-bank-balance-card small{display:block; opacity:.88; font-size:14px; margin-bottom:5px;}
+    .jxj-bank-balance-card strong{display:block; font-size:clamp(24px,6vw,36px); line-height:1.15;}
     .jxj-bank-balance-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;}
-    .jxj-bank-transaction-title{text-align:center; font-size:clamp(22px,5vw,30px); font-weight:700; margin:0 0 16px;}
+    .jxj-bank-transaction-title{
+      text-align:center; font-size:clamp(22px,5vw,30px); font-weight:700;
+      margin:0 0 16px; text-shadow:0 2px 6px rgba(0,0,0,.82);
+    }
     .jxj-bank-amount-box{
       display:grid; grid-template-columns:72px minmax(0,1fr) 72px; align-items:stretch; gap:10px;
       margin:2px 0 18px;
     }
     .jxj-bank-step{
-      min-height:78px; border:1px solid rgba(255,255,255,.40); border-radius:15px;
-      color:#fff; background:rgba(16,16,16,.69); font:800 30px/1 inherit;
-      box-shadow:0 2px 7px rgba(0,0,0,.12); touch-action:none; -webkit-tap-highlight-color:transparent;
+      min-height:76px; border-radius:12px; font:800 30px/1 inherit;
+      touch-action:none;
     }
     .jxj-bank-amount{
       min-width:0; display:flex; align-items:center; justify-content:center; text-align:center;
-      border-radius:15px; border:1px solid rgba(255,255,255,.31); background:rgba(0,0,0,.54);
-      font-size:clamp(22px,5vw,34px); font-weight:800; letter-spacing:.01em;
+      border-radius:12px; border:2.25px solid var(--line,rgba(232,191,104,.45));
+      background:rgba(8,6,4,.34); font-size:clamp(22px,5vw,32px); font-weight:800;
+      letter-spacing:.01em; text-shadow:0 2px 6px rgba(0,0,0,.82);
     }
     .jxj-bank-actions{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-    .jxj-bank-confirm,.jxj-bank-secondary{min-height:70px; font-size:clamp(18px,3.5vw,24px);}
-    .jxj-bank-secondary{background:rgba(20,20,20,.58); font-weight:600;}
-    .jxj-bank-note{text-align:center; min-height:1.5em; margin:14px 0 0; font-size:14px; opacity:.90;}
+    .jxj-bank-confirm,.jxj-bank-secondary{min-height:66px; font-size:clamp(18px,3.5vw,23px);}
+    .jxj-bank-secondary{font-weight:600;}
+    .jxj-bank-note{
+      text-align:center; min-height:1.5em; margin:14px 0 0; font-size:14px; opacity:.94;
+      text-shadow:0 2px 6px rgba(0,0,0,.82);
+    }
     .jxj-bank-note.is-error{color:#ffd1d1;}
     .jxj-bank-note.is-success{color:#dcffdf;}
     .jxj-bank-interest{
       margin:0 0 15px; padding:9px 12px; border-radius:12px; text-align:center;
-      border:1px solid rgba(255,232,157,.42); background:rgba(36,28,5,.55); color:#fff0b8; font-weight:700;
+      border:2.25px solid rgba(255,232,157,.42); background:rgba(36,28,5,.32);
+      color:#fff0b8; font-weight:700; text-shadow:0 2px 6px rgba(0,0,0,.82);
     }
     .jxj-bank-money-change{
       display:inline-block; margin-left:8px; font-weight:800; animation:jxjBankMoneyPop 1.05s ease both;
@@ -127,26 +136,25 @@ function installStyle() {
     }
     @media (orientation:portrait){
       #${BANK_SCREEN_ID}{
-        background-image:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.22)),url("${PORTRAIT_BG}");
+        background-image:linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.20)),url("${PORTRAIT_BG}");
       }
-      .jxj-bank-panel{
-        top:53%; width:min(91vw,560px); min-height:min(59vh,610px);
-        padding:26px 20px;
-      }
-      .jxj-bank-menu{gap:20px;}
-      .jxj-bank-menu-button{min-height:96px; font-size:clamp(25px,7vw,34px);}
+      .jxj-bank-content{padding:12px;}
+      .jxj-bank-panel{width:min(94vw,620px); padding:18px;}
+      .jxj-bank-menu{gap:16px;}
+      .jxj-bank-menu-button{min-height:86px; font-size:clamp(24px,7vw,32px);}
       .jxj-bank-balance-grid{grid-template-columns:1fr; gap:10px;}
-      .jxj-bank-amount-box{grid-template-columns:68px minmax(0,1fr) 68px;}
-      .jxj-bank-step{min-height:84px;}
+      .jxj-bank-amount-box{grid-template-columns:66px minmax(0,1fr) 66px;}
+      .jxj-bank-step{min-height:78px;}
     }
     @media (orientation:landscape) and (max-height:650px){
-      .jxj-bank-panel{top:53%; min-height:auto; width:min(58vw,640px); padding:18px 24px;}
-      .jxj-bank-menu{gap:14px;}
-      .jxj-bank-menu-button{min-height:68px; font-size:23px;}
-      .jxj-bank-balance-card{padding:12px;}
-      .jxj-bank-balance-card strong{font-size:26px;}
-      .jxj-bank-step{min-height:64px;}
-      .jxj-bank-confirm,.jxj-bank-secondary{min-height:58px;}
+      .jxj-bank-content{padding:10px 18px;}
+      .jxj-bank-panel{width:min(62vw,680px); padding:14px 20px;}
+      .jxj-bank-menu{gap:12px;}
+      .jxj-bank-menu-button{min-height:62px; font-size:22px;}
+      .jxj-bank-balance-card{padding:10px;}
+      .jxj-bank-balance-card strong{font-size:25px;}
+      .jxj-bank-step{min-height:58px;}
+      .jxj-bank-confirm,.jxj-bank-secondary{min-height:54px;}
     }
   `;
   document.head.appendChild(style);
@@ -172,9 +180,53 @@ function injectBankEntry() {
     button.disabled = true;
     button.setAttribute('aria-disabled','true');
     button.innerHTML = '<span>銀行</span><small>営業時間外</small>';
-    button.title = '銀行を利用できるのは8:00〜16:00です。';
+    button.title = '営業時間外です。';
   }
   host.appendChild(button);
+}
+
+function findSourceHeader() {
+  return Array.from(document.querySelectorAll('.game-header')).find((header) => !header.closest(`#${BANK_SCREEN_ID}`)) || null;
+}
+
+function buildBankHeader() {
+  const source = findSourceHeader();
+  let header;
+  if (source instanceof HTMLElement) {
+    header = source.cloneNode(true);
+    header.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
+    const back = header.querySelector('[data-action="back"]');
+    const main = header.querySelector('[data-action="main"], .header-main-button');
+    header.querySelectorAll('[data-action]').forEach((node) => node.removeAttribute('data-action'));
+    if (back instanceof HTMLElement) {
+      back.dataset.bankClose = 'true';
+      back.setAttribute('aria-label','御徒町へ戻る');
+    }
+    if (main instanceof HTMLElement) {
+      main.dataset.bankMain = 'true';
+    }
+    const titleStrong = header.querySelector('.header-title strong');
+    const title = titleStrong || header.querySelector('.header-title');
+    if (title) title.textContent = '銀行';
+  } else {
+    header = document.createElement('header');
+    header.className = 'game-header';
+    header.innerHTML = `
+      <div class="header-center">
+        <button type="button" class="icon-button" data-bank-close aria-label="御徒町へ戻る">←</button>
+        <div class="header-title"><strong>銀行</strong></div>
+        <div class="header-actions"><button type="button" class="secondary-button header-main-button" data-bank-main>メイン画面</button></div>
+      </div>`;
+  }
+  header.classList.add('jxj-bank-header');
+  return header;
+}
+
+function refreshBankHeader() {
+  const screen = document.getElementById(BANK_SCREEN_ID);
+  const current = screen?.querySelector(':scope > .game-header');
+  if (!screen || !current) return;
+  current.replaceWith(buildBankHeader());
 }
 
 function maxDraftAmount(snapshot = lastSnapshot) {
@@ -210,7 +262,6 @@ function renderMenu() {
   if (!panel) return;
   if (!open) {
     panel.innerHTML = `
-      <div class="jxj-bank-balance-card"><small>営業時間</small><strong>8:00〜16:00</strong></div>
       <p class="jxj-bank-note">本日の銀行窓口は終了しました。</p>
       <button type="button" class="jxj-bank-secondary" data-bank-close>御徒町へ戻る</button>`;
     return;
@@ -271,12 +322,11 @@ function openBank() {
   const screen = document.createElement('section');
   screen.id = BANK_SCREEN_ID;
   screen.setAttribute('aria-label','銀行');
-  screen.innerHTML = `
-    <div class="jxj-bank-topbar">
-      <button type="button" class="jxj-bank-back" data-bank-close aria-label="御徒町へ戻る">←</button>
-      <div class="jxj-bank-hours">8:00〜16:00</div>
-    </div>
-    <div class="jxj-bank-panel"></div>`;
+  screen.appendChild(buildBankHeader());
+  const content = document.createElement('div');
+  content.className = 'jxj-bank-content';
+  content.innerHTML = '<div class="jxj-bank-panel"></div>';
+  screen.appendChild(content);
   document.body.appendChild(screen);
   renderMenu();
 }
@@ -287,6 +337,13 @@ function closeBank() {
   bankMode = 'menu';
   lastSnapshot = null;
   draftAmount = BANK_TRANSACTION_STEP;
+}
+
+function goToMainFromBank() {
+  const mainButton = Array.from(document.querySelectorAll('.game-header [data-action="main"], .game-header .header-main-button'))
+    .find((button) => !button.closest(`#${BANK_SCREEN_ID}`));
+  closeBank();
+  if (mainButton instanceof HTMLElement) mainButton.click();
 }
 
 function updateDraft(delta) {
@@ -312,18 +369,19 @@ function transactionError(reason) {
 
 function moneyFeedback(delta) {
   const cashEl = document.querySelector(`#${BANK_SCREEN_ID} [data-bank-cash]`);
-  if (!cashEl) return;
-  cashEl.querySelector('.jxj-bank-money-change')?.remove();
-  const span = document.createElement('span');
-  span.className = `jxj-bank-money-change ${delta > 0 ? 'gain' : 'loss'}`;
-  span.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta).toLocaleString('ja-JP')}円`;
-  cashEl.appendChild(span);
-  setTimeout(() => span.remove(), 1120);
+  if (cashEl) {
+    cashEl.querySelector('.jxj-bank-money-change')?.remove();
+    const span = document.createElement('span');
+    span.className = `jxj-bank-money-change ${delta > 0 ? 'gain' : 'loss'}`;
+    span.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta).toLocaleString('ja-JP')}円`;
+    cashEl.appendChild(span);
+    setTimeout(() => span.remove(), 1120);
+  }
 
-  const headerValue = document.querySelector('.header-money-value');
-  if (headerValue) headerValue.textContent = yen(lastSnapshot?.game?.money);
-  const headerMoney = document.querySelector('.header-money');
-  if (headerMoney) {
+  document.querySelectorAll('.header-money-value').forEach((headerValue) => {
+    headerValue.textContent = yen(lastSnapshot?.game?.money);
+  });
+  document.querySelectorAll('.header-money').forEach((headerMoney) => {
     headerMoney.querySelector('.header-money-change')?.remove();
     const change = document.createElement('span');
     change.className = `header-money-change ${delta > 0 ? 'gain' : 'loss'}`;
@@ -334,7 +392,7 @@ function moneyFeedback(delta) {
       change.remove();
       headerMoney.classList.remove('money-change-active','money-gain','money-loss');
     }, 1100);
-  }
+  });
 }
 
 function performTransaction() {
@@ -352,6 +410,7 @@ function performTransaction() {
     bank:{ balance:result.balance },
     interest:{ credited:0 },
   };
+  refreshBankHeader();
   renderTransaction('取引が完了しました。', 'success');
   moneyFeedback(delta);
   setTimeout(() => {
@@ -425,6 +484,7 @@ document.addEventListener('click', (event) => {
   event.stopPropagation();
 
   if (target.matches('[data-bank-close]')) { closeBank(); return; }
+  if (target.matches('[data-bank-main]')) { goToMainFromBank(); return; }
   if (target.matches('[data-bank-menu]')) { bankMode = 'menu'; renderMenu(); return; }
   if (target.matches('[data-bank-mode]')) {
     const mode = target.dataset.bankMode;

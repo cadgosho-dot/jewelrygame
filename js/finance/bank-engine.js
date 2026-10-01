@@ -1,5 +1,5 @@
 export const BANK_OPEN_MINUTES = 8 * 60;
-export const BANK_CLOSE_MINUTES = 16 * 60;
+export const BANK_CLOSE_MINUTES = 17 * 60;
 export const BANK_TRANSACTION_STEP = 10_000;
 export const BANK_BALANCE_LIMIT = 100_000_000_000;
 export const BANK_INTEREST_INTERVAL_DAYS = 30;

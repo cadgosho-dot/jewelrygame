@@ -143,7 +143,12 @@ assert.match(bankUiSource, /content\.className = 'screen-content jxj-bank-conten
 assert.doesNotMatch(bankUiSource, /removeAttribute\('data-action'\)/, '共通ヘッダーの data-action を剥がさない');
 assert.match(bankUiSource, /header\.querySelector\('\.header-help-button'\)\?\.remove\(\)/, '銀行ではヘルプボタンだけを除外する');
 assert.doesNotMatch(bankUiSource, /#\$\{BANK_SCREEN_ID\}>\.game-header\s*\{/, '銀行専用のヘッダー位置上書きを持たない');
-assert.match(bankUiSource, /@media \(orientation:landscape\)\{[\s\S]*?\.jxj-bank-menu\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\);/, '横画面は3つの銀行メニューボタンを横並びにする');
+assert.match(bankUiSource, /\.jxj-bank-menu\{display:grid; grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/, '銀行トップは預ける・引き出すの2ボタンを横並びにする');
+assert.match(bankUiSource, /\.jxj-bank-menu-balance strong\{font-size:clamp\(34px,7vw,54px\);\}/, '銀行トップの残高を大きく表示する');
+assert.match(bankUiSource, /class=\"jxj-bank-balance-card jxj-bank-menu-balance\"/, '銀行トップに残高カードを表示する');
+assert.doesNotMatch(bankUiSource, /data-bank-mode=\"balance\"/, '残高確認ボタンを表示しない');
+assert.doesNotMatch(bankUiSource, /function renderBalance\(/, '残高確認専用画面を残さない');
+assert.match(bankUiSource, /@media \(orientation:portrait\)\{[\s\S]*?\.jxj-bank-menu\{grid-template-columns:1fr; gap:16px;\}/, '縦画面は預ける・引き出すを縦並びにする');
 assert.match(bankUiSource, /\.jxj-bank-content\{[\s\S]{0,260}?padding-inline:clamp\(12px,2vw,24px\);/, '本文は共通ヘッダー余白を潰さず左右余白だけ設定する');
 assert.doesNotMatch(bankUiSource, /@media \(orientation:landscape\) and \(max-height:650px\)\{[\s\S]{0,260}?\.jxj-bank-content\{padding:10px 18px;\}/, '横画面で共通ヘッダー余白をpadding shorthandで上書きしない');
 

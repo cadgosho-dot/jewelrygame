@@ -153,7 +153,7 @@ assert.match(bankUiSource, /\.jxj-bank-menu\{display:grid; grid-template-columns
 assert.match(bankUiSource, /\.jxj-bank-menu-balance strong\{font-size:clamp\(34px,7vw,54px\);\}/, '銀行トップの残高を大きく表示する');
 assert.match(bankUiSource, /class=\"jxj-bank-balance-card jxj-bank-menu-balance\"/, '銀行トップに残高カードを表示する');
 assert.doesNotMatch(bankUiSource, /data-bank-mode=\"balance\"/, '残高確認ボタンを表示しない');
-assert.match(bankUiSource, /background:linear-gradient\\(180deg,rgba\\(0,0,0,\\.12\\),rgba\\(0,0,0,\\.06\\) 45%,rgba\\(0,0,0,\\.28\\)\\);/, '銀行画面の背景を少し暗くして文字を見やすくする');
+assert.match(bankUiSource, /background:linear-gradient\(180deg,rgba\(0,0,0,\.12\),rgba\(0,0,0,\.06\) 45%,rgba\(0,0,0,\.28\)\);/, '銀行画面の背景を少し暗くして文字を見やすくする');
 assert.doesNotMatch(bankUiSource, /function renderBalance\(/, '残高確認専用画面を残さない');
 assert.match(bankUiSource, /@media \(orientation:portrait\)\{[\s\S]*?\.jxj-bank-menu\{grid-template-columns:1fr; gap:16px;\}/, '縦画面は預ける・引き出すを縦並びにする');
 assert.match(bankUiSource, /\.jxj-bank-content\{[\s\S]{0,260}?padding-inline:clamp\(12px,2vw,24px\);/, '本文は共通ヘッダー余白を潰さず左右余白だけ設定する');

@@ -1,0 +1,34 @@
+name: bank-assets-sync-temp
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  sync-assets:
+    if: github.event.pull_request.head.ref == 'feature/bank-okachimachi-20261001'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+      - name: Install Pillow
+        run: python3 -m pip install --disable-pip-version-check pillow
+      - name: Regenerate ASSETS.md
+        run: python3 scripts/generate-assets-manifest.py --write
+      - name: Commit manifest if changed
+        shell: bash
+        run: |
+          if git diff --quiet -- ASSETS.md; then
+            echo "ASSETS.md already synchronized"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ASSETS.md
+          git commit -m "Sync asset manifest for bank backgrounds"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

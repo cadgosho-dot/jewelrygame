@@ -166,6 +166,7 @@ function installEventInterceptor() {
       if (globalThis.__JXJ_OKACHIMACHI_AREA_ACTIVE__?.()) return false;
 
       const snapshot = gameSnapshot();
+      if (snapshot?.screen === 'main' && snapshot.settings?.autopilotEnabled) return false;
       if (!isOkachimachiBenchVideoEligible(snapshot)) return false;
       if (createVideoOverlay(button, snapshot)) return true;
     } catch (error) {

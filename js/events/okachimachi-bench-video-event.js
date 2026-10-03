@@ -2,6 +2,7 @@ import { suspendAudio, resumeAudio } from '../audio.js?v=0.10.966';
 import {
   isOkachimachiBenchVideoEligible,
   OKACHIMACHI_BENCH_VIDEO_EVENT_KEY,
+  nextOkachimachiBenchVideoEligibleDay,
 } from './okachimachi-bench-video-event-rules.js?v=0.10.966';
 
 const VIDEO_PATH = 'assets/videos/events/okachimachi-jewelry-bench-intro.mp4';
@@ -23,6 +24,17 @@ function patchEvent(patch) {
     console.warn('[Okachimachi bench video] Could not persist event state', error);
     return null;
   }
+}
+
+function ensureRandomRepeatDay(snapshot) {
+  const savedEvent = snapshot?.events?.[OKACHIMACHI_BENCH_VIDEO_EVENT_KEY];
+  const lastTriggeredDay = Math.max(0, Math.floor(Number(savedEvent?.lastTriggeredDay) || 0));
+  const savedNextDay = Math.max(0, Math.floor(Number(savedEvent?.nextEligibleDay) || 0));
+  if (!savedEvent || lastTriggeredDay === 0 || savedNextDay > 0) return;
+
+  const nextEligibleDay = nextOkachimachiBenchVideoEligibleDay(lastTriggeredDay);
+  savedEvent.nextEligibleDay = nextEligibleDay;
+  patchEvent({ nextEligibleDay });
 }
 
 function safeAudioCall(callback) {
@@ -137,7 +149,12 @@ function createVideoOverlay(button, snapshot) {
   });
 
   if (!resuming) {
-    patchEvent({ active: true, stage: 'video', lastTriggeredDay: day });
+    patchEvent({
+      active: true,
+      stage: 'video',
+      lastTriggeredDay: day,
+      nextEligibleDay: nextOkachimachiBenchVideoEligibleDay(day),
+    });
   }
   document.body.append(overlay);
   safeAudioCall(suspendAudio);
@@ -167,6 +184,7 @@ function installEventInterceptor() {
 
       const snapshot = gameSnapshot();
       if (snapshot?.screen === 'main' && snapshot.settings?.autopilotEnabled) return false;
+      ensureRandomRepeatDay(snapshot);
       if (!isOkachimachiBenchVideoEligible(snapshot)) return false;
       if (createVideoOverlay(button, snapshot)) return true;
     } catch (error) {

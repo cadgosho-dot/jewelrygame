@@ -8,6 +8,7 @@ module = (ROOT / 'js/events/retro-battle-frame-loader.js').read_text(encoding='u
 enemy = (ROOT / 'js/events/okachimachi-battle-enemy.js').read_text(encoding='utf-8')
 sw = (ROOT / 'sw.js').read_text(encoding='utf-8')
 version_sync = (ROOT / 'scripts/version-sync.py').read_text(encoding='utf-8')
+VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 
 checks = {
     '10秒待機上限': 'RETRO_BATTLE_API_READY_TIMEOUT_MS = 10000' in module,
@@ -23,10 +24,10 @@ checks = {
     'SW precache': './js/events/retro-battle-frame-loader.js?v=' in sw,
     'version-sync SW登録': 'retro-battle-frame-loader.js precache key' in version_sync,
     'version-sync app登録': 'retro-battle-frame-loader.js import key' in version_sync,
-    'loader helper import': "from './okachimachi-battle-enemy.js?v=0.10.965'" in module,
+    'loader helper import': f"from './okachimachi-battle-enemy.js?v={VERSION}'" in module,
     'enemy name': "OKACHIMACHI_BATTLE_ENEMY_NAME = '明朝体'" in enemy,
     'enemy image path': "assets/minigames/retro-battle/enemy-mincho.png" in enemy,
-    'enemy helper SW precache': './js/events/okachimachi-battle-enemy.js?v=0.10.965' in sw,
+    'enemy helper SW precache': f"./js/events/okachimachi-battle-enemy.js?v={VERSION}" in sw,
     'enemy image SW precache': './assets/minigames/retro-battle/enemy-mincho.png' in sw,
     'version-sync helper import登録': 'Okachimachi battle enemy helper import key' in version_sync,
 }

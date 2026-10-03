@@ -144,6 +144,7 @@ CHECKS = [
     ('終了時セーブ一本化', [sys.executable, str(ROOT / 'scripts/check-lifecycle-save-policy.py')]),
     ('互換DOM監視軽量化', [sys.executable, str(ROOT / 'scripts/check-hosting-guard-policy.py')]),
     ('Firebase App Check準備', [sys.executable, str(ROOT / 'scripts/check-app-check-readiness.py')]),
+    ('御徒町・彫金机イベント条件', ['node', str(ROOT / 'scripts/test-okachimachi-bench-video-event.mjs')]),
     ('実ブラウザ主要導線', [sys.executable, str(ROOT / 'scripts/check-browser-smoke.py')]),
 ]
 

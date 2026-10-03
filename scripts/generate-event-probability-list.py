@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / 'js' / 'app.js'
 WHITE_BUNNY_TONKATSU = ROOT / 'js' / 'events' / 'white-bunny-tonkatsu-event.js'
 OYATSU_MALATANG_MODULE = ROOT / 'js' / 'events' / 'oyatsu-malatang-event.js'
+BENCH_VIDEO_RULES = ROOT / 'js' / 'events' / 'okachimachi-bench-video-event-rules.js'
 VERSION_FILE = ROOT / 'VERSION'
 OUTPUT = ROOT / 'EVENT_PROBABILITY_LIST.md'
 CONST_RE = re.compile(r'^(?:export\s+)?const\s+([A-Z0-9_]+)\s*=\s*(.+?);\s*$', re.M)
@@ -144,6 +145,8 @@ def generate() -> str:
     malatang_exprs, _ = constants(OYATSU_MALATANG_MODULE.read_text(encoding='utf-8'))
     exprs['OYATSU_MALATANG_EVENT_CHANCE'] = malatang_exprs['OYATSU_MALATANG_EVENT_CHANCE']
     source_paths['OYATSU_MALATANG_EVENT_CHANCE'] = 'js/events/oyatsu-malatang-event.js'
+    bench_video_exprs, _ = constants(BENCH_VIDEO_RULES.read_text(encoding='utf-8'))
+    bench_video_values = numeric_values(bench_video_exprs)
     values = numeric_values(exprs)
     version = VERSION_FILE.read_text(encoding='utf-8').strip()
 
@@ -187,6 +190,7 @@ def generate() -> str:
         f'- 病院イベント初回: **401日目以降**、初回待ち **{int(values["HOSPITAL_EVENT_FIRST_WAIT_MIN_DAYS"])}〜{int(values["HOSPITAL_EVENT_FIRST_WAIT_MAX_DAYS"])}日**。',
         f'- 病院イベント2回目以降: **{int(values["HOSPITAL_EVENT_REPEAT_MIN_DAYS"])}〜{int(values["HOSPITAL_EVENT_REPEAT_MAX_DAYS"])}日**間隔。',
         f'- Blues Juke 初回: **{int(values["BLUES_JUKE_EVENT_FIRST_TRIGGER_MIN"])}〜{int(values["BLUES_JUKE_EVENT_FIRST_TRIGGER_MAX"])}日目**。以後 **{int(values["BLUES_JUKE_EVENT_REPEAT_MIN_DAYS"])}〜{int(values["BLUES_JUKE_EVENT_REPEAT_MAX_DAYS"])}日**間隔。',
+        f'- 御徒町・彫金机動画: **{int(bench_video_values["OKACHIMACHI_BENCH_VIDEO_FIRST_DAY"])}日目以降**、工房に彫金机を所持しているか購入履歴がある場合の対象訪問時に発生。以後 **{int(bench_video_values["OKACHIMACHI_BENCH_VIDEO_COOLDOWN_MIN_DAYS"])}〜{int(bench_video_values["OKACHIMACHI_BENCH_VIDEO_COOLDOWN_MAX_DAYS"])}日**のランダムな間隔を置き、次の御徒町訪問時に再発。',
         '',
         '## 判定順',
         '',

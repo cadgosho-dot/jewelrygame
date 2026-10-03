@@ -54,6 +54,9 @@ def keep_quote(match: re.Match[str], version: str) -> str:
 
 
 RULES = [
+    Rule('js/events/purple-capsule-event.js', 'purple capsule audio module cache key', qparam(r'\.\./audio\.js'), keep_prefix),
+    Rule('game.html', 'purple capsule CSS cache key', qparam(r'\./purple-capsule-event\.css'), keep_prefix),
+    Rule('game.html', 'purple capsule event cache key', qparam(r'\./js/events/purple-capsule-event\.js'), keep_prefix),
     # game.html shell
     Rule('game.html', 'PWA recovery cache key', qparam(r'\./auth-cache-recovery\.js'), keep_prefix),
     Rule('game.html', 'hosting-origin-guard cache key', qparam(r'\./hosting-origin-guard\.js'), keep_prefix),

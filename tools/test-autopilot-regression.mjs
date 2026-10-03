@@ -311,4 +311,19 @@ function load(ctx, names) {
   assert.equal(ctx.autopilotRunning, false);
 }
 
+// A suspended capsule must finish its original game day before real-date catch-up.
+{
+  let reads = 0;
+  const ctx = makeContext({
+    state: { settings:{autopilotEnabled:true}, events:{purpleCapsuleEvent:{active:true}}, game:{minutes:1140} },
+    autopilotRunning:false, sleepTransitioning:false, sessionTakenOver:false,
+    illnessEventSuppressionActive:()=>false,
+    ensureAutopilotState:()=>{ reads++; return {lastRealDate:''}; },
+    tokyoRealDateKey:()=> '2026-10-04', saveGame:async()=>{}, render:()=>{},
+  });
+  load(ctx, ['processAutopilotIfDue']);
+  assert.equal(await ctx.processAutopilotIfDue({renderAfter:false}),0);
+  assert.equal(reads,0,'active capsule must block catch-up before autopilot state changes');
+  assert.equal(ctx.state.game.minutes,1140);
+}
 console.log('AUTOPILOT REGRESSION: PASS');

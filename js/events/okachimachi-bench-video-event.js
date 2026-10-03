@@ -1,9 +1,9 @@
-import { suspendAudio, resumeAudio } from '../audio.js?v=0.10.966';
+import { suspendAudio, resumeAudio } from '../audio.js?v=0.10.968';
 import {
   isOkachimachiBenchVideoEligible,
   OKACHIMACHI_BENCH_VIDEO_EVENT_KEY,
   nextOkachimachiBenchVideoEligibleDay,
-} from './okachimachi-bench-video-event-rules.js?v=0.10.966';
+} from './okachimachi-bench-video-event-rules.js?v=0.10.968';
 
 const VIDEO_PATH = 'assets/videos/events/okachimachi-jewelry-bench-intro.mp4';
 const VIDEO_URL = new URL(`../../${VIDEO_PATH}`, import.meta.url).href;

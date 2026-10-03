@@ -65,6 +65,7 @@ RULES = [
     Rule('game.html', 'order sheet compact UI CSS cache key', qparam(r'\./order-sheet-compact-ui\.css'), keep_prefix),
     Rule('game.html', 'app.js cache key', qparam(r'\./js/app\.js'), keep_prefix),
     Rule('game.html', 'memories-screen.js cache key', qparam(r'\./js/memories-screen\.js'), keep_prefix),
+    Rule('game.html', 'Okachimachi bench video event module cache key', qparam(r'\./js/events/okachimachi-bench-video-event\.js'), keep_prefix),
 
     # outer shell
     Rule('index.html', 'PWA recovery cache key', qparam(r'\./auth-cache-recovery\.js'), keep_prefix),
@@ -123,6 +124,8 @@ RULES = [
     Rule('sw.js', 'metal-weight-label.js precache key', qparam(r'\./js/ui/metal-weight-label\.js'), keep_prefix),
     Rule('sw.js', 'press-hold-controller.js precache key', qparam(r'\./js/ui/press-hold-controller\.js'), keep_prefix),
     Rule('sw.js', 'event-state-helpers.js precache key', qparam(r'\./js/events/event-state-helpers\.js'), keep_prefix),
+    Rule('sw.js', 'Okachimachi bench video event rules precache key', qparam(r'\./js/events/okachimachi-bench-video-event-rules\.js'), keep_prefix),
+    Rule('sw.js', 'Okachimachi bench video event precache key', qparam(r'\./js/events/okachimachi-bench-video-event\.js'), keep_prefix),
     Rule('sw.js', 'retro-battle-frame-loader.js precache key', qparam(r'\./js/events/retro-battle-frame-loader\.js'), keep_prefix),
     Rule('sw.js', 'tropical shop approved UI precache key', qparam(r'\./js/aquarium/tropical-shop-approved-ui\.js'), keep_prefix),
     Rule('sw.js', 'oyatsu approved UI precache key', qparam(r'\./js/events/oyatsu-daisuki-approved-ui\.js'), keep_prefix),
@@ -161,6 +164,9 @@ RULES = [
     Rule('js/events/oyatsu-malatang-event.js', 'approved UI CSS cache key', qparam(r'\./oyatsu-malatang-event\.css'), keep_prefix),
     Rule('js/wolf-boy-ring-event.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
     Rule('js/wolf-mother-butler-event.js', 'audio.js import key', qparam(r'\./audio\.js'), keep_prefix),
+
+    Rule('js/events/okachimachi-bench-video-event.js', 'audio.js import key', qparam(r'\.\./audio\.js'), keep_prefix),
+    Rule('js/events/okachimachi-bench-video-event.js', 'rules import key', qparam(r'\./okachimachi-bench-video-event-rules\.js'), keep_prefix),
 
     # main modules
     Rule('js/app.js', 'game-data.js import key', qparam(r'\./game-data\.js'), keep_prefix),

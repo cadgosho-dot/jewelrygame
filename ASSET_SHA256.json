@@ -18,5 +18,10 @@
     "path": "assets/audio/bgm-white-bunny-tonkatsu.mp3",
     "bytes": 817153,
     "sha256": "2597ffdcf43739d49ac836bacb2ea049fd34161191cbb7f85fe20b0ab82f1e0b"
+  },
+  {
+    "path": "assets/videos/events/okachimachi-jewelry-bench-intro.mp4",
+    "bytes": 3294258,
+    "sha256": "05a30c32066869922acb4ef03adb1db285fff4aa3a9b76dc3ac2f7ef44dbb233"
   }
 ]

@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.965** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.966** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -14,19 +14,20 @@
 
 ## 集計
 
-- 総ファイル数: **610**
+- 総ファイル数: **611**
 - 画像: **480**
 - 音源: **102**
-- 動画: **15**
+- 動画: **16**
 - データ: **8**
 - ミニゲーム/コード: **4**
 - その他: **1**
-- 静的な直接参照を検出: **501** / 直接参照未検出: **109**
+- 静的な直接参照を検出: **502** / 直接参照未検出: **109**
 
 ## 重要な由来記録
 
 - 直近引継ぎでユーザー提供と確認できる病院背景2枚、中華料理画像2枚は「変更禁止」として記録。
 - ホワイト・バニー／とんかつイベントの店内背景2枚・とんかつ透過PNG・専用BGMは2026-09-19のユーザー指定正式アセットとして記録。
+- 御徒町・彫金机イベント動画は2026-10-03に受領した1000025098.mp4を原本どおり使用.
 - `TOOL_IMAGE_INTAKE_MANIFEST_*` で受領元ファイルが記録されている工具画像は「受領アセット」として記録。
 - それ以外は由来を推測せず「由来記録なし」とした。
 
@@ -636,6 +637,7 @@
 | assets/videos/events/gray-hood-aquarium-intro.mp4 | 動画 | 5,500,116 B | - | - | `js/app.js:447`<br>`scripts/FILES/js/app.js:440` | 由来記録なし | 要確認（明示許可がない限り加工しない） | badfe22a4c294bfa6124054320a421ef508f25eabfb31ba500013492fb2e6c09 |
 | assets/videos/events/mystery-chinese-meal-intro.mp4 | 動画 | 5,078,384 B | - | - | `js/app.js:451`<br>`scripts/FILES/js/app.js:444` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f0cc7816264699a7a55a731a097083ab8981cbf1e427ba121552b1740c321dcc |
 | assets/videos/events/okachimachi-invasive-turtles-intro.mp4 | 動画 | 3,115,136 B | - | - | `js/app.js:346`<br>`scripts/FILES/js/app.js:339` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 42300e9803ccedc9d5ec843a1715bc5e1fab51c2f6823f03ec47054566cfe459 |
+| assets/videos/events/okachimachi-jewelry-bench-intro.mp4 | 動画 | 3,294,258 B | - | - | `js/events/okachimachi-bench-video-event.js:7` | ユーザー提供正式動画（2026-10-03 / 1000025098.mp4） | 変更禁止（受領動画と同一バイト。編集・再圧縮・再生成禁止） | 05a30c32066869922acb4ef03adb1db285fff4aa3a9b76dc3ac2f7ef44dbb233 |
 | assets/videos/events/okachimachi-quiz-king-intro.mp4 | 動画 | 3,163,385 B | - | - | `js/app.js:330`<br>`scripts/FILES/js/app.js:323` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9e0d5e33711ca52b34ae171f419cea09267f276bb0567401d000841dc94a7519 |
 | assets/videos/events/oyatsu-malatang-event.mp4 | 動画 | 1,617,684 B | - | - | `js/events/oyatsu-malatang-event.js:14`<br>`scripts/check-oyatsu-malatang-event.py:18` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 4bfb929884cff665252d9b2431e12029a30d9d25a73ed0786a27c07bd85f7eec |
 | assets/videos/events/oyatsu-tropical-shop-intro.mp4 | 動画 | 5,500,558 B | - | - | `js/app.js:458`<br>`scripts/FILES/js/app.js:451` | 由来記録なし | 要確認（明示許可がない限り加工しない） | acd490ac696cdb8b9d63d49da26d427b47591dedbeb119eda80b31691385e0f7 |

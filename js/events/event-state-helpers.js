@@ -32,6 +32,35 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
     try { void saveGame?.(); } catch (_) {}
   };
   return Object.freeze({
+    purpleCapsuleSnapshot() {
+      const state = readState();
+      return state ? { ok:true, playerName:String(state.playerName || ''), event:{ ...state.events?.purpleCapsuleEvent } } : { ok:false };
+    },
+    beginPurpleCapsule() {
+      const state = readState();
+      if (!state) return { ok:false, reason:'state' };
+      if (state.events?.purpleCapsuleEvent?.active) return { ok:false, reason:'active' };
+      const owned = Math.max(0, Math.floor(Number(state.inventory?.items?.purpleCapsule) || 0));
+      if (!owned) return { ok:false, reason:'item' };
+      if (!eventServices.canSpendHours || !eventServices.spendHours) return { ok:false, reason:'services' };
+      if (!eventServices.canSpendHours(3)) return { ok:false, reason:'time' };
+      state.events ||= {};
+      state.inventory.items.purpleCapsule = owned - 1;
+      state.events.purpleCapsuleEvent = { active:true, stage:'opening', startedDay:state.game.day };
+      persist();
+      return { ok:true };
+    },
+    finishPurpleCapsule() {
+      const state = readState();
+      const event = state?.events?.purpleCapsuleEvent;
+      if (!event?.active) return { ok:false, reason:'inactive' };
+      if (!eventServices.spendHours) return { ok:false, reason:'services' };
+      event.active = false;
+      event.stage = 'completed';
+      eventServices.spendHours(3);
+      persist();
+      return { ok:true };
+    },
     configureServices(services = {}) {
       if (!services || typeof services !== 'object' || Array.isArray(services)) return { ok:false, reason:'invalid-services' };
       eventServices = { ...eventServices, ...services };

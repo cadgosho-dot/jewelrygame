@@ -116,6 +116,14 @@ def provenance_map() -> dict[str, dict[str, str]]:
         'source': 'ユーザー提供正式動画（2026-10-03 / 1000025098.mp4）',
         'permission': '変更禁止（受領動画と同一バイト。編集・再圧縮・再生成禁止）',
     }
+    for rel, source in [
+        ('assets/images/events/purple-capsule/exterior.png', '1000020712(3).png'),
+        ('assets/images/events/purple-capsule/exterior-portrait.png', '1000020711(3).png'),
+        ('assets/images/events/purple-capsule/interior.png', '1000020700(3).png'),
+        ('assets/images/events/purple-capsule/interior-portrait.png', '1000020702(6).png'),
+        ('assets/images/items/purple-capsule.png', '1000025109.png'),
+    ]:
+        provenance[rel] = {'source': f'ユーザー提供原本（2026-10-04 / {source}）', 'permission': '変更禁止（提供原本と同一バイト）'}
     return provenance
 
 SOURCE_ORDER = [

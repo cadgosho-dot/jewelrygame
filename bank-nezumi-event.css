@@ -1,0 +1,595 @@
+/* Frozen from the approved mobile preview; loaded only inside bank-nezumi-event.html. */
+:root { --gold: #d7ad58; --gold-light: #ffe5a0; --ink: #1b130d; --panel: rgba(20,15,11,.91); --panel-soft: rgba(31,23,16,.84); --line: rgba(232,191,104,.45); --text: #f7ead4; --muted: #c8b89a; --screen-bg: none; --ui-font: -apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo","Noto Sans JP",sans-serif; --safe-top: max(8px,env(safe-area-inset-top)); --safe-bottom: max(8px,env(safe-area-inset-bottom)); }
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0px; overflow: hidden; color: var(--text); font-family: var(--ui-font); }
+html { background: rgb(9, 6, 3); }
+body { position: relative; isolation: isolate; background: rgb(9, 6, 3); }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+#background-layer { position: fixed; inset: 0px; z-index: 0; background-color: rgb(9, 6, 3); background-image: var(--screen-bg); background-size: contain; background-position: center center; background-repeat: no-repeat; transition: background-image 0.35s; pointer-events: none; }
+#background-shade { position: fixed; inset: 0px; z-index: 1; background: linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.04) 45%, rgba(0, 0, 0, 0.38)); pointer-events: none; }
+#root { position: relative; z-index: 2; height: 100%; }
+.glass-panel { background: linear-gradient(145deg, rgba(27, 20, 14, 0.95), rgba(12, 9, 7, 0.87)); border: 2.25px solid var(--line); box-shadow: rgba(0, 0, 0, 0.5) 0px 20px 70px, rgba(255, 193, 79, 0.03) 0px 0px 30px inset; backdrop-filter: blur(10px); }
+.primary-button, .secondary-button, .danger-button, .text-button, .small-button, .icon-button { border-radius: 10px; min-height: 44px; border: 2.25px solid var(--line); padding: 0.72rem 1rem; transition: 0.16s; }
+.small-button { background: rgba(28, 21, 15, 0.9); color: var(--text); padding: 0.48rem 0.72rem; min-height: 38px; }
+.icon-button { display: grid; place-items: center; width: 42px; height: 42px; padding: 0px; background: rgba(22, 16, 11, 0.88); color: var(--text); font-weight: 900; font-size: 1.1rem; }
+.screen-shell, .main-screen, .day-result-screen { height: 100%; display: flex; flex-direction: column; min-height: 0px; }
+.game-header { height: auto; min-height: 64px; padding: var(--safe-top) 12px 8px; display: grid; grid-template-columns: minmax(100px, 1fr) auto minmax(100px, 1fr); align-items: center; gap: 10px; background: linear-gradient(rgba(10, 7, 5, 0.95), rgba(10, 7, 5, 0.68)); border-bottom: 2.25px solid rgba(231, 189, 103, 0.28); backdrop-filter: blur(9px); z-index: 10; }
+.header-left, .header-actions { display: flex; align-items: center; gap: 0.6rem; min-width: 0px; }
+.header-actions { justify-content: flex-end; }
+.screen-content { flex: 1 1 0%; min-height: 0px; overflow: auto; padding-top: clamp(12px, 2vw, 24px); padding-right: clamp(12px, 2vw, 24px); padding-left: clamp(12px, 2vw, 24px); padding-bottom: max(18px,var(--safe-bottom)); }
+@media (orientation: portrait), (max-width: 820px){.game-header { grid-template-columns: 1fr auto; gap: 6px; min-height: 72px; }
+.header-actions .small-button { display: none; }
+}
+@media (max-width: 480px){.screen-content { padding: 10px; }
+.game-header { padding-left: 8px; padding-right: 8px; }
+}
+@keyframes spin { 
+  100% { transform: rotate(360deg); }
+}
+.glass-panel { background: linear-gradient(145deg, rgba(27, 20, 14, 0.82), rgba(12, 9, 7, 0.72)); backdrop-filter: blur(8px); }
+.game-header { position: absolute; top: max(8px,var(--safe-top)); left: 10px; right: 10px; min-height: 50px; padding: 6px 9px; border: 2.25px solid rgba(231, 189, 103, 0.3); border-radius: 14px; background: linear-gradient(rgba(10, 7, 5, 0.7), rgba(10, 7, 5, 0.48)); box-shadow: rgba(0, 0, 0, 0.28) 0px 8px 28px; backdrop-filter: blur(8px); transition: opacity 0.2s, transform 0.2s; }
+.screen-content { height: 100%; padding-top: 76px; padding-left: clamp(8px, 1.5vw, 18px); padding-right: clamp(8px, 1.5vw, 18px); padding-bottom: max(12px,var(--safe-bottom)); }
+@media (orientation: portrait), (max-width: 820px){.game-header { grid-template-columns: minmax(0px, 1fr) auto; min-height: 50px; }
+.screen-content { padding-top: 88px; }
+}
+@media (max-width: 480px){.header-actions .small-button { display: none; }
+.screen-content { padding-left: 7px; padding-right: 7px; }
+}
+.game-header { grid-template-columns: minmax(110px, 1fr) auto minmax(150px, 1fr); align-items: center; gap: 10px; background: rgba(8, 6, 4, 0.14); border-color: rgba(255, 232, 181, 0.25); box-shadow: rgba(0, 0, 0, 0.18) 0px 5px 20px; backdrop-filter: blur(4px); }
+.header-center { justify-self: center; display: flex; align-items: center; gap: 0.55rem; min-width: 0px; }
+.header-title { display: grid; justify-items: center; line-height: 1.05; text-shadow: rgba(0, 0, 0, 0.95) 0px 2px 7px; }
+.header-title strong { white-space: nowrap; color: rgb(255, 243, 213); }
+.header-actions { display: flex; align-items: center; gap: 0.35rem; }
+.header-money { white-space: nowrap; color: rgb(255, 243, 207); font-weight: 900; text-shadow: rgba(0, 0, 0, 0.95) 0px 2px 7px; }
+button, .primary-button, .secondary-button, .danger-button, .small-button, .icon-button, .main-menu button, .choice-card, .tab-row button, .phone-tabs button, .compact-list button { backdrop-filter: blur(2px); text-shadow: rgba(0, 0, 0, 0.9) 0px 1px 4px; background: rgba(12, 9, 7, 0.12) !important; color: rgb(255, 241, 209) !important; border-color: rgba(255, 225, 161, 0.48) !important; box-shadow: rgba(0, 0, 0, 0.17) 0px 3px 12px !important; }
+button:hover, .primary-button:hover, .secondary-button:hover, .small-button:hover, .icon-button:hover, .main-menu button:hover, .choice-card:hover, .tab-row button:hover, .phone-tabs button:hover { filter: none; background: rgba(255, 224, 158, 0.14) !important; border-color: rgba(255, 232, 184, 0.82) !important; }
+.glass-panel { background: linear-gradient(145deg, rgba(27, 20, 14, 0.58), rgba(12, 9, 7, 0.46)); backdrop-filter: blur(5px); }
+@media (orientation: portrait), (max-width: 820px){.game-header { grid-template-columns: minmax(92px, 1fr) auto minmax(105px, 1fr); min-height: 52px; }
+.header-center { gap: 0.35rem; }
+.header-title strong { font-size: 0.78rem; max-width: 28vw; overflow: hidden; text-overflow: ellipsis; }
+.header-money { font-size: 0.72rem; }
+.header-actions .small-button { display: none; }
+.header-actions .icon-button, .header-center .icon-button { width: 34px; height: 34px; min-height: 34px; }
+.screen-content { padding-top: 72px; }
+}
+@media (max-width: 480px){.game-header { left: 6px; right: 6px; gap: 4px; padding: 5px 6px; }
+.header-title strong { font-size: 0.72rem; max-width: 24vw; }
+.header-money { font-size: 0.66rem; }
+.header-actions { gap: 0.15rem; }
+.header-actions .icon-button, .header-center .icon-button { width: 31px; height: 31px; min-height: 31px; font-size: 0.92rem; }
+}
+button, .primary-button, .secondary-button, .danger-button, .text-button, .small-button, .icon-button, .main-menu button, .choice-card, .tab-row button, .phone-tabs button, .compact-list button, .phone-ui button, .start-button { text-shadow: rgba(0, 0, 0, 0.95) 0px 1px 4px; background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; filter: none !important; color: rgb(255, 241, 209) !important; border: 2.25px solid rgba(255, 226, 166, 0.68) !important; }
+button:hover, button:focus-visible, .primary-button:hover, .secondary-button:hover, .danger-button:hover, .text-button:hover, .small-button:hover, .icon-button:hover, .main-menu button:hover, .choice-card:hover, .tab-row button:hover, .phone-tabs button:hover, .compact-list button:hover, .phone-ui button:hover, .start-button:hover, .start-button:focus-visible { background: none transparent !important; box-shadow: none !important; filter: none !important; color: rgb(255, 248, 232) !important; border-color: rgb(255, 240, 194) !important; }
+body:not([data-screen="main"]) .glass-panel, body:not([data-screen="main"]) .action-panel, body:not([data-screen="main"]) .store-panel, body:not([data-screen="main"]) .dialog-panel, body:not([data-screen="main"]) .preview-panel, body:not([data-screen="main"]) .craft-options, body:not([data-screen="main"]) .summary-card, body:not([data-screen="main"]) .stat-grid > div, body:not([data-screen="main"]) .stat-grid > button, body:not([data-screen="main"]) .store-summary > div, body:not([data-screen="main"]) .product-row, body:not([data-screen="main"]) .materials-grid section, body:not([data-screen="main"]) .jewelry-card, body:not([data-screen="main"]) .showcase-slot, body:not([data-screen="main"]) .available-items, body:not([data-screen="main"]) .visitor-box, body:not([data-screen="main"]) .order-card, body:not([data-screen="main"]) .candidate-card, body:not([data-screen="main"]) .request-card, body:not([data-screen="main"]) .modal-card { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+body:not([data-screen="main"]) button, body:not([data-screen="main"]) .primary-button, body:not([data-screen="main"]) .secondary-button, body:not([data-screen="main"]) .danger-button, body:not([data-screen="main"]) .text-button, body:not([data-screen="main"]) .small-button, body:not([data-screen="main"]) .icon-button, body:not([data-screen="main"]) .choice-card, body:not([data-screen="main"]) .tab-row button, body:not([data-screen="main"]) .phone-tabs button, body:not([data-screen="main"]) .compact-list button { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+@media (orientation: portrait), (max-width: 820px){body:not([data-screen="main"]) .screen-content { display: grid !important; align-content: center !important; padding-top: 88px !important; }
+}
+body :is(.screen-content, .title-screen, .game-header, .main-menu, .floating-notice) :is(h1, h2, h3, h4, p, strong, small, span, label, button, dt, dd, li) { text-shadow: rgba(0, 0, 0, 0.92) 0px 2px 8px, rgba(0, 0, 0, 0.88) 0px 0px 2px; }
+@keyframes miningPickaxeStrike { 
+  0% { opacity: 0; transform: translate(32%, -22%) rotate(42deg) scale(0.92); }
+  16% { opacity: 1; }
+  56% { opacity: 1; transform: translate(-34%, 2%) rotate(-31deg) scale(1); }
+  100% { opacity: 0; transform: translate(-38%, 8%) rotate(-35deg) scale(0.98); }
+}
+@keyframes rockHit { 
+  0%, 100% { transform: translateX(0px) rotate(0deg) scale(1); }
+  24% { transform: translateX(-7px) rotate(-2.5deg) scale(1.025); }
+  52% { transform: translateX(7px) rotate(2.5deg) scale(0.985); }
+  76% { transform: translateX(-3px) rotate(-1deg) scale(1.01); }
+}
+@keyframes rockBreak { 
+  0% { opacity: 1; transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.07, 0.9) rotate(-3deg); }
+  100% { opacity: 0; transform: translateY(34px) scale(0.22, 0.12) rotate(9deg); }
+}
+@keyframes dustCloud { 
+  0% { opacity: 0; transform: translateX(-50%) scale(0.2); }
+  35% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-24px) scale(1.9); }
+}
+.header-money { position: relative; display: grid; justify-items: end; z-index: 35; }
+.header-money-value { display: block; transform-origin: right top; will-change: transform; }
+.header-money.money-change-active .header-money-value { animation: 1.05s ease-in-out 0s 1 normal both running money-change-pop; }
+.header-money-change { position: absolute; right: 0px; top: calc(100% + 0.18rem); font-size: 0.82rem; line-height: 1; font-weight: 900; white-space: nowrap; text-shadow: rgba(0, 0, 0, 0.96) 0px 2px 7px, currentcolor 0px 0px 9px; animation: 1.05s ease-out 0s 1 normal both running money-change-rise; }
+.header-money-change.loss { color: rgb(255, 95, 109); }
+@keyframes money-change-pop { 
+  0%, 100% { transform: scale(1); }
+  16%, 72% { transform: scale(3); }
+}
+@keyframes money-change-rise { 
+  0% { opacity: 0; transform: translateY(-4px); }
+  18%, 76% { opacity: 1; transform: translateY(0px); }
+  100% { opacity: 0; transform: translateY(8px); }
+}
+@media (max-width: 480px){.header-money-change { font-size: 0.66rem; }
+}
+@keyframes hunger-levelup { 
+  0% { opacity: 0; transform: translate(-50%, -44%) scale(0.84); }
+  15%, 76% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -56%) scale(1.05); }
+}
+@keyframes meal-steam { 
+  0% { opacity: 0; transform: translateY(8px) scaleY(0.75); }
+  40% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-18px) scaleY(1.2); }
+}
+.header-money.money-change-active .header-money-value { font-variant-numeric: tabular-nums; min-width: 8ch; text-align: right; }
+@keyframes itemEffectPop { 
+  0% { opacity: 0; transform: translate(-50%, -45%) scale(0.86); }
+  15%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -55%) scale(0.96); }
+}
+html { font-size: 21px; }
+small, .small-note, .phone-card small, .request-card small, .order-card small, .choice-card small, .product-row small, .tool-detail-modal small { line-height: 1.5; }
+.game-header { grid-template-areas: "status money" "center center"; grid-template-columns: minmax(0px, 1fr) auto !important; align-items: center !important; gap: 0.18rem 0.55rem !important; }
+.header-center { grid-area: center; position: relative; width: 100%; min-width: 0px; min-height: 34px; justify-content: center !important; }
+.header-center > .icon-button:first-child { position: absolute; left: 0px; }
+.header-center > .header-actions { position: absolute; right: 0px; justify-content: flex-end; }
+.header-money { grid-area: money; place-self: start end; line-height: 1.15; font-size: 0.9rem !important; }
+.screen-content { padding-top: 96px; }
+@media (orientation: portrait), (max-width: 820px){.game-header { gap: 0.15rem 0.35rem !important; padding: 5px 7px !important; }
+.header-money { font-size: 0.76rem !important; }
+.header-center { min-height: 32px; }
+.header-center > .icon-button:first-child, .header-center > .header-actions .icon-button { width: 31px !important; height: 31px !important; min-height: 31px !important; }
+.screen-content { padding-top: 92px !important; }
+}
+@media (max-width: 430px){.header-money { font-size: 0.72rem !important; }
+.screen-content { padding-top: 94px !important; }
+}
+@media (orientation: landscape) and (max-height: 540px){.header-money { font-size: 0.74rem !important; }
+.screen-content { padding-top: 84px !important; }
+}
+.header-money { isolation: isolate; overflow: visible !important; }
+.header-money.money-change-active { z-index: 140 !important; }
+.header-money.money-change-active .header-money-value { position: relative; z-index: 2; animation: 1.05s ease-in-out 0s 1 normal both running money-change-pop-xxl !important; text-shadow: rgba(0, 0, 0, 0.98) 0px 3px 10px, rgba(255, 226, 151, 0.7) 0px 0px 18px !important; }
+.header-money-change { z-index: 3; letter-spacing: 0.02em; top: calc(100% + 0.4rem) !important; font-size: 2rem !important; line-height: 1 !important; text-shadow: rgba(0, 0, 0, 0.98) 0px 3px 10px, currentcolor 0px 0px 16px !important; animation: 1.05s ease-out 0s 1 normal both running money-change-rise-xxl !important; }
+@keyframes money-change-pop-xxl { 
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.35); }
+  22%, 72% { transform: scale(5); }
+  88% { transform: scale(1.22); }
+}
+@keyframes money-change-rise-xxl { 
+  0% { opacity: 0; transform: translateY(-8px) scale(0.72); }
+  16% { opacity: 1; transform: translateY(0px) scale(1.08); }
+  30%, 74% { opacity: 1; transform: translateY(2px) scale(1.28); }
+  100% { opacity: 0; transform: translateY(18px) scale(1.08); }
+}
+@media (orientation: portrait), (max-width: 820px){.header-money-change { font-size: 1.72rem !important; top: calc(100% + 0.48rem) !important; }
+@keyframes money-change-pop-xxl { 
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.35); }
+  22%, 72% { transform: scale(5.4); }
+  88% { transform: scale(1.22); }
+}
+}
+@media (max-width: 430px){.header-money-change { font-size: 1.58rem !important; }
+}
+@media (orientation: landscape) and (max-height: 540px){.header-money-change { font-size: 1.5rem !important; top: calc(100% + 0.28rem) !important; }
+}
+body:not([data-screen="main"]) .game-header .header-center { grid-template-columns: auto minmax(0px, 1fr) auto; align-items: center; gap: 0.35rem; box-sizing: border-box; display: grid !important; padding: 0px !important; }
+body:not([data-screen="main"]) .game-header .header-center > [data-action="back"], body:not([data-screen="main"]) .game-header .header-center > .header-actions { position: static !important; }
+body:not([data-screen="main"]) .game-header .header-title { width: 100%; max-width: 100%; min-width: 0px; text-align: center; }
+body:not([data-screen="main"]) .game-header .header-title strong { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body:not([data-screen="main"]) .game-header .header-actions { align-items: center; justify-content: flex-end; gap: 0.28rem; min-width: max-content; display: flex !important; }
+body:not([data-screen="main"]) .game-header .header-actions .header-main-button { align-items: center; justify-content: center; white-space: nowrap; display: inline-flex !important; width: auto !important; min-width: 76px !important; height: 32px !important; min-height: 32px !important; padding: 0px 0.55rem !important; border: 2.25px solid rgba(255, 224, 157, 0.72) !important; border-radius: 9px !important; background: rgba(28, 21, 15, 0.78) !important; color: rgb(255, 240, 207) !important; font-size: 0.72rem !important; font-weight: 900 !important; line-height: 1 !important; pointer-events: auto !important; }
+@media (max-width: 430px), (orientation: landscape) and (max-height: 540px){body:not([data-screen="main"]) .game-header .header-center { gap: 0.22rem; }
+body:not([data-screen="main"]) .game-header .header-actions { gap: 0.18rem; }
+body:not([data-screen="main"]) .game-header .header-actions .header-main-button { min-width: 68px !important; height: 30px !important; min-height: 30px !important; padding: 0px 0.38rem !important; font-size: 0.62rem !important; }
+}
+body:not([data-screen="main"]) .game-header .header-center { grid-template-columns: auto minmax(0px, 1fr) auto; align-items: center; width: 100%; gap: 0.35rem; display: grid !important; }
+body:not([data-screen="main"]) .game-header .header-center > [data-action="back"] { position: static !important; justify-self: start; }
+body:not([data-screen="main"]) .game-header .header-title { justify-self: center; text-align: center; }
+body:not([data-screen="main"]) .game-header .header-actions { position: static !important; justify-self: end; }
+@media (max-width: 430px), (orientation: landscape) and (max-height: 540px){body:not([data-screen="main"]) .game-header .header-center { gap: 0.22rem; }
+}
+.header-money-area { grid-area: money; place-self: center end; display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; min-width: 0px; white-space: nowrap; }
+.header-money-area .header-money { grid-area: auto !important; place-self: center auto !important; }
+@media (max-width: 430px), (orientation: landscape) and (max-height: 540px){.header-money-area { gap: 0.25rem; }
+}
+@media (max-width: 360px){.header-money-area { gap: 0.18rem; }
+}
+@media (orientation: landscape){html, body, .screen-shell { width: 100%; height: 100%; min-width: 0px; min-height: 0px; }
+body:not([data-screen="phone"]) #background-layer { background-size: cover !important; background-position: center center !important; }
+}
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money { font-size: 1.06rem !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 1rem !important; line-height: 1.15 !important; }
+@media (orientation: portrait), (max-width: 820px){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money { font-size: 0.88rem !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 0.88rem !important; }
+}
+@media (max-width: 430px){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money { font-size: 0.8rem !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 0.82rem !important; }
+}
+@media (orientation: landscape) and (max-height: 540px){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money { font-size: 0.84rem !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 0.82rem !important; }
+}
+.game-header { grid-template-areas: "status money" "center center" "clock clock" !important; row-gap: 0.3rem !important; }
+.game-header { grid-template-areas: "status money" "center center" !important; row-gap: 0.18rem !important; }
+html { text-size-adjust: 100%; }
+@media (orientation: portrait) and (max-width: 820px){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header { grid-template-columns: minmax(0px, 1fr) !important; grid-template-areas: "status" "money" "center" !important; align-items: stretch !important; min-height: 0px !important; padding: 7px 8px !important; gap: 5px 0px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money-area { grid-area: money !important; place-self: center stretch !important; display: flex !important; align-items: center !important; justify-content: flex-end !important; gap: 5px !important; width: 100% !important; min-width: 0px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money { flex: 0 0 auto !important; min-width: 0px !important; font-size: 14px !important; line-height: 1 !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-center { grid-area: center !important; display: grid !important; grid-template-columns: 38px minmax(0px, 1fr) 38px !important; align-items: center !important; gap: 5px !important; width: 100% !important; min-width: 0px !important; min-height: 38px !important; padding: 0px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-center > [data-action="back"] { position: static !important; justify-self: start !important; width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; font-size: 17px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title { grid-column: 2 !important; justify-self: stretch !important; width: 100% !important; max-width: 100% !important; min-width: 0px !important; text-align: center !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { display: block !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; font-size: 17px !important; line-height: 1.15 !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-actions { grid-column: 3 !important; position: static !important; justify-self: end !important; width: 38px !important; min-width: 38px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .screen-content { padding-top: 145px !important; }
+}
+@media (orientation: portrait) and (max-width: 380px){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .header-money { font-size: 13px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 16px !important; }
+}
+:root { --visual-viewport-height: 100dvh; }
+body:not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money { font-size: 1.1rem !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 1.05rem !important; }
+@media (orientation: portrait) and (max-width: 820px){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money { font-size: 15px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 18px !important; }
+}
+@media (orientation: portrait) and (max-width: 380px){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money { font-size: 14px !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 17px !important; }
+}
+@media (orientation: landscape) and (max-height: 540px){body:not([data-screen="title"]):not([data-screen="login"]) .game-header .header-money { font-size: 0.88rem !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]) .game-header .header-title strong { font-size: 0.86rem !important; }
+}
+@keyframes robbery-danger-pulse { 
+  0% { opacity: 0.52; }
+  100% { opacity: 1; }
+}
+@keyframes quizTapPulse { 
+  0%, 100% { opacity: 0.48; transform: translateY(0px); }
+  50% { opacity: 1; transform: translateY(2px); }
+}
+@keyframes quizResultArrival { 
+  0% { opacity: 0.2; transform: translateY(10px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0px) scale(1); }
+}
+@keyframes quizRewardGlow { 
+  0%, 100% { transform: scale(0.92); opacity: 0.55; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+@keyframes quizRewardFloat { 
+  0%, 100% { transform: translateY(0px) rotate(-1deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+@keyframes westernUnionTap { 
+  0%, 100% { opacity: 0.5; transform: translateY(0px); }
+  50% { opacity: 1; transform: translateY(2px); }
+}
+@keyframes westernUnionDiamondFloat { 
+  0%, 100% { transform: translateY(0px) rotate(-1deg); }
+  50% { transform: translateY(-9px) rotate(1deg); }
+}
+@keyframes westernUnionDiamondGlow { 
+  0%, 100% { opacity: 0.52; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+.event-dialogue-card { position: relative; z-index: 7; grid-row: 2; display: grid; gap: 9px; width: min(920px, 100% - 24px); margin: 0 auto max(14px,var(--safe-bottom)); padding: clamp(17px, 2.5vw, 27px) clamp(18px, 3vw, 34px); border-radius: 18px; color: rgb(238, 243, 244); text-align: left; border: 2.25px solid rgba(224, 232, 235, 0.43) !important; background: linear-gradient(155deg, rgba(14, 18, 20, 0.96), rgba(5, 7, 9, 0.96)) !important; box-shadow: rgba(0, 0, 0, 0.68) 0px 22px 58px !important; }
+.event-dialogue-card > strong { font-size: clamp(1rem, 2.2vw, 1.38rem); line-height: 1.7; letter-spacing: 0.018em; }
+.event-dialogue-card > span { justify-self: end; color: rgb(189, 201, 205); font-size: 0.82rem; font-weight: 800; animation: 1.35s ease-in-out 0s infinite normal none running westernUnionTap; }
+.special-item-glow { position: absolute; z-index: 1; width: min(400px, 66vw); aspect-ratio: 1 / 1; border-radius: 50%; background: radial-gradient(circle, rgba(255, 237, 173, 0.32), rgba(211, 157, 66, 0.1) 48%, transparent 70%); animation: 1.8s ease-in-out 0s infinite normal none running westernUnionDiamondGlow; }
+@media (orientation: portrait), (max-width: 760px){.event-dialogue-card { width: calc(100% - 16px); margin-bottom: max(8px,var(--safe-bottom)); padding: 14px 15px; gap: 8px; }
+.event-dialogue-card > strong { font-size: 0.96rem; line-height: 1.58; }
+.special-item-glow { width: min(350px, 84vw); }
+}
+@media (orientation: landscape) and (max-height: 560px){.event-dialogue-card { margin-bottom: 6px; padding: 10px 14px; gap: 6px; }
+.event-dialogue-card > strong { font-size: 0.84rem; line-height: 1.45; }
+}
+#background-layer { overflow: hidden; }
+#background-layer::before, #background-layer::after { content: none; pointer-events: none; }
+@media (orientation: portrait){body:is([data-screen="mining"], [data-screen="miningGame"], [data-screen="miningResult"], [data-screen="miningPazupanEvent"], [data-screen="kappaJadeEvent"]) { --portrait-backdrop-position: 64% center; --portrait-panorama-position: center center; }
+}
+@media (orientation: portrait){body:not([data-screen="phone"]) #background-layer { background-size: cover !important; background-position: center center !important; background-repeat: no-repeat !important; }
+}
+.visit-character-event { position: relative; display: grid; grid-template-rows: minmax(0px, 1fr) auto; min-height: calc(100dvh - var(--header-height,86px)); isolation: isolate; overflow: hidden; }
+.visit-character-event::before { content: ""; position: absolute; inset: 0px; z-index: 1; pointer-events: none; background: radial-gradient(circle at 50% 39%, transparent 10%, rgba(0, 0, 0, 0.16) 58%, rgba(0, 0, 0, 0.58)); }
+.visit-character-area { position: absolute; left: 50%; top: 0px; bottom: clamp(132px, 23vh, 202px); z-index: 5; width: 100%; min-width: 0px; padding: 8px 12px 0px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; overflow: visible; pointer-events: none; }
+.visit-character { display: block; width: auto; height: auto; max-width: min(79vw, 780px); max-height: 100%; margin: 0px auto; object-fit: contain; object-position: center center; filter: drop-shadow(rgba(0, 0, 0, 0.82) 0px 24px 34px); user-select: none; }
+.visit-event-dialogue { position: relative !important; z-index: 9 !important; grid-row: 2 !important; align-self: end !important; }
+.visit-event-dialogue > small { display: block; color: rgb(217, 185, 99); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.08em; }
+@media (orientation: portrait), (max-width: 760px){.visit-character-area { bottom: clamp(122px, 26vh, 186px); padding-inline: 5px; }
+.visit-character { max-width: 96vw; }
+}
+@media (orientation: landscape) and (max-height: 560px){.visit-character-area { bottom: 112px; padding-top: 3px; }
+.visit-character { max-width: 68vw; }
+}
+@media (orientation: portrait), (max-width: 760px){body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="kappaJadeEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"]) { overflow: hidden !important; }
+body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="kappaJadeEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"]) .main-screen { position: relative !important; overflow: hidden !important; isolation: isolate !important; }
+}
+.event-shell-no-header { min-height: 100dvh; }
+.event-shell-no-header > .screen-content { min-height: 100dvh; padding-top: 0px; }
+body[data-screen="okachimachiQuiz"] .event-shell-no-header .okachimachi-quiz-event, body[data-screen="westernUnionEvent"] .western-union-event, body[data-screen="miningPazupanEvent"] .pazupan-event, body[data-screen="mermaidEvent"] .mermaid-event, body[data-screen="sushiChefEvent"] .visit-character-event, body[data-screen="cyclopsEvent"] .visit-character-event, body[data-screen="ganeshaTuskEvent"] .visit-character-event, body[data-screen="kappaJadeEvent"] .visit-character-event, body[data-screen="childhoodFriendEvent"] .childhood-friend-event, body[data-screen="touristWoodSwordEvent"] .visit-character-event, body[data-screen="diamondPolishingLapEvent"] .visit-character-event, body[data-screen="alienAbductionEvent"] .visit-character-event, body[data-screen="mysteryChineseMealEvent"] .visit-character-event, body[data-screen="hauntingEvent"] .visit-character-event, body[data-screen="storeTheftEvent"] .visit-character-event { min-height: 100dvh; }
+html[data-device-class="phone"] { --jwj-edge-gap: clamp(5px,calc(7px * var(--jwj-ui-scale,1)),9px); }
+html[data-device-class="phone"][data-orientation="portrait"] { --jwj-main-header-height: clamp(68px,calc(78px * var(--jwj-ui-scale,1)),86px); --jwj-page-header-height: clamp(122px,calc(138px * var(--jwj-ui-scale,1)),148px); --jwj-main-menu-height: clamp(104px,calc(116px * var(--jwj-ui-scale,1)),126px); --jwj-event-dialogue-space: clamp(146px,calc(170px * var(--jwj-ui-scale,1)),184px); --jwj-character-max-width: 92vw; }
+html[data-device-class="phone"][data-orientation="landscape"] { --jwj-main-header-height: clamp(50px,calc(58px * var(--jwj-ui-scale,1)),64px); --jwj-page-header-height: clamp(62px,calc(70px * var(--jwj-ui-scale,1)),76px); --jwj-main-menu-height: clamp(50px,calc(58px * var(--jwj-ui-scale,1)),64px); --jwj-event-dialogue-space: clamp(94px,calc(108px * var(--jwj-ui-scale,1)),118px); --jwj-character-max-width: 72vw; }
+html[data-device-class="phone"], html[data-device-class="phone"] body, html[data-device-class="phone"] #root { width: var(--jwj-layout-width,100%) !important; height: var(--jwj-layout-height,100dvh) !important; min-height: var(--jwj-layout-height,100dvh) !important; max-height: var(--jwj-layout-height,100dvh) !important; }
+html[data-device-class="phone"] body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header { contain: layout paint; top: calc(var(--safe-top) + var(--jwj-edge-gap)) !important; left: var(--jwj-edge-gap) !important; right: var(--jwj-edge-gap) !important; overflow: hidden !important; }
+html[data-device-class="phone"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header { height: var(--jwj-page-header-height) !important; min-height: var(--jwj-page-header-height) !important; max-height: var(--jwj-page-header-height) !important; }
+html[data-device-class="phone"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .screen-shell:not(.event-shell-no-header) > .screen-content { padding-top: calc(var(--safe-top) + var(--jwj-edge-gap) * 2 + var(--jwj-page-header-height)) !important; }
+html[data-device-class="phone"] body[data-screen] .event-shell-no-header > .screen-content { padding: 0px !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header { grid-template-columns: minmax(0px, 1fr) !important; grid-template-areas: "status" "money" "center" !important; align-items: stretch !important; padding: calc(6px * var(--jwj-ui-scale,1)) calc(8px * var(--jwj-ui-scale,1)) !important; row-gap: calc(4px * var(--jwj-ui-scale,1)) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-money-area { min-height: calc(28px * var(--jwj-ui-scale,1)) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-center { min-height: calc(32px * var(--jwj-ui-scale,1)) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header { grid-template-columns: minmax(0px, 1fr) auto !important; grid-template-areas: "status money" "center center" !important; padding: calc(4px * var(--jwj-ui-scale,1)) calc(7px * var(--jwj-ui-scale,1)) !important; column-gap: calc(6px * var(--jwj-ui-scale,1)) !important; row-gap: calc(2px * var(--jwj-ui-scale,1)) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header .header-money { font-size: clamp(11px,calc(13px * var(--jwj-ui-scale,1)),14px) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header .header-center { min-height: calc(22px * var(--jwj-ui-scale,1)) !important; }
+html[data-device-class="phone"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="kappaJadeEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"]) :is(.western-union-character-area, .pazupan-character-area, .mermaid-character-area, .visit-character-area) { position: absolute !important; inset-inline: 0px !important; left: 0px !important; right: 0px !important; top: 0px !important; bottom: var(--jwj-event-dialogue-space) !important; width: 100% !important; height: auto !important; min-width: 0px !important; min-height: 0px !important; padding: var(--jwj-edge-gap) var(--jwj-edge-gap) 0 !important; transform: none !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: visible !important; visibility: visible !important; opacity: 1 !important; }
+html[data-device-class="phone"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="kappaJadeEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"]) :is(.western-union-character, .pazupan-character, .mermaid-character, .visit-character) { display: block !important; width: auto !important; height: auto !important; max-width: var(--jwj-character-max-width) !important; max-height: 100% !important; margin: auto !important; object-fit: contain !important; object-position: center center !important; visibility: visible !important; opacity: 1 !important; }
+html[data-device-class="phone"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="kappaJadeEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"]) :is(.western-union-dialogue, .event-dialogue-card, .visit-event-dialogue) { width: calc(100% - var(--jwj-edge-gap) * 2) !important; max-height: calc(var(--jwj-event-dialogue-space) - var(--safe-bottom) - var(--jwj-edge-gap)) !important; margin-inline: auto !important; margin-bottom: calc(var(--safe-bottom) + var(--jwj-edge-gap)) !important; padding: calc(10px * var(--jwj-ui-scale,1)) calc(13px * var(--jwj-ui-scale,1)) !important; overflow-y: auto !important; }
+@keyframes hauntingFlash { 
+  0% { opacity: 0.92; }
+  8% { opacity: 0; }
+  14% { opacity: 0.46; }
+  24% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes hauntingChromatic { 
+  0%, 100% { filter: drop-shadow(rgba(0, 0, 0, 0.9) 0px 24px 36px) drop-shadow(rgba(140, 180, 255, 0.08) -6px 0px 10px) drop-shadow(rgba(255, 80, 80, 0.06) 6px 0px 10px); }
+  50% { filter: drop-shadow(rgba(0, 0, 0, 0.92) 0px 26px 38px) drop-shadow(rgba(140, 180, 255, 0.16) -10px 0px 14px) drop-shadow(rgba(255, 80, 80, 0.12) 10px 0px 14px); }
+}
+@keyframes hauntingDialogueShake { 
+  0%, 100% { transform: translate3d(0px, 0px, 0px); }
+  15% { transform: translate3d(-1px, 0px, 0px); }
+  30% { transform: translate3d(1.2px, 0px, 0px); }
+  45% { transform: translate3d(-1.8px, 0.4px, 0px); }
+  60% { transform: translate3d(1px, -0.4px, 0px); }
+  75% { transform: translate3d(-0.8px, 0px, 0px); }
+}
+@keyframes hauntingCostGlow { 
+  0%, 100% { box-shadow: rgba(154, 94, 255, 0) 0px 0px 0px, rgba(0, 0, 0, 0.54) 0px 18px 42px; }
+  50% { box-shadow: rgba(154, 94, 255, 0.18) 0px 0px 32px, rgba(0, 0, 0, 0.64) 0px 24px 48px; }
+}
+@keyframes hauntingFadeIn { 
+  0% { opacity: 0; transform: translate3d(0px, 56px, 0px) scale(0.88); filter: blur(14px) brightness(0.42) drop-shadow(rgba(0, 0, 0, 0) 0px 0px 0px); }
+  28% { opacity: 0.35; transform: translate3d(0px, 22px, 0px) scale(0.94); filter: blur(7px) brightness(0.74) drop-shadow(rgba(0, 0, 0, 0.55) 0px 12px 18px); }
+  46% { opacity: 0.18; transform: translate3d(0px, 14px, 0px) scale(0.91); filter: blur(10px) brightness(0.52) drop-shadow(rgba(0, 0, 0, 0.66) 0px 14px 26px); }
+  70% { opacity: 0.92; transform: translate3d(0px, 0px, 0px) scale(1.03); filter: blur(1.8px) brightness(1.05) drop-shadow(rgba(0, 0, 0, 0.82) 0px 24px 34px); }
+  100% { opacity: 1; transform: translate3d(0px, 0px, 0px) scale(1); filter: blur(0px) brightness(1) drop-shadow(rgba(0, 0, 0, 0.88) 0px 24px 36px); }
+}
+@keyframes hauntingFloat { 
+  0% { transform: translate3d(0px, 0px, 0px) scale(1); }
+  25% { transform: translate3d(-10px, -8px, 0px) scale(1.016); }
+  55% { transform: translate3d(6px, 6px, 0px) scale(0.994); }
+  80% { transform: translate3d(-4px, -10px, 0px) scale(1.01); }
+  100% { transform: translate3d(0px, 0px, 0px) scale(1); }
+}
+@keyframes hauntingFlicker { 
+  0%, 100% { opacity: 1; }
+  7% { opacity: 0.88; }
+  10% { opacity: 0.98; }
+  13% { opacity: 0.84; }
+  24% { opacity: 0.97; }
+  28% { opacity: 0.9; }
+  46% { opacity: 0.78; }
+  50% { opacity: 0.98; }
+  73% { opacity: 0.89; }
+  76% { opacity: 0.99; }
+}
+@keyframes hauntingPulse { 
+  0%, 100% { box-shadow: rgba(185, 189, 255, 0) 0px 0px 0px, rgba(0, 0, 0, 0.44) 0px 22px 40px; }
+  50% { box-shadow: rgba(185, 189, 255, 0.18) 0px 0px 28px, rgba(0, 0, 0, 0.58) 0px 28px 46px; }
+}
+@keyframes hauntingStatic { 
+  0% { transform: translate3d(0px, 0px, 0px); opacity: 0.05; }
+  20% { transform: translate3d(-1%, 1%, 0px); opacity: 0.09; }
+  40% { transform: translate3d(1%, -1%, 0px); opacity: 0.06; }
+  60% { transform: translate3d(-0.7%, 0.5%, 0px); opacity: 0.1; }
+  80% { transform: translate3d(0.5%, -0.8%, 0px); opacity: 0.07; }
+  100% { transform: translate3d(0px, 0px, 0px); opacity: 0.05; }
+}
+@keyframes hauntingTextJitter { 
+  0%, 100% { transform: translateX(0px); }
+  20% { transform: translateX(-1px); }
+  40% { transform: translateX(1.5px); }
+  60% { transform: translateX(-1.2px); }
+  80% { transform: translateX(0.8px); }
+}
+body[data-screen="kappaJadeEvent"] { overflow: hidden; }
+body[data-screen="kappaJadeEvent"] .screen-content { min-height: 100dvh; padding-top: 0px !important; }
+body[data-screen="kappaJadeEvent"] .kappa-jade-event-screen { overflow: hidden; }
+body[data-screen="kappaJadeEvent"] .kappa-jade-event { background: radial-gradient(circle at 50% 28%, rgba(52, 106, 86, 0.26), rgba(10, 19, 19, 0.05) 48%, rgba(4, 7, 10, 0.16) 76%); }
+body[data-screen="kappaJadeEvent"] .kappa-character { max-width: min(92vw, 720px); max-height: min(70dvh, 980px); object-fit: contain; filter: drop-shadow(rgba(0, 0, 0, 0.88) 0px 24px 38px); }
+body[data-screen="kappaJadeEvent"] .kappa-jade-event .visit-event-dialogue > small { color: rgb(158, 227, 193); }
+.kappa-jade-reward-button { position: absolute; z-index: 10; left: 50%; top: 48%; transform: translate(-50%, -50%); width: min(86vw, 620px); min-height: 220px; border: 2.25px solid rgba(123, 220, 175, 0.72); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: rgb(239, 255, 247); background: linear-gradient(rgba(11, 26, 21, 0.92), rgba(5, 11, 9, 0.96)); box-shadow: rgba(0, 0, 0, 0.76) 0px 24px 60px, rgba(123, 220, 175, 0.12) 0px 0px 36px inset; }
+.kappa-jade-reward-button img { width: min(72vw, 430px); max-height: 31dvh; object-fit: contain; filter: drop-shadow(rgba(146, 245, 198, 0.52) 0px 0px 18px); }
+.kappa-jade-reward-button strong { font-size: clamp(1.15rem, 3vw, 1.75rem); }
+.kappa-jade-reward-button small { color: rgb(188, 239, 216); }
+.kappa-jade-glow { width: min(78vw, 560px) !important; height: min(42vw, 300px) !important; background: radial-gradient(circle, rgba(126, 255, 207, 0.28), rgba(83, 209, 164, 0.1) 52%, transparent 72%) !important; }
+@media (orientation: landscape){body[data-screen="kappaJadeEvent"] .kappa-character { max-height: 96dvh; max-width: 54vw; }
+.kappa-jade-reward-button { width: min(52vw, 620px); min-height: 170px; }
+.kappa-jade-reward-button img { width: min(40vw, 430px); max-height: 34dvh; }
+}
+@keyframes storeThiefVanish { 
+  0% { opacity: 1; transform: translateX(-50%) scale(1); filter: blur(0px); }
+  42% { opacity: 0.72; transform: translateX(-50%) scale(1.012); filter: blur(1px); }
+  70% { opacity: 0.26; transform: translateX(-50%) scale(0.992); filter: blur(5px); }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.965); filter: blur(12px); }
+}
+@keyframes storeThiefDialogueVanish { 
+  0%, 38% { opacity: 1; transform: translateY(0px); }
+  100% { opacity: 0; transform: translateY(10px); }
+}
+@keyframes storeThiefAfterimageFade { 
+  0% { opacity: 0.19; filter: brightness(0) blur(8px); transform: translate(-50%, -50%) scale(0.99); }
+  100% { opacity: 0; filter: brightness(0) blur(18px); transform: translate(-50%, -50%) scale(0.95); }
+}
+@keyframes storeTheftNoticeIn { 
+  0% { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0px); filter: blur(0px); }
+}
+@keyframes gift-pop { 
+  0% { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+  70% { transform: scale(1.12) rotate(4deg); }
+  100% { transform: scale(1); opacity: 1; }
+}
+html, body, button, input, select, textarea { font-family: var(--ui-font); }
+.header-secondary-actions { display: none !important; }
+body[data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header.game-header .header-secondary-actions { display: none !important; }
+:root { --jwj-content-top-offset: 8px; }
+@media (orientation: portrait), (max-aspect-ratio: 1 / 1){body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="loading"]) .screen-shell:not(.event-shell-no-header) > .screen-content { box-sizing: border-box !important; padding-top: var(--jwj-content-top-offset, 8px) !important; scroll-padding-top: var(--jwj-content-top-offset, 8px) !important; }
+body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="loading"]) .screen-shell:not(.event-shell-no-header) > .screen-content > :first-child { margin-top: 0px !important; }
+.event-shell-no-header > .screen-content { padding-top: max(8px, env(safe-area-inset-top)) !important; }
+}
+.event-safety-recovery { position: fixed; z-index: 12050; top: calc(env(safe-area-inset-top,0px) + 1px); right: calc(env(safe-area-inset-right,0px) + 1px); left: auto; bottom: auto; appearance: none; border-width: 0px 0px 2.25px 2.25px; border-style: none none solid solid; border-color: currentcolor currentcolor rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.2); border-image: none; border-radius: 0px 0px 0px 7px; background: rgba(12, 10, 14, 0.38); color: rgba(255, 255, 255, 0.72); padding: 3px 6px; min-width: 0px; min-height: 21px; font-style: inherit; font-variant: inherit; font-stretch: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; font-size: 9px; font-weight: 700; line-height: 1.05; letter-spacing: 0px; white-space: nowrap; cursor: pointer; opacity: 0.56; box-shadow: none; backdrop-filter: blur(2px); touch-action: manipulation; }
+@media (max-width: 520px){.event-safety-recovery { top: env(safe-area-inset-top,0px); right: env(safe-area-inset-right,0px); padding: 2px 5px; min-height: 20px; font-size: 8.5px; }
+}
+@media (orientation: landscape), (min-aspect-ratio: 1 / 1){body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header { min-height: 52px !important; padding: 1px 8px !important; gap: 0px clamp(5px, 1vw, 9px) !important; }
+body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-money { font-size: clamp(14px,calc(16px * var(--jwj-ui-scale,1)),17px) !important; line-height: 1 !important; }
+html[data-device-class="phone"][data-orientation="landscape"] { --jwj-main-header-height: clamp(44px,calc(48px * var(--jwj-ui-scale,1)),52px); --jwj-page-header-height: clamp(50px,calc(56px * var(--jwj-ui-scale,1)),60px); }
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header { padding: 1px clamp(5px, 1.2vw, 7px) !important; row-gap: 0px !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body .game-header .header-center { min-height: 18px !important; }
+}
+.game-header .header-money { font-size: clamp(16px,calc(18px * var(--jwj-ui-scale,1)),20px) !important; line-height: 1 !important; font-weight: 900 !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="kappaJadeEvent"], [data-screen="clockTowerDonationEvent"], [data-screen="tattooWomanAmberEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"], [data-screen="mysteryChineseMealEvent"], [data-screen="hauntingEvent"], [data-screen="storeTheftEvent"], [data-screen="childhoodFriendEvent"]) :is(.western-union-event, .pazupan-event, .mermaid-event, .visit-character-event, .haunting-event, .store-theft-event, .childhood-friend-event) { min-height: var(--jwj-layout-height,100dvh) !important; height: var(--jwj-layout-height,100dvh) !important; display: grid !important; grid-template-rows: minmax(0px, 1fr) auto !important; align-items: stretch !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="kappaJadeEvent"], [data-screen="clockTowerDonationEvent"], [data-screen="tattooWomanAmberEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"], [data-screen="mysteryChineseMealEvent"], [data-screen="hauntingEvent"], [data-screen="storeTheftEvent"]) :is(.western-union-character-area, .pazupan-character-area, .mermaid-character-area, .visit-character-area) { position: absolute !important; inset-inline: 0px !important; left: 0px !important; right: 0px !important; top: 0px !important; bottom: var(--jwj-event-dialogue-space) !important; width: 100% !important; height: auto !important; min-width: 0px !important; min-height: 0px !important; padding: var(--jwj-edge-gap) var(--jwj-edge-gap) 0 !important; transform: none !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: visible !important; visibility: visible !important; opacity: 1 !important; z-index: 7 !important; pointer-events: none !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="kappaJadeEvent"], [data-screen="clockTowerDonationEvent"], [data-screen="tattooWomanAmberEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"], [data-screen="mysteryChineseMealEvent"], [data-screen="hauntingEvent"], [data-screen="storeTheftEvent"]) :is(.western-union-character, .pazupan-character, .mermaid-character, .visit-character) { max-width: var(--jwj-character-max-width) !important; max-height: 100% !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="kappaJadeEvent"], [data-screen="clockTowerDonationEvent"], [data-screen="tattooWomanAmberEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"], [data-screen="mysteryChineseMealEvent"], [data-screen="hauntingEvent"], [data-screen="storeTheftEvent"], [data-screen="childhoodFriendEvent"]) :is(.western-union-dialogue, .event-dialogue-card, .visit-event-dialogue, .childhood-friend-dialogue) { width: calc(100% - var(--jwj-edge-gap) * 2) !important; max-height: calc(var(--jwj-event-dialogue-space) - var(--safe-bottom) - var(--jwj-edge-gap)) !important; margin: 0 auto calc(var(--safe-bottom) + var(--jwj-edge-gap)) !important; padding: calc(10px * var(--jwj-ui-scale,1)) calc(13px * var(--jwj-ui-scale,1)) !important; align-self: end !important; overflow-y: auto !important; }
+html[data-device-class="phone"][data-orientation="landscape"] { --jwj-page-header-height: clamp(66px,calc(74px * var(--jwj-ui-scale,1)),80px); }
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header { padding-top: calc(5px * var(--jwj-ui-scale,1)) !important; padding-bottom: calc(5px * var(--jwj-ui-scale,1)) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-center { min-height: calc(30px * var(--jwj-ui-scale,1)) !important; align-items: center !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-center > [data-action="back"] { place-self: center start !important; width: clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px) !important; height: clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px) !important; min-width: clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px) !important; min-height: clamp(30px,calc(34px * var(--jwj-ui-scale,1)),36px) !important; margin: 0px !important; padding: 0px !important; box-sizing: border-box !important; }
+@keyframes aquariumBubble { 
+  0% { transform: translateY(0px) scale(0.75); opacity: 0; }
+  18% { opacity: 0.8; }
+  100% { transform: translateY(-230px) scale(1.15); opacity: 0; }
+}
+@keyframes autosavePulse { 
+  50% { opacity: 0.35; }
+}
+@media (orientation: landscape), (min-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-money-area { position: relative !important; z-index: 421 !important; overflow: visible !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]) .game-header .header-money { position: relative !important; z-index: 422 !important; overflow: visible !important; isolation: isolate !important; pointer-events: none !important; }
+}
+:root { --jwj-header-z: 600; --jwj-money-z: 760; --jwj-header-gap: 6px; --jwj-bar-one-height: 82px; --jwj-bar-two-height: 58px; --jwj-header-panel-bg: linear-gradient(180deg,rgba(10,7,5,.88),rgba(10,7,5,.68)); --jwj-header-panel-border: rgba(255,232,181,.34); --jwj-header-text: #fff0cf; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .screen-shell.screen-shell > .game-header.game-header.game-header { position: absolute !important; top: calc(var(--safe-top) + var(--jwj-edge-gap)) !important; left: var(--jwj-edge-gap) !important; right: var(--jwj-edge-gap) !important; width: auto !important; height: auto !important; min-height: 0px !important; max-height: none !important; margin: 0px !important; padding: 0px !important; display: flex !important; flex-direction: column !important; align-items: stretch !important; justify-content: flex-start !important; gap: var(--jwj-header-gap) !important; overflow: visible !important; contain: none !important; isolation: auto !important; z-index: var(--jwj-header-z) !important; background: none !important; border: 0px !important; border-radius: 0px !important; box-shadow: none !important; backdrop-filter: none !important; box-sizing: border-box !important; font-variant-numeric: tabular-nums !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .screen-shell.screen-shell > .game-header.game-header.game-header::before, html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .screen-shell.screen-shell > .game-header.game-header.game-header::after { content: none !important; display: none !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .top-bar-one, html[data-device-class="phone"] body[data-header-mode="two-bar"][data-screen]:not([data-screen="main"]):not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .top-bar-two { position: relative !important; width: 100% !important; min-width: 0px !important; margin: 0px !important; box-sizing: border-box !important; overflow: visible !important; contain: none !important; color: var(--jwj-header-text) !important; background: var(--jwj-header-panel-bg) !important; border: 2.25px solid var(--jwj-header-panel-border) !important; border-radius: 13px !important; box-shadow: rgba(0, 0, 0, 0.26) 0px 6px 20px !important; backdrop-filter: blur(7px) !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .top-bar-one { flex: 0 0 var(--jwj-bar-one-height) !important; height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; display: grid !important; grid-template: "status money" 100% / minmax(0px, 1fr) max-content !important; align-items: stretch !important; column-gap: clamp(5px, 1.3vw, 10px) !important; padding: 0px !important; z-index: 2 !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .top-bar-one > .header-money-area.header-money-area.header-money-area { grid-area: money !important; place-self: stretch end !important; width: auto !important; height: 100% !important; min-width: max-content !important; min-height: 0px !important; max-width: none !important; max-height: none !important; margin: 0px !important; display: flex !important; align-items: center !important; justify-content: flex-end !important; overflow: visible !important; contain: none !important; box-sizing: border-box !important; z-index: calc(var(--jwj-money-z) - 2) !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .header-money.header-money { position: relative !important; display: inline-flex !important; align-items: center !important; justify-content: flex-end !important; align-self: center !important; width: auto !important; height: auto !important; min-width: max-content !important; margin: 0px !important; padding: 0px !important; overflow: visible !important; contain: none !important; isolation: auto !important; color: var(--jwj-header-text) !important; font-weight: 900 !important; line-height: 1 !important; white-space: nowrap !important; pointer-events: none !important; z-index: calc(var(--jwj-money-z) - 1) !important; }
+@media (orientation: portrait), (max-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="portrait"] body { --jwj-header-gap: 6px; --jwj-bar-one-height: clamp(76px,22vw,84px); --jwj-bar-two-height: clamp(52px,15.5vw,60px); --jwj-bar-two-side: clamp(6px,2vw,10px); --jwj-action-gap: clamp(4px,1.1vw,7px); --jwj-title-width: min(44vw,calc(100% - 206px)); }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .top-bar-one > .header-money-area.header-money-area.header-money-area { padding: clamp(7px, 1.8vw, 10px) clamp(9px, 2.4vw, 13px) clamp(7px, 1.8vw, 10px) 2px !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .header-money.header-money { font-size: clamp(16px, 4.8vw, 20px) !important; letter-spacing: -0.02em !important; }
+}
+@media (orientation: landscape), (min-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="landscape"] body { --jwj-header-gap: 4px; --jwj-bar-one-height: clamp(42px,12.5vh,48px); --jwj-bar-two-height: clamp(32px,9.5vh,38px); --jwj-bar-two-side: clamp(5px,1vw,9px); --jwj-action-gap: clamp(3px,.7vw,6px); --jwj-title-width: min(50vw,calc(100% - 200px)); }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .top-bar-one > .header-money-area.header-money-area.header-money-area { padding: clamp(4px, 1vh, 6px) clamp(8px, 1.2vw, 12px) clamp(4px, 1vh, 6px) 2px !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .header-money.header-money { font-size: clamp(16px, 4.8vh, 20px) !important; letter-spacing: -0.015em !important; }
+}
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one { position: relative !important; inset: auto !important; transform: none !important; display: grid !important; grid-template: "status money" 100% / minmax(0px, 1fr) max-content !important; align-items: stretch !important; width: 100% !important; min-width: 0px !important; height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; margin: 0px !important; padding: 0px !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; box-sizing: border-box !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .status-left.status-left, html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area { position: relative !important; inset: auto !important; transform: none !important; float: none !important; visibility: visible !important; opacity: 1 !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area { grid-area: money !important; display: flex !important; align-items: center !important; justify-content: flex-end !important; place-self: stretch end !important; width: auto !important; height: 100% !important; min-width: max-content !important; min-height: 0px !important; max-width: 40vw !important; max-height: none !important; overflow: visible !important; z-index: calc(var(--jwj-money-z) - 2) !important; }
+@media (orientation: landscape), (min-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .header-money.header-money { font-size: clamp(20px, 6vh, 24px) !important; line-height: 1 !important; letter-spacing: -0.018em !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area { min-width: max-content !important; max-width: 34vw !important; }
+}
+@media (orientation: portrait), (max-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="portrait"] body { --jwj-bar-one-height: clamp(92px,25vw,102px) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one { height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; overflow: visible !important; }
+}
+@media (orientation: portrait), (max-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="portrait"] body { --jwj-bar-one-height: clamp(112px,32vw,124px) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .screen-shell.screen-shell > .game-header.game-header.game-header { top: calc(max(12px,env(safe-area-inset-top)) + var(--jwj-edge-gap)) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one { flex-basis: var(--jwj-bar-one-height) !important; height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; overflow: visible !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area { padding: clamp(10px, 2.7vw, 13px) clamp(11px, 3vw, 14px) clamp(10px, 2.7vw, 13px) 2px !important; }
+}
+@media (orientation: portrait), (max-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="portrait"] body { --jwj-bar-one-height: clamp(112px,32vw,124px) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one { position: relative !important; display: grid !important; grid-template: "primary primary" minmax(42px, 1fr) "secondary money" minmax(46px, 1fr) / minmax(0px, 1fr) max-content !important; place-items: stretch !important; gap: 0px clamp(5px, 1.4vw, 8px) !important; height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; padding: 0px !important; overflow: visible !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area { grid-area: money !important; position: relative !important; inset: auto !important; transform: none !important; display: flex !important; align-items: center !important; place-self: stretch end !important; justify-content: flex-end !important; width: auto !important; height: 100% !important; min-width: max-content !important; min-height: 0px !important; max-width: 44vw !important; margin: 0px !important; padding: 0px clamp(11px, 3vw, 14px) clamp(8px, 2.2vw, 11px) clamp(3px, 1vw, 6px) !important; overflow: visible !important; visibility: visible !important; opacity: 1 !important; z-index: 5 !important; }
+}
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header :is(.top-bar-one.top-bar-one, .top-bar-two.top-bar-two) { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+@media (orientation: portrait), (max-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="portrait"] body { --jwj-bar-one-height: 112px !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one { display: grid !important; grid-template: "status money" 100% / minmax(0px, 1fr) max-content !important; align-items: stretch !important; column-gap: clamp(5px, 1.4vw, 8px) !important; height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; overflow: visible !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .top-bar-one.top-bar-one > .header-money-area.header-money-area { grid-area: money !important; position: relative !important; display: flex !important; align-items: flex-end !important; place-self: stretch end !important; justify-content: flex-end !important; width: auto !important; height: 100% !important; min-width: max-content !important; min-height: 0px !important; max-width: 44vw !important; margin: 0px !important; padding: 0px 12px 17px 4px !important; overflow: visible !important; visibility: visible !important; opacity: 1 !important; }
+}
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .screen-shell.screen-shell > .game-header.game-header.game-header { position: absolute !important; top: calc(max(8px,env(safe-area-inset-top)) + var(--jwj-edge-gap,6px)) !important; left: var(--jwj-edge-gap,6px) !important; right: var(--jwj-edge-gap,6px) !important; width: auto !important; height: auto !important; min-height: 0px !important; max-height: none !important; margin: 0px !important; padding: 0px !important; display: flex !important; flex-direction: column !important; align-items: stretch !important; justify-content: flex-start !important; gap: var(--jwj-header-gap,6px) !important; overflow: visible !important; contain: none !important; isolation: auto !important; z-index: var(--jwj-header-z,600) !important; background: none transparent !important; border: 0px !important; box-shadow: none !important; backdrop-filter: none !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > :is(.jwj-status-bar.top-bar-one, .top-bar-two) { position: relative !important; inset: auto !important; transform: none !important; width: 100% !important; min-width: 0px !important; margin: 0px !important; box-sizing: border-box !important; color: rgb(255, 240, 207) !important; background: none transparent !important; border: 2.25px solid rgba(255, 232, 181, 0.42) !important; border-radius: 13px !important; box-shadow: none !important; backdrop-filter: none !important; overflow: visible !important; contain: none !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-primary, html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-secondary { position: relative !important; inset: auto !important; transform: none !important; min-width: 0px !important; min-height: 0px !important; margin: 0px !important; padding: 0px !important; visibility: visible !important; opacity: 1 !important; clip: auto !important; clip-path: none !important; color: rgb(255, 240, 207) !important; font-weight: 800 !important; font-variant-numeric: tabular-nums !important; text-shadow: rgba(0, 0, 0, 0.98) 0px 2px 7px, rgba(0, 0, 0, 0.92) 0px 0px 2px !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-item { position: relative !important; inset: auto !important; transform: none !important; display: inline-flex !important; align-items: center !important; min-width: 0px !important; min-height: 1em !important; margin: 0px !important; padding: 0px !important; line-height: 1 !important; white-space: nowrap !important; visibility: visible !important; opacity: 1 !important; clip: auto !important; clip-path: none !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-weather { gap: 0.16em !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-player-name { overflow: hidden !important; text-overflow: ellipsis !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-time-wrap, html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-time.game-time-panel { display: inline-flex !important; align-items: center !important; justify-content: flex-start !important; width: auto !important; height: auto !important; min-width: 0px !important; min-height: 1em !important; max-width: none !important; max-height: none !important; margin: 0px !important; padding: 0px !important; border: 0px !important; border-radius: 0px !important; background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; font-weight: 900 !important; letter-spacing: 0.015em !important; line-height: 1 !important; white-space: nowrap !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; clip: auto !important; clip-path: none !important; color: rgb(255, 242, 207) !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-money-area.header-money-area { position: relative !important; inset: auto !important; transform: none !important; display: flex !important; align-items: center !important; justify-content: flex-end !important; width: auto !important; height: 100% !important; min-width: max-content !important; min-height: 0px !important; max-width: none !important; margin: 0px !important; padding: 0px !important; overflow: visible !important; visibility: visible !important; opacity: 1 !important; contain: none !important; z-index: calc(var(--jwj-money-z,760) - 2) !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-money-area .header-money { position: relative !important; display: inline-flex !important; align-items: center !important; justify-content: flex-end !important; width: auto !important; height: auto !important; margin: 0px !important; padding: 0px !important; line-height: 1 !important; white-space: nowrap !important; overflow: visible !important; color: rgb(255, 240, 207) !important; font-weight: 900 !important; font-variant-numeric: tabular-nums !important; text-shadow: rgba(0, 0, 0, 0.98) 0px 2px 8px, rgba(0, 0, 0, 0.92) 0px 0px 2px !important; z-index: var(--jwj-money-z,760) !important; }
+@media (orientation: portrait), (max-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="portrait"] body { --jwj-bar-one-height: 94px !important; --jwj-bar-two-height: 60px !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .jwj-status-bar.top-bar-one { display: grid !important; grid-template: "primary money" 1fr "secondary secondary" 1fr / minmax(0px, 1fr) max-content !important; place-items: center stretch !important; gap: 0px clamp(5px, 1.4vw, 8px) !important; height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; padding: 0px clamp(10px, 2.7vw, 13px) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-primary { grid-area: primary !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; align-self: stretch !important; gap: clamp(3px, 1vw, 6px) !important; overflow: visible !important; font-size: clamp(11.5px, 3.55vw, 15px) !important; letter-spacing: -0.018em !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-secondary { grid-area: secondary !important; display: grid !important; grid-template-columns: max-content minmax(0px, 1fr) max-content !important; place-items: center stretch !important; align-self: stretch !important; width: 100% !important; gap: clamp(7px, 2vw, 11px) !important; overflow: visible !important; font-size: clamp(13px, 4vw, 16px) !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-status-time-wrap { justify-self: start !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-player-name { justify-self: center !important; max-width: 100% !important; text-align: center !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-hunger { justify-self: end !important; text-align: right !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-money-area { grid-area: money !important; place-self: stretch end !important; padding-left: 5px !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body[data-screen] .game-header .jwj-money-area .header-money { font-size: clamp(17px, 5.3vw, 22px) !important; letter-spacing: -0.025em !important; }
+}
+@media (orientation: landscape), (min-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="landscape"] body { --jwj-bar-one-height: 58px !important; --jwj-bar-two-height: 54px !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > .jwj-status-bar.top-bar-one { display: grid !important; grid-template: "primary secondary spacer money" 100% / max-content max-content minmax(0px, 1fr) max-content !important; align-items: center !important; column-gap: clamp(8px, 1.4vw, 16px) !important; height: var(--jwj-bar-one-height) !important; min-height: var(--jwj-bar-one-height) !important; max-height: var(--jwj-bar-one-height) !important; padding: 0px clamp(12px, 1.8vw, 18px) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-status-primary { grid-area: primary !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: clamp(6px, 1vw, 11px) !important; font-size: clamp(13px, 3.5vh, 18px) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-status-secondary { grid-area: secondary !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: clamp(7px, 1.1vw, 12px) !important; font-size: clamp(13px, 3.5vh, 18px) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-player-name { flex: 0 1 auto !important; max-width: clamp(72px, 15vw, 150px) !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-hunger { flex: 0 0 auto !important; text-align: left !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-money-area { grid-area: money !important; justify-self: end !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body[data-screen] .game-header .jwj-money-area .header-money { font-size: clamp(20px, 6vh, 24px) !important; letter-spacing: -0.02em !important; }
+}
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-primary.jwj-status-primary { gap: 2px !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header .jwj-status-primary.jwj-status-primary > .jwj-weather.jwj-weather { margin-left: clamp(4px, 0.8vw, 8px) !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > :is(.top-bar-one.top-bar-one, .top-bar-two.top-bar-two) { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; filter: none !important; }
+html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > :is(.top-bar-one.top-bar-one, .top-bar-two.top-bar-two)::before, html[data-device-class="phone"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > :is(.top-bar-one.top-bar-one, .top-bar-two.top-bar-two)::after { content: none !important; display: none !important; background: none !important; }
+body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header > :is(.top-bar-one.top-bar-one, .top-bar-two.top-bar-two), body[data-screen="main"] .main-menu.main-menu, body[data-screen="main"] .main-menu.main-menu button { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; filter: none !important; }
+.jwj-weather-icon, .header-weather-icon { display: inline-flex !important; align-items: center !important; justify-content: center !important; color: inherit !important; line-height: 1 !important; filter: none !important; }
+@media (orientation: landscape), (min-aspect-ratio: 1 / 1){html[data-device-class="phone"][data-orientation="landscape"] body[data-screen]:not([data-screen="title"]):not([data-screen="login"]):not([data-screen="emailVerification"]):not([data-screen="nameSetup"]):not([data-screen="loading"]) .game-header.game-header.game-header > :is(.top-bar-one.top-bar-one, .top-bar-two.top-bar-two) { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+}
+html[data-device-class="phone"][data-orientation="portrait"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="kappaJadeEvent"], [data-screen="clockTowerDonationEvent"], [data-screen="tattooWomanAmberEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"], [data-screen="mysteryChineseMealEvent"], [data-screen="hauntingEvent"], [data-screen="storeTheftEvent"], [data-screen="okachimachiTollEvent"], [data-screen="pandaMusicEvent"]) { --jwj-event-character-center-dialogue-space: var(--jwj-event-dialogue-space,170px); }
+html[data-device-class="phone"][data-orientation="portrait"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="kappaJadeEvent"], [data-screen="clockTowerDonationEvent"], [data-screen="tattooWomanAmberEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"], [data-screen="mysteryChineseMealEvent"], [data-screen="hauntingEvent"], [data-screen="storeTheftEvent"], [data-screen="okachimachiTollEvent"], [data-screen="pandaMusicEvent"], [data-screen="whiteBunnyIceEvent"]) :is(.western-union-character-area, .pazupan-character-area, .mermaid-character-area, .visit-character-area, .okachimachi-toll-character-area, .panda-music-character-area, .white-bunny-character-area) { left: 50% !important; top: 50% !important; bottom: auto !important; width: 100% !important; height: min(calc(100dvh - var(--jwj-event-character-center-dialogue-space,170px) - var(--safe-bottom,0px) - 18px),60dvh) !important; padding-inline: 0px !important; padding-top: 0px !important; transform: translate(-50%, -50%) !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+html[data-device-class="phone"][data-orientation="portrait"] body:is([data-screen="westernUnionEvent"], [data-screen="miningPazupanEvent"], [data-screen="mermaidEvent"], [data-screen="sushiChefEvent"], [data-screen="cyclopsEvent"], [data-screen="ganeshaTuskEvent"], [data-screen="kappaJadeEvent"], [data-screen="clockTowerDonationEvent"], [data-screen="tattooWomanAmberEvent"], [data-screen="touristWoodSwordEvent"], [data-screen="diamondPolishingLapEvent"], [data-screen="alienAbductionEvent"], [data-screen="mysteryChineseMealEvent"], [data-screen="hauntingEvent"], [data-screen="storeTheftEvent"], [data-screen="okachimachiTollEvent"], [data-screen="pandaMusicEvent"], [data-screen="whiteBunnyIceEvent"]) :is(.western-union-character, .pazupan-character, .mermaid-character, .visit-character, .okachimachi-toll-character, .panda-music-character, .white-bunny-character) { max-height: 100% !important; object-position: center center !important; }
+@media (orientation: landscape){html[data-device-class="phone"][data-orientation="landscape"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .visit-character-area { left: 50% !important; right: auto !important; top: max(8px,var(--safe-top,0px)) !important; bottom: 72px !important; width: 100% !important; height: auto !important; padding: 0px !important; transform: translateX(-50%) !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; overflow: visible !important; visibility: visible !important; opacity: 1 !important; z-index: 4 !important; pointer-events: none !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .visit-character-area > .visit-character { display: block !important; width: auto !important; height: auto !important; max-width: min(50vw, 720px) !important; max-height: min(78dvh, 640px) !important; margin: 0px auto !important; object-fit: contain !important; object-position: center top !important; visibility: visible !important; opacity: 1 !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .visit-event-dialogue, html[data-device-class="phone"][data-orientation="landscape"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .event-dialogue-card { position: relative !important; z-index: 12 !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > :is(.visit-event-dialogue, .event-dialogue-card) > :is(small, strong, span) { position: relative !important; z-index: 13 !important; }
+}
+:is(.cyclops-reward-button, .ganesha-tusk-reward-button, .kappa-jade-reward-button, .diamond-polishing-lap-reward-button, .gray-hood-aquarium-reward, .mystery-chinese-meal-reward-button, .quiz-reward-button, .special-item-reveal) img, .quiz-reward-gem { will-change: transform; animation: 2.1s ease-in-out 0s infinite normal none running westernUnionDiamondFloat !important; }
+.event-dialogue-card { background: transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+.event-dialogue-card > small, .event-dialogue-card > strong, .event-dialogue-card > span { text-shadow: rgba(0, 0, 0, 0.68) 0px 2px 10px; }
+body :is(.event-dialogue-card, .western-union-dialogue) { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+body :is(.event-dialogue-card, .western-union-dialogue) > :is(small, strong, span) { text-shadow: rgba(0, 0, 0, 0.82) 0px 2px 10px !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body :is(.event-dialogue-card, .western-union-dialogue) { width: calc(100% - var(--jwj-edge-gap,6px) * 2) !important; max-width: none !important; margin-left: auto !important; margin-right: auto !important; }
+body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(.event-dialogue-card, .event-reward-card, .event-status-card, .visit-event-dialogue, .western-union-dialogue, .western-union-diamond-reveal, .special-item-reveal, .cinema-invitation-message, .winter-cold-event-message, .birthday-sleep-event-message, .ganesha-tusk-reward-button, .cyclops-reward-button, .kappa-jade-reward-button, .diamond-polishing-lap-reward-button, .gray-hood-aquarium-reward, .mystery-chinese-meal-reward-button, .emerald-captain-purchase-result, .quiz-reward-button) { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(.event-dialogue-card, .visit-event-dialogue, .western-union-dialogue, .winter-cold-event-message, .birthday-sleep-event-message) { z-index: 18 !important; }
+body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(.western-union-diamond-reveal, .special-item-reveal, .ganesha-tusk-reward-button, .cyclops-reward-button, .kappa-jade-reward-button, .diamond-polishing-lap-reward-button, .gray-hood-aquarium-reward, .mystery-chinese-meal-reward-button, .quiz-reward-button) > :is(strong, small, span) { background: none transparent !important; box-shadow: none !important; backdrop-filter: none !important; }
+body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(.event-dialogue-card, .event-reward-card, .event-status-card, .visit-event-dialogue, .western-union-dialogue, .western-union-diamond-reveal, .special-item-reveal, .cinema-invitation-message, .winter-cold-event-message, .birthday-sleep-event-message) :is(small, strong, span) { text-shadow: rgb(0, 0, 0) 0px 2px 4px, rgba(0, 0, 0, 0.96) 0px 0px 12px !important; }
+.event-safety-recovery, body:has(.event-movie-skip) .event-safety-recovery { position: fixed !important; z-index: 12050 !important; top: calc(env(safe-area-inset-top,0px) + 1px) !important; left: calc(env(safe-area-inset-left,0px) + 1px) !important; right: auto !important; bottom: auto !important; min-width: 0px !important; min-height: 21px !important; margin: 0px !important; padding: 3px 6px !important; border-width: 0px 2.25px 2.25px 0px !important; border-style: none solid solid none !important; border-color: currentcolor rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.2) currentcolor !important; border-image: none !important; border-radius: 0px 0px 7px !important; background: rgba(12, 10, 14, 0.38) !important; color: rgba(255, 255, 255, 0.72) !important; font-size: 9px !important; font-weight: 700 !important; line-height: 1.05 !important; box-shadow: none !important; opacity: 0.56 !important; }
+body[data-screen$="Event"] :is(.event-dialogue-card, .visit-event-dialogue, .western-union-dialogue, .winter-cold-event-message, .birthday-sleep-event-message) > span, body[data-screen$="Event"] .western-union-next > span { display: block !important; width: 100% !important; place-self: end !important; text-align: right !important; color: rgba(238, 241, 242, 0.72) !important; font-size: 0.82rem !important; font-weight: 800 !important; line-height: 1.2 !important; letter-spacing: 0.01em !important; animation: 1.35s ease-in-out 0s infinite normal none running westernUnionTap !important; }
+@media (orientation: landscape), (min-aspect-ratio: 1 / 1){html[data-device-class="phone"] body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(.western-union-character-area, .pazupan-character-area, .mermaid-character-area, .visit-character-area) { position: absolute !important; left: 50% !important; right: auto !important; top: max(6px,var(--safe-top,0px)) !important; bottom: clamp(48px, 11dvh, 74px) !important; width: 100% !important; height: auto !important; min-height: 0px !important; padding: 0px 6px !important; transform: translateX(-50%) !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; overflow: visible !important; visibility: visible !important; opacity: 1 !important; pointer-events: none !important; z-index: 7 !important; }
+html[data-device-class="phone"] body[data-screen$="Event"]:not([data-screen="storeTheftEvent"]) :is(.western-union-character, .pazupan-character, .mermaid-character, .visit-character) { position: relative !important; inset: auto !important; display: block !important; width: auto !important; height: auto !important; max-width: min(74vw, 920px) !important; max-height: 100% !important; margin: 0px auto !important; object-fit: contain !important; object-position: center top !important; transform: none !important; visibility: visible !important; }
+}
+@keyframes blues-juke-reward-float { 
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes speed-star-run-away { 
+  0% { transform: translateX(-50%); }
+  18% { transform: translateX(-36%) rotate(1deg); }
+  100% { transform: translateX(120vw) rotate(5deg); }
+}
+@keyframes storyteller-reward-float { 
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes craft-selected-pop { 
+  0% { transform: scale(0.985); }
+  58% { transform: scale(1.018); }
+  100% { transform: scale(1); }
+}
+@media (orientation: portrait){html[data-device-class="phone"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .visit-character-area { inset: 0px auto clamp(84px, 20vh, 164px) 50% !important; width: 100% !important; height: auto !important; padding: 18px 14px 0px !important; transform: translateX(-50%) !important; display: flex !important; align-items: flex-end !important; justify-content: center !important; overflow: visible !important; z-index: 4 !important; pointer-events: none !important; }
+html[data-device-class="phone"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .visit-character-area > .visit-character { display: block !important; width: auto !important; height: auto !important; max-width: min(94vw, 720px) !important; max-height: min(62dvh, 860px) !important; margin: 0px auto !important; object-fit: contain !important; object-position: center bottom !important; }
+}
+@media (orientation: landscape){html[data-device-class="phone"][data-orientation="landscape"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .visit-character-area { left: 50% !important; right: auto !important; top: max(0px,env(safe-area-inset-top)) !important; bottom: clamp(118px, 21vh, 184px) !important; width: 100% !important; height: auto !important; padding: 4px 12px 0px !important; transform: translateX(-50%) !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; overflow: visible !important; z-index: 4 !important; pointer-events: none !important; }
+html[data-device-class="phone"][data-orientation="landscape"] body .visit-character-event:not(.is-reward):not(.is-jade-reward):not(.is-after):not(.is-vanishing) > .visit-character-area > .visit-character { display: block !important; width: auto !important; height: auto !important; max-width: min(50vw, 680px) !important; max-height: calc(100dvh - 20px) !important; margin: 0px auto !important; object-fit: contain !important; object-position: center top !important; }
+}
+#background-layer { background-image: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), url("./assets/images/backgrounds/bank-okachimachi-landscape.jpg"); background-size: cover !important; }
+@media (orientation: portrait){#background-layer { background-image: linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.2)), url("./assets/images/backgrounds/bank-okachimachi-portrait.jpg"); }
+}
+#preview-movie { position: fixed; inset: 0px; z-index: 5000; background: rgb(0, 0, 0); }
+#preview-movie video { width: 100%; height: 100%; object-fit: contain; }
+#movie-skip { position: absolute; top: max(8px,env(safe-area-inset-top)); right: max(8px,env(safe-area-inset-right)); z-index: 5001; padding: 8px 12px; border: 2.25px solid var(--line); border-radius: 8px; background: rgba(0, 0, 0, 0.5); color: rgb(255, 255, 255); }
+#preview-replay { position: fixed; right: 8px; bottom: max(8px,env(safe-area-inset-bottom)); z-index: 5000; color: rgb(247, 234, 212); background: rgb(35, 27, 18); border: 2px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+body[data-screen="kappaJadeEvent"] .kappa-jade-event .visit-event-dialogue > small { color: rgb(214, 182, 138); }
+@media (orientation: landscape){body[data-screen="kappaJadeEvent"] #root #next { height: auto !important; max-height: none !important; overflow: visible !important; }
+body[data-screen="kappaJadeEvent"] #root #next > span { font-size: 0.78rem !important; line-height: 1.1 !important; white-space: nowrap !important; transform-origin: right center !important; }
+}
+#preview-movie #movie-skip { padding: 3px 6px; min-height: 21px; font-size: 9px; font-weight: 700; line-height: 1.05; border-width: 1px; border-radius: 5px; }
+#purchase-money { position: fixed; z-index: 13000; right: 18px; top: 24px; font-size: 20px; color: var(--text); text-shadow: rgb(0, 0, 0) 0px 2px 8px; }

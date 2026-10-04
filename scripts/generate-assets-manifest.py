@@ -59,6 +59,18 @@ def provenance_map() -> dict[str, dict[str, str]]:
             'source': f'ユーザー指定正式画像（bedroom_images.zip / {source}）',
             'permission': '変更禁止（原本と同一バイト。再生成・変換・再圧縮・リサイズ禁止）',
         }
+    for rel, source in [
+        ('assets/images/events/bank-nezumi.png', '02-1000024899.png'),
+        ('assets/images/items/purple-capsule.png', '01-1000025109.png'),
+    ]:
+        provenance[rel] = {
+            'source': f'ユーザー提供画像（2026-10-03 / {source} / 携帯確認で承認済みの透過PNG）',
+            'permission': '変更禁止（承認済み原本をそのまま使用。追加加工・再生成禁止）',
+        }
+    provenance['assets/videos/bank-nezumi.mp4'] = {
+        'source': 'ユーザー提供動画（2026-10-03 / 1000025104.mp4）',
+        'permission': '変更禁止（受領動画と同一バイト）',
+    }
     provenance['assets/images/events/white-bunny-tonkatsu-shop-landscape.jpg'] = {
         'source': 'ユーザー指定正式画像（2026-09-19 / 1000024259.png、JPEG原本を拡張子整理のみ）',
         'permission': '変更禁止（原本と同一バイト。再生成・変換・再圧縮・リサイズ禁止）',

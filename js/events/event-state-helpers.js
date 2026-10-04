@@ -1,3 +1,4 @@
+import { purchasePurpleCapsule } from './bank-nezumi-rules.js';
 import './oyatsu-character-position-lock.js';
 
 let bankEngine = null;
@@ -119,6 +120,17 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
         console.warn('[EventStateHelpers] bankRuntimeSnapshot failed', error);
         return { ok:false, error };
       }
+    },
+    refreshBankEventScene() {
+      try { eventServices.render?.(); } catch (_) {}
+    },
+    purchasePurpleCapsule(receipt) {
+      const result = purchasePurpleCapsule(readState(), receipt);
+      if (result.ok) {
+        try { eventServices.addFinance?.('紫のカプセルを購入', 0, result.amount); } catch (_) {}
+        persist();
+      }
+      return result;
     },
     bankTransaction(kind, amount) {
       try {

@@ -1,4 +1,4 @@
-export const VERSION = '0.10.966';
+export const VERSION = '0.10.967';
 export const SAVE_SCHEMA_VERSION = 1;
 export const DEFAULT_BIRTHDAY = '04-01';
 export const SAVE_KEY = 'jewelrygame-clean-v0.4.0';
@@ -3286,6 +3286,10 @@ export const MEALS = {
 };
 
 export const GENERAL_ITEMS = {
+  purpleCapsule: {
+    id: 'purpleCapsule', name: '紫のカプセル', category: '謎のアイテム', symbol: '◆', usable: false,
+    image: './assets/images/items/purple-capsule.png', description: '銀行でネズミから手に入れた紫のカプセル。',
+  },
   riceBall: {
     id: 'riceBall', name: 'おにぎり', category: '回復アイテム', symbol: '🍙', usable: true,
     description: '使うと空腹度が2回復します。', effect: { hunger: 2 }, sfx: 'eat',
@@ -3762,7 +3766,7 @@ export const WORKSHOP_TOOLS = {
   },
   piercingSaw: {
     id: 'piercingSaw', name: '糸鋸', type: '工具', symbol: '≋', price: 6000, qualityPoints: 1,
-    image: './assets/images/tools/piercing-saw.png?v=0.10.966-piercing-saw-20260924',
+    image: './assets/images/tools/piercing-saw.png?v=0.10.967-piercing-saw-20260924',
     initiallyAvailable: true, breakable: true, repairable: false,
     description: '細い鋸刃で板材を切り抜き、輪郭、透かし、窓、細部の切断を行う精密切断工具です。',
     detail: '張力をかけた鋸刃を上下させ、スリ板を支点にしながら小回りの利く切断を行います。',

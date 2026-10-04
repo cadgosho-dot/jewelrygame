@@ -6,6 +6,8 @@ import {
   normalizeBankAmount,
 } from './bank-engine.js';
 import { playSfx } from '../audio.js';
+import { canBuyPurpleCapsule, shouldShowBankNezumi } from '../events/bank-nezumi-rules.js';
+import { showBankNezumi } from '../events/bank-nezumi-event.js';
 
 const BANK_SCREEN_ID = 'jxj-bank-screen';
 const BANK_STYLE_ID = 'jxj-bank-ui-v2';
@@ -22,6 +24,7 @@ let holdRepeater = null;
 let holdStartedAt = 0;
 let holdConsumedClick = false;
 let activeHoldButton = null;
+let bankEventBusy = false;
 
 const yen = (value) => `${Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('ja-JP')}円`;
 const helpers = () => globalThis.__JXJ_EVENT_STATE_HELPERS__ || null;
@@ -360,6 +363,10 @@ function openBank() {
   screen.appendChild(content);
   document.body.appendChild(screen);
   renderMenu();
+  if (shouldShowBankNezumi()) {
+    bankEventBusy = true;
+    void showBankNezumi('greeting', helper).finally(() => { bankEventBusy = false; });
+  }
 }
 
 function closeBank() {
@@ -375,6 +382,18 @@ function goToMainFromBank() {
     .find((button) => !button.closest(`#${BANK_SCREEN_ID}`));
   closeBank();
   if (mainButton instanceof HTMLElement) mainButton.click();
+}
+
+async function requestBankExit(toMain = false) {
+  if (bankEventBusy) return;
+  const helper = helpers();
+  if (canBuyPurpleCapsule(helper?.eventRuntimeSnapshot?.('bluesJukeEvent'))) {
+    bankEventBusy = true;
+    try { await showBankNezumi('purchase', helper); } finally { bankEventBusy = false; }
+    closeBank();
+    return;
+  }
+  if (toMain) goToMainFromBank(); else closeBank();
 }
 
 function updateDraft(delta) {
@@ -515,8 +534,9 @@ document.addEventListener('click', (event) => {
   event.preventDefault();
   event.stopPropagation();
 
-  if (target.matches('[data-bank-close]')) { closeBank(); return; }
-  if (target.matches('[data-bank-main]')) { goToMainFromBank(); return; }
+  if (bankEventBusy) return;
+  if (target.matches('[data-bank-close]')) { void requestBankExit(); return; }
+  if (target.matches('[data-bank-main]')) { void requestBankExit(true); return; }
   if (target.matches('[data-bank-menu]')) { bankMode = 'menu'; renderMenu(); return; }
   if (target.matches('[data-bank-mode]')) {
     const mode = target.dataset.bankMode;

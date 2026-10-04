@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = [
+    ('銀行・ネズミ購入条件・保存', ['node', str(ROOT / 'tools/test-bank-nezumi-event.mjs')]),
     ('バージョン同期', [sys.executable, str(ROOT / 'scripts/version-sync.py'), '--check']),
     ('管理資料整合', [sys.executable, str(ROOT / 'scripts/check-management-docs.py')]),
     ('リポジトリ整理状態', [sys.executable, str(ROOT / 'scripts/check-repository-hygiene.py')]),

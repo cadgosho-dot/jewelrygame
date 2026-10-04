@@ -1,3 +1,4 @@
+import { GENERAL_ITEMS } from '../game-data.js';
 import { purpleCapsuleBluesmanLines } from './purple-capsule-rules.js';
 
 const ITEM_BUTTON = '[data-action="use-phone-item"][data-item-id="purpleCapsule"]';
@@ -8,6 +9,10 @@ let stage = 'idle';
 let playerName = 'あなた';
 let timer = 0;
 
+// 紫のカプセルだけを正式な使用可能アイテムとして有効化する。
+// game-data-core.js 本体や他アイテム定義は変更しない。
+if (GENERAL_ITEMS?.purpleCapsule) GENERAL_ITEMS.purpleCapsule.usable = true;
+
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const api = () => globalThis.__JXJ_EVENT_STATE_HELPERS__;
 const audio = (scene) => { try { globalThis.__JXJ_AUDIO_SWITCH__?.(scene); } catch (_) {} };
@@ -17,7 +22,7 @@ function installStyle() {
   if (document.getElementById('purple-capsule-event-style')) return;
   const el = document.createElement('style');
   el.id = 'purple-capsule-event-style';
-  el.textContent = `#${ROOT_ID}{position:fixed;inset:0;z-index:2147483000;background:#000;overflow:hidden;isolation:isolate}#${ROOT_ID} .purple-capsule-bg{position:absolute;inset:-2%;z-index:0;width:104%;height:104%;object-fit:cover;animation:purpleCapsuleSway 7s ease-in-out infinite alternate}#${ROOT_ID} .purple-capsule-haze{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle,rgba(114,72,151,.06),rgba(0,0,0,.12));animation:purpleCapsuleHaze 5s ease-in-out infinite alternate}#${ROOT_ID}>main{position:relative;z-index:2}#${ROOT_ID} .visit-character-event{z-index:2}@keyframes purpleCapsuleSway{from{transform:translate3d(-.5%,-.35%,0) scale(1.02)}to{transform:translate3d(.5%,.4%,0) scale(1.035)}}@keyframes purpleCapsuleHaze{from{opacity:.45}to{opacity:.8}}@media(prefers-reduced-motion:reduce){#${ROOT_ID} .purple-capsule-bg,#${ROOT_ID} .purple-capsule-haze{animation:none}}`;
+  el.textContent = `#${ROOT_ID}{position:fixed;inset:0;z-index:2147483000;background:#000;overflow:hidden;isolation:isolate}#${ROOT_ID} .purple-capsule-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover}#${ROOT_ID}>main{position:relative;z-index:2}#${ROOT_ID} .visit-character-event{z-index:2}#${ROOT_ID}.is-sleeping{animation:purpleCapsuleSleepFall 1.3s ease-in forwards}@keyframes purpleCapsuleSleepFall{0%{transform:translateY(0)}20%{transform:translateY(-6px)}40%{transform:translateY(5px)}60%{transform:translateY(-3px)}80%{transform:translateY(8px)}100%{transform:translateY(34px);opacity:.2}}@media(prefers-reduced-motion:reduce){#${ROOT_ID}.is-sleeping{animation:none;opacity:.2}}`;
   document.head.appendChild(el);
 }
 
@@ -35,7 +40,7 @@ function bg(place) {
   const outside = place === 'outside';
   const wide = outside ? './assets/images/blues-juke-exterior.webp' : './assets/images/blues-juke-interior.webp';
   const portrait = outside ? './assets/images/blues-juke-exterior-portrait.webp' : './assets/images/blues-juke-interior-portrait.webp';
-  return `<picture><source media="(orientation:portrait)" srcset="${portrait}"><img class="purple-capsule-bg" src="${wide}" alt="" draggable="false"></picture><div class="purple-capsule-haze" aria-hidden="true"></div>`;
+  return `<picture><source media="(orientation:portrait)" srcset="${portrait}"><img class="purple-capsule-bg" src="${wide}" alt="" draggable="false"></picture>`;
 }
 
 function dialogue(line, speaker = '') {
@@ -48,13 +53,14 @@ function normal(place, line, speaker = '', character = false) {
 
 function draw() {
   const el = root();
+  el.classList.remove('is-sleeping');
   const lines = purpleCapsuleBluesmanLines(playerName);
-  if (stage === 'outside') el.innerHTML = normal('outside', 'あ、、、、あの店だ、、、また来れたのか、、、、');
-  else if (stage === 'inside') el.innerHTML = normal('inside', 'やっぱり、、落ち着くなぁ、、、、');
+  if (stage === 'outside') el.innerHTML = bg('outside');
+  else if (stage === 'inside') el.innerHTML = bg('inside');
   else if (stage === 'blues1') el.innerHTML = normal('inside', lines[0], 'ブルースマン', true);
   else if (stage === 'blues2') el.innerHTML = normal('inside', lines[1], 'ブルースマン', true);
   else if (stage === 'blues3') el.innerHTML = normal('inside', lines[2], 'ブルースマン', true);
-  else if (stage === 'sleep') el.innerHTML = `<main class="main-screen kappa-jade-event-screen"><section class="visit-character-event kappa-jade-event" aria-live="polite">${dialogue('眠くなってきた、、、、、')}</section></main>`;
+  else if (stage === 'sleep') el.innerHTML = normal('inside', '「眠くなってきた、、、、、」', playerName, false);
   else el.innerHTML = '';
 }
 
@@ -82,10 +88,21 @@ function start(result) {
 function finish() {
   if (!active) return;
   active = false;
+  clearTimeout(timer);
   try { api()?.finishPurpleCapsuleUse?.(); } catch (_) {}
   audio('main');
   document.getElementById(ROOT_ID)?.remove();
   syncButton();
+}
+
+function sleepThenFinish() {
+  const el = document.getElementById(ROOT_ID);
+  if (!el) { blackout(finish); return; }
+  el.classList.add('is-sleeping');
+  clearTimeout(timer);
+  timer = window.setTimeout(() => {
+    if (active) blackout(finish);
+  }, 1300);
 }
 
 function next() {
@@ -95,8 +112,8 @@ function next() {
   if (stage === 'inside') { stage = 'blues1'; sfx('blues-juke-cheer', { gain:.62 }); draw(); return; }
   if (stage === 'blues1') stage = 'blues2';
   else if (stage === 'blues2') stage = 'blues3';
-  else if (stage === 'blues3') { blackout(() => { if (active) { stage = 'sleep'; draw(); } }); return; }
-  else if (stage === 'sleep') { blackout(finish); return; }
+  else if (stage === 'blues3') stage = 'sleep';
+  else if (stage === 'sleep') { sleepThenFinish(); return; }
   else return;
   draw();
 }
@@ -108,8 +125,12 @@ function syncButton() {
 }
 
 function click(event) {
+  const overlay = document.getElementById(ROOT_ID);
+  if (active && overlay?.contains(event.target) && (stage === 'outside' || stage === 'inside')) {
+    event.preventDefault(); event.stopImmediatePropagation(); next(); return;
+  }
   const advance = event.target?.closest?.('[data-purple-capsule-next]');
-  if (advance && document.getElementById(ROOT_ID)?.contains(advance)) {
+  if (advance && overlay?.contains(advance)) {
     event.preventDefault(); event.stopImmediatePropagation(); next(); return;
   }
   const button = event.target?.closest?.(ITEM_BUTTON);

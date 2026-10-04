@@ -1,4 +1,6 @@
 import { purchasePurpleCapsule } from './bank-nezumi-rules.js';
+import { PURPLE_CAPSULE_BLOCK_MESSAGE, PURPLE_CAPSULE_DAY_END_MINUTES, PURPLE_CAPSULE_REQUIRED_MINUTES, canUsePurpleCapsule } from './purple-capsule-rules.js';
+import './purple-capsule-event.js';
 import './oyatsu-character-position-lock.js';
 
 let bankEngine = null;
@@ -37,6 +39,73 @@ export function createEventStateHelpers(getState, saveGame, showToast, playSfx, 
       if (!services || typeof services !== 'object' || Array.isArray(services)) return { ok:false, reason:'invalid-services' };
       eventServices = { ...eventServices, ...services };
       return { ok:true };
+    },
+    purpleCapsuleRuntimeSnapshot() {
+      try {
+        const state = readState();
+        if (!state) return { ok:false, reason:'state-unavailable' };
+        return {
+          ok:true,
+          playerName:String(state.playerName || ''),
+          minutes:Math.max(0, Math.floor(Number(state.game?.minutes) || 0)),
+          count:Math.max(0, Math.floor(Number(state.inventory?.items?.purpleCapsule) || 0)),
+        };
+      } catch (error) {
+        return { ok:false, error };
+      }
+    },
+    beginPurpleCapsuleUse() {
+      try {
+        const state = readState();
+        if (!state) return { ok:false, reason:'state-unavailable' };
+        const minutes = Math.max(0, Math.floor(Number(state.game?.minutes) || 0));
+        const count = Math.max(0, Math.floor(Number(state.inventory?.items?.purpleCapsule) || 0));
+        const eligibility = canUsePurpleCapsule({ minutes, count });
+        if (!eligibility.ok) {
+          if (eligibility.reason === 'insufficient-time') showToast?.(PURPLE_CAPSULE_BLOCK_MESSAGE, 'error');
+          else if (eligibility.reason === 'no-item') showToast?.('紫のカプセルを持っていません。', 'error');
+          return eligibility;
+        }
+        state.inventory = state.inventory && typeof state.inventory === 'object' && !Array.isArray(state.inventory) ? state.inventory : {};
+        state.inventory.items = state.inventory.items && typeof state.inventory.items === 'object' && !Array.isArray(state.inventory.items) ? state.inventory.items : {};
+        state.inventory.items.purpleCapsule = count - 1;
+        persist();
+        try { playSfx?.('select', { gain:.82 }); } catch (_) {}
+        return { ok:true, playerName:String(state.playerName || '').trim() || 'あなた', countAfter:count - 1, minutes, remainingMinutes:eligibility.remainingMinutes };
+      } catch (error) {
+        console.warn('[PurpleCapsule] begin failed', error);
+        return { ok:false, error };
+      }
+    },
+    finishPurpleCapsuleUse() {
+      try {
+        const state = readState();
+        if (!state) return { ok:false, reason:'state-unavailable' };
+        state.game = state.game && typeof state.game === 'object' && !Array.isArray(state.game) ? state.game : {};
+        const beforeMinutes = Math.max(0, Math.floor(Number(state.game.minutes) || 0));
+        const remaining = Math.max(0, PURPLE_CAPSULE_DAY_END_MINUTES - beforeMinutes);
+        if (remaining < PURPLE_CAPSULE_REQUIRED_MINUTES) return { ok:false, reason:'insufficient-time' };
+        let usedService = true;
+        for (let i = 0; i < 3; i += 1) {
+          try { eventServices.spendMealTime?.(); }
+          catch (_) { usedService = false; break; }
+        }
+        if (!usedService || Math.max(0, Math.floor(Number(state.game.minutes) || 0)) < beforeMinutes + PURPLE_CAPSULE_REQUIRED_MINUTES) {
+          state.game.minutes = Math.min(PURPLE_CAPSULE_DAY_END_MINUTES, beforeMinutes + PURPLE_CAPSULE_REQUIRED_MINUTES);
+        }
+        state.wellbeing = state.wellbeing && typeof state.wellbeing === 'object' && !Array.isArray(state.wellbeing) ? state.wellbeing : {};
+        state.wellbeing.hunger = Math.max(0, Math.floor(Number(state.wellbeing.hunger) || 0) - 3);
+        persist();
+        try { eventServices.render?.(); } catch (_) {}
+        return { ok:true, minutes:Math.max(0, Math.floor(Number(state.game.minutes) || 0)), hunger:Math.max(0, Math.floor(Number(state.wellbeing.hunger) || 0)) };
+      } catch (error) {
+        console.warn('[PurpleCapsule] finish failed', error);
+        return { ok:false, error };
+      }
+    },
+    playEventSfx(name, options = {}) {
+      try { playSfx?.(String(name || 'select'), options); return { ok:true }; }
+      catch (error) { return { ok:false, error }; }
     },
     patchEventState(eventKey, patch) {
       try {

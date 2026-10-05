@@ -110,7 +110,7 @@ function sleepThenFinish() {
 function next() {
   if (!active) return;
   sfx('select', { gain:.78 });
-  if (stage === 'outside') { stage = 'inside'; audio('bluesJukeOutside'); draw(); return; }
+  if (stage === 'outside') { stage = 'inside'; audio('bluesJukeInside'); draw(); return; }
   if (stage === 'inside') { stage = 'blues1'; sfx('blues-juke-cheer', { gain:.62 }); draw(); return; }
   if (stage === 'blues1') stage = 'blues2';
   else if (stage === 'blues2') stage = 'blues3';

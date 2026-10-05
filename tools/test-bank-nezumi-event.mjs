@@ -24,14 +24,15 @@ assert.equal(canUsePurpleCapsule({minutes:19*60,count:1}).ok,true,'19:00は残�
 assert.equal(canUsePurpleCapsule({minutes:19*60+1,count:1}).reason,'insufficient-time','19:01は残り3時間未満なので使用できない');
 assert.equal(canUsePurpleCapsule({minutes:18*60,count:0}).reason,'no-item','所持数0では使用できない');
 assert.deepEqual(purpleCapsuleBluesmanLines('川原'),[
-  '「おう、、また来たな！川原様々！、、、、いっつもこの店はオマエのブルースで盛り上がってるぜ！、、、」',
+  '「おう、、、また来たな！川原様々！！、、、この店はいっつもオマエのブルースで盛り上がってるぜ！！、、、」',
   '「サイコーだぜ、まったく！、オマエはサイコー！、、、」',
   '「今日も好きなだけ楽しんでってくれよな、兄弟！、、、、、」',
 ]);
 const eventSource=readFileSync(new URL('../js/events/purple-capsule-event.js',import.meta.url),'utf8');
 assert.match(eventSource,/\[data-action="use-phone-item"\]\[data-id="purpleCapsule"\]/,'紫のカプセルイベントは実際のスマホ使用ボタンのdata-id属性を捕捉する');
-assert.match(eventSource,/「あ、、、、あの店だ、、、また来れたのか、、、、」/,'店外では登録済みの主人公セリフを表示する');
-assert.match(eventSource,/「やっぱり、、落ち着くなぁ、、、、」/,'店内では登録済みの主人公セリフを表示する');
+assert.match(eventSource,/normal\('outside', '「あ、、、、あの店だ、、、また来れたのか、、、、」', '', false\)/,'店外の主人公セリフではキャラクター名を表示しない');
+assert.match(eventSource,/normal\('inside', '「やっぱり、、落ち着くなぁ、、、、」', '', false\)/,'店内の主人公セリフではキャラクター名を表示しない');
+assert.match(eventSource,/blackDialogue\('「眠くなってきた、、、、、」', ''\)/,'眠気の主人公セリフではキャラクター名を表示しない');
 assert.match(eventSource,/stage === 'blues3'[\s\S]*blackout\(\(\) => \{[\s\S]*stage = 'sleep'/,'ブルースマン3セリフ後は2秒暗転してから眠気セリフへ進む');
 assert.match(eventSource,/stage === 'sleep'[\s\S]*blackDialogue\('「眠くなってきた、、、、、」'/,'眠気セリフは背景画像なしの真っ暗な画面で表示する');
 assert.match(eventSource,/stage === 'sleep'[\s\S]*blackout\(finish\)/,'眠気セリフをタップ後は2秒暗転して終了する');

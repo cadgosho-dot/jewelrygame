@@ -143,7 +143,7 @@ function click(event) {
 }
 
 function init() {
-  document.addEventListener('click', click, true);
+  window.addEventListener('click', click, true);
   new MutationObserver(() => queueMicrotask(syncButton)).observe(document.documentElement, { childList:true, subtree:true });
   queueMicrotask(syncButton);
 }

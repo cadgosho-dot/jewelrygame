@@ -17,7 +17,7 @@ export function canUsePurpleCapsule({ minutes = 0, count = 0 } = {}) {
 export function purpleCapsuleBluesmanLines(name = 'あなた') {
   const playerName = String(name || '').trim() || 'あなた';
   return [
-    `「おう、、また来たな！${playerName}様々！、、、、いっつもこの店はオマエのブルースで盛り上がってるぜ！、、、」`,
+    `「おう、、、また来たな！${playerName}様々！！、、、この店はいっつもオマエのブルースで盛り上がってるぜ！！、、、」`,
     '「サイコーだぜ、まったく！、オマエはサイコー！、、、」',
     '「今日も好きなだけ楽しんでってくれよな、兄弟！、、、、、」',
   ];

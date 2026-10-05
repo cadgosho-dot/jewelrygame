@@ -1,7 +1,7 @@
 import { GENERAL_ITEMS } from '../game-data.js';
 import { purpleCapsuleBluesmanLines } from './purple-capsule-rules.js';
 
-const ITEM_BUTTON = '[data-action="use-phone-item"][data-item-id="purpleCapsule"]';
+const ITEM_BUTTON = '[data-action="use-phone-item"][data-id="purpleCapsule"]';
 const ROOT_ID = 'purple-capsule-event-overlay';
 const BLUESMAN = './assets/images/events/blues-juke/bluesman-smile.png';
 let active = false;

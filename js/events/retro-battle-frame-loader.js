@@ -1,7 +1,7 @@
 import {
   buildOkachimachiBattleStartOptions,
   OKACHIMACHI_BATTLE_ENEMY_IMAGE_PATH,
-} from './okachimachi-battle-enemy.js?v=0.10.969';
+} from './okachimachi-battle-enemy.js?v=0.10.970';
 
 // iframe初期表示のabout:blankを戦闘画面の準備完了と誤判定しないための専用ローダー。
 const OKACHIMACHI_BATTLE_ENEMY_IMAGE_URL = new URL(

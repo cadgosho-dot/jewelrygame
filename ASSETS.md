@@ -1,6 +1,6 @@
 # ASSETS — JEWELRY×JEWELRY
 
-> 対象: **v0.10.969** / 棚卸し日: 2026-08-30
+> 対象: **v0.10.970** / 棚卸し日: 2026-08-30
 > `assets/` 配下を実ファイルから自動棚卸し。**参照なし = 不要とは限らない**（動的組み立て・CSS・ミニゲーム内部・将来予約の可能性があるため）。
 
 ## アセット運用ルール
@@ -431,9 +431,9 @@
 | assets/images/loose/turquoise/round-cabochon.png | 画像 | 667×687 | 縦 | あり | `js/app.js:1321`<br>`scripts/FILES/js/app.js:1310` | 由来記録なし | 要確認（明示許可がない限り加工しない） | ec3e16835edb83474b2ff8256e409dc11eefe04ea6171104b6ca50d694270d56 |
 | assets/images/loose/water-garden-emerald/emerald.png | 画像 | 624×774 | 縦 | あり | `js/app.js:1476`<br>`scripts/FILES/js/app.js:1465` | 由来記録なし | 要確認（明示許可がない限り加工しない） | bd945cfa002a7aad04a3face2c4d050ce22192c78e829b32d61b3e648b7e1251 |
 | assets/images/loose/wave-aquamarine/oval.png | 画像 | 1187×1000 | 横 | あり | `js/app.js:1485`<br>`scripts/FILES/js/app.js:1474` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e683170c4d43bd67399b399427ba2b23f118b93f5ff0558071fabb2b5f9a67f5 |
-| assets/images/loose-shop-portrait-v385.webp | 画像 | 874×1536 | 縦 | なし | `memories-event-image-overrides-v751.js:9`<br>`preview/3d-glasses-event-layout.html:60`<br>`scripts/check-storyteller-v2-layout.py:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d593d390215b58b55cdfc78399fe381b49e0c29b6a7aa59ecc5cf368b3ff63d1 |
+| assets/images/loose-shop-portrait-v385.webp | 画像 | 874×1536 | 縦 | なし | `memories-event-image-overrides-v751.js:9`<br>`scripts/check-storyteller-v2-layout.py:37` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d593d390215b58b55cdfc78399fe381b49e0c29b6a7aa59ecc5cf368b3ff63d1 |
 | assets/images/loose-shop-v380.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e1b6bdc7ee5ebf740ca381c2da662b0135a85cd1c208ff92879f8b3c919f2a8 |
-| assets/images/loose-shop-v385.webp | 画像 | 1600×900 | 横 | なし | `memories-event-image-overrides-v751.js:10`<br>`preview/3d-glasses-event-layout.html:16`<br>`scripts/check-storyteller-v2-layout.py:38` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 30c40ae707e24baf3619efe5e31b68620ac95af726d82d3f6237745b6c5325a6 |
+| assets/images/loose-shop-v385.webp | 画像 | 1600×900 | 横 | なし | `memories-event-image-overrides-v751.js:10`<br>`scripts/check-storyteller-v2-layout.py:38` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 30c40ae707e24baf3619efe5e31b68620ac95af726d82d3f6237745b6c5325a6 |
 | assets/images/loose-shop.webp | 画像 | 1536×864 | 横 | なし | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 7e1b6bdc7ee5ebf740ca381c2da662b0135a85cd1c208ff92879f8b3c919f2a8 |
 | assets/images/main-menu-christmas-portrait.webp | 画像 | 855×1536 | 縦 | なし | `sw.js:54`<br>`scripts/FILES/sw.js:50` | 由来記録なし | 要確認（明示許可がない限り加工しない） | a8b1337d9e109358ec6014025d3e3b2e9b70badb483925f60e605c1c57dc1d0b |
 | assets/images/main-menu-christmas.webp | 画像 | 1536×692 | 横 | なし | `sw.js:54`<br>`scripts/FILES/sw.js:50` | 由来記録なし | 要確認（明示許可がない限り加工しない） | f7ebaef81d0fc23757d0641d3472c73ed690ec6a6630be18144d2c60cedb5eb0 |
@@ -598,7 +598,7 @@
 | assets/minigames/aquarium/aquarium_initial_state.json | データ | 3,341 B | - | - | `UPDATE_MANIFEST.json:63` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 2cc2c9fe0a89038fe1058aa64c38e2ae37776351a8bde5063f6277e28c5c5056 |
 | assets/minigames/aquarium/aquarium_state_manager.js | ミニゲーム/コード | 2,864 B | - | - | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 882150b33c2b0dfe942acf1c3d9b9e3cb8aa63c073bad156aac41db384f3c14a |
 | assets/minigames/aquarium/assets/fish/black_molly.png | 画像 | 1200×823 | 横 | あり | 直接参照未検出 | 由来記録なし | 要確認（明示許可がない限り加工しない） | 9a8a1fe57701354850e748368803090516a843efed53950301c99d8cfea9ab59 |
-| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,948,656 B | - | - | `UPDATE_MANIFEST.json:69`<br>`scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:231`<br>`js/app.js:15772` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1aedb29aeb8f9566021aa096b2df3a569a2b94594a0a21be01839bdaaf2be333 |
+| assets/minigames/aquarium/index.html | ミニゲーム/コード | 5,948,656 B | - | - | `UPDATE_MANIFEST.json:69`<br>`scripts/check-aquarium-runtime.py:8`<br>`scripts/check-browser-smoke.py:289`<br>`js/app.js:15772` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 1aedb29aeb8f9566021aa096b2df3a569a2b94594a0a21be01839bdaaf2be333 |
 | assets/minigames/kaitenzushi/assets/audio/eat_sfx.ogg | 音源 | 12,226 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | 3287c08b6612ad22dc6d6c04dd9b186a0f921a7c3eff0cc41899b156060cf401 |
 | assets/minigames/kaitenzushi/assets/audio/enka_bgm.ogg | 音源 | 907,318 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | d4863f10f767ff83327e2dfdd1331c2d44e805311d6b019978761b38e083cf03 |
 | assets/minigames/kaitenzushi/assets/audio/izakaya_ambient.ogg | 音源 | 981,583 B | - | - | `js/kaitenzushi-embedded.js:3` | 由来記録なし | 要確認（明示許可がない限り加工しない） | e7d4be5ed5860639286901ca4fd92b2f5e8bd8bbf592d747c5cb70ec7ed153a4 |

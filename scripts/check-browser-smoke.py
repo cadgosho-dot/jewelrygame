@@ -53,6 +53,62 @@ def free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+def check_metal_history_scroll(page, context) -> None:
+    """Exercise the real history renderer with touch swipes, without random town events."""
+    cdp = context.new_cdp_session(page)
+    cdp.send('Emulation.setTouchEmulationEnabled', {'enabled': True, 'maxTouchPoints': 1})
+    page.set_viewport_size({'width': 390, 'height': 844})
+    # Trigger the existing action directly: layout checks must not depend on shop hours.
+    page.evaluate("""() => {
+      const button = document.createElement('button');
+      button.dataset.action = 'metal-history-open';
+      document.querySelector('#root').append(button);
+      button.click();
+    }""")
+    wait_screen(page, 'supplierMetalHistory')
+    page.wait_for_timeout(500)
+    for width, height in ((390, 844), (360, 740), (844, 390), (1280, 720)):
+        cdp.send('Emulation.setTouchEmulationEnabled', {'enabled': width != 1280, 'maxTouchPoints': 1})
+        page.set_viewport_size({'width': width, 'height': height})
+        page.wait_for_timeout(150)
+        for mode in ('month', 'year'):
+            # Toggle twice when necessary so the real renderer resets the new viewport.
+            for _ in range(2):
+                target = page.locator('.metal-history-range-button').get_attribute('data-range')
+                if target != mode:
+                    break
+                page.locator('.metal-history-range-button').evaluate('(button) => button.click()')
+            page.wait_for_timeout(100)
+            content = page.locator('.screen-content').bounding_box()
+            controls = page.locator('.metal-history-controls').bounding_box()
+            assert controls['y'] >= content['y'] - 1, f'{width}x{height}/{mode}: 期間選択が上に切れています'
+            if width != 1280:
+                for _ in range(12):
+                    start_y = height - 45
+                    end_y = content['y'] + 35
+                    cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': width / 2, 'y': start_y}]})
+                    for step in range(1, 7):
+                        cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': width / 2, 'y': start_y + (end_y - start_y) * step / 6}]})
+                        page.wait_for_timeout(20)
+                    cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
+                    page.wait_for_timeout(80)
+                    if page.locator('.metal-history-close').evaluate('(element) => element.getBoundingClientRect().bottom <= innerHeight'):
+                        break
+            else:
+                page.mouse.move(width / 2, height - 80)
+                page.mouse.wheel(0, 6000)
+                page.wait_for_function("() => document.querySelector('.metal-history-close').getBoundingClientRect().bottom <= innerHeight", timeout=5000)
+            note = page.locator('.metal-history-note').bounding_box()
+            close = page.locator('.metal-history-close').bounding_box()
+            assert note['y'] >= content['y'] - 1 and note['y'] + note['height'] <= height, f'{width}x{height}/{mode}: 説明文の全文までスクロールできません'
+            assert close['y'] >= content['y'] - 1 and close['y'] + close['height'] <= height, f'{width}x{height}/{mode}: 閉じるボタンまでスクロールできません'
+            page.locator('.screen-content').evaluate('(element) => { element.scrollTop = 0; }')
+            page.locator('.metal-history-panel').evaluate('(element) => { element.scrollTop = 0; }')
+    page.locator('.metal-history-close').click()
+    wait_screen(page, 'main')
+    cdp.detach()
+
+
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         return
@@ -152,6 +208,8 @@ def main() -> int:
             page.locator('[data-setup-birthday-day]').select_option('1')
             page.locator('[data-action="confirm-player-name"]').click()
             wait_screen(page, 'main', 15_000)
+
+            check_metal_history_scroll(page, context)
 
             page.locator('[data-action="nav"][data-screen="phone"]').click()
             wait_screen(page, 'phone', 10_000)

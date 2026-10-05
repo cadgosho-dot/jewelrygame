@@ -61,12 +61,12 @@ function draw() {
   const el = root();
   el.classList.remove('is-sleeping');
   const lines = purpleCapsuleBluesmanLines(playerName);
-  if (stage === 'outside') el.innerHTML = normal('outside', '「あ、、、、あの店だ、、、また来れたのか、、、、」', playerName, false);
-  else if (stage === 'inside') el.innerHTML = normal('inside', '「やっぱり、、落ち着くなぁ、、、、」', playerName, false);
+  if (stage === 'outside') el.innerHTML = normal('outside', '「あ、、、、あの店だ、、、また来れたのか、、、、」', '', false);
+  else if (stage === 'inside') el.innerHTML = normal('inside', '「やっぱり、、落ち着くなぁ、、、、」', '', false);
   else if (stage === 'blues1') el.innerHTML = normal('inside', lines[0], 'ブルースマン', true);
   else if (stage === 'blues2') el.innerHTML = normal('inside', lines[1], 'ブルースマン', true);
   else if (stage === 'blues3') el.innerHTML = normal('inside', lines[2], 'ブルースマン', true);
-  else if (stage === 'sleep') el.innerHTML = blackDialogue('「眠くなってきた、、、、、」', playerName);
+  else if (stage === 'sleep') el.innerHTML = blackDialogue('「眠くなってきた、、、、、」', '');
   else el.innerHTML = '';
 }
 

@@ -23,6 +23,7 @@ assert.deepEqual(purpleCapsuleBluesmanLines('川原'),[
   '「、、、、、、もうオマエの時間そのものが俺のブルースになってるけどな！、、、、、、」',
 ]);
 const eventSource=readFileSync(new URL('../js/events/purple-capsule-event.js',import.meta.url),'utf8');
+assert.match(eventSource,/window\.addEventListener\('click',\s*click,\s*true\)/,'紫のカプセル使用クリックは既存のdocument側アイテム処理より先に捕捉する');
 assert.match(eventSource,/purple-capsule-float-bg/,'紫のカプセル背景に専用の大きな揺れを付ける');
 assert.match(eventSource,/scale\(1\.055\) translate3d\(-1\.8%,1\.0%,0\)/,'背景揺れの承認済み開始値を維持する');
 assert.match(eventSource,/scale\(1\.062\) translate3d\(-2\.1%,-1\.2%,0\)/,'背景揺れの承認済み最大値を維持する');

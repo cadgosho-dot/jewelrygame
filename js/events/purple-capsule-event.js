@@ -53,16 +53,20 @@ function normal(place, line, speaker = '', character = false) {
   return `${bg(place)}<main class="main-screen kappa-jade-event-screen"><section class="visit-character-event kappa-jade-event" aria-live="polite">${character ? `<div class="visit-character-area" aria-hidden="true"><img class="visit-character kappa-character purple-capsule-character-motion" src="${BLUESMAN}" alt="" draggable="false"></div>` : ''}${dialogue(line, speaker)}</section></main>`;
 }
 
+function blackDialogue(line, speaker = '') {
+  return `<main class="main-screen kappa-jade-event-screen" style="background:transparent"><section class="visit-character-event kappa-jade-event" aria-live="polite">${dialogue(line, speaker)}</section></main>`;
+}
+
 function draw() {
   const el = root();
   el.classList.remove('is-sleeping');
   const lines = purpleCapsuleBluesmanLines(playerName);
-  if (stage === 'outside') el.innerHTML = bg('outside');
-  else if (stage === 'inside') el.innerHTML = bg('inside');
+  if (stage === 'outside') el.innerHTML = normal('outside', '「あ、、、、あの店だ、、、また来れたのか、、、、」', playerName, false);
+  else if (stage === 'inside') el.innerHTML = normal('inside', '「やっぱり、、落ち着くなぁ、、、、」', playerName, false);
   else if (stage === 'blues1') el.innerHTML = normal('inside', lines[0], 'ブルースマン', true);
   else if (stage === 'blues2') el.innerHTML = normal('inside', lines[1], 'ブルースマン', true);
   else if (stage === 'blues3') el.innerHTML = normal('inside', lines[2], 'ブルースマン', true);
-  else if (stage === 'sleep') el.innerHTML = normal('inside', '「眠くなってきた、、、、、」', playerName, false);
+  else if (stage === 'sleep') el.innerHTML = blackDialogue('「眠くなってきた、、、、、」', playerName);
   else el.innerHTML = '';
 }
 
@@ -97,27 +101,22 @@ function finish() {
   syncButton();
 }
 
-function sleepThenFinish() {
-  const el = document.getElementById(ROOT_ID);
-  if (!el) { blackout(finish); return; }
-  el.classList.add('is-sleeping');
-  clearTimeout(timer);
-  timer = window.setTimeout(() => {
-    if (active) blackout(finish);
-  }, 1300);
-}
-
 function next() {
   if (!active) return;
   sfx('select', { gain:.78 });
   if (stage === 'outside') { stage = 'inside'; audio('bluesJukeInside'); draw(); return; }
   if (stage === 'inside') { stage = 'blues1'; sfx('blues-juke-cheer', { gain:.62 }); draw(); return; }
-  if (stage === 'blues1') stage = 'blues2';
-  else if (stage === 'blues2') stage = 'blues3';
-  else if (stage === 'blues3') stage = 'sleep';
-  else if (stage === 'sleep') { sleepThenFinish(); return; }
-  else return;
-  draw();
+  if (stage === 'blues1') { stage = 'blues2'; draw(); return; }
+  if (stage === 'blues2') { stage = 'blues3'; draw(); return; }
+  if (stage === 'blues3') {
+    blackout(() => {
+      if (!active) return;
+      stage = 'sleep';
+      draw();
+    });
+    return;
+  }
+  if (stage === 'sleep') { blackout(finish); return; }
 }
 
 function restoreRetestCapsuleOnce() {

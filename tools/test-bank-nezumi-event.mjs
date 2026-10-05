@@ -25,11 +25,16 @@ assert.equal(canUsePurpleCapsule({minutes:19*60+1,count:1}).reason,'insufficient
 assert.equal(canUsePurpleCapsule({minutes:18*60,count:0}).reason,'no-item','所持数0では使用できない');
 assert.deepEqual(purpleCapsuleBluesmanLines('川原'),[
   '「おう、、また来たな！川原様々！、、、、いっつもこの店はオマエのブルースで盛り上がってるぜ！、、、」',
-  '「モテも人気も金も時間も全部忘れて音に溶けろ、、、、、、それが俺のブルースだ！」',
-  '「、、、、、、もうオマエの時間そのものが俺のブルースになってるけどな！、、、、、、」',
+  '「サイコーだぜ、まったく！、オマエはサイコー！、、、」',
+  '「今日も好きなだけ楽しんでってくれよな、兄弟！、、、、、」',
 ]);
 const eventSource=readFileSync(new URL('../js/events/purple-capsule-event.js',import.meta.url),'utf8');
 assert.match(eventSource,/\[data-action="use-phone-item"\]\[data-id="purpleCapsule"\]/,'紫のカプセルイベントは実際のスマホ使用ボタンのdata-id属性を捕捉する');
+assert.match(eventSource,/「あ、、、、あの店だ、、、また来れたのか、、、、」/,'店外では登録済みの主人公セリフを表示する');
+assert.match(eventSource,/「やっぱり、、落ち着くなぁ、、、、」/,'店内では登録済みの主人公セリフを表示する');
+assert.match(eventSource,/stage === 'blues3'[\s\S]*blackout\(\(\) => \{[\s\S]*stage = 'sleep'/,'ブルースマン3セリフ後は2秒暗転してから眠気セリフへ進む');
+assert.match(eventSource,/stage === 'sleep'[\s\S]*blackDialogue\('「眠くなってきた、、、、、」'/,'眠気セリフは背景画像なしの真っ暗な画面で表示する');
+assert.match(eventSource,/stage === 'sleep'[\s\S]*blackout\(finish\)/,'眠気セリフをタップ後は2秒暗転して終了する');
 assert.match(eventSource,/purchasePurpleCapsule\(\{ retestRestore:true \}\)/,'再確認用復旧は既存の紫カプセル状態APIを経由する');
 assert.match(eventSource,/patchEventState\(PURPLE_CAPSULE_RETEST_RECOVERY_KEY/,'再確認用復旧済み状態を保存して二重復旧を防ぐ');
 assert.match(eventSource,/window\.addEventListener\('click',\s*click,\s*true\)/,'紫のカプセル使用クリックは既存のdocument側アイテム処理より先に捕捉する');
@@ -39,4 +44,4 @@ assert.match(eventSource,/scale\(1\.062\) translate3d\(-2\.1%,-1\.2%,0\)/,'背�
 assert.match(eventSource,/purple-capsule-character-motion/,'ブルースマンだけに専用回転アニメーションを付ける');
 assert.match(eventSource,/rotate\(205deg\) scale\(1\.04\)/,'ブルースマンの大きな回転と拡大を維持する');
 assert.match(eventSource,/rotate\(344deg\) scale\(1\.02\)/,'ブルースマンの一周近い回転を維持する');
-console.log('BANK NEZUMI + PURPLE CAPSULE: purchase, retest recovery, use eligibility, dialogue, migration and approved motion PASS');
+console.log('BANK NEZUMI + PURPLE CAPSULE: purchase, retest recovery, use eligibility, approved dialogue, sequence, migration and motion PASS');

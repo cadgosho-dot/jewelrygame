@@ -22,7 +22,7 @@ function installStyle() {
   if (document.getElementById('purple-capsule-event-style')) return;
   const el = document.createElement('style');
   el.id = 'purple-capsule-event-style';
-  el.textContent = `#${ROOT_ID}{position:fixed;inset:0;z-index:2147483000;background:#000;overflow:hidden;isolation:isolate}#${ROOT_ID} .purple-capsule-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover}#${ROOT_ID}>main{position:relative;z-index:2}#${ROOT_ID} .visit-character-event{z-index:2}#${ROOT_ID}.is-sleeping{animation:purpleCapsuleSleepFall 1.3s ease-in forwards}@keyframes purpleCapsuleSleepFall{0%{transform:translateY(0)}20%{transform:translateY(-6px)}40%{transform:translateY(5px)}60%{transform:translateY(-3px)}80%{transform:translateY(8px)}100%{transform:translateY(34px);opacity:.2}}@media(prefers-reduced-motion:reduce){#${ROOT_ID}.is-sleeping{animation:none;opacity:.2}}`;
+  el.textContent = `#${ROOT_ID}{position:fixed;inset:0;z-index:2147483000;background:#000;overflow:hidden;isolation:isolate}#${ROOT_ID} .purple-capsule-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover}#${ROOT_ID} .purple-capsule-float-bg{animation:purpleCapsuleDriftBg 6.4s ease-in-out infinite;transform-origin:center center}#${ROOT_ID} .purple-capsule-character-motion{animation:purpleCapsuleDriftCharacter 3.8s ease-in-out infinite;transform-origin:50% 48%}#${ROOT_ID}>main{position:relative;z-index:2}#${ROOT_ID} .visit-character-event{z-index:2}#${ROOT_ID}.is-sleeping{animation:purpleCapsuleSleepFall 1.3s ease-in forwards}@keyframes purpleCapsuleDriftBg{0%,100%{transform:scale(1.055) translate3d(-1.8%,1.0%,0)}25%{transform:scale(1.060) translate3d(2.2%,-1.5%,0)}55%{transform:scale(1.058) translate3d(1.0%,2.0%,0)}78%{transform:scale(1.062) translate3d(-2.1%,-1.2%,0)}}@keyframes purpleCapsuleDriftCharacter{0%{transform:translate3d(-10px,8px,0) rotate(-8deg) scale(1.00)}18%{transform:translate3d(14px,-16px,0) rotate(32deg) scale(1.03)}36%{transform:translate3d(-18px,-4px,0) rotate(118deg) scale(.98)}54%{transform:translate3d(16px,14px,0) rotate(205deg) scale(1.04)}72%{transform:translate3d(-12px,-18px,0) rotate(292deg) scale(1.00)}88%{transform:translate3d(10px,6px,0) rotate(344deg) scale(1.02)}100%{transform:translate3d(-10px,8px,0) rotate(352deg) scale(1.00)}}@keyframes purpleCapsuleSleepFall{0%{transform:translateY(0)}20%{transform:translateY(-6px)}40%{transform:translateY(5px)}60%{transform:translateY(-3px)}80%{transform:translateY(8px)}100%{transform:translateY(34px);opacity:.2}}@media(prefers-reduced-motion:reduce){#${ROOT_ID} .purple-capsule-float-bg,#${ROOT_ID} .purple-capsule-character-motion{animation:none}#${ROOT_ID}.is-sleeping{animation:none;opacity:.2}}`;
   document.head.appendChild(el);
 }
 
@@ -40,7 +40,7 @@ function bg(place) {
   const outside = place === 'outside';
   const wide = outside ? './assets/images/blues-juke-exterior.webp' : './assets/images/blues-juke-interior.webp';
   const portrait = outside ? './assets/images/blues-juke-exterior-portrait.webp' : './assets/images/blues-juke-interior-portrait.webp';
-  return `<picture><source media="(orientation:portrait)" srcset="${portrait}"><img class="purple-capsule-bg" src="${wide}" alt="" draggable="false"></picture>`;
+  return `<picture><source media="(orientation:portrait)" srcset="${portrait}"><img class="purple-capsule-bg purple-capsule-float-bg" src="${wide}" alt="" draggable="false"></picture>`;
 }
 
 function dialogue(line, speaker = '') {
@@ -48,7 +48,7 @@ function dialogue(line, speaker = '') {
 }
 
 function normal(place, line, speaker = '', character = false) {
-  return `${bg(place)}<main class="main-screen kappa-jade-event-screen"><section class="visit-character-event kappa-jade-event" aria-live="polite">${character ? `<div class="visit-character-area" aria-hidden="true"><img class="visit-character kappa-character" src="${BLUESMAN}" alt="" draggable="false"></div>` : ''}${dialogue(line, speaker)}</section></main>`;
+  return `${bg(place)}<main class="main-screen kappa-jade-event-screen"><section class="visit-character-event kappa-jade-event" aria-live="polite">${character ? `<div class="visit-character-area" aria-hidden="true"><img class="visit-character kappa-character purple-capsule-character-motion" src="${BLUESMAN}" alt="" draggable="false"></div>` : ''}${dialogue(line, speaker)}</section></main>`;
 }
 
 function draw() {

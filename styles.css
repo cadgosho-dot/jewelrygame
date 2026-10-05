@@ -2581,6 +2581,30 @@ body[data-screen="meal"] .meal-eating-panel > strong{
   overscroll-behavior:contain;
   padding-bottom:1rem;
 }
+/* 地金相場詳細は上部バーを除いた画面全体を1本の縦スクロールにする。
+   内側の枠でスクロールを止めると、画面外の説明文と閉じるボタンに届かない。 */
+body[data-screen="supplierMetalHistory"] .screen-content.screen-content{
+  display:block!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:contain;
+  touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+}
+body[data-screen="supplierMetalHistory"] .split-layout.metal-history-layout{
+  height:auto!important;
+  min-height:0!important;
+  align-content:start!important;
+}
+body[data-screen="supplierMetalHistory"] .metal-history-layout .metal-history-panel{
+  max-height:none!important;
+  min-height:0!important;
+  margin-top:0!important;
+  margin-bottom:0!important;
+  overflow:visible!important;
+  overscroll-behavior:auto;
+  align-content:start;
+}
 .metal-history-controls{
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 assert.ok(existsSync(new URL('../js/events/bank-nezumi-rules.js',import.meta.url)), 'bank nezumi rules must exist');
 const {shouldShowBankNezumi,canBuyPurpleCapsule,purchasePurpleCapsule}=await import('../js/events/bank-nezumi-rules.js');
 assert.equal(shouldShowBankNezumi(()=>0),true);
@@ -22,4 +22,11 @@ assert.deepEqual(purpleCapsuleBluesmanLines('川原'),[
   '「モテも人気も金も時間も全部忘れて音に溶けろ、、、、、、それが俺のブルースだ！」',
   '「、、、、、、もうオマエの時間そのものが俺のブルースになってるけどな！、、、、、、」',
 ]);
-console.log('BANK NEZUMI + PURPLE CAPSULE: purchase, use eligibility, dialogue and migration PASS');
+const eventSource=readFileSync(new URL('../js/events/purple-capsule-event.js',import.meta.url),'utf8');
+assert.match(eventSource,/purple-capsule-float-bg/,'紫のカプセル背景に専用の大きな揺れを付ける');
+assert.match(eventSource,/scale\(1\.055\) translate3d\(-1\.8%,1\.0%,0\)/,'背景揺れの承認済み開始値を維持する');
+assert.match(eventSource,/scale\(1\.062\) translate3d\(-2\.1%,-1\.2%,0\)/,'背景揺れの承認済み最大値を維持する');
+assert.match(eventSource,/purple-capsule-character-motion/,'ブルースマンだけに専用回転アニメーションを付ける');
+assert.match(eventSource,/rotate\(205deg\) scale\(1\.04\)/,'ブルースマンの大きな回転と拡大を維持する');
+assert.match(eventSource,/rotate\(344deg\) scale\(1\.02\)/,'ブルースマンの一周近い回転を維持する');
+console.log('BANK NEZUMI + PURPLE CAPSULE: purchase, use eligibility, dialogue, migration and approved motion PASS');

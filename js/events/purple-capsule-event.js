@@ -1,4 +1,5 @@
 import { GENERAL_ITEMS } from '../game-data.js';
+import { PURPLE_CAPSULE_RETEST_RECOVERY_KEY } from './bank-nezumi-rules.js';
 import { purpleCapsuleBluesmanLines } from './purple-capsule-rules.js';
 
 const ITEM_BUTTON = '[data-action="use-phone-item"][data-id="purpleCapsule"]';
@@ -8,6 +9,7 @@ let active = false;
 let stage = 'idle';
 let playerName = 'あなた';
 let timer = 0;
+let recoveryChecked = false;
 
 // 紫のカプセルだけを正式な使用可能アイテムとして有効化する。
 // game-data-core.js 本体や他アイテム定義は変更しない。
@@ -108,7 +110,7 @@ function sleepThenFinish() {
 function next() {
   if (!active) return;
   sfx('select', { gain:.78 });
-  if (stage === 'outside') { stage = 'inside'; audio('bluesJukeInside'); draw(); return; }
+  if (stage === 'outside') { stage = 'inside'; audio('bluesJukeOutside'); draw(); return; }
   if (stage === 'inside') { stage = 'blues1'; sfx('blues-juke-cheer', { gain:.62 }); draw(); return; }
   if (stage === 'blues1') stage = 'blues2';
   else if (stage === 'blues2') stage = 'blues3';
@@ -118,7 +120,21 @@ function next() {
   draw();
 }
 
+function restoreRetestCapsuleOnce() {
+  if (recoveryChecked) return;
+  const helper = api();
+  if (!helper?.purchasePurpleCapsule || !helper?.patchEventState) return;
+  recoveryChecked = true;
+  const result = helper.purchasePurpleCapsule({ retestRestore:true });
+  if (!result?.handled) return;
+  helper.patchEventState(PURPLE_CAPSULE_RETEST_RECOVERY_KEY, {
+    handled:true,
+    restored:Boolean(result.restored),
+  });
+}
+
 function syncButton() {
+  restoreRetestCapsuleOnce();
   const snapshot = api()?.purpleCapsuleRuntimeSnapshot?.();
   const count = Math.max(0, Number(snapshot?.count) || 0);
   document.querySelectorAll(ITEM_BUTTON).forEach((button) => { button.disabled = count <= 0; });

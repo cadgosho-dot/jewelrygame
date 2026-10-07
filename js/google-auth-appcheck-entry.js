@@ -24,7 +24,10 @@ function validAppCheckConfig() {
 
 function bridgeModuleUrl() {
   const script = Array.from(document.scripts).find((node) => node.dataset?.bridgeVersion);
-  return script?.dataset?.bridgeVersion || './google-auth-bridge.js';
+  const configuredUrl = script?.dataset?.bridgeVersion;
+  return configuredUrl
+    ? new URL(configuredUrl, document.baseURI).href
+    : new URL('./google-auth-bridge.js', import.meta.url).href;
 }
 
 const app = initializeApp(effectiveFirebaseConfig());

@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-10-21T05:19:11.932Z",
-  "updatedAt": "2026-10-21T05:20:06Z",
+  "marketTimestamp": "2026-10-21T10:05:11.459Z",
+  "updatedAt": "2026-10-21T10:06:00Z",
   "marketDateJst": "2026-10-21",
   "previousMarketDateJst": "2026-10-20",
   "spotPerGram": {
-    "gold": 20941.852,
-    "silver": 291.8192,
-    "platinum": 8347.9299
+    "gold": 20940.8202,
+    "silver": 290.9888,
+    "platinum": 8300.7447
   },
   "previousSpotPerGram": {
     "gold": 20909.8767,
@@ -22,9 +22,9 @@
     "platinum": 8336.4486
   },
   "changeFromPreviousDayPerGram": {
-    "gold": 31.9753,
-    "silver": 1.614,
-    "platinum": 11.4813
+    "gold": 30.9435,
+    "silver": 0.7836,
+    "platinum": -35.7039
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -591,26 +591,26 @@
     {
       "date": "2026-10-21",
       "spotPerGram": {
-        "gold": 20941.852,
-        "silver": 291.8192,
-        "platinum": 8347.9299
+        "gold": 20940.8202,
+        "silver": 290.9888,
+        "platinum": 8300.7447
       }
     }
   ],
   "gamePricesPerGram": {
     "K18": 18060,
-    "Pt900": 8640,
-    "SV925": 351
+    "Pt900": 8590,
+    "SV925": 350
   },
   "gamePurchasePricesPerGram": {
     "K18": 18060,
-    "Pt900": 8640,
-    "SV925": 351
+    "Pt900": 8590,
+    "SV925": 350
   },
   "gameSellPricesPerGram": {
     "K18": 15390,
-    "Pt900": 7060,
-    "SV925": 243
+    "Pt900": 7020,
+    "SV925": 242
   },
   "gamePurchasePrices": {
     "gold": {
@@ -621,12 +621,12 @@
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 8640
+      "price": 8590
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 351
+      "price": 350
     }
   },
   "gameSellPrices": {
@@ -638,12 +638,12 @@
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 7060
+      "price": 7020
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 243
+      "price": 242
     }
   },
   "calculation": {

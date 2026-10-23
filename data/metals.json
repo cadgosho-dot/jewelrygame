@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-10-23T05:23:05.100Z",
-  "updatedAt": "2026-10-23T05:23:38Z",
+  "marketTimestamp": "2026-10-23T10:01:04.293Z",
+  "updatedAt": "2026-10-23T10:01:22Z",
   "marketDateJst": "2026-10-23",
   "previousMarketDateJst": "2026-10-22",
   "spotPerGram": {
-    "gold": 20251.731,
-    "silver": 272.6501,
-    "platinum": 7929.7652
+    "gold": 20255.3399,
+    "silver": 271.2218,
+    "platinum": 7848.9288
   },
   "previousSpotPerGram": {
     "gold": 20631.0821,
@@ -22,9 +22,9 @@
     "platinum": 8031.059
   },
   "changeFromPreviousDayPerGram": {
-    "gold": -379.3511,
-    "silver": -9.7136,
-    "platinum": -101.2938
+    "gold": -375.7422,
+    "silver": -11.1419,
+    "platinum": -182.1302
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -607,26 +607,26 @@
     {
       "date": "2026-10-23",
       "spotPerGram": {
-        "gold": 20251.731,
-        "silver": 272.6501,
-        "platinum": 7929.7652
+        "gold": 20255.3399,
+        "silver": 271.2218,
+        "platinum": 7848.9288
       }
     }
   ],
   "gamePricesPerGram": {
     "K18": 17470,
-    "Pt900": 8210,
-    "SV925": 328
+    "Pt900": 8120,
+    "SV925": 326
   },
   "gamePurchasePricesPerGram": {
     "K18": 17470,
-    "Pt900": 8210,
-    "SV925": 328
+    "Pt900": 8120,
+    "SV925": 326
   },
   "gameSellPricesPerGram": {
     "K18": 14890,
-    "Pt900": 6710,
-    "SV925": 227
+    "Pt900": 6640,
+    "SV925": 226
   },
   "gamePurchasePrices": {
     "gold": {
@@ -637,12 +637,12 @@
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 8210
+      "price": 8120
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 328
+      "price": 326
     }
   },
   "gameSellPrices": {
@@ -654,12 +654,12 @@
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 6710
+      "price": 6640
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 227
+      "price": 226
     }
   },
   "calculation": {

@@ -7,14 +7,14 @@
     "currency": "JPY",
     "unit": "g"
   },
-  "marketTimestamp": "2026-11-26T15:08:03.670Z",
-  "updatedAt": "2026-11-26T15:09:18Z",
+  "marketTimestamp": "2026-11-27T09:05:08.091Z",
+  "updatedAt": "2026-11-27T09:05:46Z",
   "marketDateJst": "2026-11-27",
   "previousMarketDateJst": "2026-11-26",
   "spotPerGram": {
-    "gold": 18315.0217,
-    "silver": 213.475,
-    "platinum": 6642.3893
+    "gold": 18887.0292,
+    "silver": 228.4905,
+    "platinum": 6988.4379
   },
   "previousSpotPerGram": {
     "gold": 18285.5312,
@@ -22,9 +22,9 @@
     "platinum": 6690.9177
   },
   "changeFromPreviousDayPerGram": {
-    "gold": 29.4905,
-    "silver": -0.2741,
-    "platinum": -48.5284
+    "gold": 601.498,
+    "silver": 14.7414,
+    "platinum": 297.5202
   },
   "historyRetentionYears": 5,
   "historyDaily": [
@@ -807,59 +807,59 @@
     {
       "date": "2026-11-27",
       "spotPerGram": {
-        "gold": 18315.0217,
-        "silver": 213.475,
-        "platinum": 6642.3893
+        "gold": 18887.0292,
+        "silver": 228.4905,
+        "platinum": 6988.4379
       }
     }
   ],
   "gamePricesPerGram": {
-    "K18": 15800,
-    "Pt900": 6870,
-    "SV925": 257
+    "K18": 16290,
+    "Pt900": 7230,
+    "SV925": 275
   },
   "gamePurchasePricesPerGram": {
-    "K18": 15800,
-    "Pt900": 6870,
-    "SV925": 257
+    "K18": 16290,
+    "Pt900": 7230,
+    "SV925": 275
   },
   "gameSellPricesPerGram": {
-    "K18": 13460,
-    "Pt900": 5620,
-    "SV925": 178
+    "K18": 13880,
+    "Pt900": 5910,
+    "SV925": 190
   },
   "gamePurchasePrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 15800
+      "price": 16290
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 6870
+      "price": 7230
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 257
+      "price": 275
     }
   },
   "gameSellPrices": {
     "gold": {
       "alloy": "K18",
       "grams": 1,
-      "price": 13460
+      "price": 13880
     },
     "platinum": {
       "alloy": "Pt900",
       "grams": 1,
-      "price": 5620
+      "price": 5910
     },
     "silver": {
       "alloy": "SV925",
       "grams": 1,
-      "price": 178
+      "price": 190
     }
   },
   "calculation": {
